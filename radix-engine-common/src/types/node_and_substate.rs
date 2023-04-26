@@ -212,66 +212,10 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 #[sbor(transparent)]
 pub struct ModuleId(pub u8);
 
-impl ModuleId {
-    // TODO: Need a better way to configure this
-    pub fn virtualize_substates(&self) -> bool {
-        match self.0 {
-            1u8 | 5u8 => true,
-            _ => false,
-        }
-    }
-}
-
 /// The unique identifier of a substate within a node module.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
-#[sbor(transparent)]
-pub struct SubstateKey(Vec<u8>);
-
-impl SubstateKey {
-    pub const MIN_LENGTH: usize = 1;
-    pub const MAX_LENGTH: usize = 128;
-
-    pub fn min() -> Self {
-        Self(vec![u8::MIN; Self::MIN_LENGTH])
-    }
-
-    pub fn max() -> Self {
-        Self(vec![u8::MAX; Self::MAX_LENGTH])
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Option<Self> {
-        Self::from_vec(slice.to_vec())
-    }
-
-    pub fn from_vec(bytes: Vec<u8>) -> Option<Self> {
-        if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
-            None
-        } else {
-            Some(Self(bytes))
-        }
-    }
-
-    pub fn to_hex(&self) -> String {
-        hex::encode(&self.0)
-    }
-}
-
-impl Debug for SubstateKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("SubstateKey")
-            .field(&hex::encode(&self.0))
-            .finish()
-    }
-}
-
-impl AsRef<[u8]> for SubstateKey {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Into<Vec<u8>> for SubstateKey {
-    fn into(self) -> Vec<u8> {
-        self.0
-    }
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+pub enum SubstateKey {
+    Tuple(u8),
+    Map(Vec<u8>),
+    Sorted(u16, Vec<u8>),
 }

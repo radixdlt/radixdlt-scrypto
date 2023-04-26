@@ -6,6 +6,7 @@ use sbor::rust::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ResourceError {
     InsufficientBalance,
+    InvalidTakeAmount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -57,9 +58,15 @@ impl LiquidFungibleResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct LiquidNonFungibleVault {
+    pub amount: Decimal,
+    pub ids: Own,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
-    ids: BTreeSet<NonFungibleLocalId>,
+    pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl LiquidNonFungibleResource {

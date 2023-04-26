@@ -280,7 +280,7 @@ impl<
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
-        let mut map = HashMap::with_capacity(if size <= 1024 { size } else { 1024 });
+        let mut map = hash_map_with_capacity(if size <= 1024 { size } else { 1024 });
         for _ in 0..size {
             map.insert(
                 decoder.decode_deeper_body_with_value_kind(key_value_kind)?,

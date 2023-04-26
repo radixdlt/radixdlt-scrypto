@@ -10,7 +10,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
@@ -313,26 +313,17 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::create_proof(receiver, input, api)
+                Self::create_proof(input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::initiate_recovery_as_primary(receiver, input, api)
+                Self::initiate_recovery_as_primary(input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::initiate_recovery_as_recovery(receiver, input, api)
+                Self::initiate_recovery_as_recovery(input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -361,42 +352,27 @@ impl AccessControllerNativePackage {
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::cancel_primary_role_recovery_proposal(receiver, input, api)
+                Self::cancel_primary_role_recovery_proposal(input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::cancel_recovery_role_recovery_proposal(receiver, input, api)
+                Self::cancel_recovery_role_recovery_proposal(input, api)
             }
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::lock_primary_role(receiver, input, api)
+                Self::lock_primary_role(input, api)
             }
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::unlock_primary_role(receiver, input, api)
+                Self::unlock_primary_role(input, api)
             }
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::stop_timed_recovery(receiver, input, api)
+                Self::stop_timed_recovery(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -451,7 +427,6 @@ impl AccessControllerNativePackage {
     }
 
     fn create_proof<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -462,13 +437,12 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let proof = transition(receiver, api, AccessControllerCreateProofStateMachineInput)?;
+        let proof = transition(api, AccessControllerCreateProofStateMachineInput)?;
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
 
     fn initiate_recovery_as_primary<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -485,7 +459,6 @@ impl AccessControllerNativePackage {
         };
 
         transition_mut(
-            receiver,
             api,
             AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
                 proposal: proposal.clone(),
@@ -504,7 +477,6 @@ impl AccessControllerNativePackage {
     }
 
     fn initiate_recovery_as_recovery<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -521,7 +493,6 @@ impl AccessControllerNativePackage {
         };
 
         transition_mut(
-            receiver,
             api,
             AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
                 proposal: proposal.clone(),
@@ -557,7 +528,6 @@ impl AccessControllerNativePackage {
         };
 
         let recovery_proposal = transition_mut(
-            receiver,
             api,
             AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: proposal.clone(),
@@ -599,7 +569,6 @@ impl AccessControllerNativePackage {
         };
 
         let recovery_proposal = transition_mut(
-            receiver,
             api,
             AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput {
                 proposal_to_confirm: proposal.clone(),
@@ -640,7 +609,6 @@ impl AccessControllerNativePackage {
         };
 
         let recovery_proposal = transition_mut(
-            receiver,
             api,
             AccessControllerTimedConfirmRecoveryStateMachineInput {
                 proposal_to_confirm: proposal.clone(),
@@ -666,7 +634,6 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_primary_role_recovery_proposal<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -679,7 +646,6 @@ impl AccessControllerNativePackage {
             })?;
 
         transition_mut(
-            receiver,
             api,
             AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
         )?;
@@ -695,7 +661,6 @@ impl AccessControllerNativePackage {
     }
 
     fn cancel_recovery_role_recovery_proposal<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -708,7 +673,6 @@ impl AccessControllerNativePackage {
             })?;
 
         transition_mut(
-            receiver,
             api,
             AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
         )?;
@@ -724,7 +688,6 @@ impl AccessControllerNativePackage {
     }
 
     fn lock_primary_role<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -735,18 +698,13 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        transition_mut(
-            receiver,
-            api,
-            AccessControllerLockPrimaryRoleStateMachineInput,
-        )?;
+        transition_mut(api, AccessControllerLockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, LockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn unlock_primary_role<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -757,18 +715,13 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        transition_mut(
-            receiver,
-            api,
-            AccessControllerUnlockPrimaryRoleStateMachineInput,
-        )?;
+        transition_mut(api, AccessControllerUnlockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, UnlockPrimaryRoleEvent {})?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn stop_timed_recovery<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -780,7 +733,6 @@ impl AccessControllerNativePackage {
         })?;
 
         transition_mut(
-            receiver,
             api,
             AccessControllerStopTimedRecoveryStateMachineInput {
                 proposal: RecoveryProposal {
@@ -920,7 +872,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 }
 
 fn transition<Y, I>(
-    receiver: &NodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as Transition<I>>::Output, RuntimeError>
@@ -929,7 +880,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::read_only())?;
+    let handle = api.lock_field(substate_key, LockFlags::read_only())?;
 
     let access_controller = {
         let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;
@@ -944,7 +895,6 @@ where
 }
 
 fn transition_mut<Y, I>(
-    receiver: &NodeId,
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerSubstate as TransitionMut<I>>::Output, RuntimeError>
@@ -953,7 +903,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.sys_lock_substate(receiver, &substate_key, LockFlags::MUTABLE)?;
+    let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
         let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;

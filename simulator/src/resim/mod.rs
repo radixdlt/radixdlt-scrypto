@@ -53,7 +53,7 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::system::bootstrap::bootstrap;
+use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
@@ -75,6 +75,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -92,35 +93,35 @@ use utils::ContextualDisplay;
 /// TODO: remove
 pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
     EntityType::GlobalGenericComponent as u8,
-    59,
-    99,
-    48,
-    95,
-    132,
-    112,
-    235,
-    36,
-    42,
-    161,
+    1,
+    214,
+    31,
+    81,
+    94,
+    195,
+    164,
+    245,
+    22,
     133,
-    230,
-    241,
-    33,
-    44,
-    166,
-    237,
-    56,
-    70,
-    204,
-    112,
-    110,
     219,
-    138,
-    151,
-    60,
-    191,
-    147,
-    140,
+    196,
+    153,
+    116,
+    249,
+    229,
+    98,
+    136,
+    55,
+    21,
+    2,
+    33,
+    180,
+    121,
+    11,
+    178,
+    57,
+    153,
+    132,
 ]);
 
 /// Build fast, reward everyone, and scale without friction
@@ -202,7 +203,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    bootstrap(&mut substate_db, &scrypto_interpreter);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -269,7 +270,7 @@ pub fn handle_manifest<O: std::io::Write>(
         None => {
             let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            bootstrap(&mut substate_db, &scrypto_interpreter);
+            Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -349,17 +350,15 @@ pub fn get_signing_keys(
 pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    bootstrap(&mut substate_db, &scrypto_interpreter);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
-    let substate = substate_db
-        .get_substate(
+    let package_info = substate_db
+        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            PackageOffset::Info.into(),
         )
-        .expect("Database misconfigured")
         .ok_or(Error::PackageNotFound(package_address))?;
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Ok(package_info.schema)
 }
@@ -382,18 +381,15 @@ pub fn export_blueprint_schema(
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    bootstrap(&mut substate_db, &scrypto_interpreter);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
-    let substate = substate_db
-        .get_substate(
+    let type_info = substate_db
+        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
-            &TypeInfoOffset::TypeInfo.into(),
+            TypeInfoOffset::TypeInfo.into(),
         )
-        .expect("Database misconfigured")
         .ok_or(Error::ComponentNotFound(component_address))?;
-
-    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => Ok(blueprint.clone()),
@@ -424,24 +420,22 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     *local_type_index,
                 ),
                 ObjectModuleId::SELF => {
-                    let substate = substate_db
-                        .get_substate(
+                    let type_info = substate_db
+                        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
-                            &TypeInfoOffset::TypeInfo.into(),
+                            TypeInfoOffset::TypeInfo.into(),
                         )
-                        .expect("Database misconfigured")
                         .unwrap();
-                    let type_info: TypeInfoSubstate = scrypto_decode(&substate).unwrap();
                     match type_info {
                         TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
                             blueprint.package_address,
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
-                            return None
-                        }
+                        TypeInfoSubstate::KeyValueStore(..)
+                        | TypeInfoSubstate::Index
+                        | TypeInfoSubstate::SortedIndex => return None,
                     }
                 }
             }
@@ -453,15 +447,13 @@ pub fn get_event_schema<S: SubstateDatabase>(
         ),
     };
 
-    let substate = substate_db
-        .get_substate(
+    let package_info = substate_db
+        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
+            PackageOffset::Info.into(),
         )
-        .expect("Database misconfigured")
         .unwrap();
-    let package_info: PackageInfoSubstate = scrypto_decode(&substate).unwrap();
 
     Some((
         local_type_index,

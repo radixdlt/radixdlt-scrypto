@@ -3,9 +3,8 @@ pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
-use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
 use radix_engine_interface::*;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::{hash_map_new, HashMap};
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -57,13 +56,10 @@ pub struct TreeLeafNode<P> {
 /// This design decision also brings minor space and runtime benefits, and avoids special-casing
 /// the physical `NodeKey`s (no clashes can occur between ReNode leaf and Substates' root).
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub struct ReNodeModulePayload {
-    /// ReNode ID.
-    pub node_id: NodeId,
-    /// Module ID.
-    pub node_mode_id: ModuleId,
+pub struct IndexPayload {
+    pub index_id: Vec<u8>,
     /// An embedded root of the descendant Substate layer tree.
-    pub substates_root: TreeNode<SubstateKey>,
+    pub substates_root: TreeNode<Vec<u8>>,
 }
 
 /// A payload carried by a physical leaf.
@@ -74,9 +70,9 @@ pub trait Payload:
 {
 }
 
-impl Payload for ReNodeModulePayload {}
+impl Payload for IndexPayload {}
 
-impl Payload for SubstateKey {}
+impl Payload for Vec<u8> {}
 
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore<P: Payload> {
@@ -99,10 +95,10 @@ pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
 impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
-    pub root_tree_nodes: HashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
-    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstateKey>>,
+    pub root_tree_nodes: HashMap<NodeKey, TreeNode<IndexPayload>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<Vec<u8>>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -110,21 +106,21 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            root_tree_nodes: HashMap::new(),
-            sub_tree_nodes: HashMap::new(),
+            root_tree_nodes: hash_map_new(),
+            sub_tree_nodes: hash_map_new(),
             stale_key_buffer: Vec::new(),
         }
     }
 }
 
-impl ReadableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateKey>> {
+impl ReadableTreeStore<Vec<u8>> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<Vec<u8>>> {
         self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateKey>) {
+impl WriteableTreeStore<Vec<u8>> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<Vec<u8>>) {
         self.sub_tree_nodes.insert(key, node);
     }
 
@@ -133,14 +129,14 @@ impl WriteableTreeStore<SubstateKey> for TypedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+impl ReadableTreeStore<IndexPayload> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<IndexPayload>> {
         self.root_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<ReNodeModulePayload> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+impl WriteableTreeStore<IndexPayload> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<IndexPayload>) {
         self.root_tree_nodes.insert(key, node);
     }
 
@@ -160,7 +156,7 @@ impl SerializedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> Self {
         Self {
-            memory: HashMap::new(),
+            memory: hash_map_new(),
             stale_key_buffer: Vec::new(),
         }
     }

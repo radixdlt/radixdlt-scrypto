@@ -10,7 +10,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
@@ -86,12 +86,12 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-pub struct SystemCallback<C: SystemCallbackObject> {
+pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
+impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -236,7 +236,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemCallback<C> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemCallback<C>>,
+        Y: KernelApi<SystemConfig<C>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up

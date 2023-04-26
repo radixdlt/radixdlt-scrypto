@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::system::SystemDownstream;
-use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
@@ -22,7 +22,7 @@ pub struct VirtualizationModule;
 
 // TODO: Move into a lower layer
 impl VirtualizationModule {
-    pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemCallback<C>>, C: SystemCallbackObject>(
+    pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemConfig<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
         _module_id: ModuleId,
         _offset: &SubstateKey,

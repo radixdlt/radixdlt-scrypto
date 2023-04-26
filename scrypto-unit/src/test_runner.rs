@@ -8,10 +8,10 @@ use radix_engine::blueprints::epoch_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
-use radix_engine::system::bootstrap::{create_genesis, GenesisData};
+use radix_engine::system::bootstrap::*;
 use radix_engine::system::module_mixer::SystemModuleMixer;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system_callback::SystemCallback;
+use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::Track;
@@ -50,8 +50,9 @@ use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::interface::{
-    CommittableSubstateDatabase, StateUpdate, StateUpdates, SubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
 };
+use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use radix_engine_stores::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
@@ -127,8 +128,65 @@ impl Compile {
     }
 }
 
+pub struct CustomGenesis {
+    pub genesis_data_chunks: Vec<GenesisDataChunk>,
+    pub initial_epoch: u64,
+    pub max_validators: u32,
+    pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
+}
+
+impl CustomGenesis {
+    pub fn empty(
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> CustomGenesis {
+        CustomGenesis {
+            genesis_data_chunks: vec![],
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        }
+    }
+
+    pub fn single_validator_and_staker(
+        validator_public_key: EcdsaSecp256k1PublicKey,
+        stake_xrd_amount: Decimal,
+        staker_account: ComponentAddress,
+        initial_epoch: u64,
+        max_validators: u32,
+        rounds_per_epoch: u64,
+        num_unstake_epochs: u64,
+    ) -> CustomGenesis {
+        let genesis_validator: GenesisValidator = validator_public_key.clone().into();
+        let genesis_data_chunks = vec![
+            GenesisDataChunk::Validators(vec![genesis_validator]),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: vec![(
+                    validator_public_key,
+                    vec![GenesisStakeAllocation {
+                        account_index: 0,
+                        xrd_amount: stake_xrd_amount,
+                    }],
+                )],
+            },
+        ];
+        CustomGenesis {
+            genesis_data_chunks,
+            initial_epoch,
+            max_validators,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        }
+    }
+}
+
 pub struct TestRunnerBuilder {
-    custom_genesis: Option<SystemTransaction>,
+    custom_genesis: Option<CustomGenesis>,
     trace: bool,
     state_hashing: bool,
 }
@@ -144,7 +202,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn with_custom_genesis(mut self, genesis: SystemTransaction) -> Self {
+    pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
         self.custom_genesis = Some(genesis);
         self
     }
@@ -157,31 +215,21 @@ impl TestRunnerBuilder {
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
-        // Bootstrap
-        let genesis = self
-            .custom_genesis
-            .unwrap_or_else(|| create_genesis(GenesisData::empty(), 1u64, 10u32, 1u64, 1u64));
-        let transaction_receipt = {
-            let transaction_receipt = execute_transaction(
-                &substate_db,
-                &scrypto_interpreter,
-                &FeeReserveConfig::default(),
-                &ExecutionConfig::genesis(),
-                &genesis.get_executable(btreeset![AuthAddresses::system_role()]),
-            );
-
-            let commit_result = transaction_receipt.expect_commit(true);
-            substate_db
-                .commit(&commit_result.state_updates)
-                .expect("Database misconfigured");
-            transaction_receipt
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter);
+        let (_, _, genesis_wrap_up_receipt) = match self.custom_genesis {
+            Some(custom_genesis) => bootstrapper
+                .bootstrap_with_genesis_data(
+                    custom_genesis.genesis_data_chunks,
+                    custom_genesis.initial_epoch,
+                    custom_genesis.max_validators,
+                    custom_genesis.rounds_per_epoch,
+                    custom_genesis.num_unstake_epochs,
+                )
+                .unwrap(),
+            None => bootstrapper.bootstrap_test_default().unwrap(),
         };
-        let faucet_component = transaction_receipt
-            .expect_commit_success()
-            .new_component_addresses()
-            .last()
-            .cloned()
-            .unwrap();
+
+        let faucet_component = genesis_wrap_up_receipt.faucet_component();
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -202,8 +250,7 @@ impl TestRunnerBuilder {
             faucet_component,
         };
 
-        let result = transaction_receipt.expect_commit_success();
-        let next_epoch = result.next_epoch().unwrap();
+        let next_epoch = genesis_wrap_up_receipt.commit_result.next_epoch().unwrap();
         (runner, next_epoch.0)
     }
 
@@ -223,6 +270,14 @@ pub struct TestRunner {
     faucet_component: ComponentAddress,
 }
 
+#[derive(Clone)]
+pub struct TestRunnerSnapshot {
+    substate_db: InMemorySubstateDatabase,
+    next_private_key: u64,
+    next_transaction_nonce: u64,
+    state_hash_support: Option<StateHashSupport>,
+}
+
 impl TestRunner {
     pub fn builder() -> TestRunnerBuilder {
         TestRunnerBuilder {
@@ -233,6 +288,22 @@ impl TestRunner {
             trace: false,
             state_hashing: false,
         }
+    }
+
+    pub fn create_snapshot(&self) -> TestRunnerSnapshot {
+        TestRunnerSnapshot {
+            substate_db: self.substate_db.clone(),
+            next_private_key: self.next_private_key,
+            next_transaction_nonce: self.next_transaction_nonce,
+            state_hash_support: self.state_hash_support.clone(),
+        }
+    }
+
+    pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
+        self.substate_db = snapshot.substate_db;
+        self.next_private_key = snapshot.next_private_key;
+        self.next_transaction_nonce = snapshot.next_transaction_nonce;
+        self.state_hash_support = snapshot.state_hash_support;
     }
 
     pub fn faucet_component(&self) -> ComponentAddress {
@@ -300,15 +371,16 @@ impl TestRunner {
     }
 
     pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+        // TODO: Move this to system wrapper around substate_store
+        let key = scrypto_encode(key).unwrap();
+
         let metadata_entry = self
             .substate_db
-            .get_substate(
+            .get_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
-                &SubstateKey::from_vec(scrypto_encode(key).unwrap()).unwrap(),
-            )
-            .expect("Database misconfigured")
-            .map(|s| scrypto_decode::<Option<ScryptoValue>>(&s).unwrap())?;
+                SubstateKey::Map(key),
+            )?;
 
         let metadata_entry = match metadata_entry {
             Option::Some(value) => {
@@ -328,30 +400,23 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_substate(
+            .get_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::Royalty.into(),
-                &RoyaltyOffset::RoyaltyAccumulator.into(),
+                RoyaltyOffset::RoyaltyAccumulator.into(),
             )
-            .expect("Database misconfigured")
         {
-            scrypto_decode::<ComponentRoyaltyAccumulatorSubstate>(&output)
-                .unwrap()
+            output
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database misconfigured")
-                        .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output)
-                                .unwrap()
-                                .amount()
-                        })
                 })
+                .map(|r| r.amount())
         } else {
             None
         }
@@ -360,30 +425,23 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_substate(
+            .get_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 SysModuleId::Object.into(),
-                &PackageOffset::Royalty.into(),
+                PackageOffset::Royalty.into(),
             )
-            .expect("Database misconfigured")
         {
-            scrypto_decode::<PackageRoyaltySubstate>(&output)
-                .unwrap()
+            output
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_substate(
+                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            FungibleVaultOffset::LiquidFungible.into(),
                         )
-                        .expect("Database misconfigured")
-                        .map(|output| {
-                            scrypto_decode::<LiquidFungibleResource>(&output)
-                                .unwrap()
-                                .amount()
-                        })
                 })
+                .map(|r| r.amount())
         } else {
             None
         }
@@ -417,41 +475,46 @@ impl TestRunner {
             self.inspect_fungible_vault(vault_id)
         } else {
             self.inspect_non_fungible_vault(vault_id)
-                .map(|ids| ids.len().into())
+                .map(|(amount, ..)| amount)
         }
     }
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_substate(
+            .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &FungibleVaultOffset::LiquidFungible.into(),
+                FungibleVaultOffset::LiquidFungible.into(),
             )
-            .expect("Database misconfigured")
-            .map(|output| {
-                scrypto_decode::<LiquidFungibleResource>(&output)
-                    .unwrap()
-                    .amount()
-            })
+            .map(|output| output.amount())
     }
 
     pub fn inspect_non_fungible_vault(
         &mut self,
         vault_id: NodeId,
-    ) -> Option<BTreeSet<NonFungibleLocalId>> {
-        self.substate_db()
-            .get_substate(
+    ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
+        let vault = self
+            .substate_db()
+            .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                &NonFungibleVaultOffset::LiquidNonFungible.into(),
+                NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
-            .expect("Database misconfigured")
-            .map(|output| {
-                scrypto_decode::<LiquidNonFungibleResource>(&output)
-                    .unwrap()
-                    .into_ids()
-            })
+            .map(|vault| {
+                let amount = vault.amount;
+                (amount, vault.ids)
+            });
+
+        vault.map(|(amount, ids)| {
+            let mut substate_iter = self
+                .substate_db()
+                .list_mapped_substates::<JmtMapper>(ids.as_node_id(), SysModuleId::Object.into());
+            let id = substate_iter.next().map(|(_key, value)| {
+                let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
+                id
+            });
+            (amount, id)
+        })
     }
 
     pub fn get_component_resources(
@@ -461,7 +524,7 @@ impl TestRunner {
         let node_id = component_address.as_node_id();
         let mut accounter = ResourceAccounter::new(&self.substate_db);
         accounter.traverse(node_id.clone());
-        accounter.close().fungibles
+        accounter.close().balances
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
@@ -522,33 +585,25 @@ impl TestRunner {
     }
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
-        scrypto_decode(
-            &self
-                .substate_db()
-                .get_substate(
-                    address.as_node_id(),
-                    SysModuleId::Object.into(),
-                    &ValidatorOffset::Validator.into(),
-                )
-                .expect("Database misconfigured")
-                .unwrap(),
-        )
-        .unwrap()
+        self.substate_db()
+            .get_mapped_substate::<JmtMapper, ValidatorSubstate>(
+                address.as_node_id(),
+                SysModuleId::Object.into(),
+                ValidatorOffset::Validator.into(),
+            )
+            .unwrap()
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
-        let substate: CurrentValidatorSetSubstate = scrypto_decode(
-            &self
-                .substate_db()
-                .get_substate(
-                    EPOCH_MANAGER.as_node_id(),
-                    SysModuleId::Object.into(),
-                    &EpochManagerOffset::CurrentValidatorSet.into(),
-                )
-                .expect("Database misconfigured")
-                .unwrap(),
-        )
-        .unwrap();
+        let substate = self
+            .substate_db()
+            .get_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
+                EPOCH_MANAGER.as_node_id(),
+                SysModuleId::Object.into(),
+                EpochManagerOffset::CurrentValidatorSet.into(),
+            )
+            .unwrap();
+
         substate
             .validator_set
             .iter()
@@ -771,9 +826,7 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.substate_db
-                .commit(&commit.state_updates)
-                .expect("Database misconfigured");
+            self.substate_db.commit(&commit.state_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates);
             }
@@ -1200,7 +1253,7 @@ impl TestRunner {
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
         let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::new(&substate_db);
+        let mut track = Track::<_, JmtMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
@@ -1210,7 +1263,7 @@ impl TestRunner {
             wasm_instrumenter: WasmInstrumenter::default(),
         };
 
-        let mut system = SystemCallback {
+        let mut system = SystemConfig {
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },
@@ -1265,18 +1318,14 @@ impl TestRunner {
                         local_type_index.clone(),
                     ),
                     ObjectModuleId::SELF => {
-                        let type_info: TypeInfoSubstate = scrypto_decode(
-                            &self
-                                .substate_db()
-                                .get_substate(
-                                    node_id,
-                                    SysModuleId::TypeInfo.into(),
-                                    &TypeInfoOffset::TypeInfo.into(),
-                                )
-                                .expect("Database misconfigured")
-                                .unwrap(),
-                        )
-                        .unwrap();
+                        let type_info = self
+                            .substate_db()
+                            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                                node_id,
+                                SysModuleId::TypeInfo.into(),
+                                TypeInfoOffset::TypeInfo.into(),
+                            )
+                            .unwrap();
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => (
@@ -1284,7 +1333,9 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..) | TypeInfoSubstate::SortedStore => {
+                            TypeInfoSubstate::KeyValueStore(..)
+                            | TypeInfoSubstate::SortedIndex
+                            | TypeInfoSubstate::Index => {
                                 panic!("No event schema.")
                             }
                         }
@@ -1303,23 +1354,18 @@ impl TestRunner {
 
         (
             local_type_index,
-            scrypto_decode::<PackageInfoSubstate>(
-                &self
-                    .substate_db()
-                    .get_substate(
-                        package_address.as_node_id(),
-                        SysModuleId::Object.into(),
-                        &PackageOffset::Info.into(),
-                    )
-                    .expect("Database misconfigured")
-                    .unwrap(),
-            )
-            .unwrap()
-            .schema
-            .blueprints
-            .remove(&blueprint_name)
-            .unwrap()
-            .schema,
+            self.substate_db()
+                .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+                    package_address.as_node_id(),
+                    SysModuleId::Object.into(),
+                    PackageOffset::Info.into(),
+                )
+                .unwrap()
+                .schema
+                .blueprints
+                .remove(&blueprint_name)
+                .unwrap()
+                .schema,
         )
     }
 
@@ -1350,6 +1396,7 @@ impl TestRunner {
     }
 }
 
+#[derive(Clone)]
 pub struct StateHashSupport {
     tree_store: TypedInMemoryTreeStore,
     current_version: Version,
@@ -1365,20 +1412,21 @@ impl StateHashSupport {
         }
     }
 
-    pub fn update_with(&mut self, state_updates: &StateUpdates) {
-        let hash_changes = state_updates
-            .substate_changes
-            .iter()
-            .map(|(substate_id, value)| {
-                SubstateHashChange::new(
-                    substate_id.clone(),
-                    match value {
-                        StateUpdate::Set(v) => Some(hash(v)),
-                        StateUpdate::Delete => None,
+    pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
+        let mut hash_changes = Vec::new();
+        for (index_id, index_update) in &db_updates.database_updates {
+            for (key, db_update) in index_update {
+                let hash_change = SubstateHashChange::new(
+                    (index_id.clone(), key.clone()),
+                    match db_update {
+                        DatabaseUpdate::Set(v) => Some(hash(v)),
+                        DatabaseUpdate::Delete => None,
                     },
-                )
-            })
-            .collect::<Vec<_>>();
+                );
+                hash_changes.push(hash_change);
+            }
+        }
+
         self.current_hash = put_at_next_version(
             &mut self.tree_store,
             Some(self.current_version).filter(|version| *version > 0),

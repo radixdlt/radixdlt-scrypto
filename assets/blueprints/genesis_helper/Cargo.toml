@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
+native-sdk = { path = "../../../native-sdk" }
 
 [dev-dependencies]
 transaction = { path = "../../../transaction" }

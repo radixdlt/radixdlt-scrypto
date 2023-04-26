@@ -133,7 +133,9 @@ fn transfer_test(c: &mut Criterion) {
         wasm_metering_config: WasmMeteringConfig::V0,
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
-    bootstrap(&mut substate_db, &scrypto_interpreter);
+    let _ = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+        .bootstrap_test_default()
+        .unwrap();
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();

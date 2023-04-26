@@ -53,7 +53,7 @@ alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-in
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
-cpu_ram_metrics = ["std", "dep:perfcnt"] 
+cpu_ram_metrics = ["std", "dep:perfcnt"]
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
@@ -62,6 +62,10 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 moka = ["dep:moka"]
 
 resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker"]
+
+# This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
+# to prevent non-determinism when fuzzing
+radix_engine_fuzzing = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

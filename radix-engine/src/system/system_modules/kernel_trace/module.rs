@@ -2,12 +2,12 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemCallback, SystemInvocation};
+use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
@@ -23,8 +23,8 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceModule {
-    fn before_invoke<Y: KernelApi<SystemCallback<V>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<SystemInvocation>,
         input_size: usize,
@@ -39,7 +39,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemCallback<V>>>(
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
         nodes_and_refs: &mut CallFrameUpdate,
@@ -50,7 +50,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemCallback<V>>>(
+    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
@@ -64,7 +64,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn after_invoke<Y: KernelApi<SystemCallback<V>>>(
+    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -72,7 +72,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<SystemCallback<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_type: Option<EntityType>,
         virtual_node: bool,
@@ -86,7 +86,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemCallback<V>>>(
+    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
@@ -101,7 +101,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemCallback<V>>>(
+    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
@@ -109,7 +109,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &ModuleId,
@@ -127,7 +127,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
         size: usize,
@@ -136,7 +136,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -150,7 +150,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemCallback<V>>>(
+    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         size: usize,
@@ -164,7 +164,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemCallback<V>> for KernelTraceMod
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemCallback<V>>>(
+    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {

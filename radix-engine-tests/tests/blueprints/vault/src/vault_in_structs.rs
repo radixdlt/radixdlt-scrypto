@@ -106,89 +106,11 @@ mod vault_test {
             self.vault_vector.push(Vault::with_bucket(bucket))
         }
 
-        pub fn new_vault_with_take() -> ComponentAddress {
+        pub fn new_fungible_vault_with_take() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);
             vault.put(bucket);
-            let vaults = KeyValueStore::new();
-            let vault_vector = Vec::new();
-            VaultTest {
-                vault,
-                vaults,
-                vault_vector,
-            }
-            .instantiate()
-            .globalize()
-        }
-
-        fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "TestToken")
-                .mint_initial_supply([(1u64.into(), Data {})]);
-            Vault::with_bucket(bucket)
-        }
-
-        pub fn new_vault_with_take_non_fungible() -> ComponentAddress {
-            let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleLocalId::integer(1));
-            vault.put(bucket);
-            let vaults = KeyValueStore::new();
-            let vault_vector = Vec::new();
-            VaultTest {
-                vault,
-                vaults,
-                vault_vector,
-            }
-            .instantiate()
-            .globalize()
-        }
-
-        pub fn new_vault_with_get_non_fungible_local_ids() -> ComponentAddress {
-            let vault = Self::create_non_fungible_vault();
-            let _ids = vault.non_fungible_local_ids();
-            let vaults = KeyValueStore::new();
-            let vault_vector = Vec::new();
-            VaultTest {
-                vault,
-                vaults,
-                vault_vector,
-            }
-            .instantiate()
-            .globalize()
-        }
-
-        pub fn new_vault_with_get_non_fungible_local_id() -> ComponentAddress {
-            let vault = Self::create_non_fungible_vault();
-            let _id = vault.non_fungible_local_id();
-            let vaults = KeyValueStore::new();
-            let vault_vector = Vec::new();
-            VaultTest {
-                vault,
-                vaults,
-                vault_vector,
-            }
-            .instantiate()
-            .globalize()
-        }
-
-        pub fn new_vault_with_get_amount() -> ComponentAddress {
-            let vault = Self::create_non_fungible_vault();
-            let _amount = vault.amount();
-            let vaults = KeyValueStore::new();
-            let vault_vector = Vec::new();
-            VaultTest {
-                vault,
-                vaults,
-                vault_vector,
-            }
-            .instantiate()
-            .globalize()
-        }
-
-        pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
-            let vault = Self::create_non_fungible_vault();
-            let _resource_manager = vault.resource_address();
             let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {

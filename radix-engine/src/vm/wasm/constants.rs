@@ -21,9 +21,11 @@ pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x36;
 pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
 pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
+pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_ID: usize = 0x38;
+pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME: &str = "lock_key_value_store_entry";
 
-pub const LOCK_SUBSTATE_FUNCTION_ID: usize = 0x40;
-pub const LOCK_SUBSTATE_FUNCTION_NAME: &str = "lock_substate";
+pub const LOCK_FIELD_FUNCTION_ID: usize = 0x40;
+pub const LOCK_FIELD_FUNCTION_NAME: &str = "lock_field";
 pub const READ_SUBSTATE_FUNCTION_ID: usize = 0x41;
 pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
 pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 0x42;

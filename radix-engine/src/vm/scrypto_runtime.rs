@@ -4,7 +4,7 @@ use crate::system::system_modules::costing::*;
 use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
@@ -169,21 +169,30 @@ where
         Ok(())
     }
 
-    fn lock_substate(
+    fn lock_key_value_store_entry(
         &mut self,
         node_id: Vec<u8>,
-        substate_key: Vec<u8>,
+        key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let node_id = NodeId(
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let substate_key =
-            SubstateKey::from_vec(substate_key).ok_or(WasmRuntimeError::InvalidSubstateKey)?;
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.sys_lock_substate(&node_id, &substate_key, flags)?;
+        let handle = self.api.lock_key_value_store_entry(&node_id, &key, flags)?;
+
+        Ok(handle)
+    }
+
+    fn lock_field(
+        &mut self,
+        field: u8,
+        flags: u32,
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+        let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
+        let handle = self.api.lock_field(field, flags)?;
 
         Ok(handle)
     }
@@ -382,12 +391,16 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_substate(
+    fn lock_key_value_store_entry(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
-    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn lock_field(&mut self, field: u8, flags: u32) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

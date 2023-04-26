@@ -1,6 +1,6 @@
 use radix_engine::{
     blueprints::resource::BucketError,
-    errors::{ApplicationError, RuntimeError},
+    errors::{ApplicationError, KernelError, RuntimeError},
     types::*,
 };
 use radix_engine_interface::blueprints::resource::*;
@@ -228,4 +228,78 @@ fn create_empty_bucket() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_drop_locked_fungible_bucket() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 10.into())
+        .call_function(
+            package_address,
+            "BucketTest",
+            "drop_locked_fungible_bucket",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::DropNodeFailure(_))
+        )
+    });
+}
+
+#[test]
+fn test_drop_locked_non_fungible_bucket() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, 10.into())
+        .call_function(
+            package_address,
+            "BucketTest",
+            "drop_locked_non_fungible_bucket",
+            manifest_args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::DropNodeFailure(_))
+        )
+    });
 }

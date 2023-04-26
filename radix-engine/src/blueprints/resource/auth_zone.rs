@@ -19,22 +19,18 @@ pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
     pub(crate) fn pop<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
@@ -47,22 +43,18 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn push<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let input: AuthZonePushInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         auth_zone.push(input.proof);
@@ -74,7 +66,6 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -85,11 +76,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
@@ -114,7 +102,6 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_amount<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -125,11 +112,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::read_only(),
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::read_only())?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
@@ -154,7 +138,6 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn create_proof_by_ids<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -165,11 +148,8 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
@@ -194,22 +174,17 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
@@ -224,22 +199,17 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn clear_signature_proofs<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
         auth_zone.clear_signature_proofs();
         api.sys_write_substate_typed(handle, &auth_zone)?;
@@ -249,22 +219,18 @@ impl AuthZoneBlueprint {
     }
 
     pub(crate) fn drain<Y>(
-        receiver: &NodeId,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle = api.sys_lock_substate(
-            receiver,
-            &AuthZoneOffset::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
+        let auth_zone_handle =
+            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
         let proofs = auth_zone.drain();
