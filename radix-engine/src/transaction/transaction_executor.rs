@@ -21,6 +21,8 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use radix_engine_stores::interface::*;
 use radix_engine_stores::jmt_support::JmtMapper;
+use sbor::traversal::*;
+use sbor::*;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -163,10 +165,52 @@ where
         fee_table: FeeTable,
     ) -> TransactionReceipt {
         let transaction_hash = executable.transaction_hash().clone();
+        let runtime_validations = executable.runtime_validations().to_vec();
+        let instructions = manifest_encode(executable.instructions()).unwrap();
         let mut blobs = BTreeMap::new();
         for b in executable.blobs() {
             blobs.insert(hash(b), b.clone());
         }
+        let references = {
+            let mut references = BTreeSet::new();
+            let mut traverser = ManifestTraverser::new(
+                &instructions,
+                MANIFEST_SBOR_V1_MAX_DEPTH,
+                ExpectedStart::PayloadPrefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX),
+                true,
+            );
+            loop {
+                let event = traverser.next_event();
+                match event.event {
+                    TraversalEvent::ContainerStart(_) => {}
+                    TraversalEvent::ContainerEnd(_) => {}
+                    TraversalEvent::TerminalValue(r) => {
+                        if let traversal::TerminalValueRef::Custom(c) = r {
+                            match c.0 {
+                                ManifestCustomValue::Address(address) => {
+                                    references.insert(Reference(address.0));
+                                }
+                                ManifestCustomValue::Bucket(_)
+                                | ManifestCustomValue::Proof(_)
+                                | ManifestCustomValue::Expression(_)
+                                | ManifestCustomValue::Blob(_)
+                                | ManifestCustomValue::Decimal(_)
+                                | ManifestCustomValue::PreciseDecimal(_)
+                                | ManifestCustomValue::NonFungibleLocalId(_) => {}
+                            }
+                        }
+                    }
+                    TraversalEvent::TerminalValueBatch(_) => {}
+                    TraversalEvent::End => {
+                        break;
+                    }
+                    TraversalEvent::DecodeError(e) => {
+                        panic!("Unexpected decoding error: {:?}", e);
+                    }
+                }
+            }
+            references
+        };
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
@@ -220,10 +264,10 @@ where
                 TRANSACTION_PROCESSOR_RUN_IDENT,
                 scrypto_encode(&TransactionProcessorRunInput {
                     transaction_hash,
-                    runtime_validations: executable.runtime_validations().to_vec(),
-                    instructions: manifest_encode(executable.instructions()).unwrap(),
+                    runtime_validations,
+                    instructions,
                     blobs,
-                    references: extract_refs_from_manifest(executable.instructions()),
+                    references,
                 })
                 .unwrap(),
             )

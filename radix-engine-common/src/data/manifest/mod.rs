@@ -18,7 +18,7 @@ pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;
 pub type ManifestValueKind = ValueKind<ManifestCustomValueKind>;
 pub type ManifestValue = Value<ManifestCustomValueKind, ManifestCustomValue>;
-pub type ManifestTraverser<'a> = VecTraverser<'a, ManifestCustomValueKind>;
+pub type ManifestTraverser<'a> = VecTraverser<'a, ManifestCustomTraversal>;
 
 pub trait ManifestCategorize: Categorize<ManifestCustomValueKind> {}
 impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {}
