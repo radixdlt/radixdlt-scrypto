@@ -11,20 +11,20 @@ pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum ScryptoCustomTypeKind {
-    Reference, /* any */
+    AnyReference, /* any */
     GlobalAddress,
     LocalAddress,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    ObjectRef(PackageAddress, String),
+    TypedObjectRef(PackageAddress, String),
 
-    Own, /* any */
+    AnyOwn, /* any */
     Bucket,
     Proof,
     Vault,
     KeyValueStore,
-    Object(PackageAddress, String),
+    TypedOwnedObject(PackageAddress, String),
 
     Decimal,
     PreciseDecimal,
@@ -57,23 +57,23 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         _type_indices: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
-            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
+            ScryptoCustomTypeKind::AnyReference => ScryptoCustomTypeKind::AnyReference,
             ScryptoCustomTypeKind::GlobalAddress => ScryptoCustomTypeKind::GlobalAddress,
             ScryptoCustomTypeKind::LocalAddress => ScryptoCustomTypeKind::LocalAddress,
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
-            ScryptoCustomTypeKind::ObjectRef(package_address, blueprint_name) => {
-                ScryptoCustomTypeKind::ObjectRef(package_address, blueprint_name)
+            ScryptoCustomTypeKind::TypedObjectRef(package_address, blueprint_name) => {
+                ScryptoCustomTypeKind::TypedObjectRef(package_address, blueprint_name)
             }
 
-            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
+            ScryptoCustomTypeKind::AnyOwn => ScryptoCustomTypeKind::AnyOwn,
             ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
             ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
             ScryptoCustomTypeKind::Vault => ScryptoCustomTypeKind::Vault,
             ScryptoCustomTypeKind::KeyValueStore => ScryptoCustomTypeKind::KeyValueStore,
-            ScryptoCustomTypeKind::Object(package_address, blueprint_name) => {
-                ScryptoCustomTypeKind::Object(package_address, blueprint_name)
+            ScryptoCustomTypeKind::TypedOwnedObject(package_address, blueprint_name) => {
+                ScryptoCustomTypeKind::TypedOwnedObject(package_address, blueprint_name)
             }
 
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
@@ -93,19 +93,19 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
-            ScryptoCustomTypeKind::Reference
+            ScryptoCustomTypeKind::AnyReference
             | ScryptoCustomTypeKind::GlobalAddress
             | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
-            | ScryptoCustomTypeKind::ObjectRef(_, _)
-            | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::TypedObjectRef(_, _)
+            | ScryptoCustomTypeKind::AnyOwn
             | ScryptoCustomTypeKind::Bucket
             | ScryptoCustomTypeKind::Proof
             | ScryptoCustomTypeKind::Vault
             | ScryptoCustomTypeKind::KeyValueStore
-            | ScryptoCustomTypeKind::Object(_, _)
+            | ScryptoCustomTypeKind::TypedOwnedObject(_, _)
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
@@ -123,19 +123,19 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         // Even though they all map to the same thing, we keep the explicit match statement so that
         // we will have to explicitly check this when we add a new `ScryptoCustomTypeKind`
         match type_kind {
-            ScryptoCustomTypeKind::Reference
+            ScryptoCustomTypeKind::AnyReference
             | ScryptoCustomTypeKind::GlobalAddress
             | ScryptoCustomTypeKind::LocalAddress
             | ScryptoCustomTypeKind::PackageAddress
             | ScryptoCustomTypeKind::ComponentAddress
             | ScryptoCustomTypeKind::ResourceAddress
-            | ScryptoCustomTypeKind::ObjectRef(_, _)
-            | ScryptoCustomTypeKind::Own
+            | ScryptoCustomTypeKind::TypedObjectRef(_, _)
+            | ScryptoCustomTypeKind::AnyOwn
             | ScryptoCustomTypeKind::Bucket
             | ScryptoCustomTypeKind::Proof
             | ScryptoCustomTypeKind::Vault
             | ScryptoCustomTypeKind::KeyValueStore
-            | ScryptoCustomTypeKind::Object(_, _)
+            | ScryptoCustomTypeKind::TypedOwnedObject(_, _)
             | ScryptoCustomTypeKind::Decimal
             | ScryptoCustomTypeKind::PreciseDecimal
             | ScryptoCustomTypeKind::NonFungibleLocalId => {
@@ -150,7 +150,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         match custom_type_kind {
-            ScryptoCustomTypeKind::Reference => matches!(
+            ScryptoCustomTypeKind::AnyReference => matches!(
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
@@ -170,7 +170,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
-            ScryptoCustomTypeKind::ObjectRef(_, _) => matches!(
+            ScryptoCustomTypeKind::TypedObjectRef(_, _) => matches!(
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
@@ -178,7 +178,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 value_kind,
                 ValueKind::Custom(ScryptoCustomValueKind::Reference)
             ),
-            ScryptoCustomTypeKind::Own => {
+            ScryptoCustomTypeKind::AnyOwn => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomTypeKind::Bucket => {
@@ -193,7 +193,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::KeyValueStore => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
-            ScryptoCustomTypeKind::Object(_, _) => {
+            ScryptoCustomTypeKind::TypedOwnedObject(_, _) => {
                 matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomTypeKind::Decimal => matches!(

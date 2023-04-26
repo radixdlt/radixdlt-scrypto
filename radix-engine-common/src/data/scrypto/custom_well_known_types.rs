@@ -37,7 +37,7 @@ create_well_known_lookup!(
         // Addresses
         (
             REFERENCE_ID,
-            unnamed_type_kind(ScryptoCustomTypeKind::Reference)
+            unnamed_type_kind(ScryptoCustomTypeKind::AnyReference)
         ),
         (
             GLOBAL_ADDRESS_ID,
@@ -60,7 +60,7 @@ create_well_known_lookup!(
             unnamed_type_kind(ScryptoCustomTypeKind::ResourceAddress)
         ),
         // Owned entities
-        (OWN_ID, unnamed_type_kind(ScryptoCustomTypeKind::Own)),
+        (OWN_ID, unnamed_type_kind(ScryptoCustomTypeKind::AnyOwn)),
         (
             OWN_BUCKET_ID,
             unnamed_type_kind(ScryptoCustomTypeKind::Bucket)
@@ -92,7 +92,7 @@ create_well_known_lookup!(
         ),
         (
             REFERENCE_ID,
-            unnamed_type_kind(ScryptoCustomTypeKind::Reference)
+            unnamed_type_kind(ScryptoCustomTypeKind::AnyReference)
         ),
     ]
 );

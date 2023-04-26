@@ -47,24 +47,24 @@ where
                     // Alternately, we can just use the type info for reference check.
                     // Using node entity type is to avoid massive list of blueprints for each type.
                     if match custom_type_kind {
-                        ScryptoCustomTypeKind::Reference => true,
+                        ScryptoCustomTypeKind::AnyReference => true,
                         ScryptoCustomTypeKind::GlobalAddress => reference.as_node_id().is_global(),
                         ScryptoCustomTypeKind::LocalAddress => reference.as_node_id().is_local(),
                         ScryptoCustomTypeKind::PackageAddress => reference.as_node_id().is_global_package(),
                         ScryptoCustomTypeKind::ComponentAddress => reference.as_node_id().is_global_component(),
                         ScryptoCustomTypeKind::ResourceAddress => reference.as_node_id().is_global_resource(),
-                        ScryptoCustomTypeKind::ObjectRef(package, blueprint) => match &type_info {
+                        ScryptoCustomTypeKind::TypedObjectRef(package, blueprint) => match &type_info {
                             TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address == package
                                 &&  blueprint_name == blueprint => true,
                             _ => false,
                         }
-                        ScryptoCustomTypeKind::Own |
+                        ScryptoCustomTypeKind::AnyOwn |
                         ScryptoCustomTypeKind::Bucket |
                         ScryptoCustomTypeKind::Proof |
                         ScryptoCustomTypeKind::Vault |
                         ScryptoCustomTypeKind::KeyValueStore |
-                        ScryptoCustomTypeKind::Object(_, _) |
+                        ScryptoCustomTypeKind::TypedOwnedObject(_, _) |
                         ScryptoCustomTypeKind::Decimal |
                         ScryptoCustomTypeKind::PreciseDecimal |
                         ScryptoCustomTypeKind::NonFungibleLocalId  => panic!("Non-reference type matched with reference value; please check `custom_type_kind_matches_value_kind` ")
@@ -85,7 +85,7 @@ where
             ScryptoCustomValue::Own(own) => {
                 if let Some(type_info) = context.get_node_type_info(own.as_node_id()) {
                     if match  custom_type_kind {
-                        ScryptoCustomTypeKind::Own => true,
+                        ScryptoCustomTypeKind::AnyOwn => true,
                         ScryptoCustomTypeKind::Bucket => match &type_info {
                             TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address == &RESOURCE_MANAGER_PACKAGE
@@ -108,19 +108,19 @@ where
                             TypeInfo::KeyValueStore => true,
                             _ => false,
                         }
-                        ScryptoCustomTypeKind::Object(package, blueprint) => match &type_info {
+                        ScryptoCustomTypeKind::TypedOwnedObject(package, blueprint) => match &type_info {
                             TypeInfo::Object { package_address, blueprint_name,.. }
                                 if package_address == package
                                 &&  blueprint_name == blueprint => true,
                             _ => false,
                         }
-                        ScryptoCustomTypeKind::Reference |
+                        ScryptoCustomTypeKind::AnyReference |
                         ScryptoCustomTypeKind::GlobalAddress |
                         ScryptoCustomTypeKind::LocalAddress |
                         ScryptoCustomTypeKind::PackageAddress |
                         ScryptoCustomTypeKind::ComponentAddress |
                         ScryptoCustomTypeKind::ResourceAddress |
-                        ScryptoCustomTypeKind::ObjectRef(_, _) |
+                        ScryptoCustomTypeKind::TypedObjectRef(_, _) |
                         ScryptoCustomTypeKind::Decimal |
                         ScryptoCustomTypeKind::PreciseDecimal |
                         ScryptoCustomTypeKind::NonFungibleLocalId  => panic!("Non-own type matched with own value; please check `custom_type_kind_matches_value_kind` ")
