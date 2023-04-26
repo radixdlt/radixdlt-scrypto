@@ -292,7 +292,7 @@ fn test_instruction_traces() {
         assert_eq!(
             Origin::ScryptoFunction(ApplicationFnIdentifier {
                 package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: PROOF_BLUEPRINT.to_string(),
+                blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
             }),
             trace.origin

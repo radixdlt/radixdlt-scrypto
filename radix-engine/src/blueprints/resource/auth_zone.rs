@@ -6,6 +6,7 @@ use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
+use crate::blueprints::resource::ComposedProof;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
@@ -83,6 +84,11 @@ impl AuthZoneBlueprint {
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
 
+        let blueprint_name = match &composed_proof {
+            ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
+            ComposedProof::NonFungible(..) => PROOF_BLUEPRINT,
+        };
+
         api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
@@ -91,7 +97,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
                     global: false,
                     blueprint_parent: None,
                 })).to_substates()

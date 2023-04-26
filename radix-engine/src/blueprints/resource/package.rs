@@ -959,72 +959,146 @@ impl ResourceManagerNativePackage {
             }
         };
 
-        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let fungible_proof_schema = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<ProofInfoSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
-        substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
+            let mut substates = Vec::new();
+            substates.push(aggregator.add_child_type_and_descendents::<ProofInfoSubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
+            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
 
-        let mut functions = BTreeMap::new();
-        functions.insert(
-            PROOF_DROP_IDENT.to_string(),
-            FunctionSchema {
-                receiver: None,
-                input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
-                output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
-                export_name: PROOF_DROP_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            PROOF_CLONE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
-                output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                export_name: PROOF_CLONE_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            PROOF_GET_AMOUNT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
-                output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator
-                    .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
-                export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
-            },
-        );
+            let mut functions = BTreeMap::new();
+            functions.insert(
+                PROOF_DROP_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: None,
+                    input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    export_name: PROOF_DROP_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_CLONE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    export_name: PROOF_CLONE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_GET_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                },
+            );
 
-        let schema = generate_full_schema(aggregator);
-        let proof_schema = BlueprintSchema {
-            parent: None,
-            schema,
-            substates,
-            functions,
-            virtual_lazy_load_functions: btreemap!(),
-            event_schema: [].into(),
+            functions.insert(
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
+                    export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                },
+            );
+
+            let schema = generate_full_schema(aggregator);
+            BlueprintSchema {
+                parent: None,
+                schema,
+                substates,
+                functions,
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+            }
         };
+
+        let proof_schema = {
+            let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
+            let mut substates = Vec::new();
+            substates.push(aggregator.add_child_type_and_descendents::<ProofInfoSubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
+            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
+
+            let mut functions = BTreeMap::new();
+            functions.insert(
+                PROOF_DROP_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: None,
+                    input: aggregator.add_child_type_and_descendents::<ProofDropInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofDropOutput>(),
+                    export_name: PROOF_DROP_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_CLONE_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRefMut),
+                    input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
+                    export_name: PROOF_CLONE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_GET_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
+                    output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
+                    export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
+                    export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                },
+            );
+
+            functions.insert(
+                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
+                    export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                },
+            );
+
+            let schema = generate_full_schema(aggregator);
+            BlueprintSchema {
+                parent: None,
+                schema,
+                substates,
+                functions,
+                virtual_lazy_load_functions: btreemap!(),
+                event_schema: [].into(),
+            }
+        };
+
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -1230,6 +1304,7 @@ impl ResourceManagerNativePackage {
                 NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => non_fungible_vault_schema,
                 FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
                 NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
+                FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_schema,
                 PROOF_BLUEPRINT.to_string() => proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema

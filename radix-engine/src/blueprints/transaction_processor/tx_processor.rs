@@ -713,7 +713,8 @@ impl<'blob> TransactionProcessor<'blob> {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
-                (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
+                | (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
                     ComponentAuthZone::sys_push(proof, api)?;
                 }

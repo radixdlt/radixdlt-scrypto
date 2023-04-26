@@ -167,7 +167,7 @@ impl FungibleVaultBlueprint {
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&proof).unwrap(),
@@ -202,7 +202,7 @@ impl FungibleVaultBlueprint {
         };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&proof).unwrap(),
