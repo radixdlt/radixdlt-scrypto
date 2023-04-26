@@ -51,11 +51,10 @@ macro_rules! create_well_known_lookup {
                         },
                         "None"
                     ));
-                    lookup[sbor::basic_well_known_types::BYTES_ID as usize] = Some(TypeData::no_child_names(
+                    lookup[sbor::basic_well_known_types::BYTES_ID as usize] = Some(TypeData::unnamed(
                         TypeKind::Array {
                             element_type: LocalTypeIndex::WellKnown(sbor::basic_well_known_types::U8_ID),
                         },
-                        "Bytes"
                     ));
                     // And now add in the custom types
                     $(lookup[$id as usize] = Some($type_data);)*
