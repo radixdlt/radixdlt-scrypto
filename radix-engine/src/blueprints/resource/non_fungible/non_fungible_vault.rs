@@ -70,10 +70,8 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
         let other_bucket =
-            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+            drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
         NonFungibleVault::put(other_bucket.liquid, api)?;

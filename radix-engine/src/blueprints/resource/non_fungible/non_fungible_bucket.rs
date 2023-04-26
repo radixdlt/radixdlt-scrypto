@@ -306,12 +306,8 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
         // Drop other bucket
-        let other_bucket = drop_non_fungible_bucket_of_address(
-            resource_address,
+        let other_bucket = drop_non_fungible_bucket(
             input.bucket.0.as_node_id(),
             api,
         )?;

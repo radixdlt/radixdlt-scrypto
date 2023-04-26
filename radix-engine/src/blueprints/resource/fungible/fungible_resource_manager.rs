@@ -180,9 +180,8 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
         let other_bucket =
-            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+            drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
         Runtime::emit_event(
@@ -211,10 +210,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-
         let other_bucket =
-            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+            drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         if other_bucket.liquid.amount().is_zero() {
             Ok(())

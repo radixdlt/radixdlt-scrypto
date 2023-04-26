@@ -56,6 +56,30 @@ where
         }
     }
 
+    fn cur_blueprint_global_actor(&mut self) -> Result<(Option<(GlobalAddress, String)>, PackageAddress), RuntimeError>{
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor_info = match &actor {
+            Actor::Method {
+                global_address,
+                object_info,
+                ..
+            } => {
+                if object_info.global {
+                    global_address.map(|address| (address, object_info.blueprint.blueprint_name.clone()))
+                } else {
+                    // TODO: do this recursively until global?
+                    object_info.blueprint_parent.map(|parent| {
+                        let parent_info = self.get_object_info(parent.as_node_id()).unwrap();
+                        (parent, parent_info.blueprint.blueprint_name)
+                    })
+                }
+            },
+            _ => None
+        };
+        let package_address = actor.package_address().clone();
+        Ok((actor_info, package_address))
+    }
+
     fn new_object_internal(
         &mut self,
         blueprint_ident: &str,
@@ -286,27 +310,7 @@ where
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let actor_info = match &actor {
-            Actor::Method {
-                global_address,
-                object_info,
-                ..
-            } => {
-                if object_info.global {
-                    global_address.map(|address| (address, object_info.blueprint.blueprint_name.clone()))
-                } else {
-                    // TODO: do this recursively until global?
-                    object_info.blueprint_parent.map(|parent| {
-                        let parent_info = self.get_object_info(parent.as_node_id()).unwrap();
-                        (parent, parent_info.blueprint.blueprint_name)
-                    })
-                }
-            },
-            _ => None
-        };
-        let package_address = actor.package_address().clone();
-
+        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
         self.new_object_internal(blueprint_ident, fields, package_address, actor_info)
     }
 
@@ -632,13 +636,30 @@ where
 
     #[trace_resources]
     fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
+
+        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
+
         // TODO: Cleanup
-        if let Some(actor) = self.api.kernel_get_current_actor() {
-            let info = self.get_object_info(&node_id)?;
-            if !info.blueprint.package_address.eq(actor.package_address()) {
+        let info = self.get_object_info(&node_id)?;
+        if let Some(blueprint_parent) = info.blueprint_parent {
+            match actor_info {
+                Some((address, _blueprint)) if address.eq(&blueprint_parent) => {
+                }
+                _ => {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                            node_id: node_id.clone(),
+                            package_address: info.blueprint.package_address,
+                            blueprint_name: info.blueprint.blueprint_name,
+                        })),
+                    ));
+                }
+            }
+        } else {
+            // TODO: Should we only allow the blueprint to drop?
+            if !package_address.eq(&info.blueprint.package_address) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        actor: actor.clone(),
                         node_id: node_id.clone(),
                         package_address: info.blueprint.package_address,
                         blueprint_name: info.blueprint.blueprint_name,

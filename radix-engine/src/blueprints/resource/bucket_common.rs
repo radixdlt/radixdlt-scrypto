@@ -18,26 +18,13 @@ pub struct BucketInfoSubstate {
     pub resource_type: ResourceType,
 }
 
-pub fn drop_fungible_bucket_of_address<Y>(
-    expected_address: ResourceAddress,
+pub fn drop_fungible_bucket<Y>(
     bucket_node_id: &NodeId,
     api: &mut Y,
 ) -> Result<DroppedFungibleBucket, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    // Note that we assume the input is indeed a bucket, checked by schema
-    let resource_address = ResourceAddress::new_unchecked(
-        api.get_object_info(bucket_node_id)?
-            .blueprint_parent.expect("Missing parent for fungible bucket")
-            .into(),
-    );
-    if resource_address != expected_address {
-        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-            bucket_node_id.clone(),
-        )));
-    }
-
     let fields = api.drop_object(*bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
@@ -49,26 +36,13 @@ where
     Ok(bucket)
 }
 
-pub fn drop_non_fungible_bucket_of_address<Y>(
-    expected_address: ResourceAddress,
+pub fn drop_non_fungible_bucket<Y>(
     bucket_node_id: &NodeId,
     api: &mut Y,
 ) -> Result<DroppedNonFungibleBucket, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    // Note that we assume the input is indeed a bucket, checked by schema
-    let resource_address = ResourceAddress::new_unchecked(
-        api.get_object_info(bucket_node_id)?
-            .blueprint_parent.expect("Missing parent for non-fungible bucket")
-            .into(),
-    );
-    if resource_address != expected_address {
-        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-            bucket_node_id.clone(),
-        )));
-    }
-
     let fields = api.drop_object(*bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
