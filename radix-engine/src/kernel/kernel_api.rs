@@ -156,10 +156,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
 
-    /// Returns the type info about a node;
-    /// Note that no node visibility check is performed.
-    fn kernel_get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo>;
-
     // TODO: Remove these, these are temporary until the architecture
     // TODO: gets cleaned up a little more
     fn kernel_get_current_actor(&mut self) -> Option<Actor>;
