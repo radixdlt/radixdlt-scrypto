@@ -241,8 +241,8 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateValidationError {
     BlueprintNotFound(String),
-    WrongNumberOfSubstates(String, usize, usize),
-    SchemaValidationError(String, String),
+    WrongNumberOfSubstates(Blueprint, usize, usize),
+    SchemaValidationError(Blueprint, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
