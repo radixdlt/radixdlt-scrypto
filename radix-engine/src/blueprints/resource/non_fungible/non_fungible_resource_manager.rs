@@ -3,7 +3,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -267,9 +266,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
         )?;
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+        let bucket = globalize_non_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, ids, api)?;
 
         Ok((resource_address, bucket))
     }
@@ -318,9 +315,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
         )?;
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        let bucket = ResourceManager(resource_address).new_non_fungible_bucket(ids, api)?;
+        let bucket = globalize_non_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, ids, api)?;
 
         Ok((resource_address, bucket))
     }
