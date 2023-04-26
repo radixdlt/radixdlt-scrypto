@@ -397,3 +397,48 @@ where
 
     Ok(())
 }
+
+pub fn globalize_fungible_with_initial_supply<Y>(
+    object_id: NodeId,
+    resource_address: ResourceAddress,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    metadata: BTreeMap<String, String>,
+    initial_supply: Decimal,
+    api: &mut Y,
+) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+{
+    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+        build_access_rules(access_rules);
+
+    let resman_access_rules = AccessRules::sys_new(
+        resman_access_rules,
+        btreemap!(
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules
+        ),
+        api,
+    )?
+        .0;
+
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+
+    let bucket_id = api.globalize_with_address_and_child_object(
+        btreemap!(
+            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ),
+        resource_address.into(),
+        FUNGIBLE_BUCKET_BLUEPRINT,
+        vec![
+            scrypto_encode(&LiquidFungibleResource::new(initial_supply)).unwrap(),
+            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+        ],
+    )?;
+
+    Ok(Bucket(Own(bucket_id)))
+}

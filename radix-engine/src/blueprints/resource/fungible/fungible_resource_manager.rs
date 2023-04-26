@@ -3,7 +3,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -136,9 +135,7 @@ impl FungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_unchecked(resource_address);
         check_new_amount(divisibility, initial_supply)?;
 
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        let bucket = ResourceManager(resource_address).new_fungible_bucket(initial_supply, api)?;
+        let bucket = globalize_fungible_with_initial_supply(object_id, resource_address, access_rules, metadata, initial_supply, api)?;
 
         Ok((resource_address, bucket))
     }
