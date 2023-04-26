@@ -4,6 +4,7 @@ use crate::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
+    type CustomTypeValidation: CustomTypeValidation;
 }
 
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
@@ -12,9 +13,11 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     const MAX_DEPTH: usize;
     const PAYLOAD_PREFIX: u8;
     type CustomValueKind: CustomValueKind;
+    type CustomTypeValidation: CustomTypeValidation;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,
         CustomValueKind = Self::CustomValueKind,
+        CustomTypeValidation = Self::CustomTypeValidation,
     >;
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;
 
@@ -28,14 +31,23 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         well_known_index: u8,
     ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
 
-    fn empty_schema() -> &'static Schema<Self>;
-
-    fn custom_type_kind_is_valid(
+    /// Verifies if the custom type kind is valid within the schema context,
+    /// e.g. to check if an offset is out of bounds.
+    fn validate_custom_type_kind(
         context: &SchemaContext,
         custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError>;
 
-    fn custom_type_kind_matches_metadata(
+    /// Verifies if the custom type validation is appropriate for the custom type kind.
+    /// Note that custom type validation can only be associated with custom type kind.
+    fn validate_custom_type_validation(
+        context: &SchemaContext,
+        custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
+        custom_type_validation: &Self::CustomTypeValidation,
+    ) -> Result<(), SchemaValidationError>;
+
+    /// Verifies if the metadata is appropriate for the custom type kind.
+    fn validate_type_metadata_with_custom_type_kind(
         context: &SchemaContext,
         custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
         type_metadata: &TypeMetadata,
@@ -45,4 +57,6 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool;
+
+    fn empty_schema() -> &'static Schema<Self>;
 }

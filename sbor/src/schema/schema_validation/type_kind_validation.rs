@@ -56,7 +56,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             validate_index::<E>(context, value_type)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::custom_type_kind_is_valid(context, custom_type_kind)?;
+            E::validate_custom_type_kind(context, custom_type_kind)?;
         }
     }
 

@@ -5,12 +5,13 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 // NB - the generic parameter E isn't embedded in the value model itself - instead:
 // * Via TypeKind, E::CustomTypeKind<LocalTypeIndex> gets embedded
+// * Via TypeValidation, E::CustomTypeValidation gets embedded
 // So theses are the child types which need to be registered with the sbor macro for it to compile
-#[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>")]
+#[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>, E::CustomTypeValidation")]
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
-    pub type_validations: Vec<TypeValidation>,
+    pub type_validations: Vec<TypeValidation<E::CustomTypeValidation>>,
 }
 
 pub type SchemaTypeKind<E> = TypeKind<
@@ -107,7 +108,10 @@ impl<E: CustomTypeExtension> Schema<E> {
             .and_then(|m| m.get_name())
     }
 
-    pub fn resolve_type_validation(&self, type_index: LocalTypeIndex) -> Option<&TypeValidation> {
+    pub fn resolve_type_validation(
+        &self,
+        type_index: LocalTypeIndex,
+    ) -> Option<&TypeValidation<E::CustomTypeValidation>> {
         match type_index {
             LocalTypeIndex::WellKnown(index) => {
                 E::resolve_well_known_type(index).map(|data| &data.validation)

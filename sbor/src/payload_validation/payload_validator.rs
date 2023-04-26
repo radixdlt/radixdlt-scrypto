@@ -263,6 +263,9 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
             // No Array or Map validation should be attached to terminal value.
             return Err(PayloadValidationError::SchemaInconsistency);
         }
+        TypeValidation::Custom(_) => {
+            todo!()
+        }
     }
     Ok(())
 }
