@@ -1,9 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -136,9 +135,14 @@ impl FungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_unchecked(resource_address);
         check_new_amount(divisibility, initial_supply)?;
 
-        globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
-
-        let bucket = ResourceManager(resource_address).new_fungible_bucket(initial_supply, api)?;
+        let bucket = globalize_fungible_with_initial_supply(
+            object_id,
+            resource_address,
+            access_rules,
+            metadata,
+            initial_supply,
+            api,
+        )?;
 
         Ok((resource_address, bucket))
     }
@@ -180,12 +184,10 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-        let other_bucket =
-            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Construct the event and only emit it once all of the operations are done.
         Runtime::emit_event(
@@ -201,9 +203,9 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.field_lock_read_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
             api.field_lock_release(total_supply_handle)?;
         }
 
@@ -212,12 +214,9 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn drop_empty_bucket<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
-
-        let other_bucket =
-            drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         if other_bucket.liquid.amount().is_zero() {
             Ok(())

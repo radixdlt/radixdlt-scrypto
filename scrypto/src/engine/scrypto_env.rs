@@ -71,6 +71,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn globalize_with_address_and_child_object(
+        &mut self,
+        _modules: BTreeMap<ObjectModuleId, NodeId>,
+        _address: GlobalAddress,
+        _inner_object_blueprint: &str,
+        _inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, ClientApiError> {
+        todo!("Unsupported")
+    }
+
     fn call_method(
         &mut self,
         receiver: &NodeId,
@@ -110,10 +120,10 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), ClientApiError> {
-        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-
-        Ok(())
+    fn drop_object(&mut self, _node_id: NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
+        // TODO: Remove or implement drop_object interface from scrypto
+        //unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
+        todo!("Unsupported")
     }
 }
 

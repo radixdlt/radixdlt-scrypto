@@ -1,9 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -47,11 +46,9 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(*amount, api)?;
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
 
         // Create node
-        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
+        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -64,22 +61,16 @@ impl NonFungibleVaultBlueprint {
         // Take
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
         // Create node
-        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
+        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-        let other_bucket =
-            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
         NonFungibleVault::put(other_bucket.liquid, api)?;
@@ -117,11 +108,9 @@ impl NonFungibleVaultBlueprint {
             ));
         }
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
         let taken = NonFungibleVault::take(amount, api)?;
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
 
@@ -137,11 +126,7 @@ impl NonFungibleVaultBlueprint {
     {
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
-
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
 

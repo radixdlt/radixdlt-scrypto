@@ -56,7 +56,105 @@ where
         }
     }
 
-    fn get_blueprint_schema(&mut self, blueprint: &Blueprint) -> Result<BlueprintSchema, RuntimeError> {
+    fn cur_blueprint_global_actor(
+        &mut self,
+    ) -> Result<(Option<(GlobalAddress, String)>, PackageAddress), RuntimeError> {
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor_info = match &actor {
+            Actor::Method {
+                global_address,
+                object_info,
+                ..
+            } => {
+                if object_info.global {
+                    global_address
+                        .map(|address| (address, object_info.blueprint.blueprint_name.clone()))
+                } else {
+                    // TODO: do this recursively until global?
+                    object_info.blueprint_parent.map(|parent| {
+                        let parent_info = self.get_object_info(parent.as_node_id()).unwrap();
+                        (parent, parent_info.blueprint.blueprint_name)
+                    })
+                }
+            }
+            _ => None,
+        };
+        let package_address = actor.package_address().clone();
+        Ok((actor_info, package_address))
+    }
+
+    fn new_object_internal(
+        &mut self,
+        blueprint_ident: &str,
+        fields: Vec<Vec<u8>>,
+        package_address: PackageAddress,
+        as_parent: Option<(GlobalAddress, String)>,
+    ) -> Result<NodeId, RuntimeError> {
+        let blueprint = Blueprint::new(&package_address, blueprint_ident);
+        let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
+        let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
+            match as_parent {
+                Some((actor_address, actor_blueprint)) if actor_blueprint.eq(parent) => {
+                    Some(actor_address)
+                }
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
+
+        let node_id = {
+            let entity_type = match (package_address, blueprint_ident) {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
+                    EntityType::InternalFungibleVault
+                }
+                (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
+                    EntityType::InternalNonFungibleVault
+                }
+                (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
+                _ => EntityType::InternalGenericComponent,
+            };
+
+            self.api.kernel_allocate_node_id(entity_type)?
+        };
+
+        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = fields
+            .into_iter()
+            .enumerate()
+            .map(|(i, x)| {
+                (
+                    // TODO check size during package publishing time
+                    SubstateKey::Tuple(i as u8),
+                    IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
+                )
+            })
+            .collect();
+
+        self.api.kernel_create_node(
+            node_id,
+            btreemap!(
+                SysModuleId::User.into() => node_init,
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&package_address,blueprint_ident),
+                        global:false,
+                        blueprint_parent
+                    })
+                ).to_substates(),
+            ),
+        )?;
+
+        Ok(node_id.into())
+    }
+
+    fn get_blueprint_schema(
+        &mut self,
+        blueprint: &Blueprint,
+    ) -> Result<BlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             SysModuleId::User.into(),
@@ -66,23 +164,29 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
-                    )),
-                ))?.clone();
+        let schema = package
+            .schema
+            .blueprints
+            .get(blueprint.blueprint_name.as_str())
+            .ok_or(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::BlueprintNotFound(
+                        blueprint.blueprint_name.to_string(),
+                    ),
+                )),
+            ))?
+            .clone();
 
         self.api.kernel_drop_lock(handle)?;
 
         Ok(schema)
     }
 
-    fn verify_blueprint_fields(&mut self, blueprint: &Blueprint, fields: &Vec<Vec<u8>>) -> Result<Option<String>, RuntimeError> {
+    fn verify_blueprint_fields(
+        &mut self,
+        blueprint: &Blueprint,
+        fields: &Vec<Vec<u8>>,
+    ) -> Result<Option<String>, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             SysModuleId::User.into(),
@@ -92,16 +196,17 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::BlueprintNotFound(blueprint.blueprint_name.to_string()),
-                    )),
-                ))?;
+        let schema = package
+            .schema
+            .blueprints
+            .get(blueprint.blueprint_name.as_str())
+            .ok_or(RuntimeError::SystemError(
+                SystemError::SubstateValidationError(Box::new(
+                    SubstateValidationError::BlueprintNotFound(
+                        blueprint.blueprint_name.to_string(),
+                    ),
+                )),
+            ))?;
 
         if schema.substates.len() != fields.len() {
             return Err(RuntimeError::SystemError(
@@ -202,67 +307,8 @@ where
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let package_address = actor.package_address().clone();
-        let blueprint = Blueprint::new(&package_address, blueprint_ident);
-        let parent_blueprint = self.verify_blueprint_fields(&blueprint, &fields)?;
-
-        let entity_type = match (package_address, blueprint_ident) {
-            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
-                EntityType::InternalFungibleVault
-            }
-            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
-                EntityType::InternalNonFungibleVault
-            }
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
-            _ => EntityType::InternalGenericComponent,
-        };
-
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = fields
-            .into_iter()
-            .enumerate()
-            .map(|(i, x)| {
-                (
-                    // TODO check size during package publishing time
-                    SubstateKey::Tuple(i as u8),
-                    IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
-                )
-            })
-            .collect();
-
-        let blueprint_parent = if let Some(parent) = &parent_blueprint {
-            match actor {
-                Actor::Method {
-                    global_address: Some(address),
-                    blueprint,
-                    ..
-                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
-                }
-            }
-        } else {
-            None
-        };
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                SysModuleId::User.into() => node_init,
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: Blueprint::new(&package_address,blueprint_ident),
-                        global:false,
-                        blueprint_parent
-                    })
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id.into())
+        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
+        self.new_object_internal(blueprint_ident, fields, package_address, actor_info)
     }
 
     #[trace_resources]
@@ -430,6 +476,33 @@ where
         Ok(())
     }
 
+    fn globalize_with_address_and_child_object(
+        &mut self,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+        inner_object_blueprint: &str,
+        inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, RuntimeError> {
+        let node_id = modules
+            .get(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
+        let blueprint_name = self.get_object_info(node_id)?.blueprint.blueprint_name;
+
+        self.globalize_with_address(modules, address)?;
+
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let package_address = actor.package_address().clone();
+
+        self.new_object_internal(
+            inner_object_blueprint,
+            inner_object_fields,
+            package_address,
+            Some((address, blueprint_name)),
+        )
+    }
+
     #[trace_resources]
     fn call_method(
         &mut self,
@@ -448,13 +521,11 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let (blueprint, global_address) = match module_id {
+        let (object_info, global_address) = match module_id {
             ObjectModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint, global, ..
-                    }) => {
+                    TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
                         let global_address = if global {
                             Some(GlobalAddress::new_unchecked(receiver.clone().into()))
                         } else {
@@ -476,7 +547,7 @@ where
                             }
                         };
 
-                        (blueprint, global_address)
+                        (info, global_address)
                     }
 
                     TypeInfoSubstate::KeyValueStore(..)
@@ -490,19 +561,34 @@ where
             }
             ObjectModuleId::Metadata => {
                 // TODO: Check if type has metadata
-                (Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT), None)
+                (
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
+                    None,
+                )
             }
             ObjectModuleId::Royalty => {
                 // TODO: Check if type has royalty
                 (
-                    Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
                     None,
                 )
             }
             ObjectModuleId::AccessRules => {
                 // TODO: Check if type has access rules
                 (
-                    Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                    ObjectInfo {
+                        blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                        blueprint_parent: None,
+                        global: true,
+                    },
                     None,
                 )
             }
@@ -510,9 +596,10 @@ where
 
         let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
+        let blueprint = object_info.blueprint.clone();
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), blueprint.clone()),
+            resolved_actor: Actor::method(global_address, identifier.clone(), object_info),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
@@ -545,14 +632,29 @@ where
     }
 
     #[trace_resources]
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
+    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
+
         // TODO: Cleanup
-        if let Some(actor) = self.api.kernel_get_current_actor() {
-            let info = self.get_object_info(&node_id)?;
-            if !info.blueprint.package_address.eq(actor.package_address()) {
+        let info = self.get_object_info(&node_id)?;
+        if let Some(blueprint_parent) = info.blueprint_parent {
+            match actor_info {
+                Some((address, _blueprint)) if address.eq(&blueprint_parent) => {}
+                _ => {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                            node_id: node_id.clone(),
+                            package_address: info.blueprint.package_address,
+                            blueprint_name: info.blueprint.blueprint_name,
+                        })),
+                    ));
+                }
+            }
+        } else {
+            // TODO: Should we only allow the blueprint to drop?
+            if !package_address.eq(&info.blueprint.package_address) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        actor: actor.clone(),
                         node_id: node_id.clone(),
                         package_address: info.blueprint.package_address,
                         blueprint_name: info.blueprint.blueprint_name,
@@ -561,9 +663,14 @@ where
             }
         }
 
-        self.api.kernel_drop_node(&node_id)?;
+        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+        let user_substates = node_substates.remove(&SysModuleId::User.into()).unwrap();
+        let fields = user_substates
+            .into_iter()
+            .map(|(_key, v)| v.into())
+            .collect();
 
-        Ok(())
+        Ok(fields)
     }
 }
 
@@ -1027,31 +1134,37 @@ where
     #[trace_resources]
     fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
+        let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
                 node_id,
                 module_id,
-                blueprint,
+                object_info,
                 ..
-            } => (node_id, module_id, blueprint),
+            } => (node_id, module_id, object_info),
         };
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))
+            if !(object_info
+                .blueprint
+                .package_address
+                .eq(&RESOURCE_MANAGER_PACKAGE)
+                && object_info
+                    .blueprint
+                    .blueprint_name
+                    .eq(FUNGIBLE_VAULT_BLUEPRINT))
             {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
 
         // Check if valid field_index
-        let schema = self.get_blueprint_schema(blueprint)?;
+        let schema = self.get_blueprint_schema(&object_info.blueprint)?;
         if !schema.has_field(field) {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
+            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(object_info.blueprint.clone(), field)));
         }
 
         let sys_module_id = match object_module_id {
@@ -1096,16 +1209,16 @@ where
     #[trace_resources]
     fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, blueprint) = match &actor {
+        let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
             Actor::Method {
                 node_id,
                 module_id,
-                blueprint,
+                object_info,
                 ..
-            } => (node_id, module_id, blueprint),
+            } => (node_id, module_id, object_info),
         };
 
         // TODO: Add check
@@ -1139,35 +1252,14 @@ where
     #[trace_resources]
     fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, module_id) = match &actor {
+        let object_info = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
-            Actor::Method {
-                node_id, module_id, ..
-            } => (node_id, module_id),
+            Actor::Method { object_info, .. } => object_info.clone(),
         };
 
-        let info = match module_id {
-            ObjectModuleId::SELF => self.get_object_info(node_id)?,
-            ObjectModuleId::Metadata => ObjectInfo {
-                blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-            ObjectModuleId::AccessRules => ObjectInfo {
-                blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-            ObjectModuleId::Royalty => ObjectInfo {
-                blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                global: true,
-                blueprint_parent: None,
-            },
-        };
-
-        Ok(info)
+        Ok(object_info)
     }
 
     #[trace_resources]

@@ -37,8 +37,8 @@ pub trait ClientObjectApi<E> {
         object_states: Vec<Vec<u8>>,
     ) -> Result<NodeId, E>;
 
-    /// Drops an object
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
+    /// Drops an object, returns the fields of the object
+    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, E>;
 
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
@@ -54,6 +54,14 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), E>;
+
+    fn globalize_with_address_and_child_object(
+        &mut self,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+        inner_object_blueprint: &str,
+        inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E>;
 
     /// Calls a method on an object
     fn call_method(
