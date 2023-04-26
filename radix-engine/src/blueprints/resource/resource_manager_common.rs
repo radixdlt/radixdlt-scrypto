@@ -105,18 +105,6 @@ fn build_access_rules(
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             ObjectModuleId::SELF,
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-        ),
-        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
-                RESOURCE_MANAGER_PACKAGE,
-            )),
-        ))),
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
         ),
         AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(

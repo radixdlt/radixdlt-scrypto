@@ -53,14 +53,3 @@ pub struct FungibleResourceManagerMintInput {
 }
 
 pub type FungibleResourceManagerMintOutput = Bucket;
-
-// Protected
-
-pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FungibleResourceManagerCreateBucketInput {
-    pub amount: Decimal,
-}
-
-pub type FungibleResourceManagerCreateBucketOutput = Bucket;
