@@ -234,10 +234,10 @@ impl FungibleProofBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
         where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+            Y: ClientApi<RuntimeError>,
     {
-        let proof_info = ProofInfoSubstate::of_self(api)?;
-        Ok(proof_info.resource_address)
+        let address = ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+        Ok(address)
     }
 
     pub(crate) fn drop<Y>(
@@ -319,10 +319,10 @@ impl NonFungibleProofBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        let proof_info = ProofInfoSubstate::of_self(api)?;
-        Ok(proof_info.resource_address)
+        let address = ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+        Ok(address)
     }
 
     pub(crate) fn drop<Y>(
