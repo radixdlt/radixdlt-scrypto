@@ -1,7 +1,7 @@
 use super::*;
 use crate::types::PackageAddress;
 use crate::*;
-use sbor::rust::collections::*;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind, L>;
