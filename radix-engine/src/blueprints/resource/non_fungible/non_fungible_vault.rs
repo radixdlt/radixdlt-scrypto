@@ -20,7 +20,7 @@ pub struct NonFungibleVaultIdTypeSubstate {
     pub id_type: NonFungibleIdType,
 }
 
-pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleResource as NonFungibleVaultBalanceSubstate;
+pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
 
 pub struct NonFungibleVaultBlueprint;
 

@@ -20,7 +20,7 @@ wabt = { version = "0.10.0" }
 [features]
 default = ["std"]
 std = ["scrypto/std", "scrypto/serde", "sbor/std", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-queries/std", "radix-engine/std", "transaction/std", "utils/std"]
-alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-queries/std", "radix-engine/alloc", "transaction/alloc", "utils/alloc"]
+alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-queries/alloc", "radix-engine/alloc", "transaction/alloc", "utils/alloc"]
 resource_tracker = []
 
 [lib]
