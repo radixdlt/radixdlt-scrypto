@@ -158,9 +158,13 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct DatabaseUpdates {
-    pub database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
+pub struct StateUpdates {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
 }
+
+pub type DatabaseUpdates = IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>;
+pub type SystemUpdates = IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DatabaseUpdate {

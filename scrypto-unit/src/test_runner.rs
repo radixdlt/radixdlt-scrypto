@@ -826,9 +826,9 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.substate_db.commit(&commit.state_updates);
+            self.substate_db.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&commit.state_updates);
+                state_hash_support.update_with(&commit.state_updates.database_updates);
             }
         }
         transaction_receipt
@@ -1414,7 +1414,7 @@ impl StateHashSupport {
 
     pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
         let mut hash_changes = Vec::new();
-        for (index_id, index_update) in &db_updates.database_updates {
+        for (index_id, index_update) in db_updates {
             for (key, db_update) in index_update {
                 let hash_change = SubstateHashChange::new(
                     (index_id.clone(), key.clone()),

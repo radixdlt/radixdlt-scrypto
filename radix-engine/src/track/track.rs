@@ -1,10 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{
-    AcquireLockError, DatabaseMapper, DatabaseUpdate, DatabaseUpdates, NodeSubstates,
-    SetSubstateError, SubstateDatabase, SubstateStore, TakeSubstateError,
-};
+use radix_engine_stores::interface::{AcquireLockError, DatabaseMapper, DatabaseUpdate, NodeSubstates, SetSubstateError, SubstateDatabase, SubstateStore, TakeSubstateError, StateUpdates};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
 
@@ -288,14 +285,18 @@ impl TrackedNode {
     }
 }
 
-pub fn to_database_updates<M: DatabaseMapper>(
+pub fn to_state_updates<M: DatabaseMapper>(
     index: IndexMap<NodeId, TrackedNode>,
-) -> DatabaseUpdates {
+) -> StateUpdates {
     let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
+        index_map_new();
+    let mut system_updates: IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>> =
         index_map_new();
     for (node_id, tracked_node) in index {
         for (module_id, tracked_module) in tracked_node.tracked_modules {
             let mut index_updates = index_map_new();
+            let mut node_module_updates = index_map_new();
+
             for (db_key, tracked) in tracked_module.substates {
                 let update = match tracked.tracked {
                     TrackedKey::ReadOnly(..) | TrackedKey::Garbage => None,
@@ -310,16 +311,21 @@ pub fn to_database_updates<M: DatabaseMapper>(
                     },
                 };
                 if let Some(update) = update {
-                    index_updates.insert(db_key, update);
+                    index_updates.insert(db_key, update.clone());
+                    node_module_updates.insert(tracked.substate_key, update);
                 }
             }
 
             let index_id = M::map_to_db_index(&node_id, module_id);
             database_updates.insert(index_id, index_updates);
+            system_updates.insert((node_id.clone(), module_id), node_module_updates);
         }
     }
 
-    DatabaseUpdates { database_updates }
+    StateUpdates {
+        database_updates,
+        system_updates,
+    }
 }
 
 struct TrackedIter<'a> {
