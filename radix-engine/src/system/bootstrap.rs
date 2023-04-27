@@ -38,6 +38,7 @@ const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
+const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -427,6 +428,7 @@ pub fn create_system_bootstrap_transaction(
         metadata.insert("name".to_owned(), XRD_NAME.to_owned());
         metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
+        metadata.insert("icon_url".to_owned(), XRD_ICON_URL.to_owned());
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
