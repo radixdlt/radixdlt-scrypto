@@ -90,7 +90,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &node_id,
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing TypeInfo substate");
 
@@ -130,13 +130,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             &node_id,
                             SysModuleId::Object.into(),
-                            FungibleVaultOffset::LiquidFungible.into(),
+                            &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Broken database");
 
                     self.visitor.visit_fungible_vault(
                         node_id.into(),
-                        &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                        &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                         &liquid,
                     );
                 } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -147,13 +147,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                             &node_id,
                             SysModuleId::Object.into(),
-                            NonFungibleVaultOffset::LiquidNonFungible.into(),
+                            &NonFungibleVaultOffset::LiquidNonFungible.into(),
                         )
                         .expect("Broken database");
 
                     self.visitor.visit_non_fungible_vault(
                         node_id.into(),
-                        &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                        &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                         &liquid,
                     );
 
@@ -167,7 +167,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                         self.visitor.visit_non_fungible(
                             node_id.into(),
-                            &ResourceAddress::new_unchecked(type_parent.unwrap().into()),
+                            &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                             &non_fungible_local_id,
                         );
                     }

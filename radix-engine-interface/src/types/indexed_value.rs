@@ -1,16 +1,13 @@
 use core::cell::RefCell;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
+use sbor::representations::*;
 use sbor::rust::cell::Ref;
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
-use sbor::serde_serialization::SborPayloadWithoutSchema;
-use sbor::serde_serialization::SchemalessSerializationContext;
-use sbor::serde_serialization::SerializationMode;
-use sbor::traversal::TraversalEvent;
+use sbor::traversal::*;
 use sbor::*;
 use utils::ContextualDisplay;
-use utils::ContextualSerialize;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
@@ -25,7 +22,7 @@ impl IndexedScryptoValue {
         let mut traverser = ScryptoTraverser::new(
             &bytes,
             SCRYPTO_SBOR_V1_MAX_DEPTH,
-            Some(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
+            ExpectedStart::PayloadPrefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
         let mut references = index_set_new::<NodeId>();
@@ -33,7 +30,6 @@ impl IndexedScryptoValue {
         loop {
             let event = traverser.next_event();
             match event.event {
-                TraversalEvent::PayloadPrefix => {}
                 TraversalEvent::ContainerStart(_) => {}
                 TraversalEvent::ContainerEnd(_) => {}
                 TraversalEvent::TerminalValue(r) => {
@@ -141,27 +137,28 @@ impl Into<Vec<u8>> for IndexedScryptoValue {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.contextual_format(f, &ScryptoValueSerializationContext::no_context())
+        write!(
+            f,
+            "{}",
+            self.display(ValueDisplayParameters::Schemaless {
+                display_mode: DisplayMode::RustLike,
+                print_mode: PrintMode::SingleLine,
+                custom_context: ScryptoValueDisplayContext::no_context()
+            })
+        )
     }
 }
 
-impl<'a> ContextualDisplay<ScryptoValueSerializationContext<'a>> for IndexedScryptoValue {
-    type Error = fmt::Error;
+impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomTypeExtension>>
+    for IndexedScryptoValue
+{
+    type Error = sbor::representations::FormattingError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ScryptoValueSerializationContext<'a>,
+        context: &ValueDisplayParameters<'_, '_, ScryptoCustomTypeExtension>,
     ) -> Result<(), Self::Error> {
-        let json = serde_json::to_string(
-            &SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(self.as_slice())
-                .serializable(SchemalessSerializationContext {
-                    mode: SerializationMode::Invertible,
-                    custom_context: context.clone(),
-                }),
-        )
-        .unwrap();
-
-        f.write_str(&json)
+        ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(f, *context)
     }
 }

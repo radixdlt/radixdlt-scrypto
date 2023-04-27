@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_database_updates, Track};
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -21,7 +21,6 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use radix_engine_stores::interface::*;
 use radix_engine_stores::jmt_support::JmtMapper;
-use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -163,7 +162,11 @@ where
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
-        let transaction_hash = executable.transaction_hash();
+        let transaction_hash = executable.transaction_hash().clone();
+        let mut blobs = BTreeMap::new();
+        for b in executable.blobs() {
+            blobs.insert(hash(b), b.clone());
+        }
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
@@ -216,10 +219,10 @@ where
                 TRANSACTION_PROCESSOR_BLUEPRINT,
                 TRANSACTION_PROCESSOR_RUN_IDENT,
                 scrypto_encode(&TransactionProcessorRunInput {
-                    transaction_hash: transaction_hash.clone(),
-                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                    blobs: Cow::Borrowed(executable.blobs()),
+                    transaction_hash,
+                    runtime_validations: executable.runtime_validations().to_vec(),
+                    instructions: manifest_encode(executable.instructions()).unwrap(),
+                    blobs,
                     references: extract_refs_from_manifest(executable.instructions()),
                 })
                 .unwrap(),
@@ -255,9 +258,10 @@ where
                 let tracked_nodes = track.finalize();
                 let state_update_summary =
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
+                let track_updates = to_state_updates::<JmtMapper>(tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
+                    state_updates: track_updates,
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -318,7 +322,7 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect::<BTreeMap<String, &u32>>();
                 for (k, v) in break_down {
-                    println!("{:<30}: {:>10}", k, v);
+                    println!("        + {} /* {} */", v, k);
                 }
 
                 println!("{:-^80}", "Cost Totals");
@@ -375,6 +379,14 @@ where
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
+                println!("{:-^80}", "Outcome");
+                println!(
+                    "{}",
+                    match &commit.outcome {
+                        TransactionOutcome::Success(_) => "Success".to_string(),
+                        TransactionOutcome::Failure(error) => format!("Failure: {:?}", error),
+                    }
+                );
             }
             TransactionResult::Reject(e) => {
                 println!("{:-^80}", "Transaction Rejected");
@@ -407,7 +419,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates);
+        substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
 }

@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -72,11 +72,9 @@ impl VirtualizationModule {
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
 
-                let mut system = SystemDownstream::new(api);
-                system.globalize_with_address(
-                    modules,
-                    GlobalAddress::new_unchecked(node_id.into()),
-                )?;
+                let mut system = SystemService::new(api);
+                system
+                    .globalize_with_address(modules, GlobalAddress::new_or_panic(node_id.into()))?;
 
                 Ok(true)
             }

@@ -19,8 +19,7 @@ pub use type_validation::*;
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
     pub kind: TypeKind<C::CustomValueKind, C, L>,
     pub metadata: TypeMetadata,
-    pub validation:
-        TypeValidation<<C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation>,
+    pub validation: TypeValidation<C::CustomTypeValidation>,
 }
 
 impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> TypeData<C, L> {
@@ -91,12 +90,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         )
     }
 
-    pub fn with_validation(
-        self,
-        type_validation: TypeValidation<
-            <C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation,
-        >,
-    ) -> Self {
+    pub fn with_validation(self, type_validation: TypeValidation<C::CustomTypeValidation>) -> Self {
         Self {
             kind: self.kind,
             metadata: self.metadata,

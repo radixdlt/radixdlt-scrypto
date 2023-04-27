@@ -3,6 +3,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
@@ -102,14 +103,14 @@ pub enum Instruction {
     /// Publish a package.
     PublishPackage {
         code: ManifestBlobRef,
-        schema: ManifestBlobRef,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
     },
 
     PublishPackageAdvanced {
         code: ManifestBlobRef,
-        schema: ManifestBlobRef,
+        schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRulesConfig,

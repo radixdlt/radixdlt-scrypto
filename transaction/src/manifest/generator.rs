@@ -413,7 +413,7 @@ pub fn generate_instruction(
             metadata,
         } => Instruction::PublishPackage {
             code: generate_blob(code, blobs)?,
-            schema: generate_blob(schema, blobs)?,
+            schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
         },
@@ -425,7 +425,7 @@ pub fn generate_instruction(
             access_rules,
         } => Instruction::PublishPackageAdvanced {
             code: generate_blob(code, blobs)?,
-            schema: generate_blob(schema, blobs)?,
+            schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -1223,6 +1223,7 @@ mod tests {
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
     use radix_engine_interface::network::NetworkDefinition;
+    use radix_engine_interface::schema::PackageSchema;
     use radix_engine_interface::types::NonFungibleData;
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
@@ -1446,7 +1447,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791") Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
             Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
@@ -1454,12 +1455,9 @@ mod tests {
                         .try_into()
                         .unwrap()
                 ),
-                schema: ManifestBlobRef(
-                    hex::decode("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
-                        .unwrap()
-                        .try_into()
-                        .unwrap()
-                ),
+                schema: PackageSchema {
+                    blueprints: BTreeMap::new()
+                },
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()

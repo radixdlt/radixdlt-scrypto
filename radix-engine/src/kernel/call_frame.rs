@@ -631,6 +631,13 @@ impl CallFrame {
         frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
         frame.add_ref(CLOCK.into(), RefType::Normal);
+        frame.add_ref(ACCESS_CONTROLLER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(ACCOUNT_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(CLOCK_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(EPOCH_MANAGER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(PACKAGE_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(RESOURCE_MANAGER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(TRANSACTION_PROCESSOR_PACKAGE.into(), RefType::Normal);
         frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
 
         frame

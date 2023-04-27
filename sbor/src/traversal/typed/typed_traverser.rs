@@ -14,8 +14,26 @@ pub fn traverse_payload_with_types<'de, 's, E: CustomTypeExtension>(
         schema,
         index,
         E::MAX_DEPTH,
-        Some(E::PAYLOAD_PREFIX),
+        ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX),
         true,
+    )
+}
+
+pub fn traverse_partial_payload_with_types<'de, 's, E: CustomTypeExtension>(
+    partial_payload: &'de [u8],
+    expected_start: ExpectedStart<E::CustomValueKind>,
+    check_exact_end: bool,
+    current_depth: usize,
+    schema: &'s Schema<E>,
+    index: LocalTypeIndex,
+) -> TypedTraverser<'de, 's, E> {
+    TypedTraverser::new(
+        partial_payload,
+        schema,
+        index,
+        E::MAX_DEPTH - current_depth,
+        expected_start,
+        check_exact_end,
     )
 }
 
@@ -102,11 +120,11 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         schema: &'s Schema<E>,
         type_index: LocalTypeIndex,
         max_depth: usize,
-        payload_prefix: Option<u8>,
+        expected_start: ExpectedStart<E::CustomValueKind>,
         check_exact_end: bool,
     ) -> Self {
         Self {
-            traverser: VecTraverser::new(input, max_depth, payload_prefix, check_exact_end),
+            traverser: VecTraverser::new(input, max_depth, expected_start, check_exact_end),
             state: TypedTraverserState {
                 container_stack: Vec::with_capacity(max_depth),
                 schema,
@@ -115,31 +133,9 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
         }
     }
 
-    pub fn next_event<'t>(
-        &'t mut self,
-    ) -> TypedLocatedTraversalEvent<'t, 's, 'de, E::CustomTraversal> {
-        let LocatedTraversalEvent { location, event } = self.traverser.next_event();
-        let typed_event = match event {
-            TraversalEvent::PayloadPrefix => TypedTraversalEvent::PayloadPrefix,
-            TraversalEvent::ContainerStart(header) => {
-                let type_index = self.state.get_type_index(&location);
-                self.state.map_container_start_event(type_index, header)
-            }
-            TraversalEvent::TerminalValue(value) => {
-                let type_index = self.state.get_type_index(&location);
-                self.state.map_terminal_value_event(type_index, value)
-            }
-            TraversalEvent::TerminalValueBatch(value_batch) => {
-                let type_index = self.state.get_type_index(&location);
-                self.state
-                    .map_terminal_value_batch_event(type_index, value_batch)
-            }
-            TraversalEvent::ContainerEnd(header) => self.state.map_container_end_event(header),
-            TraversalEvent::End => TypedTraversalEvent::End,
-            TraversalEvent::DecodeError(decode_error) => {
-                TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error))
-            }
-        };
+    pub fn next_event(&mut self) -> TypedLocatedTraversalEvent<'_, 's, 'de, E> {
+        let (typed_event, location) =
+            Self::next_event_internal(&mut self.traverser, &mut self.state);
 
         TypedLocatedTraversalEvent {
             location: TypedLocation {
@@ -149,6 +145,133 @@ impl<'de, 's, E: CustomTypeExtension> TypedTraverser<'de, 's, E> {
             event: typed_event,
         }
     }
+
+    pub fn next_event_with_schema(
+        &mut self,
+    ) -> (TypedLocatedTraversalEvent<'_, 's, 'de, E>, &Schema<E>) {
+        let (typed_event, location) =
+            Self::next_event_internal(&mut self.traverser, &mut self.state);
+
+        (
+            TypedLocatedTraversalEvent {
+                location: TypedLocation {
+                    location,
+                    typed_ancestor_path: &self.state.container_stack,
+                },
+                event: typed_event,
+            },
+            // We also return the schema here because it can't be read later as there are issues with &mut references
+            &self.state.schema,
+        )
+    }
+
+    fn next_event_internal<'t1, 'state>(
+        inner_traverser: &'t1 mut VecTraverser<'de, E::CustomTraversal>,
+        state: &'state mut TypedTraverserState<'s, E>,
+    ) -> (
+        TypedTraversalEvent<'de, E>,
+        Location<'t1, E::CustomTraversal>,
+    ) {
+        let LocatedTraversalEvent { location, event } = inner_traverser.next_event();
+        let typed_event = match event {
+            TraversalEvent::ContainerStart(header) => {
+                let type_index = state.get_type_index(&location);
+                state.map_container_start_event(type_index, header)
+            }
+            TraversalEvent::TerminalValue(value) => {
+                let type_index = state.get_type_index(&location);
+                state.map_terminal_value_event(type_index, value)
+            }
+            TraversalEvent::TerminalValueBatch(value_batch) => {
+                let type_index = state.get_type_index(&location);
+                state.map_terminal_value_batch_event(type_index, value_batch)
+            }
+            TraversalEvent::ContainerEnd(header) => state.map_container_end_event(header),
+            TraversalEvent::End => TypedTraversalEvent::End,
+            TraversalEvent::DecodeError(decode_error) => {
+                TypedTraversalEvent::Error(TypedTraversalError::DecodeError(decode_error))
+            }
+        };
+        (typed_event, location)
+    }
+
+    pub fn consume_container_end_event(&mut self) -> Result<(), String> {
+        let (typed_event, schema) = self.next_event_with_schema();
+        match typed_event.event {
+            TypedTraversalEvent::ContainerEnd { .. } => Ok(()),
+            _ => Err(typed_event.display_as_unexpected_event("ContainerEnd", schema)),
+        }
+    }
+
+    pub fn consume_end_event(&mut self) -> Result<(), String> {
+        let (typed_event, schema) = self.next_event_with_schema();
+        match typed_event.event {
+            TypedTraversalEvent::End => Ok(()),
+            _ => Err(typed_event.display_as_unexpected_event("End", schema)),
+        }
+    }
+
+    /// And returns the start/end offset of the value body
+    pub fn consume_value_tree(&mut self) -> Result<ValueTreeSummary<E::CustomValueKind>, String> {
+        let start_depth = self.state.container_stack.len();
+        let (first_event, schema) = self.next_event_with_schema();
+        let value_body_start_offset = first_event
+            .location
+            .location
+            .get_start_offset_of_value_body();
+        match first_event.event {
+            TypedTraversalEvent::ContainerStart(_, _) => {
+                // Proceed forward to the loop below
+            }
+            TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
+                return Ok(ValueTreeSummary {
+                    type_index,
+                    value_kind: value_ref.value_kind(),
+                    value_body_start_offset_inclusive: value_body_start_offset,
+                    value_body_end_offset_exclusive: first_event.location.location.end_offset,
+                });
+            }
+            _ => {
+                return Err(first_event
+                    .display_as_unexpected_event("TerminalValue | ContainerStart", schema))
+            }
+        }
+        loop {
+            let (next_event, schema) = self.next_event_with_schema();
+            if matches!(
+                next_event.event,
+                TypedTraversalEvent::Error(_) | TypedTraversalEvent::End
+            ) {
+                return Err(
+                    next_event.display_as_unexpected_event("ContainerEnd at correct level", schema)
+                );
+            }
+            let back_at_start_depth = next_event.location.typed_ancestor_path.len() == start_depth;
+            if back_at_start_depth {
+                match next_event.event {
+                    TypedTraversalEvent::ContainerEnd(type_index, header) => {
+                        return Ok(ValueTreeSummary {
+                            type_index,
+                            value_kind: header.get_own_value_kind(),
+                            value_body_start_offset_inclusive: value_body_start_offset,
+                            value_body_end_offset_exclusive: next_event
+                                .location
+                                .location
+                                .end_offset,
+                        });
+                    }
+                    _ => return Err(next_event.display_as_unexpected_event("ContainerEnd", schema)),
+                }
+            }
+        }
+    }
+}
+
+pub struct ValueTreeSummary<X: CustomValueKind> {
+    pub type_index: LocalTypeIndex,
+    pub value_kind: ValueKind<X>,
+    pub value_body_start_offset_inclusive: usize,
+    pub value_body_end_offset_exclusive: usize,
 }
 
 struct TypedTraverserState<'s, E: CustomTypeExtension> {
@@ -162,7 +285,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
         &'t mut self,
         type_index: LocalTypeIndex,
         header: ContainerHeader<E::CustomTraversal>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    ) -> TypedTraversalEvent<'de, E> {
         let container_type = look_up_type!(self, type_index);
 
         match header {
@@ -182,8 +305,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected: type_index,
-                        actual: ValueKind::Tuple
+                        expected_type_index: type_index,
+                        expected_type_kind: container_type.clone(),
+                        actual_value_kind: ValueKind::Tuple
                     }
                 ),
             },
@@ -214,8 +338,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                     _ => return_type_mismatch_error!(
                         location,
                         TypeMismatchError::MismatchingType {
-                            expected: type_index,
-                            actual: ValueKind::Enum
+                            expected_type_index: type_index,
+                            expected_type_kind: container_type.clone(),
+                            actual_value_kind: ValueKind::Enum
                         }
                     ),
                 }
@@ -232,8 +357,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildElementType {
-                                expected: *element_type_index,
-                                actual: element_value_kind
+                                expected_type_index: *element_type_index,
+                                expected_type_kind: element_type.clone(),
+                                actual_value_kind: element_value_kind
                             }
                         )
                     }
@@ -243,8 +369,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected: type_index,
-                        actual: ValueKind::Array
+                        expected_type_index: type_index,
+                        expected_type_kind: container_type.clone(),
+                        actual_value_kind: ValueKind::Array
                     }
                 ),
             },
@@ -263,8 +390,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildKeyType {
-                                expected: *key_type_index,
-                                actual: key_value_kind
+                                expected_type_index: *key_type_index,
+                                expected_type_kind: key_type.clone(),
+                                actual_value_kind: key_value_kind
                             }
                         )
                     }
@@ -273,8 +401,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildValueType {
-                                expected: *value_type_index,
-                                actual: key_value_kind
+                                expected_type_index: *value_type_index,
+                                expected_type_kind: value_type.clone(),
+                                actual_value_kind: key_value_kind
                             }
                         )
                     }
@@ -287,8 +416,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected: type_index,
-                        actual: ValueKind::Map
+                        expected_type_index: type_index,
+                        expected_type_kind: container_type.clone(),
+                        actual_value_kind: ValueKind::Map
                     }
                 ),
             },
@@ -301,7 +431,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
         &'t mut self,
         type_index: LocalTypeIndex,
         value_ref: TerminalValueRef<'de, E::CustomTraversal>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    ) -> TypedTraversalEvent<'de, E> {
         let value_kind = value_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
@@ -309,8 +439,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
-                    expected: type_index,
-                    actual: value_kind
+                    expected_type_index: type_index,
+                    expected_type_kind: type_kind.clone(),
+                    actual_value_kind: value_kind
                 }
             )
         }
@@ -322,7 +453,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
         &'t mut self,
         type_index: LocalTypeIndex,
         value_batch_ref: TerminalValueBatchRef<'de>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    ) -> TypedTraversalEvent<'de, E> {
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
@@ -330,8 +461,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
-                    expected: type_index,
-                    actual: value_kind
+                    expected_type_index: type_index,
+                    expected_type_kind: type_kind.clone(),
+                    actual_value_kind: value_kind
                 }
             )
         }
@@ -342,7 +474,7 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
     fn map_container_end_event<'t, 'de>(
         &'t mut self,
         header: ContainerHeader<E::CustomTraversal>,
-    ) -> TypedTraversalEvent<'de, E::CustomTraversal> {
+    ) -> TypedTraversalEvent<'de, E> {
         let container = self.container_stack.pop().unwrap();
 
         TypedTraversalEvent::ContainerEnd(container.self_type(), header)

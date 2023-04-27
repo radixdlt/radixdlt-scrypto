@@ -145,7 +145,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Check amount
         let info = BucketInfoSubstate::of_self(api)?;
@@ -176,7 +176,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Drop other bucket
         let other_bucket =
@@ -216,7 +216,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
@@ -234,7 +234,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         let info = BucketInfoSubstate::of_self(api)?;
         let node_id = {

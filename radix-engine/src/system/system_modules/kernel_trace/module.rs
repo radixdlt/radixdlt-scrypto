@@ -91,10 +91,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         node_id: &NodeId,
         node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
+        let mut module_substate_keys = BTreeMap::<&ModuleId, Vec<&SubstateKey>>::new();
+        for (module_id, m) in node_module_init {
+            for (substate_key, _) in m {
+                module_substate_keys
+                    .entry(module_id)
+                    .or_default()
+                    .push(substate_key);
+            }
+        }
         let message = format!(
-            "Creating node: id = {:?}, type = {:?}",
+            "Creating node: id = {:?}, type = {:?}, substates = {:?}",
             node_id,
-            node_id.entity_type()
+            node_id.entity_type(),
+            module_substate_keys
         )
         .red();
         log!(api, "{}", message);

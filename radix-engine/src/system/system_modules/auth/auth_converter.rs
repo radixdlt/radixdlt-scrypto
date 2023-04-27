@@ -4,9 +4,6 @@ use super::authorization::{
 };
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
-    NON_FUNGIBLE_LOCAL_ID_ID, RESOURCE_ADDRESS_ID,
-};
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::types::*;
 use sbor::basic_well_known_types::UNIT_ID;
@@ -20,22 +17,16 @@ fn soft_to_hard_decimal(
     match soft_decimal {
         SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
         SoftDecimal::Dynamic(schema_path) => {
-            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
-                match &ty {
-                    ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Decimal) => {
-                        let value = value.as_scrypto_value();
+            if let Some((sbor_path, _)) = schema_path.to_sbor_path(schema, type_index) {
+                let root = value.as_scrypto_value();
+                let value = sbor_path
+                    .get_from_value(&root)
+                    .expect(format!("Value missing at {:?}", schema_path).as_str());
 
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardDecimal::Amount(
-                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
-                                format!("Unexpected value type at {:?}", schema_path).as_str(),
-                            ),
-                        )
-                    }
-                    _ => HardDecimal::NotDecimal,
+                if let Ok(amount) = scrypto_decode::<Decimal>(&scrypto_encode(value).unwrap()) {
+                    HardDecimal::Amount(amount)
+                } else {
+                    HardDecimal::NotDecimal
                 }
             } else {
                 HardDecimal::InvalidPath
@@ -53,22 +44,16 @@ fn soft_to_hard_count(
     match soft_count {
         SoftCount::Static(count) => HardCount::Count(count.clone()),
         SoftCount::Dynamic(schema_path) => {
-            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
-                match &ty {
-                    ScryptoTypeKind::U8 => {
-                        let value = value.as_scrypto_value();
+            if let Some((sbor_path, _)) = schema_path.to_sbor_path(schema, type_index) {
+                let root = value.as_scrypto_value();
+                let value = sbor_path
+                    .get_from_value(&root)
+                    .expect(format!("Value missing at {:?}", schema_path).as_str());
 
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardCount::Count(
-                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
-                                format!("Unexpected value type at {:?}", schema_path).as_str(),
-                            ),
-                        )
-                    }
-                    _ => HardCount::NotU8,
+                if let Ok(n) = scrypto_decode::<u8>(&scrypto_encode(value).unwrap()) {
+                    HardCount::Count(n)
+                } else {
+                    HardCount::NotU8
                 }
             } else {
                 HardCount::InvalidPath
@@ -94,53 +79,30 @@ fn soft_to_hard_resource_list(
             HardProofRuleResourceList::List(hard_resources)
         }
         SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
-            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
-                match &ty {
-                    TypeKind::Array { element_type, .. }
-                        if *element_type == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID) =>
-                    {
-                        let value = value.as_scrypto_value();
+            if let Some((sbor_path, _)) = schema_path.to_sbor_path(schema, type_index) {
+                let root = value.as_scrypto_value();
+                let value = sbor_path
+                    .get_from_value(&root)
+                    .expect(format!("Value missing at {:?}", schema_path).as_str());
 
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardProofRuleResourceList::List(
-                            scrypto_decode::<Vec<ResourceAddress>>(&scrypto_encode(v).unwrap())
-                                .expect(
-                                    format!("Unexpected value type at {:?}", schema_path).as_str(),
-                                )
-                                .into_iter()
-                                .map(|e| HardResourceOrNonFungible::Resource(e))
-                                .collect(),
-                        )
-                    }
-                    TypeKind::Array { element_type, .. } => {
-                        match schema.resolve_type_kind(*element_type) {
-                            Some(TypeKind::Tuple { field_types })
-                                if field_types.len() == 2
-                                    && field_types[0] == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID)
-                                    && field_types[1]
-                                        == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>  {
-                                            let value = value.as_scrypto_value();
-                                            let v = sbor_path
-                                                .get_from_value(&value)
-                                                .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                                            HardProofRuleResourceList::List(
-                                                scrypto_decode::<Vec<NonFungibleGlobalId>>(&scrypto_encode(v).unwrap())
-                                                    .expect(
-                                                        format!("Unexpected value type at {:?}", schema_path).as_str(),
-                                                    )
-                                                    .into_iter()
-                                                    .map(|e| HardResourceOrNonFungible::NonFungible(e))
-                                                    .collect(),
-                                            )
-                                        }
-                            _ => HardProofRuleResourceList::NotResourceAddressOrNonFungibleGlobalIdArray,
-                        }
-                    }
-                    _ => HardProofRuleResourceList::NotResourceAddressOrNonFungibleGlobalIdArray,
+                if let Ok(v) =
+                    scrypto_decode::<Vec<ResourceAddress>>(&scrypto_encode(value).unwrap())
+                {
+                    HardProofRuleResourceList::List(
+                        v.into_iter()
+                            .map(|e| HardResourceOrNonFungible::Resource(e))
+                            .collect(),
+                    )
+                } else if let Ok(v) =
+                    scrypto_decode::<Vec<NonFungibleGlobalId>>(&scrypto_encode(value).unwrap())
+                {
+                    HardProofRuleResourceList::List(
+                        v.into_iter()
+                            .map(|e| HardResourceOrNonFungible::NonFungible(e))
+                            .collect(),
+                    )
+                } else {
+                    HardProofRuleResourceList::NotResourceAddressOrNonFungibleGlobalIdArray
                 }
             } else {
                 HardProofRuleResourceList::InvalidPath
@@ -157,22 +119,18 @@ fn soft_to_hard_resource(
 ) -> HardResourceOrNonFungible {
     match soft_resource {
         SoftResource::Dynamic(schema_path) => {
-            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
-                match &ty {
-                    TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
-                        let value = value.as_scrypto_value();
+            if let Some((sbor_path, _)) = schema_path.to_sbor_path(schema, type_index) {
+                let root = value.as_scrypto_value();
+                let value = sbor_path
+                    .get_from_value(&root)
+                    .expect(format!("Value missing at {:?}", schema_path).as_str());
 
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardResourceOrNonFungible::Resource(
-                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
-                                format!("Unexpected value type at {:?}", schema_path).as_str(),
-                            ),
-                        )
-                    }
-                    _ => HardResourceOrNonFungible::NotResourceAddress,
+                if let Ok(address) =
+                    scrypto_decode::<ResourceAddress>(&scrypto_encode(value).unwrap())
+                {
+                    HardResourceOrNonFungible::Resource(address)
+                } else {
+                    HardResourceOrNonFungible::NotResourceAddress
                 }
             } else {
                 HardResourceOrNonFungible::InvalidPath
@@ -190,40 +148,22 @@ fn soft_to_hard_resource_or_non_fungible(
 ) -> HardResourceOrNonFungible {
     match soft_resource_or_non_fungible {
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
-            if let Some((sbor_path, ty)) = schema_path.to_sbor_path(schema, type_index) {
-                match &ty {
-                    TypeKind::Custom(ScryptoCustomTypeKind::ResourceAddress) => {
-                        let value = value.as_scrypto_value();
+            if let Some((sbor_path, _)) = schema_path.to_sbor_path(schema, type_index) {
+                let root = value.as_scrypto_value();
+                let value = sbor_path
+                    .get_from_value(&root)
+                    .expect(format!("Value missing at {:?}", schema_path).as_str());
 
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardResourceOrNonFungible::Resource(
-                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
-                                format!("Unexpected value type at {:?}", schema_path).as_str(),
-                            ),
-                        )
-                    }
-                    TypeKind::Tuple { field_types }
-                        if field_types.len() == 2
-                            && field_types[0] == LocalTypeIndex::WellKnown(RESOURCE_ADDRESS_ID)
-                            && field_types[1]
-                                == LocalTypeIndex::WellKnown(NON_FUNGIBLE_LOCAL_ID_ID) =>
-                    {
-                        let value = value.as_scrypto_value();
-
-                        let v = sbor_path
-                            .get_from_value(&value)
-                            .expect(format!("Value missing at {:?}", schema_path).as_str());
-
-                        HardResourceOrNonFungible::NonFungible(
-                            scrypto_decode(&scrypto_encode(v).unwrap()).expect(
-                                format!("Unexpected value type at {:?}", schema_path).as_str(),
-                            ),
-                        )
-                    }
-                    _ => HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId,
+                if let Ok(address) =
+                    scrypto_decode::<ResourceAddress>(&scrypto_encode(value).unwrap())
+                {
+                    HardResourceOrNonFungible::Resource(address)
+                } else if let Ok(non_fungible) =
+                    scrypto_decode::<NonFungibleGlobalId>(&scrypto_encode(value).unwrap())
+                {
+                    HardResourceOrNonFungible::NonFungible(non_fungible)
+                } else {
+                    HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId
                 }
             } else {
                 HardResourceOrNonFungible::InvalidPath

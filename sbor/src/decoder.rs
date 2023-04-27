@@ -25,7 +25,7 @@ pub enum DecodeError {
 
     InvalidUtf8,
 
-    SizeTooLarge,
+    InvalidSize,
 
     MaxDepthExceeded(usize),
 
@@ -96,17 +96,24 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         // LEB128 and 4 bytes max
         let mut size = 0usize;
         let mut shift = 0;
+        let mut byte;
         loop {
-            let byte = self.read_byte()?;
+            byte = self.read_byte()?;
             size |= ((byte & 0x7F) as usize) << shift;
             if byte < 0x80 {
                 break;
             }
             shift += 7;
             if shift >= 28 {
-                return Err(DecodeError::SizeTooLarge);
+                return Err(DecodeError::InvalidSize);
             }
         }
+
+        // The last byte should not be zero, unless the size is zero
+        if byte == 0 && shift != 0 {
+            return Err(DecodeError::InvalidSize);
+        }
+
         Ok(size)
     }
 
@@ -166,6 +173,21 @@ pub trait Decoder<X: CustomValueKind>: Sized {
     fn read_byte(&mut self) -> Result<u8, DecodeError>;
 
     fn read_slice(&mut self, n: usize) -> Result<&[u8], DecodeError>;
+
+    // Advanced methods - mostly for use by traversers
+
+    fn peek_remaining(&self) -> &[u8];
+
+    fn get_stack_depth(&self) -> usize;
+
+    fn get_offset(&self) -> usize;
+
+    fn peek_value_kind(&self) -> Result<ValueKind<X>, DecodeError> {
+        let id = self.peek_byte()?;
+        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
+    }
+
+    fn peek_byte(&self) -> Result<u8, DecodeError>;
 }
 
 pub trait BorrowingDecoder<'de, X: CustomValueKind>: Decoder<X> {
@@ -259,32 +281,12 @@ impl<'de, X: CustomValueKind> Decoder<X> for VecDecoder<'de, X> {
             Ok(())
         }
     }
-}
 
-impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
     #[inline]
-    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
-        self.require_remaining(n)?;
-        let slice = &self.input[self.offset..self.offset + n];
-        self.offset += n;
-        Ok(slice)
-    }
-}
-
-pub trait PayloadTraverser<'de, X: CustomValueKind>: BorrowingDecoder<'de, X> {
-    fn get_stack_depth(&self) -> usize;
-
-    fn get_offset(&self) -> usize;
-
-    fn peek_value_kind(&self) -> Result<ValueKind<X>, DecodeError> {
-        let id = self.peek_byte()?;
-        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
+    fn peek_remaining(&self) -> &[u8] {
+        &self.input[self.offset..]
     }
 
-    fn peek_byte(&self) -> Result<u8, DecodeError>;
-}
-
-impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
     #[inline]
     fn get_stack_depth(&self) -> usize {
         self.stack_depth
@@ -300,6 +302,16 @@ impl<'de, X: CustomValueKind> PayloadTraverser<'de, X> for VecDecoder<'de, X> {
         self.require_remaining(1)?;
         let result = self.input[self.offset];
         Ok(result)
+    }
+}
+
+impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
+    #[inline]
+    fn read_slice_from_payload(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
+        self.require_remaining(n)?;
+        let slice = &self.input[self.offset..self.offset + n];
+        self.offset += n;
+        Ok(slice)
     }
 }
 
@@ -344,7 +356,7 @@ mod tests {
     #[test]
     pub fn test_vlq_too_large() {
         let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00], 256);
-        assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
+        assert_eq!(dec.read_size(), Err(DecodeError::InvalidSize));
     }
 
     fn assert_decoding(dec: &mut BasicDecoder) {
@@ -465,5 +477,69 @@ mod tests {
         let mut decoder = BasicDecoder::new(&bytes, 256);
         let value2 = decoder.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
+    }
+
+    #[test]
+    pub fn test_invalid_size() {
+        assert_eq!(
+            BasicDecoder::new(&[0x80], 256).read_size(),
+            Err(DecodeError::BufferUnderflow {
+                required: 1,
+                remaining: 0
+            })
+        );
+
+        // Trailing zeros
+        // LE: [0, 0]
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 00], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        // LE: [0, 1, 0]
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 0x81, 0x00], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 0x01], 256).read_size(),
+            Ok(1 << 7)
+        );
+
+        // Out of range
+        assert_eq!(
+            BasicDecoder::new(&[0xFF, 0xFF, 0xFF, 0x80], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        assert_eq!(
+            BasicDecoder::new(&[0xFF, 0xFF, 0xFF, 0xFF], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+    }
+
+    #[test]
+    pub fn test_valid_size() {
+        assert_eq!(BasicDecoder::new(&[00], 256).read_size(), Ok(0));
+        assert_eq!(BasicDecoder::new(&[123], 256).read_size(), Ok(123));
+        assert_eq!(
+            BasicDecoder::new(&[0xff, 0xff, 0xff, 0x7f], 256).read_size(),
+            Ok(0x0fffffff)
+        );
+
+        let delta = 0x1fffff;
+        let ranges = [
+            0..delta,                                       /* low */
+            0x0fffffff / 2 - delta..0x0fffffff / 2 + delta, /* mid */
+            0x0fffffff - delta..0x0fffffff,                 /* high */
+        ];
+        for range in ranges {
+            for i in range {
+                let mut vec = Vec::new();
+                let mut enc = BasicEncoder::new(&mut vec, 256);
+                enc.write_size(i).unwrap();
+                let mut dec = BasicDecoder::new(&vec, 256);
+                assert_eq!(dec.read_size(), Ok(i));
+                assert_eq!(dec.remaining_bytes(), 0);
+            }
+        }
     }
 }

@@ -1,11 +1,13 @@
 use crate::types::*;
 use transaction::model::*;
 
-pub fn extract_refs_from_manifest(instructions: &[Instruction]) -> BTreeSet<Reference> {
+// FIXME: clean-up needed!
+
+pub fn extract_refs_from_manifest<'a>(instructions: &[Instruction]) -> BTreeSet<Reference> {
     let mut references = BTreeSet::<Reference>::new();
 
     for instruction in instructions {
-        extract_refs_from_instruction(&instruction, &mut references);
+        extract_refs_from_instruction(instruction, &mut references);
     }
 
     references.insert(RADIX_TOKEN.into());
@@ -18,7 +20,7 @@ pub fn extract_refs_from_manifest(instructions: &[Instruction]) -> BTreeSet<Refe
     references
 }
 
-pub fn extract_refs_from_instruction(
+pub fn extract_refs_from_instruction<'a>(
     instruction: &Instruction,
     references: &mut BTreeSet<Reference>,
 ) {
@@ -57,14 +59,24 @@ pub fn extract_refs_from_instruction(
             references.insert(resource_address.clone().into());
             extract_refs_from_value(&args, references);
         }
-        Instruction::PublishPackage { .. } => {
+        Instruction::PublishPackage { schema, .. } => {
             references.insert(PACKAGE_PACKAGE.clone().into());
+            // TODO: Remove and cleanup
+            let value: ManifestValue = manifest_decode(&manifest_encode(schema).unwrap()).unwrap();
+            extract_refs_from_value(&value, references);
         }
-        Instruction::PublishPackageAdvanced { access_rules, .. } => {
+        Instruction::PublishPackageAdvanced {
+            access_rules,
+            schema,
+            ..
+        } => {
             references.insert(PACKAGE_PACKAGE.clone().into());
             // TODO: Remove and cleanup
             let value: ManifestValue =
                 manifest_decode(&manifest_encode(access_rules).unwrap()).unwrap();
+            extract_refs_from_value(&value, references);
+            // TODO: Remove and cleanup
+            let value: ManifestValue = manifest_decode(&manifest_encode(schema).unwrap()).unwrap();
             extract_refs_from_value(&value, references);
         }
         Instruction::SetMetadata {

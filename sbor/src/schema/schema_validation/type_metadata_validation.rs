@@ -3,7 +3,7 @@ use crate::rust::prelude::*;
 use crate::schema::*;
 
 pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+    context: &SchemaContext,
     type_kind: &SchemaTypeKind<E>,
     type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {
@@ -32,7 +32,11 @@ pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
             validate_enum_metadata(type_metadata, variants)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::validate_type_metadata_with_type_kind(context, custom_type_kind, type_metadata)?;
+            E::validate_type_metadata_with_custom_type_kind(
+                context,
+                custom_type_kind,
+                type_metadata,
+            )?;
         }
     }
 

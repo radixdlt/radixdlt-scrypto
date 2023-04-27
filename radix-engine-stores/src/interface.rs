@@ -160,9 +160,13 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct DatabaseUpdates {
-    pub database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>,
+pub struct StateUpdates {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
 }
+
+pub type DatabaseUpdates = IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>;
+pub type SystemUpdates = IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DatabaseUpdate {
@@ -172,7 +176,7 @@ pub enum DatabaseUpdate {
 
 pub trait DatabaseMapper {
     fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
-    fn map_to_db_key(key: SubstateKey) -> Vec<u8>;
+    fn map_to_db_key(key: &SubstateKey) -> Vec<u8>;
 }
 
 /// Represents the interface between Track and a database vendor.
@@ -193,11 +197,11 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: SubstateKey,
+        substate_key: &SubstateKey,
     ) -> Option<D> {
         self.get_substate(
             &M::map_to_db_index(node_id, module_id),
-            &M::map_to_db_key(substate_key),
+            &M::map_to_db_key(&substate_key),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
     }
