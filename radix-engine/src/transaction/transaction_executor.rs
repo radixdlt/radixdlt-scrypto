@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_database_updates, Track};
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -258,9 +258,10 @@ where
                 let tracked_nodes = track.finalize();
                 let state_update_summary =
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
+                let track_updates = to_state_updates::<JmtMapper>(tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
+                    state_updates: track_updates,
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -418,7 +419,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates);
+        substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
 }
