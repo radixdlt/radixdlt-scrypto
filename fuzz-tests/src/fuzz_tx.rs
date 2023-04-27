@@ -3,20 +3,24 @@ use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlo
 use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+#[cfg(feature = "smart_mutate")]
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
 
+#[derive(Debug, Clone)]
 struct Account {
     public_key: EcdsaSecp256k1PublicKey,
-    _private_key: EcdsaSecp256k1PrivateKey,
+    //_private_key: EcdsaSecp256k1PrivateKey,
+    #[allow(unused)]
     address: ComponentAddress,
+    #[allow(unused)]
+    resources: Vec<ResourceAddress>,
 }
 
 pub struct TxFuzzer {
     runner: TestRunner,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
-    resources: Vec<ResourceAddress>,
 }
 
 impl TxFuzzer {
@@ -25,28 +29,27 @@ impl TxFuzzer {
         let accounts: Vec<Account> = (0..2)
             .map(|_| {
                 let acc = runner.new_account(false);
+                let resources: Vec<ResourceAddress> = vec![
+                    runner.create_fungible_resource(10000.into(), 18, acc.2),
+                    runner.create_fungible_resource(10000.into(), 18, acc.2),
+                    runner.create_non_fungible_resource(acc.2),
+                    runner.create_non_fungible_resource(acc.2),
+                ];
                 println!("addr = {:?}", acc.2);
                 Account {
                     public_key: acc.0,
-                    _private_key: acc.1,
+                    //_private_key: acc.1,
                     address: acc.2,
+                    resources,
                 }
             })
             .collect();
-        let resources: Vec<ResourceAddress> = vec![
-            runner.create_fungible_resource(1000.into(), 18, accounts[0].address),
-            runner.create_non_fungible_resource(accounts[0].address),
-        ];
-
         let snapshot = runner.create_snapshot();
-
-        println!("resources = {:?}", resources);
 
         Self {
             runner,
             snapshot,
             accounts,
-            resources,
         }
     }
 
@@ -55,6 +58,7 @@ impl TxFuzzer {
     }
 
     // pick account from the preallocated pool basing on the input data
+    #[cfg(feature = "smart_mutate")]
     fn get_account(&mut self, data: &[u8]) -> Option<ComponentAddress> {
         let len = data.len();
         if len >= 2 && data[len - 2] % 2 == 0 {
@@ -65,13 +69,16 @@ impl TxFuzzer {
     }
 
     // pick resource from the preallocated pool basing on the input data
+    #[cfg(feature = "smart_mutate")]
     fn get_resource(&mut self, data: &[u8]) -> Option<ResourceAddress> {
         let len = data.len();
-        if len >= 2 && data[len - 2] % 2 == 0 {
-            let idx = *data.last().unwrap() as usize % self.accounts.len();
-            return Some(self.resources[idx]);
+        if len >= 3 && data[len - 3] % 2 == 0 {
+            let account_idx = *data.last().unwrap() as usize % self.accounts.len();
+            let resource_idx = data[len - 2] as usize % self.accounts[account_idx].resources.len();
+            Some(self.accounts[account_idx].resources[resource_idx])
+        } else {
+            None
         }
-        None
     }
 
     // Smartly replace some data in the manifest using some preallocated resources.
