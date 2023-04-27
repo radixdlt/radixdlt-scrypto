@@ -445,7 +445,7 @@ fn change(
     SubstateHashChange::new(
         DbId::new(
             JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), ModuleId(module_id as u8)),
-            JmtMapper::map_to_db_key(SubstateKey::Map(fake_kvs_entry_id)),
+            JmtMapper::map_to_db_key(&SubstateKey::Map(fake_kvs_entry_id)),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
     )

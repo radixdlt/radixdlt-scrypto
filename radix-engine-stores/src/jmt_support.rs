@@ -15,10 +15,10 @@ impl DatabaseMapper for JmtMapper {
         hash(buffer).0[(Hash::LENGTH - 26)..Hash::LENGTH].to_vec() // 26 bytes
     }
 
-    fn map_to_db_key(key: SubstateKey) -> DbKey {
+    fn map_to_db_key(key: &SubstateKey) -> DbKey {
         let bytes = match key {
             SubstateKey::Tuple(field) => {
-                vec![field]
+                vec![*field]
             }
             SubstateKey::Map(key) => {
                 hash(key).0[12..Hash::LENGTH].to_vec() // 20 bytes

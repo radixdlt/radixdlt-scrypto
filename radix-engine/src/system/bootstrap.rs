@@ -194,7 +194,7 @@ where
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             );
 
         if xrd_info.is_none() {
@@ -254,7 +254,8 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db.commit(&commit_result.state_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt.into()
     }
@@ -275,7 +276,8 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt
     }
@@ -296,7 +298,8 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt.into()
     }
