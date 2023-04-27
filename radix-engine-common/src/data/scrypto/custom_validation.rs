@@ -6,7 +6,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 
 impl ValidatableCustomTypeExtension<()> for ScryptoCustomTypeExtension {
-    fn validate_custom_value<'de, L: SchemaTypeLink>(
+    fn apply_custom_type_validation<'de, L: SchemaTypeLink>(
         _custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         _custom_type_kind: &Self::CustomTypeKind<L>,
         _context: &mut (),
@@ -37,7 +37,7 @@ impl<T> ValidatableCustomTypeExtension<T> for ScryptoCustomTypeExtension
 where
     T: NodeTypeInfoContext,
 {
-    fn validate_custom_value<'de, L: SchemaTypeLink>(
+    fn apply_custom_type_validation<'de, L: SchemaTypeLink>(
         custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
         custom_type_kind: &Self::CustomTypeKind<L>,
         context: &mut T,

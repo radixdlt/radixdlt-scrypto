@@ -150,7 +150,7 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum NoCustomTypeExtension {}
+pub struct NoCustomTypeExtension {}
 
 create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
 
@@ -246,10 +246,10 @@ impl FormattableCustomTypeExtension for NoCustomTypeExtension {
 }
 
 impl ValidatableCustomTypeExtension<()> for NoCustomTypeExtension {
-    fn validate_custom_value<'de, L: SchemaTypeLink>(
-        _custom_value_ref: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
-        _custom_type_kind: &Self::CustomTypeKind<L>,
-        _context: &mut (),
+    fn apply_custom_type_validation<'de>(
+        _: &Self::CustomTypeValidation,
+        _: &TerminalValueRef<'de, Self::CustomTraversal>,
+        _: &mut (),
     ) -> Result<(), ValidationError> {
         unreachable!("No custom values exist")
     }
