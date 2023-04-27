@@ -1,4 +1,3 @@
-use super::system::get_node_type_info_common;
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -6,7 +5,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::module_mixer::SystemModuleMixer;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
@@ -21,7 +20,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::schema::BlueprintSchema;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-    mut upstream: SystemUpstream<'a, Y, V>,
+    service: &mut SystemService<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
@@ -45,7 +44,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
-        &mut upstream,
+        service,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
@@ -58,7 +57,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-    mut upstream: SystemUpstream<'a, Y, V>,
+    service: &mut SystemService<'a, Y, V>,
     blueprint_schema: &BlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
@@ -72,7 +71,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
-        &mut upstream,
+        service,
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
@@ -94,21 +93,6 @@ pub struct SystemInvocation {
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub modules: SystemModuleMixer,
-}
-
-pub struct SystemUpstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
-    pub api: &'a mut Y,
-    pub phantom: PhantomData<V>,
-}
-
-impl<'a, Y, V> NodeTypeInfoContext for SystemUpstream<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
-        get_node_type_info_common(self.api, node_id)
-    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
@@ -292,7 +276,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?
             };
             let output = {
-                let mut system = SystemDownstream::new(api);
+                let mut system = SystemService::new(api);
                 vm_instance.invoke(
                     invocation.receiver.as_ref().map(|x| &x.0),
                     &export_name,
@@ -325,7 +309,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?
             };
             let output = {
-                let mut system = SystemDownstream::new(api);
+                let mut system = SystemService::new(api);
                 vm_instance.invoke(
                     invocation.receiver.as_ref().map(|x| &x.0),
                     &export_name,
@@ -371,14 +355,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 Box::new(schema)
             };
 
+            let mut system = SystemService::new(api);
+
             //  Validate input
             let export_name = match &invocation.ident {
                 FnIdent::Application(ident) => {
                     let export_name = validate_input(
-                        SystemUpstream {
-                            api,
-                            phantom: PhantomData,
-                        },
+                        &mut system,
                         &schema,
                         &ident,
                         invocation.receiver.is_some(),
@@ -400,7 +383,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // Execute
             let output = {
-                let mut system = SystemDownstream::new(api);
                 C::invoke(
                     &invocation.blueprint.package_address,
                     invocation.receiver.as_ref().map(|x| &x.0),
@@ -412,15 +394,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // Validate output
             match invocation.ident {
-                FnIdent::Application(ident) => validate_output(
-                    SystemUpstream {
-                        api,
-                        phantom: PhantomData,
-                    },
-                    &schema,
-                    &ident,
-                    &output,
-                )?,
+                FnIdent::Application(ident) => {
+                    validate_output(&mut system, &schema, &ident, &output)?
+                }
                 FnIdent::System(..) => {
                     // TODO: Validate against virtual schema
                 }
@@ -447,7 +423,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        let mut system = SystemDownstream::new(api);
+        let mut system = SystemService::new(api);
         for node_id in nodes {
             if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
                 match (blueprint.package_address, blueprint.blueprint_name.as_str()) {

@@ -12,7 +12,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::{TrackedNode, TrackedSubstateKey, Write};
+use crate::track::{TrackedKey, TrackedNode, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -233,7 +233,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 // Scan loaded substates to find children
                 for (_module_id, tracked_module) in &tracked_node.tracked_modules {
                     for (_substate_key, tracked_key) in &tracked_module.substates {
-                        if let Some(value) = tracked_key.get() {
+                        if let Some(value) = tracked_key.tracked.get() {
                             for own in value.owned_node_ids() {
                                 self.traverse_state_updates(
                                     balance_changes,
@@ -257,7 +257,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .fetch_substate::<JmtMapper, TypeInfoSubstate>(
                 node_id,
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");
 
@@ -275,14 +275,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
                     SysModuleId::Object.into(),
-                    FungibleVaultOffset::LiquidFungible.into(),
+                    &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
                         node_id,
                         SysModuleId::Object.into(),
-                        FungibleVaultOffset::LiquidFungible.into(),
+                        &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -302,7 +302,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
                     node_id,
                     SysModuleId::Object.into(),
-                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
@@ -315,20 +315,20 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     let mut removed = BTreeSet::new();
 
                     for (_key, tracked) in &tracked_module.substates {
-                        match tracked {
-                            TrackedSubstateKey::New(substate)
-                            | TrackedSubstateKey::ReadNonExistAndWrite(substate) => {
+                        match &tracked.tracked {
+                            TrackedKey::New(substate)
+                            | TrackedKey::ReadNonExistAndWrite(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                 added.insert(id);
                             }
-                            TrackedSubstateKey::ReadExistAndWrite(old, write) => match write {
+                            TrackedKey::ReadExistAndWrite(old, write) => match write {
                                 Write::Update(..) => {}
                                 Write::Delete => {
                                     let id: NonFungibleLocalId = old.as_typed().unwrap();
                                     removed.insert(id);
                                 }
                             },
-                            TrackedSubstateKey::WriteOnly(write) => match write {
+                            TrackedKey::WriteOnly(write) => match write {
                                 Write::Update(substate) => {
                                     let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                     added.insert(id);
@@ -337,7 +337,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                     panic!("Should never occur");
                                 }
                             },
-                            TrackedSubstateKey::ReadOnly(..) | TrackedSubstateKey::Garbage => {}
+                            TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
                         }
                     }
 
@@ -356,13 +356,13 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key.clone())
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key)
             .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
     }
 
@@ -370,7 +370,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
             .get_mapped_substate::<M, D>(node_id, module_id, key)
@@ -380,12 +380,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
             .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
-            .and_then(|tracked_key| tracked_key.get().map(|e| e.as_typed().unwrap()))
+            .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }
 }

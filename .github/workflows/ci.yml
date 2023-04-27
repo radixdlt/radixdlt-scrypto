@@ -261,8 +261,8 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: transaction
-  cli-resim-rtmc:
-    name: Run CLI tests (resim & rtmc)
+  cli-resim-rtmc-rtmd:
+    name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

@@ -25,7 +25,7 @@ pub enum DecodeError {
 
     InvalidUtf8,
 
-    SizeTooLarge,
+    InvalidSize,
 
     MaxDepthExceeded(usize),
 
@@ -96,17 +96,24 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         // LEB128 and 4 bytes max
         let mut size = 0usize;
         let mut shift = 0;
+        let mut byte;
         loop {
-            let byte = self.read_byte()?;
+            byte = self.read_byte()?;
             size |= ((byte & 0x7F) as usize) << shift;
             if byte < 0x80 {
                 break;
             }
             shift += 7;
             if shift >= 28 {
-                return Err(DecodeError::SizeTooLarge);
+                return Err(DecodeError::InvalidSize);
             }
         }
+
+        // The last byte should not be zero, unless the size is zero
+        if byte == 0 && shift != 0 {
+            return Err(DecodeError::InvalidSize);
+        }
+
         Ok(size)
     }
 
@@ -349,7 +356,7 @@ mod tests {
     #[test]
     pub fn test_vlq_too_large() {
         let mut dec = BasicDecoder::new(&[0xff, 0xff, 0xff, 0xff, 0x00], 256);
-        assert_eq!(dec.read_size(), Err(DecodeError::SizeTooLarge));
+        assert_eq!(dec.read_size(), Err(DecodeError::InvalidSize));
     }
 
     fn assert_decoding(dec: &mut BasicDecoder) {
@@ -470,5 +477,69 @@ mod tests {
         let mut decoder = BasicDecoder::new(&bytes, 256);
         let value2 = decoder.decode::<[NFA; 2]>().unwrap();
         assert_eq!(value1, value2);
+    }
+
+    #[test]
+    pub fn test_invalid_size() {
+        assert_eq!(
+            BasicDecoder::new(&[0x80], 256).read_size(),
+            Err(DecodeError::BufferUnderflow {
+                required: 1,
+                remaining: 0
+            })
+        );
+
+        // Trailing zeros
+        // LE: [0, 0]
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 00], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        // LE: [0, 1, 0]
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 0x81, 0x00], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        assert_eq!(
+            BasicDecoder::new(&[0x80, 0x01], 256).read_size(),
+            Ok(1 << 7)
+        );
+
+        // Out of range
+        assert_eq!(
+            BasicDecoder::new(&[0xFF, 0xFF, 0xFF, 0x80], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+        assert_eq!(
+            BasicDecoder::new(&[0xFF, 0xFF, 0xFF, 0xFF], 256).read_size(),
+            Err(DecodeError::InvalidSize)
+        );
+    }
+
+    #[test]
+    pub fn test_valid_size() {
+        assert_eq!(BasicDecoder::new(&[00], 256).read_size(), Ok(0));
+        assert_eq!(BasicDecoder::new(&[123], 256).read_size(), Ok(123));
+        assert_eq!(
+            BasicDecoder::new(&[0xff, 0xff, 0xff, 0x7f], 256).read_size(),
+            Ok(0x0fffffff)
+        );
+
+        let delta = 0x1fffff;
+        let ranges = [
+            0..delta,                                       /* low */
+            0x0fffffff / 2 - delta..0x0fffffff / 2 + delta, /* mid */
+            0x0fffffff - delta..0x0fffffff,                 /* high */
+        ];
+        for range in ranges {
+            for i in range {
+                let mut vec = Vec::new();
+                let mut enc = BasicEncoder::new(&mut vec, 256);
+                enc.write_size(i).unwrap();
+                let mut dec = BasicDecoder::new(&vec, 256);
+                assert_eq!(dec.read_size(), Ok(i));
+                assert_eq!(dec.remaining_bytes(), 0);
+            }
+        }
     }
 }
