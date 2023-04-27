@@ -133,7 +133,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         first_lock_from_db: bool,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Substate locked: handle = {:?}, first_lock_from_db = {:?}", handle, first_lock_from_db);
+        log!(
+            api,
+            "Substate locked: handle = {:?}, first_lock_from_db = {:?}",
+            handle,
+            first_lock_from_db
+        );
         Ok(())
     }
 
