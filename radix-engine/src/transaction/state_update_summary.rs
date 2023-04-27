@@ -257,7 +257,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .fetch_substate::<JmtMapper, TypeInfoSubstate>(
                 node_id,
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");
 
@@ -275,14 +275,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
                     SysModuleId::Object.into(),
-                    FungibleVaultOffset::LiquidFungible.into(),
+                    &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
                         node_id,
                         SysModuleId::Object.into(),
-                        FungibleVaultOffset::LiquidFungible.into(),
+                        &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -302,7 +302,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
                     node_id,
                     SysModuleId::Object.into(),
-                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
@@ -356,13 +356,13 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key.clone())
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key)
             .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
     }
 
@@ -370,7 +370,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
             .get_mapped_substate::<M, D>(node_id, module_id, key)
@@ -380,7 +380,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        key: SubstateKey,
+        key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)

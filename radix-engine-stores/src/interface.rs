@@ -170,7 +170,7 @@ pub enum DatabaseUpdate {
 
 pub trait DatabaseMapper {
     fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
-    fn map_to_db_key(key: SubstateKey) -> Vec<u8>;
+    fn map_to_db_key(key: &SubstateKey) -> Vec<u8>;
 }
 
 /// Represents the interface between Track and a database vendor.
@@ -191,11 +191,11 @@ pub trait SubstateDatabase {
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-        substate_key: SubstateKey,
+        substate_key: &SubstateKey,
     ) -> Option<D> {
         self.get_substate(
             &M::map_to_db_index(node_id, module_id),
-            &M::map_to_db_key(substate_key),
+            &M::map_to_db_key(&substate_key),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
     }

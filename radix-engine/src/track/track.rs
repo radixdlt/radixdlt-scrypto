@@ -95,6 +95,7 @@ impl Write {
 
 #[derive(Clone, Debug)]
 pub struct TrackedSubstateKey {
+    pub substate_key: SubstateKey,
     pub tracked: TrackedKey,
 }
 
@@ -434,7 +435,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         substate_key: SubstateKey,
         virtualize: F,
     ) -> &mut TrackedKey {
-        let db_key = M::map_to_db_key(substate_key);
+        let db_key = M::map_to_db_key(&substate_key);
 
         let module_substates = &mut self
             .tracked_nodes
@@ -455,6 +456,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
                     .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
                 if let Some(value) = value {
                     let tracked = TrackedSubstateKey {
+                        substate_key,
                         tracked: TrackedKey::ReadOnly(ReadOnly::Existent(
                             RuntimeSubstate::new(value),
                         ))
@@ -464,6 +466,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
                     let value = virtualize();
                     if let Some(value) = value {
                         let tracked = TrackedSubstateKey {
+                            substate_key,
                             tracked: TrackedKey::ReadNonExistAndWrite(
                                 RuntimeSubstate::new(value),
                             )
@@ -471,6 +474,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
                         e.insert(tracked);
                     } else {
                         let tracked = TrackedSubstateKey {
+                            substate_key,
                             tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent)
                         };
                         e.insert(tracked);
@@ -500,9 +504,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             .map(|(module_id, module_substates)| {
                 let module_substates = module_substates
                     .into_iter()
-                    .map(|(key, value)| {
-                        let key = M::map_to_db_key(key);
+                    .map(|(substate_key, value)| {
+                        let key = M::map_to_db_key(&substate_key);
                         let tracked = TrackedSubstateKey {
+                            substate_key,
                             tracked: TrackedKey::New(RuntimeSubstate::new(value))
                         };
                         (key, tracked)
@@ -529,7 +534,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError> {
-        let db_key = M::map_to_db_key(substate_key.clone());
+        let db_key = M::map_to_db_key(&substate_key);
 
         let tracked_module = self
             .tracked_nodes
@@ -544,6 +549,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         match entry {
             Entry::Vacant(e) => {
                 let tracked = TrackedSubstateKey {
+                    substate_key,
                     tracked:TrackedKey::WriteOnly(Write::Update(
                         RuntimeSubstate::new(substate_value),
                     ))
@@ -557,7 +563,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                         return Err(SetSubstateError::SubstateLocked(
                             node_id,
                             module_id,
-                            substate_key.clone(),
+                            substate_key,
                         ));
                     }
                 }
@@ -707,7 +713,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
 
                 let value = IndexedScryptoValue::from_vec(substate).unwrap();
 
+                // FIXME: This only works because only NonFungible Vaults use this.
+                // FIXME: Will need to fix this by maintaining the invariant that the value
+                // FIXME: of the index contains the key. Or alternatively, change the abstraction
+                // FIXME: from being a Map to a Set
+                let substate_key = SubstateKey::Map(value.as_slice().to_vec());
+
                 let tracked = TrackedSubstateKey {
+                    substate_key,
                     tracked: TrackedKey::ReadExistAndWrite(value.clone(), Write::Delete),
                 };
                 new_updates.push((key, tracked));
@@ -853,7 +866,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         substate.lock_state.unlock();
 
         if flags.contains(LockFlags::FORCE_WRITE) {
-            let db_key = M::map_to_db_key(substate_key);
+            let db_key = M::map_to_db_key(&substate_key);
             let cloned_track = tracked.clone();
 
             self.force_write_tracked_nodes
@@ -867,6 +880,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                 .or_insert(TrackedModule::new())
                 .substates
                 .insert(db_key, TrackedSubstateKey {
+                    substate_key,
                     tracked: cloned_track
                 });
         }

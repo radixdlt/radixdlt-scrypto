@@ -193,7 +193,7 @@ where
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             );
 
         if xrd_info.is_none() {
