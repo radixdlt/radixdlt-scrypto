@@ -1,4 +1,4 @@
-use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
+use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
@@ -186,115 +186,107 @@ impl NonFungibleProof {
     }
 }
 
+pub struct FungibleProofBlueprint;
+
+impl FungibleProofBlueprint {
+    pub(crate) fn clone<Y>(
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let proof_info = ProofInfoSubstate::of_self(api)?;
+        let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
+        let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let proof = substate_ref.clone();
+        let clone = proof.clone_proof(api)?;
+
+        let proof_id = api.new_object(
+            FUNGIBLE_PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&clone).unwrap(),
+                scrypto_encode(&NonFungibleProof::default()).unwrap(),
+            ],
+        )?;
+
+        // Drop after object creation to keep the reference alive
+        api.sys_drop_lock(handle)?;
+
+        Ok(Proof(Own(proof_id)))
+    }
+
+
+    pub(crate) fn get_amount<Y>(
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
+        let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
+    }
+
+
+
+}
+
 pub struct ProofBlueprint;
 
 impl ProofBlueprint {
     pub(crate) fn clone<Y>(
-        input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: ProofCloneInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
         let proof_info = ProofInfoSubstate::of_self(api)?;
-        let node_id = if proof_info.resource_type.is_fungible() {
-            let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
-            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
-            let proof = substate_ref.clone();
-            let clone = proof.clone_proof(api)?;
+        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let proof = substate_ref.clone();
+        let clone = proof.clone_proof(api)?;
 
-            let proof_id = api.new_object(
-                FUNGIBLE_PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&clone).unwrap(),
-                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
-                ],
-            )?;
+        let proof_id = api.new_object(
+            PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&FungibleProof::default()).unwrap(),
+                scrypto_encode(&clone).unwrap(),
+            ],
+        )?;
 
-            // Drop after object creation to keep the reference alive
-            api.sys_drop_lock(handle)?;
+        // Drop after object creation to keep the reference alive
+        api.sys_drop_lock(handle)?;
 
-            proof_id
-        } else {
-            let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
-            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
-            let proof = substate_ref.clone();
-            let clone = proof.clone_proof(api)?;
-
-            let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&FungibleProof::default()).unwrap(),
-                    scrypto_encode(&clone).unwrap(),
-                ],
-            )?;
-
-            // Drop after object creation to keep the reference alive
-            api.sys_drop_lock(handle)?;
-
-            proof_id
-        };
-
-        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
+        Ok(Proof(Own(proof_id)))
     }
 
     pub(crate) fn get_amount<Y>(
-        input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Decimal, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        let proof_info = ProofInfoSubstate::of_self(api)?;
-        let amount = if proof_info.resource_type.is_fungible() {
-            let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
-            let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
-            let amount = substate_ref.amount();
-            api.sys_drop_lock(handle)?;
-            amount
-        } else {
-            let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
-            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
-            let amount = substate_ref.amount();
-            api.sys_drop_lock(handle)?;
-            amount
-        };
-        Ok(IndexedScryptoValue::from_typed(&amount))
+        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let amount = substate_ref.amount();
+        api.sys_drop_lock(handle)?;
+        Ok(amount)
     }
 
-    pub(crate) fn get_non_fungible_local_ids<Y>(
-        input: &IndexedScryptoValue,
+    pub(crate) fn get_local_ids<Y>(
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
+        where Y: ClientApi<RuntimeError>,
     {
-        let _input: ProofGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        let proof_info = ProofInfoSubstate::of_self(api)?;
-        if proof_info.resource_type.is_fungible() {
-            Err(RuntimeError::ApplicationError(
-                ApplicationError::ProofError(ProofError::NonFungibleOperationNotSupported),
-            ))
-        } else {
-            let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
-            let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
-            let ids = substate_ref.non_fungible_local_ids().clone();
-            api.sys_drop_lock(handle)?;
-            Ok(IndexedScryptoValue::from_typed(&ids))
-        }
+        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let ids = substate_ref.non_fungible_local_ids().clone();
+        api.sys_drop_lock(handle)?;
+        Ok(ids)
     }
 
     pub(crate) fn get_resource_address<Y>(

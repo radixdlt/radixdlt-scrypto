@@ -128,17 +128,33 @@ impl AuthZoneBlueprint {
         };
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-        api.kernel_create_node(
-            node_id,
-            btreemap!(
+        match composed_proof {
+            ComposedProof::Fungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
+                SysModuleId::Object.into() => composed_proof.into(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                    global: false,
+                    blueprint_parent: None,
+                })).to_substates()
+            ),
+                )?;
+            }
+            ComposedProof::NonFungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
                     global: false,
                     blueprint_parent: None,
-                })).to_substates()
-            ),
-        )?;
+                })).to_substates()))?;
+            }
+        }
+
 
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }

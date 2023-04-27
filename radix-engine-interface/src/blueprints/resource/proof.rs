@@ -32,12 +32,12 @@ pub struct ProofGetAmountInput {}
 
 pub type ProofGetAmountOutput = Decimal;
 
-pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
+pub const NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT: &str = "NonFungibleProof_get_local_ids";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ProofGetNonFungibleLocalIdsInput {}
+pub struct NonFungibleProofGetLocalIdsInput {}
 
-pub type ProofGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
+pub type NonFungibleProofGetLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
 
 pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 

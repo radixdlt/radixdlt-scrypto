@@ -94,6 +94,13 @@ const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
 const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
     "get_non_fungible_local_ids_NonFungibleBucket";
 
+
+const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
+const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
+
+const NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_NonFungibleProof";
+const NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleProof";
+
 pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
@@ -983,7 +990,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export_name: PROOF_CLONE_IDENT.to_string(),
+                    export_name: FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -992,7 +999,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
+                    export_name: FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1007,14 +1014,14 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator
-                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
+                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
-                    export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
+                    export_name: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 },
             );
 
@@ -1053,7 +1060,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRefMut),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
-                    export_name: PROOF_CLONE_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1062,7 +1069,7 @@ impl ResourceManagerNativePackage {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
-                    export_name: PROOF_GET_AMOUNT_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1077,14 +1084,14 @@ impl ResourceManagerNativePackage {
             );
 
             functions.insert(
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
                     input: aggregator
-                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsInput>(),
+                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
                     output: aggregator
-                        .add_child_type_and_descendents::<ProofGetNonFungibleLocalIdsOutput>(),
-                    export_name: PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
+                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
+                    export_name: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 },
             );
 
@@ -1902,25 +1909,50 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let _input: ProofCloneInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleProofBlueprint::clone(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleProofBlueprint::get_amount(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let _input: ProofCloneInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ProofBlueprint::clone(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ProofBlueprint::get_amount(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let _input: NonFungibleProofGetLocalIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ProofBlueprint::get_local_ids(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             PROOF_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 ProofBlueprint::drop(input, api)
-            }
-            PROOF_CLONE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                ProofBlueprint::clone(input, api)
-            }
-            PROOF_GET_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                ProofBlueprint::get_amount(input, api)
-            }
-            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                ProofBlueprint::get_non_fungible_local_ids(input, api)
             }
             PROOF_GET_RESOURCE_ADDRESS_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
