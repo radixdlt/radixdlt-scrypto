@@ -321,7 +321,7 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect::<BTreeMap<String, &u32>>();
                 for (k, v) in break_down {
-                    println!("        + {} /* {} */ ", v, k);
+                    println!("        + {} /* {} */", v, k);
                 }
 
                 println!("{:-^80}", "Cost Totals");
