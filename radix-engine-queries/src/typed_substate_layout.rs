@@ -1,17 +1,17 @@
-use radix_engine::blueprints::access_controller::*;
-use radix_engine::blueprints::account::*;
-use radix_engine::blueprints::clock::*;
-use radix_engine::blueprints::epoch_manager::*;
-use radix_engine::blueprints::package::*;
-use radix_engine::blueprints::resource::*;
-use radix_engine::system::node_modules::access_rules::*;
-use radix_engine::system::node_modules::metadata::*;
-use radix_engine::system::node_modules::royalty::{
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-};
-use radix_engine::system::node_modules::type_info::*;
 use radix_engine::types::*;
 use sbor::rust::prelude::*;
+
+// Import and re-export these types so they are available easily with a single import
+pub use radix_engine::blueprints::access_controller::*;
+pub use radix_engine::blueprints::account::*;
+pub use radix_engine::blueprints::clock::*;
+pub use radix_engine::blueprints::epoch_manager::*;
+pub use radix_engine::blueprints::package::*;
+pub use radix_engine::blueprints::resource::*;
+pub use radix_engine::system::node_modules::access_rules::*;
+pub use radix_engine::system::node_modules::metadata::*;
+pub use radix_engine::system::node_modules::royalty::*;
+pub use radix_engine::system::node_modules::type_info::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
