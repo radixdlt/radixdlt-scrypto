@@ -80,7 +80,7 @@ impl NodeMoveModule {
                 }
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
-                    && blueprint.blueprint_name.eq(PROOF_BLUEPRINT) =>
+                    && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
                 if matches!(callee, Actor::Function { .. })
                     && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)

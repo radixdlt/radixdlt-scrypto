@@ -86,7 +86,7 @@ impl AuthZoneBlueprint {
 
         let blueprint_name = match &composed_proof {
             ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
-            ComposedProof::NonFungible(..) => PROOF_BLUEPRINT,
+            ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
         };
 
         api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
@@ -137,7 +137,7 @@ impl AuthZoneBlueprint {
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    blueprint_parent: None,
+                    blueprint_parent: Some(input.resource_address.into()),
                 })).to_substates()
             ),
                 )?;
@@ -148,9 +148,9 @@ impl AuthZoneBlueprint {
                     btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    blueprint_parent: None,
+                    blueprint_parent: Some(input.resource_address.into()),
                 })).to_substates()))?;
             }
         }
@@ -185,7 +185,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     blueprint_parent: None,
                 })).to_substates()

@@ -39,7 +39,7 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
-    ChildBlueprintDoesNotExist,
+    ChildBlueprintDoesNotExist(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
@@ -294,7 +294,7 @@ impl AuthModule {
                     .child_blueprint_rules
                     .get(&blueprint_name)
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::ChildBlueprintDoesNotExist,
+                        AuthError::ChildBlueprintDoesNotExist(blueprint_name),
                     )))?;
                 child_rules.get_access_rule(is_direct_access, &key)
             }

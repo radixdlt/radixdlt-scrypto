@@ -14,7 +14,7 @@ use sbor::*;
 
 pub const FUNGIBLE_PROOF_BLUEPRINT: &str = "FungibleProof";
 
-pub const PROOF_BLUEPRINT: &str = "Proof";
+pub const NON_FUNGIBLE_PROOF_BLUEPRINT: &str = "NonFungibleProof";
 
 pub const PROOF_DROP_IDENT: &str = "Proof_drop";
 

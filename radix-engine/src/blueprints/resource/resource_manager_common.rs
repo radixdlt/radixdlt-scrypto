@@ -341,18 +341,20 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
-    let (vault_blueprint_name, bucket_blueprint_name) =
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
-            (FUNGIBLE_VAULT_BLUEPRINT, FUNGIBLE_BUCKET_BLUEPRINT)
+            (FUNGIBLE_VAULT_BLUEPRINT, FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT)
         } else {
-            (NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT)
+            (NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT)
         };
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
         btreemap!(
             vault_blueprint_name.to_string() => vault_access_rules,
-            bucket_blueprint_name.to_string()=> bucket_access_rules
+            bucket_blueprint_name.to_string() => bucket_access_rules,
+            proof_blueprint_name.to_string() => proof_access_rules
         ),
         api,
     )?
@@ -387,12 +389,14 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
         btreemap!(
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_access_rules,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
         ),
         api,
     )?
@@ -432,12 +436,14 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
         btreemap!(
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
         ),
         api,
     )?

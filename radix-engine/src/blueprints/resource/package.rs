@@ -1017,21 +1017,9 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            functions.insert(
-                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
-                    input: aggregator
-                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsOutput>(),
-                    export_name: NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
-                },
-            );
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1101,7 +1089,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1316,7 +1304,7 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
                 NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
                 FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_schema,
-                PROOF_BLUEPRINT.to_string() => proof_schema,
+                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
             ),

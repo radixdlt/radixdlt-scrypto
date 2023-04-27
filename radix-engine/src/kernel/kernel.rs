@@ -462,7 +462,7 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == PROOF_BLUEPRINT || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) => {
+                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) => {
                     blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 _ => {

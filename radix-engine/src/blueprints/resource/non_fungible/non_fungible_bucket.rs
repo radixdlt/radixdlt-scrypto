@@ -394,7 +394,7 @@ impl NonFungibleBucketBlueprint {
         };
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&FungibleProof::default()).unwrap(),

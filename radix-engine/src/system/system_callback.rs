@@ -15,7 +15,7 @@ use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
-    Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
+    Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::BlueprintSchema;
 
@@ -458,10 +458,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             .unwrap(),
                         )?;
                     }
-                    (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                    (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
                             RESOURCE_MANAGER_PACKAGE,
-                            PROOF_BLUEPRINT,
+                            NON_FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {
                                 proof: Proof(Own(node_id)),

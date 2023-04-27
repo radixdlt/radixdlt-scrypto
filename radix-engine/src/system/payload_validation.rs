@@ -1,6 +1,6 @@
 use crate::kernel::kernel_api::KernelApi;
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::{FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT, PROOF_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT};
 use radix_engine_interface::constants::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
@@ -112,7 +112,7 @@ where
                                         },
                                     ..
                                 }) if package_address == &RESOURCE_MANAGER_PACKAGE
-                                    && (blueprint_name == PROOF_BLUEPRINT
+                                    && (blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
                                         || blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                                 {
                                     true
