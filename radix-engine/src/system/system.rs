@@ -39,12 +39,13 @@ use sbor::rust::vec::Vec;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 
-pub struct SystemDownstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
+/// Provided to upper layer for invoking lower layer service
+pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
-impl<'a, Y, V> NodeTypeInfoContext for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> NodeTypeInfoContext for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -113,7 +114,7 @@ where
     }
 }
 
-impl<'a, Y, V> SystemDownstream<'a, Y, V>
+impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -126,7 +127,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -246,7 +247,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -667,7 +668,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -770,7 +771,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -888,7 +889,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -992,7 +993,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1029,7 +1030,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1074,7 +1075,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1183,7 +1184,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1224,7 +1225,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1242,7 +1243,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1260,7 +1261,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1385,7 +1386,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1402,7 +1403,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1432,14 +1433,14 @@ where
     }
 }
 
-impl<'a, Y, V> ClientApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
 }
 
-impl<'a, Y, V> KernelNodeApi for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelNodeApi for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1465,7 +1466,7 @@ where
     }
 }
 
-impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelSubstateApi for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1555,7 +1556,7 @@ where
     }
 }
 
-impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
