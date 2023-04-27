@@ -349,7 +349,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
 
-    locks: IndexMap<u32, (NodeId, ModuleId, Vec<u8>, LockFlags)>,
+    locks: IndexMap<u32, (NodeId, ModuleId, Vec<u8>, SubstateKey, LockFlags)>,
     next_lock_id: u32,
     phantom_data: PhantomData<M>,
 }
@@ -371,11 +371,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         node_id: &NodeId,
         module_id: ModuleId,
         db_key: &Vec<u8>,
+        substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> u32 {
         let new_lock = self.next_lock_id;
         self.locks
-            .insert(new_lock, (*node_id, module_id, db_key.clone(), flags));
+            .insert(new_lock, (*node_id, module_id, db_key.clone(), substate_key.clone(), flags));
         self.next_lock_id += 1;
         new_lock
     }
@@ -837,11 +838,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        Ok(self.new_lock_handle(node_id, module_id, &db_key, flags))
+        Ok(self.new_lock_handle(node_id, module_id, &db_key, substate_key, flags))
     }
 
     fn release_lock(&mut self, handle: u32) {
-        let (node_id, module_id, db_key, flags) =
+        let (node_id, module_id, db_key, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
         let tracked = self.get_tracked_substate(&node_id, module_id, &db_key);
@@ -872,7 +873,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     }
 
     fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue {
-        let (node_id, module_id, db_key, _flags) =
+        let (node_id, module_id, db_key, substate_key, _flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
         let node_id = *node_id;
@@ -886,7 +887,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     }
 
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
-        let (node_id, module_id, db_key, flags) =
+        let (node_id, module_id, db_key, substate_key, flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
         if !flags.contains(LockFlags::MUTABLE) {
