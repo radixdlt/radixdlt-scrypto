@@ -1,4 +1,4 @@
-use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::errors::RuntimeError;
 use crate::kernel::heap::{DroppedProof, DroppedProofResource};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
@@ -239,11 +239,30 @@ impl FungibleProofBlueprint {
         let proof_info = ProofInfoSubstate::of_self(api)?;
         Ok(proof_info.resource_address)
     }
+
+    pub(crate) fn drop<Y>(
+        proof: Proof,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        // FIXME: check type before schema check is ready! applicable to all functions!
+
+        let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
+        let dropped_proof: DroppedProof = heap_node.into();
+        match dropped_proof.proof {
+            DroppedProofResource::Fungible(p) => p.drop_proof(api)?,
+            DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
+        };
+
+        Ok(())
+    }
 }
 
-pub struct ProofBlueprint;
+pub struct NonFungibleProofBlueprint;
 
-impl ProofBlueprint {
+impl NonFungibleProofBlueprint {
     pub(crate) fn clone<Y>(
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
@@ -307,17 +326,12 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn drop<Y>(
-        input: &IndexedScryptoValue,
+        proof: Proof,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: ProofDropInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-        let proof = input.proof;
-
         // FIXME: check type before schema check is ready! applicable to all functions!
 
         let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
@@ -327,6 +341,6 @@ impl ProofBlueprint {
             DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
         };
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 }
