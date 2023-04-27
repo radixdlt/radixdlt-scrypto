@@ -67,19 +67,19 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        1173 /* AllocateNodeId */
-        + 1853 /* CreateNode */
-        + 6401 /* DropLock */
-        + 1785 /* DropNode */
-        + 1121999 /* Invoke */
-        + 18054 /* LockSubstate */
-        + 262528 /* ReadSubstate */
-        + 75000 /* RunNative */
-        + 7500 /* RunSystem */
-        + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 182205, /* WriteSubstate */
+        1173 /* AllocateNodeId */ 
+        + 1853 /* CreateNode */ 
+        + 6327 /* DropLock */ 
+        + 1785 /* DropNode */ 
+        + 1121999 /* Invoke */ 
+        + 17942 /* LockSubstate */ 
+        + 260976 /* ReadSubstate */ 
+        + 75000 /* RunNative */ 
+        + 7500 /* RunSystem */ 
+        + 50000 /* TxBaseCost */ 
+        + 1320 /* TxPayloadCost */ 
+        + 100000 /* TxSignatureVerification */ 
+        + 182205 /* WriteSubstate */,
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -98,7 +98,7 @@ fn test_radiswap() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
             "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_pool", 5)
@@ -202,20 +202,20 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        2622 /* AllocateNodeId */
-        + 4153 /* CreateNode */
-        + 15244 /* DropLock */
-        + 3885 /* DropNode */
-        + 3447266 /* Invoke */
-        + 41824 /* LockSubstate */
-        + 778566 /* ReadSubstate */
-        + 160000 /* RunNative */
-        + 15000 /* RunSystem */
-        + 1503035 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1715 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 556451, /* WriteSubstate */
+        2622 /* AllocateNodeId */ 
+        + 4153 /* CreateNode */ 
+        + 15096 /* DropLock */ 
+        + 3885 /* DropNode */ 
+        + 3447266 /* Invoke */ 
+        + 41551 /* LockSubstate */ 
+        + 775092 /* ReadSubstate */ 
+        + 160000 /* RunNative */ 
+        + 15000 /* RunSystem */ 
+        + 1527200 /* RunWasm */ 
+        + 50000 /* TxBaseCost */ 
+        + 1715 /* TxPayloadCost */ 
+        + 100000 /* TxSignatureVerification */ 
+        + 556451 /* WriteSubstate */,
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -234,7 +234,7 @@ fn test_flash_loan() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
             "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_default", 5)
@@ -313,20 +313,20 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        4209 /* AllocateNodeId */
-        + 6649 /* CreateNode */
-        + 25863 /* DropLock */
-        + 6405 /* DropNode */
-        + 4333776 /* Invoke */
-        + 67495 /* LockSubstate */
-        + 1164836 /* ReadSubstate */
-        + 250000 /* RunNative */
-        + 40000 /* RunSystem */
-        + 1188850 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 2495 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 2060271, /* WriteSubstate */
+        4209 /* AllocateNodeId */ 
+        + 6649 /* CreateNode */ 
+        + 25382 /* DropLock */ 
+        + 6405 /* DropNode */ 
+        + 4333776 /* Invoke */ 
+        + 66593 /* LockSubstate */ 
+        + 1152848 /* ReadSubstate */ 
+        + 250000 /* RunNative */ 
+        + 40000 /* RunSystem */ 
+        + 1195945 /* RunWasm */ 
+        + 50000 /* TxBaseCost */ 
+        + 2495 /* TxPayloadCost */ 
+        + 100000 /* TxSignatureVerification */ 
+        + 2060271 /* WriteSubstate */,
         commit_result.fee_summary.execution_cost_sum
     );
 }

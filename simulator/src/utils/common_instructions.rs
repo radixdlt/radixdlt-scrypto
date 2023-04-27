@@ -271,7 +271,7 @@ fn build_call_argument<'a>(
             if matches!(
                 type_validation,
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalResource
+                    ReferenceValidation::IsGlobalPackage
                 ))
             ) =>
         {
