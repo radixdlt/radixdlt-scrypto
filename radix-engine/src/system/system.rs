@@ -1,3 +1,5 @@
+use super::system_modules::auth::{convert_contextless, Authentication};
+use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
     InvalidModuleType, KernelError, RuntimeError,
@@ -36,30 +38,29 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::system_modules::auth::{convert_contextless, Authentication};
-use super::system_modules::costing::CostingReason;
-
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
-impl<'a, Y, V> NodeTypeInfoContext for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfo> {
+    pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         // This is to solve the bootstrapping problem.
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
-            return Some(TypeInfo::Object {
-                package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            return Some(TypeInfoSubstate::Object(ObjectInfo {
+                blueprint: Blueprint {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 global: true,
                 type_parent: None,
-            });
+            }));
         } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
             || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
             || node_id.eq(SYSTEM_TOKEN.as_node_id())
@@ -70,12 +71,14 @@ where
             || node_id.eq(IDENTITY_OWNER_TOKEN.as_node_id())
             || node_id.eq(ACCOUNT_OWNER_TOKEN.as_node_id())
         {
-            return Some(TypeInfo::Object {
-                package_address: RESOURCE_MANAGER_PACKAGE,
-                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            return Some(TypeInfoSubstate::Object(ObjectInfo {
+                blueprint: Blueprint {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 global: true,
                 type_parent: None,
-            });
+            }));
         }
 
         self.api
@@ -96,21 +99,6 @@ where
                     })
             })
             .ok()
-            .map(|substate| match substate {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint,
-                    global,
-                    type_parent,
-                }) => TypeInfo::Object {
-                    package_address: blueprint.package_address,
-                    blueprint_name: blueprint.blueprint_name,
-                    global,
-                    type_parent,
-                },
-                TypeInfoSubstate::KeyValueStore(_) => TypeInfo::KeyValueStore,
-                TypeInfoSubstate::Index => TypeInfo::Index,
-                TypeInfoSubstate::SortedIndex => TypeInfo::SortedIndex,
-            })
     }
 }
 

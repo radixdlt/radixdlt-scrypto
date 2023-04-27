@@ -41,11 +41,6 @@ pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::Global
 
 pub const GENESIS_HELPER_BLUEPRINT: &str = "GenesisHelper";
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
-pub(crate) const FUNGIBLE_VAULT_BLUEPRINT: &str = "FungibleVault";
-pub(crate) const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
-pub(crate) const FUNGIBLE_BUCKET_BLUEPRINT: &str = "FungibleBucket";
-pub(crate) const NON_FUNGIBLE_BUCKET_BLUEPRINT: &str = "NonFungibleBucket";
-pub(crate) const PROOF_BLUEPRINT: &str = "Proof";
 
 // TODO: remove
 // There should be no need of this function, but many of our configurations are depending on it.
