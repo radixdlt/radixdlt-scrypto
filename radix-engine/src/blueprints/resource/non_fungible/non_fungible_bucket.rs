@@ -249,7 +249,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Check amount
         let info = BucketInfoSubstate::of_self(api)?;
@@ -281,7 +281,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Take
         let taken = NonFungibleBucket::take_non_fungibles(&input.ids, api)?;
@@ -305,7 +305,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket_of_address(
@@ -365,7 +365,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
@@ -383,7 +383,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let info = BucketInfoSubstate::of_self(api)?;
         let amount =
             NonFungibleBucket::locked_amount(api)? + NonFungibleBucket::liquid_amount(api)?;

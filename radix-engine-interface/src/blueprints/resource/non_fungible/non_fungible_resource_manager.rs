@@ -151,7 +151,7 @@ pub struct NonFungibleResourceManagerCreateBucketInput {
 
 pub type NonFungibleResourceManagerCreateBucketOutput = Bucket;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
     pub schema: ScryptoSchema,
     pub non_fungible: LocalTypeIndex,

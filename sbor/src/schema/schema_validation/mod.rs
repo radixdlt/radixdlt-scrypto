@@ -32,6 +32,7 @@ pub enum SchemaValidationError {
     TypeValidationMismatch,
     TypeValidationNumericValidationInvalid,
     TypeValidationLengthValidationInvalid,
+    TypeValidationAttachedToCustomType,
 }
 
 pub fn validate_schema<E: CustomTypeExtension>(
@@ -50,23 +51,19 @@ pub fn validate_schema<E: CustomTypeExtension>(
     if type_validations.len() != types_len {
         return Err(SchemaValidationError::ValidationsLengthMismatch);
     }
-    let context = TypeValidationContext {
+    let context = SchemaContext {
         local_types_len: types_len,
     };
 
     for i in 0..types_len {
         validate_type_kind::<E>(&context, &type_kinds[i])?;
         validate_type_metadata_with_type_kind::<E>(&context, &type_kinds[i], &type_metadata[i])?;
-        validate_type_validation_with_type_kind::<E>(
-            &context,
-            &type_kinds[i],
-            &type_validations[i],
-        )?;
+        validate_custom_type_validation::<E>(&context, &type_kinds[i], &type_validations[i])?;
     }
     Ok(())
 }
 
-pub struct TypeValidationContext {
+pub struct SchemaContext {
     pub local_types_len: usize,
 }
 

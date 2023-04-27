@@ -11,14 +11,14 @@ use crate::*;
 pub struct Schema<E: CustomTypeExtension> {
     pub type_kinds: Vec<SchemaTypeKind<E>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
-    pub type_validations: Vec<SchemaTypeValidation<E>>,
+    pub type_validations: Vec<TypeValidation<E::CustomTypeValidation>>,
 }
 
-pub type SchemaTypeKind<E> =
-    TypeKind<<E as CustomTypeExtension>::CustomValueKind, SchemaCustomTypeKind<E>, LocalTypeIndex>;
-pub type SchemaCustomTypeKind<E> = <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>;
-pub type SchemaTypeValidation<E> = TypeValidation<<E as CustomTypeExtension>::CustomTypeValidation>;
-pub type SchemaCustomTypeValidation<E> = <E as CustomTypeExtension>::CustomTypeValidation;
+pub type SchemaTypeKind<E> = TypeKind<
+    <E as CustomTypeExtension>::CustomValueKind,
+    <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>,
+    LocalTypeIndex,
+>;
 
 impl<E: CustomTypeExtension> Schema<E> {
     pub fn empty() -> Self {

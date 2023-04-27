@@ -46,7 +46,7 @@ impl FungibleVaultBlueprint {
     {
         let divisibility = Self::get_divisibility(api)?;
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Check amount
         if !Self::check_amount(amount, divisibility) {
@@ -68,7 +68,7 @@ impl FungibleVaultBlueprint {
     {
         // Drop other bucket
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let other_bucket =
             drop_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
@@ -98,7 +98,7 @@ impl FungibleVaultBlueprint {
     {
         // Check resource address and amount
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         if resource_address != RADIX_TOKEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
@@ -156,7 +156,7 @@ impl FungibleVaultBlueprint {
         }
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let taken = FungibleVault::take(amount, api)?;
 
         let bucket = ResourceManager(resource_address).new_fungible_bucket(taken.amount(), api)?;
@@ -174,7 +174,7 @@ impl FungibleVaultBlueprint {
 
         let divisibility = Self::get_divisibility(api)?;
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let proof_info = ProofInfoSubstate {
             resource_address,
             resource_type: ResourceType::Fungible { divisibility },
@@ -210,7 +210,7 @@ impl FungibleVaultBlueprint {
         }
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let proof_info = ProofInfoSubstate {
             resource_address,
             resource_type: ResourceType::Fungible { divisibility },

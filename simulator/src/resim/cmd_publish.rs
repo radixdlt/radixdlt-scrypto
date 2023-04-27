@@ -55,7 +55,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let schema = scrypto_decode(
+        let schema = manifest_decode(
             &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
         .map_err(Error::SborDecodeError)?;

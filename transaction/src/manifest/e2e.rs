@@ -19,10 +19,7 @@ mod tests {
                 include_str!("../../examples/package/publish.rtm").to_string(),
             ),
             &NetworkDefinition::simulator(),
-            vec![
-                include_bytes!("../../examples/package/code.blob").to_vec(),
-                include_bytes!("../../examples/package/schema.blob").to_vec(),
-            ],
+            vec![include_bytes!("../../examples/package/code.wasm").to_vec()],
             r##"
 CALL_METHOD
     Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt")
@@ -30,7 +27,7 @@ CALL_METHOD
     Decimal("10");
 PUBLISH_PACKAGE_ADVANCED
     Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
-    Blob("554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791")
+    Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
     Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
@@ -198,10 +195,7 @@ CALL_METHOD
             "values",
             include_str!("../../examples/values/values.rtm"),
             &NetworkDefinition::simulator(),
-            vec![
-                include_bytes!("../../examples/package/code.blob").to_vec(),
-                include_bytes!("../../examples/package/schema.blob").to_vec(),
-            ],
+            vec![include_bytes!("../../examples/package/code.wasm").to_vec()],
             r##"
 TAKE_FROM_WORKTOP
     Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")
@@ -713,10 +707,6 @@ CREATE_ACCESS_CONTROLLER
             (
                 "${code_blob_hash}",
                 "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
-            ),
-            (
-                "${schema_blob_hash}",
-                "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791",
             ),
             ("${initial_supply}", "12"),
             ("${mint_amount}", "12"),

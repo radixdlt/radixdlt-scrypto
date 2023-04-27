@@ -139,19 +139,18 @@ pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeKind {}
 
-impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
-    type CustomValueKind = NoCustomValueKind;
-
-    type CustomTypeExtension = NoCustomTypeExtension;
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeValidation {}
 
 impl CustomTypeValidation for NoCustomTypeValidation {}
 
+impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
+    type CustomValueKind = NoCustomValueKind;
+    type CustomTypeValidation = NoCustomTypeValidation;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum NoCustomTypeExtension {}
+pub struct NoCustomTypeExtension {}
 
 create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
 
@@ -166,8 +165,8 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
     type CustomValueKind = NoCustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
-    type CustomTypeValidation = NoCustomTypeValidation;
     type CustomTraversal = NoCustomTraversal;
+    type CustomTypeValidation = NoCustomTypeValidation;
 
     fn linearize_type_kind(
         _: Self::CustomTypeKind<GlobalTypeId>,
@@ -187,25 +186,25 @@ impl CustomTypeExtension for NoCustomTypeExtension {
         }
     }
 
-    fn validate_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
+    fn validate_custom_type_validation(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
+        _: &Self::CustomTypeValidation,
+    ) -> Result<(), SchemaValidationError> {
+        unreachable!("No custom type validation")
+    }
+
+    fn validate_custom_type_kind(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
-    fn validate_type_metadata_with_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
+    fn validate_type_metadata_with_custom_type_kind(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
         _: &TypeMetadata,
-    ) -> Result<(), SchemaValidationError> {
-        unreachable!("No custom type kinds exist")
-    }
-
-    fn validate_type_validation_with_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
-        _: &SchemaCustomTypeValidation<Self>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
@@ -242,6 +241,16 @@ impl FormattableCustomTypeExtension for NoCustomTypeExtension {
         _: &Self::CustomDisplayContext<'a>,
         _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> Result<(), fmt::Error> {
+        unreachable!("No custom values exist")
+    }
+}
+
+impl ValidatableCustomTypeExtension<()> for NoCustomTypeExtension {
+    fn apply_custom_type_validation<'de>(
+        _: &Self::CustomTypeValidation,
+        _: &TerminalValueRef<'de, Self::CustomTraversal>,
+        _: &mut (),
+    ) -> Result<(), ValidationError> {
         unreachable!("No custom values exist")
     }
 }

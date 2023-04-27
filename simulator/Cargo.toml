@@ -42,5 +42,10 @@ name = "rtmc"
 path = "src/bin/rtmc.rs"
 bench = false
 
+[[bin]]
+name = "rtmd"
+path = "src/bin/rtmd.rs"
+bench = false
+
 [lib]
 bench = false

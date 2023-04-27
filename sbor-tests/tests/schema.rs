@@ -197,7 +197,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
         LocalTypeIndex::SchemaLocalIndex(0)
     )); // Repeats the first one
 
-    let schema = generate_full_schema(aggregator);
+    let schema = generate_full_schema::<NoCustomTypeExtension>(aggregator);
 
     // Check that the AdvancedSample references UnitStruct at the correct index
     let kind = schema

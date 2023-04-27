@@ -165,7 +165,7 @@ mod genesis_helper {
                 &resource.address_bytes_without_entity_id,
             )
             .0;
-            let resource_address = ResourceAddress::new_unchecked(address_bytes.clone());
+            let resource_address = ResourceAddress::new_or_panic(address_bytes.clone());
             let mut access_rules = BTreeMap::new();
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));

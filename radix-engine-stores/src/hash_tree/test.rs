@@ -440,7 +440,7 @@ fn change(
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
-    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]);
+    let fake_pkg_address = unsafe { PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]) };
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateHashChange::new(
         DbId::new(

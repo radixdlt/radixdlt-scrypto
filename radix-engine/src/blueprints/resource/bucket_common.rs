@@ -42,7 +42,7 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     // Note that we assume the input is indeed a bucket, checked by schema
-    let resource_address = ResourceAddress::new_unchecked(
+    let resource_address = ResourceAddress::new_or_panic(
         TypeInfoBlueprint::get_type(bucket_node_id, api)?
             .parent()
             .expect("Missing parent for fungible bucket")
@@ -75,7 +75,7 @@ where
     Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
 {
     // Note that we assume the input is indeed a bucket, checked by schema
-    let resource_address = ResourceAddress::new_unchecked(
+    let resource_address = ResourceAddress::new_or_panic(
         TypeInfoBlueprint::get_type(bucket_node_id, api)?
             .parent()
             .expect("Missing parent for fungible bucket")

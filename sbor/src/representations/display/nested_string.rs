@@ -1,20 +1,28 @@
 use super::*;
+use crate::representations::*;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 use TypedTraversalEvent::*;
+
 // TODO - This file could do with a minor refactor to commonize logic to print fields
 
 #[derive(Debug, Clone, Copy)]
-pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomTypeExtension> {
+pub struct NestedStringDisplayContext<'s, 'a, E: FormattableCustomTypeExtension> {
     pub schema: &'s Schema<E>,
     pub custom_context: E::CustomDisplayContext<'a>,
     pub print_mode: PrintMode,
 }
 
-pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
+impl From<fmt::Error> for FormattingError {
+    fn from(e: fmt::Error) -> Self {
+        FormattingError::Fmt(e)
+    }
+}
+
+pub fn format_payload_as_nested_string<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     payload: &'_ [u8],
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
@@ -30,7 +38,7 @@ pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeE
     Ok(())
 }
 
-pub(crate) fn format_partial_payload_as_rustlike_value<
+pub(crate) fn format_partial_payload_as_nested_string<
     F: fmt::Write,
     E: FormattableCustomTypeExtension,
 >(
@@ -39,7 +47,7 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
     expected_start: ExpectedStart<E::CustomValueKind>,
     check_exact_end: bool,
     current_depth: usize,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
 ) -> Result<(), FormattingError> {
     let mut traverser = traverse_partial_payload_with_types(
@@ -80,7 +88,7 @@ fn consume_container_end<E: FormattableCustomTypeExtension>(
 fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
 ) -> Result<(), FormattingError> {
     let typed_event = traverser.next_event();
     match typed_event.event {
@@ -114,7 +122,7 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
 fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     tuple_header: TupleHeader,
     parent_depth: usize,
@@ -123,53 +131,31 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
         .schema
         .resolve_matching_tuple_metadata(type_index, tuple_header.length);
 
-    let field_count = tuple_header.length;
+    if let Some(type_name) = tuple_data.name {
+        write!(f, "Tuple:{}(", type_name)?;
+    } else {
+        write!(f, "Tuple(")?;
+    }
 
-    let closing_bracket = match (tuple_data.name, tuple_data.field_names, field_count) {
-        (None, None, 0) => {
-            write!(f, "Unit")?;
-            consume_container_end(traverser)?;
-            return Ok(());
-        }
-        (None, None, _) => {
-            write!(f, "Tuple(")?;
-            ')'
-        }
-        (None, Some(_), _) => {
-            write!(f, "Struct {{")?;
-            '}'
-        }
-        (Some(type_name), None, 0) => {
-            write!(f, "{}", type_name)?;
-            consume_container_end(traverser)?;
-            return Ok(());
-        }
-        (Some(type_name), None, _) => {
-            write!(f, "{}(", type_name)?;
-            ')'
-        }
-        (Some(type_name), Some(_), _) => {
-            write!(f, "{} {{", type_name)?;
-            '}'
-        }
-    };
+    let child_count = tuple_header.length;
 
-    match (field_count, context.print_mode) {
+    match (child_count, context.print_mode) {
+        (0, _) => {
+            write!(f, ")")?;
+        }
         (_, PrintMode::SingleLine) => {
             match tuple_data.field_names {
                 Some(field_names) => {
-                    write!(f, " ")?;
-                    for i in 0..field_count {
+                    for i in 0..tuple_header.length {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{}: ", field_names.get(i).unwrap())?;
+                        write!(f, "{} = ", field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                     }
-                    write!(f, " ")?;
                 }
                 _ => {
-                    for i in 0..field_count {
+                    for i in 0..tuple_header.length {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
@@ -177,7 +163,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
                     }
                 }
             }
-            f.write_char(closing_bracket)?;
+            write!(f, ")")?;
         }
         (
             _,
@@ -193,14 +179,14 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
             write!(f, "\n")?;
             match tuple_data.field_names {
                 Some(field_names) => {
-                    for i in 0..field_count {
-                        write!(f, "{}{}: ", child_indent, field_names.get(i).unwrap())?;
+                    for i in 0..tuple_header.length {
+                        write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                         write!(f, ",\n")?;
                     }
                 }
                 _ => {
-                    for _ in 0..field_count {
+                    for _ in 0..tuple_header.length {
                         write!(f, "{}", child_indent)?;
                         format_value_tree(f, traverser, context)?;
                         write!(f, ",\n")?;
@@ -208,7 +194,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
                 }
             }
 
-            write!(f, "{}{}", parent_indent, closing_bracket)?;
+            write!(f, "{})", parent_indent)?;
         }
     }
 
@@ -219,7 +205,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
 fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     variant_header: EnumVariantHeader,
     parent_depth: usize,
@@ -230,63 +216,36 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
         variant_header.length,
     );
 
-    let enum_name = enum_data.enum_name.unwrap_or("Enum");
+    if let Some(type_name) = enum_data.enum_name {
+        write!(f, "Enum:{}(", type_name)?;
+    } else {
+        write!(f, "Enum(")?;
+    }
 
     let field_length = variant_header.length;
 
-    let closing_bracket = match (enum_data.variant_name, enum_data.field_names, field_length) {
-        (None, None, 0) => {
-            write!(f, "{}::[{}]", enum_name, variant_header.variant)?;
-            consume_container_end(traverser)?;
-            return Ok(());
-        }
-        (None, None, _) => {
-            write!(f, "{}::[{}](", enum_name, variant_header.variant)?;
-            ')'
-        }
-        (None, Some(_), _) => {
-            write!(f, "{}::[{}] {{", enum_name, variant_header.variant)?;
-            '}'
-        }
-        (Some(variant_name), None, 0) => {
-            write!(f, "{}::{}", enum_name, variant_name)?;
-            consume_container_end(traverser)?;
-            return Ok(());
-        }
-        (Some(variant_name), None, _) => {
-            write!(f, "{}::{}(", enum_name, variant_name)?;
-            ')'
-        }
-        (Some(variant_name), Some(_), _) => {
-            write!(f, "{}::{} {{", enum_name, variant_name)?;
-            '}'
-        }
-    };
-
     match (field_length, context.print_mode) {
-        (_, PrintMode::SingleLine) => {
+        (0, _) | (_, PrintMode::SingleLine) => {
+            if let Some(variant_name) = enum_data.variant_name {
+                write!(f, "{}u8:{}", variant_header.variant, variant_name)?;
+            } else {
+                write!(f, "{}u8", variant_header.variant)?;
+            }
             match enum_data.field_names {
                 Some(field_names) => {
-                    write!(f, " ")?;
                     for i in 0..field_length {
-                        if i > 0 {
-                            write!(f, ", ")?;
-                        }
-                        write!(f, "{}: ", field_names.get(i).unwrap())?;
+                        write!(f, ", {} = ", field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                     }
-                    write!(f, " ")?;
                 }
                 _ => {
-                    for i in 0..field_length {
-                        if i > 0 {
-                            write!(f, ", ")?;
-                        }
+                    for _ in 0..field_length {
+                        write!(f, ", ")?;
                         format_value_tree(f, traverser, context)?;
                     }
                 }
             }
-            f.write_char(closing_bracket)?;
+            write!(f, ")")?;
         }
         (
             _,
@@ -303,7 +262,7 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
             match enum_data.field_names {
                 Some(field_names) => {
                     for i in 0..field_length {
-                        write!(f, "{}{}: ", child_indent, field_names.get(i).unwrap())?;
+                        write!(f, "{}{} = ", child_indent, field_names.get(i).unwrap())?;
                         format_value_tree(f, traverser, context)?;
                         write!(f, ",\n")?;
                     }
@@ -317,7 +276,7 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
                 }
             }
 
-            write!(f, "{}{}", parent_indent, closing_bracket)?;
+            write!(f, "{})", parent_indent)?;
         }
     }
 
@@ -328,15 +287,33 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
 fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     array_header: ArrayHeader<E::CustomValueKind>,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
     let array_data = context.schema.resolve_matching_array_metadata(type_index);
 
-    if let Some(array_name) = array_data.array_name {
-        write!(f, "{}(", array_name)?;
+    // Note - this is (purposefully) subtly different to the implementation in the manifest:
+    // We wrap bytes as Array<U8>(Hex("deadbeef")) instead of Bytes("deadbeef") to fit
+    // better with the type annotations.
+
+    match array_data.array_name {
+        Some(array_name) => {
+            write!(f, "Array:{}<", array_name)?;
+        }
+        None => {
+            write!(f, "Array<")?;
+        }
+    }
+
+    match array_data.element_name {
+        Some(element_name) => {
+            write!(f, "{}:{}>(", array_header.element_value_kind, element_name)?;
+        }
+        None => {
+            write!(f, "{}>(", array_header.element_value_kind)?;
+        }
     }
 
     let child_count = array_header.length;
@@ -346,37 +323,33 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
         context.print_mode,
         array_header.element_value_kind,
     ) {
-        (_, _, ValueKind::U8) => {
-            write!(f, "hex(\"")?;
-            if child_count > 0 {
-                let typed_event = traverser.next_event();
-                match typed_event.event {
-                    TerminalValueBatch(_, TerminalValueBatchRef::U8(bytes)) => {
-                        f.write_str(&hex::encode(bytes))?;
-                    }
-                    _ => Err(FormattingError::Sbor(
-                        typed_event
-                            .display_as_unexpected_event("TerminalValueBatch", &context.schema),
-                    ))?,
-                };
-            }
-            write!(f, "\")")?;
-        }
         (0, _, _) => {
-            write!(f, "[]")?;
+            write!(f, ")")?;
         }
-        (_, PrintMode::SingleLine, _) => {
-            write!(f, "[")?;
+        (_, _, ValueKind::U8) => {
+            write!(f, "Hex(\"")?;
+            let typed_event = traverser.next_event();
+            match typed_event.event {
+                TerminalValueBatch(_, TerminalValueBatchRef::U8(bytes)) => {
+                    f.write_str(&hex::encode(bytes))?;
+                }
+                _ => Err(FormattingError::Sbor(
+                    typed_event.display_as_unexpected_event("TerminalValueBatch", &context.schema),
+                ))?,
+            };
+            write!(f, "\"))")?;
+        }
+        (child_count, PrintMode::SingleLine, _) => {
             for i in 0..child_count {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
                 format_value_tree(f, traverser, context)?;
             }
-            write!(f, "]")?;
+            write!(f, ")")?;
         }
         (
-            _,
+            child_count,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
                 base_indent,
@@ -384,7 +357,6 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
             },
             _,
         ) => {
-            write!(f, "[")?;
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
@@ -395,13 +367,10 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
                 write!(f, ",\n")?;
             }
 
-            write!(f, "{}]", parent_indent)?;
+            write!(f, "{})", parent_indent)?;
         }
     }
 
-    if let Some(_) = array_data.array_name {
-        write!(f, ")")?;
-    }
     consume_container_end(traverser)?;
     Ok(())
 }
@@ -409,35 +378,57 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
 fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     map_header: MapHeader<E::CustomValueKind>,
     parent_depth: usize,
 ) -> Result<(), FormattingError> {
     let map_data = context.schema.resolve_matching_map_metadata(type_index);
 
-    if let Some(map_name) = map_data.map_name {
-        write!(f, "{}(", map_name)?;
+    match map_data.map_name {
+        Some(array_name) => {
+            write!(f, "Map:{}<", array_name)?;
+        }
+        None => {
+            write!(f, "Map<")?;
+        }
     }
 
-    match (map_header.length, context.print_mode) {
-        (0, _) => {
-            write!(f, "{{}}")?;
+    match map_data.key_name {
+        Some(key_name) => {
+            write!(f, "{}:{}, ", map_header.key_value_kind, key_name)?;
         }
-        (_, PrintMode::SingleLine) => {
-            write!(f, "{{ ")?;
-            for i in 0..map_header.length {
+        None => {
+            write!(f, "{}, ", map_header.key_value_kind)?;
+        }
+    }
+
+    match map_data.value_name {
+        Some(value_name) => {
+            write!(f, "{}:{}>(", map_header.value_value_kind, value_name)?;
+        }
+        None => {
+            write!(f, "{}>(", map_header.value_value_kind)?;
+        }
+    }
+
+    let child_count = map_header.length * 2;
+
+    match (child_count, context.print_mode) {
+        (0, _) => {
+            write!(f, ")")?;
+        }
+        (child_count, PrintMode::SingleLine) => {
+            for i in 0..child_count {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
                 format_value_tree(f, traverser, context)?;
-                write!(f, " => ")?;
-                format_value_tree(f, traverser, context)?;
             }
-            write!(f, " }}")?;
+            write!(f, ")")?;
         }
         (
-            _,
+            child_count,
             PrintMode::MultiLine {
                 indent_size: spaces_per_indent,
                 base_indent,
@@ -447,29 +438,24 @@ fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
             let child_indent_size = base_indent + spaces_per_indent * parent_depth;
             let child_indent = " ".repeat(child_indent_size);
             let parent_indent = &child_indent[0..child_indent_size - spaces_per_indent];
-            write!(f, "{{\n")?;
-            for _ in 0..map_header.length {
+            write!(f, "\n")?;
+            for _ in 0..child_count {
                 write!(f, "{}", child_indent)?;
-                format_value_tree(f, traverser, context)?;
-                write!(f, " => ")?;
                 format_value_tree(f, traverser, context)?;
                 write!(f, ",\n")?;
             }
 
-            write!(f, "{}}}", parent_indent)?;
+            write!(f, "{})", parent_indent)?;
         }
     }
 
-    if let Some(_) = map_data.map_name {
-        write!(f, ")")?;
-    }
     consume_container_end(traverser)?;
     Ok(())
 }
 
 fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
     f: &mut F,
-    context: &RustLikeDisplayContext<'_, '_, E>,
+    context: &NestedStringDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
     value_ref: TerminalValueRef<E::CustomTraversal>,
 ) -> Result<(), FormattingError> {
@@ -477,13 +463,6 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
         .schema
         .resolve_type_metadata(type_index)
         .and_then(|m| m.get_name());
-
-    // If the terminal value has a name, it's normally because it's in a semantic singleton wrapper -
-    // so wrap it in a "new-type-like struct"
-    if let Some(type_name) = type_name {
-        write!(f, "{}(", type_name)?;
-    }
-
     match value_ref {
         TerminalValueRef::Bool(value) => write!(f, "{}", value)?,
         TerminalValueRef::I8(value) => write!(f, "{}i8", value)?,
@@ -498,14 +477,24 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
         TerminalValueRef::U128(value) => write!(f, "{}u128", value)?,
         TerminalValueRef::String(value) => write!(f, "\"{}\"", value)?,
         TerminalValueRef::Custom(ref value) => {
-            write!(f, "{}(", value_ref.value_kind())?;
+            match type_name {
+                Some(type_name) => {
+                    write!(f, "{}:{}(", value_ref.value_kind(), type_name)?;
+                }
+                None => {
+                    write!(f, "{}(", value_ref.value_kind())?;
+                }
+            }
             E::display_string_content(f, &context.custom_context, value)?;
             write!(f, ")")?;
             return Ok(());
         }
     }
-    if type_name.is_some() {
-        write!(f, ")")?;
+    // Handle the normal terminal values which haven't returned already
+    // If the type has a type-name, append it after the :u8, eg "132u64:Epoch"
+    // This might arise from - eg - transparent wrapped types
+    if let Some(type_name) = type_name {
+        write!(f, ":{}", type_name)?;
     }
     Ok(())
 }
@@ -591,9 +580,9 @@ mod tests {
         );
         let payload = basic_encode(&value).unwrap();
 
-        let expected_annotated_single_line = r###"MyComplexTupleStruct([1u16, 2u16, 3u16], [], hex(""), hex("010203"), { TestEnum::UnitVariant => MyFieldStruct { field1: 1u64, field2: ["hello"] }, TestEnum::SingleFieldVariant { field: 1u8 } => MyFieldStruct { field1: 2u64, field2: ["world"] }, TestEnum::DoubleStructVariant { field1: 1u8, field2: 2u8 } => MyFieldStruct { field1: 3u64, field2: ["!"] } }, { "hello" => MyUnitStruct, "world" => MyUnitStruct }, TestEnum::UnitVariant, TestEnum::SingleFieldVariant { field: 1u8 }, TestEnum::DoubleStructVariant { field1: 3u8, field2: 5u8 }, MyFieldStruct { field1: 21u64, field2: ["hello", "world!"] }, [MyUnitStruct, MyUnitStruct], Tuple(Enum::[32], Enum::[21](-3i32)))"###;
+        let expected_annotated_single_line = r###"Tuple:MyComplexTupleStruct(Array<U16>(1u16, 2u16, 3u16), Array<U16>(), Array<U8>(), Array<U8>(Hex("010203")), Map<Enum:TestEnum, Tuple:MyFieldStruct>(Enum:TestEnum(0u8:UnitVariant), Tuple:MyFieldStruct(field1 = 1u64, field2 = Array<String>("hello")), Enum:TestEnum(1u8:SingleFieldVariant, field = 1u8), Tuple:MyFieldStruct(field1 = 2u64, field2 = Array<String>("world")), Enum:TestEnum(2u8:DoubleStructVariant, field1 = 1u8, field2 = 2u8), Tuple:MyFieldStruct(field1 = 3u64, field2 = Array<String>("!"))), Map<String, Tuple:MyUnitStruct>("hello", Tuple:MyUnitStruct(), "world", Tuple:MyUnitStruct()), Enum:TestEnum(0u8:UnitVariant), Enum:TestEnum(1u8:SingleFieldVariant, field = 1u8), Enum:TestEnum(2u8:DoubleStructVariant, field1 = 3u8, field2 = 5u8), Tuple:MyFieldStruct(field1 = 21u64, field2 = Array<String>("hello", "world!")), Array<Tuple:MyUnitStruct>(Tuple:MyUnitStruct(), Tuple:MyUnitStruct()), Tuple(Enum(32u8), Enum(21u8, -3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::SingleLine,
             schema: &schema,
             custom_context: Default::default(),
@@ -606,72 +595,77 @@ mod tests {
             expected_annotated_single_line,
         );
 
-        let expected_annotated_multi_line = r###"MyComplexTupleStruct(
-            [
+        let expected_annotated_multi_line = r###"Tuple:MyComplexTupleStruct(
+            Array<U16>(
                 1u16,
                 2u16,
                 3u16,
-            ],
-            [],
-            hex(""),
-            hex("010203"),
-            {
-                TestEnum::UnitVariant => MyFieldStruct {
-                    field1: 1u64,
-                    field2: [
+            ),
+            Array<U16>(),
+            Array<U8>(),
+            Array<U8>(Hex("010203")),
+            Map<Enum:TestEnum, Tuple:MyFieldStruct>(
+                Enum:TestEnum(0u8:UnitVariant),
+                Tuple:MyFieldStruct(
+                    field1 = 1u64,
+                    field2 = Array<String>(
                         "hello",
-                    ],
-                },
-                TestEnum::SingleFieldVariant {
-                    field: 1u8,
-                } => MyFieldStruct {
-                    field1: 2u64,
-                    field2: [
+                    ),
+                ),
+                Enum:TestEnum(
+                    field = 1u8,
+                ),
+                Tuple:MyFieldStruct(
+                    field1 = 2u64,
+                    field2 = Array<String>(
                         "world",
-                    ],
-                },
-                TestEnum::DoubleStructVariant {
-                    field1: 1u8,
-                    field2: 2u8,
-                } => MyFieldStruct {
-                    field1: 3u64,
-                    field2: [
+                    ),
+                ),
+                Enum:TestEnum(
+                    field1 = 1u8,
+                    field2 = 2u8,
+                ),
+                Tuple:MyFieldStruct(
+                    field1 = 3u64,
+                    field2 = Array<String>(
                         "!",
-                    ],
-                },
-            },
-            {
-                "hello" => MyUnitStruct,
-                "world" => MyUnitStruct,
-            },
-            TestEnum::UnitVariant,
-            TestEnum::SingleFieldVariant {
-                field: 1u8,
-            },
-            TestEnum::DoubleStructVariant {
-                field1: 3u8,
-                field2: 5u8,
-            },
-            MyFieldStruct {
-                field1: 21u64,
-                field2: [
+                    ),
+                ),
+            ),
+            Map<String, Tuple:MyUnitStruct>(
+                "hello",
+                Tuple:MyUnitStruct(),
+                "world",
+                Tuple:MyUnitStruct(),
+            ),
+            Enum:TestEnum(0u8:UnitVariant),
+            Enum:TestEnum(
+                field = 1u8,
+            ),
+            Enum:TestEnum(
+                field1 = 3u8,
+                field2 = 5u8,
+            ),
+            Tuple:MyFieldStruct(
+                field1 = 21u64,
+                field2 = Array<String>(
                     "hello",
                     "world!",
-                ],
-            },
-            [
-                MyUnitStruct,
-                MyUnitStruct,
-            ],
+                ),
+            ),
+            Array<Tuple:MyUnitStruct>(
+                Tuple:MyUnitStruct(),
+                Tuple:MyUnitStruct(),
+            ),
             Tuple(
-                Enum::[32],
-                Enum::[21](
+                Enum(32u8),
+                Enum(
                     -3i32,
                 ),
             ),
         )"###;
         let display_context = ValueDisplayParameters::Annotated {
-            display_mode: DisplayMode::RustLike,
+            display_mode: DisplayMode::NestedString,
             print_mode: PrintMode::MultiLine {
                 indent_size: 4,
                 base_indent: 8,

@@ -11,7 +11,7 @@ pub const VALUE_KIND_NON_FUNGIBLE_LOCAL_ID: u8 = 0xc0;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Copy, Debug, Clone, PartialEq, Eq)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ScryptoCustomValueKind {
     Reference,
     Own,
