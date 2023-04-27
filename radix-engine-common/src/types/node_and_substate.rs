@@ -76,28 +76,28 @@ impl NodeId {
     pub const fn is_global_component(&self) -> bool {
         match self.entity_type() {
             Some(entity_type) => match entity_type {
-        EntityType::GlobalEpochManager |
-        EntityType::GlobalValidator |
-        EntityType::GlobalClock |
-        EntityType::GlobalAccessController |
-        EntityType::GlobalAccount |
-        EntityType::GlobalIdentity |
-        EntityType::GlobalGenericComponent |
-        EntityType::GlobalVirtualEcdsaAccount |
-        EntityType::GlobalVirtualEddsaAccount |
-        EntityType::GlobalVirtualEcdsaIdentity |
-        EntityType::GlobalVirtualEddsaIdentity => true,
-        EntityType::GlobalPackage | /* PackageAddress */
-        EntityType::GlobalFungibleResource | /* ResourceAddress */
-        EntityType::GlobalNonFungibleResource | /* ResourceAddress */
-        EntityType::InternalFungibleVault |
-        EntityType::InternalNonFungibleVault |
-        EntityType::InternalAccount |
-        EntityType::InternalGenericComponent |
-        EntityType::InternalKeyValueStore |
-        EntityType::InternalIndex |
-        EntityType::InternalSortedIndex => false,
-    },
+                EntityType::GlobalEpochManager |
+                EntityType::GlobalValidator |
+                EntityType::GlobalClock |
+                EntityType::GlobalAccessController |
+                EntityType::GlobalAccount |
+                EntityType::GlobalIdentity |
+                EntityType::GlobalGenericComponent |
+                EntityType::GlobalVirtualEcdsaAccount |
+                EntityType::GlobalVirtualEddsaAccount |
+                EntityType::GlobalVirtualEcdsaIdentity |
+                EntityType::GlobalVirtualEddsaIdentity => true,
+                EntityType::GlobalPackage | /* PackageAddress */
+                EntityType::GlobalFungibleResource | /* ResourceAddress */
+                EntityType::GlobalNonFungibleResource | /* ResourceAddress */
+                EntityType::InternalFungibleVault |
+                EntityType::InternalNonFungibleVault |
+                EntityType::InternalAccount |
+                EntityType::InternalGenericComponent |
+                EntityType::InternalKeyValueStore |
+                EntityType::InternalIndex |
+                EntityType::InternalSortedIndex => false,
+            },
             None => false,
         }
     }
