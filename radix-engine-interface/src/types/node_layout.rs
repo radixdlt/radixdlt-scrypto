@@ -1,5 +1,5 @@
-use crate::*;
 use crate::types::*;
+use crate::*;
 use sbor::rust::prelude::*;
 
 //=========================================================================
@@ -177,7 +177,7 @@ macro_rules! substate_key {
 
         impl TryFrom<&SubstateKey> for $t {
             type Error = ();
-        
+
             fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
                 match key {
                     SubstateKey::Tuple(x) => Self::from_repr(*x).ok_or(()),

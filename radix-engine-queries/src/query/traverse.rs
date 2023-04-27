@@ -1,8 +1,4 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine_stores::{
-    interface::SubstateDatabase,
-    jmt_support::JmtMapper,
-};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
@@ -14,6 +10,7 @@ use radix_engine_interface::types::{
     ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
+use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {

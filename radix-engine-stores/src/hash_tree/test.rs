@@ -368,9 +368,13 @@ fn change(
 ) -> SubstateHashChange {
     use crate::interface::DatabaseMapper;
     use crate::jmt_support::JmtMapper;
-    let (node_id, module_id, substate_key) = substate_id(node_id_seed, module_id, substate_offset_seed);
+    let (node_id, module_id, substate_key) =
+        substate_id(node_id_seed, module_id, substate_offset_seed);
     SubstateHashChange::new(
-        (JmtMapper::map_to_db_index(&node_id, module_id), JmtMapper::map_to_db_key(substate_key)),
+        (
+            JmtMapper::map_to_db_index(&node_id, module_id),
+            JmtMapper::map_to_db_key(substate_key),
+        ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
     )
 }

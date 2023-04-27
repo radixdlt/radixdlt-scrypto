@@ -24,11 +24,11 @@ use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
-pub use radix_engine_interface::blueprints::package::{
-    PackageInfoSubstate, PackageCodeSubstate, PackageRoyaltySubstate,
-};
 pub use super::substates::PackageCodeTypeSubstate;
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
+pub use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {

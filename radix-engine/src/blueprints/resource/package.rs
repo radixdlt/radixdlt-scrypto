@@ -102,7 +102,6 @@ pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
     pub fn schema() -> PackageSchema {
-
         //====================================================================================
 
         let fungible_resource_manager_schema = {
@@ -500,7 +499,8 @@ impl ResourceManagerNativePackage {
             substates.push(
                 aggregator.add_child_type_and_descendents::<FungibleVaultDivisibilitySubstate>(),
             );
-            substates.push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
             let mut functions = BTreeMap::new();
@@ -626,7 +626,9 @@ impl ResourceManagerNativePackage {
             substates.push(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultIdTypeSubstate>(),
             );
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
+            );
             substates
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
