@@ -36,13 +36,13 @@ impl StateUpdateSummary {
         for (node_id, tracked) in updates {
             if tracked.is_new {
                 if node_id.is_global_package() {
-                    new_packages.insert(PackageAddress::new_unchecked(node_id.0));
+                    new_packages.insert(PackageAddress::new_or_panic(node_id.0));
                 }
                 if node_id.is_global_component() {
-                    new_components.insert(ComponentAddress::new_unchecked(node_id.0));
+                    new_components.insert(ComponentAddress::new_or_panic(node_id.0));
                 }
                 if node_id.is_global_resource() {
-                    new_resources.insert(ResourceAddress::new_unchecked(node_id.0));
+                    new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
                 }
             }
         }
@@ -265,7 +265,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             TypeInfoSubstate::Object(ObjectInfo {
                 type_parent: Some(x),
                 ..
-            }) => ResourceAddress::new_unchecked(x.into()),
+            }) => ResourceAddress::new_or_panic(x.into()),
             _ => panic!("Unexpected"),
         };
 

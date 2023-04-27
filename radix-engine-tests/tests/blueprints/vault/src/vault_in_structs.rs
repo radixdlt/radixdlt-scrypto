@@ -38,19 +38,12 @@ mod vault_test {
         pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
-            let vault_id = vault.0.clone();
-            let mut vaults = KeyValueStore::new();
-            vaults.insert(0, vault);
-            {
-                let mut vault = vaults.get_mut(&0).unwrap();
-                vault.put(bucket);
-            }
+            let vault_fake_copy = Vault(vault.0.clone());
 
-            let vault_vector = Vec::new();
             VaultTest {
-                vault: Vault(vault_id),
-                vaults,
-                vault_vector,
+                vault,
+                vaults: KeyValueStore::new(),
+                vault_vector: vec![vault_fake_copy],
             }
             .instantiate()
             .globalize()

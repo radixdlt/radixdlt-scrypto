@@ -36,75 +36,129 @@ impl NodeId {
 
     // TODO: gradually remove dependency on the following entity-type related methods
 
-    pub fn entity_type(&self) -> Option<EntityType> {
+    pub const fn entity_type(&self) -> Option<EntityType> {
         EntityType::from_repr(self.0[0])
     }
 
-    pub fn is_global_fungible_resource(&self) -> bool {
+    pub const fn is_global(&self) -> bool {
+        match self.entity_type() {
+            Some(entity_type) => match entity_type {
+                EntityType::GlobalPackage
+                | EntityType::GlobalFungibleResource
+                | EntityType::GlobalNonFungibleResource
+                | EntityType::GlobalEpochManager
+                | EntityType::GlobalValidator
+                | EntityType::GlobalClock
+                | EntityType::GlobalAccessController
+                | EntityType::GlobalAccount
+                | EntityType::GlobalIdentity
+                | EntityType::GlobalGenericComponent
+                | EntityType::GlobalVirtualEcdsaAccount
+                | EntityType::GlobalVirtualEddsaAccount
+                | EntityType::GlobalVirtualEcdsaIdentity
+                | EntityType::GlobalVirtualEddsaIdentity => true,
+                EntityType::InternalFungibleVault
+                | EntityType::InternalNonFungibleVault
+                | EntityType::InternalAccount
+                | EntityType::InternalGenericComponent
+                | EntityType::InternalKeyValueStore
+                | EntityType::InternalIndex
+                | EntityType::InternalSortedIndex => false,
+            },
+            None => false,
+        }
+    }
+
+    pub const fn is_local(&self) -> bool {
+        !self.is_global()
+    }
+
+    pub const fn is_global_component(&self) -> bool {
+        match self.entity_type() {
+            Some(entity_type) => match entity_type {
+                EntityType::GlobalEpochManager |
+                EntityType::GlobalValidator |
+                EntityType::GlobalClock |
+                EntityType::GlobalAccessController |
+                EntityType::GlobalAccount |
+                EntityType::GlobalIdentity |
+                EntityType::GlobalGenericComponent |
+                EntityType::GlobalVirtualEcdsaAccount |
+                EntityType::GlobalVirtualEddsaAccount |
+                EntityType::GlobalVirtualEcdsaIdentity |
+                EntityType::GlobalVirtualEddsaIdentity => true,
+                EntityType::GlobalPackage | /* PackageAddress */
+                EntityType::GlobalFungibleResource | /* ResourceAddress */
+                EntityType::GlobalNonFungibleResource | /* ResourceAddress */
+                EntityType::InternalFungibleVault |
+                EntityType::InternalNonFungibleVault |
+                EntityType::InternalAccount |
+                EntityType::InternalGenericComponent |
+                EntityType::InternalKeyValueStore |
+                EntityType::InternalIndex |
+                EntityType::InternalSortedIndex => false,
+            },
+            None => false,
+        }
+    }
+
+    pub const fn is_global_package(&self) -> bool {
+        match self.entity_type() {
+            Some(entity_type) => matches!(entity_type, EntityType::GlobalPackage),
+            None => false,
+        }
+    }
+
+    pub const fn is_global_resource(&self) -> bool {
+        match self.entity_type() {
+            Some(entity_type) => matches!(
+                entity_type,
+                EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
+            ),
+            None => false,
+        }
+    }
+
+    pub const fn is_global_virtual(&self) -> bool {
+        match self.entity_type() {
+            Some(entity_type) => match entity_type {
+                EntityType::GlobalVirtualEcdsaAccount
+                | EntityType::GlobalVirtualEddsaAccount
+                | EntityType::GlobalVirtualEcdsaIdentity
+                | EntityType::GlobalVirtualEddsaIdentity => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
+
+    pub const fn is_global_fungible_resource(&self) -> bool {
         match self.entity_type() {
             Some(t) => matches!(t, EntityType::GlobalFungibleResource),
             None => false,
         }
     }
 
-    pub fn is_internal_fungible_vault(&self) -> bool {
+    pub const fn is_internal_kv_store(&self) -> bool {
+        match self.entity_type() {
+            Some(t) => matches!(t, EntityType::InternalKeyValueStore),
+            None => false,
+        }
+    }
+
+    pub const fn is_internal_fungible_vault(&self) -> bool {
         match self.entity_type() {
             Some(t) => matches!(t, EntityType::InternalFungibleVault),
             None => false,
         }
     }
 
-    pub fn is_global(&self) -> bool {
+    pub const fn is_internal_vault(&self) -> bool {
         match self.entity_type() {
-            Some(t) => t.is_global(),
-            None => false,
-        }
-    }
-
-    pub fn is_global_component(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_component(),
-            None => false,
-        }
-    }
-
-    pub fn is_global_resource(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_resource(),
-            None => false,
-        }
-    }
-
-    pub fn is_global_package(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_package(),
-            None => false,
-        }
-    }
-
-    pub fn is_global_virtual(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_virtual(),
-            None => false,
-        }
-    }
-    pub fn is_local(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_local(),
-            None => false,
-        }
-    }
-
-    pub fn is_internal_kv_store(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_internal_kv_store(),
-            None => false,
-        }
-    }
-
-    pub fn is_internal_vault(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_internal_vault(),
+            Some(t) => matches!(
+                t,
+                EntityType::InternalFungibleVault | EntityType::InternalNonFungibleVault
+            ),
             None => false,
         }
     }

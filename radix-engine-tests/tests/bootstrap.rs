@@ -88,7 +88,7 @@ fn test_genesis_resource_with_initial_allocation() {
         &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
     );
     let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
-    let resource_address = ResourceAddress::new_unchecked(
+    let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
             EntityType::GlobalFungibleResource as u8,
             &address_bytes_without_entity_id,

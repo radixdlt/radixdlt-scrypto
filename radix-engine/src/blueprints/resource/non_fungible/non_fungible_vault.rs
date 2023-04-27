@@ -52,7 +52,7 @@ impl NonFungibleVaultBlueprint {
         // Take
         let taken = NonFungibleVault::take(*amount, api)?;
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Create node
         ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
@@ -69,7 +69,7 @@ impl NonFungibleVaultBlueprint {
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Create node
         ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
@@ -81,7 +81,7 @@ impl NonFungibleVaultBlueprint {
     {
         // Drop other bucket
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let other_bucket =
             drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
 
@@ -122,7 +122,7 @@ impl NonFungibleVaultBlueprint {
         }
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let taken = NonFungibleVault::take(amount, api)?;
         let bucket =
             ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
@@ -142,7 +142,7 @@ impl NonFungibleVaultBlueprint {
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         let bucket =
             ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
@@ -157,7 +157,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let id_type = Self::get_id_type(api)?;
         let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
 
@@ -196,7 +196,7 @@ impl NonFungibleVaultBlueprint {
 
         let id_type = Self::get_id_type(api)?;
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         let proof_info = ProofInfoSubstate {
             resource_address,
@@ -225,7 +225,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.type_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let id_type = Self::get_id_type(api)?;
 
         let proof_info = ProofInfoSubstate {

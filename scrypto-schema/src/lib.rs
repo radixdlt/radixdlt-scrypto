@@ -6,10 +6,11 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
+use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct KeyValueStoreSchema {
     pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
@@ -36,12 +37,12 @@ impl KeyValueStoreSchema {
 // - Easier macro to export schema, as they work at blueprint level
 // - Can always combine multiple schemas into one for storage benefits
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct PackageSchema {
     pub blueprints: BTreeMap<String, BlueprintSchema>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub parent: Option<String>,
 

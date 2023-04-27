@@ -175,7 +175,7 @@ impl ClockNativePackage {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = ComponentAddress::new_unchecked(input.component_address);
+        let address = ComponentAddress::new_or_panic(input.component_address);
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::SELF => clock_id,

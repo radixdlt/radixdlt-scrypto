@@ -1347,7 +1347,7 @@ impl TestRunner {
                 Emitter::Function(node_id, _, blueprint_name),
                 local_type_index,
             ) => (
-                PackageAddress::new_unchecked(node_id.0),
+                PackageAddress::new_or_panic(node_id.0),
                 blueprint_name.to_owned(),
                 local_type_index.clone(),
             ),
