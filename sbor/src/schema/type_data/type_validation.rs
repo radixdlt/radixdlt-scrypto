@@ -4,7 +4,7 @@ use crate::*;
 ///
 /// Each [`TypeKind`] typically can have either `None` or its type-specific validation.
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypeValidation {
+pub enum TypeValidation<E: CustomTypeValidation> {
     None,
 
     I8(NumericValidation<i8>),
@@ -22,6 +22,8 @@ pub enum TypeValidation {
 
     Array(LengthValidation),
     Map(LengthValidation),
+
+    Custom(E),
 }
 
 /// Represents additional validation that should be performed on the size.

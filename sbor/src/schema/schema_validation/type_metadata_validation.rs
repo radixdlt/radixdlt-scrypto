@@ -32,7 +32,11 @@ pub fn validate_type_metadata_with_type_kind<'a, E: CustomTypeExtension>(
             validate_enum_metadata(type_metadata, variants)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::custom_type_kind_matches_metadata(context, custom_type_kind, type_metadata)?;
+            E::validate_type_metadata_with_custom_type_kind(
+                context,
+                custom_type_kind,
+                type_metadata,
+            )?;
         }
     }
 

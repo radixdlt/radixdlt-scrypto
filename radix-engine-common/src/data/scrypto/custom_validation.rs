@@ -3,13 +3,14 @@ use crate::constants::*;
 use crate::types::{GlobalAddress, NodeId, PackageAddress};
 use crate::*;
 use sbor::rust::prelude::*;
+use sbor::traversal::TerminalValueRef;
 use sbor::*;
 
 impl ValidatableCustomTypeExtension<()> for ScryptoCustomTypeExtension {
-    fn validate_custom_value<'de, L: SchemaTypeLink>(
-        _custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
-        _custom_type_kind: &Self::CustomTypeKind<L>,
-        _context: &mut (),
+    fn apply_custom_type_validation<'de>(
+        _: &Self::CustomTypeValidation,
+        _: &TerminalValueRef<'de, Self::CustomTraversal>,
+        _: &mut (),
     ) -> Result<(), ValidationError> {
         Ok(())
     }
@@ -37,111 +38,148 @@ impl<T> ValidatableCustomTypeExtension<T> for ScryptoCustomTypeExtension
 where
     T: NodeTypeInfoContext,
 {
-    fn validate_custom_value<'de, L: SchemaTypeLink>(
-        custom_value_ref: &<Self::CustomTraversal as traversal::CustomTraversal>::CustomTerminalValueRef<'de>,
-        custom_type_kind: &Self::CustomTypeKind<L>,
+    fn apply_custom_type_validation<'de>(
+        custom_type_validation: &Self::CustomTypeValidation,
+        value: &TerminalValueRef<'de, Self::CustomTraversal>,
         context: &mut T,
     ) -> Result<(), ValidationError> {
-        match &custom_value_ref.0 {
-            ScryptoCustomValue::Reference(reference) => {
-                if let Some(type_info) = context.get_node_type_info(reference.as_node_id()) {
-                    // Alternately, we can just use the type info for reference check.
-                    // Using node entity type is to avoid massive list of blueprints for each type.
-                    if match custom_type_kind {
-                        ScryptoCustomTypeKind::AnyReference => true,
-                        ScryptoCustomTypeKind::GlobalAddress => reference.as_node_id().is_global(),
-                        ScryptoCustomTypeKind::LocalAddress => reference.as_node_id().is_local(),
-                        ScryptoCustomTypeKind::PackageAddress => reference.as_node_id().is_global_package(),
-                        ScryptoCustomTypeKind::ComponentAddress => reference.as_node_id().is_global_component(),
-                        ScryptoCustomTypeKind::ResourceAddress => reference.as_node_id().is_global_resource(),
-                        ScryptoCustomTypeKind::TypedObjectRef(package, blueprint) => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name,.. }
-                                if package_address == package
-                                &&  blueprint_name == blueprint => true,
-                            _ => false,
+        match custom_type_validation {
+            ScryptoCustomTypeValidation::Reference(validation) => {
+                if let TerminalValueRef::Custom(ScryptoCustomTerminalValueRef(
+                    ScryptoCustomValue::Reference(reference),
+                )) = value
+                {
+                    if let Some(type_info) = context.get_node_type_info(reference.as_node_id()) {
+                        // Alternately, we can just use the type info for reference check.
+                        // Using node entity type is to avoid massive list of blueprints for each type.
+                        if match validation {
+                            ReferenceValidation::IsGlobal => reference.as_node_id().is_global(),
+                            ReferenceValidation::IsGlobalPackage => {
+                                reference.as_node_id().is_global_package()
+                            }
+                            ReferenceValidation::IsGlobalComponent => {
+                                reference.as_node_id().is_global_component()
+                            }
+                            ReferenceValidation::IsGlobalResource => {
+                                reference.as_node_id().is_global_resource()
+                            }
+                            ReferenceValidation::IsLocal => reference.as_node_id().is_local(),
+                            ReferenceValidation::IsTypedObject(package, blueprint) => {
+                                match &type_info {
+                                    TypeInfo::Object {
+                                        package_address,
+                                        blueprint_name,
+                                        ..
+                                    } if package_address == package
+                                        && blueprint_name == blueprint =>
+                                    {
+                                        true
+                                    }
+                                    _ => false,
+                                }
+                            }
+                        } {
+                            Ok(())
+                        } else {
+                            Err(ValidationError::CustomError(format!(
+                                "Expected: Reference<{:?}>, actual node: {:?}, actual type info: {:?}", validation, reference.as_node_id(),  type_info
+                            )))
                         }
-                        ScryptoCustomTypeKind::AnyOwn |
-                        ScryptoCustomTypeKind::Bucket |
-                        ScryptoCustomTypeKind::Proof |
-                        ScryptoCustomTypeKind::Vault |
-                        ScryptoCustomTypeKind::KeyValueStore |
-                        ScryptoCustomTypeKind::TypedOwnedObject(_, _) |
-                        ScryptoCustomTypeKind::Decimal |
-                        ScryptoCustomTypeKind::PreciseDecimal |
-                        ScryptoCustomTypeKind::NonFungibleLocalId  => panic!("Non-reference type matched with reference value; please check `custom_type_kind_matches_value_kind` ")
-                    } {
-                        Ok(())
                     } else {
                         Err(ValidationError::CustomError(format!(
-                            "Invalid reference: expected = {:?}, actual node: {:?}, actual type info: {:?}", custom_type_kind, reference.as_node_id(),  type_info
+                            "Missing type info for {:?}",
+                            reference
                         )))
                     }
                 } else {
                     Err(ValidationError::CustomError(format!(
-                        "Missing type info for {:?}",
-                        reference
+                        "Expected: Reference<{:?}>, actual value: {:?}",
+                        validation, value
                     )))
                 }
             }
-            ScryptoCustomValue::Own(own) => {
-                if let Some(type_info) = context.get_node_type_info(own.as_node_id()) {
-                    if match  custom_type_kind {
-                        ScryptoCustomTypeKind::AnyOwn => true,
-                        ScryptoCustomTypeKind::Bucket => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name,.. }
-                                if package_address == &RESOURCE_MANAGER_PACKAGE
-                                && (blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT || blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => true,
-                            _ => false,
+            ScryptoCustomTypeValidation::Own(validation) => {
+                if let TerminalValueRef::Custom(ScryptoCustomTerminalValueRef(
+                    ScryptoCustomValue::Own(own),
+                )) = value
+                {
+                    if let Some(type_info) = context.get_node_type_info(own.as_node_id()) {
+                        if match validation {
+                            OwnValidation::IsBucket => match &type_info {
+                                TypeInfo::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+                                } if package_address == &RESOURCE_MANAGER_PACKAGE
+                                    && (blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                                        || blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                                {
+                                    true
+                                }
+                                _ => false,
+                            },
+                            OwnValidation::IsProof => match &type_info {
+                                TypeInfo::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+                                } if package_address == &RESOURCE_MANAGER_PACKAGE
+                                    && blueprint_name == PROOF_BLUEPRINT =>
+                                {
+                                    true
+                                }
+                                _ => false,
+                            },
+                            OwnValidation::IsVault => match &type_info {
+                                TypeInfo::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+                                } if package_address == &RESOURCE_MANAGER_PACKAGE
+                                    && (blueprint_name == FUNGIBLE_VAULT_BLUEPRINT
+                                        || blueprint_name == NON_FUNGIBLE_VAULT_BLUEPRINT) =>
+                                {
+                                    true
+                                }
+                                _ => false,
+                            },
+                            OwnValidation::IsKeyValueStore => match &type_info {
+                                TypeInfo::KeyValueStore => true,
+                                _ => false,
+                            },
+                            OwnValidation::IsTypedObject(package, blueprint) => match &type_info {
+                                TypeInfo::Object {
+                                    package_address,
+                                    blueprint_name,
+                                    ..
+                                } if package_address == package && blueprint_name == blueprint => {
+                                    true
+                                }
+                                _ => false,
+                            },
+                        } {
+                            Ok(())
+                        } else {
+                            Err(ValidationError::CustomError(format!(
+                                "Expected = Own<{:?}>, actual node: {:?}, actual type info: {:?}",
+                                validation,
+                                own.as_node_id(),
+                                type_info
+                            )))
                         }
-                        ScryptoCustomTypeKind::Proof => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name,.. }
-                                if package_address == &RESOURCE_MANAGER_PACKAGE
-                                    &&  blueprint_name == PROOF_BLUEPRINT => true,
-                            _ => false,
-                        }
-                        ScryptoCustomTypeKind::Vault => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name,.. }
-                                if package_address == &RESOURCE_MANAGER_PACKAGE
-                                && (blueprint_name == FUNGIBLE_VAULT_BLUEPRINT || blueprint_name == NON_FUNGIBLE_VAULT_BLUEPRINT) => true,
-                            _ => false,
-                        }
-                        ScryptoCustomTypeKind::KeyValueStore => match &type_info {
-                            TypeInfo::KeyValueStore => true,
-                            _ => false,
-                        }
-                        ScryptoCustomTypeKind::TypedOwnedObject(package, blueprint) => match &type_info {
-                            TypeInfo::Object { package_address, blueprint_name,.. }
-                                if package_address == package
-                                &&  blueprint_name == blueprint => true,
-                            _ => false,
-                        }
-                        ScryptoCustomTypeKind::AnyReference |
-                        ScryptoCustomTypeKind::GlobalAddress |
-                        ScryptoCustomTypeKind::LocalAddress |
-                        ScryptoCustomTypeKind::PackageAddress |
-                        ScryptoCustomTypeKind::ComponentAddress |
-                        ScryptoCustomTypeKind::ResourceAddress |
-                        ScryptoCustomTypeKind::TypedObjectRef(_, _) |
-                        ScryptoCustomTypeKind::Decimal |
-                        ScryptoCustomTypeKind::PreciseDecimal |
-                        ScryptoCustomTypeKind::NonFungibleLocalId  => panic!("Non-own type matched with own value; please check `custom_type_kind_matches_value_kind` ")
-                    } {
-                        Ok(())
                     } else {
                         Err(ValidationError::CustomError(format!(
-                            "Invalid own: expected = {:?}, actual node: {:?}, actual type info: {:?}", custom_type_kind, own.as_node_id(),  type_info
+                            "Missing type info for {:?}",
+                            own
                         )))
                     }
                 } else {
                     Err(ValidationError::CustomError(format!(
-                        "Missing type info for {:?}",
-                        own
+                        "Expected: Own<{:?}>, actual value: {:?}",
+                        validation, value
                     )))
                 }
             }
-            ScryptoCustomValue::Decimal(_)
-            | ScryptoCustomValue::PreciseDecimal(_)
-            | ScryptoCustomValue::NonFungibleLocalId(_) => Ok(()),
         }
     }
 }

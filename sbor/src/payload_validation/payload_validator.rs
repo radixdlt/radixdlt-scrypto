@@ -191,27 +191,6 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
     type_index: LocalTypeIndex,
     context: &mut T,
 ) -> Result<(), PayloadValidationError<E>> {
-    // Apply contextual custom type validation here!
-    if let TerminalValueRef::Custom(custom_value_ref) = value {
-        match schema
-            .resolve_type_kind(type_index)
-            .ok_or(PayloadValidationError::SchemaInconsistency)?
-        {
-            TypeKind::Custom(custom_type_kind) => {
-                E::validate_custom_value(custom_value_ref, custom_type_kind, context)?;
-            }
-            TypeKind::Any => {
-                // No validation for "any" type
-            }
-            ty => {
-                panic!(
-                    "Non-custom type `{:?}` matched with custom value `{:?}`; please check `custom_type_kind_matches_value_kind`",
-                    ty, custom_value_ref
-                );
-            }
-        };
-    }
-
     match schema
         .resolve_type_validation(type_index)
         .ok_or(PayloadValidationError::SchemaInconsistency)?
@@ -262,6 +241,9 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
         TypeValidation::Array(_) | TypeValidation::Map(_) => {
             // No Array or Map validation should be attached to terminal value.
             return Err(PayloadValidationError::SchemaInconsistency);
+        }
+        TypeValidation::Custom(custom_type_validation) => {
+            E::apply_custom_type_validation(custom_type_validation, value, context)?;
         }
     }
     Ok(())
