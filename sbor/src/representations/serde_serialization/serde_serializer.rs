@@ -2,7 +2,6 @@ use super::*;
 use crate::rust::cell::RefCell;
 use crate::rust::prelude::*;
 use crate::traversal::*;
-use crate::typed_traversal::*;
 use crate::*;
 use serde::ser::*;
 use utils::*;
@@ -10,11 +9,27 @@ use TypedTraversalEvent::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SerializationMode {
-    /// This "Invertible" encoding is intended to exactly capture the content of the scrypto value,
+    /// The "(Annotated) Programmatic" encoding is a default invertible API format which captures the
+    /// SBOR value model, and supports optional name annotations from a schema.
+    ///
+    /// SBOR values are generally wrapped in an object with a "kind" field. Fields are output as an
+    /// array to faithfully represent the ordering in the SBOR value.
+    ///
+    /// If a schema is available, variant names, type names and field names are added to the output.
+    ///
+    /// If value/type data is included in the parent (Vecs and Map entries), it is still duplicated
+    /// on the child object for simplicity.
+    Programmatic,
+    /// ==THIS FORMAT IS DEPRECATED - BUT KEPT FOR THE TIME BEING FOR NODE COMPATABILITY==
+    ///
+    /// This "Model" encoding is intended to exactly capture the content of the scrypto value,
     /// in a way which can be inverted back into a scrypto value.
     ///
     /// SBOR values are generally wrapped in an object with a "kind" field. Fields are output as an
     /// array to faithfully represent the ordering in the SBOR value.
+    ///
+    /// It is more compact than the Programmatic format, but more complex to describe, because
+    /// children of arrays/maps are not wrapped in a JSON object with the kind field.
     ///
     /// If value/type data is included in the parent (Vecs and Map entries), it is not duplicated
     /// on the values. This avoids duplication in the output. In these cases, child tuples and
@@ -22,247 +37,101 @@ pub enum SerializationMode {
     /// their wrapper object, as there are other fields to convey.
     ///
     /// If a schema is available, variant names, type names and field names are added to the output.
+    Model,
+    /// ==THIS FORMAT IS NOT INTENDED TO BE USED YET==
     ///
-    /// Some examples:
-    /// ```jsonc
-    /// // Array
-    /// {
-    ///     "kind": "Array",
-    ///     "element_kind": "U16",
-    ///     "elements": [1, 2, 3]
-    /// }
-    /// // Byte Array
-    /// {
-    ///     "kind": "Array",
-    ///     "element_kind": "U8",
-    ///     "hex": "deadbeef"
-    /// }
-    /// // Map
-    /// {
-    ///     "kind": "Map",
-    ///     "key_kind": "Enum",
-    ///     "key_name": "TestEnum",
-    ///     "value_kind": "Tuple",
-    ///     "value_name": "MyFieldStruct",
-    ///     "entries": [
-    ///         // Each entry is a [key, value] tuple
-    ///         [
-    ///             // Enums always have a wrapper object, but their key_kind and key_name
-    ///             // are not repeated from the parent
-    ///             { "variant_id": 3, "variant_name": "Test", "fields": [] },
-    ///             // The tuple loses its wrapper object
-    ///             [{ "kind": "String", "value": "one" }, { "kind": "U8", "value": 2 }]
-    ///         ]
-    ///     ]
-    /// }
-    /// // Struct / Named tuple with named fields
-    /// {
-    ///     "kind": "Tuple",
-    ///     "name": "MyNamedStruct",
-    ///     "fields": [
-    ///          { "key": "a", "kind": "U8", "value": 1 },
-    ///          { "key": "b", "kind": "U8", "value": 2 }
-    ///     ]
-    /// }
-    /// // Enum Variant
-    /// {
-    ///     "kind": "Enum",
-    ///     "name": "Employee",
-    ///     "variant_id": 1,
-    ///     "variant_name": "Bob",
-    ///     "fields": [
-    ///          { "key": "number", "kind": "U32", "value": 1 }
-    ///     ]
-    /// }
-    /// // Single values
-    /// {
-    ///     "kind": "String",
-    ///     "value": "Hello world!"
-    /// }
-    /// {
-    ///     "kind": "U64",
-    ///     "value": "1234123124" // U64/I64 and larger are encoded as strings for JS compatibility
-    /// }
-    /// ```
+    /// An API format designed for elegantly reading values with a well-known schema - intended for
+    /// eg DApp Builders writing their front-ends.
     ///
-    Invertible,
-    /// This "Simple" encoding is intended to be "nice to read" for a human.
+    /// It outputs values in a “JSON-native” manner - designed primary for use with a schema,
+    /// and for mapping into models like you’d find on an Open API schema.
     ///
-    /// It can be used for values with a schema, or without a schema (equivalently, values with "Any"
-    /// schema).
+    /// Its JSON schema is dependent on its SBOR schema, and it's not intended to be invertible
+    /// without the SBOR schema. We could even consider generating an Open API schema for a given
+    /// SBOR schema (eg for a blueprint) and allow developers to have a strongly-typed API to their
+    /// blueprint.
     ///
-    /// It is not intended to be invertible - ie the output cannot be mapped back into a ScryptoValue
+    /// Compared with Programmatic, it is more compact, but doesn't include type names / enum variant names.
+    ///
     /// It should favour simplicity for human comprehension, in particular:
     /// * It uses a JSON object rather than an array where possible, even if this loses field ordering
     ///   EG for structs, and for maps with string keys.
     /// * If the concept which is being represented (eg number/amount or address) is clear
     ///   to a human, information about the value kind is dropped.
-    ///
-    /// Compared with Invertible, it is more compact, but doesn't include type names.
-    Simple,
-}
-
-pub struct SborPayloadWithSchema<'de, E: SerializableCustomTypeExtension> {
-    payload: &'de [u8],
-    type_index: LocalTypeIndex,
-    type_extension: PhantomData<E>,
-}
-
-impl<'de, E: SerializableCustomTypeExtension> SborPayloadWithSchema<'de, E> {
-    pub fn new(payload: &'de [u8], type_index: LocalTypeIndex) -> Self {
-        Self {
-            payload,
-            type_index,
-            type_extension: PhantomData,
-        }
-    }
+    /// * It prefers to use the JSON number type where the number can be confirmed to be <= JS max safe int.
+    Natural,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct SerializationContext<'s, 'a, E: SerializableCustomTypeExtension> {
     pub schema: &'s Schema<E>,
     pub mode: SerializationMode,
-    pub custom_context: E::CustomSerializationContext<'a>,
+    pub custom_context: E::CustomDisplayContext<'a>,
 }
 
-impl<'s, 'a, 'de, E: SerializableCustomTypeExtension>
-    ContextualSerialize<SerializationContext<'s, 'a, E>> for SborPayloadWithSchema<'de, E>
-{
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &SerializationContext<'s, 'a, E>,
-    ) -> Result<S::Ok, S::Error> {
-        simple_serialize(serializer, self.payload, context, self.type_index)
-    }
-}
-
-pub struct SborPayloadWithoutSchema<'de, E: SerializableCustomTypeExtension> {
-    payload: &'de [u8],
-    type_extension: PhantomData<E>,
-}
-
-impl<'de, E: SerializableCustomTypeExtension> SborPayloadWithoutSchema<'de, E> {
-    pub fn new(payload: &'de [u8]) -> Self {
-        Self {
-            payload,
-            type_extension: PhantomData,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct SchemalessSerializationContext<'a, E: SerializableCustomTypeExtension> {
-    pub mode: SerializationMode,
-    pub custom_context: E::CustomSerializationContext<'a>,
-}
-
-impl<'s, 'a, 'de, E: SerializableCustomTypeExtension>
-    ContextualSerialize<SchemalessSerializationContext<'a, E>>
-    for SborPayloadWithoutSchema<'de, E>
-{
-    fn contextual_serialize<S: Serializer>(
-        &self,
-        serializer: S,
-        context: &SchemalessSerializationContext<E>,
-    ) -> Result<S::Ok, S::Error> {
-        SborPayloadWithSchema::<E>::new(&self.payload, LocalTypeIndex::any()).serialize(
-            serializer,
-            SerializationContext {
-                schema: &Schema::<E>::empty(),
-                mode: context.mode,
-                custom_context: context.custom_context,
-            },
-        )
-    }
-}
-
-pub fn simple_serialize<S: Serializer, E: SerializableCustomTypeExtension>(
+pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomTypeExtension>(
     serializer: S,
     payload: &[u8],
     context: &SerializationContext<'_, '_, E>,
     index: LocalTypeIndex,
 ) -> Result<S::Ok, S::Error> {
     let mut traverser = traverse_payload_with_types(payload, context.schema, index);
-    consume_payload_start_events::<S, E>(&mut traverser, context)?;
     let success =
         serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
-    consume_payload_end_events::<S, E>(&mut traverser, context)?;
+    consume_end_event::<S, E>(&mut traverser)?;
     Ok(success)
 }
 
-pub fn consume_payload_start_events<S: Serializer, E: SerializableCustomTypeExtension>(
-    traverser: &mut TypedTraverser<E>,
+pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomTypeExtension>(
+    serializer: S,
+    partial_payload: &[u8],
+    expected_start: ExpectedStart<E::CustomValueKind>,
+    check_exact_end: bool,
+    current_depth: usize,
     context: &SerializationContext<'_, '_, E>,
-) -> Result<(), S::Error> {
-    let typed_event = traverser.next_event();
-    match typed_event.event {
-        PayloadPrefix => Ok(()),
-        Error(error) => Err(map_error::<S, E>(
-            context,
-            &typed_event,
-            SerializationError::TraversalError(error),
-        )),
-        _ => panic!(
-            "Expected first event to be PayloadPrefix or Error, got {:?}",
-            typed_event.event
-        ),
+    index: LocalTypeIndex,
+) -> Result<S::Ok, S::Error> {
+    let mut traverser = traverse_partial_payload_with_types(
+        partial_payload,
+        expected_start,
+        check_exact_end,
+        current_depth,
+        context.schema,
+        index,
+    );
+    let success =
+        serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
+    if check_exact_end {
+        consume_end_event::<S, E>(&mut traverser)?;
     }
+    Ok(success)
 }
 
-pub fn consume_payload_end_events<S: Serializer, E: SerializableCustomTypeExtension>(
+fn consume_end_event<S: Serializer, E: SerializableCustomTypeExtension>(
     traverser: &mut TypedTraverser<E>,
-    context: &SerializationContext<'_, '_, E>,
 ) -> Result<(), S::Error> {
-    let typed_event = traverser.next_event();
-    match typed_event.event {
-        End => Ok(()),
-        Error(error) => Err(map_error::<S, E>(
-            context,
-            &typed_event,
-            SerializationError::TraversalError(error),
-        )),
-        _ => panic!(
-            "Expected end event to be End or Error, got {:?}",
-            typed_event.event
-        ),
-    }
+    traverser.consume_end_event().map_err(S::Error::custom)
 }
 
-pub fn expect_container_end<S: Serializer, E: SerializableCustomTypeExtension>(
+fn consume_container_end_event<S: Serializer, E: SerializableCustomTypeExtension>(
     traverser: &mut TypedTraverser<E>,
-    context: &SerializationContext<'_, '_, E>,
 ) -> Result<(), S::Error> {
-    let typed_event = traverser.next_event();
-    match typed_event.event {
-        ContainerEnd(_, _) => Ok(()),
-        Error(error) => Err(map_error::<S, E>(
-            context,
-            &typed_event,
-            SerializationError::TraversalError(error),
-        )),
-        _ => panic!("Expected container end event, got {:?}", typed_event.event),
-    }
+    traverser
+        .consume_container_end_event()
+        .map_err(S::Error::custom)
 }
 
-fn map_error<S: Serializer, E: SerializableCustomTypeExtension>(
+fn map_unexpected_event<S: Serializer, E: SerializableCustomTypeExtension>(
     context: &SerializationContext<'_, '_, E>,
-    typed_event: &TypedLocatedTraversalEvent<E::CustomTraversal>,
-    error: SerializationError<E>,
+    expected: &'static str,
+    typed_event: TypedLocatedTraversalEvent<E>,
 ) -> S::Error {
-    let full_location = typed_event.full_location();
-    S::Error::custom(format!(
-        "{:?} occurred at byte offset {}-{} and value path {}",
-        error,
-        full_location.start_offset,
-        full_location.end_offset,
-        full_location.path_to_string(&context.schema)
-    ))
+    S::Error::custom(typed_event.display_as_unexpected_event(expected, &context.schema))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SerializationError<E: CustomTypeExtension> {
-    TraversalError(TypedTraversalError<E::CustomValueKind>),
+    TraversalError(TypedTraversalError<E>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -271,8 +140,8 @@ pub enum ValueContext {
     VecOrMapChild,
     /// The default context - should include its own kind details
     Default,
-    /// A named field wrapper - should include its own kind details, and a key field
-    IncludeFieldKey { key: String },
+    /// A named field wrapper - should include its own kind details, and a field_name
+    IncludeFieldName { field_name: String },
 }
 
 struct SerializableValueTree<'t, 'de, 's1, E: CustomTypeExtension> {
@@ -352,53 +221,35 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomTypeExtension>(
         TerminalValue(type_index, value_ref) => {
             serialize_terminal_value(serializer, context, type_index, value_ref, value_context)
         }
-        Error(error) => Err(map_error::<S, E>(
+        _ => Err(map_unexpected_event::<S, E>(
             context,
-            &typed_event,
-            SerializationError::TraversalError(error),
+            "ContainerStart | TerminalValue",
+            typed_event,
         )),
-        PayloadPrefix | End | ContainerEnd(_, _) | TerminalValueBatch(_, _) => {
-            panic!("Unexpected event {:?}", typed_event.event)
-        }
     }
 }
 
-/// Consumes the number of value-trees from the traverser, either:
-/// * If there are child field names - into a serde map, with keys by child name
-/// * If there are no child field names - into a serde tuple
+/// Consumes the number of value-trees from the traverser, and depending on
+/// the serialization mode and presence of field names, either outputs as a
+/// serde map/JSON object or serde tuple/JSON array.
 ///
-/// Note that it doesn't consume the container end event, because it's also
-/// used for (eg) map entry pairs, which don't have a container end event
+/// Note that it doesn't consume the container end event, because it could also
+/// be used for a set of sub-fields.
 pub struct SerializableFields<'t, 'de, 's1, 's2, E: CustomTypeExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
-    fields_type: FieldsType<'s2>,
+    field_names: Option<&'s2 [Cow<'static, str>]>,
     length: usize,
-}
-
-pub enum FieldsType<'s2> {
-    NamedFields(&'s2 [Cow<'static, str>]),
-    UnnamedFields,
-    MapEntry,
-}
-
-impl<'s2> From<Option<&'s2 ChildNames>> for FieldsType<'s2> {
-    fn from(child_names: Option<&'s2 ChildNames>) -> Self {
-        match child_names {
-            Some(ChildNames::NamedFields(names)) => Self::NamedFields(names),
-            _ => Self::UnnamedFields,
-        }
-    }
 }
 
 impl<'t, 'de, 's1, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1, 's2, E> {
     fn new(
         traverser: &'t mut TypedTraverser<'de, 's1, E>,
-        fields_type: FieldsType<'s2>,
+        field_names: Option<&'s2 [Cow<'static, str>]>,
         length: usize,
     ) -> Self {
         Self {
             traverser: RefCell::new(traverser),
-            fields_type,
+            field_names,
             length,
         }
     }
@@ -417,7 +268,7 @@ impl<'t, 'de, 's1, 's2, 's, 'a, E: SerializableCustomTypeExtension>
             serializer,
             &mut self.traverser.borrow_mut(),
             context,
-            &self.fields_type,
+            &self.field_names,
             self.length,
         )
     }
@@ -427,12 +278,12 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
-    fields_type: &FieldsType<'_>,
+    field_names: &Option<&'_ [Cow<'_, str>]>,
     length: usize,
 ) -> Result<S::Ok, S::Error> {
-    match (context.mode, fields_type) {
+    match (context.mode, field_names) {
         // In simple mode, we serialize structs as JSON objects
-        (SerializationMode::Simple, FieldsType::NamedFields(field_names)) => {
+        (SerializationMode::Natural, Some(field_names)) if field_names.len() == length => {
             let mut serde_map = serializer.serialize_map(Some(length))?;
             for field_name in field_names.iter() {
                 serde_map.serialize_entry(
@@ -444,29 +295,17 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
             serde_map.end()
         }
         // In invertible mode, we serialize structs as a JSON array of field objects to preserve ordering
-        (SerializationMode::Invertible, FieldsType::NamedFields(field_names)) => {
+        (_, Some(field_names)) if field_names.len() == length => {
             let mut serde_tuple = serializer.serialize_tuple(length)?;
             for field_name in field_names.iter() {
                 serde_tuple.serialize_element(
                     &SerializableValueTree::new(
                         traverser,
-                        ValueContext::IncludeFieldKey {
-                            key: field_name.to_string(),
+                        ValueContext::IncludeFieldName {
+                            field_name: field_name.to_string(),
                         },
                     )
                     .serializable(*context),
-                )?;
-            }
-            serde_tuple.end()
-        }
-        // If we're encoding a map entry tuple, we include ValueContext::VecOrMapChild so the values
-        // aren't serialized with their type information
-        (_, FieldsType::MapEntry) => {
-            let mut serde_tuple = serializer.serialize_tuple(length)?;
-            for _ in 0..length {
-                serde_tuple.serialize_element(
-                    &SerializableValueTree::new(traverser, ValueContext::VecOrMapChild)
-                        .serializable(*context),
                 )?;
             }
             serde_tuple.end()
@@ -482,6 +321,42 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
             }
             serde_tuple.end()
         }
+    }
+}
+
+pub struct SerializableMapEntry<'t, 'de, 's1, E: CustomTypeExtension> {
+    traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
+}
+
+impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableMapEntry<'t, 'de, 's1, E> {
+    fn new(traverser: &'t mut TypedTraverser<'de, 's1, E>) -> Self {
+        Self {
+            traverser: RefCell::new(traverser),
+        }
+    }
+}
+
+impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
+    ContextualSerialize<SerializationContext<'s, 'a, E>> for SerializableMapEntry<'t, 'de, 's1, E>
+{
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        context: &SerializationContext<'s, 'a, E>,
+    ) -> Result<S::Ok, S::Error> {
+        let traverser = &mut self.traverser.borrow_mut();
+        let mut serde_tuple = serializer.serialize_map(Some(2))?;
+        serde_tuple.serialize_entry(
+            "key",
+            &SerializableValueTree::new(traverser, ValueContext::VecOrMapChild)
+                .serializable(*context),
+        )?;
+        serde_tuple.serialize_entry(
+            "value",
+            &SerializableValueTree::new(traverser, ValueContext::VecOrMapChild)
+                .serializable(*context),
+        )?;
+        serde_tuple.end()
     }
 }
 
@@ -516,7 +391,7 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
                     .serializable(*context),
             )?;
         }
-        expect_container_end::<S, E>(traverser, context)?;
+        consume_container_end_event::<S, E>(traverser)?;
         serde_tuple.end()
     }
 }
@@ -552,7 +427,8 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
     ) -> Result<S::Ok, S::Error> {
         let traverser = &mut self.traverser.borrow_mut();
         match (context.mode, self.key_value_kind) {
-            (SerializationMode::Simple, ValueKind::String) => {
+            // If string keys and in simple mode, then serialize as a JSON object
+            (SerializationMode::Natural, ValueKind::String) => {
                 let mut serde_map = serializer.serialize_map(Some(self.length))?;
                 for _ in 0..self.length {
                     serde_map.serialize_key(
@@ -564,18 +440,19 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
                             .serializable(*context),
                     )?;
                 }
-                expect_container_end::<S, E>(traverser, context)?;
+                consume_container_end_event::<S, E>(traverser)?;
                 serde_map.end()
             }
+            // Otherwise, serialize as a JSON array of key-value objects, which keeps the order, and allows for
+            // complex keys
             _ => {
                 let mut serde_tuple = serializer.serialize_tuple(self.length)?;
                 for _ in 0..self.length {
                     serde_tuple.serialize_element(
-                        &SerializableFields::new(traverser, FieldsType::MapEntry, 2)
-                            .serializable(*context),
+                        &SerializableMapEntry::new(traverser).serializable(*context),
                     )?;
                 }
-                expect_container_end::<S, E>(traverser, context)?;
+                consume_container_end_event::<S, E>(traverser)?;
                 serde_tuple.end()
             }
         }
@@ -590,54 +467,62 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomTypeExtension>(
     tuple_header: TupleHeader,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
-    let metadata = context.schema.resolve_type_metadata(type_index);
-    let child_names = metadata.and_then(|m| m.child_names.as_ref());
+    let tuple_metadata = context
+        .schema
+        .resolve_matching_tuple_metadata(type_index, tuple_header.length);
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
 
     if !map_aggregator.should_embed_value_in_contextual_json_map() {
-        let result_ok = SerializableFields::new(traverser, child_names.into(), tuple_header.length)
-            .serialize(serializer, *context)?;
-        expect_container_end::<S, E>(traverser, context)?;
+        let result_ok = SerializableFields::new(
+            traverser,
+            tuple_metadata.field_names.into(),
+            tuple_header.length,
+        )
+        .serialize(serializer, *context)?;
+        consume_container_end_event::<S, E>(traverser)?;
         return Ok(result_ok);
     }
-    map_aggregator.add_initial_details(ValueKind::Tuple, metadata);
+    map_aggregator.add_initial_details(ValueKind::Tuple, tuple_metadata.name);
     map_aggregator.add_field(
         "fields",
         SerializableType::SerializableFields(SerializableFields::new(
             traverser,
-            child_names.into(),
+            tuple_metadata.field_names.into(),
             tuple_header.length,
         )),
     );
     let success = map_aggregator.into_map(serializer)?;
-    expect_container_end::<S, E>(traverser, context)?;
+    consume_container_end_event::<S, E>(traverser)?;
     Ok(success)
 }
 
-fn serialize_enum_variant<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_enum_variant<'s, S: Serializer, E: SerializableCustomTypeExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
-    context: &SerializationContext<'_, '_, E>,
+    context: &SerializationContext<'s, '_, E>,
     type_index: LocalTypeIndex,
     variant_header: EnumVariantHeader,
     value_context: &ValueContext,
 ) -> Result<S::Ok, S::Error> {
-    let enum_metadata = context.schema.resolve_type_metadata(type_index);
+    let enum_metadata = context.schema.resolve_matching_enum_metadata(
+        type_index,
+        variant_header.variant,
+        variant_header.length,
+    );
     let mut map_aggregator = SerdeValueMapAggregator::new(context, value_context);
 
-    map_aggregator.add_initial_details(ValueKind::Enum, enum_metadata);
-    let child_names =
-        map_aggregator.add_enum_variant_details(variant_header.variant, enum_metadata);
+    map_aggregator.add_initial_details(ValueKind::Enum, enum_metadata.enum_name);
+    map_aggregator.add_enum_variant_details(variant_header.variant, enum_metadata.variant_name);
     map_aggregator.add_field(
         "fields",
         SerializableType::SerializableFields(SerializableFields::new(
             traverser,
-            child_names.into(),
+            enum_metadata.field_names,
             variant_header.length,
         )),
     );
     let success = map_aggregator.into_map(serializer)?;
-    expect_container_end::<S, E>(traverser, context)?;
+    consume_container_end_event::<S, E>(traverser)?;
     Ok(success)
 }
 
@@ -657,14 +542,15 @@ fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
         return SerializableArrayElements::new(traverser, array_header.length)
             .serialize(serializer, *context);
     }
-    let metadata = context.schema.resolve_type_metadata(type_index);
-    map_aggregator.add_initial_details(ValueKind::Array, metadata);
-    map_aggregator.add_element_details(array_header.element_value_kind, type_index);
+    let array_metadata = context.schema.resolve_matching_array_metadata(type_index);
+    map_aggregator.add_initial_details(ValueKind::Array, array_metadata.array_name);
+    map_aggregator
+        .add_element_details(array_header.element_value_kind, array_metadata.element_name);
 
     match (array_header.element_value_kind, array_header.length) {
         (ValueKind::U8, 0) => {
             map_aggregator.add_field("hex", SerializableType::Str(""));
-            expect_container_end::<S, E>(traverser, context)?;
+            consume_container_end_event::<S, E>(traverser)?;
         }
         (ValueKind::U8, _) => {
             let typed_event = traverser.next_event();
@@ -672,14 +558,13 @@ fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
                 TerminalValueBatch(_, TerminalValueBatchRef::U8(bytes)) => {
                     map_aggregator.add_field("hex", SerializableType::String(hex::encode(bytes)));
                 }
-                Error(error) => Err(map_error::<S, E>(
+                _ => Err(map_unexpected_event::<S, E>(
                     context,
-                    &typed_event,
-                    SerializationError::TraversalError(error),
+                    "TerminalValueBatch",
+                    typed_event,
                 ))?,
-                _ => panic!("Unexpected event {:?}", typed_event.event),
             };
-            expect_container_end::<S, E>(traverser, context)?;
+            consume_container_end_event::<S, E>(traverser)?;
         }
         (_, _) => {
             map_aggregator.add_field(
@@ -712,12 +597,12 @@ fn serialize_map<S: Serializer, E: SerializableCustomTypeExtension>(
         )
         .serialize(serializer, *context);
     }
-    let metadata = context.schema.resolve_type_metadata(type_index);
-    map_aggregator.add_initial_details(ValueKind::Map, metadata);
+    let map_metadata = context.schema.resolve_matching_map_metadata(type_index);
+    map_aggregator.add_initial_details(ValueKind::Map, map_metadata.map_name);
     map_aggregator.add_map_child_details(
         map_header.key_value_kind,
         map_header.value_value_kind,
-        type_index,
+        &map_metadata,
     );
     map_aggregator.add_field(
         "entries",
@@ -758,7 +643,7 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomTypeExtension>(
             let CustomTypeSerialization {
                 include_type_tag_in_simple_mode,
                 serialization,
-            } = E::serialize_value(context, type_index, custom_value);
+            } = E::map_value_for_serialization(context, type_index, custom_value);
             (serialization, include_type_tag_in_simple_mode)
         }
     };
@@ -768,8 +653,8 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomTypeExtension>(
         SerdeValueMapAggregator::new(context, value_context)
     };
     if map_aggregator.should_embed_value_in_contextual_json_map() {
-        let metadata = context.schema.resolve_type_metadata(type_index);
-        map_aggregator.add_initial_details(value_kind, metadata);
+        let type_name = context.schema.resolve_type_name_from_metadata(type_index);
+        map_aggregator.add_initial_details(value_kind, type_name);
         map_aggregator.add_field("value", serializable_value);
         map_aggregator.into_map(serializer)
     } else {
@@ -892,10 +777,10 @@ mod tests {
                 ],
             },
             [
-                [
-                    153,
-                    62
-                ]
+                {
+                    "key": 153,
+                    "value": 62
+                }
             ],
             [
                 "hello",
@@ -905,12 +790,12 @@ mod tests {
 
         let payload = basic_encode(&value).unwrap();
         assert_json_eq(
-            SborPayloadWithoutSchema::<NoCustomTypeExtension>::new(&payload).serializable(
-                SchemalessSerializationContext {
-                    mode: SerializationMode::Simple,
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+                .unwrap()
+                .serializable(SerializationParameters::Schemaless {
+                    mode: SerializationMode::Natural,
                     custom_context: (),
-                },
-            ),
+                }),
             expected_simple,
         );
     }
@@ -925,8 +810,7 @@ mod tests {
     #[derive(Sbor)]
     struct MyUnitStruct;
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     struct MyComplexTupleStruct(
         Vec<u16>,
         Vec<u16>,
@@ -993,25 +877,318 @@ mod tests {
         );
         let payload = basic_encode(&value).unwrap();
 
-        let expected_simple = json!([
+        let expected_programmatic = json!({
+            "kind": "Tuple",
+            "type_name": "MyComplexTupleStruct",
+            "fields": [
+                {
+                    "kind": "Array",
+                    "element_kind": "U16",
+                    "elements": [
+                        { "kind": "U16", "value": "1" },
+                        { "kind": "U16", "value": "2" },
+                        { "kind": "U16", "value": "3" },
+                    ]
+                },
+                {
+                    "kind": "Array",
+                    "element_kind": "U16",
+                    "elements": []
+                },
+                {
+                    "kind": "Array",
+                    "element_kind": "U8",
+                    "hex": ""
+                },
+                {
+                    "kind": "Array",
+                    "element_kind": "U8",
+                    "hex": "010203"
+                },
+                {
+                    "kind": "Map",
+                    "key_kind": "Enum",
+                    "key_type_name": "TestEnum",
+                    "value_kind": "Tuple",
+                    "value_type_name": "MyFieldStruct",
+                    "entries": [
+                        {
+                            "key": {
+                                "kind": "Enum",
+                                "type_name": "TestEnum",
+                                "variant_id": "0",
+                                "variant_name": "UnitVariant",
+                                "fields": []
+                            },
+                            "value": {
+                                "kind": "Tuple",
+                                "type_name": "MyFieldStruct",
+                                "fields": [
+                                    {
+                                        "kind": "U64",
+                                        "field_name": "field1",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "kind": "Array",
+                                        "field_name": "field2",
+                                        "element_kind": "String",
+                                        "elements": [
+                                            {
+                                                "kind": "String",
+                                                "value": "hello"
+                                            },
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "key": {
+                                "kind": "Enum",
+                                "type_name": "TestEnum",
+                                "variant_id": "1",
+                                "variant_name": "SingleFieldVariant",
+                                "fields": [
+                                    {
+                                        "kind": "U8",
+                                        "field_name": "field",
+                                        "value": "1"
+                                    }
+                                ]
+                            },
+                            "value": {
+                                "kind": "Tuple",
+                                "type_name": "MyFieldStruct",
+                                "fields": [
+                                    {
+                                        "kind": "U64",
+                                        "field_name": "field1",
+                                        "value": "2"
+                                    },
+                                    {
+                                        "kind": "Array",
+                                        "field_name": "field2",
+                                        "element_kind": "String",
+                                        "elements": [
+                                            {
+                                                "kind": "String",
+                                                "value": "world"
+                                            },
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "key": {
+                                "kind": "Enum",
+                                "type_name": "TestEnum",
+                                "variant_id": "2",
+                                "variant_name": "DoubleStructVariant",
+                                "fields": [
+                                    {
+                                        "kind": "U8",
+                                        "field_name": "field1",
+                                        "value": "1"
+                                    },
+                                    {
+                                        "kind": "U8",
+                                        "field_name": "field2",
+                                        "value": "2"
+                                    }
+                                ]
+                            },
+                            "value": {
+                                "kind": "Tuple",
+                                "type_name": "MyFieldStruct",
+                                "fields": [
+                                    {
+                                        "kind": "U64",
+                                        "field_name": "field1",
+                                        "value": "3"
+                                    },
+                                    {
+                                        "kind": "Array",
+                                        "field_name": "field2",
+                                        "element_kind": "String",
+                                        "elements": [
+                                            {
+                                                "kind": "String",
+                                                "value": "!"
+                                            },
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "kind": "Map",
+                    "key_kind": "String",
+                    "value_kind": "Tuple",
+                    "value_type_name": "MyUnitStruct",
+                    "entries": [
+                        {
+                            "key": {
+                                "kind": "String",
+                                "value": "hello"
+                            },
+                            "value": {
+                                "kind": "Tuple",
+                                "type_name": "MyUnitStruct",
+                                "fields": []
+                            },
+                        },
+                        {
+                            "key": {
+                                "kind": "String",
+                                "value": "world"
+                            },
+                            "value": {
+                                "kind": "Tuple",
+                                "type_name": "MyUnitStruct",
+                                "fields": []
+                            },
+                        }
+                    ]
+                },
+                {
+                    "kind": "Enum",
+                    "type_name": "TestEnum",
+                    "variant_id": "0",
+                    "variant_name": "UnitVariant",
+                    "fields": []
+                },
+                {
+                    "kind": "Enum",
+                    "type_name": "TestEnum",
+                    "variant_id": "1",
+                    "variant_name": "SingleFieldVariant",
+                    "fields": [
+                        {
+                            "kind": "U8",
+                            "field_name": "field",
+                            "value": "1"
+                        }
+                    ]
+                },
+                {
+                    "kind": "Enum",
+                    "type_name": "TestEnum",
+                    "variant_id": "2",
+                    "variant_name": "DoubleStructVariant",
+                    "fields": [
+                        {
+                            "kind": "U8",
+                            "field_name": "field1",
+                            "value": "3"
+                        },
+                        {
+                            "kind": "U8",
+                            "field_name": "field2",
+                            "value": "5"
+                        }
+                    ]
+                },
+                {
+                    "kind": "Tuple",
+                    "type_name": "MyFieldStruct",
+                    "fields": [
+                        {
+                            "kind": "U64",
+                            "field_name": "field1",
+                            "value": "21"
+                        },
+                        {
+                            "kind": "Array",
+                            "field_name": "field2",
+                            "element_kind": "String",
+                            "elements": [
+                                {
+                                    "kind": "String",
+                                    "value": "hello"
+                                },
+                                {
+                                    "kind": "String",
+                                    "value": "world!"
+                                },
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "Array",
+                    "element_kind": "Tuple",
+                    "element_name": "MyUnitStruct",
+                    "elements": [
+                        {
+                            "kind": "Tuple",
+                            "type_name": "MyUnitStruct",
+                            "fields": []
+                        },
+                        {
+                            "kind": "Tuple",
+                            "type_name": "MyUnitStruct",
+                            "fields": []
+                        },
+                    ]
+                },
+                {
+                    "kind": "Tuple",
+                    "fields": [
+                        {
+                            "kind": "Enum",
+                            "variant_id": "32",
+                            "fields": []
+                        },
+                        {
+                            "kind": "Enum",
+                            "variant_id": "21",
+                            "fields": [
+                                {
+                                    "kind": "I32",
+                                    "value": "-3"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        assert_json_eq(
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+                .unwrap()
+                .serializable(SerializationParameters::WithSchema {
+                    mode: SerializationMode::Programmatic,
+                    schema: &schema,
+                    custom_context: (),
+                    type_index,
+                }),
+            expected_programmatic,
+        );
+
+        let expected_natural = json!([
             [1, 2, 3],
             [],
             { "hex": "" },
             { "hex": "010203" },
             // IndexMap<TestEnum, MyFieldStruct>
             [
-                [
-                    { "variant_id": 0, "variant_name": "UnitVariant", "fields": [] },
-                    { "field1": "1", "field2": ["hello"] }
-                ],
-                [
-                    { "variant_id": 1, "variant_name": "SingleFieldVariant", "fields": { "field": 1 } },
-                    { "field1": "2", "field2": ["world"] }
-                ],
-                [
-                    { "variant_id": 2, "variant_name": "DoubleStructVariant", "fields": { "field1": 1, "field2": 2 } },
-                    { "field1": "3", "field2": ["!"] }
-                ]
+                {
+                    "key": { "variant_id": 0, "variant_name": "UnitVariant", "fields": [] },
+                    "value": { "field1": "1", "field2": ["hello"] }
+                },
+                {
+                    "key": { "variant_id": 1, "variant_name": "SingleFieldVariant", "fields": { "field": 1 } },
+                    "value": { "field1": "2", "field2": ["world"] }
+                },
+                {
+                    "key": { "variant_id": 2, "variant_name": "DoubleStructVariant", "fields": { "field1": 1, "field2": 2 } },
+                    "value": { "field1": "3", "field2": ["!"] }
+                }
             ],
             // BTreeMap<String, MyUnitStruct>
             { "hello": [], "world": [] },
@@ -1027,265 +1204,253 @@ mod tests {
         ]);
 
         assert_json_eq(
-            SborPayloadWithSchema::<NoCustomTypeExtension>::new(&payload, type_index).serializable(
-                SerializationContext {
-                    mode: SerializationMode::Simple,
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+                .unwrap()
+                .serializable(SerializationParameters::WithSchema {
+                    mode: SerializationMode::Natural,
                     schema: &schema,
                     custom_context: (),
-                },
-            ),
-            expected_simple,
+                    type_index,
+                }),
+            expected_natural,
         );
 
-        let expected_invertible = json!({
+        let expected_model = json!({
+            "kind": "Tuple",
+            "type_name": "MyComplexTupleStruct",
             "fields": [
                 {
+                    "kind": "Array",
                     "element_kind": "U16",
                     "elements": [
                         1,
                         2,
                         3
-                    ],
-                    "kind": "Array"
+                    ]
                 },
                 {
+                    "kind": "Array",
                     "element_kind": "U16",
-                    "elements": [
-
-                    ],
-                    "kind": "Array"
+                    "elements": []
                 },
                 {
-                    "element_kind": "U8",
-                    "hex": "",
                     "kind": "Array",
-                    "name": "Bytes"
-                },
-                {
                     "element_kind": "U8",
-                    "hex": "010203",
-                    "kind": "Array",
-                    "name": "Bytes"
+                    "hex": ""
                 },
                 {
+                    "kind": "Array",
+                    "element_kind": "U8",
+                    "hex": "010203"
+                },
+                {
+                    "kind": "Map",
+                    "key_kind": "Enum",
+                    "key_type_name": "TestEnum",
+                    "value_kind": "Tuple",
+                    "value_type_name": "MyFieldStruct",
                     "entries": [
-                        [
-                            {
-                                "fields": [
-
-                                ],
+                        {
+                            "key": {
+                                "variant_id": 0,
                                 "variant_name": "UnitVariant",
-                                "variant_id": 0
+                                "fields": []
                             },
-                            [
+                            "value": [
                                 {
-                                    "key": "field1",
                                     "kind": "U64",
+                                    "field_name": "field1",
                                     "value": "1"
                                 },
                                 {
+                                    "kind": "Array",
+                                    "field_name": "field2",
                                     "element_kind": "String",
                                     "elements": [
                                         "hello"
-                                    ],
-                                    "key": "field2",
-                                    "kind": "Array"
+                                    ]
                                 }
                             ]
-                        ],
-                        [
-                            {
+                        },
+                        {
+                            "key": {
+                                "variant_id": 1,
+                                "variant_name": "SingleFieldVariant",
                                 "fields": [
                                     {
-                                        "key": "field",
                                         "kind": "U8",
+                                        "field_name": "field",
                                         "value": 1
                                     }
-                                ],
-                                "variant_name": "SingleFieldVariant",
-                                "variant_id": 1
+                                ]
                             },
-                            [
+                            "value": [
                                 {
-                                    "key": "field1",
                                     "kind": "U64",
+                                    "field_name": "field1",
                                     "value": "2"
                                 },
                                 {
+                                    "kind": "Array",
+                                    "field_name": "field2",
                                     "element_kind": "String",
                                     "elements": [
                                         "world"
-                                    ],
-                                    "key": "field2",
-                                    "kind": "Array"
+                                    ]
                                 }
-                            ],
-                        ],
-                        [
-                            {
+                            ]
+                        },
+                        {
+                            "key": {
+                                "variant_id": 2,
+                                "variant_name": "DoubleStructVariant",
                                 "fields": [
                                     {
-                                        "key": "field1",
                                         "kind": "U8",
+                                        "field_name": "field1",
                                         "value": 1
                                     },
                                     {
-                                        "key": "field2",
                                         "kind": "U8",
+                                        "field_name": "field2",
                                         "value": 2
                                     }
-                                ],
-                                "variant_name": "DoubleStructVariant",
-                                "variant_id": 2
+                                ]
                             },
-                            [
+                            "value": [
                                 {
-                                    "key": "field1",
                                     "kind": "U64",
+                                    "field_name": "field1",
                                     "value": "3"
                                 },
                                 {
+                                    "kind": "Array",
+                                    "field_name": "field2",
                                     "element_kind": "String",
                                     "elements": [
                                         "!"
-                                    ],
-                                    "key": "field2",
-                                    "kind": "Array"
+                                    ]
                                 }
                             ]
-                        ]
-                    ],
-                    "key_kind": "Enum",
-                    "key_name": "TestEnum",
-                    "kind": "Map",
-                    "value_kind": "Tuple",
-                    "value_name": "MyFieldStruct"
+                        }
+                    ]
                 },
                 {
-                    "entries": [
-                        [
-                            "hello",
-                            []
-                        ],
-                        [
-                            "world",
-                            []
-                        ]
-                    ],
+                    "kind": "Map",
                     "key_kind": "String",
-                    "kind": "Map",
                     "value_kind": "Tuple",
-                    "value_name": "MyUnitStruct"
+                    "value_type_name": "MyUnitStruct",
+                    "entries": [
+                        {
+                            "key": "hello",
+                            "value": []
+                        },
+                        {
+                            "key": "world",
+                            "value": []
+                        }
+                    ]
                 },
                 {
-                    "fields": [
-
-                    ],
                     "kind": "Enum",
-                    "name": "TestEnum",
+                    "type_name": "TestEnum",
+                    "variant_id": 0,
                     "variant_name": "UnitVariant",
-                    "variant_id": 0
+                    "fields": []
                 },
                 {
+                    "kind": "Enum",
+                    "type_name": "TestEnum",
+                    "variant_id": 1,
+                    "variant_name": "SingleFieldVariant",
                     "fields": [
                         {
-                            "key": "field",
                             "kind": "U8",
+                            "field_name": "field",
                             "value": 1
                         }
-                    ],
-                    "kind": "Enum",
-                    "name": "TestEnum",
-                    "variant_name": "SingleFieldVariant",
-                    "variant_id": 1
+                    ]
                 },
                 {
+                    "kind": "Enum",
+                    "type_name": "TestEnum",
+                    "variant_id": 2,
+                    "variant_name": "DoubleStructVariant",
                     "fields": [
                         {
-                            "key": "field1",
                             "kind": "U8",
+                            "field_name": "field1",
                             "value": 3
                         },
                         {
-                            "key": "field2",
                             "kind": "U8",
+                            "field_name": "field2",
                             "value": 5
                         }
-                    ],
-                    "kind": "Enum",
-                    "name": "TestEnum",
-                    "variant_name": "DoubleStructVariant",
-                    "variant_id": 2
+                    ]
                 },
                 {
+                    "kind": "Tuple",
+                    "type_name": "MyFieldStruct",
                     "fields": [
                         {
-                            "key": "field1",
                             "kind": "U64",
+                            "field_name": "field1",
                             "value": "21"
                         },
                         {
+                            "kind": "Array",
+                            "field_name": "field2",
                             "element_kind": "String",
                             "elements": [
                                 "hello",
                                 "world!"
-                            ],
-                            "key": "field2",
-                            "kind": "Array"
+                            ]
                         }
-                    ],
-                    "kind": "Tuple",
-                    "name": "MyFieldStruct"
+                    ]
                 },
                 {
+                    "kind": "Array",
                     "element_kind": "Tuple",
                     "element_name": "MyUnitStruct",
                     "elements": [
-                        [
-
-                        ],
-                        [
-
-                        ]
-                    ],
-                    "kind": "Array"
+                        [],
+                        []
+                    ]
                 },
                 {
+                    "kind": "Tuple",
                     "fields": [
                         {
-                            "fields": [
-
-                            ],
                             "kind": "Enum",
-                            "variant_id": 32
+                            "variant_id": 32,
+                            "fields": []
                         },
                         {
+                            "kind": "Enum",
+                            "variant_id": 21,
                             "fields": [
                                 {
                                     "kind": "I32",
                                     "value": -3
                                 }
-                            ],
-                            "kind": "Enum",
-                            "variant_id": 21
+                            ]
                         }
-                    ],
-                    "kind": "Tuple"
+                    ]
                 }
-            ],
-            "kind": "Tuple",
-            "name": "MyComplexTupleStruct"
+            ]
         });
 
         assert_json_eq(
-            SborPayloadWithSchema::<NoCustomTypeExtension>::new(&payload, type_index).serializable(
-                SerializationContext {
-                    mode: SerializationMode::Invertible,
+            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
+                .unwrap()
+                .serializable(SerializationParameters::WithSchema {
+                    mode: SerializationMode::Model,
                     schema: &schema,
                     custom_context: (),
-                },
-            ),
-            expected_invertible,
+                    type_index,
+                }),
+            expected_model,
         );
     }
 }

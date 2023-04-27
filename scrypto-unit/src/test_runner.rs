@@ -48,7 +48,7 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::hash_tree::{put_at_next_version, DbId, SubstateHashChange};
 use radix_engine_stores::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
 };
@@ -1418,7 +1418,7 @@ impl StateHashSupport {
         for (index_id, index_update) in db_updates {
             for (key, db_update) in index_update {
                 let hash_change = SubstateHashChange::new(
-                    (index_id.clone(), key.clone()),
+                    DbId::new(index_id.clone(), key.clone()),
                     match db_update {
                         DatabaseUpdate::Set(v) => Some(hash(v)),
                         DatabaseUpdate::Delete => None,
