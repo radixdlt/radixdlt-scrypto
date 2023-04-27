@@ -817,7 +817,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1));
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
     }
@@ -861,7 +861,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone()));
 
         let rtn = self
             .api

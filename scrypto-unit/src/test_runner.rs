@@ -54,7 +54,7 @@ use radix_engine_stores::interface::{
 };
 use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use radix_engine_stores::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;

@@ -15,6 +15,8 @@ pub struct FungibleVaultDivisibilitySubstate {
     pub divisibility: u8,
 }
 
+pub use radix_engine_interface::blueprints::resource::LiquidFungibleResource as FungibleVaultBalanceSubstate;
+
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
@@ -28,7 +30,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleVaultOffset::Info.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleVaultOffset::Divisibility.into(), LockFlags::read_only())?;
         let info: FungibleVaultDivisibilitySubstate = api.sys_read_substate_typed(handle)?;
         let divisibility = info.divisibility;
         api.sys_drop_lock(handle)?;
