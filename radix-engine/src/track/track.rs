@@ -489,7 +489,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
             Entry::Occupied(..) => true,
         };
 
-        (&mut module_substates.get_mut(&db_key).unwrap().tracked, found)
+        (
+            &mut module_substates.get_mut(&db_key).unwrap().tracked,
+            found,
+        )
     }
 
     fn get_tracked_substate(
@@ -498,7 +501,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         module_id: ModuleId,
         substate_key: SubstateKey,
     ) -> &mut TrackedKey {
-        self.get_tracked_substate_virtualize(node_id, module_id, substate_key, || None).0
+        self.get_tracked_substate_virtualize(node_id, module_id, substate_key, || None)
+            .0
     }
 }
 
@@ -860,7 +864,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             AcquireLockError::SubstateLocked(*node_id, module_id, substate_key.clone())
         })?;
 
-        Ok((self.new_lock_handle(node_id, module_id, substate_key, flags), !found))
+        Ok((
+            self.new_lock_handle(node_id, module_id, substate_key, flags),
+            !found,
+        ))
     }
 
     fn release_lock(&mut self, handle: u32) {
