@@ -55,4 +55,6 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
         custom_type_kind: &Self::CustomTypeKind<L>,
         value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool;
+
+    fn empty_schema() -> &'static Schema<Self>;
 }

@@ -1,3 +1,5 @@
+mod custom_formatting;
+mod custom_payload_wrappers;
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
 /// Defines custom serialization of the types.
@@ -15,6 +17,8 @@ mod schema_path;
 
 pub mod model;
 
+pub use custom_formatting::*;
+pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
 pub use custom_serde::*;
 pub use custom_traversal::*;
