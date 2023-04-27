@@ -48,7 +48,7 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::hash_tree::{put_at_next_version, DbId, SubstateHashChange};
 use radix_engine_stores::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
 };
@@ -379,7 +379,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
-                SubstateKey::Map(key),
+                &SubstateKey::Map(key),
             )?;
 
         let metadata_entry = match metadata_entry {
@@ -403,7 +403,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::Royalty.into(),
-                RoyaltyOffset::RoyaltyAccumulator.into(),
+                &RoyaltyOffset::RoyaltyAccumulator.into(),
             )
         {
             output
@@ -413,7 +413,7 @@ impl TestRunner {
                         .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            FungibleVaultOffset::LiquidFungible.into(),
+                            &FungibleVaultOffset::LiquidFungible.into(),
                         )
                 })
                 .map(|r| r.amount())
@@ -428,7 +428,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 SysModuleId::Object.into(),
-                PackageOffset::Royalty.into(),
+                &PackageOffset::Royalty.into(),
             )
         {
             output
@@ -438,7 +438,7 @@ impl TestRunner {
                         .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
-                            FungibleVaultOffset::LiquidFungible.into(),
+                            &FungibleVaultOffset::LiquidFungible.into(),
                         )
                 })
                 .map(|r| r.amount())
@@ -484,7 +484,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                FungibleVaultOffset::LiquidFungible.into(),
+                &FungibleVaultOffset::LiquidFungible.into(),
             )
             .map(|output| output.amount())
     }
@@ -498,7 +498,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
-                NonFungibleVaultOffset::LiquidNonFungible.into(),
+                &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
             .map(|vault| {
                 let amount = vault.amount;
@@ -589,7 +589,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 SysModuleId::Object.into(),
-                ValidatorOffset::Validator.into(),
+                &ValidatorOffset::Validator.into(),
             )
             .unwrap()
     }
@@ -600,7 +600,7 @@ impl TestRunner {
             .get_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
                 SysModuleId::Object.into(),
-                EpochManagerOffset::CurrentValidatorSet.into(),
+                &EpochManagerOffset::CurrentValidatorSet.into(),
             )
             .unwrap();
 
@@ -826,9 +826,10 @@ impl TestRunner {
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
-            self.substate_db.commit(&commit.state_updates);
+            self.substate_db
+                .commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
-                state_hash_support.update_with(&commit.state_updates);
+                state_hash_support.update_with(&commit.state_updates.database_updates);
             }
         }
         transaction_receipt
@@ -1323,7 +1324,7 @@ impl TestRunner {
                             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                                 node_id,
                                 SysModuleId::TypeInfo.into(),
-                                TypeInfoOffset::TypeInfo.into(),
+                                &TypeInfoOffset::TypeInfo.into(),
                             )
                             .unwrap();
 
@@ -1346,7 +1347,7 @@ impl TestRunner {
                 Emitter::Function(node_id, _, blueprint_name),
                 local_type_index,
             ) => (
-                PackageAddress::new_unchecked(node_id.0),
+                PackageAddress::new_or_panic(node_id.0),
                 blueprint_name.to_owned(),
                 local_type_index.clone(),
             ),
@@ -1358,7 +1359,7 @@ impl TestRunner {
                 .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     SysModuleId::Object.into(),
-                    PackageOffset::Info.into(),
+                    &PackageOffset::Info.into(),
                 )
                 .unwrap()
                 .schema
@@ -1414,10 +1415,10 @@ impl StateHashSupport {
 
     pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
         let mut hash_changes = Vec::new();
-        for (index_id, index_update) in &db_updates.database_updates {
+        for (index_id, index_update) in db_updates {
             for (key, db_update) in index_update {
                 let hash_change = SubstateHashChange::new(
-                    (index_id.clone(), key.clone()),
+                    DbId::new(index_id.clone(), key.clone()),
                     match db_update {
                         DatabaseUpdate::Set(v) => Some(hash(v)),
                         DatabaseUpdate::Delete => None,

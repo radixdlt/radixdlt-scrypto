@@ -49,8 +49,8 @@ impl SubstateDatabase for RocksdbSubstateStore {
 }
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
-    fn commit(&mut self, state_changes: &DatabaseUpdates) {
-        for (index_id, index_updates) in &state_changes.database_updates {
+    fn commit(&mut self, database_updates: &DatabaseUpdates) {
+        for (index_id, index_updates) in database_updates {
             for (db_key, update) in index_updates {
                 let substate_id = encode_substate_id(index_id, db_key);
                 match update {

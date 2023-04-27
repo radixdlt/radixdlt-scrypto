@@ -172,7 +172,7 @@ pub fn build_package<P: AsRef<Path>>(
     let schema = extract_schema(&wasm).map_err(BuildError::SchemaExtractionError)?;
     fs::write(
         &schema_path,
-        scrypto_encode(&schema).map_err(BuildError::SchemaEncodeError)?,
+        manifest_encode(&schema).map_err(BuildError::SchemaEncodeError)?,
     )
     .map_err(|err| BuildError::IOErrorAtPath(err, schema_path.clone()))?;
 

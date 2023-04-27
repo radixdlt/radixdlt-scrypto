@@ -1,6 +1,8 @@
+use super::system_modules::auth::{convert_contextless, Authentication};
+use super::system_modules::costing::CostingReason;
 use crate::errors::{
-    ApplicationError, InvalidDropNodeAccess, InvalidModuleSet, InvalidModuleType, KernelError,
-    RuntimeError, SubstateValidationError,
+    ApplicationError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
+    InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
@@ -36,15 +38,71 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use super::system_modules::auth::{convert_contextless, Authentication};
-use super::system_modules::costing::CostingReason;
-
-pub struct SystemDownstream<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
+/// Provided to upper layer for invoking lower layer service
+pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
 
-impl<'a, Y, V> SystemDownstream<'a, Y, V>
+impl<'a, Y, V> SystemService<'a, Y, V>
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
+{
+    pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
+        // This is to solve the bootstrapping problem.
+        // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
+        if node_id.eq(RADIX_TOKEN.as_node_id()) {
+            return Some(TypeInfoSubstate::Object(ObjectInfo {
+                blueprint: Blueprint {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
+                global: true,
+                blueprint_parent: None,
+            }));
+        } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
+            || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
+            || node_id.eq(SYSTEM_TOKEN.as_node_id())
+            || node_id.eq(PACKAGE_TOKEN.as_node_id())
+            || node_id.eq(GLOBAL_OBJECT_TOKEN.as_node_id())
+            || node_id.eq(PACKAGE_OWNER_TOKEN.as_node_id())
+            || node_id.eq(VALIDATOR_OWNER_TOKEN.as_node_id())
+            || node_id.eq(IDENTITY_OWNER_TOKEN.as_node_id())
+            || node_id.eq(ACCOUNT_OWNER_TOKEN.as_node_id())
+        {
+            return Some(TypeInfoSubstate::Object(ObjectInfo {
+                blueprint: Blueprint {
+                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
+                global: true,
+                blueprint_parent: None,
+            }));
+        }
+
+        self.api
+            .kernel_lock_substate(
+                node_id,
+                SysModuleId::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
+                LockFlags::read_only(),
+            )
+            .and_then(|lock_handle| {
+                self.api
+                    .kernel_read_substate(lock_handle)
+                    .and_then(|x| Ok(x.as_typed::<TypeInfoSubstate>().unwrap()))
+                    .and_then(|substate| {
+                        self.api
+                            .kernel_drop_lock(lock_handle)
+                            .and_then(|_| Ok(substate))
+                    })
+            })
+            .ok()
+    }
+}
+
+impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -172,13 +230,11 @@ where
             .schema
             .blueprints
             .get(blueprint.blueprint_name.as_str())
-            .ok_or(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    ),
+            .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::BlueprintNotFound(
+                    blueprint.blueprint_name.to_string(),
                 )),
-            ))?
+            )))?
             .clone();
 
         self.api.kernel_drop_lock(handle)?;
@@ -199,37 +255,35 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema = package
-            .schema
-            .blueprints
-            .get(blueprint.blueprint_name.as_str())
-            .ok_or(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::BlueprintNotFound(
+        let schema =
+            package
+                .schema
+                .blueprints
+                .get(&blueprint.blueprint_name)
+                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::BlueprintNotFound(
                         blueprint.blueprint_name.to_string(),
-                    ),
-                )),
-            ))?;
-
+                    )),
+                )))?;
         if schema.substates.len() != fields.len() {
-            return Err(RuntimeError::SystemError(
-                SystemError::SubstateValidationError(Box::new(
-                    SubstateValidationError::WrongNumberOfSubstates(
-                        blueprint.clone(),
-                        fields.len(),
-                        schema.substates.len(),
-                    ),
+            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::WrongNumberOfSubstates(
+                    blueprint.clone(),
+                    fields.len(),
+                    schema.substates.len(),
                 )),
-            ));
+            )));
         }
         for i in 0..fields.len() {
-            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i])
+            validate_payload_against_schema(
+                &fields[i],
+                &schema.schema,
+                schema.substates[i],
+                self,
+            )
                 .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::SubstateValidationError(Box::new(
-                        SubstateValidationError::SchemaValidationError(
-                            blueprint.clone(),
-                            err.error_message(&schema.schema),
-                        ),
+                    RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                        CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
                     )))
                 })?;
         }
@@ -242,7 +296,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSubstateLockApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -261,42 +315,93 @@ where
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
-            node_id, module_id, ..
+            node_id,
+            module_id,
+            substate_key,
+            ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if module_id.eq(&SysModuleId::Virtualized.into()) {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-            match type_info {
-                TypeInfoSubstate::KeyValueStore(schema) => {
-                    validate_payload_against_schema(&buffer, &schema.schema, schema.value)
-                        .map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        match type_info {
+            TypeInfoSubstate::KeyValueStore(store_schema) => {
+                if let Err(e) = validate_payload_against_schema(
+                    &buffer,
+                    &store_schema.schema,
+                    store_schema.value,
+                    self,
+                ) {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
+                    ));
+                };
 
-                    if !schema.can_own {
-                        let indexed = IndexedScryptoValue::from_slice(&buffer).map_err(|_| {
-                            RuntimeError::SystemError(SystemError::InvalidSubstateWrite)
-                        })?;
-                        let (_, own, _) = indexed.unpack();
-                        if !own.is_empty() {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidKeyValueStoreOwnership,
-                            ));
-                        }
+                if !store_schema.can_own {
+                    let indexed = IndexedScryptoValue::from_slice(&buffer)
+                        .expect("Should be valid due to payload check");
+                    let (_, own, _) = indexed.unpack();
+                    if !own.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidKeyValueStoreOwnership,
+                        ));
                     }
                 }
-                _ => {
-                    // TODO: Other schema checks
-                    // TODO: Check objects stored are storeable
-                }
             }
-        } else {
-            // TODO: Other schema checks
-            // TODO: Check objects stored are storeable
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                let handle = self.kernel_lock_substate(
+                    blueprint.package_address.as_node_id(),
+                    SysModuleId::Object.into(),
+                    &PackageOffset::Info.into(),
+                    LockFlags::read_only(),
+                )?;
+                let package_info: PackageInfoSubstate = self.sys_read_substate_typed(handle)?;
+                let blueprint_schema = package_info
+                    .schema
+                    .blueprints
+                    .get(&blueprint.blueprint_name)
+                    .expect("Missing blueprint schema")
+                    .clone();
+                self.kernel_drop_lock(handle)?;
+
+                match SysModuleId::from_repr(module_id.0).unwrap() {
+                    SysModuleId::Object => {
+                        if let SubstateKey::Tuple(offset) = substate_key {
+                            if let Some(index) = blueprint_schema.substates.get(offset as usize) {
+                                if let Err(e) = validate_payload_against_schema(
+                                    &buffer,
+                                    &blueprint_schema.schema,
+                                    *index,
+                                    self,
+                                ) {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::InvalidSubstateWrite(
+                                            e.error_message(&blueprint_schema.schema),
+                                        ),
+                                    ));
+                                };
+                            } else {
+                                // TODO: error here?
+                            }
+                        } else {
+                            // TODO: is this a valid execution path?
+                        }
+                    }
+                    SysModuleId::TypeInfo
+                    | SysModuleId::Metadata
+                    | SysModuleId::Royalty
+                    | SysModuleId::AccessRules
+                    | SysModuleId::Virtualized => {
+                        // TODO: We should validate these substates, but luckily they're not accessible from
+                        // Scrypto, so safe for now.
+                    }
+                };
+            }
+            TypeInfoSubstate::Index | TypeInfoSubstate::SortedIndex => {
+                // TODO: Check objects stored are storeable
+            }
         }
 
-        let substate = IndexedScryptoValue::from_vec(buffer)
-            .map_err(|_| RuntimeError::SystemError(SystemError::InvalidSubstateWrite))?;
+        let substate =
+            IndexedScryptoValue::from_vec(buffer).expect("Should be valid due to payload check");
         self.api.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
@@ -311,7 +416,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -324,6 +429,114 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
         self.new_object_internal(blueprint_ident, fields, package_address, actor_info)
+            /*
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let package_address = actor.package_address().clone();
+
+        let handle = self.api.kernel_lock_substate(
+            package_address.as_node_id(),
+            SysModuleId::Object.into(),
+            &PackageOffset::Info.into(),
+            LockFlags::read_only(),
+        )?;
+        let package: PackageInfoSubstate =
+            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let schema =
+            package
+                .schema
+                .blueprints
+                .get(blueprint_ident)
+                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::BlueprintNotFound(
+                        blueprint_ident.to_string(),
+                    )),
+                )))?;
+        if schema.substates.len() != object_states.len() {
+            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::WrongNumberOfSubstates(
+                    blueprint_ident.to_string(),
+                    object_states.len(),
+                    schema.substates.len(),
+                )),
+            )));
+        }
+        for i in 0..object_states.len() {
+            validate_payload_against_schema(
+                &object_states[i],
+                &schema.schema,
+                schema.substates[i],
+                self,
+            )
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                    CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
+                )))
+            })?;
+        }
+        self.api.kernel_drop_lock(handle)?;
+
+        let entity_type = match (package_address, blueprint_ident) {
+            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalFungibleVault
+            }
+            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
+                EntityType::InternalNonFungibleVault
+            }
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
+            _ => EntityType::InternalGenericComponent,
+        };
+
+        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = object_states
+            .into_iter()
+            .enumerate()
+            .map(|(i, x)| {
+                (
+                    // TODO check size during package publishing time
+                    SubstateKey::Tuple(i as u8),
+                    IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
+                )
+            })
+            .collect();
+
+        let type_parent = if let Some(parent) = &schema.parent {
+            match actor {
+                Actor::Method {
+                    global_address: Some(address),
+                    blueprint,
+                    ..
+                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
+                _ => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidChildObjectCreation,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
+
+        let self_module_id = match (package_address, blueprint_ident) {
+            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+            _ => SysModuleId::Object,
+        };
+
+        self.api.kernel_create_node(
+            node_id,
+            btreemap!(
+                self_module_id.into() => node_init,
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint: Blueprint::new(&package_address,blueprint_ident),
+                        global:false,
+                        type_parent
+                    })
+                ).to_substates(),
+            ),
+        )?;
+
+        Ok(node_id.into())
+             */
     }
 
     #[trace_resources]
@@ -367,7 +580,7 @@ where
         };
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let global_address = GlobalAddress::new_unchecked(global_node_id.into());
+        let global_address = GlobalAddress::new_or_panic(global_node_id.into());
         self.globalize_with_address(modules, global_address)?;
         Ok(global_address)
     }
@@ -542,7 +755,7 @@ where
                 match type_info {
                     TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
                         let global_address = if global {
-                            Some(GlobalAddress::new_unchecked(receiver.clone().into()))
+                            Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                         } else {
                             // See if we have a parent
 
@@ -689,7 +902,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -792,7 +1005,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -910,7 +1123,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1014,7 +1227,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1051,7 +1264,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1096,7 +1309,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1213,7 +1426,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1254,7 +1467,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientTransactionLimitsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1272,7 +1485,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1290,7 +1503,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientEventApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1373,6 +1586,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
+            self,
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
@@ -1391,7 +1605,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientLoggerApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1408,7 +1622,7 @@ where
     }
 }
 
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1438,14 +1652,14 @@ where
     }
 }
 
-impl<'a, Y, V> ClientApi<RuntimeError> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
 }
 
-impl<'a, Y, V> KernelNodeApi for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelNodeApi for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1471,7 +1685,7 @@ where
     }
 }
 
-impl<'a, Y, V> KernelSubstateApi for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelSubstateApi for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
@@ -1561,7 +1775,7 @@ where
     }
 }
 
-impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemDownstream<'a, Y, V>
+impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,

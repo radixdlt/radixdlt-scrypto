@@ -16,7 +16,13 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct ComponentAddress(NodeId); // private to ensure entity type check
 
 impl ComponentAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
+        let node_id = NodeId(raw);
+        assert!(node_id.is_global_component());
+        Self(node_id)
+    }
+
+    pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -91,11 +97,10 @@ impl TryFrom<[u8; NodeId::LENGTH]> for ComponentAddress {
     type Error = ParseComponentAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        if EntityType::from_repr(value[0])
-            .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
-            .is_global_component()
-        {
-            Ok(Self(NodeId(value)))
+        let node_id = NodeId(value);
+
+        if node_id.is_global_component() {
+            Ok(Self(node_id))
         } else {
             Err(ParseComponentAddressError::InvalidEntityTypeId(value[0]))
         }
@@ -121,7 +126,7 @@ impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
 
 impl From<ComponentAddress> for super::GlobalAddress {
     fn from(value: ComponentAddress) -> Self {
-        Self::new_unchecked(value.into())
+        Self::new_or_panic(value.into())
     }
 }
 

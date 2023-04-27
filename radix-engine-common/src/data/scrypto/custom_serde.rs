@@ -1,47 +1,26 @@
 use super::*;
-use crate::address::Bech32Encoder;
 use crate::*;
+use sbor::representations::*;
 use sbor::rust::prelude::*;
-use sbor::serde_serialization::*;
 use sbor::traversal::*;
 use sbor::*;
-
-#[derive(Clone, Copy, Debug, Default)]
-pub struct ScryptoValueSerializationContext<'a> {
-    pub bech32_encoder: Option<&'a Bech32Encoder>,
-}
-
-impl<'a> ScryptoValueSerializationContext<'a> {
-    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
-        Self { bech32_encoder }
-    }
-    pub fn no_context() -> Self {
-        Self {
-            bech32_encoder: None,
-        }
-    }
-}
-
-impl<'a> CustomSerializationContext<'a> for ScryptoValueSerializationContext<'a> {
-    type CustomTypeExtension = ScryptoCustomTypeExtension;
-}
+use utils::ContextualDisplay;
 
 impl SerializableCustomTypeExtension for ScryptoCustomTypeExtension {
-    type CustomSerializationContext<'a> = ScryptoValueSerializationContext<'a>;
-
-    fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
-        _context: &SerializationContext<'s, 'a, Self>,
+    fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
+        context: &SerializationContext<'s, 'a, Self>,
         _: LocalTypeIndex,
         custom_value: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
-            ScryptoCustomValue::Reference(value) => {
-                // FIXME add bech32 support
-                (SerializableType::String(hex::encode(&value.0)), true)
-            }
-            ScryptoCustomValue::Own(value) => {
-                (SerializableType::String(hex::encode(&value.0)), true)
-            }
+            ScryptoCustomValue::Reference(value) => (
+                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                true,
+            ),
+            ScryptoCustomValue::Own(value) => (
+                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                true,
+            ),
             ScryptoCustomValue::Decimal(value) => {
                 (SerializableType::String(value.to_string()), false)
             }
@@ -101,12 +80,8 @@ mod tests {
             "value": "000000000000000000000000000000000000000000000000000000"
         });
 
-        assert_simple_json_matches(
-            &value,
-            ScryptoValueSerializationContext::no_context(),
-            expected,
-        );
-        assert_invertible_json_matches(
+        assert_natural_json_matches(&value, ScryptoValueDisplayContext::no_context(), expected);
+        assert_programmatic_json_matches(
             &value,
             ScryptoValueSerializationContext::no_context(),
             expected_invertible,
@@ -128,16 +103,8 @@ mod tests {
             "value": "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k"
         });
 
-        assert_simple_json_matches(
-            &value,
-            ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder)),
-            expected_simple,
-        );
-        assert_invertible_json_matches(
-            &value,
-            ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder)),
-            expected_invertible,
-        );
+        assert_natural_json_matches(&value, &encoder, expected_simple);
+        assert_programmatic_json_matches(&value, &encoder, expected_invertible);
     }
 
     #[test]
@@ -185,38 +152,7 @@ mod tests {
             ],
         };
 
-        let expected_simple = json!([
-            "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
-            {
-                "kind": "Own",
-                "value": "00000000000000000000000000000000000000000000000000000000000000"
-            },
-            "1",
-            "0.01",
-            "0",
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "<hello>"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "#123#"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "[2345]"
-            },
-            {
-                "kind": "NonFungibleLocalId",
-                "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
-            },
-            {
-                "kind": "Reference",
-                "value": "00000000000000000000000000000000000000000000000000000000000000"
-            }
-        ]);
-
-        let expected_invertible = json!({
+        let expected_programmatic = json!({
             "fields": [
                 {
                     "kind": "Address",
@@ -262,13 +198,44 @@ mod tests {
             "kind": "Tuple"
         });
 
-        let context = ScryptoValueSerializationContext::with_optional_bech32(Some(&encoder));
+        let expected_natural = json!([
+            "resource_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs6d89k",
+            {
+                "kind": "Own",
+                "value": "00000000000000000000000000000000000000000000000000000000000000"
+            },
+            "1",
+            "0.01",
+            "0",
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "<hello>"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "#123#"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "[2345]"
+            },
+            {
+                "kind": "NonFungibleLocalId",
+                "value": "{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}"
+            },
+            {
+                "kind": "Reference",
+                "value": "00000000000000000000000000000000000000000000000000000000000000"
+            }
+        ]);
 
-        assert_simple_json_matches(&value, context, expected_simple);
-        assert_invertible_json_matches(&value, context, expected_invertible);
+        let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
+
+        assert_natural_json_matches(&value, context, expected_natural);
+        assert_programmatic_json_matches(&value, context, expected_programmatic);
     }
 
-    fn assert_simple_json_matches<
+    fn assert_natural_json_matches<
         'a,
         T: ScryptoEncode,
         C: Into<ScryptoValueSerializationContext<'a>>,
@@ -280,9 +247,9 @@ mod tests {
         let payload = scrypto_encode(&value).unwrap();
 
         assert_json_eq(
-            SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(&payload).serializable(
-                SchemalessSerializationContext {
-                    mode: SerializationMode::Simple,
+            ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
+                SerializationParameters::Schemaless {
+                    mode: SerializationMode::Natural,
                     custom_context: context.into(),
                 },
             ),
@@ -290,10 +257,10 @@ mod tests {
         );
     }
 
-    fn assert_invertible_json_matches<
+    fn assert_programmatic_json_matches<
         'a,
         T: ScryptoEncode,
-        C: Into<ScryptoValueSerializationContext<'a>>,
+        C: Into<ScryptoValueDisplayContext<'a>>,
     >(
         value: &T,
         context: C,
@@ -302,9 +269,9 @@ mod tests {
         let payload = scrypto_encode(&value).unwrap();
 
         assert_json_eq(
-            SborPayloadWithoutSchema::<ScryptoCustomTypeExtension>::new(&payload).serializable(
-                SchemalessSerializationContext {
-                    mode: SerializationMode::Invertible,
+            ScryptoRawPayload::new_from_valid_slice(&payload).serializable(
+                SerializationParameters::Schemaless {
+                    mode: SerializationMode::Programmatic,
                     custom_context: context.into(),
                 },
             ),

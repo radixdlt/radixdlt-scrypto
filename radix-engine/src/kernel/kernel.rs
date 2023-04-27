@@ -12,7 +12,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -66,7 +66,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
             } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_unchecked(node_id.0))
+                && is_native_package(PackageAddress::new_or_panic(node_id.0))
             {
                 // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
@@ -114,7 +114,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             }
         }
 
-        let mut system = SystemDownstream::new(&mut kernel);
+        let mut system = SystemService::new(&mut kernel);
 
         let rtn =
             system.call_function(package_address, blueprint_name, function_name, args.into())?;
@@ -408,7 +408,7 @@ where
                     let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = blueprint_parent.unwrap();
                     let resource_address: ResourceAddress =
-                        ResourceAddress::new_unchecked(parent.as_ref().clone().try_into().unwrap());
+                        ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)
                 }
                 _ => {

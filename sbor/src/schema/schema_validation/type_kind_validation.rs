@@ -4,7 +4,7 @@ use crate::schema::*;
 pub const MAX_NUMBER_OF_FIELDS: usize = 1024;
 
 pub fn validate_type_kind<'a, E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+    context: &SchemaContext,
     type_kind: &SchemaTypeKind<E>,
 ) -> Result<(), SchemaValidationError> {
     match type_kind {
@@ -56,7 +56,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             validate_index::<E>(context, value_type)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::validate_type_kind(context, custom_type_kind)?;
+            E::validate_custom_type_kind(context, custom_type_kind)?;
         }
     }
 
@@ -64,7 +64,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
 }
 
 pub fn validate_index<E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+    context: &SchemaContext,
     type_index: &LocalTypeIndex,
 ) -> Result<(), SchemaValidationError> {
     match type_index {

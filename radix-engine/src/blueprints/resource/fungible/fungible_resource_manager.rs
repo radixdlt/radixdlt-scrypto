@@ -82,7 +82,7 @@ impl FungibleResourceManagerBlueprint {
         )?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
@@ -99,7 +99,7 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         Self::create_with_initial_supply_and_address(
             divisibility,
@@ -132,7 +132,7 @@ impl FungibleResourceManagerBlueprint {
             ],
         )?;
 
-        let resource_address = ResourceAddress::new_unchecked(resource_address);
+        let resource_address = ResourceAddress::new_or_panic(resource_address);
         check_new_amount(divisibility, initial_supply)?;
 
         let bucket = globalize_fungible_with_initial_supply(

@@ -18,7 +18,7 @@ pub mod math;
 pub mod network;
 /// RE time library.
 pub mod time;
-/// RE types
+/// RE types.
 pub mod types;
 
 mod macros;

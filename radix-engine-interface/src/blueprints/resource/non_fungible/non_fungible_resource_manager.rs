@@ -140,7 +140,7 @@ pub struct NonFungibleResourceManagerMintSingleUuidInput {
 }
 pub type NonFungibleResourceManagerMintSingleUuidOutput = (Bucket, NonFungibleLocalId);
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
     pub schema: ScryptoSchema,
     pub non_fungible: LocalTypeIndex,

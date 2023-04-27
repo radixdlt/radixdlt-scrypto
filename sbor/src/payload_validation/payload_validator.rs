@@ -1,22 +1,22 @@
 use crate::rust::prelude::*;
 use crate::traversal::*;
-use crate::typed_traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadValidationError<E: CustomTypeExtension> {
-    TraversalError(TypedTraversalError<E::CustomValueKind>),
-    TypeValidationError(TypeValidationError),
+    TraversalError(TypedTraversalError<E>),
+    ValidationError(ValidationError),
+    SchemaInconsistency,
 }
 
-impl<E: CustomTypeExtension> From<TypeValidationError> for PayloadValidationError<E> {
-    fn from(value: TypeValidationError) -> Self {
-        Self::TypeValidationError(value)
+impl<E: CustomTypeExtension> From<ValidationError> for PayloadValidationError<E> {
+    fn from(value: ValidationError) -> Self {
+        Self::ValidationError(value)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypeValidationError {
+pub enum ValidationError {
     LengthValidationError {
         required: LengthValidation,
         actual: usize,
@@ -61,12 +61,13 @@ pub enum TypeValidationError {
         required: NumericValidation<u128>,
         actual: u128,
     },
+    CustomError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocatedValidationError<'s, E: CustomTypeExtension> {
     error: PayloadValidationError<E>,
-    location: FullLocation<'s, E::CustomTraversal>,
+    location: FullLocation<'s, E>,
 }
 
 impl<'s, E: CustomTypeExtension> LocatedValidationError<'s, E> {
@@ -81,68 +82,59 @@ impl<'s, E: CustomTypeExtension> LocatedValidationError<'s, E> {
     }
 }
 
-// TODO: need better representation for validated scheme to eliminate panic below
-
-#[macro_export]
-macro_rules! failed_to_resolve_type_validation {
-    () => {
-        panic!("Failed to resolve type validation, possibly caused by a bug in schema or payload validation!")
-    };
-}
-
-#[macro_export]
-macro_rules! type_validation_meets_unexpected_value {
-    () => {
-        panic!("Type validation meets unexpected value, possibly caused by a bug in schema or payload validation!")
-    };
-}
-
 #[macro_export]
 macro_rules! numeric_validation_match {
     ($numeric_validation: ident, $value: expr, $type: ident, $error_type: ident) => {{
         {
-            let TerminalValueRef::$type(value) = *$value else { type_validation_meets_unexpected_value!() };
+            // Note - we use this instead of a let else statement to avoid
+            // a rustfmt infinite-indent bug
+            let value = match *$value {
+                TerminalValueRef::$type(value) => value,
+                _ => return Err(PayloadValidationError::SchemaInconsistency),
+            };
             if !$numeric_validation.is_valid(value) {
-                return Err(TypeValidationError::$error_type {
+                return Err(ValidationError::$error_type {
                     required: *$numeric_validation,
                     actual: value,
-                }.into());
+                }
+                .into());
             }
         }
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: CustomTypeExtension>(
+pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>, T>(
     payload: &[u8],
     schema: &'s Schema<E>,
     index: LocalTypeIndex,
+    context: &mut T,
 ) -> Result<(), LocatedValidationError<'s, E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
         let typed_event = traverser.next_event();
-        if validate_event_with_type::<E>(&schema, &typed_event.event).map_err(|error| {
-            LocatedValidationError {
+        if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
+            |error| LocatedValidationError {
                 error,
                 location: typed_event.full_location(),
-            }
-        })? {
+            },
+        )? {
             return Ok(());
         }
     }
 }
 
-fn validate_event_with_type<E: CustomTypeExtension>(
+fn validate_event_with_type<E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
-    event: &TypedTraversalEvent<E::CustomTraversal>,
+    event: &TypedTraversalEvent<E>,
+    context: &mut T,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
-        TypedTraversalEvent::PayloadPrefix => Ok(false),
         TypedTraversalEvent::ContainerStart(type_index, header) => {
             validate_container::<E>(schema, header, *type_index).map(|_| false)
         }
         TypedTraversalEvent::ContainerEnd(_, _) => Ok(false), // Validation already handled at Container Start
         TypedTraversalEvent::TerminalValue(type_index, value_ref) => {
-            validate_terminal_value::<E>(schema, value_ref, *type_index).map(|_| false)
+            validate_terminal_value::<E, T>(schema, value_ref, *type_index, context).map(|_| false)
         }
         TypedTraversalEvent::TerminalValueBatch(type_index, value_batch_ref) => {
             validate_terminal_value_batch::<E>(schema, value_batch_ref, *type_index).map(|_| false)
@@ -161,15 +153,15 @@ pub fn validate_container<E: CustomTypeExtension>(
 ) -> Result<(), PayloadValidationError<E>> {
     match schema
         .resolve_type_validation(type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+        .ok_or(PayloadValidationError::SchemaInconsistency)?
     {
         TypeValidation::None => {}
         TypeValidation::Array(length_validation) => {
             let ContainerHeader::Array(ArrayHeader { length, .. }) = header else {
-                type_validation_meets_unexpected_value!()
+                return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(*length) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: *length,
                 }
@@ -178,29 +170,30 @@ pub fn validate_container<E: CustomTypeExtension>(
         }
         TypeValidation::Map(length_validation) => {
             let ContainerHeader::Map(MapHeader { length, .. }) = header else {
-                type_validation_meets_unexpected_value!()
+                return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(*length) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: *length,
                 }
                 .into());
             }
         }
-        _ => type_validation_meets_unexpected_value!(),
+        _ => return Err(PayloadValidationError::SchemaInconsistency),
     }
     Ok(())
 }
 
-pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
+pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
     schema: &Schema<E>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
+    context: &mut T,
 ) -> Result<(), PayloadValidationError<E>> {
     match schema
         .resolve_type_validation(type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+        .ok_or(PayloadValidationError::SchemaInconsistency)?
     {
         TypeValidation::None => {}
         TypeValidation::I8(x) => {
@@ -235,20 +228,23 @@ pub fn validate_terminal_value<'de, E: CustomTypeExtension>(
         }
         TypeValidation::String(length_validation) => {
             let TerminalValueRef::String(x) = value else {
-                type_validation_meets_unexpected_value!()
+                return Err(PayloadValidationError::SchemaInconsistency);
             };
             if !length_validation.is_valid(x.len()) {
-                return Err(TypeValidationError::LengthValidationError {
+                return Err(ValidationError::LengthValidationError {
                     required: *length_validation,
                     actual: x.len(),
                 }
                 .into());
             }
         }
-        TypeValidation::Custom(_) => {
-            todo!("Add support for custom type validation")
+        TypeValidation::Array(_) | TypeValidation::Map(_) => {
+            // No Array or Map validation should be attached to terminal value.
+            return Err(PayloadValidationError::SchemaInconsistency);
         }
-        _ => type_validation_meets_unexpected_value!(),
+        TypeValidation::Custom(custom_type_validation) => {
+            E::apply_custom_type_validation(custom_type_validation, value, context)?;
+        }
     }
     Ok(())
 }
@@ -260,7 +256,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
 ) -> Result<(), PayloadValidationError<E>> {
     match schema
         .resolve_type_validation(type_index)
-        .unwrap_or_else(|| failed_to_resolve_type_validation!())
+        .ok_or(PayloadValidationError::SchemaInconsistency)?
     {
         TypeValidation::None => {}
         TypeValidation::U8(numeric_validation) => {
@@ -268,7 +264,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
             let TerminalValueBatchRef::U8(value_batch) = value_batch;
             for byte in value_batch.iter() {
                 if !numeric_validation.is_valid(*byte) {
-                    return Err(TypeValidationError::U8ValidationError {
+                    return Err(ValidationError::U8ValidationError {
                         required: *numeric_validation,
                         actual: *byte,
                     }
@@ -276,7 +272,7 @@ pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
                 }
             }
         }
-        _ => type_validation_meets_unexpected_value!(),
+        _ => return Err(PayloadValidationError::SchemaInconsistency),
     }
     Ok(())
 }
@@ -305,7 +301,7 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, &mut ());
         assert!(result.is_ok())
     }
 
@@ -318,12 +314,12 @@ mod tests {
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index);
+        let result = validate_payload_against_schema(&payload, &schema, type_index, &mut ());
         assert!(matches!(
             result,
             Err(LocatedValidationError {
-                error: PayloadValidationError::TypeValidationError(
-                    TypeValidationError::LengthValidationError {
+                error: PayloadValidationError::ValidationError(
+                    ValidationError::LengthValidationError {
                         required: LengthValidation {
                             min: Some(16),
                             max: Some(16)
@@ -396,7 +392,7 @@ mod tests {
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate_payload_against_schema(&bytes, &schema, type_index);
+        let result = validate_payload_against_schema(&bytes, &schema, type_index, &mut ());
         assert!(result.is_ok())
     }
 
@@ -431,6 +427,7 @@ mod tests {
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &mut ()
             ),
             Ok(())
         );
@@ -440,10 +437,11 @@ mod tests {
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &mut ()
             )
             .map_err(|e| e.error),
-            Err(PayloadValidationError::TypeValidationError(
-                TypeValidationError::U8ValidationError {
+            Err(PayloadValidationError::ValidationError(
+                ValidationError::U8ValidationError {
                     required: NumericValidation {
                         min: Some(5),
                         max: Some(6)
@@ -458,10 +456,11 @@ mod tests {
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
+                &mut ()
             )
             .map_err(|e| e.error),
-            Err(PayloadValidationError::TypeValidationError(
-                TypeValidationError::LengthValidationError {
+            Err(PayloadValidationError::ValidationError(
+                ValidationError::LengthValidationError {
                     required: LengthValidation {
                         min: Some(0),
                         max: Some(1)
@@ -472,14 +471,12 @@ mod tests {
         );
     }
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     struct MyStruct {
         hello: MyEnum,
     }
 
-    #[derive(Sbor)]
-    #[sbor(custom_value_kind = "NoCustomValueKind")]
+    #[derive(BasicSbor)]
     enum MyEnum {
         Option1(HashMap<String, Vec<(BasicValue,)>>),
         Option2 { inner: Box<MyEnum> },
@@ -524,6 +521,7 @@ mod tests {
             &cut_off_payload,
             &schema,
             type_index,
+            &mut ()
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -531,7 +529,75 @@ mod tests {
 
         assert_eq!(
             path_message,
-            "MyStruct.hello[0]->MyEnum::Option2{1}.inner[0]->MyEnum::Option1{0}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key"
+            "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key->[ERROR] DecodeError(BufferUnderflow { required: 1, remaining: 0 })"
+        );
+    }
+
+    #[derive(BasicSbor)]
+    struct MyStruct2 {
+        field1: u8,
+        field2: u16,
+    }
+
+    #[test]
+    pub fn mismatched_type_full_location_path_is_readable() {
+        let value = BasicValue::Tuple {
+            fields: vec![
+                // EG got these around the wrong way
+                BasicValue::U16 { value: 2 },
+                BasicValue::U8 { value: 1 },
+            ],
+        };
+        let payload = basic_encode(&value).unwrap();
+
+        let (type_index, schema) =
+            generate_full_schema_from_single_type::<MyStruct2, NoCustomTypeExtension>();
+
+        let Err(error) = validate_payload_against_schema(
+            &payload,
+            &schema,
+            type_index,
+            &mut()
+        ) else {
+            panic!("Validation did not error with too short a payload");
+        };
+        let path_message = error.location.path_to_string(&schema);
+
+        assert_eq!(
+            path_message,
+            "MyStruct2.[0|field1]->[ERROR] { expected_type: U8, found: U16 }"
+        );
+    }
+
+    #[test]
+    pub fn mismatched_enum_variant_full_location_path_is_readable() {
+        let value = BasicValue::Tuple {
+            fields: vec![
+                // This discriminator doesn't exist
+                BasicValue::Enum {
+                    discriminator: 2,
+                    fields: vec![],
+                },
+            ],
+        };
+        let payload = basic_encode(&value).unwrap();
+
+        let (type_index, schema) =
+            generate_full_schema_from_single_type::<(MyEnum,), NoCustomTypeExtension>();
+
+        let Err(error) = validate_payload_against_schema(
+            &payload,
+            &schema,
+            type_index,
+            &mut()
+        ) else {
+            panic!("Validation did not error with too short a payload");
+        };
+        let path_message = error.location.path_to_string(&schema);
+
+        assert_eq!(
+            path_message,
+            "Tuple.[0]->MyEnum::{2}[ERROR] { unknown_variant_id: 2 }"
         );
     }
 }

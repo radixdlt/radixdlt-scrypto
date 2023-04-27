@@ -1,19 +1,16 @@
 mod custom_traits;
 mod describe;
 mod macros;
-mod payload_validation;
 mod schema;
 mod schema_validation;
 mod type_aggregator;
 mod type_data;
 mod type_link;
-pub mod typed_traversal;
 mod well_known_types;
 
 pub use custom_traits::*;
 pub use describe::*;
 pub(crate) use macros::*;
-pub use payload_validation::*;
 pub use schema::*;
 pub use schema_validation::*;
 pub use type_aggregator::*;

@@ -1,8 +1,30 @@
 use super::*;
-use crate::decoder::PayloadTraverser;
+use crate::decoder::BorrowingDecoder;
 use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
+
+/// Returns the length of the value at the start of the partial payload.
+pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomTypeExtension>(
+    partial_payload: &'de [u8],
+    value_kind: ValueKind<E::CustomValueKind>,
+    current_depth: usize,
+) -> Result<usize, DecodeError> {
+    let mut traverser = VecTraverser::<E::CustomTraversal>::new(
+        partial_payload,
+        E::MAX_DEPTH - current_depth,
+        ExpectedStart::ValueBody(value_kind),
+        false,
+    );
+    loop {
+        let next_event = traverser.next_event();
+        match next_event.event {
+            TraversalEvent::End => return Ok(next_event.location.end_offset),
+            TraversalEvent::DecodeError(decode_error) => return Err(decode_error),
+            _ => {}
+        }
+    }
+}
 
 pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
     type CustomValueKind: CustomValueKind;
@@ -15,7 +37,7 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
     where
-        R: PayloadTraverser<'de, Self::CustomValueKind>;
+        R: BorrowingDecoder<'de, Self::CustomValueKind>;
 }
 
 pub trait CustomTerminalValueRef: Debug + Clone + PartialEq + Eq {
@@ -38,7 +60,7 @@ impl<C: CustomTraversal> ContainerState<C> {
     }
 }
 
-/// The `VecTraverser` is for streamed decoding of a payload.
+/// The `VecTraverser` is for streamed decoding of a payload or single encoded value (tree).
 /// It turns payload decoding into a pull-based event stream.
 ///
 /// The caller is responsible for stopping calling `next_event` after an Error or End event.
@@ -47,13 +69,14 @@ pub struct VecTraverser<'de, C: CustomTraversal> {
     check_exact_end: bool,
     decoder: VecDecoder<'de, C::CustomValueKind>,
     container_stack: Vec<ContainerState<C>>,
-    next_event_override: NextEventOverride,
+    next_event_override: NextEventOverride<C::CustomValueKind>,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum NextEventOverride {
+pub enum NextEventOverride<X: CustomValueKind> {
     ReadPrefix(u8),
     ReadRootValue,
+    ReadRootValueWithValueKind(ValueKind<X>),
     ReadBytes(usize),
     None,
 }
@@ -97,34 +120,52 @@ macro_rules! return_if_error {
     }};
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ExpectedStart<X: CustomValueKind> {
+    PayloadPrefix(u8),
+    Value,
+    ValueBody(ValueKind<X>),
+}
+
 impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     pub fn new(
         input: &'de [u8],
         max_depth: usize,
-        payload_prefix: Option<u8>,
+        expected_start: ExpectedStart<T::CustomValueKind>,
         check_exact_end: bool,
     ) -> Self {
         Self {
             decoder: VecDecoder::new(input, max_depth),
             container_stack: Vec::with_capacity(max_depth),
             max_depth,
-            next_event_override: match payload_prefix {
-                Some(prefix) => NextEventOverride::ReadPrefix(prefix),
-                None => NextEventOverride::ReadRootValue,
+            next_event_override: match expected_start {
+                ExpectedStart::PayloadPrefix(prefix) => NextEventOverride::ReadPrefix(prefix),
+                ExpectedStart::Value => NextEventOverride::ReadRootValue,
+                ExpectedStart::ValueBody(value_kind) => {
+                    NextEventOverride::ReadRootValueWithValueKind(value_kind)
+                }
             },
             check_exact_end,
         }
     }
 
     pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        match self.next_event_override.clone() {
+        match self.next_event_override {
             NextEventOverride::ReadPrefix(expected_prefix) => {
                 self.next_event_override = NextEventOverride::ReadRootValue;
-                self.read_payload_prefix(expected_prefix)
+                return_if_error!(
+                    self,
+                    self.decoder.read_and_check_payload_prefix(expected_prefix)
+                );
+                self.next_event()
             }
             NextEventOverride::ReadRootValue => {
                 self.next_event_override = NextEventOverride::None;
-                self.read_root_value()
+                self.read_root_value(None)
+            }
+            NextEventOverride::ReadRootValueWithValueKind(value_kind) => {
+                self.next_event_override = NextEventOverride::None;
+                self.read_root_value(Some(value_kind))
             }
             NextEventOverride::ReadBytes(size) => {
                 self.next_event_override = NextEventOverride::None;
@@ -143,25 +184,6 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                     None => self.read_end(),
                 }
             }
-        }
-    }
-
-    pub fn read_payload_prefix<'t>(
-        &'t mut self,
-        expected_prefix: u8,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let start_offset = self.get_offset();
-        return_if_error!(
-            self,
-            self.decoder.read_and_check_payload_prefix(expected_prefix)
-        );
-        LocatedTraversalEvent {
-            event: TraversalEvent::PayloadPrefix,
-            location: Location {
-                start_offset,
-                end_offset: self.get_offset(),
-                ancestor_path: &self.container_stack,
-            },
         }
     }
 
@@ -208,9 +230,15 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         }
     }
 
-    fn read_root_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
+    fn read_root_value<'t>(
+        &'t mut self,
+        value_kind: Option<ValueKind<T::CustomValueKind>>,
+    ) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
-        let value_kind = return_if_error!(self, self.decoder.read_value_kind());
+        let value_kind = match value_kind {
+            Some(value_kind) => value_kind,
+            None => return_if_error!(self, self.decoder.read_value_kind()),
+        };
         self.next_value(start_offset, value_kind)
     }
 
@@ -444,7 +472,6 @@ mod tests {
         let mut traverser = basic_payload_traverser(&payload);
 
         // Start:
-        next_event_is_payload_prefix(&mut traverser, 0, 1);
         next_event_is_container_start_header(
             &mut traverser,
             ContainerHeader::Tuple(TupleHeader { length: 7 }),
@@ -652,27 +679,6 @@ mod tests {
             55,
         );
         next_event_is_end(&mut traverser, 55, 55);
-    }
-
-    pub fn next_event_is_payload_prefix(
-        traverser: &mut BasicTraverser,
-        expected_start_offset: usize,
-        expected_end_offset: usize,
-    ) {
-        let event = traverser.next_event();
-        let LocatedTraversalEvent {
-            event: TraversalEvent::PayloadPrefix,
-            location: Location {
-                start_offset,
-                end_offset,
-                ..
-            },
-        } = event else {
-            panic!("Invalid event - expected PayloadPrefix, was {:?}", event);
-        };
-        assert_eq!(start_offset, expected_start_offset);
-        assert_eq!(end_offset, expected_end_offset);
-        assert!(event.location.ancestor_path.is_empty());
     }
 
     pub fn next_event_is_container_start_header(

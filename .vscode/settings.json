@@ -16,6 +16,7 @@
         "descendents",
         "eddsa",
         "flamegraph",
+        "Formattable",
         "instantiatable",
         "Instrumenter",
         "Invokable",
@@ -32,6 +33,7 @@
         "Unstake",
         "unstaked",
         "Untimed",
+        "Validatable",
         "virtualizable",
         "Wasmer",
         "Wasmi"

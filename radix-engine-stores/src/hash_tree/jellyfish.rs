@@ -80,11 +80,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::{
-    Child, Children, InternalNode, IteratedHash, LeafNode, Nibble, NibblePath, Node, NodeKey,
+    Child, Children, InternalNode, IteratedLeafKey, LeafNode, Nibble, NibblePath, Node, NodeKey,
     SparseMerkleProof, SparseMerkleProofExt, SparseMerkleRangeProof, TreeReader, Version,
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
-use crate::hash_tree::types::StorageError;
+use crate::hash_tree::types::{LeafKey, StorageError};
 use radix_engine_interface::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::{hash_map_new, HashMap};
@@ -97,12 +97,12 @@ const SANITY_NIBBLE_LIMIT: usize = 1000;
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/storage/jellyfish-merkle/src/lib.rs#L329
 /// The Jellyfish Merkle tree data structure. See [`crate`] for description.
-pub struct JellyfishMerkleTree<'a, R, K> {
+pub struct JellyfishMerkleTree<'a, R, P> {
     reader: &'a R,
-    phantom_value: PhantomData<K>,
+    phantom_value: PhantomData<P>,
 }
 
-impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
+impl<'a, R: 'a + TreeReader<P>, P: Clone> JellyfishMerkleTree<'a, R, P> {
     /// Creates a `JellyfishMerkleTree` backed by the given [`TreeReader`](trait.TreeReader.html).
     pub fn new(reader: &'a R) -> Self {
         Self {
@@ -114,7 +114,7 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
     /// Get the node hash from the cache if cache is provided, otherwise (for test only) compute it.
     fn get_hash(
         node_key: &NodeKey,
-        node: &Node<K>,
+        node: &Node<P>,
         hash_cache: &Option<&HashMap<NibblePath, Hash>>,
     ) -> Hash {
         if let Some(cache) = hash_cache {
@@ -171,11 +171,11 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
     /// the batch is not reachable from public interfaces before being committed.
     pub fn batch_put_value_set(
         &self,
-        value_set: Vec<(Hash, Option<&(Hash, K)>)>,
+        value_set: Vec<(&LeafKey, Option<&(Hash, P)>)>,
         node_hashes: Option<&HashMap<NibblePath, Hash>>,
         persisted_version: Option<Version>,
         version: Version,
-    ) -> Result<(Hash, TreeUpdateBatch<K>), StorageError> {
+    ) -> Result<(Hash, TreeUpdateBatch<P>), StorageError> {
         let deduped_and_sorted_kvs = value_set
             .into_iter()
             .collect::<BTreeMap<_, _>>()
@@ -220,11 +220,11 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
         &self,
         node_key: &NodeKey,
         version: Version,
-        kvs: &[(Hash, Option<&(Hash, K)>)],
+        kvs: &[(&LeafKey, Option<&(Hash, P)>)],
         depth: usize,
         hash_cache: &Option<&HashMap<NibblePath, Hash>>,
-        batch: &mut TreeUpdateBatch<K>,
-    ) -> Result<Option<Node<K>>, StorageError> {
+        batch: &mut TreeUpdateBatch<P>,
+    ) -> Result<Option<Node<P>>, StorageError> {
         let node = self.reader.get_node(node_key)?;
         batch.put_stale_node(node_key.clone(), version, &node);
 
@@ -252,7 +252,7 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
 
                 // Reuse the current `InternalNode` in memory to create a new internal node.
                 let mut old_children: Children = internal_node.into();
-                let mut new_created_children: HashMap<Nibble, Node<K>> = hash_map_new();
+                let mut new_created_children: HashMap<Nibble, Node<P>> = hash_map_new();
                 for (child_nibble, child_option) in new_children {
                     if let Some(child) = child_option {
                         new_created_children.insert(child_nibble, child);
@@ -316,13 +316,13 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
         node_key: &NodeKey,
         internal_node: &InternalNode,
         version: Version,
-        kvs: &[(Hash, Option<&(Hash, K)>)],
+        kvs: &[(&LeafKey, Option<&(Hash, P)>)],
         left: usize,
         right: usize,
         depth: usize,
         hash_cache: &Option<&HashMap<NibblePath, Hash>>,
-        batch: &mut TreeUpdateBatch<K>,
-    ) -> Result<(Nibble, Option<Node<K>>), StorageError> {
+        batch: &mut TreeUpdateBatch<P>,
+    ) -> Result<(Nibble, Option<Node<P>>), StorageError> {
         let child_index = kvs[left].0.get_nibble(depth);
         let child = internal_node.child(child_index);
 
@@ -352,17 +352,18 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
         &self,
         node_key: &NodeKey,
         version: Version,
-        existing_leaf_node: LeafNode<K>,
-        kvs: &[(Hash, Option<&(Hash, K)>)],
+        existing_leaf_node: LeafNode<P>,
+        kvs: &[(&LeafKey, Option<&(Hash, P)>)],
         depth: usize,
         hash_cache: &Option<&HashMap<NibblePath, Hash>>,
-        batch: &mut TreeUpdateBatch<K>,
-    ) -> Result<Option<Node<K>>, StorageError> {
-        let existing_leaf_key = existing_leaf_node.account_key();
+        batch: &mut TreeUpdateBatch<P>,
+    ) -> Result<Option<Node<P>>, StorageError> {
+        let existing_leaf_key = existing_leaf_node.leaf_key();
 
         if kvs.len() == 1 && kvs[0].0 == existing_leaf_key {
-            if let (key, Some((value_hash, state_key))) = kvs[0] {
-                let new_leaf_node = Node::new_leaf(key, *value_hash, (state_key.clone(), version));
+            if let (key, Some((value_hash, payload))) = kvs[0] {
+                let new_leaf_node =
+                    Node::new_leaf(key.clone(), *value_hash, payload.clone(), version);
                 Ok(Some(new_leaf_node))
             } else {
                 Ok(None)
@@ -440,14 +441,15 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
         &self,
         node_key: &NodeKey,
         version: Version,
-        kvs: &[(Hash, Option<&(Hash, K)>)],
+        kvs: &[(&LeafKey, Option<&(Hash, P)>)],
         depth: usize,
         hash_cache: &Option<&HashMap<NibblePath, Hash>>,
-        batch: &mut TreeUpdateBatch<K>,
-    ) -> Result<Option<Node<K>>, StorageError> {
+        batch: &mut TreeUpdateBatch<P>,
+    ) -> Result<Option<Node<P>>, StorageError> {
         if kvs.len() == 1 {
-            if let (key, Some((value_hash, state_key))) = kvs[0] {
-                let new_leaf_node = Node::new_leaf(key, *value_hash, (state_key.clone(), version));
+            if let (key, Some((value_hash, payload))) = kvs[0] {
+                let new_leaf_node =
+                    Node::new_leaf(key.clone(), *value_hash, payload.clone(), version);
                 Ok(Some(new_leaf_node))
             } else {
                 Ok(None)
@@ -505,22 +507,22 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
     /// Returns the value (if applicable) and the corresponding merkle proof.
     pub fn get_with_proof(
         &self,
-        key: Hash,
+        key: &LeafKey,
         version: Version,
-    ) -> Result<(Option<(Hash, (K, Version))>, SparseMerkleProof), StorageError> {
+    ) -> Result<(Option<(Hash, P, Version)>, SparseMerkleProof), StorageError> {
         self.get_with_proof_ext(key, version)
             .map(|(value, proof_ext)| (value, proof_ext.into()))
     }
 
     pub fn get_with_proof_ext(
         &self,
-        key: Hash,
+        key: &LeafKey,
         version: Version,
-    ) -> Result<(Option<(Hash, (K, Version))>, SparseMerkleProofExt), StorageError> {
+    ) -> Result<(Option<(Hash, P, Version)>, SparseMerkleProofExt), StorageError> {
         // Empty tree just returns proof with no sibling hash.
         let mut next_node_key = NodeKey::new_empty_path(version);
         let mut siblings = vec![];
-        let nibble_path = NibblePath::new_even(key.to_vec());
+        let nibble_path = NibblePath::new_even(key.bytes.clone());
         let mut nibble_iter = nibble_path.nibbles();
 
         for _nibble_depth in 0..SANITY_NIBBLE_LIMIT {
@@ -552,8 +554,12 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
                 }
                 Node::Leaf(leaf_node) => {
                     return Ok((
-                        if leaf_node.account_key() == key {
-                            Some((leaf_node.value_hash(), leaf_node.value_index().clone()))
+                        if leaf_node.leaf_key() == key {
+                            Some((
+                                leaf_node.value_hash(),
+                                leaf_node.payload().clone(),
+                                leaf_node.version(),
+                            ))
                         } else {
                             None
                         },
@@ -574,11 +580,11 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
     /// Gets the proof that shows a list of keys up to `rightmost_key_to_prove` exist at `version`.
     pub fn get_range_proof(
         &self,
-        rightmost_key_to_prove: Hash,
+        rightmost_key_to_prove: &LeafKey,
         version: Version,
     ) -> Result<SparseMerkleRangeProof, StorageError> {
-        let (account, proof) = self.get_with_proof(rightmost_key_to_prove, version)?;
-        assert!(account.is_some(), "rightmost_key_to_prove must exist.");
+        let (leaf, proof) = self.get_with_proof(rightmost_key_to_prove, version)?;
+        assert!(leaf.is_some(), "rightmost_key_to_prove must exist.");
 
         let siblings = proof
             .siblings()
@@ -598,7 +604,7 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
         Ok(SparseMerkleRangeProof::new(siblings))
     }
 
-    fn get_root_node(&self, version: Version) -> Result<Node<K>, StorageError> {
+    fn get_root_node(&self, version: Version) -> Result<Node<P>, StorageError> {
         let root_node_key = NodeKey::new_empty_path(version);
         self.reader.get_node(&root_node_key)
     }
@@ -642,14 +648,14 @@ impl<'a, R: 'a + TreeReader<K>, K: Clone> JellyfishMerkleTree<'a, R, K> {
 /// An iterator that iterates the index range (inclusive) of each different nibble at given
 /// `nibble_idx` of all the keys in a sorted key-value pairs which have the identical Hash
 /// prefix (up to nibble_idx).
-struct NibbleRangeIterator<'a, K> {
-    sorted_kvs: &'a [(Hash, K)],
+struct NibbleRangeIterator<'a, P> {
+    sorted_kvs: &'a [(&'a LeafKey, P)],
     nibble_idx: usize,
     pos: usize,
 }
 
-impl<'a, K> NibbleRangeIterator<'a, K> {
-    fn new(sorted_kvs: &'a [(Hash, K)], nibble_idx: usize) -> Self {
+impl<'a, P> NibbleRangeIterator<'a, P> {
+    fn new(sorted_kvs: &'a [(&'a LeafKey, P)], nibble_idx: usize) -> Self {
         NibbleRangeIterator {
             sorted_kvs,
             nibble_idx,
@@ -658,7 +664,7 @@ impl<'a, K> NibbleRangeIterator<'a, K> {
     }
 }
 
-impl<'a, K> Iterator for NibbleRangeIterator<'a, K> {
+impl<'a, P> Iterator for NibbleRangeIterator<'a, P> {
     type Item = (usize, usize);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -684,14 +690,14 @@ impl<'a, K> Iterator for NibbleRangeIterator<'a, K> {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct TreeUpdateBatch<K> {
-    pub node_batch: Vec<Vec<(NodeKey, Node<K>)>>,
+pub struct TreeUpdateBatch<P> {
+    pub node_batch: Vec<Vec<(NodeKey, Node<P>)>>,
     pub stale_node_index_batch: Vec<Vec<StaleNodeIndex>>,
     pub num_new_leaves: usize,
     pub num_stale_leaves: usize,
 }
 
-impl<K: Clone> TreeUpdateBatch<K> {
+impl<P: Clone> TreeUpdateBatch<P> {
     pub fn new() -> Self {
         Self {
             node_batch: vec![vec![]],
@@ -709,7 +715,7 @@ impl<K: Clone> TreeUpdateBatch<K> {
         self.num_stale_leaves += 1;
     }
 
-    pub fn put_node(&mut self, node_key: NodeKey, node: Node<K>) {
+    pub fn put_node(&mut self, node_key: NodeKey, node: Node<P>) {
         if node.is_leaf() {
             self.inc_num_new_leaves();
         }
@@ -720,7 +726,7 @@ impl<K: Clone> TreeUpdateBatch<K> {
         &mut self,
         node_key: NodeKey,
         stale_since_version: Version,
-        node: &Node<K>,
+        node: &Node<P>,
     ) {
         if node.is_leaf() {
             self.inc_num_stale_leaves();

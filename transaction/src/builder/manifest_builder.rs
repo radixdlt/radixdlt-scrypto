@@ -24,7 +24,7 @@ use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::{
     model::*, to_manifest_value, ManifestEncode, ManifestValue,
 };
-use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
@@ -566,13 +566,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config,
             metadata,
             access_rules,
@@ -585,13 +581,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackage {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
         });
@@ -608,13 +600,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: package_access_rules_from_owner_badge(&owner_badge),
