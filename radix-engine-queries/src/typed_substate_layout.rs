@@ -73,6 +73,21 @@ pub enum TypedSubstateKey {
     ObjectModule(TypedObjectModuleSubstateKey),
 }
 
+impl TypedSubstateKey {
+    /// Just a work around for now to filter out "transient" substates we shouldn't be storing
+    pub fn value_is_mappable(&self) -> bool {
+        match self {
+            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVault(
+                NonFungibleVaultOffset::LockedNonFungible,
+            )) => false,
+            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleVault(
+                FungibleVaultOffset::LockedFungible,
+            )) => false,
+            _ => true,
+        }
+    }
+}
+
 /// Doesn't include non-object modules, nor transient nodes.
 #[derive(Debug, Clone)]
 pub enum TypedObjectModuleSubstateKey {
@@ -140,7 +155,7 @@ pub fn to_typed_object_module_substate_key(
     entity_type: EntityType,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, String> {
-    return to_typed_object_substate_key_no_error(entity_type, substate_key).map_err(|_| {
+    return to_typed_object_substate_key_internal(entity_type, substate_key).map_err(|_| {
         format!(
             "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
             entity_type, substate_key
@@ -148,7 +163,7 @@ pub fn to_typed_object_module_substate_key(
     });
 }
 
-fn to_typed_object_substate_key_no_error(
+fn to_typed_object_substate_key_internal(
     entity_type: EntityType,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, ()> {
@@ -194,9 +209,19 @@ fn to_typed_object_substate_key_no_error(
         EntityType::InternalNonFungibleVault => TypedObjectModuleSubstateKey::NonFungibleVault(
             NonFungibleVaultOffset::try_from(substate_key)?,
         ),
-        EntityType::InternalKeyValueStore
-        | EntityType::InternalIndex
-        | EntityType::InternalSortedIndex => Err(())?, // KVStore, Index and SortedIndex currently use Virtualized module
+        // These seem to be spread between Object and Virtualized SysModules
+        EntityType::InternalKeyValueStore => {
+            let key = substate_key.for_map().ok_or(())?;
+            TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
+        }
+        EntityType::InternalIndex => {
+            let key = substate_key.for_map().ok_or(())?;
+            TypedObjectModuleSubstateKey::GenericIndex(key.clone())
+        }
+        EntityType::InternalSortedIndex => {
+            let key = substate_key.for_sorted().ok_or(())?;
+            TypedObjectModuleSubstateKey::GenericSortedU16Index(key.clone())
+        }
     };
     Ok(substate_type)
 }
