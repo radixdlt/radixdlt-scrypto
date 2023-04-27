@@ -230,8 +230,15 @@ impl FungibleProofBlueprint {
         Ok(amount)
     }
 
-
-
+    pub(crate) fn get_resource_address<Y>(
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let proof_info = ProofInfoSubstate::of_self(api)?;
+        Ok(proof_info.resource_address)
+    }
 }
 
 pub struct ProofBlueprint;
@@ -290,20 +297,13 @@ impl ProofBlueprint {
     }
 
     pub(crate) fn get_resource_address<Y>(
-        input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
         let proof_info = ProofInfoSubstate::of_self(api)?;
-        Ok(IndexedScryptoValue::from_typed(
-            &proof_info.resource_address,
-        ))
+        Ok(proof_info.resource_address)
     }
 
     pub(crate) fn drop<Y>(

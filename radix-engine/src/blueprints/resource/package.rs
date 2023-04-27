@@ -97,9 +97,11 @@ const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
 
 const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
 const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
+const FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_FungibleProof";
 
 const NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleProof";
+const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_NonFungibleProof";
 
 pub struct ResourceManagerNativePackage;
 
@@ -1009,7 +1011,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                    export_name: FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -1079,7 +1081,7 @@ impl ResourceManagerNativePackage {
                     input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
-                    export_name: PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
+                    export_name: NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -1925,6 +1927,16 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleProofBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = FungibleProofBlueprint::get_resource_address(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
@@ -1949,15 +1961,20 @@ impl ResourceManagerNativePackage {
                 let rtn = ProofBlueprint::get_local_ids(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+
+            NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = ProofBlueprint::get_resource_address(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             PROOF_DROP_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 ProofBlueprint::drop(input, api)
-            }
-            PROOF_GET_RESOURCE_ADDRESS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                ProofBlueprint::get_resource_address(input, api)
             }
 
             FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
