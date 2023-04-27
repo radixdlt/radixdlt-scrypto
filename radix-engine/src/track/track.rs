@@ -1,7 +1,10 @@
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{AcquireLockError, DatabaseMapper, DatabaseUpdate, NodeSubstates, SetSubstateError, SubstateDatabase, SubstateStore, TakeSubstateError, StateUpdates};
+use radix_engine_stores::interface::{
+    AcquireLockError, DatabaseMapper, DatabaseUpdate, NodeSubstates, SetSubstateError,
+    StateUpdates, SubstateDatabase, SubstateStore, TakeSubstateError,
+};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
 
@@ -148,8 +151,7 @@ impl TrackedKey {
                 substate.value = value;
             }
             TrackedKey::ReadOnly(ReadOnly::NonExistent) => {
-                let new_tracked =
-                    TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value));
+                let new_tracked = TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value));
                 let mut old = mem::replace(self, new_tracked);
                 self.get_runtime_substate_mut().unwrap().lock_state =
                     old.get_runtime_substate_mut().unwrap().lock_state;
@@ -190,8 +192,7 @@ impl TrackedKey {
                 old.into_value()
             }
             TrackedKey::ReadOnly(ReadOnly::Existent(v)) => {
-                let new_tracked =
-                    TrackedKey::ReadExistAndWrite(v.value.clone(), Write::Delete);
+                let new_tracked = TrackedKey::ReadExistAndWrite(v.value.clone(), Write::Delete);
                 let old = mem::replace(self, new_tracked);
                 old.into_value()
             }
@@ -206,9 +207,8 @@ impl TrackedKey {
                 *self = TrackedKey::Garbage;
             }
             TrackedKey::ReadExistAndWrite(read, _) => {
-                *self = TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
-                    read.clone(),
-                )));
+                *self =
+                    TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(read.clone())));
             }
             TrackedKey::ReadNonExistAndWrite(..) => {
                 *self = TrackedKey::ReadOnly(ReadOnly::NonExistent);
@@ -222,9 +222,7 @@ impl TrackedKey {
             | TrackedKey::WriteOnly(Write::Update(substate))
             | TrackedKey::ReadOnly(ReadOnly::Existent(substate))
             | TrackedKey::ReadNonExistAndWrite(substate)
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate)) => {
-                Some(substate.value)
-            }
+            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate)) => Some(substate.value),
             TrackedKey::WriteOnly(Write::Delete)
             | TrackedKey::ReadExistAndWrite(_, Write::Delete)
             | TrackedKey::ReadOnly(ReadOnly::NonExistent)
@@ -285,9 +283,7 @@ impl TrackedNode {
     }
 }
 
-pub fn to_state_updates<M: DatabaseMapper>(
-    index: IndexMap<NodeId, TrackedNode>,
-) -> StateUpdates {
+pub fn to_state_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
     let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
         index_map_new();
     let mut system_updates: IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>> =
@@ -300,15 +296,17 @@ pub fn to_state_updates<M: DatabaseMapper>(
             for (db_key, tracked) in tracked_module.substates {
                 let update = match tracked.tracked {
                     TrackedKey::ReadOnly(..) | TrackedKey::Garbage => None,
-                    TrackedKey::ReadNonExistAndWrite(substate)
-                    | TrackedKey::New(substate) => {
+                    TrackedKey::ReadNonExistAndWrite(substate) | TrackedKey::New(substate) => {
                         Some(DatabaseUpdate::Set(substate.value.into()))
                     }
-                    TrackedKey::ReadExistAndWrite(_, write)
-                    | TrackedKey::WriteOnly(write) => match write {
-                        Write::Delete => Some(DatabaseUpdate::Delete),
-                        Write::Update(substate) => Some(DatabaseUpdate::Set(substate.value.into())),
-                    },
+                    TrackedKey::ReadExistAndWrite(_, write) | TrackedKey::WriteOnly(write) => {
+                        match write {
+                            Write::Delete => Some(DatabaseUpdate::Delete),
+                            Write::Update(substate) => {
+                                Some(DatabaseUpdate::Set(substate.value.into()))
+                            }
+                        }
+                    }
                 };
                 if let Some(update) = update {
                     index_updates.insert(db_key, update.clone());
@@ -463,9 +461,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
                 if let Some(value) = value {
                     let tracked = TrackedSubstateKey {
                         substate_key,
-                        tracked: TrackedKey::ReadOnly(ReadOnly::Existent(
-                            RuntimeSubstate::new(value),
-                        ))
+                        tracked: TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
+                            value,
+                        ))),
                     };
                     e.insert(tracked);
                 } else {
@@ -473,15 +471,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
                     if let Some(value) = value {
                         let tracked = TrackedSubstateKey {
                             substate_key,
-                            tracked: TrackedKey::ReadNonExistAndWrite(
-                                RuntimeSubstate::new(value),
-                            )
+                            tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
                         };
                         e.insert(tracked);
                     } else {
                         let tracked = TrackedSubstateKey {
                             substate_key,
-                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent)
+                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent),
                         };
                         e.insert(tracked);
                     }
@@ -514,7 +510,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                         let key = M::map_to_db_key(&substate_key);
                         let tracked = TrackedSubstateKey {
                             substate_key,
-                            tracked: TrackedKey::New(RuntimeSubstate::new(value))
+                            tracked: TrackedKey::New(RuntimeSubstate::new(value)),
                         };
                         (key, tracked)
                     })
@@ -556,9 +552,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             Entry::Vacant(e) => {
                 let tracked = TrackedSubstateKey {
                     substate_key,
-                    tracked:TrackedKey::WriteOnly(Write::Update(
-                        RuntimeSubstate::new(substate_value),
-                    ))
+                    tracked: TrackedKey::WriteOnly(Write::Update(RuntimeSubstate::new(
+                        substate_value,
+                    ))),
                 };
                 e.insert(tracked);
             }
@@ -816,7 +812,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         virtualize: F,
     ) -> Result<u32, AcquireLockError> {
         // Load the substate from state track
-        let tracked = self.get_tracked_substate_virtualize(node_id, module_id, substate_key.clone(), virtualize);
+        let tracked = self.get_tracked_substate_virtualize(
+            node_id,
+            module_id,
+            substate_key.clone(),
+            virtualize,
+        );
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -885,10 +886,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                 .entry(module_id)
                 .or_insert(TrackedModule::new())
                 .substates
-                .insert(db_key, TrackedSubstateKey {
-                    substate_key,
-                    tracked: cloned_track
-                });
+                .insert(
+                    db_key,
+                    TrackedSubstateKey {
+                        substate_key,
+                        tracked: cloned_track,
+                    },
+                );
         }
     }
 

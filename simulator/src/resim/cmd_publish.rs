@@ -78,15 +78,15 @@ impl Publish {
                 dependent_components: BTreeSet::new(),
             };
             let database_updates = indexmap!(
-                    index_id => indexmap!(
-                        substate_key_code => DatabaseUpdate::Set(
-                            scrypto_encode(&package_code).unwrap()
-                        ),
-                        substate_key_info => DatabaseUpdate::Set(
-                            scrypto_encode(&package_info).unwrap()
-                        )
+                index_id => indexmap!(
+                    substate_key_code => DatabaseUpdate::Set(
+                        scrypto_encode(&package_code).unwrap()
+                    ),
+                    substate_key_info => DatabaseUpdate::Set(
+                        scrypto_encode(&package_info).unwrap()
                     )
-                );
+                )
+            );
 
             substate_db.commit(&database_updates);
 

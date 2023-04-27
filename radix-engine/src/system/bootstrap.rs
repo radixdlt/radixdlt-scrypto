@@ -253,7 +253,8 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db.commit(&commit_result.state_updates.database_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt.into()
     }
@@ -274,7 +275,8 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates.database_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt
     }
@@ -295,7 +297,8 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates.database_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt.into()
     }

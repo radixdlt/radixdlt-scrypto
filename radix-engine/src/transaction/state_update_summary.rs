@@ -12,7 +12,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::{TrackedNode, TrackedKey, Write};
+use crate::track::{TrackedKey, TrackedNode, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
