@@ -1,5 +1,5 @@
-use crate::rust::collections::*;
-use crate::rust::vec::Vec;
+use crate::representations::*;
+use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
@@ -120,7 +120,7 @@ impl CustomTraversal for NoCustomTraversal {
         _reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
     where
-        R: decoder::PayloadTraverser<'de, Self::CustomValueKind>,
+        R: BorrowingDecoder<'de, Self::CustomValueKind>,
     {
         unreachable!("NoCustomTraversal can't exist")
     }
@@ -131,7 +131,7 @@ pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
     BasicTraverser::new(
         buf,
         BASIC_SBOR_V1_MAX_DEPTH,
-        Some(BASIC_SBOR_V1_PAYLOAD_PREFIX),
+        ExpectedStart::PayloadPrefix(BASIC_SBOR_V1_PAYLOAD_PREFIX),
         true,
     )
 }
@@ -154,6 +154,12 @@ impl CustomTypeValidation for NoCustomTypeValidation {}
 pub enum NoCustomTypeExtension {}
 
 create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
+
+lazy_static::lazy_static! {
+    static ref EMPTY_SCHEMA: Schema<NoCustomTypeExtension> = {
+        Schema::empty()
+    };
+}
 
 impl CustomTypeExtension for NoCustomTypeExtension {
     const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
@@ -210,11 +216,35 @@ impl CustomTypeExtension for NoCustomTypeExtension {
     ) -> bool {
         unreachable!("No custom value kinds exist")
     }
+
+    fn empty_schema() -> &'static Schema<Self> {
+        &EMPTY_SCHEMA
+    }
 }
 
+pub type BasicRawPayload<'a> = RawPayload<'a, NoCustomTypeExtension>;
+pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomTypeExtension>;
+pub type BasicRawValue<'a> = RawValue<'a, NoCustomTypeExtension>;
+pub type BasicOwnedRawValue = RawValue<'static, NoCustomTypeExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
 pub type BasicSchema = Schema<NoCustomTypeExtension>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
+
+impl<'a> CustomDisplayContext<'a> for () {
+    type CustomTypeExtension = NoCustomTypeExtension;
+}
+
+impl FormattableCustomTypeExtension for NoCustomTypeExtension {
+    type CustomDisplayContext<'a> = ();
+
+    fn display_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        _: &mut F,
+        _: &Self::CustomDisplayContext<'a>,
+        _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        unreachable!("No custom values exist")
+    }
+}
 
 #[cfg(feature = "serde")]
 pub use self::serde_serialization::*;
@@ -222,16 +252,9 @@ pub use self::serde_serialization::*;
 #[cfg(feature = "serde")]
 mod serde_serialization {
     use super::*;
-    use crate::serde_serialization::*;
-
-    impl<'a> CustomSerializationContext<'a> for () {
-        type CustomTypeExtension = NoCustomTypeExtension;
-    }
 
     impl SerializableCustomTypeExtension for NoCustomTypeExtension {
-        type CustomSerializationContext<'a> = ();
-
-        fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
+        fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
             _: &SerializationContext<'s, 'a, Self>,
             _: LocalTypeIndex,
             _: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,

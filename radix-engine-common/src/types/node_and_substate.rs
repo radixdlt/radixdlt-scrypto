@@ -1,7 +1,9 @@
+use crate::address::{AddressDisplayContext, EncodeBech32AddressError};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
 use sbor::rust::prelude::*;
+use utils::ContextualDisplay;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -173,6 +175,35 @@ impl Debug for NodeId {
         f.debug_tuple("NodeId")
             .field(&hex::encode(&self.0))
             .finish()
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
+    type Error = EncodeBech32AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            let result = encoder.encode_to_fmt(f, self.as_ref());
+            match result {
+                Ok(_)
+                | Err(EncodeBech32AddressError::FormatError(_))
+                | Err(EncodeBech32AddressError::Bech32mEncodingError(_)) => return result,
+                // Only persistable NodeIds are guaranteed to have an address - so
+                // fall through to using hex if necessary.
+                Err(EncodeBech32AddressError::InvalidEntityTypeId(_))
+                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => {}
+            }
+            if let Ok(()) = encoder.encode_to_fmt(f, self.as_ref()) {
+                return Ok(());
+            }
+        }
+
+        // This could be made more performant by streaming the hex into the formatter
+        write!(f, "NodeId({})", hex::encode(&self.0)).map_err(EncodeBech32AddressError::FormatError)
     }
 }
 

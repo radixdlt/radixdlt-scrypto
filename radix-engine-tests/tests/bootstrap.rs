@@ -128,7 +128,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
             &resource_address.as_node_id(),
             SysModuleId::Object.into(),
-            ResourceManagerOffset::ResourceManager.into(),
+            &ResourceManagerOffset::ResourceManager.into(),
         )
         .unwrap();
     assert_eq!(resource_manager_substate.total_supply, allocation_amount);
@@ -138,7 +138,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
             SysModuleId::Metadata.into(),
-            SubstateKey::Map(key),
+            &SubstateKey::Map(key),
         )
         .unwrap();
 

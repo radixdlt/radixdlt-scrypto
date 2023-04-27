@@ -30,7 +30,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
-            PackageOffset::Code.into(),
+            &PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
 
@@ -62,7 +62,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
@@ -138,7 +138,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                ResourceManagerOffset::ResourceManager.into(),
+                &ResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
@@ -164,7 +164,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                ResourceManagerOffset::ResourceManager.into(),
+                &ResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
