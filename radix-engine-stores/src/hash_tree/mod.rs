@@ -169,7 +169,7 @@ fn get_index_leaf_entry<S: ReadableTreeStore<IndexPayload>>(
         .get_with_proof(&LeafKey::new(index.as_slice()), current_version)
         .unwrap();
 
-    let Some((_, (payload, version))) = node_option else {
+    let Some((_hash, payload, version)) = node_option else {
         return (None, None);
     };
 

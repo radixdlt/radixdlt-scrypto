@@ -1043,30 +1043,45 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
     (child_half_start, sibling_half_start)
 }
 
-/// Represents an account.
+/// Leaf node, capturing the value hash and carrying an arbitrary payload.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LeafNode<K> {
-    // The hashed key associated with this leaf node.
-    account_key: LeafKey,
-    // The hash of the value.
+pub struct LeafNode<P> {
+    // The key of this leaf node (i.e. its full nibble path).
+    leaf_key: LeafKey,
+    // The hash of an externally-stored value.
+    // Note: do not confuse that value with the `payload`.
     value_hash: Hash,
-    // The key and version that points to the value
-    value_index: (K, Version),
+    // The client payload.
+    // This is not the "value" whose changes are tracked by the tree (in fact, these values are
+    // supposed to be stored externally, and the tree only cares about their hashes - see
+    // `value_hash`).
+    // Rather, the payload is an arbitrary piece of data that the client wishes to store within the
+    // tree, in order to facilitate some related processing:
+    // - Many clients do not need it and will simply use a no-cost `()`.
+    // - A use-case designed by the original authors was to store a non-hashed element key as a
+    //   payload (while the `leaf_key` contains that key's hash, to ensure the nibble paths are
+    //   distributed over their space, for performance).
+    // - Our current use-case (specific to a "two layers" tree) is to store the nested tree's root
+    //   metadata.
+    payload: P,
+    // The version at which this leaf was created.
+    version: Version,
 }
 
-impl<K: Clone> LeafNode<K> {
+impl<P: Clone> LeafNode<P> {
     /// Creates a new leaf node.
-    pub fn new(account_key: LeafKey, value_hash: Hash, value_index: (K, Version)) -> Self {
+    pub fn new(leaf_key: LeafKey, value_hash: Hash, payload: P, version: Version) -> Self {
         Self {
-            account_key,
+            leaf_key,
             value_hash,
-            value_index,
+            payload,
+            version,
         }
     }
 
-    /// Gets the account key, the hashed account address.
-    pub fn account_key(&self) -> &LeafKey {
-        &self.account_key
+    /// Gets the key.
+    pub fn leaf_key(&self) -> &LeafKey {
+        &self.leaf_key
     }
 
     /// Gets the associated value hash.
@@ -1074,19 +1089,28 @@ impl<K: Clone> LeafNode<K> {
         self.value_hash
     }
 
-    /// Get the index key to locate the value.
-    pub fn value_index(&self) -> &(K, Version) {
-        &self.value_index
+    /// Gets the payload.
+    pub fn payload(&self) -> &P {
+        &self.payload
     }
 
-    pub fn hash(&self) -> Hash {
-        hash([self.account_key.bytes.as_slice(), &self.value_hash.0].concat())
+    /// Gets the version.
+    pub fn version(&self) -> Version {
+        self.version
+    }
+
+    /// Gets the leaf's hash (not to be confused with a `value_hash()`).
+    /// This hash incorporates the node's key and the value's hash, in order to capture certain
+    /// changes within a sparse merkle tree (consider 2 trees, both containing a single element with
+    /// the same value, but stored under different keys - we want their root hashes to differ).
+    pub fn leaf_hash(&self) -> Hash {
+        hash([self.leaf_key.bytes.as_slice(), &self.value_hash.0].concat())
     }
 }
 
 impl<K> From<LeafNode<K>> for SparseMerkleLeafNode {
     fn from(leaf_node: LeafNode<K>) -> Self {
-        Self::new(leaf_node.account_key, leaf_node.value_hash)
+        Self::new(leaf_node.leaf_key, leaf_node.value_hash)
     }
 }
 
@@ -1119,7 +1143,7 @@ impl<K: Clone> From<LeafNode<K>> for Node<K> {
     }
 }
 
-impl<K: Clone> Node<K> {
+impl<P: Clone> Node<P> {
     /// Creates the [`Internal`](Node::Internal) variant.
     #[cfg(any(test, feature = "fuzzing"))]
     pub fn new_internal(children: Children) -> Self {
@@ -1127,8 +1151,8 @@ impl<K: Clone> Node<K> {
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
-    pub fn new_leaf(account_key: LeafKey, value_hash: Hash, value_index: (K, Version)) -> Self {
-        Node::Leaf(LeafNode::new(account_key, value_hash, value_index))
+    pub fn new_leaf(leaf_key: LeafKey, value_hash: Hash, payload: P, version: Version) -> Self {
+        Node::Leaf(LeafNode::new(leaf_key, value_hash, payload, version))
     }
 
     /// Returns `true` if the node is a leaf node.
@@ -1160,7 +1184,7 @@ impl<K: Clone> Node<K> {
     pub fn hash(&self) -> Hash {
         match self {
             Node::Internal(internal_node) => internal_node.hash(),
-            Node::Leaf(leaf_node) => leaf_node.hash(),
+            Node::Leaf(leaf_node) => leaf_node.leaf_hash(),
             Node::Null => SPARSE_MERKLE_PLACEHOLDER_HASH,
         }
     }
