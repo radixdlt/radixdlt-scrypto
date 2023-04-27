@@ -123,11 +123,34 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     }
 
     fn validate_custom_type_validation(
-        context: &SchemaContext,
+        _context: &SchemaContext,
         custom_type_kind: &Self::CustomTypeKind<LocalTypeIndex>,
         custom_type_validation: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
-        todo!()
+        match custom_type_kind {
+            ScryptoCustomTypeKind::Reference => {
+                if let ScryptoCustomTypeValidation::Reference(_) = custom_type_validation {
+                    Ok(())
+                } else {
+                    return Err(SchemaValidationError::TypeValidationMismatch);
+                }
+            }
+            ScryptoCustomTypeKind::Own => {
+                if let ScryptoCustomTypeValidation::Own(_) = custom_type_validation {
+                    Ok(())
+                } else {
+                    return Err(SchemaValidationError::TypeValidationMismatch);
+                }
+            }
+            ScryptoCustomTypeKind::Decimal
+            | ScryptoCustomTypeKind::PreciseDecimal
+            | ScryptoCustomTypeKind::NonFungibleLocalId => {
+                // All these custom type kinds only support `SchemaTypeValidation::None`.
+                // If they get to this point, they have been paired with some ScryptoCustomTypeValidation
+                // - which isn't valid.
+                return Err(SchemaValidationError::TypeValidationMismatch);
+            }
+        }
     }
 
     fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
