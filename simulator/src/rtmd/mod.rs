@@ -19,9 +19,9 @@ pub struct Args {
     #[clap(short, long)]
     network: Option<String>,
 
-    /// Extract blobls
+    /// Whether to export blobs
     #[clap(short, long, action)]
-    blobs: bool,
+    export_blobs: bool,
 
     /// Input file
     #[clap(required = true)]
@@ -48,7 +48,7 @@ pub fn run() -> Result<(), Error> {
     let result = decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
     std::fs::write(&args.output, &result).map_err(Error::IoError)?;
 
-    if args.blobs {
+    if args.export_blobs {
         let directory = args.output.parent().unwrap();
         for blob in manifest.blobs {
             let blob_hash = hash(&blob);
