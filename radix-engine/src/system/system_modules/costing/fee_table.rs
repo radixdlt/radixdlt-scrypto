@@ -34,6 +34,7 @@ pub enum CostingEntry<'a> {
         module_id: &'a SysModuleId,
         substate_key: &'a SubstateKey,
     },
+    LockSubstateFirstTime,
     ReadSubstate {
         size: u32,
     },
@@ -346,6 +347,7 @@ impl FeeTable {
                 (SysModuleId::TypeInfo, Some(EntityType::InternalNonFungibleVault)) => 207,
                 _ => 632, // average of above values
             },
+            CostingEntry::LockSubstateFirstTime => 100, // todo: determine correct value
             CostingEntry::ReadSubstate { size: _ } => 174,
             CostingEntry::WriteSubstate { size: _ } => 126,
         }) as u64

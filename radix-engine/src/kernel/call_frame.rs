@@ -190,7 +190,7 @@ impl CallFrame {
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
-        } else if let Ok(handle) = store.acquire_lock(
+        } else if let Ok((handle, _)) = store.acquire_lock(
             node_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
@@ -213,13 +213,14 @@ impl CallFrame {
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
-    ) -> Result<LockHandle, LockSubstateError> {
+    ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
+        let mut first_time_lock = false;
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -243,12 +244,13 @@ impl CallFrame {
                     })?
             }
         } else {
-            let handle = store
+            let (handle, first_time) = store
                 .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
+            first_time_lock = first_time;
             store.read_substate(handle)
         };
 
@@ -302,7 +304,7 @@ impl CallFrame {
             *counter += 1;
         }
 
-        Ok(lock_handle)
+        Ok((lock_handle, first_time_lock))
     }
 
     pub fn drop_lock<S: SubstateStore>(
