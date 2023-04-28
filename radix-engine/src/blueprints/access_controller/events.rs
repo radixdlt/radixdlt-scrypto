@@ -8,13 +8,28 @@ pub struct InitiateRecoveryEvent {
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
+pub struct InitiateBadgeWithdrawAttemptEvent {
+    pub proposer: Proposer,
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct RuleSetUpdateEvent {
     pub proposer: Proposer,
     pub proposal: RecoveryProposal,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent)]
+pub struct BadgeWithdrawEvent {
+    pub proposer: Proposer,
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
 pub struct CancelRecoveryProposalEvent {
+    pub proposer: Proposer,
+}
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct CancelBadgeWithdrawAttemptEvent {
     pub proposer: Proposer,
 }
 
@@ -26,3 +41,6 @@ pub struct UnlockPrimaryRoleEvent;
 
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct StopTimedRecoveryEvent;
+
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct StopTimedBadgeWithdrawAttemptEvent;

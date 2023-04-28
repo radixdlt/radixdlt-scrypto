@@ -330,9 +330,9 @@ impl AccessControllerNativePackage {
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptInput>(),
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptOutput>(),
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
                 export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -341,9 +341,9 @@ impl AccessControllerNativePackage {
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptInput>(),
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptOutput>(),
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
                 export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
@@ -640,6 +640,62 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
+    fn initiate_badge_withdraw_attempt_as_primary<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            InitiateBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn initiate_badge_withdraw_attempt_as_recovery<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            InitiateBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
     fn quick_confirm_primary_role_recovery_proposal<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -722,6 +778,68 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
+    fn quick_confirm_primary_role_badge_withdraw_attempt<Y>(
+        receiver: &NodeId,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let bucket = transition_mut(
+            api,
+            AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        update_access_rules(api, receiver, locked_access_rules())?;
+
+        Runtime::emit_event(
+            api,
+            BadgeWithdrawEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
+    }
+
+    fn quick_confirm_recovery_role_badge_withdraw_attempt<Y>(
+        receiver: &NodeId,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let bucket = transition_mut(
+            api,
+            AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        update_access_rules(api, receiver, locked_access_rules())?;
+
+        Runtime::emit_event(
+            api,
+            BadgeWithdrawEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
+    }
+
     fn timed_confirm_recovery<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -761,6 +879,37 @@ impl AccessControllerNativePackage {
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn timed_confirm_badge_withdraw_attempt<Y>(
+        receiver: &NodeId,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerTimedConfirmBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let bucket = transition_mut(
+            api,
+            AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        update_access_rules(api, receiver, locked_access_rules())?;
+
+        Runtime::emit_event(
+            api,
+            BadgeWithdrawEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
     fn cancel_primary_role_recovery_proposal<Y>(
@@ -810,6 +959,62 @@ impl AccessControllerNativePackage {
         Runtime::emit_event(
             api,
             CancelRecoveryProposalEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn cancel_primary_role_badge_withdraw_attempt<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            CancelBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn cancel_recovery_role_badge_withdraw_attempt<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            CancelBadgeWithdrawAttemptEvent {
                 proposer: Proposer::Recovery,
             },
         )?;
@@ -871,7 +1076,29 @@ impl AccessControllerNativePackage {
                 },
             },
         )?;
-        Runtime::emit_event(api, StopTimedRecoveryEvent {})?;
+        Runtime::emit_event(api, StopTimedRecoveryEvent)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn stop_timed_badge_withdraw_attempt<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerStopTimedBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput,
+        )?;
+        Runtime::emit_event(api, StopTimedBadgeWithdrawAttemptEvent)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

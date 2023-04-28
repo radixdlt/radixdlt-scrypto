@@ -134,9 +134,9 @@ pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_ID
     "quick_confirm_primary_role_badge_withdraw_attempt";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptInput;
+pub struct AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput;
 
-pub type AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptOutput = Bucket;
+pub type AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput = Bucket;
 
 //======================================================================
 // Access Controller Quick Confirm Recovery Role Badge Withdraw Attempt
@@ -146,9 +146,9 @@ pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_I
     "quick_confirm_recovery_role_badge_withdraw_attempt";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptInput;
+pub struct AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput;
 
-pub type AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptOutput = Bucket;
+pub type AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput = Bucket;
 
 //=========================================
 // Access Controller Timed Confirm Recovery

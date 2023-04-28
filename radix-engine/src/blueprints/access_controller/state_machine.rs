@@ -361,11 +361,11 @@ pub(super) struct AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSta
 impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput>
     for AccessControllerSubstate
 {
-    type Output = ();
+    type Output = Bucket;
 
     fn transition_mut<Y>(
         &mut self,
-        _api: &mut Y,
+        api: &mut Y,
         _input: AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
@@ -375,7 +375,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Ok(())
+                Vault(self.controlled_asset).sys_take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -393,11 +393,11 @@ pub(super) struct AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptSt
 impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput>
     for AccessControllerSubstate
 {
-    type Output = ();
+    type Output = Bucket;
 
     fn transition_mut<Y>(
         &mut self,
-        _api: &mut Y,
+        api: &mut Y,
         _input: AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
@@ -416,7 +416,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
             ) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Ok(())
+                Vault(self.controlled_asset).sys_take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -494,7 +494,7 @@ pub(super) struct AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineIn
 impl TransitionMut<AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput>
     for AccessControllerSubstate
 {
-    type Output = ();
+    type Output = Bucket;
 
     fn transition_mut<Y>(
         &mut self,
@@ -533,7 +533,7 @@ impl TransitionMut<AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineI
                 } else {
                     self.state = Default::default();
 
-                    Ok(())
+                    Vault(self.controlled_asset).sys_take_all(api)
                 }
             }
             _ => access_controller_runtime_error!(NoTimedBadgeWithdrawAttemptsFound),
@@ -772,9 +772,9 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
     }
 }
 
-pub(super) struct AccessControllerStopBadgeWithdrawAttemptStateMachineInput;
+pub(super) struct AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput;
 
-impl TransitionMut<AccessControllerStopBadgeWithdrawAttemptStateMachineInput>
+impl TransitionMut<AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput>
     for AccessControllerSubstate
 {
     type Output = ();
@@ -782,7 +782,7 @@ impl TransitionMut<AccessControllerStopBadgeWithdrawAttemptStateMachineInput>
     fn transition_mut<Y>(
         &mut self,
         _api: &mut Y,
-        _input: AccessControllerStopBadgeWithdrawAttemptStateMachineInput,
+        _input: AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
