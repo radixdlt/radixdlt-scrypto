@@ -4,7 +4,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -175,7 +175,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 Actor::Method { node_id, ident, .. } => {
                     if node_id.is_global_component() {
                         (
-                            Some(ComponentAddress::new_unchecked(node_id.clone().into())),
+                            Some(ComponentAddress::new_or_panic(node_id.clone().into())),
                             ident,
                         )
                     } else {
@@ -212,7 +212,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let vault_id = if let Some(vault) = substate.royalty_vault {
                 vault
             } else {
-                let mut system = SystemDownstream::new(api);
+                let mut system = SystemService::new(api);
                 let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
                 substate.royalty_vault = Some(new_vault);
                 api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
@@ -256,7 +256,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 let vault_id = if let Some(vault) = substate.royalty_vault {
                     vault
                 } else {
-                    let mut system = SystemDownstream::new(api);
+                    let mut system = SystemService::new(api);
                     let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
                     substate.royalty_vault = Some(new_vault);
                     new_vault

@@ -3,7 +3,6 @@ use crate::address::{Bech32Decoder, EncodeBech32AddressError};
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
-use crate::types::NodeId;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -16,7 +15,13 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct PackageAddress(NodeId); // private to ensure entity type check
 
 impl PackageAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
+        let node_id = NodeId(raw);
+        assert!(node_id.is_global_package());
+        Self(node_id)
+    }
+
+    pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -57,11 +62,10 @@ impl TryFrom<[u8; NodeId::LENGTH]> for PackageAddress {
     type Error = ParsePackageAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        if EntityType::from_repr(value[0])
-            .ok_or(ParsePackageAddressError::InvalidEntityTypeId(value[0]))?
-            .is_global_package()
-        {
-            Ok(Self(NodeId(value)))
+        let node_id = NodeId(value);
+
+        if node_id.is_global_package() {
+            Ok(Self(node_id))
         } else {
             Err(ParsePackageAddressError::InvalidEntityTypeId(value[0]))
         }
@@ -87,7 +91,7 @@ impl Into<[u8; NodeId::LENGTH]> for PackageAddress {
 
 impl From<PackageAddress> for super::GlobalAddress {
     fn from(value: PackageAddress) -> Self {
-        Self::new_unchecked(value.into())
+        Self::new_or_panic(value.into())
     }
 }
 

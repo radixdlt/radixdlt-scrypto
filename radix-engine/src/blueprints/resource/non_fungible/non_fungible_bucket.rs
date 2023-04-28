@@ -360,7 +360,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
@@ -378,7 +378,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
         let handle = api.lock_parent_field(
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::read_only(),

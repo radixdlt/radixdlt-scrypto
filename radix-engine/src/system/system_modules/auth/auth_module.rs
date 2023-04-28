@@ -18,7 +18,7 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::convert;
@@ -133,7 +133,7 @@ impl AuthModule {
                 let method_key = MethodKey::new(*module_id, ident);
 
                 let info = {
-                    let mut system = SystemDownstream::new(api);
+                    let mut system = SystemService::new(api);
                     system.get_object_info(node_id)?
                 };
 
@@ -355,7 +355,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_callback().modules.auth.last_auth_zone();
 
-        let mut system = SystemDownstream::new(api);
+        let mut system = SystemService::new(api);
 
         // Authenticate
         for authorization in authorizations {

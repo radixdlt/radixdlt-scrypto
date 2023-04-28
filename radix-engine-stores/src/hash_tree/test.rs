@@ -3,11 +3,15 @@ use crate::hash_tree::tree_store::{
     SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
     TypedInMemoryTreeStore,
 };
-use crate::hash_tree::{put_at_next_version, SubstateHashChange};
+use crate::hash_tree::types::{LeafKey, NodeKey};
+use crate::hash_tree::{put_at_next_version, DbId, SubstateHashChange};
+use crate::interface::DatabaseMapper;
+use crate::jmt_support::JmtMapper;
 use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::{ModuleId, NodeId, PackageAddress, SubstateKey, SysModuleId};
+use sbor::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -204,6 +208,77 @@ fn hash_of_different_re_node_nested_trees_is_same_when_contained_substates_are_s
 }
 
 #[test]
+fn db_index_and_key_are_used_directly_for_node_nibble_path() {
+    let mut store = TypedInMemoryTreeStore::new();
+
+    put_at_next_version(
+        &mut store,
+        None,
+        vec![
+            SubstateHashChange::new(
+                DbId::new(vec![1, 3, 3, 7], vec![253]),
+                Some(Hash([1; Hash::LENGTH])),
+            ),
+            SubstateHashChange::new(
+                DbId::new(vec![1, 3, 3, 7], vec![66]),
+                Some(Hash([2; Hash::LENGTH])),
+            ),
+            SubstateHashChange::new(
+                DbId::new(vec![123, 12, 1, 0], vec![6, 6, 6]),
+                Some(Hash([3; Hash::LENGTH])),
+            ),
+            SubstateHashChange::new(
+                DbId::new(vec![123, 12, 1, 0], vec![6, 6, 7]),
+                Some(Hash([4; Hash::LENGTH])),
+            ),
+        ],
+    );
+
+    let upper_leaf_keys = store
+        .root_tree_nodes
+        .iter()
+        .filter_map(|(node_key, node)| match node {
+            TreeNode::Leaf(TreeLeafNode { key_suffix, .. }) => Some(leaf_key(node_key, key_suffix)),
+            _ => None,
+        })
+        .collect::<HashSet<_>>();
+    // we cannot assert on the upper hashes, since they are effectively internal merkle hashes
+    assert_eq!(
+        upper_leaf_keys,
+        hashset!(
+            LeafKey {
+                bytes: vec![1, 3, 3, 7]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0]
+            },
+        )
+    );
+
+    let lower_leaves = store
+        .sub_tree_nodes
+        .iter()
+        .filter_map(|(node_key, node)| match node {
+            TreeNode::Leaf(TreeLeafNode {
+                key_suffix,
+                value_hash,
+                ..
+            }) => Some((leaf_key(node_key, key_suffix), value_hash.clone())),
+            _ => None,
+        })
+        .collect::<HashMap<_, _>>();
+    assert_eq!(
+        lower_leaves,
+        hashmap!(
+            LeafKey { bytes: vec![1, 3, 3, 7, 253] } => Hash([1; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, 66] } => Hash([2; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
+        )
+    );
+}
+
+#[test]
 fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
     fn count_current_re_node_leafs(store: &TypedInMemoryTreeStore) -> usize {
         store
@@ -295,7 +370,7 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let direct_bytes = nibbles.bytes().to_vec();
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
-        payload: substate_id(13, SysModuleId::Royalty, 37),
+        payload: (vec![9, 8, 7], vec![6]),
         value_hash: Hash([7; 32]),
     });
     let encoded = scrypto_encode(&node).unwrap();
@@ -326,14 +401,13 @@ fn sbor_decodes_what_was_encoded() {
         }),
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
-            payload: substate_id(13, SysModuleId::User, 37),
+            payload: (vec![1, 2], vec![3, 3, 3, 3, 3, 3, 3, 8, 3]),
             value_hash: Hash([7; 32]),
         }),
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded =
-        scrypto_decode::<Vec<TreeNode<(NodeId, ModuleId, SubstateKey)>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode<(Vec<u8>, Vec<u8>)>>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
@@ -366,23 +440,14 @@ fn change(
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
-    SubstateHashChange::new(
-        substate_id(node_id_seed, module_id, substate_offset_seed),
-        value_hash_seed.map(|value_seed| value_hash(value_seed)),
-    )
-}
-
-fn substate_id(
-    node_id_seed: u8,
-    module_id: SysModuleId,
-    substate_offset_seed: u8,
-) -> (NodeId, ModuleId, SubstateKey) {
-    let fake_pkg_address = PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]);
+    let fake_pkg_address = unsafe { PackageAddress::new_unchecked([node_id_seed; NodeId::LENGTH]) };
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
-    (
-        NodeId(fake_pkg_address.into()),
-        ModuleId(module_id as u8),
-        SubstateKey::Map(fake_kvs_entry_id),
+    SubstateHashChange::new(
+        DbId::new(
+            JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), ModuleId(module_id as u8)),
+            JmtMapper::map_to_db_key(&SubstateKey::Map(fake_kvs_entry_id)),
+        ),
+        value_hash_seed.map(|value_seed| value_hash(value_seed)),
     )
 }
 
@@ -396,5 +461,17 @@ fn nibbles(hex_string: &str) -> NibblePath {
         hex_string
             .chars()
             .map(|nibble| Nibble::from(char::to_digit(nibble, 16).unwrap() as u8)),
+    )
+}
+
+fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
+    LeafKey::new(
+        NibblePath::from_iter(
+            node_key
+                .nibble_path()
+                .nibbles()
+                .chain(suffix_from_leaf.nibbles()),
+        )
+        .bytes(),
     )
 }

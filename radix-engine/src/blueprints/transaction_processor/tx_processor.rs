@@ -23,9 +23,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::PackageSchema;
+use sbor::rust::prelude::*;
 use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::errors::ManifestIdAllocationError;
@@ -65,7 +64,7 @@ impl TransactionProcessorBlueprint {
         })?;
 
         // Runtime transaction validation
-        for request in input.runtime_validations.as_ref() {
+        for request in &input.runtime_validations {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
@@ -91,14 +90,7 @@ impl TransactionProcessorBlueprint {
         // Decode instructions
         let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
 
-        // Index blobs
-        // TODO: defer blob hashing to post fee payments as it's computationally costly
-        let mut blobs_by_hash = NonIterMap::new();
-        for blob in input.blobs.as_ref() {
-            blobs_by_hash.insert(hash(blob), blob);
-        }
-
-        let mut processor = TransactionProcessor::new(blobs_by_hash);
+        let mut processor = TransactionProcessor::new(&input.blobs);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
@@ -278,12 +270,6 @@ impl TransactionProcessorBlueprint {
                     metadata,
                 } => {
                     let code = processor.get_blob(&code)?;
-                    let schema = processor.get_blob(&schema)?;
-                    let schema = scrypto_decode::<PackageSchema>(schema).map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::InvalidPackageSchema(e),
-                        ))
-                    })?;
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
@@ -316,12 +302,6 @@ impl TransactionProcessorBlueprint {
                     access_rules,
                 } => {
                     let code = processor.get_blob(&code)?;
-                    let schema = processor.get_blob(&schema)?;
-                    let schema = scrypto_decode::<PackageSchema>(schema).map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::InvalidPackageSchema(e),
-                        ))
-                    })?;
 
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let result = api.call_function(
@@ -601,11 +581,11 @@ struct TransactionProcessor<'blob> {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>,
+    blobs_by_hash: &'blob BTreeMap<Hash, Vec<u8>>,
 }
 
 impl<'blob> TransactionProcessor<'blob> {
-    fn new(blobs_by_hash: NonIterMap<Hash, &'blob Vec<u8>>) -> Self {
+    fn new(blobs_by_hash: &'blob BTreeMap<Hash, Vec<u8>>) -> Self {
         Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
@@ -639,7 +619,6 @@ impl<'blob> TransactionProcessor<'blob> {
         let hash = Hash(blob_ref.0);
         self.blobs_by_hash
             .get(&hash)
-            .cloned()
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::TransactionProcessorError(
                     TransactionProcessorError::BlobNotFound(hash),
@@ -713,7 +692,8 @@ impl<'blob> TransactionProcessor<'blob> {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
-                (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
+                | (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
                     ComponentAuthZone::sys_push(proof, api)?;
                 }

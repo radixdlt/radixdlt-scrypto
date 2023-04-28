@@ -2,9 +2,7 @@ use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
@@ -633,6 +631,13 @@ impl<L: Clone> CallFrame<L> {
         frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
         frame.add_ref(CLOCK.into(), RefType::Normal);
+        frame.add_ref(ACCESS_CONTROLLER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(ACCOUNT_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(CLOCK_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(EPOCH_MANAGER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(PACKAGE_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(RESOURCE_MANAGER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(TRANSACTION_PROCESSOR_PACKAGE.into(), RefType::Normal);
         frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
 
         frame
@@ -825,6 +830,7 @@ impl<L: Clone> CallFrame<L> {
                         if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                             && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                                || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
                                 || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
                     {
                         false

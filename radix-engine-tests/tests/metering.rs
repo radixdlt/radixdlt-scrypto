@@ -69,11 +69,11 @@ fn test_basic_transfer() {
     assert_eq!(
         1104 /* AllocateNodeId */
         + 1744 /* CreateNode */
-        + 5513 /* DropLock */
+        + 6105 /* DropLock */
         + 1680 /* DropNode */
         + 1054091 /* Invoke */
-        + 15922 /* LockSubstate */
-        + 207844 /* ReadSubstate */
+        + 17155 /* LockSubstate */
+        + 217960 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -98,7 +98,7 @@ fn test_radiswap() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
             "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_pool", 5)
@@ -204,14 +204,14 @@ fn test_radiswap() {
     assert_eq!(
         2484 /* AllocateNodeId */
         + 3935 /* CreateNode */
-        + 13542 /* DropLock */
+        + 15207 /* DropLock */
         + 3675 /* DropNode */
         + 3311450 /* Invoke */
-        + 37624 /* LockSubstate */
-        + 647844 /* ReadSubstate */
+        + 41427 /* LockSubstate */
+        + 678254 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1503045 /* RunWasm */
+        + 1503310 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -234,7 +234,7 @@ fn test_flash_loan() {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        scrypto_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
             "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
                 .add_rule("instantiate_default", 5)
@@ -315,14 +315,14 @@ fn test_flash_loan() {
     assert_eq!(
         3933 /* AllocateNodeId */
         + 6213 /* CreateNode */
-        + 21534 /* DropLock */
+        + 25308 /* DropLock */
         + 5985 /* DropNode */
-        + 4056793 /* Invoke */
-        + 57938 /* LockSubstate */
-        + 914322 /* ReadSubstate */
+        + 4420973 /* Invoke */
+        + 66239 /* LockSubstate */
+        + 978694 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1188850 /* RunWasm */
+        + 1243885 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

@@ -30,7 +30,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::User.into(),
-            PackageOffset::Code.into(),
+            &PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
 
@@ -62,7 +62,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
@@ -138,14 +138,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
                 SysModuleId::User.into(),
-                NonFungibleResourceManagerOffset::IdType.into(),
+                &NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .get_mapped_substate::<JmtMapper, Decimal>(
                 resource_address.as_node_id(),
                 SysModuleId::User.into(),
-                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                &NonFungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
@@ -166,14 +166,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::User.into(),
-                FungibleResourceManagerOffset::Divisibility.into(),
+                &FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::User.into(),
-                FungibleResourceManagerOffset::TotalSupply.into(),
+                &FungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");

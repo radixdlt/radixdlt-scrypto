@@ -91,7 +91,7 @@ use utils::ContextualDisplay;
 
 /// The address of the faucet component, test network only.
 /// TODO: remove
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
+pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_or_panic([
     EntityType::GlobalGenericComponent as u8,
     1,
     214,
@@ -356,7 +356,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
         .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::User.into(),
-            PackageOffset::Info.into(),
+            &PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
 
@@ -387,7 +387,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
         .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
-            TypeInfoOffset::TypeInfo.into(),
+            &TypeInfoOffset::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
 
@@ -424,7 +424,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
-                            TypeInfoOffset::TypeInfo.into(),
+                            &TypeInfoOffset::TypeInfo.into(),
                         )
                         .unwrap();
                     match type_info {
@@ -441,7 +441,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
-            PackageAddress::new_unchecked(node_id.clone().into()),
+            PackageAddress::new_or_panic(node_id.clone().into()),
             blueprint_name.to_owned(),
             *local_type_index,
         ),
@@ -451,7 +451,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
         .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::User.into(),
-            PackageOffset::Info.into(),
+            &PackageOffset::Info.into(),
         )
         .unwrap();
 

@@ -138,7 +138,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
         let id_type = Self::get_id_type(api)?;
         let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
 
@@ -177,7 +177,7 @@ impl NonFungibleVaultBlueprint {
 
         let id_type = Self::get_id_type(api)?;
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
 
         let proof_info = ProofInfoSubstate {
             resource_address,
@@ -206,7 +206,7 @@ impl NonFungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
         let id_type = Self::get_id_type(api)?;
 
         let proof_info = ProofInfoSubstate {

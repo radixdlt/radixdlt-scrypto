@@ -47,7 +47,7 @@ where
 {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
-    let key_schema = generate_full_schema(aggregator);
+    let key_schema = generate_full_schema::<ScryptoCustomTypeExtension>(aggregator);
 
     let mut kv_schema = non_fungible_schema.schema;
 
@@ -172,7 +172,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
             id_type,
             non_fungible_schema,
@@ -209,7 +209,7 @@ impl NonFungibleResourceManagerBlueprint {
             ],
         )?;
 
-        let resource_address = ResourceAddress::new_unchecked(resource_address);
+        let resource_address = ResourceAddress::new_or_panic(resource_address);
         globalize_resource_manager(object_id, resource_address, access_rules, metadata, api)?;
 
         Ok(resource_address)
@@ -239,7 +239,7 @@ impl NonFungibleResourceManagerBlueprint {
             build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let supply: Decimal = Decimal::from(entries.len());
 
@@ -302,7 +302,7 @@ impl NonFungibleResourceManagerBlueprint {
             build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
-        let resource_address = ResourceAddress::new_unchecked(global_node_id.into());
+        let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         create_non_fungibles(
             resource_address,
@@ -341,7 +341,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let id_type = {
             let handle = api.lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
@@ -407,7 +407,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
 
         // Check id_type
         let id_type = {
@@ -479,7 +479,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
 
         // Check type
         let id_type = {
@@ -555,7 +555,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let data_schema_handle = api.lock_field(
             NonFungibleResourceManagerOffset::DataSchema.into(),
             LockFlags::read_only(),
@@ -655,7 +655,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_unchecked(api.get_global_address()?.into());
+        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let data_handle = api.lock_field(
             NonFungibleResourceManagerOffset::Data.into(),
             LockFlags::read_only(),

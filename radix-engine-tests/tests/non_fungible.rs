@@ -715,7 +715,7 @@ pub struct Sandwich {
     pub available: bool,
     pub tastes_great: bool,
     #[mutable]
-    pub reference: Option<ResourceAddress>,
+    pub reference: Option<ComponentAddress>,
     #[mutable]
     pub own: Option<()>,
 }
@@ -725,7 +725,6 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
-    let (other_address, ..) = test_runner.create_restricted_token(account);
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -748,7 +747,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
                 name: "test".to_string(),
                 available: false,
                 tastes_great: true,
-                reference: Some(other_address),
+                reference: Some(account),
                 own: None,
             }],
         )

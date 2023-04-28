@@ -1,7 +1,7 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 
-use radix_engine_interface::crypto::Hash;
+use crate::hash_tree::types::LeafKey;
 
 use super::tree_store::{
     Payload, ReadableTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
@@ -30,11 +30,11 @@ impl<P: Clone> TreeLeafNode<P> {
     fn from(key: &NodeKey, leaf_node: &LeafNode<P>) -> Self {
         TreeLeafNode {
             key_suffix: NibblePath::from_iter(
-                NibblePath::new_even(leaf_node.account_key().to_vec())
+                NibblePath::new_even(leaf_node.leaf_key().bytes.clone())
                     .nibbles()
                     .skip(key.nibble_path().num_nibbles()),
             ),
-            payload: leaf_node.value_index().0.clone(),
+            payload: leaf_node.payload().clone(),
             value_hash: leaf_node.value_hash(),
         }
     }
@@ -95,9 +95,10 @@ impl<P: Clone> LeafNode<P> {
                 .chain(leaf_node.key_suffix.nibbles()),
         );
         LeafNode::new(
-            Hash::try_from(full_key.bytes()).unwrap(),
+            LeafKey::new(full_key.bytes()),
             leaf_node.value_hash,
-            (leaf_node.payload.clone(), key.version()),
+            leaf_node.payload.clone(),
+            key.version(),
         )
     }
 }

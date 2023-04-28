@@ -12,6 +12,8 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
+pub const FUNGIBLE_PROOF_BLUEPRINT: &str = "FungibleProof";
+
 pub const PROOF_BLUEPRINT: &str = "Proof";
 
 pub const PROOF_DROP_IDENT: &str = "Proof_drop";

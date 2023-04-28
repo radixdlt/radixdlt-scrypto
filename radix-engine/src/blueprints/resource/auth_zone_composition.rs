@@ -27,10 +27,12 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
         match value {
             ComposedProof::Fungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&NonFungibleProof::default()),
                 ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
             ),
             ComposedProof::NonFungible(info, proof) => btreemap!(
                 ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
+                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&FungibleProof::default()),
                 ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
             ),
         }

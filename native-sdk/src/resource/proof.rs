@@ -112,9 +112,11 @@ impl SysProof for Proof {
     where
         Y: ClientApi<E>,
     {
+        let info = api.get_object_info(self.0.as_node_id())?;
+        let blueprint = info.blueprint.blueprint_name;
         api.call_function(
             RESOURCE_MANAGER_PACKAGE,
-            PROOF_BLUEPRINT,
+            blueprint.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),

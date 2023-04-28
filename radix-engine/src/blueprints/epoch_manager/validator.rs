@@ -233,7 +233,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
-            ComponentAddress::new_unchecked(api.get_global_address()?.into());
+            ComponentAddress::new_or_panic(api.get_global_address()?.into());
         let new_sorted_key =
             Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
@@ -540,7 +540,7 @@ impl ValidatorCreator {
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_unchecked(global_node_id.into());
+        let address = ComponentAddress::new_or_panic(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::SELF => validator_id,

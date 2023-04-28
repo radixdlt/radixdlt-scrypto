@@ -206,10 +206,9 @@ impl ProofBlueprint {
             let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
-            api.field_lock_release(handle)?;
 
             let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
+                FUNGIBLE_PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&clone).unwrap(),
@@ -217,13 +216,15 @@ impl ProofBlueprint {
                 ],
             )?;
 
+            // Drop after object creation to keep the reference alive
+            api.field_lock_release(handle)?;
+
             proof_id
         } else {
             let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
             let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
             let proof = substate_ref.clone();
             let clone = proof.clone_proof(api)?;
-            api.field_lock_release(handle)?;
 
             let proof_id = api.new_object(
                 PROOF_BLUEPRINT,
@@ -233,6 +234,9 @@ impl ProofBlueprint {
                     scrypto_encode(&clone).unwrap(),
                 ],
             )?;
+
+            // Drop after object creation to keep the reference alive
+            api.field_lock_release(handle)?;
 
             proof_id
         };

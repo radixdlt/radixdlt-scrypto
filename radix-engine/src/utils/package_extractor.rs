@@ -25,7 +25,7 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
     let wasm_engine = DefaultWasmEngine::default();
     let wasm_instrumenter = WasmInstrumenter::default();
     let instrumented_code = wasm_instrumenter.instrument(
-        PackageAddress::new_unchecked([0u8; NodeId::LENGTH]),
+        PackageAddress::new_or_panic([0u8; NodeId::LENGTH]),
         code,
         WasmMeteringConfig::V0,
     );

@@ -12,7 +12,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -66,7 +66,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
             } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_unchecked(node_id.0))
+                && is_native_package(PackageAddress::new_or_panic(node_id.0))
             {
                 // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
@@ -114,7 +114,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             }
         }
 
-        let mut system = SystemDownstream::new(&mut kernel);
+        let mut system = SystemService::new(&mut kernel);
 
         let rtn =
             system.call_function(package_address, blueprint_name, function_name, args.into())?;
@@ -408,7 +408,7 @@ where
                     let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = blueprint_parent.unwrap();
                     let resource_address: ResourceAddress =
-                        ResourceAddress::new_unchecked(parent.as_ref().clone().try_into().unwrap());
+                        ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)
                 }
                 _ => {
@@ -453,7 +453,7 @@ where
     }
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
@@ -462,62 +462,65 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == PROOF_BLUEPRINT => {}
+                        && (blueprint.blueprint_name == PROOF_BLUEPRINT || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) => {
+                    blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            proof_id,
-            SysModuleId::User.into(),
-            &ProofOffset::Info.into(),
-        ) {
+        if is_fungible {
+            let substate = self.heap.get_substate(
+                proof_id,
+                SysModuleId::User.into(),
+                &ProofOffset::Info.into(),
+            ).unwrap();
             let info: ProofInfoSubstate = substate.as_typed().unwrap();
 
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::User.into(),
-                            &ProofOffset::Fungible.into(),
-                        )
-                        .unwrap();
-                    let proof: FungibleProof = substate.as_typed().unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::User.into(),
+                    &ProofOffset::Fungible.into(),
+                )
+                .unwrap();
+            let proof: FungibleProof = substate.as_typed().unwrap();
 
-                    Some(ProofSnapshot::Fungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::User.into(),
-                            &ProofOffset::NonFungible.into(),
-                        )
-                        .unwrap();
-                    let proof: NonFungibleProof = substate.as_typed().unwrap();
-
-                    Some(ProofSnapshot::NonFungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.non_fungible_local_ids().clone(),
-                    })
-                }
-            }
+            Some(ProofSnapshot::Fungible {
+                resource_address: info.resource_address,
+                resource_type: info.resource_type,
+                restricted: info.restricted,
+                total_locked: proof.amount(),
+            })
         } else {
-            None
+            let substate = self.heap.get_substate(
+                proof_id,
+                SysModuleId::User.into(),
+                &ProofOffset::Info.into(),
+            ).unwrap();
+            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::User.into(),
+                    &ProofOffset::NonFungible.into(),
+                )
+                .unwrap();
+            let proof: NonFungibleProof = substate.as_typed().unwrap();
+
+            Some(ProofSnapshot::NonFungible {
+                resource_address: info.resource_address,
+                resource_type: info.resource_type,
+                restricted: info.restricted,
+                total_locked: proof.non_fungible_local_ids().clone(),
+            })
         }
     }
 }

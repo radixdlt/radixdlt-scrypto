@@ -3,7 +3,6 @@ use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK
 use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::Reference;
 use crate::data::scrypto::*;
-use crate::types::NodeId;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
@@ -16,7 +15,13 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct LocalAddress(NodeId); // private to ensure entity type check
 
 impl LocalAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
+        let node_id = NodeId(raw);
+        assert!(node_id.is_local());
+        Self(node_id)
+    }
+
+    pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -57,11 +62,10 @@ impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
     type Error = ParseLocalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        if EntityType::from_repr(value[0])
-            .ok_or(ParseLocalAddressError::InvalidEntityTypeId(value[0]))?
-            .is_local()
-        {
-            Ok(Self(NodeId(value)))
+        let node_id = NodeId(value);
+
+        if node_id.is_local() {
+            Ok(Self(node_id))
         } else {
             Err(ParseLocalAddressError::InvalidEntityTypeId(value[0]))
         }

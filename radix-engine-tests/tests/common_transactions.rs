@@ -118,17 +118,15 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 fn publish_package_succeeds() {
     test_manifest(|account_address, bech32_encoder| {
         let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
-        let schema_blob = include_bytes!("../../assets/faucet.schema").to_vec();
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
-            schema_blob_hash = hash(&schema_blob),
             account_address = account_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             auth_badge_non_fungible_local_id = "#1#"
         );
-        (manifest, vec![code_blob, schema_blob])
+        (manifest, vec![code_blob])
     });
 }
 

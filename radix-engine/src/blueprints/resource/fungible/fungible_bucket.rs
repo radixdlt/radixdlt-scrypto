@@ -223,7 +223,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
@@ -241,7 +241,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_unchecked(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
 
         let node_id = {
             let divisibility = Self::get_divisibility(api)?;
@@ -255,7 +255,7 @@ impl FungibleBucketBlueprint {
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
             let proof_id = api.new_object(
-                PROOF_BLUEPRINT,
+                FUNGIBLE_PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&proof).unwrap(),
