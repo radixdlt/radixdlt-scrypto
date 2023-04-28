@@ -1,4 +1,4 @@
-use arbitrary::Unstructured;
+use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "decode_tx_manifest")]
@@ -214,7 +214,7 @@ impl TxFuzzer {
             .clone();
         //let package_addresses = unstructured.choose(&self.package_addresses[..]).unwrap();
 
-        let fee = Decimal::from(100);
+        let fee = Decimal::arbitrary(&mut unstructured).unwrap();
         builder.lock_fee(component_address, fee);
 
         let mut i = 0;
@@ -234,8 +234,7 @@ impl TxFuzzer {
                 0 => Some(Instruction::AssertWorktopContains { resource_address }),
                 // AssertWorktopContainsByAmount
                 1 => {
-                    let amount: u128 = unstructured.int_in_range(0..=10_000_000u128).unwrap();
-                    let amount = Decimal::from(amount);
+                    let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     Some(Instruction::AssertWorktopContainsByAmount {
                         amount,
                         resource_address,
