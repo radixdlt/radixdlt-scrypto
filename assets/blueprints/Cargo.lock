@@ -290,6 +290,7 @@ name = "faucet"
 version = "0.1.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -329,6 +330,7 @@ version = "0.1.0"
 dependencies = [
  "native-sdk",
  "radix-engine",
+ "radix-engine-interface",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -725,6 +727,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "radix-engine-queries"
+version = "0.10.0"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine",
+ "radix-engine-constants",
+ "radix-engine-interface",
+ "radix-engine-stores",
+ "sbor",
+ "transaction",
+ "utils",
+]
+
+[[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
 dependencies = [
@@ -934,6 +951,7 @@ dependencies = [
  "radix-engine",
  "radix-engine-constants",
  "radix-engine-interface",
+ "radix-engine-queries",
  "radix-engine-stores",
  "sbor",
  "scrypto",

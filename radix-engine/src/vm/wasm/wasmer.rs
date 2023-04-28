@@ -272,6 +272,25 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        pub fn globalize_object_with_address(
+            env: &WasmerInstanceEnv,
+            modules_ptr: u32,
+            modules_len: u32,
+            address_ptr: u32,
+            address_len: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .globalize_object_with_address(
+                    read_memory(&instance, modules_ptr, modules_len)?,
+                    read_memory(&instance, address_ptr, address_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
+        }
+
         pub fn get_type_info(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
@@ -505,6 +524,7 @@ impl WasmerModule {
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
+                GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object_with_address),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),

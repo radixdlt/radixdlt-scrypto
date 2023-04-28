@@ -14,7 +14,7 @@ use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -100,50 +100,10 @@ pub enum GenesisDataChunk {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct SystemBootstrapReceipt {
-    pub commit_result: CommitResult,
-}
-
-impl SystemBootstrapReceipt {
-    pub fn genesis_helper(&self) -> ComponentAddress {
-        self.commit_result
-            .new_component_addresses()
-            .last()
-            .unwrap()
-            .clone()
-    }
-}
-
-impl From<TransactionReceipt> for SystemBootstrapReceipt {
-    fn from(receipt: TransactionReceipt) -> Self {
-        SystemBootstrapReceipt {
-            commit_result: receipt.expect_commit_success().clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct GenesisWrapUpReceipt {
-    pub commit_result: CommitResult,
-}
-
-impl GenesisWrapUpReceipt {
-    pub fn faucet_component(&self) -> ComponentAddress {
-        // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-        self.commit_result
-            .new_component_addresses()
-            .last()
-            .unwrap()
-            .clone()
-    }
-}
-
-impl From<TransactionReceipt> for GenesisWrapUpReceipt {
-    fn from(receipt: TransactionReceipt) -> Self {
-        GenesisWrapUpReceipt {
-            commit_result: receipt.expect_commit_success().clone(),
-        }
-    }
+pub struct GenesisReceipts {
+    pub system_bootstrap_receipt: TransactionReceipt,
+    pub data_ingestion_receipts: Vec<TransactionReceipt>,
+    pub wrap_up_receipt: TransactionReceipt,
 }
 
 pub struct Bootstrapper<'s, 'i, S, W>
@@ -167,13 +127,7 @@ where
         }
     }
 
-    pub fn bootstrap_test_default(
-        &mut self,
-    ) -> Option<(
-        SystemBootstrapReceipt,
-        Vec<TransactionReceipt>,
-        GenesisWrapUpReceipt,
-    )> {
+    pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
         self.bootstrap_with_genesis_data(vec![], 1u64, 10u32, 1u64, 1u64)
     }
 
@@ -184,11 +138,7 @@ where
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
-    ) -> Option<(
-        SystemBootstrapReceipt,
-        Vec<TransactionReceipt>,
-        GenesisWrapUpReceipt,
-    )> {
+    ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
@@ -208,23 +158,18 @@ where
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
             for chunk in genesis_data_chunks.into_iter() {
-                let receipt = self.ingest_genesis_data_chunk(
-                    &system_bootstrap_receipt.genesis_helper(),
-                    chunk,
-                    next_nonce,
-                );
+                let receipt = self.ingest_genesis_data_chunk(chunk, next_nonce);
                 next_nonce += 1;
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt: GenesisWrapUpReceipt = self
-                .execute_genesis_wrap_up(&system_bootstrap_receipt.genesis_helper(), next_nonce);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
 
-            Some((
+            Some(GenesisReceipts {
                 system_bootstrap_receipt,
                 data_ingestion_receipts,
-                genesis_wrap_up_receipt,
-            ))
+                wrap_up_receipt: genesis_wrap_up_receipt,
+            })
         } else {
             None
         }
@@ -236,7 +181,7 @@ where
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
-    ) -> SystemBootstrapReceipt {
+    ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
             max_validators,
@@ -257,16 +202,15 @@ where
         self.substate_db
             .commit(&commit_result.state_updates.database_updates);
 
-        receipt.into()
+        receipt
     }
 
     fn ingest_genesis_data_chunk(
         &mut self,
-        genesis_helper: &ComponentAddress,
         chunk: GenesisDataChunk,
         nonce: u64,
     ) -> TransactionReceipt {
-        let transaction = create_genesis_data_ingestion_transaction(genesis_helper, chunk, nonce);
+        let transaction = create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, nonce);
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
@@ -282,12 +226,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(
-        &mut self,
-        genesis_helper: &ComponentAddress,
-        nonce: u64,
-    ) -> GenesisWrapUpReceipt {
-        let transaction = create_genesis_wrap_up_transaction(genesis_helper, nonce);
+    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(nonce);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -301,7 +241,7 @@ where
         self.substate_db
             .commit(&commit_result.state_updates.database_updates);
 
-        receipt.into()
+        receipt
     }
 }
 
@@ -857,11 +797,14 @@ pub fn create_system_bootstrap_transaction(
             }
             .into(),
         );
+        pre_allocated_ids.insert(GENESIS_HELPER.into());
+        let address_bytes = GENESIS_HELPER.as_node_id().0;
         instructions.push(Instruction::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
+                address_bytes,
                 whole_lotta_xrd,
                 EPOCH_MANAGER,
                 rounds_per_epoch,
@@ -909,15 +852,12 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(
-    genesis_helper: &ComponentAddress,
-    nonce: u64,
-) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
     instructions.push(Instruction::CallMethod {
-        component_address: genesis_helper.clone(),
+        component_address: GENESIS_HELPER,
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });
@@ -930,17 +870,18 @@ pub fn create_genesis_wrap_up_transaction(
     );
 
     let bucket = id_allocator.new_bucket_id().unwrap();
+    let address_bytes = FAUCET.as_node_id().0;
 
     instructions.push(Instruction::CallFunction {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(bucket),
+        args: manifest_args!(address_bytes, bucket),
     });
 
     SystemTransaction {
         instructions,
-        pre_allocated_ids: BTreeSet::new(),
+        pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
         blobs: Vec::new(),
         nonce,
     }

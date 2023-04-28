@@ -144,6 +144,21 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
+    fn globalize_object_with_address(
+        &mut self,
+        modules: Vec<u8>,
+        address: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let modules = scrypto_decode::<BTreeMap<ObjectModuleId, NodeId>>(&modules)
+            .map_err(WasmRuntimeError::InvalidModules)?;
+        let address =
+            scrypto_decode::<GlobalAddress>(&address).map_err(WasmRuntimeError::InvalidAddress)?;
+
+        self.api.globalize_with_address(modules, address)?;
+
+        Ok(())
+    }
+
     fn new_key_value_store(
         &mut self,
         schema: Vec<u8>,
@@ -375,8 +390,16 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn globalize_object(
         &mut self,
-        access_rules: Vec<u8>,
+        modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn globalize_object_with_address(
+        &mut self,
+        modules: Vec<u8>,
+        address: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
