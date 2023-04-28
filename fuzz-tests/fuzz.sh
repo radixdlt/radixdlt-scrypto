@@ -107,6 +107,7 @@ function fuzzer_afl() {
     shift
 
     if [ $cmd = "build" ] ; then
+        set -x
         cargo afl build --release \
             --no-default-features --features std,afl \
             --target-dir target-afl
@@ -175,14 +176,22 @@ function generate_input() {
 
         else
             # Collect input data
-            cargo nextest run -p radix-engine-tests --features dump_manifest_to_file
+            #cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
             popd
+
+            cargo nextest run fuzz_tx  --release  --features skip_crash
+
             if [ $mode = "raw" ] ; then
-                mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
+                #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}
+                mv manifest_*.raw ${curr_path}/${final_dir}
                 return
             fi
 
-            mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+            #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+            mv manifest_*.raw ${curr_path}/${raw_dir}
+
+            # do not minimize big files, move them directly to input
+            find ${curr_path}/${raw_dir} -type f -size +100k | xargs -I {} mv "{}" ${curr_path}/${final_dir}
         fi
 
         # Make the input corpus unique
