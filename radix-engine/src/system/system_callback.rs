@@ -153,12 +153,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
+        first_lock_from_db: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, size)
+        SystemModuleMixer::after_lock_substate(api, handle, first_lock_from_db, size)
     }
 
     fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>

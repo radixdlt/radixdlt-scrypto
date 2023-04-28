@@ -77,7 +77,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 continue;
             }
 
-            let handle = kernel
+            let (handle, _) = kernel
                 .store
                 .acquire_lock(
                     node_id,
@@ -560,8 +560,8 @@ where
             default,
         );
 
-        let lock_handle = match &maybe_lock_handle {
-            Ok(lock_handle) => *lock_handle,
+        let (lock_handle, first_lock_from_db) = match &maybe_lock_handle {
+            Ok((lock_handle, first_lock_from_db)) => (*lock_handle, *first_lock_from_db),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -582,6 +582,7 @@ where
                             .map_err(KernelError::CallFrameError)?
                     } else {
                         return maybe_lock_handle
+                            .map(|(lock_handle, _)| lock_handle)
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)
                             .map_err(RuntimeError::KernelError);
@@ -602,7 +603,7 @@ where
                         if node_id.is_global_package() =>
                     {
                         let module_id = SysModuleId::Object;
-                        let handle = self
+                        let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(
                                 node_id,
@@ -616,7 +617,8 @@ where
                         self.store.release_lock(handle);
 
                         self.current_frame.add_ref(*node_id, RefType::Normal);
-                        self.current_frame
+                        let (lock_handle, _) = self
+                            .current_frame
                             .acquire_lock(
                                 &mut self.heap,
                                 self.store,
@@ -627,7 +629,8 @@ where
                                 None,
                             )
                             .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?
+                            .map_err(KernelError::CallFrameError)?;
+                        (lock_handle, first_lock_from_db)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -639,7 +642,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, self)?;
+        M::after_lock_substate(lock_handle, 0, first_lock_from_db, self)?;
 
         Ok(lock_handle)
     }
