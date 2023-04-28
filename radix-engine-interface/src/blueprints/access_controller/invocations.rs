@@ -72,6 +72,30 @@ pub struct AccessControllerInitiateRecoveryAsRecoveryInput {
 
 pub type AccessControllerInitiateRecoveryAsRecoveryOutput = ();
 
+//==============================================================
+// Access Controller Initiate Badge Withdraw Attempt As Primary
+//==============================================================
+
+pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT: &str =
+    "initiate_badge_withdraw_attempt_as_primary";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput;
+
+pub type AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput = ();
+
+//===============================================================
+// Access Controller Initiate Badge Withdraw Attempt As Recovery
+//===============================================================
+
+pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT: &str =
+    "initiate_badge_withdraw_attempt_as_recovery";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput;
+
+pub type AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput = ();
+
 //=======================================================
 // Access Controller Quick Confirm Primary Role Recovery
 //=======================================================
@@ -102,9 +126,33 @@ pub struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
 
 pub type AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput = ();
 
-//=================================
-// Access Controller Timed Confirm
-//=================================
+//=====================================================================
+// Access Controller Quick Confirm Primary Role Badge Withdraw Attempt
+//=====================================================================
+
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "quick_confirm_primary_role_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptInput;
+
+pub type AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptOutput = Bucket;
+
+//======================================================================
+// Access Controller Quick Confirm Recovery Role Badge Withdraw Attempt
+//======================================================================
+
+pub const ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "quick_confirm_recovery_role_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptInput;
+
+pub type AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptOutput = Bucket;
+
+//=========================================
+// Access Controller Timed Confirm Recovery
+//=========================================
 
 pub const ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT: &str = "timed_confirm_recovery";
 
@@ -115,6 +163,18 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
 }
 
 pub type AccessControllerTimedConfirmRecoveryOutput = ();
+
+//========================================================
+// Access Controller Timed Confirm Badge Withdraw Attempt
+//========================================================
+
+pub const ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "timed_confirm_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerTimedConfirmBadgeWithdrawAttemptInput;
+
+pub type AccessControllerTimedConfirmBadgeWithdrawAttemptOutput = Bucket;
 
 //=========================================================
 // Access Controller Cancel Primary Role Recovery Proposal
@@ -139,6 +199,30 @@ pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT: &str =
 pub struct AccessControllerCancelRecoveryRoleRecoveryProposalInput;
 
 pub type AccessControllerCancelRecoveryRoleRecoveryProposalOutput = ();
+
+//==============================================================
+// Access Controller Cancel Primary Role Badge Withdraw Attempt
+//==============================================================
+
+pub const ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "cancel_primary_role_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput;
+
+pub type AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput = ();
+
+//===============================================================
+// Access Controller Cancel Recovery Role Badge Withdraw Attempt
+//===============================================================
+
+pub const ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "cancel_recovery_role_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput;
+
+pub type AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput = ();
 
 //=====================================
 // Access Controller Lock Primary Role
@@ -175,3 +259,15 @@ pub struct AccessControllerStopTimedRecoveryInput {
 }
 
 pub type AccessControllerStopTimedRecoveryOutput = ();
+
+//=====================================================
+// Access Controller Stop Timed Badge Withdraw Attempt
+//=====================================================
+
+pub const ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+    "stop_timed_badge_withdraw_attempt";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerStopTimedBadgeWithdrawAttemptInput;
+
+pub type AccessControllerStopTimedBadgeWithdrawAttemptOutput = ();
