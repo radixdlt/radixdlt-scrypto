@@ -4,8 +4,10 @@ use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlo
 #[cfg(feature = "decode_tx_manifest")]
 use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
+use strum::EnumCount;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
+use transaction::manifest::ast;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
 
@@ -213,13 +215,14 @@ impl TxFuzzer {
         //let package_addresses = unstructured.choose(&self.package_addresses[..]).unwrap();
 
         let fee = Decimal::from(100);
-        //builder.lock_fee(self.runner.faucet_component(), fee);
         builder.lock_fee(component_address, fee);
 
         let mut i = 0;
         while i < INSTRUCTION_MAX_CNT && unstructured.len() > 0 {
             println!("unstructured remaining len = {}", unstructured.len());
-            let next: u8 = unstructured.int_in_range(0..=1).unwrap();
+            let next: u8 = unstructured
+                .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
+                .unwrap();
             println!(
                 "unstructured remaining len = {} next = {}",
                 unstructured.len(),
@@ -229,6 +232,7 @@ impl TxFuzzer {
             let instruction = match next {
                 // AssertWorktopContains
                 0 => Some(Instruction::AssertWorktopContains { resource_address }),
+                // AssertWorktopContainsByAmount
                 1 => {
                     let amount: u128 = unstructured.int_in_range(0..=10_000_000u128).unwrap();
                     let amount = Decimal::from(amount);
@@ -237,10 +241,10 @@ impl TxFuzzer {
                         resource_address,
                     })
                 }
-                2 => None,
+                2..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
-                    2
+                    ast::Instruction::COUNT
                 ),
             };
             match instruction {

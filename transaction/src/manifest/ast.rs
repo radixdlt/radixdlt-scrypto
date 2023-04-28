@@ -1,5 +1,8 @@
 use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
+#[cfg(feature = "radix_engine_fuzzing")]
+use strum_macros::EnumCount;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(EnumCount))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
