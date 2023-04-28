@@ -166,23 +166,26 @@ where
                 }
             }
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                let handle = self.kernel_lock_substate(
-                    blueprint.package_address.as_node_id(),
-                    SysModuleId::Object.into(),
-                    &PackageOffset::Info.into(),
-                    LockFlags::read_only(),
-                )?;
-                let package_info: PackageInfoSubstate = self.sys_read_substate_typed(handle)?;
-                let blueprint_schema = package_info
-                    .schema
-                    .blueprints
-                    .get(&blueprint.blueprint_name)
-                    .expect("Missing blueprint schema")
-                    .clone();
-                self.kernel_drop_lock(handle)?;
-
                 match SysModuleId::from_repr(module_id.0).unwrap() {
                     SysModuleId::Object => {
+                        // Load the Object SysModule schema from the Package
+                        let handle = self.kernel_lock_substate(
+                            blueprint.package_address.as_node_id(),
+                            SysModuleId::Object.into(),
+                            &PackageOffset::Info.into(),
+                            LockFlags::read_only(),
+                        )?;
+                        let package_info: PackageInfoSubstate =
+                            self.sys_read_substate_typed(handle)?;
+                        self.kernel_drop_lock(handle)?;
+
+                        let blueprint_schema = package_info
+                            .schema
+                            .blueprints
+                            .get(&blueprint.blueprint_name)
+                            .expect("Missing blueprint schema");
+
+                        // Validate the substate against the schema
                         if let SubstateKey::Tuple(offset) = substate_key {
                             if let Some(index) = blueprint_schema.substates.get(offset as usize) {
                                 if let Err(e) = validate_payload_against_schema(
@@ -198,10 +201,13 @@ where
                                     ));
                                 };
                             } else {
-                                // TODO: error here?
+                                let schema_substate_count = blueprint_schema.substates.len();
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidSubstateWrite(format!("Stored a substate at tuple index {offset} but schema for {blueprint:?} only has {schema_substate_count} defined")),
+                                ));
                             }
                         } else {
-                            // TODO: is this a valid execution path?
+                            // TODO - we don't have schemas for this bit yet
                         }
                     }
                     SysModuleId::TypeInfo
@@ -926,7 +932,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1));
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
     }
@@ -970,7 +976,7 @@ where
         }
 
         let module_id = SysModuleId::Object.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone()));
 
         let rtn = self
             .api

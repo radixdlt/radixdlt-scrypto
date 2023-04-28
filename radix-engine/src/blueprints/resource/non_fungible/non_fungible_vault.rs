@@ -20,6 +20,8 @@ pub struct NonFungibleVaultIdTypeSubstate {
     pub id_type: NonFungibleIdType,
 }
 
+pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
+
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
@@ -31,7 +33,10 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleVaultOffset::Info.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            NonFungibleVaultOffset::IdType.into(),
+            LockFlags::read_only(),
+        )?;
         let info: NonFungibleVaultIdTypeSubstate = api.sys_read_substate_typed(handle)?;
         let id_type = info.id_type;
         api.sys_drop_lock(handle)?;

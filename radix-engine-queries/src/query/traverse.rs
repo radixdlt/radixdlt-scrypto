@@ -1,6 +1,4 @@
-use super::TypeInfoSubstate;
-use crate::interface::SubstateDatabase;
-use crate::jmt_support::JmtMapper;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
@@ -12,6 +10,7 @@ use radix_engine_interface::types::{
     ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
+use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
@@ -116,7 +115,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            TypeInfoSubstate::IterableStore | TypeInfoSubstate::SortedStore => {}
+            TypeInfoSubstate::Index | TypeInfoSubstate::SortedIndex => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 type_parent,
@@ -135,7 +134,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .expect("Broken database");
 
                     self.visitor.visit_fungible_vault(
-                        node_id.into(),
+                        node_id,
                         &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                         &liquid,
                     );
@@ -152,7 +151,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .expect("Broken database");
 
                     self.visitor.visit_non_fungible_vault(
-                        node_id.into(),
+                        node_id,
                         &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                         &liquid,
                     );
@@ -166,7 +165,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             scrypto_decode(&value).unwrap();
 
                         self.visitor.visit_non_fungible(
-                            node_id.into(),
+                            node_id,
                             &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
                             &non_fungible_local_id,
                         );

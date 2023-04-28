@@ -9,7 +9,7 @@ use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::{NodeId, ResourceManagerOffset};
+use radix_engine_interface::types::{FungibleResourceManagerOffset, NodeId};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
@@ -155,7 +155,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -184,7 +184,7 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -242,7 +242,7 @@ impl FungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =
@@ -268,7 +268,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =
@@ -294,7 +294,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -312,7 +312,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            FungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: FungibleResourceManagerSubstate =

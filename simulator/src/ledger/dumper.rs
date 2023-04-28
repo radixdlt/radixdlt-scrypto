@@ -6,9 +6,9 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::network::NetworkDefinition;
+use radix_engine_queries::query::ResourceAccounter;
 use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_stores::jmt_support::JmtMapper;
-use radix_engine_stores::query::ResourceAccounter;
 use utils::ContextualDisplay;
 
 /// Represents an error when displaying an entity.
@@ -138,7 +138,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                &ResourceManagerOffset::ResourceManager.into(),
+                &NonFungibleResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
@@ -164,7 +164,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                &ResourceManagerOffset::ResourceManager.into(),
+                &FungibleResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");

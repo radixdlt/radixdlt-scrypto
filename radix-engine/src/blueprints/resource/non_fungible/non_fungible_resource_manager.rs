@@ -10,7 +10,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::KeyValueStoreSchema;
-use radix_engine_interface::types::{NodeId, ResourceManagerOffset};
+use radix_engine_interface::types::{NodeId, NonFungibleResourceManagerOffset};
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
 
@@ -327,7 +327,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
 
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
         let mut resource_manager: NonFungibleResourceManagerSubstate =
@@ -374,7 +374,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -427,7 +427,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -484,7 +484,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -553,7 +553,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -582,7 +582,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -626,7 +626,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -653,7 +653,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -717,7 +717,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::MUTABLE,
         )?;
 
@@ -750,7 +750,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -768,7 +768,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resman_handle = api.lock_field(
-            ResourceManagerOffset::ResourceManager.into(),
+            NonFungibleResourceManagerOffset::ResourceManager.into(),
             LockFlags::read_only(),
         )?;
         let resource_manager: NonFungibleResourceManagerSubstate =
