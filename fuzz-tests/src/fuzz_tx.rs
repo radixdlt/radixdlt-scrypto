@@ -254,7 +254,7 @@ impl TxFuzzer {
         let mut proof_ids: Vec<ManifestProof> =
             vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
 
-        println!("unstructured init len = {}", unstructured.len());
+        //println!("unstructured init len = {}", unstructured.len());
 
         let resource_address = unstructured
             .choose(&self.all_resource_addresses[..])
@@ -282,15 +282,15 @@ impl TxFuzzer {
 
         let mut i = 0;
         while i < INSTRUCTION_MAX_CNT && unstructured.len() > 0 {
-            println!("unstructured remaining len = {}", unstructured.len());
+            //println!("unstructured remaining len = {}", unstructured.len());
             let next: u8 = unstructured
                 .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
                 .unwrap();
-            println!(
-                "unstructured remaining len = {} next = {}",
-                unstructured.len(),
-                next
-            );
+            //println!(
+            //    "unstructured remaining len = {} next = {}",
+            //    unstructured.len(),
+            //    next
+            //);
 
             let instruction = match next {
                 // AssertWorktopContains
@@ -343,14 +343,14 @@ impl TxFuzzer {
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', src/fuzz_tx.rs:358:31
                     // - crash if any role equals
                     //   Protected(ProofRule(AmountOf(Static(9346522905005059338871465549192114877207573668753774438020.279842539602103386), Static(ResourceAddress(8fca9cf99eb51bbcbd774efea6def526efa9ac26eadfbc5c5f26b4fe4286))))), recovery_role: AllowAll, confirmation_role: DenyAll }
-                    //let rule_set = RuleSet::arbitrary(&mut unstructured).unwrap();
-
+                    #[cfg(not(feature = "skip_crash"))]
+                    let rule_set = RuleSet::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(feature = "skip_crash")]
                     let rule_set = RuleSet {
                         primary_role: AccessRule::AllowAll,
                         recovery_role: AccessRule::AllowAll,
                         confirmation_role: AccessRule::AllowAll,
                     };
-
                     let timed_recovery_delay_in_minutes =
                         <Option<u32>>::arbitrary(&mut unstructured).unwrap();
 
@@ -375,16 +375,19 @@ impl TxFuzzer {
                     // TODO: crash when using arbitrary AccountCreateAdvancedInput
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - AccountCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {}, method_auth: {MethodKey { module_id: SELF, ident: "-!" }: AccessRule(DenyAll)}, grouped_auth: {"!LX": Protected(AllOf([AnyOf([]), AllOf([])])), "1)UZ": DenyAll, "t7": DenyAll}, default_auth: AccessRule(AllowAll), method_auth_mutability: {MethodKey { module_id: SELF, ident: "" }: AccessRule(Protected(AnyOf([AnyOf([AllOf([AllOf([]), ProofRule(AllOf(Static([StaticResource(ResourceAddress(dcd0c83141b9ff8080553b6190b5a7dc0cbde7854d9cf22b600480dcbc36)), Dynamic(SchemaPath([Field("\u{4}G<]y\u{5}\u{1f}")]))])))])]), AnyOf([ProofRule(AmountOf(Static(53647144799766708596252244031328084853448836832030149660791.749040275160793477), Static(ResourceAddress(d53666602d72af4e26da05ce175857e93a99a2ee5636a74734e7122ff9f2))))])])))}, grouped_auth_mutability: {"": DenyAll}, default_auth_mutability: AccessRule(DenyAll) } }
-                    //let account_create_advanced_input =
-                    //    AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(not(feature = "skip_crash"))]
+                    let account_create_advanced_input =
+                        AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(feature = "skip_crash")]
                     let account_create_advanced_input = AccountCreateAdvancedInput {
                         config: AccessRulesConfig::new()
                             .default(AccessRule::AllowAll, AccessRule::AllowAll),
                     };
-                    println!(
-                        "account_create_advanced_input = {:?}",
-                        account_create_advanced_input
-                    );
+
+                    //println!(
+                    //    "account_create_advanced_input = {:?}",
+                    //    account_create_advanced_input
+                    //);
                     Some(Instruction::CallFunction {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
@@ -469,24 +472,29 @@ pub enum TxStatus {
 // If it fails with TxStatus::DecodeError then most likely that manifest format has changed and
 // input files shall be recreated.
 fn test_fuzz_tx() {
-    let mut fuzzer = TxFuzzer::new();
-    let data = std::fs::read(
-        "fuzz_input/transaction/manifest_01995e0d6005c34ad99fba993ebe1443ef55c4db71ed037de12afb3eb28bbfae.raw",
-    )
-    .unwrap();
-    assert!(matches!(
-        fuzzer.fuzz_tx_manifest(&data),
-        TxStatus::CommitSuccess
-    ));
+    use rand::{Rng, RngCore};
+    use rand_chacha::rand_core::SeedableRng;
+    use rand_chacha::ChaCha8Rng;
 
-    let data = std::fs::read(
-        "fuzz_input/transaction//manifest_0113970c0a72935c8c27ddd97a9396d1839f0173bf9ed091f9706aa61db8417e.raw",
-    )
-    .unwrap();
-    assert!(matches!(
-        fuzzer.fuzz_tx_manifest(&data),
-        TxStatus::CommitFailure
-    ));
+    let mut rng = ChaCha8Rng::seed_from_u64(1234);
+    let mut fuzzer = TxFuzzer::new();
+    for _ in 0..5000 {
+        let len = rng.gen_range(0..1024);
+        let mut bytes: Vec<u8> = (0..len).map(|_| rng.gen_range(0..u8::MAX)).collect();
+        rng.fill_bytes(&mut bytes[..]);
+        println!("len = {}", len);
+
+        fuzzer.reset_runner();
+        match fuzzer.fuzz_tx_manifest(&bytes[..]) {
+            TxStatus::CommitSuccess => {
+                let m_hash = hash(&bytes);
+                let path = format!("manifest_{:?}.raw", m_hash);
+                std::fs::write(&path, bytes).unwrap();
+                println!("manifest dumped to file {}", &path);
+            }
+            _ => {}
+        }
+    }
 }
 
 // Initialize static objects outside the fuzzing loop to assure deterministic instrumentation
