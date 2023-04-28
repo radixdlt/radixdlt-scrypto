@@ -37,9 +37,14 @@ pub struct AccessControllerSubstate {
 
     /// The states of the Access Controller.
     pub state: (
-        PrimaryRoleState,
-        PrimaryOperationState,
-        RecoveryOperationState,
+        // Controls whether the primary role is locked or unlocked
+        PrimaryRoleLockingState,
+        // Primary role recovery and withdraw states
+        PrimaryRoleRecoveryAttemptState,
+        PrimaryRoleBadgeWithdrawAttemptState,
+        // Recovery role recovery and withdraw states
+        RecoveryRoleRecoveryAttemptState,
+        RecoveryRoleBadgeWithdrawAttemptState,
     ),
 }
 
@@ -54,31 +59,53 @@ impl AccessControllerSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum PrimaryRoleState {
+pub enum PrimaryRoleLockingState {
     #[default]
     Unlocked,
     Locked,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum PrimaryOperationState {
+pub enum PrimaryRoleRecoveryAttemptState {
     #[default]
-    Normal,
-    Recovery(RecoveryProposal),
+    NoRecoveryAttempt,
+    RecoveryAttempt(RecoveryProposal),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum RecoveryOperationState {
+pub enum PrimaryRoleBadgeWithdrawAttemptState {
     #[default]
-    Normal,
-    Recovery(RecoveryRecoveryState),
+    NoBadgeWithdrawAttempt,
+    BadgeWithdrawAttempt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub enum RecoveryRoleRecoveryAttemptState {
+    #[default]
+    NoRecoveryAttempt,
+    RecoveryAttempt(RecoveryRoleRecoveryState),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RecoveryRecoveryState {
-    Untimed(RecoveryProposal),
-    Timed {
+pub enum RecoveryRoleRecoveryState {
+    UntimedRecovery(RecoveryProposal),
+    TimedRecovery {
         proposal: RecoveryProposal,
+        timed_recovery_allowed_after: Instant,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub enum RecoveryRoleBadgeWithdrawAttemptState {
+    #[default]
+    NoBadgeWithdrawAttempt,
+    BadgeWithdrawAttempt(RecoveryRoleWithdrawBadgeState),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum RecoveryRoleWithdrawBadgeState {
+    UntimedWithdraw,
+    TimedWithdraw {
         timed_recovery_allowed_after: Instant,
     },
 }
@@ -98,13 +125,28 @@ pub enum AccessControllerError {
     /// Occurs when no recovery can be found for a given proposer.
     NoRecoveryExistsForProposer { proposer: Proposer },
 
+    /// Occurs when a proposer attempts to initiate another badge withdraw when they already have a
+    /// recovery underway.
+    BadgeWithdrawAttemptAlreadyExistsForProposer { proposer: Proposer },
+
+    /// Occurs when no recovery can be found for a given proposer.
+    NoBadgeWithdrawAttemptExistsForProposer { proposer: Proposer },
+
     /// Occurs when there is no timed recoveries on the controller - typically because it isn't in
     /// the state that allows for it.
     NoTimedRecoveriesFound,
 
+    /// Occurs when there is no timed badge withdraw attempts on the controller - typically because
+    /// it isn't in the state that allows for it.
+    NoTimedBadgeWithdrawAttemptsFound,
+
     /// Occurs when trying to perform a timed confirm recovery on a recovery proposal that could
     /// be time-confirmed but whose delay has not yet elapsed.
     TimedRecoveryDelayHasNotElapsed,
+
+    /// Occurs when trying to perform a timed confirm on a badge withdraw attempt that could be
+    /// time-confirmed but whose delay has not yet elapsed.
+    TimedBadgeWithdrawDelayHasNotElapsed,
 
     /// Occurs when the expected recovery proposal doesn't match that which was found
     RecoveryProposalMismatch {
