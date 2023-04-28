@@ -255,14 +255,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
-            // Make dependent resources/components visible
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-            )?;
-            api.kernel_drop_lock(handle)?;
+            // TODO: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(
@@ -297,14 +290,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
-            // Make dependent resources/components visible
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-            )?;
-            api.kernel_drop_lock(handle)?;
+            // TODO: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(

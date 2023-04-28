@@ -65,12 +65,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 // For virtual accounts and native packages, create a reference directly
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
-            } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_or_panic(node_id.0))
-            {
-                // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                continue;
             }
 
             if kernel.current_frame.get_node_visibility(node_id).is_some() {

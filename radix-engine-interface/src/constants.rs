@@ -1,5 +1,11 @@
 use crate::*;
+use lazy_static::lazy_static;
 use radix_engine_common::types::*;
+use sbor::rust::prelude::*;
+
+//====================
+// Resource Managers
+//====================
 
 pub const RADIX_TOKEN: ResourceAddress = resource_address(EntityType::GlobalFungibleResource, 0);
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
@@ -21,6 +27,10 @@ pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
 pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
     resource_address(EntityType::GlobalNonFungibleResource, 8);
 
+//====================
+// Packages
+//====================
+
 pub const PACKAGE_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 0);
 pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 1);
 pub const IDENTITY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 2);
@@ -36,29 +46,61 @@ pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::Glo
 pub const GENESIS_HELPER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 13);
 pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 64);
 
+//====================
+// Components
+//====================
+
 pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
 pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
+
+//====================
+// Blueprint Names
+//====================
 
 pub const GENESIS_HELPER_BLUEPRINT: &str = "GenesisHelper";
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
-// TODO: remove
-// There should be no need of this function, but many of our configurations are depending on it.
-// Having it in a single place to avoid out-of-sync.
-pub fn is_native_package(address: PackageAddress) -> bool {
-    match address {
-        PACKAGE_PACKAGE
-        | RESOURCE_MANAGER_PACKAGE
-        | IDENTITY_PACKAGE
-        | EPOCH_MANAGER_PACKAGE
-        | CLOCK_PACKAGE
-        | ACCOUNT_PACKAGE
-        | ACCESS_CONTROLLER_PACKAGE
-        | TRANSACTION_PROCESSOR_PACKAGE
-        | METADATA_PACKAGE
-        | ROYALTY_PACKAGE
-        | ACCESS_RULES_PACKAGE
-        | GENESIS_HELPER_PACKAGE => true,
-        _ => false,
-    }
+// Currently, functions and methods can reference these well-known nodes without declaring
+// the dependency in the package info.
+//
+// To avoid creating references from various places, a list of well-known nodes is crafted
+// and added to every call frame, as a temporary solution.
+//
+// TODO: to remove it, we will have to:
+// - Add Scrypto support for declaring dependencies
+// - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
+//
+lazy_static! {
+    pub static ref WELL_KNOWN_GLOBAL_NODES: BTreeSet<NodeId> = {
+        btreeset![
+            // resource managers
+            RADIX_TOKEN.into(),
+            ECDSA_SECP256K1_TOKEN.into(),
+            EDDSA_ED25519_TOKEN.into(),
+            SYSTEM_TOKEN.into(),
+            PACKAGE_TOKEN.into(),
+            GLOBAL_OBJECT_TOKEN.into(),
+            PACKAGE_OWNER_TOKEN.into(),
+            VALIDATOR_OWNER_TOKEN.into(),
+            IDENTITY_OWNER_TOKEN.into(),
+            ACCOUNT_OWNER_TOKEN.into(),
+            // managers
+            PACKAGE_PACKAGE.into(),
+            RESOURCE_MANAGER_PACKAGE.into(),
+            IDENTITY_PACKAGE.into(),
+            EPOCH_MANAGER_PACKAGE.into(),
+            CLOCK_PACKAGE.into(),
+            ACCOUNT_PACKAGE.into(),
+            ACCESS_CONTROLLER_PACKAGE.into(),
+            TRANSACTION_PROCESSOR_PACKAGE.into(),
+            METADATA_PACKAGE.into(),
+            ROYALTY_PACKAGE.into(),
+            ACCESS_RULES_PACKAGE.into(),
+            GENESIS_HELPER_PACKAGE.into(),
+            FAUCET_PACKAGE.into(),
+            // components
+            CLOCK.into(),
+            EPOCH_MANAGER.into(),
+        ]
+    };
 }
