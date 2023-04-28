@@ -89,41 +89,6 @@ use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use utils::ContextualDisplay;
 
-/// The address of the faucet component, test network only.
-/// TODO: remove
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_or_panic([
-    EntityType::GlobalGenericComponent as u8,
-    1,
-    214,
-    31,
-    81,
-    94,
-    195,
-    164,
-    245,
-    22,
-    133,
-    219,
-    196,
-    153,
-    116,
-    249,
-    229,
-    98,
-    136,
-    55,
-    21,
-    2,
-    33,
-    180,
-    121,
-    11,
-    178,
-    57,
-    153,
-    132,
-]);
-
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, name = "resim")]
