@@ -266,7 +266,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+    fn lock_key_value_entry(&mut self, _key: &Vec<u8>, _flags: LockFlags) -> Result<LockHandle, ClientApiError> {
         todo!()
     }
 

@@ -290,7 +290,7 @@ fn key_value_entry_get(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
-    let (memory, runtime) = grab_runtime!(caller);
+    let (_memory, runtime) = grab_runtime!(caller);
     runtime.key_value_entry_get(handle).map(|buffer| buffer.0)
 }
 
@@ -306,7 +306,7 @@ fn key_value_entry_set(
 }
 
 fn unlock_key_value_entry(
-    mut caller: Caller<'_, HostState>,
+    caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);

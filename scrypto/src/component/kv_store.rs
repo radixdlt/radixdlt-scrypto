@@ -1,7 +1,6 @@
 use sbor::rust::ops::{Deref, DerefMut};
 use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
 use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
@@ -12,7 +11,6 @@ use sbor::rust::fmt;
 use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::runtime::{DataRef, DataRefMut, OriginalData};
 
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
@@ -82,7 +80,7 @@ impl<
         match substate {
             Option::Some(value) => {
                 let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(KeyValueEntryRefMut::new(handle, value, rust_value))
+                Some(KeyValueEntryRefMut::new(handle, rust_value))
             }
             Option::None => {
                 env.key_value_entry_lock_release(handle).unwrap();
@@ -227,7 +225,6 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
 
 pub struct KeyValueEntryRefMut<V: ScryptoEncode> {
     handle: KeyValueEntryLockHandle,
-    original_data: ScryptoValue,
     value: V,
 }
 
@@ -238,10 +235,9 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<V> {
 }
 
 impl<V: ScryptoEncode> KeyValueEntryRefMut<V> {
-    pub fn new(lock_handle: LockHandle, original_data: ScryptoValue, value: V) -> KeyValueEntryRefMut<V> {
+    pub fn new(lock_handle: LockHandle, value: V) -> KeyValueEntryRefMut<V> {
         KeyValueEntryRefMut {
             handle: lock_handle,
-            original_data,
             value,
         }
     }

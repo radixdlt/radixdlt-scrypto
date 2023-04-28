@@ -1325,7 +1325,7 @@ where
     #[trace_resources]
     fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, object_info) = match &actor {
+        let (node_id, object_module_id, _object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
@@ -1337,7 +1337,7 @@ where
             } => (node_id, module_id, object_info),
         };
 
-        // TODO: Add check
+        // TODO: Add check if key value exists
         /*
         let schema = self.get_blueprint_schema(blueprint)?;
 
