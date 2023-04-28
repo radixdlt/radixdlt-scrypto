@@ -848,7 +848,7 @@ impl CallFrame {
             Some((RefType::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
             Some((ref_data.ref_type, false))
-        } else if WELL_KNOWN_GLOBAL_NODES.contains(node_id) {
+        } else if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
             // TODO: remove
             Some((RefType::Normal, false))
         } else {

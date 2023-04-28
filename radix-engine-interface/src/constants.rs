@@ -71,7 +71,7 @@ pub const FAUCET_BLUEPRINT: &str = "Faucet";
 // - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
 //
 lazy_static! {
-    pub static ref WELL_KNOWN_GLOBAL_NODES: BTreeSet<NodeId> = {
+    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: BTreeSet<NodeId> = {
         btreeset![
             // resource managers
             RADIX_TOKEN.into(),
