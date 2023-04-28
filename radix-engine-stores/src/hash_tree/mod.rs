@@ -1,12 +1,11 @@
 use crate::hash_tree::tree_store::IndexPayload;
 use crate::hash_tree::types::LeafKey;
 use jellyfish::JellyfishMerkleTree;
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::*;
-use sbor::rust::collections::{index_map_new, IndexMap};
-use sbor::rust::vec::Vec;
+use radix_engine_common::crypto::Hash;
 use tree_store::{Payload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
+use utils::rust::collections::{index_map_new, IndexMap};
+use utils::rust::vec::Vec;
 
 pub mod hash_tree_facade;
 pub mod tree_store;

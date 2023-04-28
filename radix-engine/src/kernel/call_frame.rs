@@ -1,14 +1,14 @@
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::interface::{
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
-};
 
 use super::heap::Heap;
 use super::kernel_api::LockInfo;

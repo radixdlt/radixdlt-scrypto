@@ -1,4 +1,7 @@
-use crate::interface::*;
+use crate::utils::{decode_substate_id, encode_substate_id};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
+};
 use sbor::rust::ops::Bound::Included;
 use sbor::rust::ops::Bound::Unbounded;
 use sbor::rust::prelude::*;

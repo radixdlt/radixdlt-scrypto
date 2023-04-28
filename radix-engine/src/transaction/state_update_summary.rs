@@ -1,3 +1,4 @@
+use crate::track::db_key_mapper::{DatabaseMapper, JmtMapper, MappedSubstateDatabase};
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleVault,
@@ -6,8 +7,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_stores::interface::{DatabaseMapper, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 

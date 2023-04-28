@@ -1,12 +1,20 @@
+use crate::track::db_key_mapper::DatabaseMapper;
+use crate::track::interface::{
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{
-    AcquireLockError, DatabaseMapper, DatabaseUpdate, NodeSubstates, SetSubstateError,
-    StateUpdates, SubstateDatabase, SubstateStore, TakeSubstateError,
-};
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates, SubstateDatabase};
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct StateUpdates {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
+}
+pub type SystemUpdates = IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 pub struct SubstateLockError;
 

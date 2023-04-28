@@ -1,11 +1,12 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::track::db_key_mapper::{DatabaseMapper, JmtMapper};
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_stores::interface::DatabaseUpdate;
-use radix_engine_stores::interface::{CommittableSubstateDatabase, DatabaseMapper};
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;

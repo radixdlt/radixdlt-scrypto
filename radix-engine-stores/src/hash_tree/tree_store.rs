@@ -1,12 +1,12 @@
 // Re-exports
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
-use radix_engine_interface::crypto::Hash;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
-use radix_engine_interface::*;
-use sbor::rust::collections::{hash_map_new, HashMap};
-use sbor::rust::vec::Vec;
+use radix_engine_common::crypto::Hash;
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
+use radix_engine_derive::ScryptoSbor;
 use sbor::*;
+use utils::rust::collections::{hash_map_new, HashMap};
+use utils::rust::vec::Vec;
 
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]

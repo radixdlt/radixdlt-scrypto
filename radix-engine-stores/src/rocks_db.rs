@@ -1,4 +1,7 @@
-use crate::interface::*;
+use crate::utils::{decode_substate_id, encode_substate_id};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
+};
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;

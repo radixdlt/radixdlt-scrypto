@@ -13,6 +13,7 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::db_key_mapper::{JmtMapper, MappedSubstateDatabase};
 use crate::transaction::{
     execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -29,8 +30,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 

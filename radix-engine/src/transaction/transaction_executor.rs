@@ -5,6 +5,8 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
+use crate::track::db_key_mapper::{DatabaseMapper, JmtMapper};
+use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
@@ -19,8 +21,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_stores::interface::*;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::*;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {

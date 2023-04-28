@@ -85,7 +85,7 @@ use super::types::{
     SPARSE_MERKLE_PLACEHOLDER_HASH,
 };
 use crate::hash_tree::types::{LeafKey, StorageError};
-use radix_engine_interface::crypto::Hash;
+use radix_engine_common::crypto::Hash;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::{hash_map_new, HashMap};
 use sbor::rust::marker::PhantomData;

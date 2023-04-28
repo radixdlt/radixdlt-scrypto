@@ -3,12 +3,12 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::track::db_key_mapper::{JmtMapper, MappedSubstateDatabase};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use utils::ContextualDisplay;
 
 /// Represents an error when displaying an entity.
