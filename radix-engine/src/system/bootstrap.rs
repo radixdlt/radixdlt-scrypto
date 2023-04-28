@@ -857,11 +857,13 @@ pub fn create_system_bootstrap_transaction(
             }
             .into(),
         );
+        pre_allocated_ids.insert(GENESIS_HELPER.into());
         instructions.push(Instruction::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
+                GENESIS_HELPER,
                 whole_lotta_xrd,
                 EPOCH_MANAGER,
                 rounds_per_epoch,
@@ -935,12 +937,12 @@ pub fn create_genesis_wrap_up_transaction(
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(bucket),
+        args: manifest_args!(FAUCET, bucket),
     });
 
     SystemTransaction {
         instructions,
-        pre_allocated_ids: BTreeSet::new(),
+        pre_allocated_ids: btreeset!{ FAUCET.as_node_id().clone() },
         blobs: Vec::new(),
         nonce,
     }

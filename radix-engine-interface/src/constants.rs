@@ -38,6 +38,8 @@ pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPac
 
 pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
 pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
+pub const FAUCET: ComponentAddress = component_address(EntityType::GlobalGenericComponent, 0);
+pub const GENESIS_HELPER: ComponentAddress = component_address(EntityType::GlobalGenericComponent, 1);
 
 pub const GENESIS_HELPER_BLUEPRINT: &str = "GenesisHelper";
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
