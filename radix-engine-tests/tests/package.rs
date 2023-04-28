@@ -143,7 +143,7 @@ fn test_basic_package_missing_export() {
     package_schema.blueprints.insert(
         "Test".to_string(),
         BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],

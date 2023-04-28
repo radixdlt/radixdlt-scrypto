@@ -38,7 +38,7 @@ impl TransactionProcessorNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
                     functions,

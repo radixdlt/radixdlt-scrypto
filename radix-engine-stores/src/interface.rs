@@ -118,13 +118,15 @@ pub trait SubstateStore {
     ) -> Vec<IndexedScryptoValue>;
 
     /// Acquires a lock over a substate.
+    /// Returns tuple of lock handle id and information if particular substate
+    /// is locked for the first time during transaction execution.
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
         module_id: ModuleId,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<u32, AcquireLockError> {
+    ) -> Result<(u32, bool), AcquireLockError> {
         self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
     }
 
@@ -135,7 +137,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<u32, AcquireLockError>;
+    ) -> Result<(u32, bool), AcquireLockError>;
 
     /// Releases a lock.
     ///

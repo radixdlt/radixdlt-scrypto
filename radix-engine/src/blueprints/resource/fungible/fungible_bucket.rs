@@ -223,7 +223,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }

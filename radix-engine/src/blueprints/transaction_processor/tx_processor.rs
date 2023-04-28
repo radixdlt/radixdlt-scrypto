@@ -80,7 +80,7 @@ impl TransactionProcessorBlueprint {
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
-                        blueprint_parent: None,
+                        outer_object: None,
                     })
                 ).to_substates()
             ),

@@ -9,6 +9,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
+pub use radix_engine_interface::blueprints::resource::LiquidFungibleResource as FungibleVaultBalanceSubstate;
+
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
@@ -84,7 +86,7 @@ impl FungibleVaultBlueprint {
     {
         // Check resource address and amount
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
         if resource_address != RADIX_TOKEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),

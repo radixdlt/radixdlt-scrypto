@@ -123,8 +123,7 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+        let address = ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
         Ok(address)
     }
 
@@ -136,7 +135,7 @@ impl FungibleProofBlueprint {
 
         let parent = api
             .get_object_info(proof.0.as_node_id())?
-            .blueprint_parent
+            .outer_object
             .unwrap();
 
         api.call_method(

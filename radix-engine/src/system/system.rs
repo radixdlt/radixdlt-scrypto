@@ -66,7 +66,7 @@ where
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
-                blueprint_parent: None,
+                outer_object: None,
             }));
         } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
             || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
@@ -84,7 +84,7 @@ where
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
-                blueprint_parent: None,
+                outer_object: None,
             }));
         }
 
@@ -118,7 +118,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
         let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
-        let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
+        let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
                 Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
                 _ => {
@@ -166,7 +166,7 @@ where
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
-                        blueprint_parent
+                        outer_object
                     })
                 ).to_substates(),
             ),
@@ -245,7 +245,7 @@ where
                 })?;
         }
 
-        let parent_blueprint = schema.parent.clone();
+        let parent_blueprint = schema.outer_blueprint.clone();
 
         self.api.kernel_drop_lock(handle)?;
 
@@ -365,6 +365,64 @@ where
                         ));
                     }
                 }
+            }
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                match SysModuleId::from_repr(module_id.0).unwrap() {
+                    SysModuleId::Object => {
+                        // Load the Object SysModule schema from the Package
+                        let handle = self.kernel_lock_substate(
+                            blueprint.package_address.as_node_id(),
+                            SysModuleId::Object.into(),
+                            &PackageOffset::Info.into(),
+                            LockFlags::read_only(),
+                        )?;
+                        let package_info: PackageInfoSubstate =
+                            self.sys_read_substate_typed(handle)?;
+                        self.kernel_drop_lock(handle)?;
+
+                        let blueprint_schema = package_info
+                            .schema
+                            .blueprints
+                            .get(&blueprint.blueprint_name)
+                            .expect("Missing blueprint schema");
+
+                        // Validate the substate against the schema
+                        if let SubstateKey::Tuple(offset) = substate_key {
+                            if let Some(index) = blueprint_schema.substates.get(offset as usize) {
+                                if let Err(e) = validate_payload_against_schema(
+                                    &buffer,
+                                    &blueprint_schema.schema,
+                                    *index,
+                                    self,
+                                ) {
+                                    return Err(RuntimeError::SystemError(
+                                        SystemError::InvalidSubstateWrite(
+                                            e.error_message(&blueprint_schema.schema),
+                                        ),
+                                    ));
+                                };
+                            } else {
+                                let schema_substate_count = blueprint_schema.substates.len();
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidSubstateWrite(format!("Stored a substate at tuple index {offset} but schema for {blueprint:?} only has {schema_substate_count} defined")),
+                                ));
+                            }
+                        } else {
+                            // TODO - we don't have schemas for this bit yet
+                        }
+                    }
+                    SysModuleId::TypeInfo
+                    | SysModuleId::Metadata
+                    | SysModuleId::Royalty
+                    | SysModuleId::AccessRules
+                    | SysModuleId::Virtualized => {
+                        // TODO: We should validate these substates, but luckily they're not accessible from
+                        // Scrypto, so safe for now.
+                    }
+                };
+            }
+            TypeInfoSubstate::Index | TypeInfoSubstate::SortedIndex => {
+                // TODO: Check objects stored are storeable
             }
              */
         }
@@ -572,7 +630,7 @@ where
         Ok(())
     }
 
-    fn globalize_with_address_and_child_object(
+    fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
@@ -660,7 +718,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -671,7 +729,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -682,7 +740,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -704,7 +762,7 @@ where
                 }),
             }
         } else {
-            match &object_info.blueprint_parent {
+            match &object_info.outer_object {
                 None => None,
                 Some(blueprint_parent) => {
                     // TODO: do this recursively until global?
@@ -758,7 +816,7 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        if let Some(blueprint_parent) = info.blueprint_parent {
+        if let Some(blueprint_parent) = info.outer_object {
             let actor = self.api.kernel_get_current_actor().unwrap();
             let instance_context = actor.instance_context();
             match instance_context {
@@ -1105,7 +1163,7 @@ where
         }
 
         let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1);
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1));
         self.api
             .kernel_set_substate(node_id, module_id, substate_key, value)
     }
@@ -1149,7 +1207,7 @@ where
         }
 
         let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Sorted(sorted_key.0, sorted_key.1.clone());
+        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone()));
 
         let rtn = self
             .api
@@ -1308,7 +1366,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         let parent = self
             .get_info()?
-            .blueprint_parent
+            .outer_object
             .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
 
         // TODO: Check if valid substate_key for node_id

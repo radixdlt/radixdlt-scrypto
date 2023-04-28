@@ -269,7 +269,34 @@ pub struct ModuleId(pub u8);
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
-    Tuple(u8),
-    Map(Vec<u8>),
-    Sorted(u16, Vec<u8>),
+    Tuple(TupleKey),
+    Map(MapKey),
+    Sorted(SortedU16Key),
 }
+
+impl SubstateKey {
+    pub fn for_tuple(&self) -> Option<&TupleKey> {
+        match self {
+            SubstateKey::Tuple(key) => Some(key),
+            _ => None,
+        }
+    }
+
+    pub fn for_map(&self) -> Option<&MapKey> {
+        match self {
+            SubstateKey::Map(key) => Some(key),
+            _ => None,
+        }
+    }
+
+    pub fn for_sorted(&self) -> Option<&SortedU16Key> {
+        match self {
+            SubstateKey::Sorted(key) => Some(key),
+            _ => None,
+        }
+    }
+}
+
+pub type TupleKey = u8;
+pub type MapKey = Vec<u8>;
+pub type SortedU16Key = (u16, Vec<u8>);

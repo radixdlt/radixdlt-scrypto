@@ -1,4 +1,3 @@
-use super::PackageCodeTypeSubstate;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -16,13 +15,20 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::{ClientApi, LockFlags};
-use radix_engine_interface::blueprints::package::*;
+pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
+
+// Import and re-export substate types
+pub use super::substates::PackageCodeTypeSubstate;
+pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
+pub use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -127,10 +133,10 @@ where
     // Prepare node init.
     let node_init = btreemap!(
         PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
-        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
-        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty ),
-        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(& function_access_rules ),
+        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
+        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code),
+        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
     // Prepare node modules.
@@ -140,7 +146,7 @@ where
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-            blueprint_parent: None,
+            outer_object: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();
@@ -208,6 +214,7 @@ pub struct PackageNativePackage;
 impl PackageNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+
         let mut substates = Vec::new();
         substates.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
@@ -269,7 +276,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
                     functions,
@@ -520,7 +527,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            parent,
+            outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()

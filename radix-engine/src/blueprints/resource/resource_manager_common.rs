@@ -418,7 +418,7 @@ where
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-    let bucket_id = api.globalize_with_address_and_child_object(
+    let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::SELF => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
@@ -465,7 +465,7 @@ where
     let metadata = Metadata::sys_create_with_data(metadata, api)?;
     let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-    let bucket_id = api.globalize_with_address_and_child_object(
+    let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::SELF => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,

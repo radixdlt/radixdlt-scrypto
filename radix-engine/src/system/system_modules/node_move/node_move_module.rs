@@ -33,12 +33,12 @@ impl NodeMoveModule {
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
-                blueprint_parent,
+                outer_object,
                 ..
             }) if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(blueprint_parent.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
                 {
                     return Ok(());
                 }
@@ -87,12 +87,12 @@ impl NodeMoveModule {
             }
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
-                blueprint_parent,
+                outer_object,
                 ..
             }) if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(blueprint_parent.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
                 {
                     return Ok(());
                 }

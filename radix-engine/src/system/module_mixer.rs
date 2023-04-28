@@ -675,35 +675,36 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
+        first_lock_from_db: bool,
         size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::after_lock_substate(api, handle, size)?;
+            KernelTraceModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::after_lock_substate(api, handle, size)?;
+            CostingModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::after_lock_substate(api, handle, size)?;
+            NodeMoveModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::after_lock_substate(api, handle, size)?;
+            AuthModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::after_lock_substate(api, handle, size)?;
+            LoggerModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::after_lock_substate(api, handle, size)?;
+            TransactionRuntimeModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::after_lock_substate(api, handle, size)?;
+            ExecutionTraceModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::after_lock_substate(api, handle, size)?;
+            TransactionLimitsModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::after_lock_substate(api, handle, size)?;
+            EventsModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
         Ok(())
     }

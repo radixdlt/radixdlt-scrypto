@@ -159,12 +159,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
+        first_lock_from_db: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, size)
+        SystemModuleMixer::after_lock_substate(api, handle, first_lock_from_db, size)
     }
 
     fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
@@ -241,7 +242,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         .node_refs_to_copy
                         .insert(address.as_node_id().clone());
                 }
-                if let Some(blueprint_parent) = object_info.blueprint_parent {
+                if let Some(blueprint_parent) = object_info.outer_object {
                     update
                         .node_refs_to_copy
                         .insert(blueprint_parent.as_node_id().clone());

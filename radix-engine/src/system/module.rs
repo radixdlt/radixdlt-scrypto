@@ -145,6 +145,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _first_lock_from_db: bool,
         _size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
