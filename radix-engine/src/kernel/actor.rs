@@ -2,18 +2,9 @@ use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum Context {
-    Instance(GlobalAddress, Blueprint),
-    Blueprint(Blueprint),
-}
-
-impl Context {
-    pub fn package_address(&self) -> PackageAddress {
-        match self {
-            Context::Instance(_, blueprint)
-            | Context::Blueprint(blueprint) => blueprint.package_address,
-        }
-    }
+pub struct InstanceContext {
+    pub instance: GlobalAddress,
+    pub instance_blueprint: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -24,7 +15,7 @@ pub enum Actor {
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
-        context: Context,
+        instance_context: Option<InstanceContext>,
     },
     Function {
         blueprint: Blueprint,
@@ -37,6 +28,13 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn instance_context(&self) -> Option<InstanceContext> {
+        match self {
+            Actor::Method { instance_context, .. } => instance_context.clone(),
+            _ => None,
+        }
+    }
+
     pub fn blueprint(&self) -> &Blueprint {
         match self {
             Actor::Method {
@@ -76,7 +74,7 @@ impl Actor {
         global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
         object_info: ObjectInfo,
-        context: Context,
+        instance_context: Option<InstanceContext>,
     ) -> Self {
         Self::Method {
             global_address,
@@ -84,7 +82,7 @@ impl Actor {
             module_id: method.1,
             ident: method.2,
             object_info,
-            context,
+            instance_context,
         }
     }
 

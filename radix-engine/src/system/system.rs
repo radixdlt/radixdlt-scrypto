@@ -5,7 +5,7 @@ use crate::errors::{
     InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, Context};
+use crate::kernel::actor::{Actor, InstanceContext};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
@@ -109,37 +109,19 @@ where
             .ok()
     }
 
-    // TODO: Add this to Actor
-    fn cur_context(
-        &mut self,
-    ) -> Result<Context, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let context = match actor {
-            Actor::Method {
-                context,
-                ..
-            } => {
-                context
-            }
-            Actor::Function { blueprint, .. } => Context::Blueprint(blueprint),
-            Actor::VirtualLazyLoad { blueprint, .. } => Context::Blueprint(blueprint),
-        };
-        Ok(context)
-    }
-
     fn new_object_internal(
         &mut self,
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
-        context: Context,
+        package_address: PackageAddress,
+        instance_context: Option<InstanceContext>,
     ) -> Result<NodeId, RuntimeError> {
-        let package_address = context.package_address();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
         let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
         let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
-            match context {
-                Context::Instance(address, actor_blueprint) if actor_blueprint.blueprint_name.eq(parent) => {
-                    Some(address)
+            match instance_context {
+                Some(context) if context.instance_blueprint.eq(parent) => {
+                    Some(context.instance)
                 }
                 _ => {
                     return Err(RuntimeError::SystemError(
@@ -413,8 +395,10 @@ where
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let context = self.cur_context()?;
-        self.new_object_internal(blueprint_ident, fields, context)
+        let actor = self.api.kernel_get_current_actor().unwrap();
+        let package_address = actor.package_address().clone();
+        let instance_context = actor.instance_context();
+        self.new_object_internal(blueprint_ident, fields, package_address, instance_context)
     }
 
     #[trace_resources]
@@ -601,7 +585,11 @@ where
         self.new_object_internal(
             inner_object_blueprint,
             inner_object_fields,
-            Context::Instance(address, blueprint),
+            blueprint.package_address,
+            Some(InstanceContext {
+                instance: address,
+                instance_blueprint: blueprint.blueprint_name,
+            }),
         )
     }
 
@@ -700,59 +688,31 @@ where
         let payload_size = args.len() + identifier.2.len();
         let blueprint = object_info.blueprint.clone();
 
-
-        /*
-        fn cur_context(
-            &mut self,
-        ) -> Result<Context, RuntimeError> {
-            let actor = self.api.kernel_get_current_actor().unwrap();
-            let context = match actor {
-                Actor::Method {
-                    global_address,
-                    object_info,
-                    ..
-                } => {
-                    if object_info.global {
-                        match global_address {
-                            None => Context::Blueprint(object_info.blueprint),
-                            Some(address) => Context::Instance(address, object_info.blueprint),
-                        }
-                    } else {
-                        // TODO: do this recursively until global?
-                        match object_info.blueprint_parent {
-                            None => Context::Blueprint(object_info.blueprint),
-                            Some(blueprint_parent) => {
-                                let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
-                                Context::Instance(blueprint_parent, parent_info.blueprint)
-                            },
-                        }
-                    }
-                }
-                Actor::Function { blueprint, .. } => Context::Blueprint(blueprint),
-                Actor::VirtualLazyLoad { blueprint, .. } => Context::Blueprint(blueprint),
-            };
-            Ok(context)
-        }
-         */
-
-        let context = if object_info.global {
+        // TODO: Can we load this lazily when needed?
+        let instance_context = if object_info.global {
             match global_address {
-                None => Context::Blueprint(object_info.blueprint.clone()),
-                Some(address) => Context::Instance(address, object_info.blueprint.clone()),
+                None => None,
+                Some(address) => Some(InstanceContext {
+                    instance: address,
+                    instance_blueprint: object_info.blueprint.blueprint_name.clone(),
+                }),
             }
         } else {
-            // TODO: do this recursively until global?
             match &object_info.blueprint_parent {
-                None => Context::Blueprint(object_info.blueprint.clone()),
+                None => None,
                 Some(blueprint_parent) => {
+                    // TODO: do this recursively until global?
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
-                    Context::Instance(blueprint_parent.clone(), parent_info.blueprint.clone())
+                    Some(InstanceContext {
+                        instance: blueprint_parent.clone(),
+                        instance_blueprint: parent_info.blueprint.blueprint_name.clone()
+                    })
                 },
             }
         };
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), object_info, context),
+            resolved_actor: Actor::method(global_address, identifier.clone(), object_info, instance_context),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
@@ -786,26 +746,12 @@ where
 
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let context = self.cur_context()?;
-
-        // TODO: Cleanup
         let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.blueprint_parent {
-            match context {
-                Context::Instance(address, _blueprint) if address.eq(&blueprint_parent) => {}
-                _ => {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                            node_id: node_id.clone(),
-                            package_address: info.blueprint.package_address,
-                            blueprint_name: info.blueprint.blueprint_name,
-                        })),
-                    ));
-                }
-            }
-        } else {
-            match context {
-                Context::Blueprint(blueprint) if blueprint.eq(&info.blueprint) => {}
+            let actor = self.api.kernel_get_current_actor().unwrap();
+            let instance_context = actor.instance_context();
+            match instance_context {
+                Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
                 _ => {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
