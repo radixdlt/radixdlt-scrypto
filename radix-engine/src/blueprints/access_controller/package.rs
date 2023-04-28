@@ -315,14 +315,14 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT.to_string(),
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT.to_string(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -381,14 +381,14 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+                export_name: ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
 
@@ -886,12 +886,25 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
             AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
         }
     }
-    AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
+    if rule_nodes.len() != 0 {
+        AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
+    } else {
+        AccessRule::DenyAll
+    }
 }
 
 //=========
 // Helpers
 //=========
+
+fn locked_access_rules() -> AccessRulesConfig {
+    let rule_set = RuleSet {
+        primary_role: AccessRule::DenyAll,
+        recovery_role: AccessRule::DenyAll,
+        confirmation_role: AccessRule::DenyAll,
+    };
+    access_rules_from_rule_set(rule_set)
+}
 
 fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
@@ -917,6 +930,20 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         ),
         primary_group.into(),
     );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT,
+        ),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        primary_group.into(),
+    );
 
     // Recovery Role Rules
     let recovery_group = "recovery";
@@ -931,6 +958,13 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT,
+        ),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
         ),
         recovery_group.into(),
@@ -938,7 +972,21 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         recovery_group.into(),
     );
@@ -982,7 +1030,34 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule(
         MethodKey::new(
             ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        access_rule_or(
+            [
+                rule_set.primary_role.clone(),
+                rule_set.recovery_role.clone(),
+                rule_set.confirmation_role.clone(),
+            ]
+            .into(),
+        ),
+    );
+    access_rules.set_method_access_rule(
+        MethodKey::new(
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        access_rule_or(
+            [
+                rule_set.recovery_role.clone(),
+                rule_set.confirmation_role.clone(),
+            ]
+            .into(),
+        ),
+    );
+    access_rules.set_method_access_rule(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
     );
@@ -990,6 +1065,19 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         MethodKey::new(
             ObjectModuleId::SELF,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        access_rule_or(
+            [
+                rule_set.primary_role.clone(),
+                rule_set.confirmation_role.clone(),
+            ]
+            .into(),
+        ),
+    );
+    access_rules.set_method_access_rule(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );

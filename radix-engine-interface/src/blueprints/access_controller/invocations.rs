@@ -88,7 +88,7 @@ pub type AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput = ();
 // Access Controller Initiate Badge Withdraw Attempt As Recovery
 //===============================================================
 
-pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT: &str =
+pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT: &str =
     "initiate_badge_withdraw_attempt_as_recovery";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -264,7 +264,7 @@ pub type AccessControllerStopTimedRecoveryOutput = ();
 // Access Controller Stop Timed Badge Withdraw Attempt
 //=====================================================
 
-pub const ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
+pub const ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
     "stop_timed_badge_withdraw_attempt";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
