@@ -303,6 +303,94 @@ impl AccessControllerNativePackage {
                 export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_BADGE_WITHDRAW_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeRecoveryAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeRecoveryAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerTimedConfirmBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_STOP_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
