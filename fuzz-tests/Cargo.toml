@@ -61,6 +61,8 @@ flamegraph = []
 simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
 dump_manifest_to_file = []
 smart_mutate = []
+# If enabled then try to decode manifest from the fuzz data
+decode_tx_manifest = []
 
 #fuzzer = [ "libfuzzer-sys" ]
 #fuzzer = [ "afl" ]

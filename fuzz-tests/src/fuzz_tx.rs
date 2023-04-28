@@ -1,11 +1,11 @@
-use arbitrary::{Arbitrary, Unstructured};
+use arbitrary::Unstructured;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
+#[cfg(feature = "decode_tx_manifest")]
 use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::manifest::ast;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
 
@@ -27,6 +27,7 @@ pub struct TxFuzzer {
     accounts: Vec<Account>,
     component_addresses: Vec<ComponentAddress>,
     resource_addresses: Vec<ResourceAddress>,
+    #[allow(unused)]
     package_addresses: Vec<PackageAddress>,
 }
 
@@ -63,7 +64,7 @@ impl TxFuzzer {
         let accounts: Vec<Account> = (0..2)
             .map(|_| {
                 let acc = runner.new_account(false);
-                let mut resources: Vec<ResourceAddress> = vec![
+                let resources: Vec<ResourceAddress> = vec![
                     runner.create_fungible_resource(10000.into(), 18, acc.2),
                     runner.create_fungible_resource(10000.into(), 18, acc.2),
                     runner.create_non_fungible_resource(acc.2),
@@ -178,6 +179,7 @@ impl TxFuzzer {
         }
     }
 
+    #[allow(unused)]
     fn get_random_account(
         &mut self,
         unstructured: &mut Unstructured,
@@ -264,8 +266,11 @@ impl TxFuzzer {
     }
 
     pub fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
-        //        let result = manifest_decode::<TransactionManifest>(data);
+        #[cfg(feature = "decode_tx_manifest")]
+        let result = manifest_decode::<TransactionManifest>(data);
+        #[cfg(not(feature = "decode_tx_manifest"))]
         let result = self.build_manifest(data);
+
         match result {
             #[allow(unused_mut)]
             Ok(mut manifest) => {
@@ -292,12 +297,14 @@ impl TxFuzzer {
 #[derive(Debug)]
 pub enum TxStatus {
     // Transaction manifest build error
+    #[allow(unused)]
     ManifestBuildError,
     // Transaction commit success
     CommitSuccess,
     // Transaction commit failure
     CommitFailure,
     // Transaction manifest parse error
+    #[allow(unused)]
     DecodeError,
 }
 
