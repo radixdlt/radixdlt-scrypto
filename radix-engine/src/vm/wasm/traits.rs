@@ -143,5 +143,8 @@ pub trait WasmEngine {
     type WasmInstance: WasmInstance;
 
     /// Instantiate a Scrypto module.
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
+    fn instantiate(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Result<Self::WasmInstance, PrepareError>;
 }

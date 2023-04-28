@@ -989,7 +989,10 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+    fn instantiate(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Result<WasmiInstance, PrepareError> {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 
@@ -998,17 +1001,17 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                    return cached_module.instantiate();
+                    return Ok(cached_module.instantiate());
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-                return cached_module.as_ref().instantiate();
+                return Ok(cached_module.as_ref().instantiate());
             }
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code).unwrap();
+        let module = WasmiModule::new(code)?;
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1021,6 +1024,7 @@ impl WasmEngine for WasmiEngine {
             self.modules_cache
                 .insert(*metered_code_key, Arc::new(module));
         }
-        instance
+
+        Ok(instance)
     }
 }

@@ -161,7 +161,7 @@ impl From<WasmRuntimeError> for RuntimeError {
 }
 
 impl WasmerModule {
-    fn instantiate(&self) -> WasmerInstance {
+    fn instantiate(&self) -> Result<WasmerInstance, PrepareError> {
         // native functions starts
         pub fn consume_buffer(
             env: &WasmerInstanceEnv,
@@ -546,13 +546,16 @@ impl WasmerModule {
         };
 
         // instantiate
-        let instance =
-            Instance::new(&self.module, &import_object).expect("Failed to instantiate WASM module");
+        let instance = Instance::new(&self.module, &import_object).map_err(|err| {
+            PrepareError::NotInstantiatable {
+                reason: format!("{err:?}"),
+            }
+        })?;
 
-        WasmerInstance {
+        Ok(WasmerInstance {
             instance,
             runtime_ptr: env.runtime_ptr,
-        }
+        })
     }
 }
 
@@ -658,7 +661,10 @@ impl WasmerEngine {
 impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
+    fn instantiate(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Result<WasmerInstance, PrepareError> {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 

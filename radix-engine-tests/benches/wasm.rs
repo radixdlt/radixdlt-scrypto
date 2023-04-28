@@ -28,7 +28,7 @@ fn bench_wasm_instantiation(c: &mut Criterion) {
     c.bench_function("WASM::instantiate_wasm", |b| {
         b.iter(|| {
             let engine = DefaultWasmEngine::default();
-            engine.instantiate(&pretend_instrumented_code);
+            engine.instantiate(&pretend_instrumented_code).unwrap();
         })
     });
 }
@@ -41,10 +41,10 @@ fn bench_wasm_instantiation_pre_loaded(c: &mut Criterion) {
         code: Arc::new(code),
     };
     let engine = DefaultWasmEngine::default();
-    engine.instantiate(&pretend_instrumented_code);
+    engine.instantiate(&pretend_instrumented_code).unwrap();
     c.bench_function("WASM::instantiate_wasm_preloaded", |b| {
         b.iter(|| {
-            engine.instantiate(&pretend_instrumented_code);
+            engine.instantiate(&pretend_instrumented_code).unwrap();
         })
     });
 }

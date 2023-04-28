@@ -23,7 +23,7 @@ use crate::system::system_modules::node_move::NodeMoveError;
 use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
-use crate::vm::wasm::WasmRuntimeError;
+use crate::vm::wasm::{PrepareError, WasmRuntimeError};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -234,6 +234,7 @@ pub enum SystemUpstreamError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VmError {
     InvalidCode,
+    WasmPrepareError(PrepareError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
