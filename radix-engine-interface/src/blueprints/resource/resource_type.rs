@@ -38,8 +38,12 @@ impl ResourceType {
     }
 
     pub fn check_amount(&self, amount: Decimal) -> bool {
-        !amount.is_negative()
-            && amount.0 % BnumI256::from(10i128.pow((18 - self.divisibility().unwrap_or(0)).into()))
-                == BnumI256::from(0)
+        check_amount(self.divisibility(), amount)
     }
+}
+
+pub fn check_amount(divisibility: Option<u8>, amount: Decimal) -> bool {
+    !amount.is_negative()
+        && amount.0 % BnumI256::from(10i128.pow((18 - divisibility.unwrap_or(0)).into()))
+            == BnumI256::from(0)
 }

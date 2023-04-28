@@ -82,19 +82,22 @@ pub enum PackageOffset {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleResourceManagerOffset {
-    ResourceManager,
+    Divisibility,
+    TotalSupply,
 }
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleResourceManagerOffset {
-    ResourceManager,
+    IdType,
+    DataSchema,
+    TotalSupply,
+    Data,
 }
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleVaultOffset {
-    Divisibility,
     LiquidFungible,
     LockedFungible,
 }
@@ -102,7 +105,6 @@ pub enum FungibleVaultOffset {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleVaultOffset {
-    IdType,
     LiquidNonFungible,
     LockedNonFungible,
 }
@@ -110,9 +112,10 @@ pub enum NonFungibleVaultOffset {
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum EpochManagerOffset {
+    Config,
     EpochManager,
     CurrentValidatorSet,
-    RegisteredValidatorSet,
+    RegisteredValidators,
 }
 
 #[repr(u8)]
@@ -123,18 +126,30 @@ pub enum ValidatorOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum BucketOffset {
-    Info,
+pub enum FungibleBucketOffset {
     Liquid,
     Locked,
 }
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum ProofOffset {
-    Info,
-    Fungible,
-    NonFungible,
+pub enum NonFungibleBucketOffset {
+    Liquid,
+    Locked,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleProofOffset {
+    Moveable,
+    ProofRefs,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleProofOffset {
+    Moveable,
+    ProofRefs,
 }
 
 #[repr(u8)]
@@ -200,16 +215,19 @@ substate_key!(RoyaltyOffset);
 substate_key!(ComponentOffset);
 substate_key!(PackageOffset);
 substate_key!(FungibleResourceManagerOffset);
-substate_key!(NonFungibleResourceManagerOffset);
 substate_key!(FungibleVaultOffset);
+substate_key!(FungibleBucketOffset);
+substate_key!(FungibleProofOffset);
+substate_key!(NonFungibleResourceManagerOffset);
 substate_key!(NonFungibleVaultOffset);
+substate_key!(NonFungibleBucketOffset);
+substate_key!(NonFungibleProofOffset);
 substate_key!(EpochManagerOffset);
 substate_key!(ValidatorOffset);
+
+// Transient
+substate_key!(WorktopOffset);
 substate_key!(ClockOffset);
 substate_key!(AccountOffset);
 substate_key!(AccessControllerOffset);
-// Transient
-substate_key!(WorktopOffset);
 substate_key!(AuthZoneOffset);
-substate_key!(BucketOffset);
-substate_key!(ProofOffset);

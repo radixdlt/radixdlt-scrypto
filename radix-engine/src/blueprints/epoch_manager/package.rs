@@ -1,7 +1,7 @@
 use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -20,6 +20,7 @@ impl EpochManagerNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
         substates.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
@@ -83,17 +84,6 @@ impl EpochManagerNativePackage {
                 export_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             },
         );
-        functions.insert(
-            EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerUpdateValidatorInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerUpdateValidatorOutput>(),
-                export_name: EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT.to_string(),
-            },
-        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -105,7 +95,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let epoch_manager_schema = BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema,
             substates,
             functions,
@@ -199,7 +189,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
-            parent: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
+            outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
             substates,
             functions,
@@ -235,7 +225,7 @@ impl EpochManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => {
@@ -309,17 +299,6 @@ impl EpochManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::create_validator(input.key, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let input: EpochManagerUpdateValidatorInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-
-                let rtn = EpochManagerBlueprint::update_validator(input.update, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

@@ -1,9 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::resource::ResourceManager;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
@@ -15,11 +14,6 @@ pub enum NonFungibleVaultError {
     NotEnoughAmount,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleVaultIdTypeSubstate {
-    pub id_type: NonFungibleIdType,
-}
-
 pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
 
 pub struct NonFungibleVaultBlueprint;
@@ -29,23 +23,9 @@ impl NonFungibleVaultBlueprint {
         !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
     }
 
-    fn get_id_type<Y>(api: &mut Y) -> Result<NonFungibleIdType, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.lock_field(
-            NonFungibleVaultOffset::IdType.into(),
-            LockFlags::read_only(),
-        )?;
-        let info: NonFungibleVaultIdTypeSubstate = api.sys_read_substate_typed(handle)?;
-        let id_type = info.id_type;
-        api.sys_drop_lock(handle)?;
-        Ok(id_type)
-    }
-
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Check amount
         if !Self::check_amount(amount) {
@@ -56,11 +36,9 @@ impl NonFungibleVaultBlueprint {
 
         // Take
         let taken = NonFungibleVault::take(*amount, api)?;
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
 
         // Create node
-        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
+        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -73,22 +51,16 @@ impl NonFungibleVaultBlueprint {
         // Take
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-
         // Create node
-        ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)
+        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
     }
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // Drop other bucket
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-        let other_bucket =
-            drop_non_fungible_bucket_of_address(resource_address, bucket.0.as_node_id(), api)?;
+        let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
         NonFungibleVault::put(other_bucket.liquid, api)?;
@@ -98,7 +70,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
 
@@ -118,7 +90,7 @@ impl NonFungibleVaultBlueprint {
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
@@ -126,11 +98,9 @@ impl NonFungibleVaultBlueprint {
             ));
         }
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
         let taken = NonFungibleVault::take(amount, api)?;
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Amount(amount))?;
 
@@ -142,15 +112,11 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-
-        let bucket =
-            ResourceManager(resource_address).new_non_fungible_bucket(taken.into_ids(), api)?;
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
         Runtime::emit_event(api, RecallResourceEvent::Ids(non_fungible_local_ids))?;
 
@@ -159,25 +125,17 @@ impl NonFungibleVaultBlueprint {
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-        let id_type = Self::get_id_type(api)?;
         let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
 
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
 
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&proof).unwrap(),
             ],
         )?;
@@ -191,7 +149,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !Self::check_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
@@ -199,21 +157,12 @@ impl NonFungibleVaultBlueprint {
             ));
         }
 
-        let id_type = Self::get_id_type(api)?;
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&proof).unwrap(),
             ],
         )?;
@@ -227,23 +176,14 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.type_parent.unwrap().into());
-        let id_type = Self::get_id_type(api)?;
-
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_non_fungibles(receiver, ids, api)?;
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&proof).unwrap(),
             ],
         )?;
@@ -262,7 +202,7 @@ impl NonFungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         NonFungibleVault::lock_non_fungibles(receiver, local_ids, api)?;
         Ok(())
@@ -470,7 +410,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
@@ -521,7 +461,7 @@ impl NonFungibleVault {
         api: &mut Y,
     ) -> Result<NonFungibleProof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),

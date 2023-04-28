@@ -17,20 +17,20 @@ pub enum ComposeProofError {
 }
 
 pub enum ComposedProof {
-    Fungible(ProofInfoSubstate, FungibleProof),
-    NonFungible(ProofInfoSubstate, NonFungibleProof),
+    Fungible(ProofMoveableSubstate, FungibleProof),
+    NonFungible(ProofMoveableSubstate, NonFungibleProof),
 }
 
 impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof) => btreemap!(
-                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
+                FungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                FungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
             ComposedProof::NonFungible(info, proof) => btreemap!(
-                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
+                NonFungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                NonFungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
         }
     }
@@ -59,9 +59,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         ResourceType::Fungible { .. } => {
             compose_fungible_proof(proofs, resource_address, amount, api).map(|proof| {
                 ComposedProof::Fungible(
-                    ProofInfoSubstate {
-                        resource_address,
-                        resource_type,
+                    ProofMoveableSubstate {
                         restricted: false, // TODO: follow existing impl, but need to revisit this
                     },
                     proof,
@@ -85,9 +83,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )
         .map(|proof| {
             ComposedProof::NonFungible(
-                ProofInfoSubstate {
-                    resource_address,
-                    resource_type,
+                ProofMoveableSubstate {
                     restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
@@ -124,9 +120,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         )
         .map(|proof| {
             ComposedProof::NonFungible(
-                ProofInfoSubstate {
-                    resource_address,
-                    resource_type,
+                ProofMoveableSubstate {
                     restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
@@ -147,33 +141,27 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     // calculate the max locked amount of each container
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
-        let handle = api.kernel_lock_substate(
-            proof.0.as_node_id(),
-            SysModuleId::Object.into(),
-            &ProofOffset::Info.into(),
-            LockFlags::read_only(),
-        )?;
-        let proof_info: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
-        if proof_info.resource_address == resource_address {
-            api.sys_drop_lock(handle)?;
+        let info = api.get_object_info(proof.0.as_node_id())?;
 
-            let handle = api.kernel_lock_substate(
-                proof.0.as_node_id(),
-                SysModuleId::Object.into(),
-                &ProofOffset::Fungible.into(),
-                LockFlags::read_only(),
-            )?;
-            let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
-            for (container, locked_amount) in &proof.evidence {
-                if let Some(existing) = max.get_mut(container) {
-                    *existing = Decimal::max(*existing, locked_amount.clone());
-                } else {
-                    max.insert(container.clone(), locked_amount.clone());
+        if info.blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) {
+            let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
+            if proof_resource == resource_address {
+                let handle = api.kernel_lock_substate(
+                    proof.0.as_node_id(),
+                    SysModuleId::Object.into(),
+                    &FungibleProofOffset::ProofRefs.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
+                for (container, locked_amount) in &proof.evidence {
+                    if let Some(existing) = max.get_mut(container) {
+                        *existing = Decimal::max(*existing, locked_amount.clone());
+                    } else {
+                        max.insert(container.clone(), locked_amount.clone());
+                    }
                 }
+                api.sys_drop_lock(handle)?;
             }
-            api.sys_drop_lock(handle)?;
-        } else {
-            api.sys_drop_lock(handle)?;
         }
     }
     let total = max
@@ -200,33 +188,30 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
-        let handle = api.kernel_lock_substate(
-            proof.0.as_node_id(),
-            SysModuleId::Object.into(),
-            &ProofOffset::Info.into(),
-            LockFlags::read_only(),
-        )?;
-        let proof_info: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
-        if proof_info.resource_address == resource_address {
-            api.sys_drop_lock(handle)?;
-
-            let handle = api.kernel_lock_substate(
-                proof.0.as_node_id(),
-                SysModuleId::Object.into(),
-                &ProofOffset::NonFungible.into(),
-                LockFlags::read_only(),
-            )?;
-            let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
-            for (container, locked_ids) in &proof.evidence {
-                total.extend(locked_ids.clone());
-                if let Some(ids) = per_container.get_mut(container) {
-                    ids.extend(locked_ids.clone());
-                } else {
-                    per_container.insert(container.clone(), locked_ids.clone());
+        let info = api.get_object_info(proof.0.as_node_id())?;
+        if info
+            .blueprint
+            .blueprint_name
+            .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
+        {
+            let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
+            if proof_resource == resource_address {
+                let handle = api.kernel_lock_substate(
+                    proof.0.as_node_id(),
+                    SysModuleId::Object.into(),
+                    &NonFungibleProofOffset::ProofRefs.into(),
+                    LockFlags::read_only(),
+                )?;
+                let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+                for (container, locked_ids) in &proof.evidence {
+                    total.extend(locked_ids.clone());
+                    if let Some(ids) = per_container.get_mut(container) {
+                        ids.extend(locked_ids.clone());
+                    } else {
+                        per_container.insert(container.clone(), locked_ids.clone());
+                    }
                 }
             }
-        } else {
-            api.sys_drop_lock(handle)?;
         }
     }
     Ok((total, per_container))
@@ -257,7 +242,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
             SysModuleId::Object.into(),
-            &ProofOffset::Fungible.into(),
+            &FungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate: FungibleProof = api.sys_read_substate_typed(handle)?;
@@ -341,7 +326,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
             SysModuleId::Object.into(),
-            &ProofOffset::NonFungible.into(),
+            &NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate: NonFungibleProof = api.sys_read_substate_typed(handle)?;

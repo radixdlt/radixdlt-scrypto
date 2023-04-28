@@ -88,13 +88,6 @@ pub enum UpdateSecondaryIndex {
     },
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct EpochManagerUpdateValidatorInput {
-    pub update: UpdateSecondaryIndex,
-}
-
-pub type EpochManagerUpdateValidatorOutput = ();
-
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]

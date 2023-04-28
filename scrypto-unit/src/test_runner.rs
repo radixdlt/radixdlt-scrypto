@@ -1496,7 +1496,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
     package_schema.blueprints.insert(
         blueprint_name.to_string(),
         BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],

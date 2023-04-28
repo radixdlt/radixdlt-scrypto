@@ -325,28 +325,31 @@ pub enum TypedPackageSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleResourceManagerSubstateValue {
-    ResourceManager(FungibleResourceManagerSubstate),
+    Divisibility(FungibleResourceManagerDivisibilitySubstate),
+    TotalSupply(FungibleResourceManagerTotalSupplySubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerSubstateValue {
-    ResourceManager(NonFungibleResourceManagerSubstate),
+    IdType(NonFungibleResourceManagerIdTypeSubstate),
+    DataSchema(NonFungibleResourceManagerDataSchemaSubstate),
+    TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
+    Data(NonFungibleResourceManagerDataSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleVaultSubstateValue {
-    Divisibility(FungibleVaultDivisibilitySubstate),
     Balance(FungibleVaultBalanceSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultSubstateValue {
-    IdType(NonFungibleVaultIdTypeSubstate),
     Balance(NonFungibleVaultBalanceSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedEpochManagerSubstateValue {
+    Config(EpochManagerConfigSubstate),
     EpochManager(EpochManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     RegisteredValidatorSet(SecondaryIndexSubstate),
@@ -455,27 +458,32 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::FungibleResource(offset) => {
             TypedObjectModuleSubstateValue::FungibleResource(match offset {
-                FungibleResourceManagerOffset::ResourceManager => {
-                    TypedFungibleResourceManagerSubstateValue::ResourceManager(scrypto_decode(
-                        data,
-                    )?)
+                FungibleResourceManagerOffset::Divisibility => {
+                    TypedFungibleResourceManagerSubstateValue::Divisibility(scrypto_decode(data)?)
+                }
+                FungibleResourceManagerOffset::TotalSupply => {
+                    TypedFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
                 }
             })
         }
         TypedObjectModuleSubstateKey::NonFungibleResource(offset) => {
             TypedObjectModuleSubstateValue::NonFungibleResource(match offset {
-                NonFungibleResourceManagerOffset::ResourceManager => {
-                    TypedNonFungibleResourceManagerSubstateValue::ResourceManager(scrypto_decode(
-                        data,
-                    )?)
+                NonFungibleResourceManagerOffset::IdType => {
+                    TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
+                }
+                NonFungibleResourceManagerOffset::DataSchema => {
+                    TypedNonFungibleResourceManagerSubstateValue::DataSchema(scrypto_decode(data)?)
+                }
+                NonFungibleResourceManagerOffset::TotalSupply => {
+                    TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
+                }
+                NonFungibleResourceManagerOffset::Data => {
+                    TypedNonFungibleResourceManagerSubstateValue::Data(scrypto_decode(data)?)
                 }
             })
         }
         TypedObjectModuleSubstateKey::FungibleVault(offset) => {
             TypedObjectModuleSubstateValue::FungibleVault(match offset {
-                FungibleVaultOffset::Divisibility => {
-                    TypedFungibleVaultSubstateValue::Divisibility(scrypto_decode(data)?)
-                }
                 FungibleVaultOffset::LiquidFungible => {
                     TypedFungibleVaultSubstateValue::Balance(scrypto_decode(data)?)
                 }
@@ -485,9 +493,6 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::NonFungibleVault(offset) => {
             TypedObjectModuleSubstateValue::NonFungibleVault(match offset {
-                NonFungibleVaultOffset::IdType => {
-                    TypedNonFungibleVaultSubstateValue::IdType(scrypto_decode(data)?)
-                }
                 NonFungibleVaultOffset::LiquidNonFungible => {
                     TypedNonFungibleVaultSubstateValue::Balance(scrypto_decode(data)?)
                 }
@@ -497,13 +502,16 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::EpochManager(offset) => {
             TypedObjectModuleSubstateValue::EpochManager(match offset {
+                EpochManagerOffset::Config => {
+                    TypedEpochManagerSubstateValue::Config(scrypto_decode(data)?)
+                }
                 EpochManagerOffset::EpochManager => {
                     TypedEpochManagerSubstateValue::EpochManager(scrypto_decode(data)?)
                 }
                 EpochManagerOffset::CurrentValidatorSet => {
                     TypedEpochManagerSubstateValue::CurrentValidatorSet(scrypto_decode(data)?)
                 }
-                EpochManagerOffset::RegisteredValidatorSet => {
+                EpochManagerOffset::RegisteredValidators => {
                     TypedEpochManagerSubstateValue::RegisteredValidatorSet(scrypto_decode(data)?)
                 }
             })

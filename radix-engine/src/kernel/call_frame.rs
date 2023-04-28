@@ -3,7 +3,8 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
+    FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
+    NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_stores::interface::{
@@ -343,7 +344,7 @@ impl CallFrame {
             // Check references exist
             for reference in references {
                 self.get_node_visibility(reference)
-                    .ok_or(UnlockSubstateError::RefNotFound(reference.clone()))?;
+                    .ok_or_else(|| UnlockSubstateError::RefNotFound(reference.clone()))?;
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
@@ -659,7 +660,7 @@ impl CallFrame {
         for node_id in call_frame_update.node_refs_to_copy {
             let visibility = parent
                 .get_node_visibility(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
             next_node_refs.insert(node_id, RENodeRefData::new(visibility.0));
         }
 
@@ -692,7 +693,7 @@ impl CallFrame {
             let ref_data = from
                 .immortal_node_refs
                 .get(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
 
             to.immortal_node_refs
                 .entry(node_id)
@@ -830,7 +831,8 @@ impl CallFrame {
                         if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                             && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
+                                || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                                || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }
