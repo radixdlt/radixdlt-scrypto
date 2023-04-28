@@ -7,7 +7,6 @@ edition = "2021"
 sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
 native-sdk = { path = "../../../native-sdk" }
-radix-engine-interface = { path = "../../../radix-engine-interface" }
 
 [dev-dependencies]
 transaction = { path = "../../../transaction" }

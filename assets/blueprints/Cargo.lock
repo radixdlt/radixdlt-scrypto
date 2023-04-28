@@ -290,7 +290,6 @@ name = "faucet"
 version = "0.1.0"
 dependencies = [
  "radix-engine",
- "radix-engine-interface",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -330,7 +329,6 @@ version = "0.1.0"
 dependencies = [
  "native-sdk",
  "radix-engine",
- "radix-engine-interface",
  "sbor",
  "scrypto",
  "scrypto-unit",
