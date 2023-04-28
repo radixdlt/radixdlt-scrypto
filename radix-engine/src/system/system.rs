@@ -5,7 +5,7 @@ use crate::errors::{
     InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, Context};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
@@ -38,19 +38,6 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-enum Context {
-    Instance(GlobalAddress, Blueprint),
-    Blueprint(Blueprint),
-}
-
-impl Context {
-    fn package_address(&self) -> PackageAddress {
-        match self {
-            Context::Instance(_, blueprint)
-            | Context::Blueprint(blueprint) => blueprint.package_address,
-        }
-    }
-}
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -129,25 +116,10 @@ where
         let actor = self.api.kernel_get_current_actor().unwrap();
         let context = match actor {
             Actor::Method {
-                global_address,
-                object_info,
+                context,
                 ..
             } => {
-                if object_info.global {
-                    match global_address {
-                        None => Context::Blueprint(object_info.blueprint),
-                        Some(address) => Context::Instance(address, object_info.blueprint),
-                    }
-                } else {
-                    // TODO: do this recursively until global?
-                    match object_info.blueprint_parent {
-                        None => Context::Blueprint(object_info.blueprint),
-                        Some(blueprint_parent) => {
-                            let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
-                            Context::Instance(blueprint_parent, parent_info.blueprint)
-                        },
-                    }
-                }
+                context
             }
             Actor::Function { blueprint, .. } => Context::Blueprint(blueprint),
             Actor::VirtualLazyLoad { blueprint, .. } => Context::Blueprint(blueprint),
@@ -728,8 +700,59 @@ where
         let payload_size = args.len() + identifier.2.len();
         let blueprint = object_info.blueprint.clone();
 
+
+        /*
+        fn cur_context(
+            &mut self,
+        ) -> Result<Context, RuntimeError> {
+            let actor = self.api.kernel_get_current_actor().unwrap();
+            let context = match actor {
+                Actor::Method {
+                    global_address,
+                    object_info,
+                    ..
+                } => {
+                    if object_info.global {
+                        match global_address {
+                            None => Context::Blueprint(object_info.blueprint),
+                            Some(address) => Context::Instance(address, object_info.blueprint),
+                        }
+                    } else {
+                        // TODO: do this recursively until global?
+                        match object_info.blueprint_parent {
+                            None => Context::Blueprint(object_info.blueprint),
+                            Some(blueprint_parent) => {
+                                let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                                Context::Instance(blueprint_parent, parent_info.blueprint)
+                            },
+                        }
+                    }
+                }
+                Actor::Function { blueprint, .. } => Context::Blueprint(blueprint),
+                Actor::VirtualLazyLoad { blueprint, .. } => Context::Blueprint(blueprint),
+            };
+            Ok(context)
+        }
+         */
+
+        let context = if object_info.global {
+            match global_address {
+                None => Context::Blueprint(object_info.blueprint.clone()),
+                Some(address) => Context::Instance(address, object_info.blueprint.clone()),
+            }
+        } else {
+            // TODO: do this recursively until global?
+            match &object_info.blueprint_parent {
+                None => Context::Blueprint(object_info.blueprint.clone()),
+                Some(blueprint_parent) => {
+                    let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                    Context::Instance(blueprint_parent.clone(), parent_info.blueprint.clone())
+                },
+            }
+        };
+
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), object_info),
+            resolved_actor: Actor::method(global_address, identifier.clone(), object_info, context),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
