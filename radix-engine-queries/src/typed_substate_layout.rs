@@ -74,7 +74,9 @@ pub enum TypedSubstateKey {
 }
 
 impl TypedSubstateKey {
-    /// Just a work around for now to filter out "transient" substates we shouldn't be storing
+    /// This method should be used to filter out substates which we don't want to map in the Core API.
+    /// (See `radix-engine-tests/tests/bootstrap.rs` for an example of how it should be used)
+    /// Just a work around for now to filter out "transient" substates we shouldn't really be storing.
     pub fn value_is_mappable(&self) -> bool {
         match self {
             TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVault(
@@ -93,8 +95,8 @@ impl TypedSubstateKey {
 pub enum TypedObjectModuleSubstateKey {
     // Objects
     Package(PackageOffset),
-    FungibleResource(ResourceManagerOffset),
-    NonFungibleResource(ResourceManagerOffset),
+    FungibleResource(FungibleResourceManagerOffset),
+    NonFungibleResource(NonFungibleResourceManagerOffset),
     FungibleVault(FungibleVaultOffset),
     NonFungibleVault(NonFungibleVaultOffset),
     EpochManager(EpochManagerOffset),
@@ -177,10 +179,10 @@ fn to_typed_object_substate_key_internal(
             TypedObjectModuleSubstateKey::Package(PackageOffset::try_from(substate_key)?)
         }
         EntityType::GlobalFungibleResource => TypedObjectModuleSubstateKey::FungibleResource(
-            ResourceManagerOffset::try_from(substate_key)?,
+            FungibleResourceManagerOffset::try_from(substate_key)?,
         ),
         EntityType::GlobalNonFungibleResource => TypedObjectModuleSubstateKey::NonFungibleResource(
-            ResourceManagerOffset::try_from(substate_key)?,
+            NonFungibleResourceManagerOffset::try_from(substate_key)?,
         ),
         EntityType::GlobalEpochManager => {
             TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
@@ -453,7 +455,7 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::FungibleResource(offset) => {
             TypedObjectModuleSubstateValue::FungibleResource(match offset {
-                ResourceManagerOffset::ResourceManager => {
+                FungibleResourceManagerOffset::ResourceManager => {
                     TypedFungibleResourceManagerSubstateValue::ResourceManager(scrypto_decode(
                         data,
                     )?)
@@ -462,7 +464,7 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::NonFungibleResource(offset) => {
             TypedObjectModuleSubstateValue::NonFungibleResource(match offset {
-                ResourceManagerOffset::ResourceManager => {
+                NonFungibleResourceManagerOffset::ResourceManager => {
                     TypedNonFungibleResourceManagerSubstateValue::ResourceManager(scrypto_decode(
                         data,
                     )?)

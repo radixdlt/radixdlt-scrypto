@@ -138,7 +138,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, NonFungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                &ResourceManagerOffset::ResourceManager.into(),
+                &NonFungibleResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(
@@ -164,7 +164,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
-                &ResourceManagerOffset::ResourceManager.into(),
+                &FungibleResourceManagerOffset::ResourceManager.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
