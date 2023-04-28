@@ -2,7 +2,7 @@ use crate::blueprints::resource::*;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
-    LockedNonFungibleResource, ResourceType,
+    LockedNonFungibleResource,
 };
 use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::btree_map::Entry;
@@ -198,8 +198,9 @@ impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
 }
 
 pub struct DroppedProof {
-    pub info: ProofInfoSubstate,
-    pub proof: DroppedProofResource,
+    pub moveable: ProofMoveableSubstate,
+    pub fungible_proof: FungibleProof,
+    pub non_fungible_proof: NonFungibleProof,
 }
 
 pub enum DroppedProofResource {
@@ -207,30 +208,15 @@ pub enum DroppedProofResource {
     NonFungible(NonFungibleProof),
 }
 
-impl Into<DroppedProof> for NodeSubstates {
-    fn into(mut self) -> DroppedProof {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedProof> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedProof {
+        let moveable: ProofMoveableSubstate =
+            scrypto_decode(&self[ProofOffset::Info as usize]).unwrap();
+        let fungible_proof: FungibleProof =
+            scrypto_decode(&self[ProofOffset::Fungible as usize]).unwrap();
+        let non_fungible_proof: NonFungibleProof =
+            scrypto_decode(&self[ProofOffset::NonFungible as usize]).unwrap();
 
-        let info: ProofInfoSubstate = module
-            .remove(&ProofOffset::Info.into())
-            .map(|x| x.as_typed().unwrap())
-            .unwrap();
-
-        let proof = match info.resource_type {
-            ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
-                module
-                    .remove(&ProofOffset::Fungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-            ResourceType::NonFungible { .. } => DroppedProofResource::NonFungible(
-                module
-                    .remove(&ProofOffset::NonFungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-        };
-
-        DroppedProof { info, proof }
+        DroppedProof { moveable, fungible_proof, non_fungible_proof, }
     }
 }

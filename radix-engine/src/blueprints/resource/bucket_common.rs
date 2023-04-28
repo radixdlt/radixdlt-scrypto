@@ -25,7 +25,7 @@ pub fn drop_fungible_bucket<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let fields = api.drop_object(*bucket_node_id)?;
+    let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
@@ -43,7 +43,7 @@ pub fn drop_non_fungible_bucket<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let fields = api.drop_object(*bucket_node_id)?;
+    let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
         return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(

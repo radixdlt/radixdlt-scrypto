@@ -30,6 +30,9 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME: &str =
+    "drop_proof_FungibleResourceManager";
+
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -48,6 +51,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME: &str =
+    "drop_proof_NonFungibleResourceManager";
 
 const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
@@ -239,6 +244,18 @@ impl ResourceManagerNativePackage {
                     export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
                         .to_string(),
                 },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_DROP_PROOF_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropProofInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropProofOutput>(),
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME
+                        .to_string(),
+                }
             );
 
             let event_schema = event_schema! {
@@ -465,6 +482,18 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME
                         .to_string(),
                 },
+            );
+            functions.insert(
+                RESOURCE_MANAGER_DROP_PROOF_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(Receiver::SelfRef),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropProofInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<ResourceManagerDropProofOutput>(),
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME
+                        .to_string(),
+                }
             );
 
             let event_schema = event_schema! {
@@ -974,7 +1003,7 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<ProofInfoSubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
 
@@ -1032,7 +1061,7 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<ProofInfoSubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
 
@@ -1411,6 +1440,15 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerDropProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleResourceManagerBlueprint::drop_proof(input.proof, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
@@ -1593,6 +1631,15 @@ impl ResourceManagerNativePackage {
                 })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ResourceManagerDropProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleResourceManagerBlueprint::drop_proof(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME => {

@@ -142,6 +142,14 @@ fn build_access_rules(
         AllowAll,
         DenyAll,
     );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            RESOURCE_MANAGER_DROP_PROOF_IDENT,
+        ),
+        AllowAll,
+        DenyAll,
+    );
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)

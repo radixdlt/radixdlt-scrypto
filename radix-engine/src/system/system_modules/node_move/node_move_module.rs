@@ -1,4 +1,4 @@
-use crate::blueprints::resource::ProofInfoSubstate;
+use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
@@ -35,9 +35,7 @@ impl NodeMoveModule {
             if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
-                    if matches!(callee, Actor::Function { .. })
-                        && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
-                    {
+                    if callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE) {
                         return Ok(());
                     }
 
@@ -62,7 +60,7 @@ impl NodeMoveModule {
                         &ProofOffset::Info.into(),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut proof: ProofInfoSubstate =
+                    let mut proof: ProofMoveableSubstate =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.restricted {
@@ -82,9 +80,7 @@ impl NodeMoveModule {
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                     && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Function { .. })
-                    && callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE)
-                {
+                if callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE) {
                     return Ok(());
                 }
 
@@ -109,7 +105,7 @@ impl NodeMoveModule {
                     &ProofOffset::Info.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut proof: ProofInfoSubstate =
+                let mut proof: ProofMoveableSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                 if proof.restricted {

@@ -240,16 +240,10 @@ impl FungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
-
         let node_id = {
-            let divisibility = Self::get_divisibility(api)?;
             let amount = FungibleBucket::locked_amount(api)? + FungibleBucket::liquid_amount(api)?;
 
-            let proof_info = ProofInfoSubstate {
-                resource_address,
-                resource_type: ResourceType::Fungible { divisibility },
+            let proof_info = ProofMoveableSubstate {
                 restricted: false,
             };
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;

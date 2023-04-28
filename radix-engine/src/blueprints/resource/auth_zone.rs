@@ -99,7 +99,7 @@ impl AuthZoneBlueprint {
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
                     global: false,
-                    blueprint_parent: None,
+                    blueprint_parent: Some(input.resource_address.into()),
                 })).to_substates()
             ),
         )?;
@@ -187,7 +187,7 @@ impl AuthZoneBlueprint {
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    blueprint_parent: None,
+                    blueprint_parent: Some(input.resource_address.into()),
                 })).to_substates()
             ),
         )?;

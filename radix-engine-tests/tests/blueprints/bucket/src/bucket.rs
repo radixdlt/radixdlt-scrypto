@@ -32,7 +32,7 @@ mod bucket_test {
                 .mint_initial_supply(1u32);
 
             ScryptoEnv
-                .drop_object(bucket.0.as_node_id().clone())
+                .drop_object(bucket.0.as_node_id())
                 .unwrap();
         }
 

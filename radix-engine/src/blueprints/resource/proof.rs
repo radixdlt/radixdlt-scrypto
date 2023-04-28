@@ -1,6 +1,4 @@
 use crate::errors::RuntimeError;
-use crate::kernel::heap::{DroppedProof, DroppedProofResource};
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -32,19 +30,15 @@ pub enum ProofError {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ProofInfoSubstate {
-    /// The resource address.
-    pub resource_address: ResourceAddress,
-    /// The resource type.
-    pub resource_type: ResourceType,
+pub struct ProofMoveableSubstate {
     /// Whether movement of this proof is restricted.
     pub restricted: bool,
 }
 
-impl ProofInfoSubstate {
+impl ProofMoveableSubstate {
     pub fn of_self<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<Self, RuntimeError> {
         let handle = api.lock_field(ProofOffset::Info.into(), LockFlags::read_only())?;
-        let substate_ref: ProofInfoSubstate = api.sys_read_substate_typed(handle)?;
+        let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
         Ok(info)
@@ -195,7 +189,7 @@ impl FungibleProofBlueprint {
         where
             Y: ClientApi<RuntimeError>,
     {
-        let proof_info = ProofInfoSubstate::of_self(api)?;
+        let proof_info = ProofMoveableSubstate::of_self(api)?;
         let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
@@ -245,16 +239,19 @@ impl FungibleProofBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
         where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+            Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
 
-        let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
-        let dropped_proof: DroppedProof = heap_node.into();
-        match dropped_proof.proof {
-            DroppedProofResource::Fungible(p) => p.drop_proof(api)?,
-            DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
-        };
+        let parent = api.get_object_info(proof.0.as_node_id())?.blueprint_parent.unwrap();
+
+        api.call_method(
+            parent.as_node_id(),
+            RESOURCE_MANAGER_DROP_PROOF_IDENT,
+            scrypto_encode(&ResourceManagerDropProofInput {
+                proof
+            }).unwrap()
+        )?;
 
         Ok(())
     }
@@ -269,7 +266,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proof_info = ProofInfoSubstate::of_self(api)?;
+        let proof_info = ProofMoveableSubstate::of_self(api)?;
         let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
@@ -330,16 +327,18 @@ impl NonFungibleProofBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
+        let parent = api.get_object_info(proof.0.as_node_id())?.blueprint_parent.unwrap();
 
-        let heap_node = api.kernel_drop_node(proof.0.as_node_id())?;
-        let dropped_proof: DroppedProof = heap_node.into();
-        match dropped_proof.proof {
-            DroppedProofResource::Fungible(p) => p.drop_proof(api)?,
-            DroppedProofResource::NonFungible(p) => p.drop_proof(api)?,
-        };
+        api.call_method(
+            parent.as_node_id(),
+            RESOURCE_MANAGER_DROP_PROOF_IDENT,
+            scrypto_encode(&ResourceManagerDropProofInput {
+                proof
+            }).unwrap()
+        )?;
 
         Ok(())
     }

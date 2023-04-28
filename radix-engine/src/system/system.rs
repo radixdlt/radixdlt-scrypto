@@ -860,11 +860,11 @@ where
     }
 
     #[trace_resources]
-    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
 
         // TODO: Cleanup
-        let info = self.get_object_info(&node_id)?;
+        let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.blueprint_parent {
             match actor_info {
                 Some((address, _blueprint)) if address.eq(&blueprint_parent) => {}
@@ -891,7 +891,7 @@ where
             }
         }
 
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+        let mut node_substates = self.api.kernel_drop_node(node_id)?;
         let user_substates = node_substates.remove(&SysModuleId::Object.into()).unwrap();
         let fields = user_substates
             .into_iter()

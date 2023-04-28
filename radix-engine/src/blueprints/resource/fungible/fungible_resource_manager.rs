@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{FungibleResourceManagerOffset, NodeId};
 use radix_engine_interface::*;
+use crate::kernel::heap::DroppedProof;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -293,5 +294,16 @@ impl FungibleResourceManagerBlueprint {
         )?;
         let total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
         Ok(total_supply)
+    }
+
+    pub(crate) fn drop_proof<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let node_substates = api.drop_object(proof.0.as_node_id())?;
+        let dropped_proof: DroppedProof = node_substates.into();
+        dropped_proof.fungible_proof.drop_proof(api)?;
+
+        Ok(())
     }
 }

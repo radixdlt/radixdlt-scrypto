@@ -476,10 +476,11 @@ where
         if is_fungible {
             let substate = self.heap.get_substate(
                 proof_id,
-                SysModuleId::Object.into(),
-                &ProofOffset::Info.into(),
+                SysModuleId::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             ).unwrap();
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
             let substate = self
                 .heap
@@ -492,18 +493,17 @@ where
             let proof: FungibleProof = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: info.restricted,
+                resource_address,
                 total_locked: proof.amount(),
             })
         } else {
             let substate = self.heap.get_substate(
                 proof_id,
-                SysModuleId::Object.into(),
-                &ProofOffset::Info.into(),
+                SysModuleId::TypeInfo.into(),
+                &TypeInfoOffset::TypeInfo.into(),
             ).unwrap();
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
             let substate = self
                 .heap
@@ -516,9 +516,7 @@ where
             let proof: NonFungibleProof = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: info.restricted,
+                resource_address,
                 total_locked: proof.non_fungible_local_ids().clone(),
             })
         }

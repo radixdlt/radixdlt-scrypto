@@ -12,6 +12,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
+use crate::kernel::heap::DroppedProof;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -825,5 +826,16 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let total_supply: Decimal = api.sys_read_substate_typed(handle)?;
         Ok(total_supply)
+    }
+
+    pub(crate) fn drop_proof<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        let node_substates = api.drop_object(proof.0.as_node_id())?;
+        let dropped_proof: DroppedProof = node_substates.into();
+        dropped_proof.non_fungible_proof.drop_proof(api)?;
+
+        Ok(())
     }
 }

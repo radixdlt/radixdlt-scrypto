@@ -128,14 +128,10 @@ impl BucketSnapshot {
 pub enum ProofSnapshot {
     Fungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        restricted: bool,
         total_locked: Decimal,
     },
     NonFungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        restricted: bool,
         total_locked: BTreeSet<NonFungibleLocalId>,
     },
 }
