@@ -12,7 +12,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
-
 pub const PROOF_DROP_IDENT: &str = "Proof_drop";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]

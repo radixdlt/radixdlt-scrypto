@@ -1,9 +1,9 @@
+use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProof {
@@ -70,8 +70,8 @@ pub struct FungibleProofBlueprint;
 
 impl FungibleProofBlueprint {
     pub(crate) fn clone<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let moveable = {
             let handle =
@@ -82,8 +82,10 @@ impl FungibleProofBlueprint {
             moveable
         };
 
-        let handle =
-            api.lock_field(FungibleProofOffset::ProofRefs.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            FungibleProofOffset::ProofRefs.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -103,11 +105,13 @@ impl FungibleProofBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.lock_field(FungibleProofOffset::ProofRefs.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            FungibleProofOffset::ProofRefs.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -116,8 +120,8 @@ impl FungibleProofBlueprint {
 
     // TODO: Remove in favor of an API get_parent()
     pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let address =
             ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
@@ -125,8 +129,8 @@ impl FungibleProofBlueprint {
     }
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
 
