@@ -76,7 +76,7 @@ pub type AccessControllerInitiateRecoveryAsRecoveryOutput = ();
 // Access Controller Initiate Badge Withdraw Attempt As Primary
 //==============================================================
 
-pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT: &str =
+pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT: &str =
     "initiate_badge_withdraw_attempt_as_primary";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -88,7 +88,7 @@ pub type AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput = ();
 // Access Controller Initiate Badge Withdraw Attempt As Recovery
 //===============================================================
 
-pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT: &str =
+pub const ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT: &str =
     "initiate_badge_withdraw_attempt_as_recovery";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]

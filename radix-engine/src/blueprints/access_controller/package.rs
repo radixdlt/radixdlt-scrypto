@@ -304,25 +304,25 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT.to_string(),
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT.to_string(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT.to_string(),
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
-                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT.to_string(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -503,6 +503,55 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::stop_timed_recovery(input, api)
+            }
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::initiate_badge_withdraw_attempt_as_primary(input, api)
+            }
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::initiate_badge_withdraw_attempt_as_recovery(input, api)
+            }
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::quick_confirm_primary_role_badge_withdraw_attempt(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::quick_confirm_recovery_role_badge_withdraw_attempt(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::timed_confirm_badge_withdraw_attempt(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::cancel_primary_role_badge_withdraw_attempt(input, api)
+            }
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
+            }
+            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::stop_timed_badge_withdraw_attempt(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -1160,7 +1209,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_PRIMARY_IDENT,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
         ),
         primary_group.into(),
     );
@@ -1185,7 +1234,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_AS_RECOVERY_IDENT,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
