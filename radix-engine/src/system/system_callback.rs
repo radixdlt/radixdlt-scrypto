@@ -236,7 +236,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         .node_refs_to_copy
                         .insert(address.as_node_id().clone());
                 }
-                if let Some(blueprint_parent) = object_info.blueprint_parent {
+                if let Some(blueprint_parent) = object_info.outer_object {
                     update
                         .node_refs_to_copy
                         .insert(blueprint_parent.as_node_id().clone());

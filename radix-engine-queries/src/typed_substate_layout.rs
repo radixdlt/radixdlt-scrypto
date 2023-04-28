@@ -459,38 +459,26 @@ fn to_typed_object_substate_value(
         TypedObjectModuleSubstateKey::FungibleResource(offset) => {
             TypedObjectModuleSubstateValue::FungibleResource(match offset {
                 FungibleResourceManagerOffset::Divisibility => {
-                    TypedFungibleResourceManagerSubstateValue::Divisibility(scrypto_decode(
-                        data,
-                    )?)
+                    TypedFungibleResourceManagerSubstateValue::Divisibility(scrypto_decode(data)?)
                 }
                 FungibleResourceManagerOffset::TotalSupply => {
-                    TypedFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(
-                        data,
-                    )?)
+                    TypedFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
                 }
             })
         }
         TypedObjectModuleSubstateKey::NonFungibleResource(offset) => {
             TypedObjectModuleSubstateValue::NonFungibleResource(match offset {
                 NonFungibleResourceManagerOffset::IdType => {
-                    TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(
-                        data,
-                    )?)
+                    TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
                 }
                 NonFungibleResourceManagerOffset::DataSchema => {
-                    TypedNonFungibleResourceManagerSubstateValue::DataSchema(scrypto_decode(
-                        data,
-                    )?)
+                    TypedNonFungibleResourceManagerSubstateValue::DataSchema(scrypto_decode(data)?)
                 }
                 NonFungibleResourceManagerOffset::TotalSupply => {
-                    TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(
-                        data,
-                    )?)
+                    TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
                 }
                 NonFungibleResourceManagerOffset::Data => {
-                    TypedNonFungibleResourceManagerSubstateValue::Data(scrypto_decode(
-                        data,
-                    )?)
+                    TypedNonFungibleResourceManagerSubstateValue::Data(scrypto_decode(data)?)
                 }
             })
         }

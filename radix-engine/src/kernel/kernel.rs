@@ -352,7 +352,7 @@ where
                             .add_ref(address.as_node_id().clone(), RefType::Normal);
                     }
 
-                    if let Some(address) = object_info.blueprint_parent {
+                    if let Some(address) = object_info.outer_object {
                         self.current_frame
                             .add_ref(address.as_node_id().clone(), RefType::Normal);
                     }
@@ -399,14 +399,14 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint,
-                    blueprint_parent,
+                    outer_object,
                     ..
                 }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
                     && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                         || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                    let parent = blueprint_parent.unwrap();
+                    let parent = outer_object.unwrap();
                     let resource_address: ResourceAddress =
                         ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)

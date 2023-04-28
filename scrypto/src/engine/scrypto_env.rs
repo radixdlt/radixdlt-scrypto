@@ -71,7 +71,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn globalize_with_address_and_child_object(
+    fn globalize_with_address_and_create_inner_object(
         &mut self,
         _modules: BTreeMap<ObjectModuleId, NodeId>,
         _address: GlobalAddress,

@@ -146,7 +146,7 @@ where
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-            blueprint_parent: None,
+            outer_object: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();
@@ -276,7 +276,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
                     functions,
@@ -527,7 +527,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            parent,
+            outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()

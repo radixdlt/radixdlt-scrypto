@@ -55,7 +55,7 @@ pub trait ClientObjectApi<E> {
         address: GlobalAddress,
     ) -> Result<(), E>;
 
-    fn globalize_with_address_and_child_object(
+    fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,

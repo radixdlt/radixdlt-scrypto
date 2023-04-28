@@ -66,7 +66,7 @@ where
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
-                blueprint_parent: None,
+                outer_object: None,
             }));
         } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
             || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
@@ -84,7 +84,7 @@ where
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
-                blueprint_parent: None,
+                outer_object: None,
             }));
         }
 
@@ -117,7 +117,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
         let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
-        let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
+        let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
                 Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
                 _ => {
@@ -170,7 +170,7 @@ where
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
-                        blueprint_parent
+                        outer_object
                     })
                 ).to_substates(),
             ),
@@ -247,7 +247,7 @@ where
                 })?;
         }
 
-        let parent_blueprint = schema.parent.clone();
+        let parent_blueprint = schema.outer_blueprint.clone();
 
         self.api.kernel_drop_lock(handle)?;
 
@@ -563,7 +563,7 @@ where
         Ok(())
     }
 
-    fn globalize_with_address_and_child_object(
+    fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
@@ -651,7 +651,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -662,7 +662,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -673,7 +673,7 @@ where
                 (
                     ObjectInfo {
                         blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                        blueprint_parent: None,
+                        outer_object: None,
                         global: true,
                     },
                     None,
@@ -695,7 +695,7 @@ where
                 }),
             }
         } else {
-            match &object_info.blueprint_parent {
+            match &object_info.outer_object {
                 None => None,
                 Some(blueprint_parent) => {
                     // TODO: do this recursively until global?
@@ -749,7 +749,7 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        if let Some(blueprint_parent) = info.blueprint_parent {
+        if let Some(blueprint_parent) = info.outer_object {
             let actor = self.api.kernel_get_current_actor().unwrap();
             let instance_context = actor.instance_context();
             match instance_context {
@@ -1254,7 +1254,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         let parent = self
             .get_info()?
-            .blueprint_parent
+            .outer_object
             .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
 
         // TODO: Check if valid substate_key for node_id

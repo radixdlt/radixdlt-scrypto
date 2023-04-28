@@ -268,7 +268,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                outer_blueprint: None,
                 schema,
                 substates,
                 functions,
@@ -293,7 +293,10 @@ impl ResourceManagerNativePackage {
                     ),
             );
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>());
+            substates.push(
+                aggregator
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>(),
+            );
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -507,7 +510,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: None,
+                outer_blueprint: None,
                 schema,
                 substates,
                 functions,
@@ -521,7 +524,8 @@ impl ResourceManagerNativePackage {
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
+            substates
+                .push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
             let mut functions = BTreeMap::new();
@@ -630,7 +634,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintSchema {
-                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -644,7 +648,9 @@ impl ResourceManagerNativePackage {
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>());
+            substates.push(
+                aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
+            );
             substates
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
@@ -791,7 +797,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintSchema {
-                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -881,7 +887,7 @@ impl ResourceManagerNativePackage {
             );
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -998,7 +1004,7 @@ impl ResourceManagerNativePackage {
             );
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1056,7 +1062,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1126,7 +1132,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
-                parent: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
                 functions,
@@ -1229,7 +1235,7 @@ impl ResourceManagerNativePackage {
         );
         let schema = generate_full_schema(aggregator);
         let worktop_schema = BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema,
             substates,
             functions,
@@ -1323,7 +1329,7 @@ impl ResourceManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let auth_zone_schema = BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema,
             substates,
             functions,
