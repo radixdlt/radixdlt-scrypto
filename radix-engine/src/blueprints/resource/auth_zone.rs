@@ -1,3 +1,4 @@
+use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
@@ -83,6 +84,11 @@ impl AuthZoneBlueprint {
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
 
+        let blueprint_name = match &composed_proof {
+            ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
+            ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
+        };
+
         api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
@@ -91,9 +97,9 @@ impl AuthZoneBlueprint {
             btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
                 })).to_substates()
             ),
         )?;
@@ -122,17 +128,32 @@ impl AuthZoneBlueprint {
         };
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-        api.kernel_create_node(
-            node_id,
-            btreemap!(
+        match composed_proof {
+            ComposedProof::Fungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
                 })).to_substates()
             ),
-        )?;
+                )?;
+            }
+            ComposedProof::NonFungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
+                SysModuleId::Object.into() => composed_proof.into(),
+                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    global: false,
+                    outer_object: Some(input.resource_address.into()),
+                })).to_substates()))?;
+            }
+        }
 
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
@@ -163,9 +184,9 @@ impl AuthZoneBlueprint {
             btreemap!(
                 SysModuleId::Object.into() => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
                 })).to_substates()
             ),
         )?;

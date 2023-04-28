@@ -97,12 +97,10 @@ pub enum VaultOp {
 pub enum BucketSnapshot {
     Fungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
         liquid: Decimal,
     },
     NonFungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
         liquid: BTreeSet<NonFungibleLocalId>,
     },
 }
@@ -130,14 +128,10 @@ impl BucketSnapshot {
 pub enum ProofSnapshot {
     Fungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        restricted: bool,
         total_locked: Decimal,
     },
     NonFungible {
         resource_address: ResourceAddress,
-        resource_type: ResourceType,
-        restricted: bool,
         total_locked: BTreeSet<NonFungibleLocalId>,
     },
 }
@@ -450,10 +444,10 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Actor::Method {
-                    blueprint, ident, ..
+                    object_info, ident, ..
                 } => Origin::ScryptoMethod(ApplicationFnIdentifier {
-                    package_address: blueprint.package_address.clone(),
-                    blueprint_name: blueprint.blueprint_name.clone(),
+                    package_address: object_info.blueprint.package_address.clone(),
+                    blueprint_name: object_info.blueprint.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
                 Actor::Function { blueprint, ident } => {
@@ -481,18 +475,20 @@ impl ExecutionTraceModule {
         match &callee {
             Actor::Method {
                 node_id,
-                blueprint,
+                object_info,
                 ident,
                 ..
-            } if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_PUT_IDENT) => {
+            } if VaultUtil::is_vault_blueprint(&object_info.blueprint)
+                && ident.eq(VAULT_PUT_IDENT) =>
+            {
                 self.handle_vault_put_input(&resource_summary, &current_actor, node_id)
             }
             Actor::Method {
                 node_id,
-                blueprint,
+                object_info,
                 ident,
                 ..
-            } if VaultUtil::is_vault_blueprint(blueprint)
+            } if VaultUtil::is_vault_blueprint(&object_info.blueprint)
                 && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(&current_actor, node_id)
@@ -511,10 +507,12 @@ impl ExecutionTraceModule {
         match &current_actor {
             Some(Actor::Method {
                 node_id,
-                blueprint,
+                object_info,
                 ident,
                 ..
-            }) if VaultUtil::is_vault_blueprint(blueprint) && ident.eq(VAULT_TAKE_IDENT) => {
+            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
+                && ident.eq(VAULT_TAKE_IDENT) =>
+            {
                 self.handle_vault_take_output(&resource_summary, caller, node_id)
             }
             Some(Actor::VirtualLazyLoad { .. }) => return,

@@ -15,7 +15,7 @@ use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
-    Proof, ProofDropInput, PROOF_BLUEPRINT, PROOF_DROP_IDENT,
+    Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::BlueprintSchema;
 
@@ -225,6 +225,25 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
+        match callee {
+            Actor::Method {
+                global_address,
+                object_info,
+                ..
+            } => {
+                if let Some(address) = global_address {
+                    update
+                        .node_refs_to_copy
+                        .insert(address.as_node_id().clone());
+                }
+                if let Some(blueprint_parent) = object_info.outer_object {
+                    update
+                        .node_refs_to_copy
+                        .insert(blueprint_parent.as_node_id().clone());
+                }
+            }
+            _ => {}
+        }
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
@@ -322,6 +341,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             output
         } else {
             // Make dependent resources/components visible
+
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
                 SysModuleId::Object.into(),
@@ -428,10 +448,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         for node_id in nodes {
             if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
                 match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT) => {
+                    (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
                             RESOURCE_MANAGER_PACKAGE,
-                            PROOF_BLUEPRINT,
+                            FUNGIBLE_PROOF_BLUEPRINT,
+                            PROOF_DROP_IDENT,
+                            scrypto_encode(&ProofDropInput {
+                                proof: Proof(Own(node_id)),
+                            })
+                            .unwrap(),
+                        )?;
+                    }
+                    (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                        system.call_function(
+                            RESOURCE_MANAGER_PACKAGE,
+                            NON_FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {
                                 proof: Proof(Own(node_id)),

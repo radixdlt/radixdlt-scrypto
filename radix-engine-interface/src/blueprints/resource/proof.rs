@@ -12,8 +12,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
-pub const PROOF_BLUEPRINT: &str = "Proof";
-
 pub const PROOF_DROP_IDENT: &str = "Proof_drop";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
@@ -29,13 +27,6 @@ pub const PROOF_GET_AMOUNT_IDENT: &str = "Proof_get_amount";
 pub struct ProofGetAmountInput {}
 
 pub type ProofGetAmountOutput = Decimal;
-
-pub const PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "Proof_get_non_fungible_local_ids";
-
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ProofGetNonFungibleLocalIdsInput {}
-
-pub type ProofGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;
 
 pub const PROOF_GET_RESOURCE_ADDRESS_IDENT: &str = "Proof_get_resource_address";
 

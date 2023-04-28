@@ -31,9 +31,7 @@ mod bucket_test {
                 .metadata("name", "TestToken")
                 .mint_initial_supply(1u32);
 
-            ScryptoEnv
-                .drop_object(bucket.0.as_node_id().clone())
-                .unwrap();
+            ScryptoEnv.drop_object(bucket.0.as_node_id()).unwrap();
         }
 
         pub fn drop_empty(amount: u32) {
