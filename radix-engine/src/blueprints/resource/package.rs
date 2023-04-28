@@ -1053,7 +1053,7 @@ impl ResourceManagerNativePackage {
             }
         };
 
-        let proof_schema = {
+        let non_fungible_proof_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut substates = Vec::new();
@@ -1328,7 +1328,7 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_BUCKET_BLUEPRINT.to_string() => fungible_bucket_schema,
                 NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => non_fungible_bucket_schema,
                 FUNGIBLE_PROOF_BLUEPRINT.to_string() => fungible_proof_schema,
-                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_schema,
+                NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => non_fungible_proof_schema,
                 WORKTOP_BLUEPRINT.to_string() => worktop_schema,
                 AUTH_ZONE_BLUEPRINT.to_string() => auth_zone_schema
             ),

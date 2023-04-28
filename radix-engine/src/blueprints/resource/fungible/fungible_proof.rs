@@ -73,9 +73,17 @@ impl FungibleProofBlueprint {
         where
             Y: ClientApi<RuntimeError>,
     {
-        let moveable = ProofMoveableSubstate::of_self(api)?;
+        let moveable = {
+            let handle =
+                api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
+            let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
+            let moveable = substate_ref.clone();
+            api.sys_drop_lock(handle)?;
+            moveable
+        };
+
         let handle =
-            api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+            api.lock_field(FungibleProofOffset::ProofRefs.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -99,13 +107,14 @@ impl FungibleProofBlueprint {
             Y: ClientApi<RuntimeError>,
     {
         let handle =
-            api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+            api.lock_field(FungibleProofOffset::ProofRefs.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
+    // TODO: Remove in favor of an API get_parent()
     pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
         where
             Y: ClientApi<RuntimeError>,

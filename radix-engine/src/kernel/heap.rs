@@ -212,7 +212,7 @@ impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
         let moveable: ProofMoveableSubstate =
             scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
         let fungible_proof: FungibleProof =
-            scrypto_decode(&self[FungibleProofOffset::ProofRef as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
 
         DroppedFungibleProof {
             moveable,
@@ -226,7 +226,7 @@ impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
         let moveable: ProofMoveableSubstate =
             scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
         let non_fungible_proof: NonFungibleProof =
-            scrypto_decode(&self[FungibleProofOffset::ProofRef as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
 
         DroppedNonFungibleProof {
             moveable,

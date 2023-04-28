@@ -3,56 +3,7 @@ use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
-pub enum LocalRef {
-    Bucket(Reference),
-    Vault(Reference),
-}
-
-impl LocalRef {
-    pub fn as_node_id(&self) -> &NodeId {
-        match self {
-            LocalRef::Bucket(id) => id.as_node_id(),
-            LocalRef::Vault(id) => id.as_node_id(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ProofError {
-    /// Error produced by a resource container.
-    ResourceError(ResourceError),
-    /// Can't generate zero-amount or empty non-fungible set proofs.
-    EmptyProofNotAllowed,
-    /// Can't apply a non-fungible operation on fungible proofs.
-    NonFungibleOperationNotSupported,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ProofMoveableSubstate {
-    /// Whether movement of this proof is restricted.
-    pub restricted: bool,
-}
-
-impl ProofMoveableSubstate {
-    pub fn of_self<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<Self, RuntimeError> {
-        let handle =
-            api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
-        let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
-        let info = substate_ref.clone();
-        api.sys_drop_lock(handle)?;
-        Ok(info)
-    }
-
-    pub fn change_to_unrestricted(&mut self) {
-        self.restricted = false;
-    }
-
-    pub fn change_to_restricted(&mut self) {
-        self.restricted = true;
-    }
-}
+use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProof {
@@ -125,12 +76,19 @@ pub struct NonFungibleProofBlueprint;
 
 impl NonFungibleProofBlueprint {
     pub(crate) fn clone<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
-        let proof_info = ProofMoveableSubstate::of_self(api)?;
+        let moveable = {
+            let handle =
+                api.lock_field(NonFungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
+            let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
+            let moveable = substate_ref.clone();
+            api.sys_drop_lock(handle)?;
+            moveable
+        };
         let handle = api.lock_field(
-            NonFungibleProofOffset::ProofRef.into(),
+            NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
@@ -140,7 +98,7 @@ impl NonFungibleProofBlueprint {
         let proof_id = api.new_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&moveable).unwrap(),
                 scrypto_encode(&clone).unwrap(),
             ],
         )?;
@@ -152,11 +110,11 @@ impl NonFungibleProofBlueprint {
     }
 
     pub(crate) fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            NonFungibleProofOffset::ProofRef.into(),
+            NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
@@ -168,11 +126,11 @@ impl NonFungibleProofBlueprint {
     pub(crate) fn get_local_ids<Y>(
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
         let handle = api.lock_field(
-            NonFungibleProofOffset::ProofRef.into(),
+            NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
@@ -181,9 +139,10 @@ impl NonFungibleProofBlueprint {
         Ok(ids)
     }
 
+    // TODO: Remove in favor of an API get_parent()
     pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
         let address =
             ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
@@ -191,8 +150,8 @@ impl NonFungibleProofBlueprint {
     }
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+        where
+            Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
         let parent = api
