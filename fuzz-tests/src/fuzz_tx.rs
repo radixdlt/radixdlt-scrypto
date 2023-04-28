@@ -25,21 +25,54 @@ pub struct TxFuzzer {
     runner: TestRunner,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
+    component_addresses: Vec<ComponentAddress>,
+    resource_addresses: Vec<ResourceAddress>,
+    package_addresses: Vec<PackageAddress>,
 }
 
 impl TxFuzzer {
     pub fn new() -> Self {
         let mut runner = TestRunner::builder().without_trace().build();
+        let mut component_addresses = vec![runner.faucet_component()];
+        let mut resource_addresses = vec![
+            RADIX_TOKEN,
+            ECDSA_SECP256K1_TOKEN,
+            EDDSA_ED25519_TOKEN,
+            SYSTEM_TOKEN,
+            PACKAGE_TOKEN,
+            GLOBAL_OBJECT_TOKEN,
+            PACKAGE_OWNER_TOKEN,
+            VALIDATOR_OWNER_TOKEN,
+            IDENTITY_OWNER_TOKEN,
+            ACCOUNT_OWNER_TOKEN,
+        ];
+        let package_addresses = vec![
+            PACKAGE_PACKAGE,
+            RESOURCE_MANAGER_PACKAGE,
+            IDENTITY_PACKAGE,
+            EPOCH_MANAGER_PACKAGE,
+            CLOCK_PACKAGE,
+            ACCOUNT_PACKAGE,
+            ACCESS_CONTROLLER_PACKAGE,
+            TRANSACTION_PROCESSOR_PACKAGE,
+            METADATA_PACKAGE,
+            ROYALTY_PACKAGE,
+            ACCESS_RULES_PACKAGE,
+            GENESIS_HELPER_PACKAGE,
+        ];
         let accounts: Vec<Account> = (0..2)
             .map(|_| {
                 let acc = runner.new_account(false);
-                let resources: Vec<ResourceAddress> = vec![
+                let mut resources: Vec<ResourceAddress> = vec![
                     runner.create_fungible_resource(10000.into(), 18, acc.2),
                     runner.create_fungible_resource(10000.into(), 18, acc.2),
                     runner.create_non_fungible_resource(acc.2),
                     runner.create_non_fungible_resource(acc.2),
                 ];
+                resource_addresses.append(&mut resources.clone());
                 println!("addr = {:?}", acc.2);
+                component_addresses.push(acc.2);
+
                 Account {
                     public_key: acc.0,
                     //_private_key: acc.1,
@@ -54,6 +87,9 @@ impl TxFuzzer {
             runner,
             snapshot,
             accounts,
+            component_addresses,
+            resource_addresses,
+            package_addresses,
         }
     }
 
@@ -145,14 +181,11 @@ impl TxFuzzer {
     fn get_random_account(
         &mut self,
         unstructured: &mut Unstructured,
-    ) -> (Account, ResourceAddress) {
-        let account_idx = unstructured.choose_index(self.accounts.len()).unwrap();
-        let mut account = self.accounts[account_idx].clone();
+    ) -> Result<(Account, ResourceAddress), arbitrary::Error> {
+        let account = unstructured.choose(&self.accounts[..])?;
+        let resource_address = unstructured.choose(&account.resources[..])?;
 
-        let resource_idx = unstructured.choose_index(account.resources.len()).unwrap();
-        let mut resource_address = account.resources[resource_idx];
-
-        (account, resource_address)
+        Ok((account.clone(), resource_address.clone()))
     }
 
     fn build_manifest(&mut self, data: &[u8]) -> Result<TransactionManifest, TxStatus> {
@@ -160,11 +193,22 @@ impl TxFuzzer {
         let mut buckets: Vec<ManifestBucket> = vec![];
         let mut proof_ids: Vec<ManifestProof> = vec![];
 
+        // Arbitrary does not return error if not enough data to construct a full instance of
+        // Self. It uses dummy values (zeros) instead.
+        // TODO: to consider if this is ok to allow it.
+
         let mut unstructured = Unstructured::new(&data);
         println!("unstructured init len = {}", unstructured.len());
 
-        let (account, resource_address) = self.get_random_account(&mut unstructured);
-        let component_address = account.address;
+        let resource_address = unstructured
+            .choose(&self.resource_addresses[..])
+            .unwrap()
+            .clone();
+        let component_address = unstructured
+            .choose(&self.component_addresses[..])
+            .unwrap()
+            .clone();
+        //let package_addresses = unstructured.choose(&self.package_addresses[..]).unwrap();
 
         let fee = Decimal::from(100);
         //builder.lock_fee(self.runner.faucet_component(), fee);
@@ -247,6 +291,8 @@ impl TxFuzzer {
 
 #[derive(Debug)]
 pub enum TxStatus {
+    // Transaction manifest build error
+    ManifestBuildError,
     // Transaction commit success
     CommitSuccess,
     // Transaction commit failure
