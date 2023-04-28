@@ -156,14 +156,7 @@ impl FungibleVaultBlueprint {
     {
         let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
 
-        let divisibility = Self::get_divisibility(api)?;
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::Fungible { divisibility },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
         let proof_id = api.new_object(
@@ -171,7 +164,6 @@ impl FungibleVaultBlueprint {
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&proof).unwrap(),
-                scrypto_encode(&NonFungibleProof::default()).unwrap(),
             ],
         )?;
 
@@ -193,20 +185,13 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::Fungible { divisibility },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&proof).unwrap(),
-                scrypto_encode(&NonFungibleProof::default()).unwrap(),
             ],
         )?;
 

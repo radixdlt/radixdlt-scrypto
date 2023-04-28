@@ -38,7 +38,7 @@ pub trait ClientObjectApi<E> {
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object
-    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, E>;
+    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;

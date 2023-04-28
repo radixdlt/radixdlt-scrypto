@@ -69,11 +69,11 @@ fn test_basic_transfer() {
     assert_eq!(
         1104 /* AllocateNodeId */
         + 1744 /* CreateNode */
-        + 6105 /* DropLock */
+        + 6253 /* DropLock */
         + 1680 /* DropNode */
         + 1054091 /* Invoke */
-        + 17155 /* LockSubstate */
-        + 217960 /* ReadSubstate */
+        + 17563 /* LockSubstate */
+        + 226284 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -204,11 +204,11 @@ fn test_radiswap() {
     assert_eq!(
         2484 /* AllocateNodeId */
         + 3935 /* CreateNode */
-        + 15207 /* DropLock */
+        + 15762 /* DropLock */
         + 3675 /* DropNode */
         + 3311450 /* Invoke */
-        + 41427 /* LockSubstate */
-        + 678254 /* ReadSubstate */
+        + 42957 /* LockSubstate */
+        + 708134 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1503310 /* RunWasm */
@@ -313,20 +313,20 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        3933 /* AllocateNodeId */
-        + 6213 /* CreateNode */
-        + 25308 /* DropLock */
-        + 5985 /* DropNode */
-        + 4420973 /* Invoke */
-        + 66239 /* LockSubstate */
-        + 978694 /* ReadSubstate */
-        + 200000 /* RunNative */
+        4071 /* AllocateNodeId */
+        + 6431 /* CreateNode */
+        + 26899 /* DropLock */
+        + 6195 /* DropNode */
+        + 4691111 /* Invoke */
+        + 70277 /* LockSubstate */
+        + 1139310 /* ReadSubstate */
+        + 225000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1243885 /* RunWasm */
+        + 1252175 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1936271, /* WriteSubstate */
+        + 1864271, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

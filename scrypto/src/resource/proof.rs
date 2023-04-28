@@ -240,8 +240,8 @@ impl ScryptoProof for Proof {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -305,8 +305,8 @@ impl ValidatedProof {
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

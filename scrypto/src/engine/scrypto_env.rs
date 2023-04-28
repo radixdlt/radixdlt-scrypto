@@ -120,7 +120,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn drop_object(&mut self, _node_id: NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
+    fn drop_object(&mut self, _node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
         // TODO: Remove or implement drop_object interface from scrypto
         //unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
         todo!("Unsupported")

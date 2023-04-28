@@ -150,7 +150,7 @@ where
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
 
-        self.api.drop_object(node_id)?;
+        self.api.drop_object(&node_id)?;
 
         Ok(())
     }

@@ -132,10 +132,16 @@ pub enum NonFungibleBucketOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ProofOffset {
-    Info,
-    Fungible,
-    NonFungible,
+pub enum FungibleProofOffset {
+    Moveable,
+    ProofRefs,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum NonFungibleProofOffset {
+    Moveable,
+    ProofRefs,
 }
 
 #[repr(u8)]
@@ -191,13 +197,14 @@ into_substate_key!(ComponentOffset);
 into_substate_key!(PackageOffset);
 into_substate_key!(FungibleResourceManagerOffset);
 into_substate_key!(FungibleVaultOffset);
+into_substate_key!(FungibleBucketOffset);
+into_substate_key!(FungibleProofOffset);
 into_substate_key!(NonFungibleResourceManagerOffset);
 into_substate_key!(NonFungibleVaultOffset);
+into_substate_key!(NonFungibleBucketOffset);
+into_substate_key!(NonFungibleProofOffset);
 into_substate_key!(EpochManagerOffset);
 into_substate_key!(ValidatorOffset);
-into_substate_key!(NonFungibleBucketOffset);
-into_substate_key!(FungibleBucketOffset);
-into_substate_key!(ProofOffset);
 into_substate_key!(WorktopOffset);
 into_substate_key!(ClockOffset);
 into_substate_key!(AccountOffset);

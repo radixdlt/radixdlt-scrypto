@@ -462,7 +462,9 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == PROOF_BLUEPRINT || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) => {
+                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
                     blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 _ => {
@@ -474,51 +476,55 @@ where
         };
 
         if is_fungible {
-            let substate = self.heap.get_substate(
-                proof_id,
-                SysModuleId::User.into(),
-                &ProofOffset::Info.into(),
-            ).unwrap();
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
             let substate = self
                 .heap
                 .get_substate(
                     proof_id,
                     SysModuleId::User.into(),
-                    &ProofOffset::Fungible.into(),
+                    &FungibleProofOffset::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: FungibleProof = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: info.restricted,
+                resource_address,
                 total_locked: proof.amount(),
             })
         } else {
-            let substate = self.heap.get_substate(
-                proof_id,
-                SysModuleId::User.into(),
-                &ProofOffset::Info.into(),
-            ).unwrap();
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
             let substate = self
                 .heap
                 .get_substate(
                     proof_id,
                     SysModuleId::User.into(),
-                    &ProofOffset::NonFungible.into(),
+                    &NonFungibleProofOffset::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: NonFungibleProof = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
-                resource_address: info.resource_address,
-                resource_type: info.resource_type,
-                restricted: info.restricted,
+                resource_address,
                 total_locked: proof.non_fungible_local_ids().clone(),
             })
         }

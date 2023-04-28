@@ -72,8 +72,8 @@ impl SysProof for Proof {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

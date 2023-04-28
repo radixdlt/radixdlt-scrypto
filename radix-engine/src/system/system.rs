@@ -5,7 +5,7 @@ use crate::errors::{
     InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, InstanceContext};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
@@ -49,6 +49,13 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    pub fn new(api: &'a mut Y) -> Self {
+        Self {
+            api,
+            phantom: PhantomData::default(),
+        }
+    }
+
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         // This is to solve the bootstrapping problem.
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
@@ -101,61 +108,19 @@ where
             })
             .ok()
     }
-}
-
-impl<'a, Y, V> SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    pub fn new(api: &'a mut Y) -> Self {
-        Self {
-            api,
-            phantom: PhantomData::default(),
-        }
-    }
-
-    fn cur_blueprint_global_actor(
-        &mut self,
-    ) -> Result<(Option<(GlobalAddress, String)>, PackageAddress), RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let actor_info = match &actor {
-            Actor::Method {
-                global_address,
-                object_info,
-                ..
-            } => {
-                if object_info.global {
-                    global_address
-                        .map(|address| (address, object_info.blueprint.blueprint_name.clone()))
-                } else {
-                    // TODO: do this recursively until global?
-                    object_info.blueprint_parent.map(|parent| {
-                        let parent_info = self.get_object_info(parent.as_node_id()).unwrap();
-                        (parent, parent_info.blueprint.blueprint_name)
-                    })
-                }
-            }
-            _ => None,
-        };
-        let package_address = actor.package_address().clone();
-        Ok((actor_info, package_address))
-    }
 
     fn new_object_internal(
         &mut self,
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
         package_address: PackageAddress,
-        as_parent: Option<(GlobalAddress, String)>,
+        instance_context: Option<InstanceContext>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
         let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
         let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
-            match as_parent {
-                Some((actor_address, actor_blueprint)) if actor_blueprint.eq(parent) => {
-                    Some(actor_address)
-                }
+            match instance_context {
+                Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -253,16 +218,15 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(&blueprint.blueprint_name)
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    )),
-                )))?;
+        let schema = package
+            .schema
+            .blueprints
+            .get(&blueprint.blueprint_name)
+            .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::BlueprintNotFound(
+                    blueprint.blueprint_name.to_string(),
+                )),
+            )))?;
         if schema.substates.len() != fields.len() {
             return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                 Box::new(CreateObjectError::WrongNumberOfSubstates(
@@ -273,12 +237,7 @@ where
             )));
         }
         for i in 0..fields.len() {
-            validate_payload_against_schema(
-                &fields[i],
-                &schema.schema,
-                schema.substates[i],
-                self,
-            )
+            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i], self)
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
                         CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
@@ -442,116 +401,10 @@ where
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
-        self.new_object_internal(blueprint_ident, fields, package_address, actor_info)
-            /*
         let actor = self.api.kernel_get_current_actor().unwrap();
         let package_address = actor.package_address().clone();
-
-        let handle = self.api.kernel_lock_substate(
-            package_address.as_node_id(),
-            SysModuleId::Object.into(),
-            &PackageOffset::Info.into(),
-            LockFlags::read_only(),
-        )?;
-        let package: PackageInfoSubstate =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(blueprint_ident)
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint_ident.to_string(),
-                    )),
-                )))?;
-        if schema.substates.len() != object_states.len() {
-            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                Box::new(CreateObjectError::WrongNumberOfSubstates(
-                    blueprint_ident.to_string(),
-                    object_states.len(),
-                    schema.substates.len(),
-                )),
-            )));
-        }
-        for i in 0..object_states.len() {
-            validate_payload_against_schema(
-                &object_states[i],
-                &schema.schema,
-                schema.substates[i],
-                self,
-            )
-            .map_err(|err| {
-                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                    CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
-                )))
-            })?;
-        }
-        self.api.kernel_drop_lock(handle)?;
-
-        let entity_type = match (package_address, blueprint_ident) {
-            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
-                EntityType::InternalFungibleVault
-            }
-            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
-                EntityType::InternalNonFungibleVault
-            }
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
-            _ => EntityType::InternalGenericComponent,
-        };
-
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-        let node_init: BTreeMap<SubstateKey, IndexedScryptoValue> = object_states
-            .into_iter()
-            .enumerate()
-            .map(|(i, x)| {
-                (
-                    // TODO check size during package publishing time
-                    SubstateKey::Tuple(i as u8),
-                    IndexedScryptoValue::from_vec(x).expect("Checked by payload-schema validation"),
-                )
-            })
-            .collect();
-
-        let type_parent = if let Some(parent) = &schema.parent {
-            match actor {
-                Actor::Method {
-                    global_address: Some(address),
-                    blueprint,
-                    ..
-                } if parent.eq(blueprint.blueprint_name.as_str()) => Some(address),
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
-                }
-            }
-        } else {
-            None
-        };
-
-        let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
-            _ => SysModuleId::Object,
-        };
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                self_module_id.into() => node_init,
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: Blueprint::new(&package_address,blueprint_ident),
-                        global:false,
-                        type_parent
-                    })
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id.into())
-             */
+        let instance_context = actor.instance_context();
+        self.new_object_internal(blueprint_ident, fields, package_address, instance_context)
     }
 
     #[trace_resources]
@@ -731,18 +584,18 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::SELF,
             )))?;
-        let blueprint_name = self.get_object_info(node_id)?.blueprint.blueprint_name;
+        let blueprint = self.get_object_info(node_id)?.blueprint;
 
         self.globalize_with_address(modules, address)?;
-
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let package_address = actor.package_address().clone();
 
         self.new_object_internal(
             inner_object_blueprint,
             inner_object_fields,
-            package_address,
-            Some((address, blueprint_name)),
+            blueprint.package_address,
+            Some(InstanceContext {
+                instance: address,
+                instance_blueprint: blueprint.blueprint_name,
+            }),
         )
     }
 
@@ -841,8 +694,36 @@ where
         let payload_size = args.len() + identifier.2.len();
         let blueprint = object_info.blueprint.clone();
 
+        // TODO: Can we load this lazily when needed?
+        let instance_context = if object_info.global {
+            match global_address {
+                None => None,
+                Some(address) => Some(InstanceContext {
+                    instance: address,
+                    instance_blueprint: object_info.blueprint.blueprint_name.clone(),
+                }),
+            }
+        } else {
+            match &object_info.blueprint_parent {
+                None => None,
+                Some(blueprint_parent) => {
+                    // TODO: do this recursively until global?
+                    let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                    Some(InstanceContext {
+                        instance: blueprint_parent.clone(),
+                        instance_blueprint: parent_info.blueprint.blueprint_name.clone(),
+                    })
+                }
+            }
+        };
+
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), object_info),
+            resolved_actor: Actor::method(
+                global_address,
+                identifier.clone(),
+                object_info,
+                instance_context,
+            ),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),
@@ -875,14 +756,13 @@ where
     }
 
     #[trace_resources]
-    fn drop_object(&mut self, node_id: NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (actor_info, package_address) = self.cur_blueprint_global_actor()?;
-
-        // TODO: Cleanup
-        let info = self.get_object_info(&node_id)?;
+    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.blueprint_parent {
-            match actor_info {
-                Some((address, _blueprint)) if address.eq(&blueprint_parent) => {}
+            let actor = self.api.kernel_get_current_actor().unwrap();
+            let instance_context = actor.instance_context();
+            match instance_context {
+                Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
                 _ => {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
@@ -892,17 +772,6 @@ where
                         })),
                     ));
                 }
-            }
-        } else {
-            // TODO: Should we only allow the blueprint to drop?
-            if !package_address.eq(&info.blueprint.package_address) {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                        node_id: node_id.clone(),
-                        package_address: info.blueprint.package_address,
-                        blueprint_name: info.blueprint.blueprint_name,
-                    })),
-                ));
             }
         }
 

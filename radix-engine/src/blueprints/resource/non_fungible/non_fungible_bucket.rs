@@ -377,27 +377,15 @@ impl NonFungibleBucketBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
-        let handle = api.lock_parent_field(
-            NonFungibleResourceManagerOffset::IdType.into(),
-            LockFlags::read_only(),
-        )?;
-        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
         let amount =
             NonFungibleBucket::locked_amount(api)? + NonFungibleBucket::liquid_amount(api)?;
 
-        let proof_info = ProofInfoSubstate {
-            resource_address,
-            resource_type: ResourceType::NonFungible { id_type },
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
-            PROOF_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&proof).unwrap(),
             ],
         )?;
