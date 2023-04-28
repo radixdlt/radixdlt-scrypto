@@ -102,6 +102,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
+    type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where

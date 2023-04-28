@@ -19,7 +19,7 @@ use crate::system::node_modules::access_rules::{
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::convert;
 use crate::types::*;
@@ -101,7 +101,7 @@ impl AuthModule {
                 SysModuleId::User.into(),
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
-                SystemLockData::default(),
+                M::LockData::default(),
             )?;
             let package_access_rules: FunctionAccessRulesSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -207,7 +207,7 @@ impl AuthModule {
                 SysModuleId::User.into(),
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
-                SystemLockData::default(),
+                M::LockData::default(),
             )?;
             let package: PackageInfoSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -242,7 +242,7 @@ impl AuthModule {
                 SysModuleId::User.into(),
                 &substate_key,
                 LockFlags::read_only(),
-                SystemLockData::default(),
+                M::LockData::default(),
             )?;
             let state: ComponentStateSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -256,7 +256,7 @@ impl AuthModule {
             SysModuleId::AccessRules.into(),
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
-            SystemLockData::default(),
+            M::LockData::default(),
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -283,7 +283,7 @@ impl AuthModule {
             SysModuleId::AccessRules.into(),
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
-            SystemLockData::default(),
+            M::LockData::default(),
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();

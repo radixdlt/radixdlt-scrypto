@@ -8,7 +8,6 @@ use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_stores::interface::NodeSubstates;
-use crate::system::system_callback::SystemLockData;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -197,6 +196,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<SystemLockData> + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
 {
 }

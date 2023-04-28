@@ -13,7 +13,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
@@ -136,11 +136,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<SystemLockData>,
+    current_frame: CallFrame<M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<SystemLockData>>,
+    prev_frame_stack: Vec<CallFrame<M::LockData>>,
     /// Heap
     heap: Heap,
     /// Store
@@ -531,7 +531,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelSubstateApi<SystemLockData> for Kernel<'g, M, S>
+impl<'g, M, S> KernelSubstateApi<M::LockData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -544,7 +544,7 @@ where
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
-        data: SystemLockData,
+        data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
         M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
 
@@ -576,7 +576,7 @@ where
                                 &substate_key,
                                 flags,
                                 None,
-                                SystemLockData::default(),
+                                M::LockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -625,7 +625,7 @@ where
                                 substate_key,
                                 flags,
                                 None,
-                                SystemLockData::default(),
+                                M::LockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
@@ -646,7 +646,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<SystemLockData>, RuntimeError> {
+    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<M::LockData>, RuntimeError> {
         self.current_frame
             .get_lock_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(

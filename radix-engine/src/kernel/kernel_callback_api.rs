@@ -9,6 +9,7 @@ use radix_engine_stores::interface::NodeSubstates;
 
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;
+    type LockData: Default + Clone;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
