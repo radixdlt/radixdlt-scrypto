@@ -34,10 +34,7 @@ pub type FieldLockHandle = u32;
 pub trait ClientFieldLockApi<E: Debug> {
     fn field_lock_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, E>;
 
-    fn field_lock_read_typed<S: ScryptoDecode>(
-        &mut self,
-        handle: LockHandle,
-    ) -> Result<S, E> {
+    fn field_lock_read_typed<S: ScryptoDecode>(&mut self, handle: LockHandle) -> Result<S, E> {
         let buf = self.field_lock_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf).unwrap();
         Ok(typed_substate)

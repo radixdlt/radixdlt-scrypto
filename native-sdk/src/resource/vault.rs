@@ -1,4 +1,4 @@
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, ClientFieldLockApi};
+use radix_engine_interface::api::{ClientApi, ClientFieldLockApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};

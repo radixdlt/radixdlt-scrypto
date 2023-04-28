@@ -1,13 +1,15 @@
-use sbor::rust::ops::{Deref, DerefMut};
-use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueEntryLockHandle,
+};
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::LockHandle;
-use sbor::rust::marker::PhantomData;
-use sbor::*;
 use sbor::rust::fmt;
+use sbor::rust::marker::PhantomData;
+use sbor::rust::ops::{Deref, DerefMut};
+use sbor::*;
 use scrypto_schema::KeyValueStoreSchema;
 
 use crate::engine::scrypto_env::ScryptoEnv;
@@ -121,7 +123,8 @@ impl<
         });
 
         let value: Option<ScryptoValue> = None;
-        env.key_value_entry_set(handle, scrypto_encode(&value).unwrap()).unwrap();
+        env.key_value_entry_set(handle, scrypto_encode(&value).unwrap())
+            .unwrap();
         env.key_value_entry_lock_release(handle).unwrap();
 
         rtn
@@ -186,8 +189,6 @@ impl<
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }
 
-
-
 pub struct KeyValueEntryRef<V: ScryptoEncode> {
     lock_handle: KeyValueEntryLockHandle,
     value: V,
@@ -201,10 +202,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<V> {
 
 impl<V: ScryptoEncode> KeyValueEntryRef<V> {
     pub fn new(lock_handle: KeyValueEntryLockHandle, value: V) -> KeyValueEntryRef<V> {
-        KeyValueEntryRef {
-            lock_handle,
-            value,
-        }
+        KeyValueEntryRef { lock_handle, value }
     }
 }
 

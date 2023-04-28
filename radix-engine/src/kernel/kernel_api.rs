@@ -61,11 +61,21 @@ pub trait KernelSubstateApi<L> {
         flags: LockFlags,
         lock_data: L,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None, lock_data)
+        self.kernel_lock_substate_with_default(
+            node_id,
+            module_id,
+            substate_key,
+            flags,
+            None,
+            lock_data,
+        )
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<L>, RuntimeError>;
+    fn kernel_get_lock_info(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<LockInfo<L>, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.
@@ -196,6 +206,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::Invocation>
+    + KernelInternalApi<M>
 {
 }

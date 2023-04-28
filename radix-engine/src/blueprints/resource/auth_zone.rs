@@ -3,11 +3,11 @@ use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system_callback::SystemLockData;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
@@ -90,7 +90,6 @@ impl AuthZoneBlueprint {
             ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
         };
         api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
-
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(

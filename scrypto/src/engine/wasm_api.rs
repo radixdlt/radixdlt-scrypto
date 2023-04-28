@@ -72,9 +72,7 @@ extern "C" {
         flags: u32,
     ) -> u32;
 
-    pub fn key_value_entry_get(
-        _key_value_entry_lock_handle: u32,
-    ) -> Buffer;
+    pub fn key_value_entry_get(_key_value_entry_lock_handle: u32) -> Buffer;
 
     pub fn key_value_entry_set(
         _key_value_entry_lock_handle: u32,
@@ -82,9 +80,7 @@ extern "C" {
         _buffer_len: usize,
     );
 
-    pub fn unlock_key_value_entry(
-        _key_value_entry_lock_handle: u32,
-    );
+    pub fn unlock_key_value_entry(_key_value_entry_lock_handle: u32);
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -219,9 +215,7 @@ pub unsafe fn lock_key_value_store_entry(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn key_value_entry_get(
-    _key_value_entry_lock_handle: u32,
-) -> Buffer {
+pub unsafe fn key_value_entry_get(_key_value_entry_lock_handle: u32) -> Buffer {
     unreachable!()
 }
 
@@ -235,9 +229,7 @@ pub unsafe fn key_value_entry_set(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn unlock_key_value_entry(
-    _key_value_entry_lock_handle: u32,
-) {
+pub unsafe fn unlock_key_value_entry(_key_value_entry_lock_handle: u32) {
     unreachable!()
 }
 

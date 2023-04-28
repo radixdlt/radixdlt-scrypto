@@ -17,7 +17,9 @@ use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
 use radix_engine_interface::api::index_api::ClientIndexApi;
-use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueEntryLockHandle,
+};
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -260,9 +262,7 @@ where
 {
     #[trace_resources]
     fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo {
-            data, ..
-        } = self.api.kernel_get_lock_info(lock_handle)?;
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
         if data.is_kv_store {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
@@ -291,56 +291,56 @@ where
         }
 
         {
-        let object_info = self.get_object_info(&node_id)?;
+            let object_info = self.get_object_info(&node_id)?;
             let blueprint = object_info.blueprint;
-        let handle = self.kernel_lock_substate(
-            blueprint.package_address.as_node_id(),
-            SysModuleId::User.into(),
-            &PackageOffset::Info.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
-        )?;
-        let package_info: PackageInfoSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
-        let blueprint_schema = package_info
-            .schema
-            .blueprints
-            .get(&blueprint.blueprint_name)
-            .expect("Missing blueprint schema")
-            .clone();
-        self.kernel_drop_lock(handle)?;
+            let handle = self.kernel_lock_substate(
+                blueprint.package_address.as_node_id(),
+                SysModuleId::User.into(),
+                &PackageOffset::Info.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let package_info: PackageInfoSubstate =
+                self.kernel_read_substate(handle)?.as_typed().unwrap();
+            let blueprint_schema = package_info
+                .schema
+                .blueprints
+                .get(&blueprint.blueprint_name)
+                .expect("Missing blueprint schema")
+                .clone();
+            self.kernel_drop_lock(handle)?;
 
-        match SysModuleId::from_repr(module_id.0).unwrap() {
-            SysModuleId::User => {
-                if let SubstateKey::Tuple(offset) = substate_key {
-                    if let Some(index) = blueprint_schema.substates.get(offset as usize) {
-                        if let Err(e) = validate_payload_against_schema(
-                            &buffer,
-                            &blueprint_schema.schema,
-                            *index,
-                            self,
-                        ) {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidSubstateWrite(
-                                    e.error_message(&blueprint_schema.schema),
-                                ),
-                            ));
-                        };
+            match SysModuleId::from_repr(module_id.0).unwrap() {
+                SysModuleId::User => {
+                    if let SubstateKey::Tuple(offset) = substate_key {
+                        if let Some(index) = blueprint_schema.substates.get(offset as usize) {
+                            if let Err(e) = validate_payload_against_schema(
+                                &buffer,
+                                &blueprint_schema.schema,
+                                *index,
+                                self,
+                            ) {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidSubstateWrite(
+                                        e.error_message(&blueprint_schema.schema),
+                                    ),
+                                ));
+                            };
+                        } else {
+                            // TODO: error here?
+                        }
                     } else {
-                        // TODO: error here?
+                        // TODO: is this a valid execution path?
                     }
-                } else {
-                    // TODO: is this a valid execution path?
                 }
-            }
-            SysModuleId::TypeInfo
-            | SysModuleId::Metadata
-            | SysModuleId::Royalty
-            | SysModuleId::AccessRules
-            => {
-                // TODO: We should validate these substates, but luckily they're not accessible from
-                // Scrypto, so safe for now.
-            }
-        };
+                SysModuleId::TypeInfo
+                | SysModuleId::Metadata
+                | SysModuleId::Royalty
+                | SysModuleId::AccessRules => {
+                    // TODO: We should validate these substates, but luckily they're not accessible from
+                    // Scrypto, so safe for now.
+                }
+            };
 
             /*
             TypeInfoSubstate::KeyValueStore(store_schema) => {
@@ -436,9 +436,7 @@ where
 
     #[trace_resources]
     fn field_lock_release(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
-        let LockInfo {
-            data, ..
-        } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         if data.is_kv_store {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
@@ -616,9 +614,7 @@ where
                     }
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = royalty_substates
-                        .remove(&SysModuleId::User.into())
-                        .unwrap();
+                    let royalty = royalty_substates.remove(&SysModuleId::User.into()).unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
             }
@@ -903,8 +899,10 @@ where
         }
 
         match type_info {
-            TypeInfoSubstate::KeyValueStore(..) => {},
-            TypeInfoSubstate::SortedIndex | TypeInfoSubstate::Index | TypeInfoSubstate::Object(..) => {
+            TypeInfoSubstate::KeyValueStore(..) => {}
+            TypeInfoSubstate::SortedIndex
+            | TypeInfoSubstate::Index
+            | TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
         };
@@ -915,17 +913,18 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData {
-                is_kv_store: true,
-            },
+            SystemLockData { is_kv_store: true },
         )
     }
 
     #[trace_resources]
-    fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn key_value_entry_get(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_store {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
         self.api
@@ -939,9 +938,7 @@ where
         handle: KeyValueEntryLockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo {
-            node_id, data, ..
-        } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         if data.is_kv_store {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -954,7 +951,9 @@ where
                         self,
                     ) {
                         return Err(RuntimeError::SystemError(
-                            SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
+                            SystemError::InvalidSubstateWrite(
+                                e.error_message(&store_schema.schema),
+                            ),
                         ));
                     };
 
@@ -968,13 +967,13 @@ where
                             ));
                         }
                     }
-                },
+                }
                 _ => {
                     // TODO: verify against schema
-                },
+                }
             }
         } else {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         };
 
         let substate = IndexedScryptoValue::from_vec(buffer).unwrap();
@@ -983,17 +982,17 @@ where
         Ok(())
     }
 
-    fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), RuntimeError> {
-        let LockInfo {
-            data, ..
-        } = self.api.kernel_get_lock_info(handle)?;
+    fn key_value_entry_lock_release(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+    ) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_store {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
         self.api.kernel_drop_lock(handle)
     }
-
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1338,7 +1337,10 @@ where
         // Check if valid field_index
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
         if !schema.has_field(field) {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(object_info.blueprint.clone(), field)));
+            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                object_info.blueprint.clone(),
+                field,
+            )));
         }
 
         let sys_module_id = match object_module_id {
@@ -1350,11 +1352,11 @@ where
         let substate_key = SubstateKey::Tuple(field);
 
         self.api.kernel_lock_substate(
-                &node_id,
-                sys_module_id.into(),
-                &substate_key,
-                flags,
-                SystemLockData::default(),
+            &node_id,
+            sys_module_id.into(),
+            &substate_key,
+            flags,
+            SystemLockData::default(),
         )
     }
 
@@ -1379,9 +1381,12 @@ where
         )
     }
 
-
     #[trace_resources]
-    fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+    fn lock_key_value_entry(
+        &mut self,
+        key: &Vec<u8>,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, _object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
@@ -1417,9 +1422,7 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData {
-                is_kv_store: true,
-            },
+            SystemLockData { is_kv_store: true },
         )
     }
 
@@ -1731,11 +1734,20 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
     ) -> Result<LockHandle, RuntimeError> {
-        self.api
-            .kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, default, data)
+        self.api.kernel_lock_substate_with_default(
+            node_id,
+            module_id,
+            substate_key,
+            flags,
+            default,
+            data,
+        )
     }
 
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<SystemLockData>, RuntimeError> {
+    fn kernel_get_lock_info(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<LockInfo<SystemLockData>, RuntimeError> {
         self.api.kernel_get_lock_info(lock_handle)
     }
 

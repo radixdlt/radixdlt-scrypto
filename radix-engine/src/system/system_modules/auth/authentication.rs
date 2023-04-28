@@ -1,13 +1,13 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::*;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
-use crate::system::system_callback::SystemLockData;
 
 pub struct Authentication;
 
@@ -103,7 +103,9 @@ impl Authentication {
         Ok(pass)
     }
 
-    fn auth_zone_stack_has_amount<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
+    fn auth_zone_stack_has_amount<
+        Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
+    >(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
@@ -129,7 +131,9 @@ impl Authentication {
         )
     }
 
-    fn auth_zone_stack_matches_rule<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
+    fn auth_zone_stack_matches_rule<
+        Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
+    >(
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,

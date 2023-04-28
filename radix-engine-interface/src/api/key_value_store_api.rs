@@ -1,9 +1,10 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_common::data::scrypto::{
+    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_common::types::*;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreSchema;
-
 
 pub type KeyValueEntryLockHandle = u32;
 

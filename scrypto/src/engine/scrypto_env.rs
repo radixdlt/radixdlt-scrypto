@@ -1,8 +1,10 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::key_value_store_api::{ClientKeyValueStoreApi, KeyValueEntryLockHandle};
+use radix_engine_interface::api::key_value_store_api::{
+    ClientKeyValueStoreApi, KeyValueEntryLockHandle,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientFieldLockApi};
+use radix_engine_interface::api::{ClientActorApi, ClientFieldLockApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -167,34 +169,30 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, ClientApiError> {
-        let entry = copy_buffer(unsafe {
-            key_value_entry_get(
-                handle,
-            )
-        });
+    fn key_value_entry_get(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let entry = copy_buffer(unsafe { key_value_entry_get(handle) });
 
         Ok(entry)
     }
 
-    fn key_value_entry_set(&mut self, handle: KeyValueEntryLockHandle, buffer: Vec<u8>) -> Result<(), ClientApiError> {
-        unsafe {
-            key_value_entry_set(
-                handle,
-                buffer.as_ptr(),
-                buffer.len(),
-            )
-        };
+    fn key_value_entry_set(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), ClientApiError> {
+        unsafe { key_value_entry_set(handle, buffer.as_ptr(), buffer.len()) };
 
         Ok(())
     }
 
-    fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), ClientApiError> {
-        unsafe {
-            unlock_key_value_entry(
-                handle,
-            )
-        };
+    fn key_value_entry_lock_release(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+    ) -> Result<(), ClientApiError> {
+        unsafe { unlock_key_value_entry(handle) };
 
         Ok(())
     }
@@ -266,7 +264,11 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn lock_key_value_entry(&mut self, _key: &Vec<u8>, _flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+    fn lock_key_value_entry(
+        &mut self,
+        _key: &Vec<u8>,
+        _flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
         todo!()
     }
 

@@ -3,6 +3,7 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -12,7 +13,6 @@ use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
 use resources_tracker_macro::trace_resources;
-use crate::system::system_callback::SystemLockData;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =

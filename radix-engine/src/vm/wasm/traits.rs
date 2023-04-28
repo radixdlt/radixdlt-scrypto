@@ -54,10 +54,8 @@ pub trait WasmRuntime {
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
-    fn key_value_entry_get(
-        &mut self,
-        handle: u32,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn key_value_entry_get(&mut self, handle: u32)
+        -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn key_value_entry_set(
         &mut self,
@@ -65,10 +63,7 @@ pub trait WasmRuntime {
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn unlock_key_value_entry(
-        &mut self,
-        handle: u32,
-    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_object_info(
         &mut self,

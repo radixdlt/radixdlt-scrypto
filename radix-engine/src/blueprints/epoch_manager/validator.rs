@@ -154,8 +154,7 @@ impl ValidatorBlueprint {
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: EpochManagerSubstate =
-                api.field_lock_read_typed(manager_handle)?;
+            let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
             let config_handle =

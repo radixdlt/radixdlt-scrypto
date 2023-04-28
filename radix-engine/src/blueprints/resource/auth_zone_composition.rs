@@ -1,12 +1,12 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system_callback::SystemLockData;
 
 use super::AuthZoneError;
 

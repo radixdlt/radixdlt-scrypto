@@ -14,11 +14,7 @@ pub trait ClientActorApi<E: Debug> {
 
     // TODO: Add specific object read/write lock apis
 
-    fn lock_key_value_entry(
-        &mut self,
-        key: &Vec<u8>,
-        flags: LockFlags,
-    ) -> Result<LockHandle, E>;
+    fn lock_key_value_entry(&mut self, key: &Vec<u8>, flags: LockFlags) -> Result<LockHandle, E>;
 
     fn get_info(&mut self) -> Result<ObjectInfo, E>;
 

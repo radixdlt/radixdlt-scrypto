@@ -649,7 +649,10 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo<M::LockData>, RuntimeError> {
+    fn kernel_get_lock_info(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<LockInfo<M::LockData>, RuntimeError> {
         self.current_frame
             .get_lock_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(

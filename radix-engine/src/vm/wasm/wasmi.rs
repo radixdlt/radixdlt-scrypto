@@ -620,13 +620,8 @@ impl WasmiModule {
 
         let host_key_value_entry_get = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             handle: u32|
-             -> Result<u64, Trap> {
-                key_value_entry_get(
-                    caller,
-                    handle,
-                ).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                key_value_entry_get(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -637,24 +632,14 @@ impl WasmiModule {
              buffer_ptr: u32,
              buffer_len: u32|
              -> Result<(), Trap> {
-                key_value_entry_set(
-                    caller,
-                    handle,
-                    buffer_ptr,
-                    buffer_len,
-                ).map_err(|e| e.into())
+                key_value_entry_set(caller, handle, buffer_ptr, buffer_len).map_err(|e| e.into())
             },
         );
 
         let host_unlock_key_value_entry = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>,
-             handle: u32|
-             -> Result<(), Trap> {
-                unlock_key_value_entry(
-                    caller,
-                    handle,
-                ).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
+                unlock_key_value_entry(caller, handle).map_err(|e| e.into())
             },
         );
 

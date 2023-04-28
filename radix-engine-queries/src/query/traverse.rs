@@ -104,11 +104,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(
-                                node_id,
-                                SysModuleId::User.into(),
-                                substate_key.clone(),
-                            )),
+                            Some(&(node_id, SysModuleId::User.into(), substate_key.clone())),
                             child_node_id,
                             depth + 1,
                         );
