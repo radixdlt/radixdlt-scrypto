@@ -84,7 +84,7 @@ lazy_static! {
             VALIDATOR_OWNER_TOKEN.into(),
             IDENTITY_OWNER_TOKEN.into(),
             ACCOUNT_OWNER_TOKEN.into(),
-            // managers
+            // packages
             PACKAGE_PACKAGE.into(),
             RESOURCE_MANAGER_PACKAGE.into(),
             IDENTITY_PACKAGE.into(),
