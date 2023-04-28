@@ -14,6 +14,7 @@ hex = { version = "0.4.3", default-features = false }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 bitflags = { version = "1.3" }
 serde_json = { version = "1.0", default-features = false }
+arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
@@ -23,6 +24,10 @@ alloc = ["hex/alloc", "serde_json/alloc", "sbor/alloc", "scrypto-schema/alloc", 
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]
+
+# This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
+# to let fuzzing work
+radix_engine_fuzzing = ["arbitrary"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

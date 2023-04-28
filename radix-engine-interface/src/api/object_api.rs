@@ -1,4 +1,6 @@
 use crate::types::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
@@ -6,6 +8,7 @@ use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 #[repr(u8)]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(
     Debug,
     Clone,

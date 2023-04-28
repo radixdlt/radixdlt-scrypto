@@ -2,6 +2,8 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -30,6 +32,7 @@ pub type AccountCreateLocalOutput = Own;
 
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateAdvancedInput {
     pub config: AccessRulesConfig,
@@ -43,6 +46,7 @@ pub type AccountCreateAdvancedOutput = ComponentAddress;
 
 pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 

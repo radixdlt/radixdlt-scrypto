@@ -3,6 +3,8 @@ use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_common::types::*;
 use sbor::rust::fmt;
@@ -13,6 +15,7 @@ use sbor::rust::vec::Vec;
 use utils::ContextualDisplay;
 
 /// Represents the global id of a non-fungible.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleGlobalId(ResourceAddress, NonFungibleLocalId);
 

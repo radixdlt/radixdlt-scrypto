@@ -1,5 +1,7 @@
 use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::access_controller::*;
+use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "decode_tx_manifest")]
@@ -241,15 +243,17 @@ impl TxFuzzer {
     }
 
     fn build_manifest(&mut self, data: &[u8]) -> Result<TransactionManifest, TxStatus> {
-        let mut builder = ManifestBuilder::new();
-        let mut buckets: Vec<ManifestBucket> = vec![];
-        let mut proof_ids: Vec<ManifestProof> = vec![];
-
         // Arbitrary does not return error if not enough data to construct a full instance of
         // Self. It uses dummy values (zeros) instead.
         // TODO: to consider if this is ok to allow it.
-
         let mut unstructured = Unstructured::new(&data);
+
+        let mut builder = ManifestBuilder::new();
+        let mut buckets: Vec<ManifestBucket> =
+            vec![ManifestBucket::arbitrary(&mut unstructured).unwrap()];
+        let mut proof_ids: Vec<ManifestProof> =
+            vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
+
         println!("unstructured init len = {}", unstructured.len());
 
         let resource_address = unstructured
@@ -306,11 +310,7 @@ impl TxFuzzer {
                 }),
                 // BurnResource
                 3 => {
-                    let bucket_id = match unstructured.choose(&buckets[..]) {
-                        Ok(bucket_id) => *bucket_id,
-                        Err(_) => ManifestBucket::arbitrary(&mut unstructured).unwrap(),
-                    };
-
+                    let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
                     Some(Instruction::BurnResource { bucket_id })
                 }
                 // CallFunction
@@ -333,14 +333,67 @@ impl TxFuzzer {
                 9 => Some(Instruction::ClearSignatureProofs),
                 // CloneProof
                 10 => {
-                    let proof_id = match unstructured.choose(&proof_ids[..]) {
-                        Ok(proof_id) => *proof_id,
-                        Err(_) => ManifestProof::arbitrary(&mut unstructured).unwrap(),
-                    };
+                    let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
                     Some(Instruction::CloneProof { proof_id })
                 }
+                // CreateAccessController
+                11 => {
+                    let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
+                    // TODO: crash when using arbitrary RuleSet
+                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', src/fuzz_tx.rs:358:31
+                    // - crash if any role equals
+                    //   Protected(ProofRule(AmountOf(Static(9346522905005059338871465549192114877207573668753774438020.279842539602103386), Static(ResourceAddress(8fca9cf99eb51bbcbd774efea6def526efa9ac26eadfbc5c5f26b4fe4286))))), recovery_role: AllowAll, confirmation_role: DenyAll }
+                    //let rule_set = RuleSet::arbitrary(&mut unstructured).unwrap();
 
-                11..=43 => None,
+                    let rule_set = RuleSet {
+                        primary_role: AccessRule::AllowAll,
+                        recovery_role: AccessRule::AllowAll,
+                        confirmation_role: AccessRule::AllowAll,
+                    };
+
+                    let timed_recovery_delay_in_minutes =
+                        <Option<u32>>::arbitrary(&mut unstructured).unwrap();
+
+                    Some(Instruction::CallFunction {
+                        package_address: ACCESS_CONTROLLER_PACKAGE,
+                        blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+                        function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes),
+                    })
+                }
+                // CreateAccount
+                12 => Some(Instruction::CallFunction {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                    function_name: ACCOUNT_CREATE_IDENT.to_string(),
+                    args: to_manifest_value(
+                        &AccountCreateInput::arbitrary(&mut unstructured).unwrap(),
+                    ),
+                }),
+                // CreateAccountAdvanced
+                13 => {
+                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - AccountCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {}, method_auth: {MethodKey { module_id: SELF, ident: "-!" }: AccessRule(DenyAll)}, grouped_auth: {"!LX": Protected(AllOf([AnyOf([]), AllOf([])])), "1)UZ": DenyAll, "t7": DenyAll}, default_auth: AccessRule(AllowAll), method_auth_mutability: {MethodKey { module_id: SELF, ident: "" }: AccessRule(Protected(AnyOf([AnyOf([AllOf([AllOf([]), ProofRule(AllOf(Static([StaticResource(ResourceAddress(dcd0c83141b9ff8080553b6190b5a7dc0cbde7854d9cf22b600480dcbc36)), Dynamic(SchemaPath([Field("\u{4}G<]y\u{5}\u{1f}")]))])))])]), AnyOf([ProofRule(AmountOf(Static(53647144799766708596252244031328084853448836832030149660791.749040275160793477), Static(ResourceAddress(d53666602d72af4e26da05ce175857e93a99a2ee5636a74734e7122ff9f2))))])])))}, grouped_auth_mutability: {"": DenyAll}, default_auth_mutability: AccessRule(DenyAll) } }
+                    //let account_create_advanced_input =
+                    //    AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    let account_create_advanced_input = AccountCreateAdvancedInput {
+                        config: AccessRulesConfig::new()
+                            .default(AccessRule::AllowAll, AccessRule::AllowAll),
+                    };
+                    println!(
+                        "account_create_advanced_input = {:?}",
+                        account_create_advanced_input
+                    );
+                    Some(Instruction::CallFunction {
+                        package_address: ACCOUNT_PACKAGE,
+                        blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+                        function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
+                        args: to_manifest_value(&account_create_advanced_input),
+                    })
+                }
+
+                14..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
