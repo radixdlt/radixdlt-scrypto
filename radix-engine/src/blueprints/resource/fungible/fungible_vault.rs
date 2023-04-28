@@ -9,6 +9,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
+pub use radix_engine_interface::blueprints::resource::LiquidFungibleResource as FungibleVaultBalanceSubstate;
+
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {

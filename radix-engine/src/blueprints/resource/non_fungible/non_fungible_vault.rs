@@ -14,6 +14,8 @@ pub enum NonFungibleVaultError {
     NotEnoughAmount,
 }
 
+pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
+
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {

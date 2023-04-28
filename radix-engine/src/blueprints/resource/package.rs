@@ -112,6 +112,8 @@ pub struct ResourceManagerNativePackage;
 
 impl ResourceManagerNativePackage {
     pub fn schema() -> PackageSchema {
+        //====================================================================================
+
         let fungible_resource_manager_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -275,6 +277,8 @@ impl ResourceManagerNativePackage {
             }
         };
 
+        //====================================================================================
+
         let non_fungible_resource_manager_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -288,8 +292,8 @@ impl ResourceManagerNativePackage {
                     .add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(
                     ),
             );
-            substates.push(aggregator.add_child_type_and_descendents::<Decimal>());
-            substates.push(aggregator.add_child_type_and_descendents::<Own>());
+            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
+            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -512,10 +516,12 @@ impl ResourceManagerNativePackage {
             }
         };
 
+        //====================================================================================
+
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
+            substates.push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
             substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
             let mut functions = BTreeMap::new();
@@ -633,10 +639,12 @@ impl ResourceManagerNativePackage {
             }
         };
 
+        //====================================================================================
+
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
             let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleVault>());
+            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>());
             substates
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
@@ -792,6 +800,8 @@ impl ResourceManagerNativePackage {
             }
         };
 
+        //====================================================================================
+
         let fungible_bucket_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
@@ -879,6 +889,8 @@ impl ResourceManagerNativePackage {
                 event_schema: [].into(),
             }
         };
+
+        //====================================================================================
 
         let non_fungible_bucket_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();

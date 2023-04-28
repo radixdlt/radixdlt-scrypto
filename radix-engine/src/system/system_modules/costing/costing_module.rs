@@ -329,6 +329,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _handle: LockHandle,
+        first_lock_from_db: bool,
+        _size: usize,
+    ) -> Result<(), RuntimeError> {
+        if first_lock_from_db {
+            api.kernel_get_callback()
+                .modules
+                .costing
+                .apply_execution_cost(
+                    CostingReason::LockSubstateFirstTime,
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstateFirstTime),
+                    1,
+                )?;
+        }
+        Ok(())
+    }
+
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
