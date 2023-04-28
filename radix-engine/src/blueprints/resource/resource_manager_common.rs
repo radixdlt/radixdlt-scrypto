@@ -143,10 +143,7 @@ fn build_access_rules(
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            RESOURCE_MANAGER_DROP_PROOF_IDENT,
-        ),
+        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_DROP_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -352,9 +349,17 @@ where
     let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
-            (FUNGIBLE_VAULT_BLUEPRINT, FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT)
+            (
+                FUNGIBLE_VAULT_BLUEPRINT,
+                FUNGIBLE_BUCKET_BLUEPRINT,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )
         } else {
-            (NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT)
+            (
+                NON_FUNGIBLE_VAULT_BLUEPRINT,
+                NON_FUNGIBLE_BUCKET_BLUEPRINT,
+                NON_FUNGIBLE_PROOF_BLUEPRINT,
+            )
         };
 
     let resman_access_rules = AccessRules::sys_new(

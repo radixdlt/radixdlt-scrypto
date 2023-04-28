@@ -156,9 +156,7 @@ impl FungibleVaultBlueprint {
     {
         let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
 
-        let proof_info = ProofMoveableSubstate {
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
 
         let proof_id = api.new_object(
@@ -187,9 +185,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let proof_info = ProofMoveableSubstate {
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
             FUNGIBLE_PROOF_BLUEPRINT,

@@ -380,9 +380,7 @@ impl NonFungibleBucketBlueprint {
         let amount =
             NonFungibleBucket::locked_amount(api)? + NonFungibleBucket::liquid_amount(api)?;
 
-        let proof_info = ProofMoveableSubstate {
-            restricted: false,
-        };
+        let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,

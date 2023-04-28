@@ -243,9 +243,7 @@ impl FungibleBucketBlueprint {
         let node_id = {
             let amount = FungibleBucket::locked_amount(api)? + FungibleBucket::liquid_amount(api)?;
 
-            let proof_info = ProofMoveableSubstate {
-                restricted: false,
-            };
+            let proof_info = ProofMoveableSubstate { restricted: false };
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
             let proof_id = api.new_object(

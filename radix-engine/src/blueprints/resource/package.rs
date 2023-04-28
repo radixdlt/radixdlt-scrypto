@@ -30,9 +30,7 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_FungibleResourceManager";
-const FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME: &str =
-    "drop_proof_FungibleResourceManager";
-
+const FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME: &str = "drop_proof_FungibleResourceManager";
 
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
@@ -99,7 +97,6 @@ const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
 const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
     "get_non_fungible_local_ids_NonFungibleBucket";
 
-
 const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
 const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
 const FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_FungibleProof";
@@ -107,7 +104,8 @@ const FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_FungibleProof";
 
 const NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleProof";
-const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_NonFungibleProof";
+const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
+    "get_resource_address_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 
 pub struct ResourceManagerNativePackage;
@@ -253,9 +251,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropProofInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropProofOutput>(),
-                    export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME
-                        .to_string(),
-                }
+                    export_name: FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME.to_string(),
+                },
             );
 
             let event_schema = event_schema! {
@@ -491,9 +488,8 @@ impl ResourceManagerNativePackage {
                         .add_child_type_and_descendents::<ResourceManagerDropProofInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropProofOutput>(),
-                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME
-                        .to_string(),
-                }
+                    export_name: NON_FUNGIBLE_RESOURCE_MANAGER_DROP_PROOF_EXPORT_NAME.to_string(),
+                },
             );
 
             let event_schema = event_schema! {
@@ -1038,7 +1034,8 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
-                    input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
                     export_name: FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
@@ -1095,7 +1092,8 @@ impl ResourceManagerNativePackage {
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(Receiver::SelfRef),
-                    input: aggregator.add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
+                    input: aggregator
+                        .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressOutput>(),
                     export_name: NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
@@ -1124,7 +1122,6 @@ impl ResourceManagerNativePackage {
                 event_schema: [].into(),
             }
         };
-
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 

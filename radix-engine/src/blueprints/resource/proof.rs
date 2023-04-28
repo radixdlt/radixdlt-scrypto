@@ -37,7 +37,8 @@ pub struct ProofMoveableSubstate {
 
 impl ProofMoveableSubstate {
     pub fn of_self<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<Self, RuntimeError> {
-        let handle = api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
+        let handle =
+            api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
         let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -183,14 +184,13 @@ impl NonFungibleProof {
 pub struct FungibleProofBlueprint;
 
 impl FungibleProofBlueprint {
-    pub(crate) fn clone<Y>(
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    pub(crate) fn clone<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let proof_info = ProofMoveableSubstate::of_self(api)?;
-        let handle = api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+        let handle =
+            api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -209,47 +209,42 @@ impl FungibleProofBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-
-    pub(crate) fn get_amount<Y>(
-        api: &mut Y,
-    ) -> Result<Decimal, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    pub(crate) fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+        let handle =
+            api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
         Ok(amount)
     }
 
-    pub(crate) fn get_resource_address<Y>(
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
         Ok(address)
     }
 
-    pub(crate) fn drop<Y>(
-        proof: Proof,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
 
-        let parent = api.get_object_info(proof.0.as_node_id())?.blueprint_parent.unwrap();
+        let parent = api
+            .get_object_info(proof.0.as_node_id())?
+            .blueprint_parent
+            .unwrap();
 
         api.call_method(
             parent.as_node_id(),
             RESOURCE_MANAGER_DROP_PROOF_IDENT,
-            scrypto_encode(&ResourceManagerDropProofInput {
-                proof
-            }).unwrap()
+            scrypto_encode(&ResourceManagerDropProofInput { proof }).unwrap(),
         )?;
 
         Ok(())
@@ -259,14 +254,15 @@ impl FungibleProofBlueprint {
 pub struct NonFungibleProofBlueprint;
 
 impl NonFungibleProofBlueprint {
-    pub(crate) fn clone<Y>(
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
+    pub(crate) fn clone<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let proof_info = ProofMoveableSubstate::of_self(api)?;
-        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            NonFungibleProofOffset::ProofRef.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -285,13 +281,14 @@ impl NonFungibleProofBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub(crate) fn get_amount<Y>(
-        api: &mut Y,
-    ) -> Result<Decimal, RuntimeError>
+    pub(crate) fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            NonFungibleProofOffset::ProofRef.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -301,41 +298,42 @@ impl NonFungibleProofBlueprint {
     pub(crate) fn get_local_ids<Y>(
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
-        where Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(
+            NonFungibleProofOffset::ProofRef.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
         api.sys_drop_lock(handle)?;
         Ok(ids)
     }
 
-    pub(crate) fn get_resource_address<Y>(
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
+    pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.get_info()?.blueprint_parent.unwrap().into());
         Ok(address)
     }
 
-    pub(crate) fn drop<Y>(
-        proof: Proof,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         // FIXME: check type before schema check is ready! applicable to all functions!
-        let parent = api.get_object_info(proof.0.as_node_id())?.blueprint_parent.unwrap();
+        let parent = api
+            .get_object_info(proof.0.as_node_id())?
+            .blueprint_parent
+            .unwrap();
 
         api.call_method(
             parent.as_node_id(),
             RESOURCE_MANAGER_DROP_PROOF_IDENT,
-            scrypto_encode(&ResourceManagerDropProofInput {
-                proof
-            }).unwrap()
+            scrypto_encode(&ResourceManagerDropProofInput { proof }).unwrap(),
         )?;
 
         Ok(())

@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::heap::DroppedFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
@@ -10,7 +11,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{FungibleResourceManagerOffset, NodeId};
 use radix_engine_interface::*;
-use crate::kernel::heap::DroppedFungibleProof;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -297,8 +297,8 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn drop_proof<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let node_substates = api.drop_object(proof.0.as_node_id())?;
         let dropped_proof: DroppedFungibleProof = node_substates.into();

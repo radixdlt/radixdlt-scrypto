@@ -144,7 +144,8 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         let info = api.get_object_info(proof.0.as_node_id())?;
 
         if info.blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) {
-            let proof_resource = ResourceAddress::new_or_panic(info.blueprint_parent.unwrap().into());
+            let proof_resource =
+                ResourceAddress::new_or_panic(info.blueprint_parent.unwrap().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
@@ -189,8 +190,13 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
-        if info.blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) {
-            let proof_resource = ResourceAddress::new_or_panic(info.blueprint_parent.unwrap().into());
+        if info
+            .blueprint
+            .blueprint_name
+            .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
+        {
+            let proof_resource =
+                ResourceAddress::new_or_panic(info.blueprint_parent.unwrap().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),

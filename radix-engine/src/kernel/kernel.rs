@@ -462,7 +462,9 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) => {
+                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
                     blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 _ => {
@@ -474,11 +476,14 @@ where
         };
 
         if is_fungible {
-            let substate = self.heap.get_substate(
-                proof_id,
-                SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
-            ).unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
@@ -497,11 +502,14 @@ where
                 total_locked: proof.amount(),
             })
         } else {
-            let substate = self.heap.get_substate(
-                proof_id,
-                SysModuleId::TypeInfo.into(),
-                &TypeInfoOffset::TypeInfo.into(),
-            ).unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 

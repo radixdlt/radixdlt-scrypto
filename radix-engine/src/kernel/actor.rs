@@ -30,7 +30,9 @@ pub enum Actor {
 impl Actor {
     pub fn instance_context(&self) -> Option<InstanceContext> {
         match self {
-            Actor::Method { instance_context, .. } => instance_context.clone(),
+            Actor::Method {
+                instance_context, ..
+            } => instance_context.clone(),
             _ => None,
         }
     }

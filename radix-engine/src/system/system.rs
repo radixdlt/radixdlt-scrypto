@@ -38,7 +38,6 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
@@ -120,9 +119,7 @@ where
         let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
         let blueprint_parent = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
-                Some(context) if context.instance_blueprint.eq(parent) => {
-                    Some(context.instance)
-                }
+                Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -223,16 +220,15 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema =
-            package
-                .schema
-                .blueprints
-                .get(&blueprint.blueprint_name)
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    )),
-                )))?;
+        let schema = package
+            .schema
+            .blueprints
+            .get(&blueprint.blueprint_name)
+            .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::BlueprintNotFound(
+                    blueprint.blueprint_name.to_string(),
+                )),
+            )))?;
         if schema.substates.len() != fields.len() {
             return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                 Box::new(CreateObjectError::WrongNumberOfSubstates(
@@ -243,12 +239,7 @@ where
             )));
         }
         for i in 0..fields.len() {
-            validate_payload_against_schema(
-                &fields[i],
-                &schema.schema,
-                schema.substates[i],
-                self,
-            )
+            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i], self)
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
                         CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
@@ -705,14 +696,19 @@ where
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
                         instance: blueprint_parent.clone(),
-                        instance_blueprint: parent_info.blueprint.blueprint_name.clone()
+                        instance_blueprint: parent_info.blueprint.blueprint_name.clone(),
                     })
-                },
+                }
             }
         };
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(global_address, identifier.clone(), object_info, instance_context),
+            resolved_actor: Actor::method(
+                global_address,
+                identifier.clone(),
+                object_info,
+                instance_context,
+            ),
             sys_invocation: SystemInvocation {
                 blueprint,
                 ident: FnIdent::Application(identifier.2.clone()),

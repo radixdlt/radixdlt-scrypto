@@ -1,3 +1,4 @@
+use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
@@ -6,7 +7,6 @@ use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
-use crate::blueprints::resource::ComposedProof;
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
@@ -154,7 +154,6 @@ impl AuthZoneBlueprint {
                 })).to_substates()))?;
             }
         }
-
 
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }

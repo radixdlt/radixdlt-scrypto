@@ -466,7 +466,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             scrypto_encode(&ProofDropInput {
                                 proof: Proof(Own(node_id)),
                             })
-                                .unwrap(),
+                            .unwrap(),
                         )?;
                     }
                     _ => {

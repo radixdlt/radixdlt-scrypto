@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::heap::DroppedNonFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
@@ -12,7 +13,6 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
-use crate::kernel::heap::DroppedNonFungibleProof;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -829,8 +829,8 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn drop_proof<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         let node_substates = api.drop_object(proof.0.as_node_id())?;
         let dropped_proof: DroppedNonFungibleProof = node_substates.into();
