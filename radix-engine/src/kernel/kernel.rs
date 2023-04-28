@@ -487,7 +487,7 @@ where
                 .get_substate(
                     proof_id,
                     SysModuleId::Object.into(),
-                    &ProofOffset::Fungible.into(),
+                    &FungibleProofOffset::ProofRef.into(),
                 )
                 .unwrap();
             let proof: FungibleProof = substate.as_typed().unwrap();
@@ -510,7 +510,7 @@ where
                 .get_substate(
                     proof_id,
                     SysModuleId::Object.into(),
-                    &ProofOffset::NonFungible.into(),
+                    &NonFungibleProofOffset::ProofRef.into(),
                 )
                 .unwrap();
             let proof: NonFungibleProof = substate.as_typed().unwrap();

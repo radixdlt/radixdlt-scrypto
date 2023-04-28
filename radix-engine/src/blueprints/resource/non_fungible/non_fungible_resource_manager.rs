@@ -12,7 +12,7 @@ use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
-use crate::kernel::heap::DroppedProof;
+use crate::kernel::heap::DroppedNonFungibleProof;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -833,7 +833,7 @@ impl NonFungibleResourceManagerBlueprint {
             Y: ClientApi<RuntimeError>,
     {
         let node_substates = api.drop_object(proof.0.as_node_id())?;
-        let dropped_proof: DroppedProof = node_substates.into();
+        let dropped_proof: DroppedNonFungibleProof = node_substates.into();
         dropped_proof.non_fungible_proof.drop_proof(api)?;
 
         Ok(())

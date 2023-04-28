@@ -388,7 +388,6 @@ impl NonFungibleBucketBlueprint {
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&proof).unwrap(),
             ],
         )?;

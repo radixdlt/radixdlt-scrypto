@@ -31,11 +31,15 @@ impl NodeMoveModule {
         // TODO: Make this more generic?
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, blueprint_parent, .. })
             if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                 && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
-                    if callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE) {
+                    if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(blueprint_parent.unwrap().as_node_id())) {
+                        return Ok(());
+                    }
+
+                    if matches!(callee, Actor::Function { .. }) && callee.blueprint().eq(&blueprint) {
                         return Ok(());
                     }
 
@@ -57,7 +61,7 @@ impl NodeMoveModule {
                     let handle = api.kernel_lock_substate(
                         &node_id,
                         SysModuleId::Object.into(),
-                        &ProofOffset::Info.into(),
+                        &FungibleProofOffset::Moveable.into(),
                         LockFlags::MUTABLE,
                     )?;
                     let mut proof: ProofMoveableSubstate =
@@ -76,11 +80,15 @@ impl NodeMoveModule {
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                     api.kernel_drop_lock(handle)?;
                 }
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
+            TypeInfoSubstate::Object(ObjectInfo { blueprint, blueprint_parent, .. })
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
                     && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if callee.package_address().eq(&RESOURCE_MANAGER_PACKAGE) {
+                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(blueprint_parent.unwrap().as_node_id())) {
+                    return Ok(());
+                }
+
+                if matches!(callee, Actor::Function { .. }) && callee.blueprint().eq(&blueprint) {
                     return Ok(());
                 }
 
@@ -102,7 +110,7 @@ impl NodeMoveModule {
                 let handle = api.kernel_lock_substate(
                     &node_id,
                     SysModuleId::Object.into(),
-                    &ProofOffset::Info.into(),
+                    &NonFungibleProofOffset::Moveable.into(),
                     LockFlags::MUTABLE,
                 )?;
                 let mut proof: ProofMoveableSubstate =

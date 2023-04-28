@@ -37,7 +37,7 @@ pub struct ProofMoveableSubstate {
 
 impl ProofMoveableSubstate {
     pub fn of_self<Y: ClientApi<RuntimeError>>(api: &mut Y) -> Result<Self, RuntimeError> {
-        let handle = api.lock_field(ProofOffset::Info.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
         let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
         let info = substate_ref.clone();
         api.sys_drop_lock(handle)?;
@@ -53,7 +53,7 @@ impl ProofMoveableSubstate {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor, Default)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProof {
     pub total_locked: Decimal,
     /// The supporting containers.
@@ -114,7 +114,7 @@ impl FungibleProof {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor, Default)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProof {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
@@ -190,7 +190,7 @@ impl FungibleProofBlueprint {
             Y: ClientApi<RuntimeError>,
     {
         let proof_info = ProofMoveableSubstate::of_self(api)?;
-        let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -200,7 +200,6 @@ impl FungibleProofBlueprint {
             vec![
                 scrypto_encode(&proof_info).unwrap(),
                 scrypto_encode(&clone).unwrap(),
-                scrypto_encode(&NonFungibleProof::default()).unwrap(),
             ],
         )?;
 
@@ -217,7 +216,7 @@ impl FungibleProofBlueprint {
         where
             Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ProofOffset::Fungible.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(FungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -267,7 +266,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let proof_info = ProofMoveableSubstate::of_self(api)?;
-        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -276,7 +275,6 @@ impl NonFungibleProofBlueprint {
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&FungibleProof::default()).unwrap(),
                 scrypto_encode(&clone).unwrap(),
             ],
         )?;
@@ -293,7 +291,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let amount = substate_ref.amount();
         api.sys_drop_lock(handle)?;
@@ -305,7 +303,7 @@ impl NonFungibleProofBlueprint {
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
         where Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ProofOffset::NonFungible.into(), LockFlags::read_only())?;
+        let handle = api.lock_field(NonFungibleProofOffset::ProofRef.into(), LockFlags::read_only())?;
         let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
         api.sys_drop_lock(handle)?;

@@ -253,7 +253,6 @@ impl FungibleBucketBlueprint {
                 vec![
                     scrypto_encode(&proof_info).unwrap(),
                     scrypto_encode(&proof).unwrap(),
-                    scrypto_encode(&NonFungibleProof::default()).unwrap(),
                 ],
             )?;
             proof_id

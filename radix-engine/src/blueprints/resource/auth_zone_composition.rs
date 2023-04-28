@@ -25,14 +25,12 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof) => btreemap!(
-                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&NonFungibleProof::default()),
-                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&proof),
+                FungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                FungibleProofOffset::ProofRef.into() => IndexedScryptoValue::from_typed(&proof),
             ),
             ComposedProof::NonFungible(info, proof) => btreemap!(
-                ProofOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-                ProofOffset::Fungible.into() => IndexedScryptoValue::from_typed(&FungibleProof::default()),
-                ProofOffset::NonFungible.into() => IndexedScryptoValue::from_typed(&proof),
+                NonFungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                NonFungibleProofOffset::ProofRef.into() => IndexedScryptoValue::from_typed(&proof),
             ),
         }
     }
@@ -151,7 +149,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
                     SysModuleId::Object.into(),
-                    &ProofOffset::Fungible.into(),
+                    &FungibleProofOffset::ProofRef.into(),
                     LockFlags::read_only(),
                 )?;
                 let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
@@ -197,7 +195,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
                     SysModuleId::Object.into(),
-                    &ProofOffset::NonFungible.into(),
+                    &NonFungibleProofOffset::ProofRef.into(),
                     LockFlags::read_only(),
                 )?;
                 let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
@@ -240,7 +238,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
             SysModuleId::Object.into(),
-            &ProofOffset::Fungible.into(),
+            &FungibleProofOffset::ProofRef.into(),
             LockFlags::read_only(),
         )?;
         let substate: FungibleProof = api.sys_read_substate_typed(handle)?;
@@ -324,7 +322,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
             SysModuleId::Object.into(),
-            &ProofOffset::NonFungible.into(),
+            &NonFungibleProofOffset::ProofRef.into(),
             LockFlags::read_only(),
         )?;
         let substate: NonFungibleProof = api.sys_read_substate_typed(handle)?;

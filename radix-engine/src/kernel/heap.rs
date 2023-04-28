@@ -197,26 +197,34 @@ impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
     }
 }
 
-pub struct DroppedProof {
+pub struct DroppedFungibleProof {
     pub moveable: ProofMoveableSubstate,
     pub fungible_proof: FungibleProof,
+}
+
+pub struct DroppedNonFungibleProof {
+    pub moveable: ProofMoveableSubstate,
     pub non_fungible_proof: NonFungibleProof,
 }
 
-pub enum DroppedProofResource {
-    Fungible(FungibleProof),
-    NonFungible(NonFungibleProof),
+impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedFungibleProof {
+        let moveable: ProofMoveableSubstate =
+            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
+        let fungible_proof: FungibleProof =
+            scrypto_decode(&self[FungibleProofOffset::ProofRef as usize]).unwrap();
+
+        DroppedFungibleProof { moveable, fungible_proof, }
+    }
 }
 
-impl Into<DroppedProof> for Vec<Vec<u8>> {
-    fn into(self) -> DroppedProof {
+impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedNonFungibleProof {
         let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[ProofOffset::Info as usize]).unwrap();
-        let fungible_proof: FungibleProof =
-            scrypto_decode(&self[ProofOffset::Fungible as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
         let non_fungible_proof: NonFungibleProof =
-            scrypto_decode(&self[ProofOffset::NonFungible as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofOffset::ProofRef as usize]).unwrap();
 
-        DroppedProof { moveable, fungible_proof, non_fungible_proof, }
+        DroppedNonFungibleProof { moveable, non_fungible_proof, }
     }
 }
