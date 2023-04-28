@@ -567,46 +567,9 @@ where
                 }
             }
             Err(err) => {
-                match &err {
-                    // TODO: This is a hack to allow for package imports to be visible
-                    // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    LockSubstateError::NodeNotInCallFrame(node_id)
-                        if node_id.is_global_package() =>
-                    {
-                        let module_id = SysModuleId::Object;
-                        let handle = self
-                            .store
-                            .acquire_lock(
-                                node_id,
-                                module_id.into(),
-                                substate_key,
-                                LockFlags::read_only(),
-                            )
-                            .map_err(|e| LockSubstateError::TrackError(Box::new(e)))
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?;
-                        self.store.release_lock(handle);
-
-                        self.current_frame.add_ref(*node_id, RefType::Normal);
-                        self.current_frame
-                            .acquire_lock(
-                                &mut self.heap,
-                                self.store,
-                                &node_id,
-                                module_id.into(),
-                                substate_key,
-                                flags,
-                                None,
-                            )
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::LockSubstateError(err.clone()),
-                        )))
-                    }
-                }
+                return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::LockSubstateError(err.clone()),
+                )))
             }
         };
 
