@@ -1565,14 +1565,6 @@ where
         self.api.kernel_get_node_info(node_id)
     }
 
-    fn kernel_load_common(&mut self) {
-        self.api.kernel_load_common()
-    }
-
-    fn kernel_load_package_package_dependencies(&mut self) {
-        self.api.kernel_load_package_package_dependencies()
-    }
-
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         self.api.kernel_read_bucket(bucket_id)
     }

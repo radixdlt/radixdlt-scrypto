@@ -359,28 +359,6 @@ where
         actor
     }
 
-    // TODO: Remove
-    fn kernel_load_package_package_dependencies(&mut self) {
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-    }
-
-    // TODO: Remove
-    fn kernel_load_common(&mut self) {
-        self.current_frame
-            .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
-    }
-
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         if let Some(substate) = self.heap.get_substate(
             &bucket_id,

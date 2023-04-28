@@ -698,7 +698,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
                 dependent_resources: vec![],
-                dependent_components: vec![],
+                dependent_components: vec![EPOCH_MANAGER],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
