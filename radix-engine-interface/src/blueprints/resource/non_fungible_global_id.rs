@@ -161,6 +161,7 @@ impl FromPublicKey for NonFungibleGlobalId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::address::test_addresses::*;
     use crate::address::Bech32Decoder;
 
     #[test]
@@ -171,51 +172,53 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<id>",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:<id>"),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<id>"
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:<id>")
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#123#",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:#123#"),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#123#"
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:#123#")
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}",
+                &format!(
+                    "{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{8fe4abde-affa-4f99-9a0f-300ec6acb64d}}"
+                ),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:{8fe4abde-affa-4f99-9a0f-300ec6acb64d}"
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:{{8fe4abde-affa-4f99-9a0f-300ec6acb64d}}")
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<test>",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:<test>"),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<test>"
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:<test>"),
         );
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &dec,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[010a]",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:[010a]"),
             )
             .unwrap()
             .to_canonical_string(&enc),
-            "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[010a]"
+            format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:[010a]"),
         );
     }
 
@@ -225,7 +228,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp",
+                &NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -233,7 +236,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:1:2",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:1:2"),
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
         );
@@ -241,7 +244,7 @@ mod tests {
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:"),
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::UnknownType
@@ -264,7 +267,7 @@ mod tests {
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
                 &bech32_decoder,
-                "resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#notnumber#",
+                &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:#notnumber#"),
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
                 ParseNonFungibleLocalIdError::InvalidInteger
