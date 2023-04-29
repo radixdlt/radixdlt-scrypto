@@ -245,14 +245,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
             match result {
                 Ok(_)
                 | Err(EncodeBech32AddressError::FormatError(_))
-                | Err(EncodeBech32AddressError::Bech32mEncodingError(_)) => return result,
+                | Err(EncodeBech32AddressError::Bech32mEncodingError(_))
+                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => return result,
                 // Only persistable NodeIds are guaranteed to have an address - so
                 // fall through to using hex if necessary.
-                Err(EncodeBech32AddressError::InvalidEntityTypeId(_))
-                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => {}
-            }
-            if let Ok(()) = encoder.encode_to_fmt(f, self.as_ref()) {
-                return Ok(());
+                Err(EncodeBech32AddressError::InvalidEntityTypeId(_)) => {}
             }
         }
 

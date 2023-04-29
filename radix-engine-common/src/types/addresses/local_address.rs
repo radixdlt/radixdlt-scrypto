@@ -33,6 +33,10 @@ impl LocalAddress {
         &self.0
     }
 
+    pub const fn into_node_id(self) -> NodeId {
+        self.0
+    }
+
     pub fn try_from_hex(s: &str) -> Option<Self> {
         hex::decode(s)
             .ok()

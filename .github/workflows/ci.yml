@@ -160,6 +160,7 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
+          --features serde \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \

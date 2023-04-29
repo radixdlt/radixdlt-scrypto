@@ -1501,7 +1501,6 @@ name = "utils"
 version = "0.10.0"
 dependencies = [
  "indexmap 2.0.0-pre",
- "serde",
 ]
 
 [[package]]
