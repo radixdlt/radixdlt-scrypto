@@ -1,7 +1,6 @@
 use radix_engine_common::address::test_addresses::*;
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::data::manifest::*;
-use radix_engine_common::types::NodeId;
 use radix_engine_common::*;
 
 #[derive(ManifestSbor, PartialEq, Eq, Debug)]

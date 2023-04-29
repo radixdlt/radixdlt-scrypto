@@ -24,7 +24,7 @@ pub enum EntityType {
     /// A global validator entity. Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
     GlobalValidator = 0b10000010, //----------------- 10000 => s, 110xx => vdw0
 
-    /// The global clock entity. Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
+    /// The global clock entity. Gives Bech32 prefix: `s` followed by one of `5`, `4`, `k` or `h`.
     GlobalClock = 0b10000101, //--------------------- 10000 => s, 101xx => 54kh
 
     //=========================================================================
