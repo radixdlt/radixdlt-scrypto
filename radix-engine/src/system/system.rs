@@ -1304,7 +1304,7 @@ where
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, _object_info) = match &actor {
+        let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
@@ -1317,24 +1317,25 @@ where
         };
 
         // TODO: Add check if key value exists
-        /*
-        let schema = self.get_blueprint_schema(blueprint)?;
 
-        if !schema.has_field(field) {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(blueprint.clone(), field)));
-        }
-         */
+        let schema = self.get_blueprint_schema(&object_info.blueprint)?;
+        let module_offset = schema.first_key_value_store_module_offset()
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(object_info.blueprint.clone(), 0u8))
+            })?;
 
-        let sys_module_id = match object_module_id {
-            ObjectModuleId::Metadata => SysModuleId::Metadata,
-            ObjectModuleId::Royalty => SysModuleId::Royalty,
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-            ObjectModuleId::SELF => SysModuleId::User,
+        let module_base = match object_module_id {
+            ObjectModuleId::Metadata => SysModuleId::Metadata as u8,
+            ObjectModuleId::Royalty => SysModuleId::Royalty as u8,
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules as u8,
+            ObjectModuleId::SELF => SysModuleId::User as u8,
         };
+
+        let module_number = module_base + module_offset;
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            sys_module_id.into(),
+            ModuleId(module_number),
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1470,22 +1471,7 @@ where
         let (blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
-                Some(Actor::Method {
-                    node_id, module_id, ..
-                }) => match module_id {
-                    ObjectModuleId::AccessRules => Ok(Blueprint::new(
-                        &ACCESS_RULES_PACKAGE,
-                        ACCESS_RULES_BLUEPRINT,
-                    )),
-                    ObjectModuleId::Royalty => Ok(Blueprint::new(
-                        &ROYALTY_PACKAGE,
-                        COMPONENT_ROYALTY_BLUEPRINT,
-                    )),
-                    ObjectModuleId::Metadata => {
-                        Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
-                    }
-                    ObjectModuleId::SELF => self.get_object_info(&node_id).map(|x| x.blueprint),
-                },
+                Some(Actor::Method { ref object_info, .. }) => Ok(object_info.blueprint.clone()),
                 Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),

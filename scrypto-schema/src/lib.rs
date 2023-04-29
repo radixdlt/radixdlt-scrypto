@@ -116,6 +116,19 @@ impl BlueprintSchema {
         field_index < self.substates.len()
     }
 
+    pub fn first_key_value_store_module_offset(&self) -> Option<u8> {
+        let mut module_offset = 0u8;
+        if !self.substates.is_empty() {
+            module_offset += 1;
+        }
+
+        if self.key_value_stores.is_empty() {
+            return None;
+        }
+
+        Some(module_offset)
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
