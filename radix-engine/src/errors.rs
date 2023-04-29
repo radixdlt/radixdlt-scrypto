@@ -8,7 +8,6 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
@@ -153,7 +152,6 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
-    pub actor: Actor,
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -191,7 +189,9 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     GlobalAddressDoesNotExist,
+    NoParent,
     NotAnObject,
+    NotAMethod,
     NotATuple,
     NotAKeyValueStore,
     NotASortedStore,
@@ -239,7 +239,8 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
     BlueprintNotFound(String),
-    WrongNumberOfSubstates(String, usize, usize),
+    WrongNumberOfSubstates(Blueprint, usize, usize),
+    SchemaValidationError(Blueprint, String),
     InvalidSubstateWrite(String),
 }
 

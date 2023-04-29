@@ -343,11 +343,19 @@ where
         if let Some(actor) = &actor {
             match actor {
                 Actor::Method {
-                    global_address: Some(address),
+                    global_address,
+                    object_info,
                     ..
                 } => {
-                    self.current_frame
-                        .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    if let Some(address) = global_address {
+                        self.current_frame
+                            .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    }
+
+                    if let Some(address) = object_info.outer_object {
+                        self.current_frame
+                            .add_ref(address.as_node_id().clone(), RefType::Normal);
+                    }
                 }
                 _ => {}
             }
@@ -382,90 +390,70 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => {}
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    outer_object,
+                    ..
+                }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                    && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                {
+                    let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
+                    let parent = outer_object.unwrap();
+                    let resource_address: ResourceAddress =
+                        ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
+                    (is_fungible, resource_address)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            &bucket_id,
-            SysModuleId::Object.into(),
-            &BucketOffset::Info.into(),
-        ) {
-            let info: BucketInfoSubstate = substate.as_typed().unwrap();
+        if is_fungible_bucket {
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    SysModuleId::Object.into(),
+                    &FungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
-            let resource_address = ResourceAddress::new_or_panic(
-                self.heap
-                    .get_substate(
-                        bucket_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                    )
-                    .unwrap()
-                    .as_typed::<TypeInfoSubstate>()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .into(),
-            );
-
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::Object.into(),
-                            &BucketOffset::Liquid.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::Fungible {
-                        resource_address: resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::Object.into(),
-                            &BucketOffset::Liquid.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::NonFungible {
-                        resource_address: resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.ids().clone(),
-                    })
-                }
-            }
+            Some(BucketSnapshot::Fungible {
+                resource_address,
+                liquid: liquid.amount(),
+            })
         } else {
-            None
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    SysModuleId::Object.into(),
+                    &NonFungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
+
+            Some(BucketSnapshot::NonFungible {
+                resource_address,
+                liquid: liquid.ids().clone(),
+            })
         }
     }
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
@@ -474,62 +462,71 @@ where
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
                     if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == PROOF_BLUEPRINT => {}
+                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
+                    blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            proof_id,
-            SysModuleId::Object.into(),
-            &ProofOffset::Info.into(),
-        ) {
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+        if is_fungible {
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::Object.into(),
-                            &ProofOffset::Fungible.into(),
-                        )
-                        .unwrap();
-                    let proof: FungibleProof = substate.as_typed().unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::Object.into(),
+                    &FungibleProofOffset::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: FungibleProof = substate.as_typed().unwrap();
 
-                    Some(ProofSnapshot::Fungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::Object.into(),
-                            &ProofOffset::NonFungible.into(),
-                        )
-                        .unwrap();
-                    let proof: NonFungibleProof = substate.as_typed().unwrap();
-
-                    Some(ProofSnapshot::NonFungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.non_fungible_local_ids().clone(),
-                    })
-                }
-            }
+            Some(ProofSnapshot::Fungible {
+                resource_address,
+                total_locked: proof.amount(),
+            })
         } else {
-            None
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::TypeInfo.into(),
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    SysModuleId::Object.into(),
+                    &NonFungibleProofOffset::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: NonFungibleProof = substate.as_typed().unwrap();
+
+            Some(ProofSnapshot::NonFungible {
+                resource_address,
+                total_locked: proof.non_fungible_local_ids().clone(),
+            })
         }
     }
 }

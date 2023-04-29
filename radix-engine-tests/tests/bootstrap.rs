@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
+use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
@@ -180,14 +180,14 @@ fn test_genesis_resource_with_initial_allocation() {
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
-    let resource_manager_substate = substate_db
-        .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
+    let total_supply = substate_db
+        .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
             SysModuleId::Object.into(),
-            &FungibleResourceManagerOffset::ResourceManager.into(),
+            &FungibleResourceManagerOffset::TotalSupply.into(),
         )
         .unwrap();
-    assert_eq!(resource_manager_substate.total_supply, allocation_amount);
+    assert_eq!(total_supply, allocation_amount);
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db

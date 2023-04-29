@@ -119,7 +119,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::Index | TypeInfoSubstate::SortedIndex => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
-                type_parent,
+                outer_object,
                 global: _,
             }) => {
                 if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -136,7 +136,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
+                        &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
                         &liquid,
                     );
                 } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
@@ -153,7 +153,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_non_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
+                        &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
                         &liquid,
                     );
 
@@ -167,7 +167,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                         self.visitor.visit_non_fungible(
                             node_id,
-                            &ResourceAddress::new_or_panic(type_parent.unwrap().into()),
+                            &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
                             &non_fungible_local_id,
                         );
                     }

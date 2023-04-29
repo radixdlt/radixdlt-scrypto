@@ -1,6 +1,6 @@
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
@@ -125,7 +125,7 @@ fn globalize_package<Y>(
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: KernelNodeApi + ClientApi<RuntimeError>,
 {
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
@@ -146,7 +146,7 @@ where
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-            type_parent: None,
+            outer_object: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();
@@ -276,7 +276,7 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
                     functions,
@@ -314,7 +314,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
@@ -419,7 +419,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)
@@ -467,7 +467,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
         let address = Self::publish_wasm_internal(
@@ -493,7 +493,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedPackage::create_advanced(config, api)?;
         let address = Self::publish_wasm_internal(
@@ -519,7 +519,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)
@@ -527,7 +527,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            parent,
+            outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()

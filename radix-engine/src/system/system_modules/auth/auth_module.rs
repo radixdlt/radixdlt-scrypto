@@ -39,7 +39,7 @@ use transaction::model::AuthZoneParams;
 pub enum AuthError {
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
-    ChildBlueprintDoesNotExist,
+    InnerBlueprintDoesNotExist(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
@@ -138,7 +138,7 @@ impl AuthModule {
 
                 let mut auths = Vec::new();
 
-                if let Some(parent) = info.type_parent {
+                if let Some(parent) = info.outer_object {
                     let (ref_type, _) =
                         api.kernel_get_node_info(node_id)
                             .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
@@ -232,6 +232,7 @@ impl AuthModule {
             (schema, index)
         };
 
+        // TODO: Remove
         let state = {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
@@ -293,7 +294,7 @@ impl AuthModule {
                     .child_blueprint_rules
                     .get(&blueprint_name)
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::ChildBlueprintDoesNotExist,
+                        AuthError::InnerBlueprintDoesNotExist(blueprint_name),
                     )))?;
                 child_rules.get_access_rule(is_direct_access, &key)
             }
@@ -445,7 +446,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    outer_object: None,
                 })).to_substates()
             ),
         )?;

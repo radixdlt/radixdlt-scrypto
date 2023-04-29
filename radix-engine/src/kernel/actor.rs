@@ -2,13 +2,20 @@ use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InstanceContext {
+    pub instance: GlobalAddress,
+    pub instance_blueprint: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Method {
         global_address: Option<GlobalAddress>,
         node_id: NodeId,
         module_id: ObjectModuleId,
-        blueprint: Blueprint,
         ident: String,
+        object_info: ObjectInfo,
+        instance_context: Option<InstanceContext>,
     },
     Function {
         blueprint: Blueprint,
@@ -21,9 +28,21 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn instance_context(&self) -> Option<InstanceContext> {
+        match self {
+            Actor::Method {
+                instance_context, ..
+            } => instance_context.clone(),
+            _ => None,
+        }
+    }
+
     pub fn blueprint(&self) -> &Blueprint {
         match self {
-            Actor::Method { blueprint, .. }
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         }
@@ -31,7 +50,10 @@ impl Actor {
 
     pub fn package_address(&self) -> &PackageAddress {
         let blueprint = match &self {
-            Actor::Method { blueprint, .. } => blueprint,
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            } => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
             Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
         };
@@ -41,7 +63,10 @@ impl Actor {
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
-            Actor::Method { blueprint, .. }
+            Actor::Method {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            }
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
         }
@@ -50,14 +75,16 @@ impl Actor {
     pub fn method(
         global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
-        blueprint: Blueprint,
+        object_info: ObjectInfo,
+        instance_context: Option<InstanceContext>,
     ) -> Self {
         Self::Method {
             global_address,
             node_id: method.0,
             module_id: method.1,
-            blueprint,
             ident: method.2,
+            object_info,
+            instance_context,
         }
     }
 
