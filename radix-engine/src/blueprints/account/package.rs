@@ -204,6 +204,7 @@ impl AccountNativePackage {
                     outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into()

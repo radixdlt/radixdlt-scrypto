@@ -1503,6 +1503,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                 type_validations: vec![],
             },
             substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+            key_value_stores: vec![],
             functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
                     receiver: Option::None,

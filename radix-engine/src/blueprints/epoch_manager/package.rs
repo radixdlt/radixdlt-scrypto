@@ -97,7 +97,8 @@ impl EpochManagerNativePackage {
         let epoch_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
-            substates: substates,
+            substates,
+            key_value_stores: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
@@ -191,7 +192,8 @@ impl EpochManagerNativePackage {
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
-            substates: substates,
+            substates,
+            key_value_stores: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,

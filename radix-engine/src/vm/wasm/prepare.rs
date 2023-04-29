@@ -1062,6 +1062,7 @@ mod tests {
                     type_validations: vec![],
                 },
                 substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                key_value_stores: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,

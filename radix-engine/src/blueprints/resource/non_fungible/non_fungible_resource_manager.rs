@@ -9,7 +9,7 @@ use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::{KeyValueStoreInfo, KeyValueStoreSchema};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
 use sbor::rust::borrow::Cow;
@@ -88,11 +88,13 @@ where
     kv_schema.type_validations.push(TypeValidation::None);
     let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
 
-    let kv_schema = KeyValueStoreSchema {
+    let kv_schema = KeyValueStoreInfo {
         schema: kv_schema,
-        key: non_fungible_type,
-        value: value_index,
-        can_own: false, // Only allow NonFungibles to store data/references
+        kv_store_schema: KeyValueStoreSchema {
+            key: non_fungible_type,
+            value: value_index,
+            can_own: false, // Only allow NonFungibles to store data/references
+        }
     };
 
     let nf_store_id = api.key_value_store_new(kv_schema)?;

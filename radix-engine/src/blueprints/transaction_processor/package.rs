@@ -41,6 +41,7 @@ impl TransactionProcessorNativePackage {
                     outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()

@@ -16,7 +16,7 @@ use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::KeyValueStoreInfo;
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -132,7 +132,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_new(
         &mut self,
-        schema: KeyValueStoreSchema,
+        schema: KeyValueStoreInfo,
     ) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
@@ -142,7 +142,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, ClientApiError> {
+    ) -> Result<KeyValueStoreInfo, ClientApiError> {
         let bytes = copy_buffer(unsafe {
             get_key_value_store_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });

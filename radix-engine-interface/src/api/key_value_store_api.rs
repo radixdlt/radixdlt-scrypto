@@ -4,17 +4,17 @@ use radix_engine_common::data::scrypto::{
 use radix_engine_common::types::*;
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::KeyValueStoreInfo;
 
 pub type KeyValueEntryLockHandle = u32;
 
 // TODO: Add locked entry interface rather than using substate api
 pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
-    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, E>;
+    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, E>;
 
     /// Get info regarding a visible key value store
-    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
+    fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreInfo, E>;
 
     /// Lock a key value store entry for reading/writing
     fn key_value_store_lock_entry(

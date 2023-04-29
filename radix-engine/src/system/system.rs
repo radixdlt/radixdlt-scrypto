@@ -34,7 +34,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreSchema};
+use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreInfo};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -341,90 +341,6 @@ where
                     // Scrypto, so safe for now.
                 }
             };
-
-            /*
-            TypeInfoSubstate::KeyValueStore(store_schema) => {
-                if let Err(e) = validate_payload_against_schema(
-                    &buffer,
-                    &store_schema.schema,
-                    store_schema.value,
-                    self,
-                ) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
-                    ));
-                };
-
-                if !store_schema.can_own {
-                    let indexed = IndexedScryptoValue::from_slice(&buffer)
-                        .expect("Should be valid due to payload check");
-                    let (_, own, _) = indexed.unpack();
-                    if !own.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::InvalidKeyValueStoreOwnership,
-                        ));
-                    }
-                }
-            }
-            TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
-                match SysModuleId::from_repr(module_id.0).unwrap() {
-                    SysModuleId::Object => {
-                        // Load the Object SysModule schema from the Package
-                        let handle = self.kernel_lock_substate(
-                            blueprint.package_address.as_node_id(),
-                            SysModuleId::Object.into(),
-                            &PackageOffset::Info.into(),
-                            LockFlags::read_only(),
-                        )?;
-                        let package_info: PackageInfoSubstate =
-                            self.sys_read_substate_typed(handle)?;
-                        self.kernel_drop_lock(handle)?;
-
-                        let blueprint_schema = package_info
-                            .schema
-                            .blueprints
-                            .get(&blueprint.blueprint_name)
-                            .expect("Missing blueprint schema");
-
-                        // Validate the substate against the schema
-                        if let SubstateKey::Tuple(offset) = substate_key {
-                            if let Some(index) = blueprint_schema.substates.get(offset as usize) {
-                                if let Err(e) = validate_payload_against_schema(
-                                    &buffer,
-                                    &blueprint_schema.schema,
-                                    *index,
-                                    self,
-                                ) {
-                                    return Err(RuntimeError::SystemError(
-                                        SystemError::InvalidSubstateWrite(
-                                            e.error_message(&blueprint_schema.schema),
-                                        ),
-                                    ));
-                                };
-                            } else {
-                                let schema_substate_count = blueprint_schema.substates.len();
-                                return Err(RuntimeError::SystemError(
-                                    SystemError::InvalidSubstateWrite(format!("Stored a substate at tuple index {offset} but schema for {blueprint:?} only has {schema_substate_count} defined")),
-                                ));
-                            }
-                        } else {
-                            // TODO - we don't have schemas for this bit yet
-                        }
-                    }
-                    SysModuleId::TypeInfo
-                    | SysModuleId::Metadata
-                    | SysModuleId::Royalty
-                    | SysModuleId::AccessRules
-                    | SysModuleId::Virtualized => {
-                        // TODO: We should validate these substates, but luckily they're not accessible from
-                        // Scrypto, so safe for now.
-                    }
-                };
-            }
-            TypeInfoSubstate::Index | TypeInfoSubstate::SortedIndex => {
-                // TODO: Check objects stored are storeable
-            }
-             */
         }
 
         let substate =
@@ -846,7 +762,7 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn key_value_store_new(&mut self, schema: KeyValueStoreSchema) -> Result<NodeId, RuntimeError> {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, RuntimeError> {
         schema
             .schema
             .validate()
@@ -872,7 +788,7 @@ where
     fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, RuntimeError> {
+    ) -> Result<KeyValueStoreInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
             TypeInfoSubstate::Object { .. }
@@ -947,7 +863,7 @@ where
                     if let Err(e) = validate_payload_against_schema(
                         &buffer,
                         &store_schema.schema,
-                        store_schema.value,
+                        store_schema.kv_store_schema.value,
                         self,
                     ) {
                         return Err(RuntimeError::SystemError(
@@ -957,7 +873,7 @@ where
                         ));
                     };
 
-                    if !store_schema.can_own {
+                    if !store_schema.kv_store_schema.can_own {
                         let indexed = IndexedScryptoValue::from_slice(&buffer)
                             .expect("Should be valid due to payload check");
                         let (_, own, _) = indexed.unpack();

@@ -10,15 +10,21 @@ use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
-    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl KeyValueStoreSchema {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct KeyValueStoreInfo {
+    pub schema: ScryptoSchema,
+    pub kv_store_schema: KeyValueStoreSchema,
+}
+
+impl KeyValueStoreInfo {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
@@ -26,9 +32,11 @@ impl KeyValueStoreSchema {
         let schema = generate_full_schema(aggregator);
         Self {
             schema,
-            key: key_type_index,
-            value: value_type_index,
-            can_own,
+            kv_store_schema: KeyValueStoreSchema {
+                key: key_type_index,
+                value: value_type_index,
+                can_own,
+            },
         }
     }
 }
@@ -49,6 +57,9 @@ pub struct BlueprintSchema {
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
+
+    pub key_value_stores: Vec<KeyValueStoreSchema>,
+
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
@@ -86,6 +97,7 @@ impl Default for BlueprintSchema {
                 type_validations: vec![],
             },
             substates: Vec::default(),
+            key_value_stores: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),

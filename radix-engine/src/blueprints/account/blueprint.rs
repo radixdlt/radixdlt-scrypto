@@ -13,7 +13,7 @@ use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAc
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::KeyValueStoreInfo;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccountSubstate {
@@ -160,7 +160,7 @@ impl AccountBlueprint {
             // Creating the key-value-store where the vaults will be held. This is a KVStore of
             // [`ResourceAddress`] and [`Own`]ed vaults.
             let kv_store_id =
-                api.key_value_store_new(KeyValueStoreSchema::new::<ResourceAddress, Own>(true))?;
+                api.key_value_store_new(KeyValueStoreInfo::new::<ResourceAddress, Own>(true))?;
 
             let account_substate = AccountSubstate {
                 vaults: Own(kv_store_id),

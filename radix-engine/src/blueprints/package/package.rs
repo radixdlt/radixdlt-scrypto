@@ -279,6 +279,7 @@ impl PackageNativePackage {
                     outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -527,6 +528,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
+            key_value_stores,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
@@ -539,6 +541,12 @@ impl PackageNativePackage {
             }
 
             if !virtual_lazy_load_functions.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                ));
+            }
+
+            if !key_value_stores.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::InvalidSystemFunction),
                 ));
