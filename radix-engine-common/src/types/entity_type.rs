@@ -107,3 +107,101 @@ pub enum EntityType {
     /// The whole index is considered a single unit for contention/locking/versioning.
     InternalSortedIndex = 0b10110010, //------------- 10110 => k, 010xx => gf2t
 }
+
+impl EntityType {
+    pub const fn is_global(&self) -> bool {
+        match self {
+            EntityType::GlobalPackage
+            | EntityType::GlobalFungibleResource
+            | EntityType::GlobalNonFungibleResource
+            | EntityType::GlobalEpochManager
+            | EntityType::GlobalValidator
+            | EntityType::GlobalClock
+            | EntityType::GlobalAccessController
+            | EntityType::GlobalAccount
+            | EntityType::GlobalIdentity
+            | EntityType::GlobalGenericComponent
+            | EntityType::GlobalVirtualSecp256k1Account
+            | EntityType::GlobalVirtualEd25519Account
+            | EntityType::GlobalVirtualSecp256k1Identity
+            | EntityType::GlobalVirtualEd25519Identity => true,
+            EntityType::InternalFungibleVault
+            | EntityType::InternalNonFungibleVault
+            | EntityType::InternalAccount
+            | EntityType::InternalGenericComponent
+            | EntityType::InternalKeyValueStore
+            | EntityType::InternalIndex
+            | EntityType::InternalSortedIndex => false,
+        }
+    }
+
+    pub const fn is_internal(&self) -> bool {
+        !self.is_global()
+    }
+
+    pub const fn is_global_component(&self) -> bool {
+        match self {
+            EntityType::GlobalEpochManager
+            | EntityType::GlobalValidator
+            | EntityType::GlobalClock
+            | EntityType::GlobalAccessController
+            | EntityType::GlobalAccount
+            | EntityType::GlobalIdentity
+            | EntityType::GlobalGenericComponent
+            | EntityType::GlobalVirtualSecp256k1Account
+            | EntityType::GlobalVirtualEd25519Account
+            | EntityType::GlobalVirtualSecp256k1Identity
+            | EntityType::GlobalVirtualEd25519Identity => true,
+            EntityType::GlobalPackage
+            | EntityType::GlobalFungibleResource
+            | EntityType::GlobalNonFungibleResource
+            | EntityType::InternalFungibleVault
+            | EntityType::InternalNonFungibleVault
+            | EntityType::InternalAccount
+            | EntityType::InternalGenericComponent
+            | EntityType::InternalKeyValueStore
+            | EntityType::InternalIndex
+            | EntityType::InternalSortedIndex => false,
+        }
+    }
+
+    pub const fn is_global_package(&self) -> bool {
+        matches!(self, EntityType::GlobalPackage)
+    }
+
+    pub const fn is_global_resource(&self) -> bool {
+        matches!(
+            self,
+            EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
+        )
+    }
+
+    pub const fn is_global_virtual(&self) -> bool {
+        match self {
+            EntityType::GlobalVirtualSecp256k1Account
+            | EntityType::GlobalVirtualEd25519Account
+            | EntityType::GlobalVirtualSecp256k1Identity
+            | EntityType::GlobalVirtualEd25519Identity => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_global_fungible_resource(&self) -> bool {
+        matches!(self, EntityType::GlobalFungibleResource)
+    }
+
+    pub const fn is_internal_kv_store(&self) -> bool {
+        matches!(self, EntityType::InternalKeyValueStore)
+    }
+
+    pub const fn is_internal_fungible_vault(&self) -> bool {
+        matches!(self, EntityType::InternalFungibleVault)
+    }
+
+    pub const fn is_internal_vault(&self) -> bool {
+        matches!(
+            self,
+            EntityType::InternalFungibleVault | EntityType::InternalNonFungibleVault
+        )
+    }
+}
