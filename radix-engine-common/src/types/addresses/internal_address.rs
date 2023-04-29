@@ -12,12 +12,12 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a local entity
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct LocalAddress(NodeId); // private to ensure entity type check
+pub struct InternalAddress(NodeId); // private to ensure entity type check
 
-impl LocalAddress {
+impl InternalAddress {
     pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
-        assert!(node_id.is_local());
+        assert!(node_id.is_internal());
         Self(node_id)
     }
 
@@ -56,19 +56,19 @@ impl LocalAddress {
     }
 }
 
-impl AsRef<[u8]> for LocalAddress {
+impl AsRef<[u8]> for InternalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
+impl TryFrom<[u8; NodeId::LENGTH]> for InternalAddress {
     type Error = ParseLocalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         let node_id = NodeId(value);
 
-        if node_id.is_local() {
+        if node_id.is_internal() {
             Ok(Self(node_id))
         } else {
             Err(ParseLocalAddressError::InvalidEntityTypeId(value[0]))
@@ -76,31 +76,31 @@ impl TryFrom<[u8; NodeId::LENGTH]> for LocalAddress {
     }
 }
 
-impl TryFrom<&[u8]> for LocalAddress {
+impl TryFrom<&[u8]> for InternalAddress {
     type Error = ParseLocalAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            NodeId::LENGTH => LocalAddress::try_from(copy_u8_array(slice)),
+            NodeId::LENGTH => InternalAddress::try_from(copy_u8_array(slice)),
             _ => Err(ParseLocalAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Into<[u8; NodeId::LENGTH]> for LocalAddress {
+impl Into<[u8; NodeId::LENGTH]> for InternalAddress {
     fn into(self) -> [u8; NodeId::LENGTH] {
         self.0.into()
     }
 }
 
-impl From<LocalAddress> for Reference {
-    fn from(value: LocalAddress) -> Self {
+impl From<InternalAddress> for Reference {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }
 
-impl From<LocalAddress> for crate::data::manifest::model::ManifestAddress {
-    fn from(value: LocalAddress) -> Self {
+impl From<InternalAddress> for crate::data::manifest::model::ManifestAddress {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }
@@ -130,7 +130,7 @@ impl fmt::Display for ParseLocalAddressError {
 //========
 
 well_known_scrypto_custom_type!(
-    LocalAddress,
+    InternalAddress,
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
@@ -138,7 +138,7 @@ well_known_scrypto_custom_type!(
 );
 
 manifest_type!(
-    LocalAddress,
+    InternalAddress,
     ManifestCustomValueKind::Address,
     NodeId::LENGTH
 );
@@ -147,13 +147,13 @@ manifest_type!(
 // text
 //======
 
-impl fmt::Debug for LocalAddress {
+impl fmt::Debug for InternalAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for LocalAddress {
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for InternalAddress {
     type Error = EncodeBech32AddressError;
 
     fn contextual_format<F: fmt::Write>(

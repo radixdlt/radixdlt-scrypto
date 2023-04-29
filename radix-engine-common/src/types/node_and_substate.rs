@@ -73,7 +73,7 @@ impl NodeId {
         }
     }
 
-    pub const fn is_local(&self) -> bool {
+    pub const fn is_internal(&self) -> bool {
         !self.is_global()
     }
 
@@ -192,8 +192,8 @@ impl From<GlobalAddress> for NodeId {
     }
 }
 
-impl From<LocalAddress> for NodeId {
-    fn from(value: LocalAddress) -> Self {
+impl From<InternalAddress> for NodeId {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }

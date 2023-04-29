@@ -183,7 +183,7 @@ struct SecurifiedIdentity;
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_BADGE;
+    const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {

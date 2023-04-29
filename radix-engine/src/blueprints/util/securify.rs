@@ -13,7 +13,7 @@ pub enum MethodType {
 pub trait SecurifiedAccessRules {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_GROUP_NAME: &'static str;
-    const OWNER_TOKEN: ResourceAddress;
+    const OWNER_BADGE: ResourceAddress;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![]
@@ -81,7 +81,7 @@ pub trait SecurifiedAccessRules {
         access_rules: &A,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
-        let owner_token = ResourceManager(Self::OWNER_TOKEN);
+        let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
@@ -91,7 +91,7 @@ pub trait SecurifiedAccessRules {
                 api,
             )?;
         }
-        let global_id = NonFungibleGlobalId::new(Self::OWNER_TOKEN, owner_local_id);
+        let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
         access_rules.set_group_access_rule_and_mutability(
             Self::OWNER_GROUP_NAME,
             rule!(require(global_id)),

@@ -38,7 +38,7 @@ struct SecurifiedAccount;
 impl SecurifiedAccessRules for SecurifiedAccount {
     const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_BADGE;
+    const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![
