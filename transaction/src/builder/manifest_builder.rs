@@ -769,7 +769,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: LocalAddress, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: InternalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }

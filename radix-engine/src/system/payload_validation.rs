@@ -45,7 +45,7 @@ where
                             ReferenceValidation::IsGlobalResource => {
                                 reference.as_node_id().is_global_resource()
                             }
-                            ReferenceValidation::IsLocal => reference.as_node_id().is_local(),
+                            ReferenceValidation::IsInternal => reference.as_node_id().is_internal(),
                             ReferenceValidation::IsTypedObject(package, blueprint) => {
                                 match &type_info {
                                     TypeInfoSubstate::Object(ObjectInfo {

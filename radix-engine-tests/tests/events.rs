@@ -228,7 +228,7 @@ fn vault_fungible_recall_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .recall(LocalAddress::new_or_panic(vault_id.into()), 1.into())
+        .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
@@ -324,7 +324,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .recall(LocalAddress::new_or_panic(vault_id.into()), 1.into())
+        .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
             ACCOUNT_DEPOSIT_BATCH_IDENT,

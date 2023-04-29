@@ -63,7 +63,7 @@ impl AsRef<[u8]> for InternalAddress {
 }
 
 impl TryFrom<[u8; NodeId::LENGTH]> for InternalAddress {
-    type Error = ParseLocalAddressError;
+    type Error = ParseInternalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         let node_id = NodeId(value);
@@ -71,18 +71,18 @@ impl TryFrom<[u8; NodeId::LENGTH]> for InternalAddress {
         if node_id.is_internal() {
             Ok(Self(node_id))
         } else {
-            Err(ParseLocalAddressError::InvalidEntityTypeId(value[0]))
+            Err(ParseInternalAddressError::InvalidEntityTypeId(value[0]))
         }
     }
 }
 
 impl TryFrom<&[u8]> for InternalAddress {
-    type Error = ParseLocalAddressError;
+    type Error = ParseInternalAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             NodeId::LENGTH => InternalAddress::try_from(copy_u8_array(slice)),
-            _ => Err(ParseLocalAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseInternalAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -110,16 +110,16 @@ impl From<InternalAddress> for crate::data::manifest::model::ManifestAddress {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseLocalAddressError {
+pub enum ParseInternalAddressError {
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseLocalAddressError {}
+impl std::error::Error for ParseInternalAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseLocalAddressError {
+impl fmt::Display for ParseInternalAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -134,7 +134,7 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
-    GLOBAL_ADDRESS_ID
+    INTERNAL_ADDRESS_ID
 );
 
 manifest_type!(

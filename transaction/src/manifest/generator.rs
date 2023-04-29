@@ -42,7 +42,7 @@ use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::types::ComponentAddress;
 use radix_engine_interface::types::GlobalAddress;
-use radix_engine_interface::types::LocalAddress;
+use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::ResourceAddress;
 use sbor::rust::borrow::Borrow;
@@ -95,7 +95,7 @@ pub enum GeneratorError {
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
     InvalidGlobalAddress(String),
-    InvalidLocalAddress(String),
+    InvalidInternalAddress(String),
     InvalidLength {
         value_type: ast::Type,
         expected_length: usize,
@@ -821,16 +821,16 @@ fn generate_global_address(
 fn generate_local_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<LocalAddress, GeneratorError> {
+) -> Result<InternalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
                 if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
-                    if let Ok(address) = LocalAddress::try_from(full_data.as_ref()) {
+                    if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
                 }
-                return Err(GeneratorError::InvalidLocalAddress(s.into()));
+                return Err(GeneratorError::InvalidInternalAddress(s.into()));
             }
             v => return invalid_type!(v, ast::Type::String),
         },
