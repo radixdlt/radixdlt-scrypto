@@ -10,13 +10,7 @@ on:
       - betanet
       - release\/*
   pull_request:
-    branches:
-      - main
-      - develop
-      - docs
-      - alphanet
-      - betanet
-      - release\/*
+    # Run on PR against any branch
 
 env:
   CARGO_TERM_COLOR: always
