@@ -1,3 +1,4 @@
+use radix_engine_common::address::test_addresses::*;
 use radix_engine_common::data::manifest::model::*;
 use radix_engine_common::data::manifest::*;
 use radix_engine_common::types::NodeId;
@@ -18,7 +19,7 @@ struct TestStruct {
 #[test]
 fn test_encode_and_decode() {
     let t = TestStruct {
-        a: ManifestAddress(NodeId([0u8; NodeId::LENGTH])),
+        a: ManifestAddress(FUNGIBLE_RESOURCE_NODE_ID),
         d: ManifestBucket(4),
         e: ManifestProof(5),
         f: ManifestExpression::EntireAuthZone,
@@ -35,8 +36,8 @@ fn test_encode_and_decode() {
             77, // prefix
             33, // struct
             8,  // field length
-            128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, // address
+            128, 93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247,
+            148, 170, 141, 41, 95, 20, 230, 49, 140, 99, 24, 198, // address
             129, 4, 0, 0, 0, // bucket
             130, 5, 0, 0, 0, // proof
             131, 1, // expression

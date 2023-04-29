@@ -30,6 +30,10 @@ impl NodeId {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
     pub fn to_hex(&self) -> String {
         hex::encode(&self.0)
     }
