@@ -1,6 +1,6 @@
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
@@ -23,7 +23,7 @@ impl Worktop {
         Y: ClientApi<E>,
     {
         let _rtn = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             WORKTOP_BLUEPRINT,
             WORKTOP_DROP_IDENT,
             scrypto_encode(&WorktopDropInput { worktop: self.0 }).unwrap(),

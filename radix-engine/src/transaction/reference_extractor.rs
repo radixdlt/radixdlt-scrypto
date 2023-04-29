@@ -11,11 +11,11 @@ pub fn extract_refs_from_manifest<'a>(instructions: &[Instruction]) -> BTreeSet<
     }
 
     references.insert(RADIX_TOKEN.into());
-    references.insert(PACKAGE_TOKEN.into());
+    references.insert(PACKAGE_VIRTUAL_BADGE.into());
     references.insert(EPOCH_MANAGER.into());
     references.insert(CLOCK.into());
-    references.insert(ECDSA_SECP256K1_TOKEN.into());
-    references.insert(EDDSA_ED25519_TOKEN.into());
+    references.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
+    references.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
 
     references
 }
@@ -34,7 +34,7 @@ pub fn extract_refs_from_instruction<'a>(
             extract_refs_from_value(&args, references);
 
             if package_address.eq(&EPOCH_MANAGER_PACKAGE) {
-                references.insert(PACKAGE_TOKEN.clone().into());
+                references.insert(PACKAGE_VIRTUAL_BADGE.clone().into());
             }
         }
         Instruction::CallMethod {

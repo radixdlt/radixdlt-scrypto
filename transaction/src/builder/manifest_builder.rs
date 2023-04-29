@@ -15,8 +15,7 @@ use radix_engine_interface::blueprints::identity::{
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
-    RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 #[cfg(feature = "dump_manifest_to_file")]
@@ -291,7 +290,7 @@ impl ManifestBuilder {
             .collect();
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -304,7 +303,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -343,7 +342,7 @@ impl ManifestBuilder {
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -359,7 +358,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {

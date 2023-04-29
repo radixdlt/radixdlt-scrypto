@@ -95,7 +95,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 }) => {
                     if global {
                         kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                    } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
@@ -382,11 +382,15 @@ where
         self.current_frame
             .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
         self.current_frame
-            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
+            .add_ref(PACKAGE_VIRTUAL_BADGE.as_node_id().clone(), RefType::Normal);
+        self.current_frame.add_ref(
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id().clone(),
+            RefType::Normal,
+        );
+        self.current_frame.add_ref(
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id().clone(),
+            RefType::Normal,
+        );
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
@@ -401,7 +405,7 @@ where
                     blueprint,
                     outer_object,
                     ..
-                }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                }) if blueprint.package_address == RESOURCE_PACKAGE
                     && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                         || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
@@ -461,7 +465,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                    if blueprint.package_address == RESOURCE_PACKAGE
                         && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
                             || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {

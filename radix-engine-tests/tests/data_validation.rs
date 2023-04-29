@@ -338,7 +338,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
         .call_method(
             component_address,
             "accept_custom_reference",
-            manifest_args!(PACKAGE_TOKEN),
+            manifest_args!(PACKAGE_VIRTUAL_BADGE),
         )
         .build();
 

@@ -36,12 +36,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEcdsaAccount as u8;
+                node_id[0] = EntityType::GlobalVirtualSecp256k1Account as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEddsaAccount as u8;
+                node_id[0] = EntityType::GlobalVirtualEd25519Account as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -53,12 +53,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEcdsaIdentity as u8;
+                node_id[0] = EntityType::GlobalVirtualSecp256k1Identity as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
+                node_id[0] = EntityType::GlobalVirtualEd25519Identity as u8;
                 Self(NodeId(node_id))
             }
         }

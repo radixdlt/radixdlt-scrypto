@@ -200,7 +200,7 @@ mod test {
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])
                 .unwrap()]),
-                ECDSA_SECP256K1_TOKEN
+                ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE
             )
         )
     }
@@ -239,7 +239,7 @@ mod test {
                     ])
                     .unwrap()
                 ]),
-                ECDSA_SECP256K1_TOKEN
+                ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE
             )
         )
     }

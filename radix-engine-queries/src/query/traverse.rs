@@ -2,7 +2,7 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
@@ -121,7 +121,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 outer_object,
                 global: _,
             }) => {
-                if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                     && blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                 {
                     let liquid = self
@@ -138,7 +138,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
                         &liquid,
                     );
-                } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                     && blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 {
                     let liquid = self

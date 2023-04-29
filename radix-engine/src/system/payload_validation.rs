@@ -98,7 +98,7 @@ where
                                             blueprint_name,
                                         },
                                     ..
-                                }) if package_address == &RESOURCE_MANAGER_PACKAGE
+                                }) if package_address == &RESOURCE_PACKAGE
                                     && (blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                         || blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                                 {
@@ -114,7 +114,7 @@ where
                                             blueprint_name,
                                         },
                                     ..
-                                }) if package_address == &RESOURCE_MANAGER_PACKAGE
+                                }) if package_address == &RESOURCE_PACKAGE
                                     && (blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
                                         || blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                                 {
@@ -130,7 +130,7 @@ where
                                             blueprint_name,
                                         },
                                     ..
-                                }) if package_address == &RESOURCE_MANAGER_PACKAGE
+                                }) if package_address == &RESOURCE_PACKAGE
                                     && (blueprint_name == FUNGIBLE_VAULT_BLUEPRINT
                                         || blueprint_name == NON_FUNGIBLE_VAULT_BLUEPRINT) =>
                                 {

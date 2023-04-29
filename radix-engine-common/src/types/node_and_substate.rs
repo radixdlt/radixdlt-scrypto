@@ -53,10 +53,10 @@ impl NodeId {
                 | EntityType::GlobalAccount
                 | EntityType::GlobalIdentity
                 | EntityType::GlobalGenericComponent
-                | EntityType::GlobalVirtualEcdsaAccount
-                | EntityType::GlobalVirtualEddsaAccount
-                | EntityType::GlobalVirtualEcdsaIdentity
-                | EntityType::GlobalVirtualEddsaIdentity => true,
+                | EntityType::GlobalVirtualSecp256k1Account
+                | EntityType::GlobalVirtualEd25519Account
+                | EntityType::GlobalVirtualSecp256k1Identity
+                | EntityType::GlobalVirtualEd25519Identity => true,
                 EntityType::InternalFungibleVault
                 | EntityType::InternalNonFungibleVault
                 | EntityType::InternalAccount
@@ -83,10 +83,10 @@ impl NodeId {
                 EntityType::GlobalAccount |
                 EntityType::GlobalIdentity |
                 EntityType::GlobalGenericComponent |
-                EntityType::GlobalVirtualEcdsaAccount |
-                EntityType::GlobalVirtualEddsaAccount |
-                EntityType::GlobalVirtualEcdsaIdentity |
-                EntityType::GlobalVirtualEddsaIdentity => true,
+                EntityType::GlobalVirtualSecp256k1Account |
+                EntityType::GlobalVirtualEd25519Account |
+                EntityType::GlobalVirtualSecp256k1Identity |
+                EntityType::GlobalVirtualEd25519Identity => true,
                 EntityType::GlobalPackage | /* PackageAddress */
                 EntityType::GlobalFungibleResource | /* ResourceAddress */
                 EntityType::GlobalNonFungibleResource | /* ResourceAddress */
@@ -122,10 +122,10 @@ impl NodeId {
     pub const fn is_global_virtual(&self) -> bool {
         match self.entity_type() {
             Some(entity_type) => match entity_type {
-                EntityType::GlobalVirtualEcdsaAccount
-                | EntityType::GlobalVirtualEddsaAccount
-                | EntityType::GlobalVirtualEcdsaIdentity
-                | EntityType::GlobalVirtualEddsaIdentity => true,
+                EntityType::GlobalVirtualSecp256k1Account
+                | EntityType::GlobalVirtualEd25519Account
+                | EntityType::GlobalVirtualSecp256k1Identity
+                | EntityType::GlobalVirtualEd25519Identity => true,
                 _ => false,
             },
             None => false,

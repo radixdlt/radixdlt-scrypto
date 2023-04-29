@@ -622,14 +622,20 @@ impl CallFrame {
 
         // Add well-known global refs to current frame
         frame.add_ref(RADIX_TOKEN.into(), RefType::Normal);
-        frame.add_ref(SYSTEM_TOKEN.into(), RefType::Normal);
-        frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RefType::Normal);
-        frame.add_ref(EDDSA_ED25519_TOKEN.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_TOKEN.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(VALIDATOR_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
+        frame.add_ref(SYSTEM_TRANSACTION_BADGE.into(), RefType::Normal);
+        frame.add_ref(
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+            RefType::Normal,
+        );
+        frame.add_ref(
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+            RefType::Normal,
+        );
+        frame.add_ref(PACKAGE_VIRTUAL_BADGE.into(), RefType::Normal);
+        frame.add_ref(PACKAGE_OWNER_BADGE.into(), RefType::Normal);
+        frame.add_ref(VALIDATOR_OWNER_BADGE.into(), RefType::Normal);
+        frame.add_ref(IDENTITY_OWNER_BADGE.into(), RefType::Normal);
+        frame.add_ref(ACCOUNT_OWNER_BADGE.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
         frame.add_ref(CLOCK.into(), RefType::Normal);
         frame.add_ref(ACCESS_CONTROLLER_PACKAGE.into(), RefType::Normal);
@@ -637,7 +643,7 @@ impl CallFrame {
         frame.add_ref(CLOCK_PACKAGE.into(), RefType::Normal);
         frame.add_ref(EPOCH_MANAGER_PACKAGE.into(), RefType::Normal);
         frame.add_ref(PACKAGE_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(RESOURCE_MANAGER_PACKAGE.into(), RefType::Normal);
+        frame.add_ref(RESOURCE_PACKAGE.into(), RefType::Normal);
         frame.add_ref(TRANSACTION_PROCESSOR_PACKAGE.into(), RefType::Normal);
         frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
 
@@ -828,7 +834,7 @@ impl CallFrame {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                        if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                        if blueprint.package_address == RESOURCE_PACKAGE
                             && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT

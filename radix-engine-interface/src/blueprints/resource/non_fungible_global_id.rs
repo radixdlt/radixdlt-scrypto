@@ -24,7 +24,7 @@ impl NonFungibleGlobalId {
     pub fn package_actor(package_address: PackageAddress) -> Self {
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id)
+        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id)
     }
 
     /// Returns the resource address.
@@ -123,7 +123,7 @@ impl FromComponent for NonFungibleGlobalId {
     fn from_component_address(component_address: &ComponentAddress) -> Self {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(GLOBAL_OBJECT_TOKEN, non_fungible_local_id)
+        NonFungibleGlobalId::new(GLOBAL_ACTOR_VIRTUAL_BADGE, non_fungible_local_id)
     }
 }
 
@@ -139,14 +139,14 @@ impl FromPublicKey for NonFungibleGlobalId {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
                 NonFungibleGlobalId::new(
-                    ECDSA_SECP256K1_TOKEN,
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
                     NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
                 )
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
                 NonFungibleGlobalId::new(
-                    EDDSA_ED25519_TOKEN,
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
                     NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
                 )
             }

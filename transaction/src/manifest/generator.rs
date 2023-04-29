@@ -32,8 +32,7 @@ use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
-    RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
@@ -525,7 +524,7 @@ pub fn generate_instruction(
             metadata,
             access_rules,
         } => Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -540,7 +539,7 @@ pub fn generate_instruction(
             access_rules,
             initial_supply,
         } => Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
             args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
@@ -556,7 +555,7 @@ pub fn generate_instruction(
             metadata,
             access_rules,
         } => Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -573,7 +572,7 @@ pub fn generate_instruction(
             access_rules,
             initial_supply,
         } => Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
@@ -1472,7 +1471,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -1513,7 +1512,7 @@ mod tests {
             "{}",
             crate::manifest::decompile(
                 &[Instruction::CallFunction {
-                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -1535,7 +1534,7 @@ mod tests {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum("NonFungibleIdType::Integer") Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));"##,
             Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -1572,7 +1571,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")));"#,
             Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -1598,7 +1597,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Decimal("500");"#,
             Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
