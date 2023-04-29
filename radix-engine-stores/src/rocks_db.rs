@@ -1,10 +1,8 @@
-use crate::utils::{decode_substate_id, encode_substate_id};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
-};
+use radix_engine_store_interface::interface::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
+use utils::copy_u8_array;
 
 pub struct RocksdbSubstateStore {
     db: DBWithThreadMode<SingleThreaded>,
@@ -19,33 +17,31 @@ impl RocksdbSubstateStore {
 }
 
 impl SubstateDatabase for RocksdbSubstateStore {
-    fn get_substate(&self, index_id: &Vec<u8>, db_key: &Vec<u8>) -> Option<Vec<u8>> {
-        let key = encode_substate_id(index_id, db_key);
-        self.db.get(&key).expect("IO Error")
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        let key_bytes = encode_to_rocksdb_bytes(partition_key, sort_key);
+        self.db.get(&key_bytes).expect("IO Error")
     }
 
-    fn list_substates(
+    fn list_entries(
         &self,
-        index_id: &Vec<u8>,
-    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let index_id = index_id.clone();
-
-        let start = encode_substate_id(&index_id, &vec![0]);
-
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        let partition_key = partition_key.clone();
+        let start_key_bytes = encode_to_rocksdb_bytes(&partition_key, &DbSortKey(vec![]));
         let iter = self
             .db
-            .iterator(IteratorMode::From(&start, Direction::Forward))
-            .take_while(move |kv| {
-                let (key, _value) = kv.as_ref().unwrap();
-                key[0..26].eq(&index_id)
-            })
+            .iterator(IteratorMode::From(&start_key_bytes, Direction::Forward))
             .map(|kv| {
-                let (key, value) = kv.unwrap();
-                let (_, substate_key) =
-                    decode_substate_id(key.as_ref()).expect("Failed to decode substate ID");
-                let value = value.as_ref().to_vec();
-                (substate_key, value)
-            });
+                let (iter_key_bytes, iter_value) = kv.as_ref().unwrap();
+                let iter_key = decode_from_rocksdb_bytes(iter_key_bytes);
+                (iter_key, iter_value.to_vec())
+            })
+            .take_while(move |((iter_partition_key, _), _)| *iter_partition_key == partition_key)
+            .map(|((_, iter_sort_key), iter_value)| (iter_sort_key, iter_value.to_vec()));
 
         Box::new(iter)
     }
@@ -53,18 +49,32 @@ impl SubstateDatabase for RocksdbSubstateStore {
 
 impl CommittableSubstateDatabase for RocksdbSubstateStore {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
-        for (index_id, index_updates) in database_updates {
-            for (db_key, update) in index_updates {
-                let substate_id = encode_substate_id(index_id, db_key);
-                match update {
-                    DatabaseUpdate::Set(substate_value) => {
-                        self.db.put(substate_id, substate_value).expect("IO error");
-                    }
-                    DatabaseUpdate::Delete => {
-                        self.db.delete(substate_id).expect("IO error");
-                    }
-                }
+        for (patrition_key, partition_updates) in database_updates {
+            for (sort_key, database_update) in partition_updates {
+                let key_bytes = encode_to_rocksdb_bytes(patrition_key, sort_key);
+                let result = match database_update {
+                    DatabaseUpdate::Set(value_bytes) => self.db.put(key_bytes, value_bytes),
+                    DatabaseUpdate::Delete => self.db.delete(key_bytes),
+                };
+                result.expect("IO error");
             }
         }
     }
+}
+
+fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
+    let mut buffer = Vec::new();
+    buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
+    buffer.extend(partition_key.0.clone());
+    buffer.extend(sort_key.0.clone());
+    buffer
+}
+
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
+    let partition_key_len =
+        usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
+    let sort_key_offset = 4 + partition_key_len;
+    let partition_key = DbPartitionKey(buffer[4..sort_key_offset].to_vec());
+    let sort_key = DbSortKey(buffer[sort_key_offset..].to_vec());
+    (partition_key, sort_key)
 }

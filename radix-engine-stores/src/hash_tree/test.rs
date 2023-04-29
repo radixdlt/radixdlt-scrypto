@@ -4,10 +4,11 @@ use crate::hash_tree::tree_store::{
     TypedInMemoryTreeStore,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
-use crate::hash_tree::{put_at_next_version, DbId, SubstateHashChange};
+use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey};
 use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
 #[test]
@@ -144,19 +145,25 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
         None,
         vec![
             SubstateHashChange::new(
-                DbId::new(vec![1, 3, 3, 7], vec![253]),
+                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![253])),
                 Some(Hash([1; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
-                DbId::new(vec![1, 3, 3, 7], vec![66]),
+                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![66])),
                 Some(Hash([2; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
-                DbId::new(vec![123, 12, 1, 0], vec![6, 6, 6]),
+                (
+                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    DbSortKey(vec![6, 6, 6]),
+                ),
                 Some(Hash([3; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
-                DbId::new(vec![123, 12, 1, 0], vec![6, 6, 7]),
+                (
+                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    DbSortKey(vec![6, 6, 7]),
+                ),
                 Some(Hash([4; Hash::LENGTH])),
             ),
         ],
@@ -271,7 +278,7 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let direct_bytes = nibbles.bytes().to_vec();
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
-        payload: (vec![9, 8, 7], vec![6]),
+        payload: (),
         value_hash: Hash([7; 32]),
     });
     let encoded = scrypto_encode(&node).unwrap();
@@ -302,13 +309,13 @@ fn sbor_decodes_what_was_encoded() {
         }),
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
-            payload: (vec![1, 2], vec![3, 3, 3, 3, 3, 3, 3, 8, 3]),
+            payload: (),
             value_hash: Hash([7; 32]),
         }),
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded = scrypto_decode::<Vec<TreeNode<(Vec<u8>, Vec<u8>)>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode<()>>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
@@ -333,9 +340,9 @@ fn change(
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
     SubstateHashChange::new(
-        DbId::new(
-            vec![partition_key_seed; Hash::LENGTH],
-            vec![sort_key_seed; sort_key_seed as usize],
+        (
+            DbPartitionKey(vec![partition_key_seed; Hash::LENGTH]),
+            DbSortKey(vec![sort_key_seed; sort_key_seed as usize]),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
     )

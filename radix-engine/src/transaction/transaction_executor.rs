@@ -5,7 +5,7 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::db_key_mapper::{DatabaseMapper, JmtMapper};
+use crate::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
@@ -188,7 +188,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::<_, JmtMapper>::new(self.substate_db);
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             transaction_hash.clone(),
             executable.pre_allocated_ids().clone(),
@@ -259,7 +259,7 @@ where
                 let tracked_nodes = track.finalize();
                 let state_update_summary =
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
-                let track_updates = to_state_updates::<JmtMapper>(tracked_nodes);
+                let track_updates = to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
                     state_updates: track_updates,
@@ -512,7 +512,7 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
+fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,

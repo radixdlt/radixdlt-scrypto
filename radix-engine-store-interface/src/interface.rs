@@ -3,37 +3,60 @@ use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
 
-pub type DatabaseUpdates = IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>;
+/// A database-level key of an entire partition.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+pub struct DbPartitionKey(pub Vec<u8>);
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+/// A database-level key of a substate within a known partition.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
+pub struct DbSortKey(pub Vec<u8>);
+
+/// A fully-specified key of a substate (i.e. specifying its partition and sort key).
+pub type DbSubstateKey = (DbPartitionKey, DbSortKey);
+
+/// A raw substate value stored by the database.
+pub type DbSubstateValue = Vec<u8>;
+
+/// A key-value entry of a substate within a known partition.
+pub type PartitionEntry = (DbSortKey, DbSubstateValue);
+
+/// A fully-specified set of substate value updates (aggregated by partition).
+pub type DatabaseUpdates = IndexMap<DbPartitionKey, PartitionUpdates>;
+
+/// A set of substate value updates within a known partition.
+pub type PartitionUpdates = IndexMap<DbSortKey, DatabaseUpdate>;
+
+/// An update of a single substate values.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
 pub enum DatabaseUpdate {
-    Set(Vec<u8>),
+    Set(DbSubstateValue),
     Delete,
 }
 
-/// Represents the interface between Track and a database vendor.
+/// A read interface between Track and a database vendor.
 pub trait SubstateDatabase {
-    /// Reads a substate of the given node module.
-    ///
-    /// [`Option::None`] is returned if missing.
-    fn get_substate(&self, index_id: &Vec<u8>, key: &Vec<u8>) -> Option<Vec<u8>>;
-
-    /// Returns a lexicographical sorted iterator over the substates of an index
-    fn list_substates(
+    /// Reads a substate value by its partition and sort key, or [`Option::None`] if missing.
+    fn get_substate(
         &self,
-        index_id: &Vec<u8>,
-    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_>;
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue>;
+
+    /// Iterates over all entries of the given partition, in a lexicographical order.
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_>;
 }
 
-/// Interface for committing changes into a substate database.
+/// A write interface between Track and a database vendor.
 pub trait CommittableSubstateDatabase {
     /// Commits state changes to the database.
-    ///
-    /// An error is thrown in case of invalid module ID.
-    fn commit(&mut self, state_changes: &DatabaseUpdates);
+    fn commit(&mut self, database_updates: &DatabaseUpdates);
 }
 
-/// Interface for listing nodes within a substate database.
+/// A partition listing interface between Track and a database vendor.
 pub trait ListableSubstateDatabase {
-    fn list_nodes(&self) -> Vec<Vec<u8>>;
+    /// Iterates over all partition keys, in an arbitrary order.
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_>;
 }

@@ -1,7 +1,8 @@
-use crate::hash_tree::tree_store::IndexPayload;
+use crate::hash_tree::tree_store::PartitionPayload;
 use crate::hash_tree::types::LeafKey;
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::Hash;
+use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey, DbSubstateKey};
 use tree_store::{Payload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
 use utils::rust::collections::{index_map_new, IndexMap};
@@ -20,24 +21,6 @@ mod jellyfish;
 mod test;
 #[allow(dead_code)]
 mod types;
-
-/// Part of the ID addressing the upper layer of the JMT.
-pub type DbIndex = Vec<u8>;
-
-/// Part of the ID addressing the lower layer of the JMT.
-pub type DbKey = Vec<u8>;
-
-/// A complete ID of the substate, as tracked by the JMT.
-pub struct DbId {
-    index: DbIndex,
-    key: DbKey,
-}
-
-impl DbId {
-    pub fn new(index: DbIndex, key: DbKey) -> Self {
-        Self { index, key }
-    }
-}
 
 /// A change of value associated with some ID.
 /// External API only uses it for hashes of substates (see `SubstateHashChange`), but internally we
@@ -58,7 +41,7 @@ impl<I, V> IdChange<I, V> {
 }
 
 /// A top-level `IdChange`, representing an actual change of a specific substate's hashed value.
-pub type SubstateHashChange = IdChange<DbId, Hash>;
+pub type SubstateHashChange = IdChange<DbSubstateKey, Hash>;
 
 /// Inserts a new set of nodes at version `current_version` + 1 into the "nested JMT" persisted
 /// within the given `store`.
@@ -75,34 +58,35 @@ pub type SubstateHashChange = IdChange<DbId, Hash>;
 /// # Panics
 /// Panics if a root node for `current_version` does not exist. The caller should use `None` to
 /// denote an empty, initial state of the tree (i.e. inserting at version 1).
-pub fn put_at_next_version<S: TreeStore<IndexPayload> + TreeStore<()>>(
+pub fn put_at_next_version<S: TreeStore<PartitionPayload> + TreeStore<()>>(
     store: &mut S,
     current_version: Option<Version>,
     changes: Vec<SubstateHashChange>,
 ) -> Hash {
-    let changes_by_index = aggregate_by_db_index(changes);
+    let changes_by_db_partition_key = index_by_db_partition_key(changes);
     let mut nested_root_changes = Vec::new();
-    for (index, substate_changes) in changes_by_index {
-        let nested_root = put_substate_changes(store, current_version, &index, substate_changes);
-        nested_root_changes.push(IdChange::new(index, nested_root));
+    for (db_partition_key, substate_changes) in changes_by_db_partition_key {
+        let nested_root =
+            put_substate_changes(store, current_version, &db_partition_key, substate_changes);
+        nested_root_changes.push(IdChange::new(db_partition_key, nested_root));
     }
-    put_index_changes(store, current_version, nested_root_changes)
+    put_partition_changes(store, current_version, nested_root_changes)
 }
 
 // only internals below
 
-fn aggregate_by_db_index(
+fn index_by_db_partition_key(
     changes: Vec<SubstateHashChange>,
-) -> IndexMap<DbIndex, Vec<IdChange<DbKey, Hash>>> {
-    let mut by_db_index = index_map_new();
+) -> IndexMap<DbPartitionKey, Vec<IdChange<DbSortKey, Hash>>> {
+    let mut by_db_partition_key = index_map_new();
     for change in changes {
-        let db_id = change.id;
-        by_db_index
-            .entry(db_id.index)
+        let db_substate_key = change.id;
+        by_db_partition_key
+            .entry(db_substate_key.0)
             .or_insert_with(|| Vec::new())
-            .push(IdChange::new(db_id.key, change.changed));
+            .push(IdChange::new(db_substate_key.1, change.changed));
     }
-    by_db_index
+    by_db_partition_key
 }
 
 #[derive(Debug)]
@@ -111,15 +95,15 @@ struct TreeRoot<P> {
     node: TreeNode<P>,
 }
 
-fn put_substate_changes<S: TreeStore<IndexPayload> + TreeStore<()>>(
+fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<()>>(
     store: &mut S,
     current_version: Option<Version>,
-    index: &DbIndex,
-    changes: Vec<IdChange<DbKey, Hash>>,
+    db_partition_key: &DbPartitionKey,
+    changes: Vec<IdChange<DbSortKey, Hash>>,
 ) -> Option<TreeRoot<()>> {
     let (subtree_last_update_state_version, subtree_root) =
-        get_index_leaf_entry(store, current_version, index);
-    let mut subtree_store = NestedTreeStore::new(store, index, subtree_root);
+        get_parition_leaf_entry(store, current_version, db_partition_key);
+    let mut subtree_store = NestedTreeStore::new(store, db_partition_key, subtree_root);
     let substate_root_hash = put_changes(
         &mut subtree_store,
         subtree_last_update_state_version,
@@ -140,10 +124,10 @@ fn put_substate_changes<S: TreeStore<IndexPayload> + TreeStore<()>>(
     }
 }
 
-fn put_index_changes<S: TreeStore<IndexPayload>>(
+fn put_partition_changes<S: TreeStore<PartitionPayload>>(
     store: &mut S,
     current_version: Option<Version>,
-    changes: Vec<IdChange<DbIndex, TreeRoot<()>>>,
+    changes: Vec<IdChange<DbPartitionKey, TreeRoot<()>>>,
 ) -> Hash {
     put_changes(
         store,
@@ -151,21 +135,21 @@ fn put_index_changes<S: TreeStore<IndexPayload>>(
         current_version.unwrap_or(0) + 1,
         changes
             .into_iter()
-            .map(|change| to_index_change(change))
+            .map(|change| to_partition_change(change))
             .collect(),
     )
 }
 
-fn get_index_leaf_entry<S: ReadableTreeStore<IndexPayload>>(
+fn get_parition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
     store: &S,
     current_version: Option<Version>,
-    index: &DbIndex,
+    db_partition_key: &DbPartitionKey,
 ) -> (Option<Version>, Option<TreeNode<()>>) {
     let Some(current_version) = current_version else {
         return (None, None);
     };
     let (node_option, _proof) = JellyfishMerkleTree::new(store)
-        .get_with_proof(&LeafKey::new(index.as_slice()), current_version)
+        .get_with_proof(&LeafKey::new(&db_partition_key.0), current_version)
         .unwrap();
 
     let Some((_hash, payload, version)) = node_option else {
@@ -207,16 +191,18 @@ fn put_changes<S: TreeStore<P>, P: Payload>(
     root_hash
 }
 
-fn to_index_change(change: IdChange<DbIndex, TreeRoot<()>>) -> LeafChange<IndexPayload> {
+fn to_partition_change(
+    change: IdChange<DbPartitionKey, TreeRoot<()>>,
+) -> LeafChange<PartitionPayload> {
     LeafChange {
-        key: LeafKey { bytes: change.id },
+        key: LeafKey { bytes: change.id.0 },
         new_payload: change.changed.map(|root| (root.hash, root.node)),
     }
 }
 
-fn to_substate_change(change: IdChange<DbKey, Hash>) -> LeafChange<()> {
+fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<()> {
     LeafChange {
-        key: LeafKey { bytes: change.id },
+        key: LeafKey { bytes: change.id.0 },
         new_payload: change.changed.map(|value_hash| (value_hash, ())),
     }
 }
@@ -231,12 +217,12 @@ struct NestedTreeStore<'s, S> {
 impl<'s, S> NestedTreeStore<'s, S> {
     pub fn new(
         underlying: &'s mut S,
-        index: &DbIndex,
+        db_partition_key: &DbPartitionKey,
         root: Option<TreeNode<()>>,
     ) -> NestedTreeStore<'s, S> {
         NestedTreeStore {
             underlying,
-            parent_key: LeafKey::new(index),
+            parent_key: LeafKey::new(&db_partition_key.0),
             current_root: root,
             new_root: None,
         }

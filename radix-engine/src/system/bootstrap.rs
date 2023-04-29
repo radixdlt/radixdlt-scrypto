@@ -13,7 +13,7 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::db_key_mapper::{JmtMapper, MappedSubstateDatabase};
+use crate::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use crate::transaction::{
     execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
@@ -191,7 +191,7 @@ where
     )> {
         let xrd_info = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
