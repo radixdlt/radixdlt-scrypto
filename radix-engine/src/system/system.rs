@@ -1298,8 +1298,9 @@ where
     }
 
     #[trace_resources]
-    fn lock_key_value_entry(
+    fn lock_key_value_handle_entry(
         &mut self,
+        kv_handle: u8,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
@@ -1319,7 +1320,7 @@ where
         // TODO: Add check if key value exists
 
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let module_offset = schema.first_key_value_store_module_offset()
+        let module_offset = schema.key_value_store_module_offset(kv_handle)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(object_info.blueprint.clone(), 0u8))
             })?;
