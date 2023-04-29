@@ -1298,7 +1298,7 @@ where
     }
 
     #[trace_resources]
-    fn lock_key_value_handle_entry(
+    fn actor_lock_key_value_handle_entry(
         &mut self,
         kv_handle: u8,
         key: &Vec<u8>,

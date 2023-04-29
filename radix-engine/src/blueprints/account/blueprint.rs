@@ -13,14 +13,6 @@ use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAc
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::schema::KeyValueStoreInfo;
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct AccountSubstate {
-    /// An owned [`KeyValueStore`] which maps the [`ResourceAddress`] to an [`Own`] of the vault
-    /// containing that resource.
-    pub vaults: Own,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -156,20 +148,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let account_id = {
-            // Creating the key-value-store where the vaults will be held. This is a KVStore of
-            // [`ResourceAddress`] and [`Own`]ed vaults.
-            let kv_store_id =
-                api.key_value_store_new(KeyValueStoreInfo::new::<ResourceAddress, Own>(true))?;
-
-            let account_substate = AccountSubstate {
-                vaults: Own(kv_store_id),
-            };
-            api.new_object(
-                ACCOUNT_BLUEPRINT,
-                vec![scrypto_encode(&account_substate).unwrap()],
-            )?
-        };
+        let account_id = api.new_object(ACCOUNT_BLUEPRINT, vec![])?;
 
         Ok(Own(account_id))
     }
@@ -185,13 +164,9 @@ impl AccountBlueprint {
         let resource_address = RADIX_TOKEN;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
-
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.key_value_store_lock_entry(
-                account.vaults.as_node_id(),
+            let handle = api.actor_lock_key_value_entry(
                 &encoded_key,
                 LockFlags::read_only(),
             )?;
@@ -220,7 +195,6 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
-        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -248,13 +222,9 @@ impl AccountBlueprint {
         let resource_address = bucket.sys_resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?;
-
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.key_value_store_lock_entry(
-                account.vaults.as_node_id(),
+            let handle = api.actor_lock_key_value_entry(
                 &encoded_key,
                 LockFlags::MUTABLE,
             )?;
@@ -289,7 +259,6 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
-        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -298,8 +267,6 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
-
         // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
         // KV-store entries again and again because of buckets that have the same resource address.
         // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
@@ -310,9 +277,7 @@ impl AccountBlueprint {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-                let handle = api.key_value_store_lock_entry(
-                    account.vaults.as_node_id(),
+                let handle = api.actor_lock_key_value_entry(
                     &encoded_key,
                     LockFlags::MUTABLE,
                 )?;
@@ -348,8 +313,6 @@ impl AccountBlueprint {
             api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
         }
 
-        api.field_lock_release(handle)?;
-
         Ok(())
     }
 
@@ -364,13 +327,9 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let handle = api.lock_field(AccountOffset::Account.into(), LockFlags::read_only())?; // TODO: should this be an R or RW lock?
-
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let account: AccountSubstate = api.field_lock_read_typed(handle)?;
-            let handle = api.key_value_store_lock_entry(
-                account.vaults.as_node_id(),
+            let handle = api.actor_lock_key_value_entry(
                 &encoded_key,
                 LockFlags::read_only(),
             )?;
@@ -395,7 +354,6 @@ impl AccountBlueprint {
 
         // Drop locks (LIFO)
         api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
-        api.field_lock_release(handle)?;
 
         Ok(rtn)
     }

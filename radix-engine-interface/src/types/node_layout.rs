@@ -165,12 +165,6 @@ pub enum ClockOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccountOffset {
-    Account,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerOffset {
     AccessController,
 }
@@ -227,6 +221,5 @@ substate_key!(ValidatorOffset);
 // Transient
 substate_key!(WorktopOffset);
 substate_key!(ClockOffset);
-substate_key!(AccountOffset);
 substate_key!(AccessControllerOffset);
 substate_key!(AuthZoneOffset);

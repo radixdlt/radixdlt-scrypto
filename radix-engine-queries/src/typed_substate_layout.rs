@@ -102,7 +102,7 @@ pub enum TypedObjectModuleSubstateKey {
     EpochManager(EpochManagerOffset),
     Clock(ClockOffset),
     Validator(ValidatorOffset),
-    Account(AccountOffset),
+    Account(MapKey),
     AccessController(AccessControllerOffset),
     // Generic Scrypto Components
     GenericScryptoComponent(ComponentOffset),
@@ -196,7 +196,8 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEddsaAccount
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            TypedObjectModuleSubstateKey::Account(AccountOffset::try_from(substate_key)?)
+            let key = substate_key.for_map().ok_or(())?;
+            TypedObjectModuleSubstateKey::Account(key.clone())
         }
         EntityType::GlobalVirtualEcdsaIdentity
         | EntityType::GlobalVirtualEddsaIdentity
@@ -363,7 +364,7 @@ pub enum TypedValidatorSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccountSubstateValue {
-    Account(AccountSubstate),
+    Account(Option<Own>),
 }
 
 #[derive(Debug, Clone)]
@@ -526,10 +527,8 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedObjectModuleSubstateKey::Account(offset) => {
-            TypedObjectModuleSubstateValue::Account(match offset {
-                AccountOffset::Account => TypedAccountSubstateValue::Account(scrypto_decode(data)?),
-            })
+        TypedObjectModuleSubstateKey::Account(_) => {
+            TypedObjectModuleSubstateValue::Account(TypedAccountSubstateValue::Account(scrypto_decode(data)?))
         }
         TypedObjectModuleSubstateKey::AccessController(offset) => {
             TypedObjectModuleSubstateValue::AccessController(match offset {
