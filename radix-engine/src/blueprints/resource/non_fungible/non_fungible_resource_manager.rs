@@ -745,18 +745,14 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerOffset::Data.into(),
                 LockFlags::MUTABLE,
             )?;
-            let ids: NonFungibleResourceManagerDataSubstate =
+            let data: NonFungibleResourceManagerDataSubstate =
                 api.field_lock_read_typed(data_handle)?;
 
             for id in other_bucket.liquid.into_ids() {
-                let non_fungible_handle = api.key_value_store_lock_entry(
-                    ids.as_node_id(),
+                api.key_value_entry_remove(
+                    data.as_node_id(),
                     &id.to_key(),
-                    LockFlags::MUTABLE,
                 )?;
-
-                api.key_value_entry_set_typed(non_fungible_handle, None::<ScryptoValue>)?;
-                api.key_value_entry_lock_release(non_fungible_handle)?;
             }
         }
 

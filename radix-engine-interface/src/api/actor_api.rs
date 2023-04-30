@@ -29,6 +29,8 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
+    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, E>;
+
     fn get_info(&mut self) -> Result<ObjectInfo, E>;
 
     fn get_global_address(&mut self) -> Result<GlobalAddress, E>;

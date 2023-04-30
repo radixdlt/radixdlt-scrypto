@@ -253,6 +253,16 @@ where
 
         Ok(parent_blueprint)
     }
+
+    fn key_value_entry_remove_and_release_lock(&mut self, handle: KeyValueEntryLockHandle) -> Result<Option<Vec<u8>>, RuntimeError> {
+        // TODO: Replace with api::replace
+        let current_value = self.key_value_entry_get(handle)?;
+        let entry: Option<ScryptoValue> = scrypto_decode(&current_value).unwrap();
+        self.key_value_entry_set(handle, scrypto_encode(&None::<ScryptoValue>).unwrap())?;
+        let result = entry.map(|v| scrypto_encode(&v).unwrap());
+        self.key_value_entry_lock_release(handle)?;
+        Ok(result)
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -909,6 +919,11 @@ where
 
         self.api.kernel_drop_lock(handle)
     }
+
+    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
+        self.key_value_entry_remove_and_release_lock(handle)
+    }
 }
 
 impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1303,7 +1318,7 @@ where
         kv_handle: u8,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<KeyValueEntryLockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
@@ -1342,6 +1357,11 @@ where
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
             SystemLockData { is_kv_store: true },
         )
+    }
+
+    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let handle = self.actor_lock_key_value_handle_entry(0u8, key, LockFlags::MUTABLE)?;
+        self.key_value_entry_remove_and_release_lock(handle)
     }
 
     #[trace_resources]

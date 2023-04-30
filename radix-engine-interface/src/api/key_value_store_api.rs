@@ -24,8 +24,6 @@ pub trait ClientKeyValueStoreApi<E> {
         flags: LockFlags,
     ) -> Result<KeyValueEntryLockHandle, E>;
 
-    // TODO: Add specific kv store read lock apis
-
     // TODO: Change return to Option<Vec<u8>>
     fn key_value_entry_get(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, E>;
 
@@ -54,4 +52,6 @@ pub trait ClientKeyValueStoreApi<E> {
     }
 
     fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), E>;
+
+    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Option<Vec<u8>>, E>;
 }

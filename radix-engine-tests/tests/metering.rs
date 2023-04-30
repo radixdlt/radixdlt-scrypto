@@ -322,7 +322,7 @@ fn test_flash_loan() {
         + 4691111 /* Invoke */
         + 67882 /* LockSubstate */
         + 1312 /* LockSubstateFirstTime */
-        + 1123590 /* ReadSubstate */
+        + 1124036 /* ReadSubstate */
         + 225000 /* RunNative */
         + 40000 /* RunSystem */
         + 1252195 /* RunWasm */
