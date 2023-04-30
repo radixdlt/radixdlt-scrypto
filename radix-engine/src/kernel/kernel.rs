@@ -424,7 +424,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &FungibleBucketOffset::Liquid.into(),
                 )
                 .unwrap();
@@ -439,7 +439,7 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &NonFungibleBucketOffset::Liquid.into(),
                 )
                 .unwrap();
@@ -491,7 +491,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &FungibleProofOffset::ProofRefs.into(),
                 )
                 .unwrap();
@@ -517,7 +517,7 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &NonFungibleProofOffset::ProofRefs.into(),
                 )
                 .unwrap();
@@ -602,12 +602,11 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::User;
                         let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(
                                 node_id,
-                                module_id.into(),
+                                USER_BASE_MODULE,
                                 substate_key,
                                 LockFlags::read_only(),
                             )
@@ -623,7 +622,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_id.into(),
+                                USER_BASE_MODULE,
                                 substate_key,
                                 flags,
                                 None,
@@ -770,11 +769,11 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .scan_substates(node_id, module_id.into(), count, &mut self.heap, self.store)
+            .scan_substates(node_id, module_id, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
@@ -783,7 +782,7 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame

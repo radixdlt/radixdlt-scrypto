@@ -131,14 +131,14 @@ pub trait KernelSubstateApi<L> {
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 }

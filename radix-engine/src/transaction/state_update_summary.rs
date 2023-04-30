@@ -274,14 +274,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
                         node_id,
-                        SysModuleId::User.into(),
+                        USER_BASE_MODULE,
                         &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
@@ -301,13 +301,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(vault) = self
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
                     node_id,
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
                 let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
-                    let module_id: ModuleId = SysModuleId::User.into();
-                    n.tracked_modules.get(&module_id)
+                    n.tracked_modules.get(&USER_BASE_MODULE)
                 });
 
                 if let Some(tracked_module) = vault_updates {

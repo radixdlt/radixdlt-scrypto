@@ -95,7 +95,7 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::User.into() => composed_proof.into(),
+                USER_BASE_MODULE => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
                     global: false,
@@ -134,7 +134,7 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                SysModuleId::User.into() => composed_proof.into(),
+                USER_BASE_MODULE => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
@@ -148,7 +148,7 @@ impl AuthZoneBlueprint {
                 api.kernel_create_node(
                     node_id,
                     btreemap!(
-                SysModuleId::User.into() => composed_proof.into(),
+                USER_BASE_MODULE => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
@@ -185,7 +185,7 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::User.into() => composed_proof.into(),
+                USER_BASE_MODULE => composed_proof.into(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,

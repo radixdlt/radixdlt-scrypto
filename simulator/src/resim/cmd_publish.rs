@@ -66,8 +66,7 @@ impl Publish {
             Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::User.into();
-            let index_id = JmtMapper::map_to_db_index(&node_id, module_id);
+            let index_id = JmtMapper::map_to_db_index(&node_id, USER_BASE_MODULE);
             let substate_key_code: Vec<u8> = JmtMapper::map_to_db_key(&PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
 

@@ -212,7 +212,7 @@ where
     ) -> Result<BlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::User.into(),
+            USER_BASE_MODULE,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -250,7 +250,7 @@ where
     > {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            SysModuleId::User.into(),
+            USER_BASE_MODULE,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -623,7 +623,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
-                        .remove(&SysModuleId::User.into())
+                        .remove(&USER_BASE_MODULE)
                         .unwrap();
                     node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
                 }
@@ -641,7 +641,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
-                        .remove(&SysModuleId::User.into())
+                        .remove(&USER_BASE_MODULE)
                         .unwrap();
                     node_substates.insert(SysModuleId::Metadata.into(), metadata);
                 }
@@ -658,7 +658,7 @@ where
                     }
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = royalty_substates.remove(&SysModuleId::User.into()).unwrap();
+                    let royalty = royalty_substates.remove(&USER_BASE_MODULE).unwrap();
                     node_substates.insert(SysModuleId::Royalty.into(), royalty);
                 }
             }
@@ -880,7 +880,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&SysModuleId::User.into()).unwrap();
+        let user_substates = node_substates.remove(&USER_BASE_MODULE).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -995,7 +995,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::User.into() => btreemap!(),
+                USER_BASE_MODULE => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -1064,7 +1064,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            SysModuleId::User.into(),
+            USER_BASE_MODULE,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1094,7 +1094,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::User.into() => btreemap!(),
+                USER_BASE_MODULE => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Index
                 ).to_substates(),
@@ -1128,11 +1128,12 @@ where
             ));
         }
 
-        let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Map(key);
-
-        self.api
-            .kernel_set_substate(node_id, module_id, substate_key, value)
+        self.api.kernel_set_substate(
+            node_id,
+            USER_BASE_MODULE,
+            SubstateKey::Map(key),
+            value,
+        )
     }
 
     fn remove_from_index(
@@ -1148,12 +1149,13 @@ where
             }
         }
 
-        let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Map(key);
-
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, module_id, &substate_key)?
+            .kernel_remove_substate(
+                node_id,
+                USER_BASE_MODULE,
+                &SubstateKey::Map(key),
+            )?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1168,10 +1170,9 @@ where
             }
         }
 
-        let module_id = SysModuleId::User;
         let substates = self
             .api
-            .kernel_scan_substates(node_id, module_id, count)?
+            .kernel_scan_substates(node_id, USER_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1188,10 +1189,9 @@ where
             }
         }
 
-        let module_id = SysModuleId::User;
         let substates = self
             .api
-            .kernel_take_substates(node_id, module_id, count)?
+            .kernel_take_substates(node_id, USER_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1213,7 +1213,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::User.into() => btreemap!(),
+                USER_BASE_MODULE => btreemap!(),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedIndex
                 ).to_substates(),
@@ -1248,10 +1248,12 @@ where
             ));
         }
 
-        let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1));
-        self.api
-            .kernel_set_substate(node_id, module_id, substate_key, value)
+        self.api.kernel_set_substate(
+                node_id,
+                USER_BASE_MODULE,
+                SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
+                value,
+        )
     }
 
     #[trace_resources]
@@ -1270,7 +1272,11 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, SysModuleId::User.into(), count)?
+            .kernel_scan_sorted_substates(
+                node_id,
+                USER_BASE_MODULE,
+                count,
+            )?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1292,12 +1298,13 @@ where
             }
         }
 
-        let module_id = SysModuleId::User.into();
-        let substate_key = SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone()));
-
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, module_id, &substate_key)?
+            .kernel_remove_substate(
+                node_id,
+                USER_BASE_MODULE,
+                &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
+            )?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1432,11 +1439,11 @@ where
             )));
         };
 
-        let sys_module_id = match object_module_id {
-            ObjectModuleId::Metadata => SysModuleId::Metadata,
-            ObjectModuleId::Royalty => SysModuleId::Royalty,
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules,
-            ObjectModuleId::SELF => SysModuleId::User,
+        let module_id = match object_module_id {
+            ObjectModuleId::Metadata => SysModuleId::Metadata.into(),
+            ObjectModuleId::Royalty => SysModuleId::Royalty.into(),
+            ObjectModuleId::AccessRules => SysModuleId::AccessRules.into(),
+            ObjectModuleId::SELF => USER_BASE_MODULE,
         };
         let substate_key = SubstateKey::Tuple(field);
 
@@ -1451,7 +1458,7 @@ where
 
         self.api.kernel_lock_substate(
             &node_id,
-            sys_module_id.into(),
+            module_id,
             &substate_key,
             flags,
             SystemLockData::Field(lock_data),
@@ -1492,7 +1499,7 @@ where
 
         self.api.kernel_lock_substate(
             parent.as_node_id(),
-            SysModuleId::User.into(),
+            USER_BASE_MODULE,
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
@@ -1532,14 +1539,14 @@ where
                 ))
             })?;
 
-        let module_base = match object_module_id {
-            ObjectModuleId::Metadata => SysModuleId::Metadata as u8,
-            ObjectModuleId::Royalty => SysModuleId::Royalty as u8,
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules as u8,
-            ObjectModuleId::SELF => SysModuleId::User as u8,
+        let base_module = match object_module_id {
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
+            ObjectModuleId::SELF => USER_BASE_MODULE,
         };
 
-        let module_number = module_base + module_offset;
+        let module_number = base_module.at_offset(module_offset);
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
@@ -1564,7 +1571,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            ModuleId(module_number),
+            module_number,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1942,7 +1949,7 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_scan_substates(node_id, module_id, count)
@@ -1951,7 +1958,7 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_take_substates(node_id, module_id, count)

@@ -98,7 +98,7 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::User.into(),
+                USER_BASE_MODULE,
                 &PackageOffset::FunctionAccessRules.into(),
                 LockFlags::read_only(),
                 M::LockData::default(),
@@ -204,7 +204,7 @@ impl AuthModule {
 
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                SysModuleId::User.into(),
+                USER_BASE_MODULE,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
                 M::LockData::default(),
@@ -239,7 +239,7 @@ impl AuthModule {
             let substate_key = ComponentOffset::State0.into();
             let handle = api.kernel_lock_substate(
                 receiver,
-                SysModuleId::User.into(),
+                USER_BASE_MODULE,
                 &substate_key,
                 LockFlags::read_only(),
                 M::LockData::default(),
@@ -445,7 +445,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                SysModuleId::User.into() => btreemap!(
+                USER_BASE_MODULE => btreemap!(
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {

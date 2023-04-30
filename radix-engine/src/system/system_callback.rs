@@ -319,7 +319,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Make dependent resources/components visible
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::User.into(),
+                USER_BASE_MODULE,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -384,7 +384,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::User.into(),
+                USER_BASE_MODULE,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -399,7 +399,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    SysModuleId::User.into(),
+                    USER_BASE_MODULE,
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),

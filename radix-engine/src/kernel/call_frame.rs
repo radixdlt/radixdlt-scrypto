@@ -513,7 +513,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn scan_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -522,9 +522,9 @@ impl<L: Clone> CallFrame<L> {
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let substates = if heap.contains_node(node_id) {
-            heap.scan_substates(node_id, module_id.into(), count)
+            heap.scan_substates(node_id, module_id, count)
         } else {
-            store.scan_substates(node_id, module_id.into(), count)
+            store.scan_substates(node_id, module_id, count)
         };
 
         for substate in &substates {
@@ -546,7 +546,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn take_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_id: ModuleId,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -556,9 +556,9 @@ impl<L: Clone> CallFrame<L> {
         })?;
 
         let substates = if heap.contains_node(node_id) {
-            heap.take_substates(node_id, module_id.into(), count)
+            heap.take_substates(node_id, module_id, count)
         } else {
-            store.take_substates(node_id, module_id.into(), count)
+            store.take_substates(node_id, module_id, count)
         };
 
         for substate in &substates {

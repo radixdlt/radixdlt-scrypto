@@ -266,6 +266,13 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 #[sbor(transparent)]
 pub struct ModuleId(pub u8);
 
+impl ModuleId {
+    pub fn at_offset(self, offset: u8) -> Self {
+        let module_number = self.0.checked_add(offset).unwrap();
+        Self(module_number)
+    }
+}
+
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
