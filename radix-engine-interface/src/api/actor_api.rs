@@ -1,5 +1,5 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use crate::types::*;
+use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::api::LockFlags;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
@@ -32,7 +32,10 @@ pub trait ClientActorApi<E: Debug> {
 
     fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, E>;
 
-    fn actor_key_value_entry_remove_typed<V: ScryptoDecode>(&mut self, key: &Vec<u8>) -> Result<Option<V>, E> {
+    fn actor_key_value_entry_remove_typed<V: ScryptoDecode>(
+        &mut self,
+        key: &Vec<u8>,
+    ) -> Result<Option<V>, E> {
         let removed = self.actor_key_value_entry_remove(key)?;
         let rtn = scrypto_decode(&removed).unwrap();
         Ok(rtn)

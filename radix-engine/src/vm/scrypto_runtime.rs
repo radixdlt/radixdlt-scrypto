@@ -208,6 +208,19 @@ where
         Ok(())
     }
 
+    fn key_value_entry_remove(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let rtn = self.api.key_value_entry_remove(&node_id, &key)?;
+        self.allocate_buffer(rtn)
+    }
+
     fn lock_field(
         &mut self,
         field: u8,
@@ -438,6 +451,14 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn key_value_entry_remove(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

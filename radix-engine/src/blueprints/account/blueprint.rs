@@ -166,10 +166,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(
-                &encoded_key,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
             handle
         };
 
@@ -224,10 +221,7 @@ impl AccountBlueprint {
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(
-                &encoded_key,
-                LockFlags::MUTABLE,
-            )?;
+            let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
             handle
         };
 
@@ -277,10 +271,7 @@ impl AccountBlueprint {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = {
-                let handle = api.actor_lock_key_value_entry(
-                    &encoded_key,
-                    LockFlags::MUTABLE,
-                )?;
+                let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
                 handle
             };
 
@@ -329,10 +320,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(
-                &encoded_key,
-                LockFlags::read_only(),
-            )?;
+            let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
             handle
         };
 

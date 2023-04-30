@@ -93,7 +93,7 @@ where
             key: non_fungible_type,
             value: non_fungible_schema.non_fungible,
             can_own: false, // Only allow NonFungibles to store data/references
-        }
+        },
     };
 
     let nf_store_id = api.key_value_store_new(kv_schema)?;
@@ -748,10 +748,7 @@ impl NonFungibleResourceManagerBlueprint {
                 api.field_lock_read_typed(data_handle)?;
 
             for id in other_bucket.liquid.into_ids() {
-                api.key_value_entry_remove(
-                    data.as_node_id(),
-                    &id.to_key(),
-                )?;
+                api.key_value_entry_remove(data.as_node_id(), &id.to_key())?;
             }
         }
 

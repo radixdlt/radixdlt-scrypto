@@ -130,10 +130,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
-    fn key_value_store_new(
-        &mut self,
-        schema: KeyValueStoreInfo,
-    ) -> Result<NodeId, ClientApiError> {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
         let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
@@ -197,8 +194,20 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn key_value_entry_remove(&mut self, _node_id: &NodeId, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
+    fn key_value_entry_remove(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let removed = copy_buffer(unsafe {
+            key_value_entry_remove(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                key.as_ptr(),
+                key.len(),
+            )
+        });
+        Ok(removed)
     }
 }
 

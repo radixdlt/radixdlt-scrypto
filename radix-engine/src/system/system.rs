@@ -254,12 +254,19 @@ where
         Ok(parent_blueprint)
     }
 
-    fn key_value_entry_remove_and_release_lock(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn key_value_entry_remove_and_release_lock(
+        &mut self,
+        handle: KeyValueEntryLockHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Replace with api::replace
-        let current_value = self.api
+        let current_value = self
+            .api
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
-        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&None::<ScryptoValue>))?;
+        self.kernel_write_substate(
+            handle,
+            IndexedScryptoValue::from_typed(&None::<ScryptoValue>),
+        )?;
         self.kernel_drop_lock(handle)?;
         Ok(current_value)
     }
@@ -910,7 +917,8 @@ where
         };
 
         let value = substate.as_scrypto_value().clone();
-        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+        let indexed =
+            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
 
         self.api.kernel_write_substate(handle, indexed)?;
 
@@ -929,7 +937,11 @@ where
         self.api.kernel_drop_lock(handle)
     }
 
-    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+    fn key_value_entry_remove(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
@@ -1344,9 +1356,13 @@ where
         // TODO: Add check if key value exists
 
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let module_offset = schema.key_value_store_module_offset(kv_handle)
+        let module_offset = schema
+            .key_value_store_module_offset(kv_handle)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(object_info.blueprint.clone(), 0u8))
+                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
+                    object_info.blueprint.clone(),
+                    0u8,
+                ))
             })?;
 
         let module_base = match object_module_id {
@@ -1501,7 +1517,9 @@ where
         let (blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
-                Some(Actor::Method { ref object_info, .. }) => Ok(object_info.blueprint.clone()),
+                Some(Actor::Method {
+                    ref object_info, ..
+                }) => Ok(object_info.blueprint.clone()),
                 Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),

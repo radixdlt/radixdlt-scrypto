@@ -313,6 +313,22 @@ fn unlock_key_value_entry(
     runtime.unlock_key_value_entry(handle)
 }
 
+fn key_value_entry_remove(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+    key_ptr: u32,
+    key_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
+    let key = read_memory(caller.as_context_mut(), memory, key_ptr, key_len)?;
+
+    runtime
+        .key_value_entry_remove(node_id, key)
+        .map(|buffer| buffer.0)
+}
+
 fn lock_field(
     caller: Caller<'_, HostState>,
     field: u32,
@@ -643,6 +659,19 @@ impl WasmiModule {
             },
         );
 
+        let host_key_value_entry_remove = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32,
+             key_ptr: u32,
+             key_len: u32|
+             -> Result<u64, Trap> {
+                key_value_entry_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
@@ -795,6 +824,11 @@ impl WasmiModule {
             linker,
             UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME,
             host_unlock_key_value_entry
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME,
+            host_key_value_entry_remove
         );
 
         linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);

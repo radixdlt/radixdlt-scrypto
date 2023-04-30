@@ -109,28 +109,13 @@ impl<
 
     /// Remove an entry from the map and return the original value if it exists
     pub fn remove(&self, key: &K) -> Option<V> {
-        todo!()
-        /*
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
-        let handle = env
-            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+        let rtn = env
+            .key_value_entry_remove(self.id.as_node_id(), &key_payload)
             .unwrap();
 
-        let raw_bytes = env.key_value_entry_get(handle).unwrap();
-        let value: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
-        let rtn = value.map(|v| {
-            let rust_value = scrypto_decode(&scrypto_encode(&v).unwrap()).unwrap();
-            rust_value
-        });
-
-        let value: Option<ScryptoValue> = None;
-        env.key_value_entry_set(handle, scrypto_encode(&value).unwrap())
-            .unwrap();
-        env.key_value_entry_lock_release(handle).unwrap();
-
-        rtn
-         */
+        scrypto_decode(&rtn).unwrap()
     }
 }
 

@@ -527,9 +527,9 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedObjectModuleSubstateKey::Account(_) => {
-            TypedObjectModuleSubstateValue::Account(TypedAccountSubstateValue::Account(scrypto_decode(data)?))
-        }
+        TypedObjectModuleSubstateKey::Account(_) => TypedObjectModuleSubstateValue::Account(
+            TypedAccountSubstateValue::Account(scrypto_decode(data)?),
+        ),
         TypedObjectModuleSubstateKey::AccessController(offset) => {
             TypedObjectModuleSubstateValue::AccessController(match offset {
                 AccessControllerOffset::AccessController => {

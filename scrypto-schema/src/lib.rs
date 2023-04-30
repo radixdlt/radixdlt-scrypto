@@ -10,7 +10,6 @@ use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
     pub key: LocalTypeIndex,
@@ -125,7 +124,6 @@ impl BlueprintSchema {
         if kv_handle as usize > self.key_value_stores.len() {
             return None;
         }
-
 
         Some(module_offset + kv_handle)
     }

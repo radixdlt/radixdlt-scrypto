@@ -82,6 +82,13 @@ extern "C" {
 
     pub fn unlock_key_value_entry(_key_value_entry_lock_handle: u32);
 
+    pub fn key_value_entry_remove(
+        _key_value_store_id_ptr: *const u8,
+        _key_value_store_id_len: usize,
+        _key: *const u8,
+        _key_len: usize,
+    ) -> Buffer;
+
     /// Invokes a method on a component.
     pub fn call_method(
         receiver_ptr: *const u8,
@@ -230,6 +237,16 @@ pub unsafe fn key_value_entry_set(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn unlock_key_value_entry(_key_value_entry_lock_handle: u32) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn key_value_entry_remove(
+    _key_value_store_id_ptr: *const u8,
+    _key_value_store_id_len: usize,
+    _key: *const u8,
+    _key_len: usize,
+) -> Buffer {
     unreachable!()
 }
 
