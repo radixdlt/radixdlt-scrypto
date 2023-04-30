@@ -254,16 +254,14 @@ where
         Ok(parent_blueprint)
     }
 
-    fn key_value_entry_remove_and_release_lock(&mut self, handle: KeyValueEntryLockHandle) -> Result<Option<Vec<u8>>, RuntimeError> {
+    fn key_value_entry_remove_and_release_lock(&mut self, handle: KeyValueEntryLockHandle) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Replace with api::replace
         let current_value = self.api
             .kernel_read_substate(handle)
             .map(|v| v.as_slice().to_vec())?;
-        let entry: Option<ScryptoValue> = scrypto_decode(&current_value).unwrap();
         self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&None::<ScryptoValue>))?;
-        let result = entry.map(|v| scrypto_encode(&v).unwrap());
         self.kernel_drop_lock(handle)?;
-        Ok(result)
+        Ok(current_value)
     }
 }
 
@@ -931,7 +929,7 @@ where
         self.api.kernel_drop_lock(handle)
     }
 
-    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError> {
+    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
@@ -1370,7 +1368,7 @@ where
         )
     }
 
-    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError> {
+    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_handle_entry(0u8, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }

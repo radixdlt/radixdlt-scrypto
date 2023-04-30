@@ -53,5 +53,5 @@ pub trait ClientKeyValueStoreApi<E> {
 
     fn key_value_entry_lock_release(&mut self, handle: KeyValueEntryLockHandle) -> Result<(), E>;
 
-    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Option<Vec<u8>>, E>;
+    fn key_value_entry_remove(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Vec<u8>, E>;
 }

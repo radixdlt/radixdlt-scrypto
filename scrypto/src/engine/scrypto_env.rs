@@ -197,7 +197,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn key_value_entry_remove(&mut self, _node_id: &NodeId, _key: &Vec<u8>) -> Result<Option<Vec<u8>>, ClientApiError> {
+    fn key_value_entry_remove(&mut self, _node_id: &NodeId, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
         todo!()
     }
 }
@@ -277,7 +277,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn actor_key_value_entry_remove(&mut self, _key: &Vec<u8>) -> Result<Option<Vec<u8>>, ClientApiError> {
+    fn actor_key_value_entry_remove(&mut self, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
         todo!()
     }
 
