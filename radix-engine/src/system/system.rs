@@ -59,32 +59,22 @@ where
         }
     }
 
-    fn validate_buffer(
-        &mut self,
+    fn validate_payload_against_blueprint_and_instance_schema<'s>(
+        &'s mut self,
         payload: &Vec<u8>,
         type_schema: &TypeSchema,
-        blueprint_schema: &ScryptoSchema,
-        instance_schema: &Option<InstanceSchema>,
-    ) -> Result<(), RuntimeError>{
+        blueprint_schema: &'s ScryptoSchema,
+        instance_schema: &'s Option<InstanceSchema>,
+    ) -> Result<(), LocatedValidationError<ScryptoCustomTypeExtension>>{
         match type_schema {
             TypeSchema::Blueprint(index) => {
-                validate_payload_against_schema(payload, blueprint_schema, index.clone(), self)
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema)),
-                        )))
-                    })?;
+                validate_payload_against_schema(payload, blueprint_schema, index.clone(), self)?;
             }
             TypeSchema::Instance(instance_index) => {
                 let instance_schema = instance_schema.as_ref().unwrap();
                 let index = instance_schema.type_index.get(*instance_index as usize).unwrap().clone();
 
-                validate_payload_against_schema(&payload, &instance_schema.schema, index, self)
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema)),
-                        )))
-                    })?;
+                validate_payload_against_schema(&payload, &instance_schema.schema, index, self)?;
             }
         }
 
@@ -153,13 +143,13 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        mut kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
         let (expected_blueprint_parent, user_substates) = self.verify_blueprint_fields_and_schema(
             &blueprint,
-            fields,
             &instance_schema,
+            fields,
             kv_entries,
         )?;
 
@@ -244,8 +234,8 @@ where
     fn verify_blueprint_fields_and_schema(
         &mut self,
         blueprint: &Blueprint,
-        fields: Vec<Vec<u8>>,
         instance_schema: &Option<InstanceSchema>,
+        fields: Vec<Vec<u8>>,
         kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<(Option<String>, Vec<BTreeMap<SubstateKey, IndexedScryptoValue>>), RuntimeError> {
         let handle = self.api.kernel_lock_substate(
@@ -341,8 +331,29 @@ where
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {
-                        self.validate_buffer(&key, &blueprint_kv_schema.key, &blueprint_schema.schema, instance_schema)?;
-                        self.validate_buffer(&value, &blueprint_kv_schema.value, &blueprint_schema.schema, instance_schema)?;
+                        self.validate_payload_against_blueprint_and_instance_schema(
+                            &key,
+                            &blueprint_kv_schema.key,
+                            &blueprint_schema.schema,
+                            instance_schema
+                        )
+                            .map_err(|err| {
+                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                    CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema.schema)),
+                                )))
+                            })?;
+
+                        self.validate_payload_against_blueprint_and_instance_schema(
+                            &value,
+                            &blueprint_kv_schema.value,
+                            &blueprint_schema.schema,
+                            instance_schema
+                        )
+                            .map_err(|err| {
+                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                    CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema.schema)),
+                                )))
+                            })?;
 
                         let value: ScryptoValue = scrypto_decode(&value).unwrap();
                         let value = IndexedScryptoValue::from_typed(&Some(value));
