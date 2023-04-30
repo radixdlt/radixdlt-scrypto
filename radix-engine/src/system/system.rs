@@ -361,7 +361,7 @@ where
     #[trace_resources]
     fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
-        if data.is_kv_store {
+        if data.is_kv_store() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -384,7 +384,7 @@ where
             ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if data.is_kv_store {
+        if data.is_kv_store() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -452,7 +452,7 @@ where
     fn field_lock_release(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        if data.is_kv_store {
+        if data.is_kv_store() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -934,7 +934,7 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData { is_kv_store: true },
+            SystemLockData::KeyValueEntry,
         )
     }
 
@@ -944,7 +944,7 @@ where
         handle: KeyValueEntryLockHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_store {
+        if !data.is_kv_store() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
@@ -961,7 +961,7 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo { node_id, module_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        let substate = if data.is_kv_store {
+        let substate = if data.is_kv_store() {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(store_schema) => {
@@ -1034,7 +1034,7 @@ where
         handle: KeyValueEntryLockHandle,
     ) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_store {
+        if !data.is_kv_store() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
@@ -1484,7 +1484,7 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData { is_kv_store: true },
+            SystemLockData::KeyValueEntry,
         )
     }
 

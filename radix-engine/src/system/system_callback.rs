@@ -90,9 +90,23 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
-#[derive(Default, Clone)]
-pub struct SystemLockData {
-    pub is_kv_store: bool,
+#[derive(Clone)]
+pub enum SystemLockData {
+    KeyValueEntry,
+    Field,
+    Default,
+}
+
+impl Default for SystemLockData {
+    fn default() -> Self {
+        SystemLockData::Default
+    }
+}
+
+impl SystemLockData {
+    pub fn is_kv_store(&self) -> bool {
+        matches!(self, SystemLockData::KeyValueEntry)
+    }
 }
 
 pub struct SystemConfig<C: SystemCallbackObject> {
