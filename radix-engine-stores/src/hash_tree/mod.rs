@@ -102,7 +102,7 @@ fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<()>>(
     changes: Vec<IdChange<DbSortKey, Hash>>,
 ) -> Option<TreeRoot<()>> {
     let (subtree_last_update_state_version, subtree_root) =
-        get_parition_leaf_entry(store, current_version, db_partition_key);
+        get_partition_leaf_entry(store, current_version, db_partition_key);
     let mut subtree_store = NestedTreeStore::new(store, db_partition_key, subtree_root);
     let substate_root_hash = put_changes(
         &mut subtree_store,
@@ -140,7 +140,7 @@ fn put_partition_changes<S: TreeStore<PartitionPayload>>(
     )
 }
 
-fn get_parition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
+fn get_partition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
     store: &S,
     current_version: Option<Version>,
     db_partition_key: &DbPartitionKey,

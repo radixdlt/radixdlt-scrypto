@@ -4,10 +4,16 @@ use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
 
 /// A database-level key of an entire partition.
+/// Seen from the higher-level API: it represents a pair (RE Node ID, Module ID).
+/// Seen from the lower-level implementation: it is used as a key in the upper-layer tree of our
+/// two-layered JMT.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
 pub struct DbPartitionKey(pub Vec<u8>);
 
 /// A database-level key of a substate within a known partition.
+/// Seen from the higher-level API: it represents a local Substate Key.
+/// Seen from the lower-level implementation: it is used as a key in the lower-layer tree of our
+/// two-layered JMT.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct DbSortKey(pub Vec<u8>);
 
@@ -42,7 +48,8 @@ pub trait SubstateDatabase {
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue>;
 
-    /// Iterates over all entries of the given partition, in a lexicographical order.
+    /// Iterates over all entries of the given partition, in a lexicographical order (ascending)
+    /// of the [`DbSortKey`]s.
     fn list_entries(
         &self,
         partition_key: &DbPartitionKey,
