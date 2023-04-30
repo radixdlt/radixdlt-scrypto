@@ -954,8 +954,11 @@ where
         handle: KeyValueEntryLockHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+        match data {
+            SystemLockData::KeyValueEntry(..) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+            }
         }
 
         self.api
@@ -969,65 +972,40 @@ where
         handle: KeyValueEntryLockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { node_id, module_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        let substate = if data.is_kv_entry() {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-            match type_info {
-                TypeInfoSubstate::KeyValueStore(store_schema) => {
-                    if let Err(e) = validate_payload_against_schema(
-                        &buffer,
-                        &store_schema.schema,
-                        store_schema.kv_store_schema.value,
-                        self,
-                    ) {
+        let substate = match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write { schema, index, can_own }) => {
+                if let Err(e) = validate_payload_against_schema(
+                    &buffer,
+                    &schema,
+                    index,
+                    self,
+                ) {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidSubstateWrite(
+                            e.error_message(&schema),
+                        ),
+                    ));
+                };
+
+                let substate = IndexedScryptoValue::from_slice(&buffer)
+                    .expect("Should be valid due to payload check");
+
+                if !can_own {
+                    let own = substate.owned_node_ids();
+                    if !own.is_empty() {
                         return Err(RuntimeError::SystemError(
-                            SystemError::InvalidSubstateWrite(
-                                e.error_message(&store_schema.schema),
-                            ),
+                            SystemError::InvalidKeyValueStoreOwnership,
                         ));
-                    };
-
-                    let substate = IndexedScryptoValue::from_slice(&buffer)
-                        .expect("Should be valid due to payload check");
-
-                    if !store_schema.kv_store_schema.can_own {
-                        let own = substate.owned_node_ids();
-                        if !own.is_empty() {
-                            return Err(RuntimeError::SystemError(
-                                SystemError::InvalidKeyValueStoreOwnership,
-                            ));
-                        }
                     }
-
-                    substate
                 }
-                TypeInfoSubstate::Object(info) => {
-                    // TODO: verify against schema
 
-                    let substate = IndexedScryptoValue::from_slice(&buffer)
-                        .expect("Should be valid due to payload check");
-
-                    if module_id.0 >= 4u8 {
-                        let blueprint_schema = self.get_blueprint_schema(&info.blueprint)?;
-
-                        if !blueprint_schema.key_value_stores.get(0).unwrap().can_own {
-                            if !substate.owned_node_ids().is_empty() {
-                                return Err(RuntimeError::SystemError(
-                                    SystemError::InvalidKeyValueStoreOwnership,
-                                ));
-                            }
-                        }
-                    }
-
-                    substate
-                }
-                _ => {
-                    panic!("Unexpected");
-                }
+                substate
             }
-        } else {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueWriteLock));
+            }
         };
 
         let value = substate.as_scrypto_value().clone();
