@@ -1,5 +1,6 @@
+use radix_engine_interface::api::key_value_entry_api::{ClientKeyValueEntryApi, KeyValueEntryHandle};
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueEntryLockHandle,
+    ClientKeyValueStoreApi,
 };
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::data::scrypto::model::*;
@@ -63,7 +64,7 @@ impl<
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
             Option::None => {
-                env.key_value_entry_lock_release(handle).unwrap();
+                env.key_value_entry_release(handle).unwrap();
                 None
             }
         }
@@ -85,7 +86,7 @@ impl<
                 Some(KeyValueEntryRefMut::new(handle, rust_value))
             }
             Option::None => {
-                env.key_value_entry_lock_release(handle).unwrap();
+                env.key_value_entry_release(handle).unwrap();
                 None
             }
         }
@@ -104,7 +105,7 @@ impl<
         let buffer = scrypto_encode(&value).unwrap();
 
         env.key_value_entry_set(handle, buffer).unwrap();
-        env.key_value_entry_lock_release(handle).unwrap();
+        env.key_value_entry_release(handle).unwrap();
     }
 
     /// Remove an entry from the map and return the original value if it exists
@@ -112,7 +113,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let rtn = env
-            .key_value_entry_remove(self.id.as_node_id(), &key_payload)
+            .key_value_store_remove_entry(self.id.as_node_id(), &key_payload)
             .unwrap();
 
         scrypto_decode(&rtn).unwrap()
@@ -178,7 +179,7 @@ impl<
 }
 
 pub struct KeyValueEntryRef<V: ScryptoEncode> {
-    lock_handle: KeyValueEntryLockHandle,
+    lock_handle: KeyValueEntryHandle,
     value: V,
 }
 
@@ -189,7 +190,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<V> {
 }
 
 impl<V: ScryptoEncode> KeyValueEntryRef<V> {
-    pub fn new(lock_handle: KeyValueEntryLockHandle, value: V) -> KeyValueEntryRef<V> {
+    pub fn new(lock_handle: KeyValueEntryHandle, value: V) -> KeyValueEntryRef<V> {
         KeyValueEntryRef { lock_handle, value }
     }
 }
@@ -205,12 +206,12 @@ impl<V: ScryptoEncode> Deref for KeyValueEntryRef<V> {
 impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        env.key_value_entry_lock_release(self.lock_handle).unwrap();
+        env.key_value_entry_release(self.lock_handle).unwrap();
     }
 }
 
 pub struct KeyValueEntryRefMut<V: ScryptoEncode> {
-    handle: KeyValueEntryLockHandle,
+    handle: KeyValueEntryHandle,
     value: V,
 }
 
@@ -234,7 +235,7 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
         let mut env = ScryptoEnv;
         let value = scrypto_encode(&self.value).unwrap();
         env.key_value_entry_set(self.handle, value).unwrap();
-        env.key_value_entry_lock_release(self.handle).unwrap();
+        env.key_value_entry_release(self.handle).unwrap();
     }
 }
 

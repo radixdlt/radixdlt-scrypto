@@ -18,7 +18,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::types::*;
 use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueEntryLockHandle,
+    ClientKeyValueStoreApi,
 };
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -27,6 +27,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
 use radix_engine_interface::api::substate_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::key_value_entry_api::{ClientKeyValueEntryApi, KeyValueEntryHandle};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -394,7 +395,7 @@ where
 
     fn key_value_entry_remove_and_release_lock(
         &mut self,
-        handle: KeyValueEntryLockHandle,
+        handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Replace with api::replace
         let current_value = self
@@ -889,6 +890,93 @@ where
     }
 }
 
+impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+    where
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+{
+
+    #[trace_resources]
+    fn key_value_entry_get(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        match data {
+            SystemLockData::KeyValueEntry(..) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+            }
+        }
+
+        self.api
+            .kernel_read_substate(handle)
+            .map(|v| v.as_slice().to_vec())
+    }
+
+    #[trace_resources]
+    fn key_value_entry_set(
+        &mut self,
+        handle: KeyValueEntryHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+
+        let substate = match data {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
+                                              schema,
+                                              index,
+                                              can_own,
+                                          }) => {
+                if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::InvalidSubstateWrite(e.error_message(&schema)),
+                    ));
+                };
+
+                let substate = IndexedScryptoValue::from_slice(&buffer)
+                    .expect("Should be valid due to payload check");
+
+                if !can_own {
+                    let own = substate.owned_node_ids();
+                    if !own.is_empty() {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidKeyValueStoreOwnership,
+                        ));
+                    }
+                }
+
+                substate
+            }
+            _ => {
+                return Err(RuntimeError::SystemError(
+                    SystemError::NotAKeyValueWriteLock,
+                ));
+            }
+        };
+
+        let value = substate.as_scrypto_value().clone();
+        let indexed =
+            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+
+        self.api.kernel_write_substate(handle, indexed)?;
+
+        Ok(())
+    }
+
+    fn key_value_entry_release(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        if !data.is_kv_entry() {
+            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
+        }
+
+        self.api.kernel_drop_lock(handle)
+    }
+}
+
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -941,7 +1029,7 @@ where
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<KeyValueEntryLockHandle, RuntimeError> {
+    ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
@@ -984,87 +1072,7 @@ where
         )
     }
 
-    #[trace_resources]
-    fn key_value_entry_get(
-        &mut self,
-        handle: KeyValueEntryLockHandle,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        match data {
-            SystemLockData::KeyValueEntry(..) => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
-            }
-        }
-
-        self.api
-            .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())
-    }
-
-    #[trace_resources]
-    fn key_value_entry_set(
-        &mut self,
-        handle: KeyValueEntryLockHandle,
-        buffer: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-
-        let substate = match data {
-            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                schema,
-                index,
-                can_own,
-            }) => {
-                if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidSubstateWrite(e.error_message(&schema)),
-                    ));
-                };
-
-                let substate = IndexedScryptoValue::from_slice(&buffer)
-                    .expect("Should be valid due to payload check");
-
-                if !can_own {
-                    let own = substate.owned_node_ids();
-                    if !own.is_empty() {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::InvalidKeyValueStoreOwnership,
-                        ));
-                    }
-                }
-
-                substate
-            }
-            _ => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::NotAKeyValueWriteLock,
-                ));
-            }
-        };
-
-        let value = substate.as_scrypto_value().clone();
-        let indexed =
-            IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
-
-        self.api.kernel_write_substate(handle, indexed)?;
-
-        Ok(())
-    }
-
-    fn key_value_entry_lock_release(
-        &mut self,
-        handle: KeyValueEntryLockHandle,
-    ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
-        }
-
-        self.api.kernel_drop_lock(handle)
-    }
-
-    fn key_value_entry_remove(
+    fn key_value_store_remove_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
@@ -1497,7 +1505,7 @@ where
         kv_handle: u8,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<KeyValueEntryLockHandle, RuntimeError> {
+    ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, object_info) = match actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {

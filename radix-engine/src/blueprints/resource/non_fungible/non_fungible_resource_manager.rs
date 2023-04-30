@@ -77,7 +77,7 @@ where
         }
 
         api.key_value_entry_set_typed(non_fungible_handle, value)?;
-        api.key_value_entry_lock_release(non_fungible_handle)?;
+        api.key_value_entry_release(non_fungible_handle)?;
         ids.insert(non_fungible_local_id);
     }
 
@@ -516,7 +516,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.key_value_entry_lock_release(non_fungible_handle)?;
+        api.key_value_entry_release(non_fungible_handle)?;
 
         Ok(())
     }

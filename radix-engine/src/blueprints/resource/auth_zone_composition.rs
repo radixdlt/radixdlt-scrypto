@@ -334,7 +334,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: NonFungibleProof = api.field_lock_read_typed(handle)?;
+        let substate: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {
@@ -357,7 +357,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                 evidence.insert(container.clone(), ids);
             }
         }
-        api.field_lock_release(handle)?;
+        api.kernel_drop_lock(handle)?;
     }
 
     NonFungibleProof::new(ids.clone(), evidence)

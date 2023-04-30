@@ -204,7 +204,7 @@ where
     }
 
     fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.key_value_entry_lock_release(handle)?;
+        self.api.key_value_entry_release(handle)?;
         Ok(())
     }
 
@@ -217,7 +217,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let rtn = self.api.key_value_entry_remove(&node_id, &key)?;
+        let rtn = self.api.key_value_store_remove_entry(&node_id, &key)?;
         self.allocate_buffer(rtn)
     }
 

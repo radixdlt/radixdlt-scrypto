@@ -190,8 +190,7 @@ impl AccountBlueprint {
             vault.sys_lock_contingent_fee(api, amount)?;
         }
 
-        // Drop locks (LIFO)
-        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -251,8 +250,7 @@ impl AccountBlueprint {
         // Put the bucket in the vault
         vault.sys_put(bucket, api)?;
 
-        // Drop locks (LIFO)
-        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -301,7 +299,7 @@ impl AccountBlueprint {
             // Put the bucket in the vault
             vault.sys_put(bucket, api)?;
 
-            api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
+            api.key_value_entry_release(kv_store_entry_lock_handle)?;
         }
 
         Ok(())
@@ -340,8 +338,7 @@ impl AccountBlueprint {
         // Withdraw to bucket
         let rtn = vault_fn(&mut vault, api)?;
 
-        // Drop locks (LIFO)
-        api.key_value_entry_lock_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(rtn)
     }
