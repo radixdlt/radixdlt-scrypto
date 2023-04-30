@@ -256,11 +256,13 @@ where
 
     fn key_value_entry_remove_and_release_lock(&mut self, handle: KeyValueEntryLockHandle) -> Result<Option<Vec<u8>>, RuntimeError> {
         // TODO: Replace with api::replace
-        let current_value = self.key_value_entry_get(handle)?;
+        let current_value = self.api
+            .kernel_read_substate(handle)
+            .map(|v| v.as_slice().to_vec())?;
         let entry: Option<ScryptoValue> = scrypto_decode(&current_value).unwrap();
-        self.key_value_entry_set(handle, scrypto_encode(&None::<ScryptoValue>).unwrap())?;
+        self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&None::<ScryptoValue>))?;
         let result = entry.map(|v| scrypto_encode(&v).unwrap());
-        self.key_value_entry_lock_release(handle)?;
+        self.kernel_drop_lock(handle)?;
         Ok(result)
     }
 }
@@ -866,7 +868,7 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        if data.is_kv_store {
+        let substate = if data.is_kv_store {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(store_schema) => {
@@ -883,18 +885,25 @@ where
                         ));
                     };
 
+                    let substate = IndexedScryptoValue::from_slice(&buffer)
+                        .expect("Should be valid due to payload check");
+
                     if !store_schema.kv_store_schema.can_own {
-                        let indexed = IndexedScryptoValue::from_slice(&buffer)
-                            .expect("Should be valid due to payload check");
-                        let (_, own, _) = indexed.unpack();
+                        let own = substate.owned_node_ids();
                         if !own.is_empty() {
                             return Err(RuntimeError::SystemError(
                                 SystemError::InvalidKeyValueStoreOwnership,
                             ));
                         }
                     }
+
+                    substate
                 }
                 _ => {
+                    let substate = IndexedScryptoValue::from_slice(&buffer)
+                        .expect("Should be valid due to payload check");
+                    substate
+
                     // TODO: verify against schema
                 }
             }
@@ -902,8 +911,10 @@ where
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         };
 
-        let substate = IndexedScryptoValue::from_vec(buffer).unwrap();
-        self.api.kernel_write_substate(handle, substate)?;
+        let value = substate.as_scrypto_value().clone();
+        let indexed = IndexedScryptoValue::from_vec(scrypto_encode(&Option::Some(value)).unwrap()).unwrap();
+
+        self.api.kernel_write_substate(handle, indexed)?;
 
         Ok(())
     }

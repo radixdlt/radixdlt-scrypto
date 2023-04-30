@@ -247,7 +247,7 @@ impl AccountBlueprint {
 
                     api.key_value_entry_set_typed(
                         kv_store_entry_lock_handle,
-                        &Some(encoded_value.to_scrypto_value()),
+                        &encoded_value.to_scrypto_value(),
                     )?;
                     vault
                 }
@@ -300,7 +300,7 @@ impl AccountBlueprint {
 
                         api.key_value_entry_set_typed(
                             kv_store_entry_lock_handle,
-                            &Some(encoded_value.to_scrypto_value()),
+                            &encoded_value.to_scrypto_value(),
                         )?;
                         vault
                     }

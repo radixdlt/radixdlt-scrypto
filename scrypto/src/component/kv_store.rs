@@ -101,7 +101,7 @@ impl<
         let value_payload = scrypto_encode(&value).unwrap();
 
         let value: ScryptoValue = scrypto_decode(&value_payload).unwrap();
-        let buffer = scrypto_encode(&Option::Some(value)).unwrap();
+        let buffer = scrypto_encode(&value).unwrap();
 
         env.key_value_entry_set(handle, buffer).unwrap();
         env.key_value_entry_lock_release(handle).unwrap();
@@ -109,6 +109,8 @@ impl<
 
     /// Remove an entry from the map and return the original value if it exists
     pub fn remove(&self, key: &K) -> Option<V> {
+        todo!()
+        /*
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
@@ -128,6 +130,7 @@ impl<
         env.key_value_entry_lock_release(handle).unwrap();
 
         rtn
+         */
     }
 }
 
@@ -244,9 +247,7 @@ impl<V: ScryptoEncode> KeyValueEntryRefMut<V> {
 impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        let substate: Option<ScryptoValue> =
-            Option::Some(scrypto_decode(&scrypto_encode(&self.value).unwrap()).unwrap());
-        let value = scrypto_encode(&substate).unwrap();
+        let value = scrypto_encode(&self.value).unwrap();
         env.key_value_entry_set(self.handle, value).unwrap();
         env.key_value_entry_lock_release(self.handle).unwrap();
     }

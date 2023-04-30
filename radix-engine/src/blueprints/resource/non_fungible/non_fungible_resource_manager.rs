@@ -48,13 +48,20 @@ where
 {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
+
     let key_schema = generate_full_schema::<ScryptoCustomTypeExtension>(aggregator);
 
     let mut kv_schema = non_fungible_schema.schema;
 
     // Key
     kv_schema.type_kinds.extend(key_schema.type_kinds);
+    // Key
+    kv_schema.type_metadata.extend(key_schema.type_metadata);
+    kv_schema
+        .type_validations
+        .extend(key_schema.type_validations);
 
+    /*
     // Optional Value
     {
         let mut variants = BTreeMap::new();
@@ -63,10 +70,6 @@ where
         let type_kind = TypeKind::Enum { variants };
         kv_schema.type_kinds.push(type_kind);
     }
-
-    // Key
-    kv_schema.type_metadata.extend(key_schema.type_metadata);
-
     // Optional value
     {
         let metadata = TypeMetadata {
@@ -79,20 +82,16 @@ where
         kv_schema.type_metadata.push(metadata);
     }
 
-    // Key
-    kv_schema
-        .type_validations
-        .extend(key_schema.type_validations);
-
     // Optional value
     kv_schema.type_validations.push(TypeValidation::None);
     let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
+     */
 
     let kv_schema = KeyValueStoreInfo {
         schema: kv_schema,
         kv_store_schema: KeyValueStoreSchema {
             key: non_fungible_type,
-            value: value_index,
+            value: non_fungible_schema.non_fungible,
             can_own: false, // Only allow NonFungibles to store data/references
         }
     };
@@ -152,8 +151,7 @@ where
             }
         }
 
-        // TODO: Change interface so that we accept Option instead
-        api.key_value_entry_set_typed(non_fungible_handle, Some(value))?;
+        api.key_value_entry_set_typed(non_fungible_handle, value)?;
         api.key_value_entry_lock_release(non_fungible_handle)?;
         ids.insert(non_fungible_local_id);
     }
@@ -607,8 +605,9 @@ impl NonFungibleResourceManagerBlueprint {
         if let Some(ref mut non_fungible) = non_fungible_entry {
             let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
             *value = data;
+            let buffer = scrypto_encode(non_fungible).unwrap();
 
-            api.key_value_entry_set_typed(non_fungible_handle, &non_fungible_entry)?;
+            api.key_value_entry_set(non_fungible_handle, buffer)?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
