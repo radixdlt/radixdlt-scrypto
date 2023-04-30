@@ -61,7 +61,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let type_info = substate_db
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;

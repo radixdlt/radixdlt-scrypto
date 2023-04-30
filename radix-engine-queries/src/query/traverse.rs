@@ -5,7 +5,11 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::data::scrypto::scrypto_decode;
-use radix_engine_interface::types::{FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset, ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset, USER_BASE_MODULE};
+use radix_engine_interface::types::{
+    FungibleVaultOffset, IndexedScryptoValue, ModuleId, NonFungibleVaultOffset, ObjectInfo,
+    ResourceAddress, TypeInfoOffset, ACCESS_RULES_MODULE, METADATA_MODULE, ROYALTY_MODULE,
+    TYPE_INFO_MODULE, USER_BASE_MODULE,
+};
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
 use sbor::rust::prelude::*;
@@ -85,7 +89,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             .substate_db
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &node_id,
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing TypeInfo substate");
@@ -165,11 +169,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         );
                     }
                 } else {
-                    for t in SysModuleId::iter() {
+                    for t in [
+                        TYPE_INFO_MODULE,
+                        METADATA_MODULE,
+                        ROYALTY_MODULE,
+                        ACCESS_RULES_MODULE,
+                        USER_BASE_MODULE,
+                    ] {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         let x = self
                             .substate_db
-                            .list_mapped_substates::<JmtMapper>(&node_id, t.into());
+                            .list_mapped_substates::<JmtMapper>(&node_id, t);
                         for (db_key, substate_value) in x {
                             let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
                                 .expect("Substate is not a scrypto value")

@@ -193,7 +193,7 @@ where
             .substate_db
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             );
 

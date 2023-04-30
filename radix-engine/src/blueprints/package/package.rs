@@ -142,7 +142,7 @@ where
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        SysModuleId::TypeInfo,
+        TYPE_INFO_MODULE,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
@@ -157,9 +157,9 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(SysModuleId::Metadata, ModuleInit::Metadata(metadata_init));
+    node_modules.insert(METADATA_MODULE, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        SysModuleId::Royalty,
+        ROYALTY_MODULE,
         ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
@@ -178,13 +178,10 @@ where
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        node_modules.insert(
-            SysModuleId::AccessRules,
-            ModuleInit::AccessRules(access_rules),
-        );
+        node_modules.insert(ACCESS_RULES_MODULE, ModuleInit::AccessRules(access_rules));
     } else {
         node_modules.insert(
-            SysModuleId::AccessRules,
+            ACCESS_RULES_MODULE,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
                 child_blueprint_rules: BTreeMap::new(),
@@ -200,7 +197,7 @@ where
 
     let mut modules: NodeSubstates = node_modules
         .into_iter()
-        .map(|(k, v)| (k.into(), v.to_substates()))
+        .map(|(k, v)| (k, v.to_substates()))
         .collect();
     modules.insert(USER_BASE_MODULE, node_init);
 

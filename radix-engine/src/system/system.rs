@@ -10,16 +10,19 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::{FieldLockData, KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData};
+use crate::system::system_callback::{
+    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData,
+};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
 use radix_engine_interface::api::index_api::ClientIndexApi;
-use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi,
+use radix_engine_interface::api::key_value_entry_api::{
+    ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
+use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -27,7 +30,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
 use radix_engine_interface::api::substate_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::*;
-use radix_engine_interface::api::key_value_entry_api::{ClientKeyValueEntryApi, KeyValueEntryHandle};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
@@ -124,7 +126,7 @@ where
         self.api
             .kernel_lock_substate(
                 node_id,
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -150,12 +152,8 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let (expected_blueprint_parent, user_substates) = self.verify_instance_schema_and_state(
-            blueprint,
-            &instance_schema,
-            fields,
-            kv_entries,
-        )?;
+        let (expected_blueprint_parent, user_substates) =
+            self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -186,7 +184,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+            TYPE_INFO_MODULE => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -420,7 +418,7 @@ where
     fn field_lock_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
         match data {
-            SystemLockData::Field(..) => { }
+            SystemLockData::Field(..) => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
             }
@@ -441,16 +439,9 @@ where
 
         match data {
             SystemLockData::Field(FieldLockData::Write { index, schema }) => {
-                if let Err(e) = validate_payload_against_schema(
-                    &buffer,
-                    &schema,
-                    index,
-                    self,
-                ) {
+                if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
                     return Err(RuntimeError::SystemError(
-                        SystemError::InvalidSubstateWrite(
-                            e.error_message(&schema),
-                        ),
+                        SystemError::InvalidSubstateWrite(e.error_message(&schema)),
                     ));
                 };
             }
@@ -470,7 +461,7 @@ where
     fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
-            SystemLockData::Field(..) => { }
+            SystemLockData::Field(..) => {}
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
             }
@@ -498,13 +489,7 @@ where
         let instance_context = actor.instance_context();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
 
-        self.new_object_internal(
-            &blueprint,
-            instance_context,
-            schema,
-            fields,
-            kv_entries,
-        )
+        self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
     }
 
     #[trace_resources]
@@ -586,7 +571,7 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&SysModuleId::TypeInfo.into())
+            .get_mut(&TYPE_INFO_MODULE)
             .unwrap()
             .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
@@ -597,13 +582,10 @@ where
             }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
-        node_substates
-            .get_mut(&SysModuleId::TypeInfo.into())
-            .unwrap()
-            .insert(
-                TypeInfoOffset::TypeInfo.into(),
-                IndexedScryptoValue::from_typed(&type_info),
-            );
+        node_substates.get_mut(&TYPE_INFO_MODULE).unwrap().insert(
+            TypeInfoOffset::TypeInfo.into(),
+            IndexedScryptoValue::from_typed(&type_info),
+        );
 
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
@@ -622,10 +604,8 @@ where
                     }
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = access_rule_substates
-                        .remove(&USER_BASE_MODULE)
-                        .unwrap();
-                    node_substates.insert(SysModuleId::AccessRules.into(), access_rules);
+                    let access_rules = access_rule_substates.remove(&USER_BASE_MODULE).unwrap();
+                    node_substates.insert(ACCESS_RULES_MODULE, access_rules);
                 }
                 ObjectModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -640,10 +620,8 @@ where
                     }
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = metadata_substates
-                        .remove(&USER_BASE_MODULE)
-                        .unwrap();
-                    node_substates.insert(SysModuleId::Metadata.into(), metadata);
+                    let metadata = metadata_substates.remove(&USER_BASE_MODULE).unwrap();
+                    node_substates.insert(METADATA_MODULE, metadata);
                 }
                 ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -659,7 +637,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(SysModuleId::Royalty.into(), royalty);
+                    node_substates.insert(ROYALTY_MODULE, royalty);
                 }
             }
         }
@@ -891,11 +869,10 @@ where
 }
 
 impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
-    where
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
 {
-
     #[trace_resources]
     fn key_value_entry_get(
         &mut self,
@@ -924,10 +901,10 @@ impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 
         let substate = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
-                                              schema,
-                                              index,
-                                              can_own,
-                                          }) => {
+                schema,
+                index,
+                can_own,
+            }) => {
                 if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidSubstateWrite(e.error_message(&schema)),
@@ -964,10 +941,7 @@ impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
         Ok(())
     }
 
-    fn key_value_entry_release(
-        &mut self,
-        handle: KeyValueEntryHandle,
-    ) -> Result<(), RuntimeError> {
+    fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
@@ -996,7 +970,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -1095,7 +1069,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Index
                 ).to_substates(),
             ),
@@ -1128,12 +1102,8 @@ where
             ));
         }
 
-        self.api.kernel_set_substate(
-            node_id,
-            USER_BASE_MODULE,
-            SubstateKey::Map(key),
-            value,
-        )
+        self.api
+            .kernel_set_substate(node_id, USER_BASE_MODULE, SubstateKey::Map(key), value)
     }
 
     fn remove_from_index(
@@ -1151,11 +1121,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(
-                node_id,
-                USER_BASE_MODULE,
-                &SubstateKey::Map(key),
-            )?
+            .kernel_remove_substate(node_id, USER_BASE_MODULE, &SubstateKey::Map(key))?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1214,7 +1180,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedIndex
                 ).to_substates(),
             ),
@@ -1249,10 +1215,10 @@ where
         }
 
         self.api.kernel_set_substate(
-                node_id,
-                USER_BASE_MODULE,
-                SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
-                value,
+            node_id,
+            USER_BASE_MODULE,
+            SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
+            value,
         )
     }
 
@@ -1272,11 +1238,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(
-                node_id,
-                USER_BASE_MODULE,
-                count,
-            )?
+            .kernel_scan_sorted_substates(node_id, USER_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1440,12 +1402,11 @@ where
         };
 
         let module_id = match object_module_id {
-            ObjectModuleId::Metadata => SysModuleId::Metadata.into(),
-            ObjectModuleId::Royalty => SysModuleId::Royalty.into(),
-            ObjectModuleId::AccessRules => SysModuleId::AccessRules.into(),
+            ObjectModuleId::Metadata => METADATA_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_MODULE,
             ObjectModuleId::SELF => USER_BASE_MODULE,
         };
-        let substate_key = SubstateKey::Tuple(field);
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
@@ -1459,7 +1420,7 @@ where
         self.api.kernel_lock_substate(
             &node_id,
             module_id,
-            &substate_key,
+            &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
         )
@@ -1540,9 +1501,9 @@ where
             })?;
 
         let base_module = match object_module_id {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
+            ObjectModuleId::Metadata => METADATA_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_MODULE,
             ObjectModuleId::SELF => USER_BASE_MODULE,
         };
 

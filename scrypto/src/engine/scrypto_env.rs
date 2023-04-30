@@ -1,8 +1,9 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi,
+use radix_engine_interface::api::key_value_entry_api::{
+    ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
+use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientFieldLockApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
@@ -14,7 +15,6 @@ use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
-use radix_engine_interface::api::key_value_entry_api::{ClientKeyValueEntryApi, KeyValueEntryHandle};
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreInfo};

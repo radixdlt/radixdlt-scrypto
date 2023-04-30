@@ -157,8 +157,10 @@ impl ValidatorBlueprint {
             let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
-            let config_handle =
-                api.lock_outer_object_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+            let config_handle = api.lock_outer_object_field(
+                EpochManagerOffset::Config.into(),
+                LockFlags::read_only(),
+            )?;
             let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
             let epoch_unlocked = current_epoch + config.num_unstake_epochs;
 

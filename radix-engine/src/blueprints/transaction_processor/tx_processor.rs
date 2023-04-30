@@ -76,7 +76,7 @@ impl TransactionProcessorBlueprint {
                 USER_BASE_MODULE => btreemap!(
                     WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,

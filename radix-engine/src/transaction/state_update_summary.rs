@@ -256,7 +256,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<JmtMapper, TypeInfoSubstate>(
                 node_id,
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");
@@ -305,9 +305,10 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
-                let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
-                    n.tracked_modules.get(&USER_BASE_MODULE)
-                });
+                let vault_updates = self
+                    .tracked
+                    .get(vault.ids.as_node_id())
+                    .and_then(|n| n.tracked_modules.get(&USER_BASE_MODULE));
 
                 if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();

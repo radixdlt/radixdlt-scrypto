@@ -20,5 +20,9 @@ pub trait ClientKeyValueStoreApi<E> {
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, E>;
 
-    fn key_value_store_remove_entry(&mut self, node_id: &NodeId, key: &Vec<u8>) -> Result<Vec<u8>, E>;
+    fn key_value_store_remove_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
 }

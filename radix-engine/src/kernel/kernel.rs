@@ -81,7 +81,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 .store
                 .acquire_lock(
                     node_id,
-                    SysModuleId::TypeInfo.into(),
+                    TYPE_INFO_MODULE,
                     &TypeInfoOffset::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
@@ -392,7 +392,7 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -455,7 +455,7 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -478,11 +478,7 @@ where
         if is_fungible {
             let substate = self
                 .heap
-                .get_substate(
-                    proof_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                )
+                .get_substate(proof_id, TYPE_INFO_MODULE, &TypeInfoOffset::TypeInfo.into())
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
@@ -504,11 +500,7 @@ where
         } else {
             let substate = self
                 .heap
-                .get_substate(
-                    proof_id,
-                    SysModuleId::TypeInfo.into(),
-                    &TypeInfoOffset::TypeInfo.into(),
-                )
+                .get_substate(proof_id, TYPE_INFO_MODULE, &TypeInfoOffset::TypeInfo.into())
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());

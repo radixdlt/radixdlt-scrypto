@@ -6,47 +6,11 @@ use sbor::rust::prelude::*;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
-#[repr(u8)]
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestSbor,
-    FromRepr,
-    EnumIter,
-)]
-pub enum SysModuleId {
-    TypeInfo,
-    Metadata,
-    Royalty,
-    AccessRules,
-}
-
-pub const TYPE_INFO_BASE_MODULE: ModuleId = ModuleId(0u8);
-pub const METADATA_BASE_MODULE: ModuleId = ModuleId(1u8);
-pub const ROYALTY_BASE_MODULE: ModuleId = ModuleId(2u8);
-pub const ACCESS_RULES_BASE_MODULE: ModuleId = ModuleId(3u8);
+pub const TYPE_INFO_MODULE: ModuleId = ModuleId(0u8);
+pub const METADATA_MODULE: ModuleId = ModuleId(1u8);
+pub const ROYALTY_MODULE: ModuleId = ModuleId(2u8);
+pub const ACCESS_RULES_MODULE: ModuleId = ModuleId(3u8);
 pub const USER_BASE_MODULE: ModuleId = ModuleId(4u8);
-
-impl From<SysModuleId> for ModuleId {
-    fn from(value: SysModuleId) -> Self {
-        Self(value as u8)
-    }
-}
-
-impl TryFrom<ModuleId> for SysModuleId {
-    type Error = ();
-
-    fn try_from(key: ModuleId) -> Result<Self, Self::Error> {
-        Self::from_repr(key.0).ok_or(())
-    }
-}
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
