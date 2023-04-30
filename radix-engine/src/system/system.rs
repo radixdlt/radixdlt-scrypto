@@ -40,6 +40,7 @@ use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
@@ -56,6 +57,38 @@ where
             api,
             phantom: PhantomData::default(),
         }
+    }
+
+    fn validate_buffer(
+        &mut self,
+        payload: &Vec<u8>,
+        type_schema: &TypeSchema,
+        blueprint_schema: &ScryptoSchema,
+        instance_schema: &Option<InstanceSchema>,
+    ) -> Result<(), RuntimeError>{
+        match type_schema {
+            TypeSchema::Blueprint(index) => {
+                validate_payload_against_schema(payload, blueprint_schema, index.clone(), self)
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                            CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema)),
+                        )))
+                    })?;
+            }
+            TypeSchema::Instance(instance_index) => {
+                let instance_schema = instance_schema.as_ref().unwrap();
+                let index = instance_schema.type_index.get(*instance_index as usize).unwrap().clone();
+
+                validate_payload_against_schema(&payload, &instance_schema.schema, index, self)
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                            CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema)),
+                        )))
+                    })?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
@@ -308,8 +341,10 @@ where
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {
+                        self.validate_buffer(&key, &blueprint_kv_schema.key, &blueprint_schema.schema, instance_schema)?;
+                        self.validate_buffer(&value, &blueprint_kv_schema.value, &blueprint_schema.schema, instance_schema)?;
+
                         let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                        // TODO: Validate key value data
                         let value = IndexedScryptoValue::from_typed(&Some(value));
 
                         if !blueprint_kv_schema.can_own {
@@ -926,6 +961,19 @@ where
             | TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
+        };
+
+        if let Err(e) = validate_payload_against_schema(
+            key,
+            &info.schema,
+            info.kv_store_schema.key,
+            self,
+        ) {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidKeyValueKey(
+                    e.error_message(&info.schema),
+                ),
+            ));
         };
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {

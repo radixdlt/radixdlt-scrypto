@@ -201,6 +201,7 @@ pub enum SystemError {
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
+    InvalidKeyValueKey(String),
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
