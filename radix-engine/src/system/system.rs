@@ -116,13 +116,19 @@ where
     fn new_object_internal(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<Vec<u8>>,
         package_address: PackageAddress,
         instance_context: Option<InstanceContext>,
-        schema: Option<InstanceSchema>,
+        instance_schema: Option<InstanceSchema>,
+        fields: Vec<Vec<u8>>,
+        mut kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
-        let expected_blueprint_parent = self.verify_blueprint_fields_and_schema(&blueprint, &fields, &schema)?;
+        let expected_blueprint_parent = self.verify_blueprint_fields_and_schema(
+            &blueprint,
+            &fields,
+            &instance_schema,
+            &kv_entries,
+        )?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
@@ -164,20 +170,34 @@ where
             })
             .collect();
 
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                SysModuleId::User.into() => node_init,
+        let mut node_substates = btreemap!(
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
                         outer_object,
-                        instance_schema: None,
+                        instance_schema,
                     })
                 ).to_substates(),
-            ),
-        )?;
+                SysModuleId::User.into() => node_init,
+            );
+
+
+        if let Some(kv_entries) = kv_entries.pop() {
+            let kv_init: BTreeMap<SubstateKey, IndexedScryptoValue> =
+                kv_entries.into_iter().map(|(key, value)| {
+                    // TODO check value
+                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                (
+                    // TODO check size during package publishing time
+                    SubstateKey::Map(key),
+                    IndexedScryptoValue::from_typed(&Some(value)),
+                )
+            }).collect();
+            node_substates.insert(ModuleId(5u8), kv_init);
+        }
+
+        self.api.kernel_create_node(node_id, node_substates)?;
 
         Ok(node_id.into())
     }
@@ -216,6 +236,7 @@ where
         blueprint: &Blueprint,
         fields: &Vec<Vec<u8>>,
         instance_schema: &Option<InstanceSchema>,
+        kv_entries: &Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<Option<String>, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
@@ -253,30 +274,45 @@ where
                 })?;
         }
 
-        let parent_blueprint = blueprint_schema.outer_blueprint.clone();
 
+        // Validate instance schema
+        {
+            if let Some(instance_schema) = instance_schema {
+                validate_schema(&instance_schema.schema)
+                    .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
 
-        if let Some(instance_schema) = instance_schema {
-            validate_schema(&instance_schema.schema)
-                .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
-
-            for (kv_index, kv_schema) in blueprint_schema.key_value_stores.iter().enumerate() {
-                match &kv_schema.key {
-                    TypeSchema::Blueprint(..) => {}
-                    TypeSchema::Instance(type_index) => {
-                        if instance_schema.type_index.len() < (*type_index as usize) {
-                            return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+                for (kv_index, kv_schema) in blueprint_schema.key_value_stores.iter().enumerate() {
+                    match &kv_schema.key {
+                        TypeSchema::Blueprint(..) => {}
+                        TypeSchema::Instance(type_index) => {
+                            if instance_schema.type_index.len() < (*type_index as usize) {
+                                return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+                            }
                         }
                     }
                 }
-            }
-        } else {
-            if instance_schema.is_some() {
-                return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+            } else {
+                if instance_schema.is_some() {
+                    return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+                }
             }
         }
 
+        if blueprint_schema.key_value_stores.len() != kv_entries.len() {
+            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
+                    blueprint.clone(),
+                    kv_entries.len(),
+                    blueprint_schema.key_value_stores.len(),
+                )),
+            )));
+        }
+
+        // TODO: Validate key value data
+
         self.api.kernel_drop_lock(handle)?;
+
+        let parent_blueprint = blueprint_schema.outer_blueprint.clone();
 
         Ok(parent_blueprint)
     }
@@ -412,11 +448,17 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_object_with_schemas(&mut self, blueprint_ident: &str, fields: Vec<Vec<u8>>, schema: Option<InstanceSchema>) -> Result<NodeId, RuntimeError> {
+    fn new_object_with_schemas(
+        &mut self,
+        blueprint_ident: &str,
+        fields: Vec<Vec<u8>>,
+        schema: Option<InstanceSchema>,
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+    ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
-        self.new_object_internal(blueprint_ident, fields, package_address, instance_context, schema)
+        self.new_object_internal(blueprint_ident, package_address, instance_context, schema, fields, kv_entries)
     }
 
     #[trace_resources]
@@ -600,13 +642,14 @@ where
 
         self.new_object_internal(
             inner_object_blueprint,
-            inner_object_fields,
             blueprint.package_address,
             Some(InstanceContext {
                 instance: address,
                 instance_blueprint: blueprint.blueprint_name,
             }),
             None,
+            inner_object_fields,
+            vec![],
         )
     }
 

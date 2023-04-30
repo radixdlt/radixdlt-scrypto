@@ -44,9 +44,10 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn new_object_with_schemas(&mut self, _blueprint_ident: &str, _fields: Vec<Vec<u8>>, _schema: Option<InstanceSchema>) -> Result<NodeId, ClientApiError> {
+    fn new_object_with_schemas(&mut self, blueprint_ident: &str, fields: Vec<Vec<u8>>, schema: Option<InstanceSchema>, kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>) -> Result<NodeId, ClientApiError> {
         todo!()
     }
+
 
     fn globalize(
         &mut self,

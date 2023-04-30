@@ -35,7 +35,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object_with_schemas(blueprint_ident, fields, None)
+        self.new_object_with_schemas(blueprint_ident, fields, None, vec![])
     }
 
     fn new_object_with_schemas(
@@ -43,6 +43,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
         schema: Option<InstanceSchema>,
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

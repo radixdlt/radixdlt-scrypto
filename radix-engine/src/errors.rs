@@ -242,6 +242,7 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
     BlueprintNotFound(String),
+    WrongNumberOfKeyValueStores(Blueprint, usize, usize),
     WrongNumberOfSubstates(Blueprint, usize, usize),
     SchemaValidationError(Blueprint, String),
     InvalidSubstateWrite(String),

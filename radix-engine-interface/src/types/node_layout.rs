@@ -91,7 +91,6 @@ pub enum NonFungibleResourceManagerOffset {
     IdType,
     DataSchema,
     TotalSupply,
-    Data,
 }
 
 #[repr(u8)]

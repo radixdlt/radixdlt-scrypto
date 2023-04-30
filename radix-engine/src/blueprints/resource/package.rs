@@ -8,7 +8,7 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
@@ -295,10 +295,13 @@ impl ResourceManagerNativePackage {
                     ),
             );
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
-            substates.push(
-                aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>(),
-            );
+
+            let mut key_value_stores = Vec::new();
+            key_value_stores.push(BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<NonFungibleLocalId>()),
+                value: TypeSchema::Instance(0u8),
+                can_own: false,
+            });
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -515,7 +518,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: None,
                 schema,
                 substates,
-                key_value_stores: vec![],
+                key_value_stores,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,

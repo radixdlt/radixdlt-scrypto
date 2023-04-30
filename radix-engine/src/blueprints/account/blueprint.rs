@@ -148,7 +148,12 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let account_id = api.new_object(ACCOUNT_BLUEPRINT, vec![])?;
+        let account_id = api.new_object_with_schemas(
+            ACCOUNT_BLUEPRINT,
+            vec![],
+            None,
+            vec![vec![]],
+        )?;
 
         Ok(Own(account_id))
     }

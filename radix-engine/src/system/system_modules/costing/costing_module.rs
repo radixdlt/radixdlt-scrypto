@@ -323,7 +323,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::LockSubstate {
                         node_id,
-                        module_id: &SysModuleId::from_repr(module_id.0).unwrap(),
+                        module_id,
                         substate_key,
                     })
                 },
