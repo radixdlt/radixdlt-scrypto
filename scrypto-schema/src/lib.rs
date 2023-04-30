@@ -123,9 +123,9 @@ impl BlueprintSchema {
         self.substates.is_empty()
     }
 
-    pub fn has_field(&self, field_index: u8) -> bool {
+    pub fn field(&self, field_index: u8) -> Option<LocalTypeIndex> {
         let field_index: usize = field_index.into();
-        field_index < self.substates.len()
+        self.substates.get(field_index).cloned()
     }
 
     pub fn key_value_store_module_offset(

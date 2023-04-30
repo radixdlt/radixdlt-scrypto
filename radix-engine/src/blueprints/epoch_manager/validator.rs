@@ -150,7 +150,7 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.lock_parent_field(
+            let manager_handle = api.lock_outer_object_field(
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -158,7 +158,7 @@ impl ValidatorBlueprint {
             let current_epoch = epoch_manager.epoch;
 
             let config_handle =
-                api.lock_parent_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+                api.lock_outer_object_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
             let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
             let epoch_unlocked = current_epoch + config.num_unstake_epochs;
 
@@ -262,7 +262,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let registered_handle = api.lock_parent_field(
+            let registered_handle = api.lock_outer_object_field(
                 EpochManagerOffset::RegisteredValidators.into(),
                 LockFlags::read_only(),
             )?;
@@ -292,7 +292,7 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.lock_parent_field(
+            let mgr_handle = api.lock_outer_object_field(
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -343,7 +343,7 @@ impl ValidatorBlueprint {
                     key,
                 };
 
-                let registered_handle = api.lock_parent_field(
+                let registered_handle = api.lock_outer_object_field(
                     EpochManagerOffset::RegisteredValidators.into(),
                     LockFlags::read_only(),
                 )?;

@@ -193,6 +193,7 @@ pub enum SystemError {
     NotAnObject,
     NotAMethod,
     NotAFieldLock,
+    NotAFieldWriteLock,
     FieldDoesNotExist(Blueprint, u8),
     KeyValueStoreDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,

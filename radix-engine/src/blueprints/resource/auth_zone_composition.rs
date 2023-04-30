@@ -249,7 +249,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: FungibleProof = api.field_lock_read_typed(handle)?;
+        let substate: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
@@ -270,7 +270,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 evidence.insert(container.clone(), amount);
             }
         }
-        api.field_lock_release(handle)?;
+        api.kernel_drop_lock(handle)?;
     }
 
     FungibleProof::new(amount, evidence)

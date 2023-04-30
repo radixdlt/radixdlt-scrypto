@@ -136,7 +136,7 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_parent_field(
+        let divisibility_handle = api.lock_outer_object_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;

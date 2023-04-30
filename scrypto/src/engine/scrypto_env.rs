@@ -279,7 +279,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn lock_parent_field(
+    fn lock_outer_object_field(
         &mut self,
         _field: u8,
         _flags: LockFlags,

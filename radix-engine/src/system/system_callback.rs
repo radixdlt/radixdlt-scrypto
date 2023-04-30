@@ -93,7 +93,7 @@ pub struct SystemInvocation {
 #[derive(Clone)]
 pub enum SystemLockData {
     KeyValueEntry(KeyValueEntryLockData),
-    Field,
+    Field(FieldLockData),
     Default,
 }
 
@@ -110,6 +110,15 @@ pub enum KeyValueEntryLockData {
         schema: ScryptoSchema,
         index: LocalTypeIndex,
         can_own: bool,
+    },
+}
+
+#[derive(Clone)]
+pub enum FieldLockData {
+    Read,
+    Write {
+        schema: ScryptoSchema,
+        index: LocalTypeIndex,
     },
 }
 
