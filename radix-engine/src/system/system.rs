@@ -34,7 +34,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreInfo};
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, KeyValueStoreInfo, TypeSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -119,9 +119,11 @@ where
         fields: Vec<Vec<u8>>,
         package_address: PackageAddress,
         instance_context: Option<InstanceContext>,
+        schema: Option<InstanceSchema>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
-        let expected_blueprint_parent = self.verify_blueprint_fields(&blueprint, &fields)?;
+        let expected_blueprint_parent = self.verify_blueprint_fields_and_schema(&blueprint, &fields, &schema)?;
+
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
                 Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
@@ -209,10 +211,11 @@ where
         Ok(schema)
     }
 
-    fn verify_blueprint_fields(
+    fn verify_blueprint_fields_and_schema(
         &mut self,
         blueprint: &Blueprint,
         fields: &Vec<Vec<u8>>,
+        instance_schema: &Option<InstanceSchema>,
     ) -> Result<Option<String>, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
@@ -223,7 +226,7 @@ where
         )?;
         let package: PackageInfoSubstate =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema = package
+        let blueprint_schema = package
             .schema
             .blueprints
             .get(&blueprint.blueprint_name)
@@ -232,25 +235,46 @@ where
                     blueprint.blueprint_name.to_string(),
                 )),
             )))?;
-        if schema.substates.len() != fields.len() {
+        if blueprint_schema.substates.len() != fields.len() {
             return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                 Box::new(CreateObjectError::WrongNumberOfSubstates(
                     blueprint.clone(),
                     fields.len(),
-                    schema.substates.len(),
+                    blueprint_schema.substates.len(),
                 )),
             )));
         }
         for i in 0..fields.len() {
-            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i], self)
+            validate_payload_against_schema(&fields[i], &blueprint_schema.schema, blueprint_schema.substates[i], self)
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                        CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
+                        CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema.schema)),
                     )))
                 })?;
         }
 
-        let parent_blueprint = schema.outer_blueprint.clone();
+        let parent_blueprint = blueprint_schema.outer_blueprint.clone();
+
+
+        if let Some(instance_schema) = instance_schema {
+            validate_schema(&instance_schema.schema)
+                .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
+
+            for (kv_index, kv_schema) in blueprint_schema.key_value_stores.iter().enumerate() {
+                match &kv_schema.key {
+                    TypeSchema::Blueprint(..) => {}
+                    TypeSchema::Instance(type_index) => {
+                        if instance_schema.type_index.len() < (*type_index as usize) {
+                            return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+                        }
+                    }
+                }
+            }
+        } else {
+            if instance_schema.is_some() {
+                return Err(RuntimeError::SystemError(SystemError::InvalidInstanceSchema));
+            }
+        }
 
         self.api.kernel_drop_lock(handle)?;
 
@@ -388,15 +412,11 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_object(
-        &mut self,
-        blueprint_ident: &str,
-        fields: Vec<Vec<u8>>,
-    ) -> Result<NodeId, RuntimeError> {
+    fn new_object_with_schemas(&mut self, blueprint_ident: &str, fields: Vec<Vec<u8>>, schema: Option<InstanceSchema>) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
-        self.new_object_internal(blueprint_ident, fields, package_address, instance_context)
+        self.new_object_internal(blueprint_ident, fields, package_address, instance_context, schema)
     }
 
     #[trace_resources]
@@ -586,6 +606,7 @@ where
                 instance: address,
                 instance_blueprint: blueprint.blueprint_name,
             }),
+            None,
         )
     }
 

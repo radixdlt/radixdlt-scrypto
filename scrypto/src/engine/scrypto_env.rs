@@ -10,7 +10,7 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{Blueprint, GlobalAddress};
+use radix_engine_interface::types::{Blueprint, GlobalAddress, InstanceSchema};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
@@ -42,6 +42,10 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn new_object_with_schemas(&mut self, _blueprint_ident: &str, _fields: Vec<Vec<u8>>, _schema: Option<InstanceSchema>) -> Result<NodeId, ClientApiError> {
+        todo!()
     }
 
     fn globalize(

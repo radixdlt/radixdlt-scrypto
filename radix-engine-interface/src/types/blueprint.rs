@@ -1,10 +1,11 @@
+use std::collections::BTreeMap;
 use radix_engine_common::data::scrypto::ScryptoSchema;
 use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
+use sbor::LocalTypeIndex;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use scrypto_schema::KeyValueStoreSchema;
 
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,7 +19,7 @@ pub struct ObjectInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceSchema {
     pub schema: ScryptoSchema,
-    pub kv_schemas: Vec<KeyValueStoreSchema>,
+    pub type_index: Vec<LocalTypeIndex>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

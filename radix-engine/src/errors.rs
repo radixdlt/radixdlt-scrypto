@@ -210,6 +210,7 @@ pub enum SystemError {
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
+    InvalidInstanceSchema,
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
 }

@@ -29,12 +29,20 @@ pub enum ObjectModuleId {
 
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
-    // TODO: refine the interface
     /// Creates a new object of a given blueprint type
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E> {
+        self.new_object_with_schemas(blueprint_ident, fields, None)
+    }
+
+    fn new_object_with_schemas(
+        &mut self,
+        blueprint_ident: &str,
+        fields: Vec<Vec<u8>>,
+        schema: Option<InstanceSchema>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object
