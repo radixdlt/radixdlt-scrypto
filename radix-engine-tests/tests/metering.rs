@@ -205,12 +205,12 @@ fn test_radiswap() {
     assert_eq!(
         2484 /* AllocateNodeId */
         + 3935 /* CreateNode */
-        + 15096 /* DropLock */
+        + 15133 /* DropLock */
         + 3675 /* DropNode */
         + 3311450 /* Invoke */
-        + 85284 /* LockSubstate */
+        + 85490 /* LockSubstate */
         + 1472 /* LockSubstateFirstTime */
-        + 700364 /* ReadSubstate */
+        + 700420 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1515955 /* RunWasm */
@@ -317,12 +317,12 @@ fn test_flash_loan() {
     assert_eq!(
         4071 /* AllocateNodeId */
         + 6431 /* CreateNode */
-        + 25863 /* DropLock */
+        + 25900 /* DropLock */
         + 6195 /* DropNode */
         + 4691111 /* Invoke */
-        + 147290 /* LockSubstate */
+        + 147496 /* LockSubstate */
         + 1248 /* LockSubstateFirstTime */
-        + 1141124 /* ReadSubstate */
+        + 1141180 /* ReadSubstate */
         + 225000 /* RunNative */
         + 40000 /* RunSystem */
         + 1288375 /* RunWasm */

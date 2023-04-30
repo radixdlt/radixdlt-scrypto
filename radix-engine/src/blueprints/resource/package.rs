@@ -291,7 +291,7 @@ impl ResourceManagerNativePackage {
             );
             substates.push(
                 aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
                     ),
             );
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());

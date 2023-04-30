@@ -30,52 +30,11 @@ pub enum NonFungibleResourceManagerError {
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerDataSchemaSubstate {
-    //pub non_fungible_type_index: LocalTypeIndex,
+pub struct NonFungibleResourceManagerMutableFieldsSubstate {
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
-
-fn build_non_fungible_resource_manager_data_substate<Y>(
-    mutable_fields: BTreeSet<String>,
-    api: &mut Y,
-) -> Result<NonFungibleResourceManagerDataSchemaSubstate, RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    /*
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
-
-    let key_schema = generate_full_schema::<ScryptoCustomTypeExtension>(aggregator);
-
-    let mut kv_schema = non_fungible_schema.schema;
-
-    // Key
-    kv_schema.type_kinds.extend(key_schema.type_kinds);
-    kv_schema.type_metadata.extend(key_schema.type_metadata);
-    kv_schema
-        .type_validations
-        .extend(key_schema.type_validations);
-
-    let kv_schema = KeyValueStoreInfo {
-        schema: kv_schema,
-        kv_store_schema: KeyValueStoreSchema {
-            key: non_fungible_type,
-            value: non_fungible_schema.non_fungible,
-            can_own: false, // Only allow NonFungibles to store data/references
-        },
-    };
-     */
-
-    let update_data_substate = NonFungibleResourceManagerDataSchemaSubstate {
-        //non_fungible_type_index: non_fungible_schema.non_fungible,
-        mutable_fields,
-    };
-
-    Ok(update_data_substate)
-}
 
 fn create_non_fungibles<Y>(
     resource_address: ResourceAddress,
@@ -164,10 +123,9 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // If address isn't user frame allocated or pre_allocated then
-        // using this node_id will fail on create_node below
-        let resource_manager_substate =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema.mutable_fields, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
@@ -178,7 +136,7 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&resource_manager_substate).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
             ],
             Some(instance_schema),
@@ -211,8 +169,9 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let resource_manager =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema.mutable_fields, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
@@ -237,16 +196,6 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.push((scrypto_encode(&id).unwrap(), scrypto_encode(&value).unwrap()));
         }
 
-        /*
-        create_non_fungibles(
-            resource_address,
-            id_type,
-            non_fungibles,
-            false,
-            api,
-        )?;
-         */
-
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
             type_index: vec![non_fungible_schema.non_fungible],
@@ -256,7 +205,7 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&resource_manager).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
             Some(instance_schema),
@@ -294,21 +243,12 @@ impl NonFungibleResourceManagerBlueprint {
             non_fungibles.push((scrypto_encode(&id).unwrap(), scrypto_encode(&entry).unwrap()));
         }
 
-        let data =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema.mutable_fields, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
-
-        /*
-        create_non_fungibles(
-            resource_address,
-            NonFungibleIdType::UUID,
-            non_fungibles,
-            false,
-            api,
-        )?;
-         */
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
@@ -319,7 +259,7 @@ impl NonFungibleResourceManagerBlueprint {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
-                scrypto_encode(&data).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
             Some(instance_schema),
@@ -538,27 +478,15 @@ impl NonFungibleResourceManagerBlueprint {
             NonFungibleResourceManagerOffset::DataSchema.into(),
             LockFlags::read_only(),
         )?;
-        let data_schema: NonFungibleResourceManagerDataSchemaSubstate =
+        let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
             api.field_lock_read_typed(data_schema_handle)?;
 
         let mut instance_schema = api.get_info()?.instance_schema.unwrap();
         let kv_schema = instance_schema.schema;
         let local_index = instance_schema.type_index.remove(0);
 
-        /*
-        let non_fungible_type_index = data_schema.non_fungible_type_index;
-         */
-        let mutable_fields = data_schema.mutable_fields.clone();
+        let mutable_fields = mutable_fields.mutable_fields;
 
-        /*
-        let nf_store_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::Data.into(),
-            LockFlags::read_only(),
-        )?;
-         */
-        //let nf_store: Own = api.field_lock_read_typed(nf_store_handle)?;
-
-        //let kv_schema = api.key_value_store_get_info(nf_store.as_node_id())?;
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
 
         let sbor_path = schema_path.to_sbor_path(&kv_schema, local_index);

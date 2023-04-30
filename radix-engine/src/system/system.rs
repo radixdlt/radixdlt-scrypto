@@ -123,11 +123,11 @@ where
         mut kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
     ) -> Result<NodeId, RuntimeError> {
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
-        let (expected_blueprint_parent, substate_fields) = self.verify_blueprint_fields_and_schema(
+        let (expected_blueprint_parent, user_substates) = self.verify_blueprint_fields_and_schema(
             &blueprint,
             fields,
             &instance_schema,
-            &kv_entries,
+            kv_entries,
         )?;
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
@@ -167,22 +167,11 @@ where
                         instance_schema,
                     })
                 ).to_substates(),
-                SysModuleId::User.into() => substate_fields,
             );
 
-
-        if let Some(kv_entries) = kv_entries.pop() {
-            let kv_init: BTreeMap<SubstateKey, IndexedScryptoValue> =
-                kv_entries.into_iter().map(|(key, value)| {
-                    // TODO check value
-                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                (
-                    // TODO check size during package publishing time
-                    SubstateKey::Map(key),
-                    IndexedScryptoValue::from_typed(&Some(value)),
-                )
-            }).collect();
-            node_substates.insert(ModuleId(5u8), kv_init);
+        for (i, module_substates) in user_substates.into_iter().enumerate() {
+            let module_number = 4u8 + (i as u8);
+            node_substates.insert(ModuleId(module_number), module_substates);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;
@@ -224,8 +213,8 @@ where
         blueprint: &Blueprint,
         fields: Vec<Vec<u8>>,
         instance_schema: &Option<InstanceSchema>,
-        kv_entries: &Vec<Vec<(Vec<u8>, Vec<u8>)>>,
-    ) -> Result<(Option<String>, BTreeMap<SubstateKey, IndexedScryptoValue>), RuntimeError> {
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+    ) -> Result<(Option<String>, Vec<BTreeMap<SubstateKey, IndexedScryptoValue>>), RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             SysModuleId::User.into(),
@@ -244,34 +233,6 @@ where
                     blueprint.blueprint_name.to_string(),
                 )),
             )))?;
-
-        let substate_fields = {
-            if blueprint_schema.substates.len() != fields.len() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::WrongNumberOfSubstates(
-                        blueprint.clone(),
-                        fields.len(),
-                        blueprint_schema.substates.len(),
-                    )),
-                )));
-            }
-            let mut substate_fields = BTreeMap::new();
-            for (i, field) in fields.into_iter().enumerate() {
-                validate_payload_against_schema(&field, &blueprint_schema.schema, blueprint_schema.substates[i], self)
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema.schema)),
-                        )))
-                    })?;
-
-                substate_fields.insert(
-                    SubstateKey::Tuple(i as u8),
-                    IndexedScryptoValue::from_vec(field).expect("Checked by payload-schema validation"),
-                );
-            }
-
-            substate_fields
-        };
 
         // Validate instance schema
         {
@@ -296,23 +257,82 @@ where
             }
         }
 
-        if blueprint_schema.key_value_stores.len() != kv_entries.len() {
-            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
-                    blueprint.clone(),
-                    kv_entries.len(),
-                    blueprint_schema.key_value_stores.len(),
-                )),
-            )));
-        }
+        let mut user_substates = Vec::new();
 
-        // TODO: Validate key value data
+        // Fields
+        {
+            if blueprint_schema.substates.len() != fields.len() {
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::WrongNumberOfSubstates(
+                        blueprint.clone(),
+                        fields.len(),
+                        blueprint_schema.substates.len(),
+                    )),
+                )));
+            }
+            if blueprint_schema.substates.len() > 0 {
+                let mut substate_fields = BTreeMap::new();
+                for (i, field) in fields.into_iter().enumerate() {
+                    validate_payload_against_schema(&field, &blueprint_schema.schema, blueprint_schema.substates[i], self)
+                        .map_err(|err| {
+                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                CreateObjectError::InvalidSubstateWrite(err.error_message(&blueprint_schema.schema)),
+                            )))
+                        })?;
+
+                    substate_fields.insert(
+                        SubstateKey::Tuple(i as u8),
+                        IndexedScryptoValue::from_vec(field).expect("Checked by payload-schema validation"),
+                    );
+                }
+
+                user_substates.push(substate_fields);
+            }
+        };
+
+
+        {
+            if blueprint_schema.key_value_stores.len() != kv_entries.len() {
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
+                        blueprint.clone(),
+                        kv_entries.len(),
+                        blueprint_schema.key_value_stores.len(),
+                    )),
+                )));
+            }
+
+            if kv_entries.len() > 0 {
+                for (i, entries) in kv_entries.into_iter().enumerate() {
+                    let blueprint_kv_schema = blueprint_schema.key_value_stores.get(i).unwrap();
+
+                    let mut kv_substates = BTreeMap::new();
+                    for (key, value) in entries {
+                        let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                        // TODO: Validate key value data
+                        let value = IndexedScryptoValue::from_typed(&Some(value));
+
+                        if !blueprint_kv_schema.can_own {
+                            if !value.owned_node_ids().is_empty() {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidKeyValueStoreOwnership,
+                                ));
+                            }
+                        }
+
+                        kv_substates.insert(SubstateKey::Map(key), value);
+                    }
+
+                    user_substates.push(kv_substates);
+                }
+            }
+        }
 
         self.api.kernel_drop_lock(handle)?;
 
         let parent_blueprint = blueprint_schema.outer_blueprint.clone();
 
-        Ok((parent_blueprint, substate_fields))
+        Ok((parent_blueprint, user_substates))
     }
 
     fn key_value_entry_remove_and_release_lock(
@@ -939,7 +959,7 @@ where
         handle: KeyValueEntryLockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { node_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let LockInfo { node_id, module_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         let substate = if data.is_kv_store {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -972,12 +992,28 @@ where
 
                     substate
                 }
-                _ => {
+                TypeInfoSubstate::Object(info) => {
+                    // TODO: verify against schema
+
                     let substate = IndexedScryptoValue::from_slice(&buffer)
                         .expect("Should be valid due to payload check");
-                    substate
 
-                    // TODO: verify against schema
+                    if module_id.0 >= 4u8 {
+                        let blueprint_schema = self.get_blueprint_schema(&info.blueprint)?;
+
+                        if !blueprint_schema.key_value_stores.get(0).unwrap().can_own {
+                            if !substate.owned_node_ids().is_empty() {
+                                return Err(RuntimeError::SystemError(
+                                    SystemError::InvalidKeyValueStoreOwnership,
+                                ));
+                            }
+                        }
+                    }
+
+                    substate
+                }
+                _ => {
+                    panic!("Unexpected");
                 }
             }
         } else {

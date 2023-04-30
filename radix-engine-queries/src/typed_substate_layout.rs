@@ -341,7 +341,7 @@ pub enum TypedFungibleResourceManagerSubstateValue {
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerSubstateValue {
     IdType(NonFungibleResourceManagerIdTypeSubstate),
-    DataSchema(NonFungibleResourceManagerDataSchemaSubstate),
+    DataSchema(NonFungibleResourceManagerMutableFieldsSubstate),
     TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
 }
 

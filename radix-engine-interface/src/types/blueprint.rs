@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use sbor::rust::collections::BTreeMap;
 use radix_engine_common::data::scrypto::ScryptoSchema;
 use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddress;
@@ -6,6 +6,7 @@ use radix_engine_common::types::PackageAddress;
 use sbor::LocalTypeIndex;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
