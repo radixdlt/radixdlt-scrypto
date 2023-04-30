@@ -10,7 +10,7 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
+use crate::system::system_callback::{KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
@@ -361,7 +361,7 @@ where
     #[trace_resources]
     fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
-        if data.is_kv_store() {
+        if data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -384,7 +384,7 @@ where
             ..
         } = self.api.kernel_get_lock_info(lock_handle)?;
 
-        if data.is_kv_store() {
+        if data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -452,7 +452,7 @@ where
     fn field_lock_release(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        if data.is_kv_store() {
+        if data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
         }
 
@@ -919,13 +919,23 @@ where
             return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
         }
 
-        match type_info {
-            TypeInfoSubstate::KeyValueStore(..) => {}
+        let info = match type_info {
+            TypeInfoSubstate::KeyValueStore(info) => info,
             TypeInfoSubstate::SortedIndex
             | TypeInfoSubstate::Index
             | TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
+        };
+
+        let lock_data = if flags.contains(LockFlags::MUTABLE) {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
+                schema: info.schema,
+                index: info.kv_store_schema.value,
+                can_own: info.kv_store_schema.can_own,
+            })
+        } else {
+            SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
         self.api.kernel_lock_substate_with_default(
@@ -934,7 +944,7 @@ where
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData::KeyValueEntry,
+            lock_data,
         )
     }
 
@@ -944,7 +954,7 @@ where
         handle: KeyValueEntryLockHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_store() {
+        if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
@@ -961,7 +971,7 @@ where
     ) -> Result<(), RuntimeError> {
         let LockInfo { node_id, module_id, data, .. } = self.api.kernel_get_lock_info(handle)?;
 
-        let substate = if data.is_kv_store() {
+        let substate = if data.is_kv_entry() {
             let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
             match type_info {
                 TypeInfoSubstate::KeyValueStore(store_schema) => {
@@ -1034,7 +1044,7 @@ where
         handle: KeyValueEntryLockHandle,
     ) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-        if !data.is_kv_store() {
+        if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
@@ -1445,7 +1455,7 @@ where
         flags: LockFlags,
     ) -> Result<KeyValueEntryLockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, object_info) = match &actor {
+        let (node_id, object_module_id, object_info) = match actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
@@ -1460,12 +1470,13 @@ where
         // TODO: Add check if key value exists
 
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let module_offset = schema
+
+        let (module_offset, kv_schema) = schema
             .key_value_store_module_offset(kv_handle)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
                     object_info.blueprint.clone(),
-                    0u8,
+                    kv_handle,
                 ))
             })?;
 
@@ -1478,13 +1489,36 @@ where
 
         let module_number = module_base + module_offset;
 
+        let lock_data = if flags.contains(LockFlags::MUTABLE) {
+            let can_own = kv_schema.can_own;
+            match kv_schema.value {
+                TypeSchema::Instance(index) => {
+                    let mut instance_schema = object_info.instance_schema.unwrap();
+                    KeyValueEntryLockData::Write {
+                        schema: instance_schema.schema,
+                        index: instance_schema.type_index.remove(index as usize),
+                        can_own,
+                    }
+                },
+                TypeSchema::Blueprint(index) => {
+                    KeyValueEntryLockData::Write {
+                        schema: schema.schema,
+                        index,
+                        can_own,
+                    }
+                }
+            }
+        } else {
+            KeyValueEntryLockData::Read
+        };
+
         self.api.kernel_lock_substate_with_default(
             &node_id,
             ModuleId(module_number),
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
-            SystemLockData::KeyValueEntry,
+            SystemLockData::KeyValueEntry(lock_data),
         )
     }
 

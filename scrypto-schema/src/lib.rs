@@ -128,17 +128,19 @@ impl BlueprintSchema {
         field_index < self.substates.len()
     }
 
-    pub fn key_value_store_module_offset(&self, kv_handle: u8) -> Option<u8> {
+    pub fn key_value_store_module_offset(&self, kv_handle: u8) -> Option<(u8, &BlueprintKeyValueStoreSchema)> {
         let mut module_offset = 0u8;
         if !self.substates.is_empty() {
             module_offset += 1;
         }
 
-        if kv_handle as usize > self.key_value_stores.len() {
+        let kv_schema = if let Some(kv_schema ) = self.key_value_stores.get(kv_handle as usize) {
+            kv_schema
+        } else {
             return None;
-        }
+        };
 
-        Some(module_offset + kv_handle)
+        Some((module_offset + kv_handle, kv_schema))
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {

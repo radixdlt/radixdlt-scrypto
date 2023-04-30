@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreInfo};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -90,9 +90,10 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
+
 #[derive(Clone)]
 pub enum SystemLockData {
-    KeyValueEntry,
+    KeyValueEntry(KeyValueEntryLockData),
     Field,
     Default,
 }
@@ -103,9 +104,19 @@ impl Default for SystemLockData {
     }
 }
 
+#[derive(Clone)]
+pub enum KeyValueEntryLockData {
+    Read,
+    Write {
+        schema: ScryptoSchema,
+        index: LocalTypeIndex,
+        can_own: bool,
+    },
+}
+
 impl SystemLockData {
-    pub fn is_kv_store(&self) -> bool {
-        matches!(self, SystemLockData::KeyValueEntry)
+    pub fn is_kv_entry(&self) -> bool {
+        matches!(self, SystemLockData::KeyValueEntry(..))
     }
 }
 
