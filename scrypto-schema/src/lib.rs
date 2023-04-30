@@ -67,11 +67,17 @@ pub struct BlueprintSchema {
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum TypeSchema {
+    Blueprint(LocalTypeIndex),
+    Instance(u8),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub enum BlueprintKeyValueStoreSchema {
-    Blueprint(KeyValueStoreSchema),
-    Instance(u8),
+pub struct BlueprintKeyValueStoreSchema {
+    pub key: TypeSchema,
+    pub value: TypeSchema,
+    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

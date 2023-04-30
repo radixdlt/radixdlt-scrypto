@@ -4,7 +4,7 @@ use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, Receiver, TypeSchema, VirtualLazyLoadSchema};
 
 use crate::blueprints::account::AccountBlueprint;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
@@ -23,11 +23,11 @@ impl AccountNativePackage {
         let substates = Vec::new();
 
         let mut key_value_stores = Vec::new();
-        key_value_stores.push(BlueprintKeyValueStoreSchema::Blueprint(KeyValueStoreSchema {
-            key: aggregator.add_child_type_and_descendents::<ResourceAddress>(),
-            value: aggregator.add_child_type_and_descendents::<Own>(),
+        key_value_stores.push(BlueprintKeyValueStoreSchema {
+            key: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<ResourceAddress>()),
+            value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
             can_own: true,
-        }));
+        });
 
         let mut functions = BTreeMap::new();
 

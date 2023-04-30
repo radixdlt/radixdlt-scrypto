@@ -24,17 +24,11 @@ mod cyclic_map {
 
             let node_id = kv_store1_id.as_node_id();
             let key = scrypto_encode(&0u32).unwrap();
-            let substate: Option<ScryptoValue> = Option::Some(
-                scrypto_decode(
-                    &scrypto_encode(&KeyValueStore::<(), ()> {
-                        id: kv_store0_id,
-                        key: PhantomData,
-                        value: PhantomData,
-                    })
-                    .unwrap(),
-                )
-                .unwrap(),
-            );
+            let substate = KeyValueStore::<(), ()> {
+                id: kv_store0_id,
+                key: PhantomData,
+                value: PhantomData,
+            };
 
             let handle = ScryptoEnv
                 .key_value_store_lock_entry(node_id, &key, LockFlags::MUTABLE)
@@ -52,17 +46,11 @@ mod cyclic_map {
 
             let node_id = kv_store_id.as_node_id();
             let key = scrypto_encode(&0u32).unwrap();
-            let substate: Option<ScryptoValue> = Option::Some(
-                scrypto_decode(
-                    &scrypto_encode(&KeyValueStore::<(), ()> {
+            let substate = KeyValueStore::<(), ()> {
                         id: kv_store_id,
                         key: PhantomData,
                         value: PhantomData,
-                    })
-                    .unwrap(),
-                )
-                .unwrap(),
-            );
+                    };
 
             let handle = ScryptoEnv
                 .key_value_store_lock_entry(node_id, &key, LockFlags::MUTABLE)
