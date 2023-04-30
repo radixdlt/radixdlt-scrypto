@@ -310,11 +310,64 @@ pub fn quick_confirm_semantics_are_correct() {
     }
 }
 
+#[test]
+pub fn primary_or_recovery_can_initiate_a_badge_withdraw_attempt() {
+    // Arrange
+    for role in [Role::Primary, Role::Recovery] {
+        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+
+        // Act
+        let receipt = test_runner.initiate_badge_withdraw_attempt(role, true);
+
+        // Assert
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+pub fn cant_initiate_a_badge_withdraw_attempt_without_valid_proofs() {
+    // Arrange
+    for role in [Role::Primary, Role::Recovery] {
+        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+
+        // Act
+        let receipt = test_runner.initiate_badge_withdraw_attempt(role, false);
+
+        // Assert
+        receipt.expect_specific_failure(is_auth_unauthorized_error);
+    }
+}
+
+#[test]
+pub fn confirmation_role_cant_initiate_a_badge_withdraw_attempt_as_primary_or_recovery() {
+    // Arrange
+    for ident in [
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
+    ] {
+        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+
+        // Act
+        let manifest = test_runner
+            .manifest_builder(Role::Confirmation)
+            .call_method(
+                test_runner.access_controller_address,
+                ident,
+                to_manifest_value(&AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest(manifest);
+
+        // Assert
+        receipt.expect_specific_failure(is_auth_unauthorized_error);
+    }
+}
+
 //=============
 // State Tests
 //=============
 
-mod normal_operations_with_primary_unlocked {
+mod no_recovery_with_primary_unlocked {
     use super::*;
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
@@ -562,7 +615,7 @@ mod normal_operations_with_primary_unlocked {
     }
 }
 
-mod normal_operations_with_primary_locked {
+mod no_recovery_with_primary_locked {
     use super::*;
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
@@ -1521,6 +1574,33 @@ impl AccessControllerTestRunner {
                     },
                     timed_recovery_delay_in_minutes,
                 }),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn initiate_badge_withdraw_attempt(
+        &mut self,
+        as_role: Role,
+        create_proof: bool,
+    ) -> TransactionReceipt {
+        let method_name = match as_role {
+            Role::Primary => ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
+            Role::Recovery => ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
+            Role::Confirmation => panic!("Confirmation Role can't initiate recovery!"),
+        };
+
+        let mut manifest_builder = if create_proof {
+            self.manifest_builder(as_role)
+        } else {
+            ManifestBuilder::new()
+        };
+
+        let manifest = manifest_builder
+            .call_method(
+                self.access_controller_address,
+                method_name,
+                to_manifest_value(&AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput {}),
             )
             .build();
         self.execute_manifest(manifest)

@@ -400,7 +400,11 @@ impl AccessControllerNativePackage {
                 CancelRecoveryProposalEvent,
                 LockPrimaryRoleEvent,
                 UnlockPrimaryRoleEvent,
-                StopTimedRecoveryEvent
+                StopTimedRecoveryEvent,
+                InitiateBadgeWithdrawAttemptEvent,
+                BadgeWithdrawEvent,
+                CancelBadgeWithdrawAttemptEvent,
+                StopTimedBadgeWithdrawAttemptEvent
             ]
         };
 
