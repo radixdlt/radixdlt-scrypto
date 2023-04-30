@@ -27,7 +27,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::substate_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -418,10 +418,13 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn field_lock_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
-        if data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+        match data {
+            SystemLockData::Field => { }
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+            }
         }
 
         self.api
@@ -432,7 +435,7 @@ where
     #[trace_resources]
     fn field_lock_write(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: FieldLockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let LockInfo {
@@ -508,11 +511,13 @@ where
     }
 
     #[trace_resources]
-    fn field_lock_release(&mut self, handle: LockHandle) -> Result<(), RuntimeError> {
+    fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
-
-        if data.is_kv_entry() {
-            return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+        match data {
+            SystemLockData::Field => { }
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+            }
         }
 
         self.api.kernel_drop_lock(handle)

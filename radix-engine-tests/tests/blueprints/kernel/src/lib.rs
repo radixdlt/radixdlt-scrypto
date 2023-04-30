@@ -9,7 +9,7 @@ mod node_create {
     impl NodeCreate {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoEnv
-                .new_object(
+                .new_simple_object(
                     "invalid_blueprint",
                     vec![scrypto_encode(&NodeCreate {}).unwrap()],
                 )
