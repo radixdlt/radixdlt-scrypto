@@ -69,6 +69,7 @@ where
                 },
                 global: true,
                 outer_object: None,
+                instance_schema: None,
             }));
         } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
             || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
@@ -87,6 +88,7 @@ where
                 },
                 global: true,
                 outer_object: None,
+                instance_schema: None,
             }));
         }
 
@@ -168,7 +170,8 @@ where
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&package_address,blueprint_ident),
                         global:false,
-                        outer_object
+                        outer_object,
+                        instance_schema: None,
                     })
                 ).to_substates(),
             ),
@@ -649,6 +652,7 @@ where
                         blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
                         outer_object: None,
                         global: true,
+                        instance_schema: None,
                     },
                     None,
                 )
@@ -660,6 +664,7 @@ where
                         blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
                         outer_object: None,
                         global: true,
+                        instance_schema: None,
                     },
                     None,
                 )
@@ -671,6 +676,7 @@ where
                         blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
                         outer_object: None,
                         global: true,
+                        instance_schema: None,
                     },
                     None,
                 )

@@ -81,6 +81,7 @@ impl TransactionProcessorBlueprint {
                         blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
                         outer_object: None,
+                        instance_schema: None,
                     })
                 ).to_substates()
             ),

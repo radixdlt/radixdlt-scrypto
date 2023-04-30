@@ -57,7 +57,7 @@ pub struct BlueprintSchema {
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
 
-    pub key_value_stores: Vec<KeyValueStoreSchema>,
+    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -65,6 +65,13 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintKeyValueStoreSchema {
+    Blueprint(KeyValueStoreSchema),
+    Instance(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

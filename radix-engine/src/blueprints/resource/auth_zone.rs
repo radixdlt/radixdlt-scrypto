@@ -100,6 +100,7 @@ impl AuthZoneBlueprint {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
         )?;
@@ -138,6 +139,7 @@ impl AuthZoneBlueprint {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
                 )?;
@@ -151,6 +153,7 @@ impl AuthZoneBlueprint {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()))?;
             }
         }
@@ -187,6 +190,7 @@ impl AuthZoneBlueprint {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
         )?;

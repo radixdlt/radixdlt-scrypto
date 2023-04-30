@@ -147,6 +147,7 @@ where
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             outer_object: None,
+            instance_schema: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();

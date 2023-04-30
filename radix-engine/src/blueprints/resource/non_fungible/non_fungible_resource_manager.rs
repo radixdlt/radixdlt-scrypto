@@ -12,7 +12,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::{KeyValueStoreInfo, KeyValueStoreSchema};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
-use sbor::rust::borrow::Cow;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -55,37 +54,10 @@ where
 
     // Key
     kv_schema.type_kinds.extend(key_schema.type_kinds);
-    // Key
     kv_schema.type_metadata.extend(key_schema.type_metadata);
     kv_schema
         .type_validations
         .extend(key_schema.type_validations);
-
-    /*
-    // Optional Value
-    {
-        let mut variants = BTreeMap::new();
-        variants.insert(OPTION_VARIANT_NONE, vec![]);
-        variants.insert(OPTION_VARIANT_SOME, vec![non_fungible_schema.non_fungible]);
-        let type_kind = TypeKind::Enum { variants };
-        kv_schema.type_kinds.push(type_kind);
-    }
-    // Optional value
-    {
-        let metadata = TypeMetadata {
-            type_name: Some(Cow::Borrowed("Option")),
-            child_names: Some(ChildNames::EnumVariants(btreemap!(
-                OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
-                OPTION_VARIANT_SOME => TypeMetadata::no_child_names("Some"),
-            ))),
-        };
-        kv_schema.type_metadata.push(metadata);
-    }
-
-    // Optional value
-    kv_schema.type_validations.push(TypeValidation::None);
-    let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
-     */
 
     let kv_schema = KeyValueStoreInfo {
         schema: kv_schema,
