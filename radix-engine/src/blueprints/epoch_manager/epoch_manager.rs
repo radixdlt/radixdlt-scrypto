@@ -107,7 +107,7 @@ impl EpochManagerBlueprint {
                 validator_set: BTreeMap::new(),
             };
 
-            api.new_object(
+            api.new_simple_object(
                 EPOCH_MANAGER_BLUEPRINT,
                 vec![
                     scrypto_encode(&config).unwrap(),

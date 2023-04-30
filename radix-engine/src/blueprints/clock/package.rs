@@ -151,7 +151,7 @@ impl ClockNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let clock_id = api.new_object(
+        let clock_id = api.new_simple_object(
             CLOCK_BLUEPRINT,
             vec![scrypto_encode(&ClockSubstate {
                 current_time_rounded_to_minutes_ms: 0,

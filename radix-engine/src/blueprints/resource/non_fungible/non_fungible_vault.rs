@@ -132,7 +132,7 @@ impl NonFungibleVaultBlueprint {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
 
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
@@ -159,7 +159,7 @@ impl NonFungibleVaultBlueprint {
 
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
@@ -180,7 +180,7 @@ impl NonFungibleVaultBlueprint {
     {
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_non_fungibles(receiver, ids, api)?;
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),

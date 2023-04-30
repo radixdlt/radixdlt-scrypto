@@ -9,10 +9,9 @@ use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::{KeyValueStoreInfo, KeyValueStoreSchema};
+use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
-use radix_engine_interface::schema::TypeSchema::Instance;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -59,10 +58,8 @@ where
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
-            &non_fungible_local_id.to_key(),
-            LockFlags::MUTABLE,
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&non_fungible_local_id.to_key(), LockFlags::MUTABLE)?;
 
         if check_non_existence {
             let cur_non_fungible: Option<ScryptoValue> =
@@ -132,15 +129,15 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let object_id = api.new_object_with_schemas(
+        let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
             ],
-            Some(instance_schema),
-            vec![vec![]]
+            vec![vec![]],
         )?;
 
         let resource_address = ResourceAddress::new_or_panic(resource_address);
@@ -193,7 +190,10 @@ impl NonFungibleResourceManagerBlueprint {
                 ));
             }
 
-            non_fungibles.push((scrypto_encode(&id).unwrap(), scrypto_encode(&value).unwrap()));
+            non_fungibles.push((
+                scrypto_encode(&id).unwrap(),
+                scrypto_encode(&value).unwrap(),
+            ));
         }
 
         let instance_schema = InstanceSchema {
@@ -201,14 +201,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let object_id = api.new_object_with_schemas(
+        let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            Some(instance_schema),
             vec![non_fungibles],
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
@@ -240,7 +240,10 @@ impl NonFungibleResourceManagerBlueprint {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
             ids.insert(id.clone());
-            non_fungibles.push((scrypto_encode(&id).unwrap(), scrypto_encode(&entry).unwrap()));
+            non_fungibles.push((
+                scrypto_encode(&id).unwrap(),
+                scrypto_encode(&entry).unwrap(),
+            ));
         }
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
@@ -255,14 +258,14 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let object_id = api.new_object_with_schemas(
+        let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            Some(instance_schema),
             vec![non_fungibles],
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
@@ -317,13 +320,7 @@ impl NonFungibleResourceManagerBlueprint {
         let ids = {
             let ids: BTreeSet<NonFungibleLocalId> = entries.keys().cloned().collect();
             let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                non_fungibles,
-                true,
-                api,
-            )?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?;
 
             ids
         };
@@ -380,13 +377,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
             let non_fungibles = btreemap!(id.clone() => value);
 
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                non_fungibles,
-                false,
-                api,
-            )?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
 
             id
         };
@@ -447,13 +438,7 @@ impl NonFungibleResourceManagerBlueprint {
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                non_fungibles,
-                false,
-                api,
-            )?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
 
             ids
         };
@@ -508,10 +493,8 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
-            &id.to_key(),
-            LockFlags::MUTABLE,
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::MUTABLE)?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
@@ -545,10 +528,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_handle = api.actor_lock_key_value_entry(
-            &id.to_key(),
-            LockFlags::read_only(),
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
         let non_fungible: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
@@ -565,11 +546,8 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
 
-
-        let non_fungible_handle = api.actor_lock_key_value_entry(
-            &id.to_key(),
-            LockFlags::read_only(),
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
         let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
@@ -599,7 +577,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket_id = api.new_object(
+        let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
@@ -673,7 +651,7 @@ impl NonFungibleResourceManagerBlueprint {
             amount: Decimal::zero(),
             ids,
         };
-        let vault_id = api.new_object(
+        let vault_id = api.new_simple_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&vault).unwrap(),

@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreInfo};
+use radix_engine_interface::schema::BlueprintSchema;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -89,7 +89,6 @@ pub struct SystemInvocation {
     pub ident: FnIdent,
     pub receiver: Option<MethodIdentifier>,
 }
-
 
 #[derive(Clone)]
 pub enum SystemLockData {

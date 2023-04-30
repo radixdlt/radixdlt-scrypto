@@ -529,7 +529,7 @@ impl ValidatorCreator {
             is_registered,
         };
 
-        let validator_id = api.new_object(
+        let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;

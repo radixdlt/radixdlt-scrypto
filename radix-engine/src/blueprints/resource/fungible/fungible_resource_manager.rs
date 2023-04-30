@@ -74,7 +74,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -125,7 +125,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -241,7 +241,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket_id = api.new_object(
+        let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
@@ -256,7 +256,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let vault_id = api.new_object(
+        let vault_id = api.new_simple_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),

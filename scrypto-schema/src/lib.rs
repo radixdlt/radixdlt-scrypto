@@ -128,13 +128,16 @@ impl BlueprintSchema {
         field_index < self.substates.len()
     }
 
-    pub fn key_value_store_module_offset(&self, kv_handle: u8) -> Option<(u8, &BlueprintKeyValueStoreSchema)> {
+    pub fn key_value_store_module_offset(
+        &self,
+        kv_handle: u8,
+    ) -> Option<(u8, &BlueprintKeyValueStoreSchema)> {
         let mut module_offset = 0u8;
         if !self.substates.is_empty() {
             module_offset += 1;
         }
 
-        let kv_schema = if let Some(kv_schema ) = self.key_value_stores.get(kv_handle as usize) {
+        let kv_schema = if let Some(kv_schema) = self.key_value_stores.get(kv_handle as usize) {
             kv_schema
         } else {
             return None;
@@ -160,4 +163,42 @@ impl BlueprintSchema {
         }
         None
     }
+
+    pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
+        for kv_schema in &self.key_value_stores {
+            match &kv_schema.key {
+                TypeSchema::Blueprint(..) => {}
+                TypeSchema::Instance(type_index) => {
+                    if let Some(instance_schema) = instance_schema {
+                        if instance_schema.type_index.len() < (*type_index as usize) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
+            match &kv_schema.value {
+                TypeSchema::Blueprint(..) => {}
+                TypeSchema::Instance(type_index) => {
+                    if let Some(instance_schema) = instance_schema {
+                        if instance_schema.type_index.len() < (*type_index as usize) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InstanceSchema {
+    pub schema: ScryptoSchema,
+    pub type_index: Vec<LocalTypeIndex>,
 }

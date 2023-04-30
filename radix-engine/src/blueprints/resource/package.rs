@@ -8,10 +8,10 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
@@ -298,7 +298,9 @@ impl ResourceManagerNativePackage {
 
             let mut key_value_stores = Vec::new();
             key_value_stores.push(BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<NonFungibleLocalId>()),
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
+                ),
                 value: TypeSchema::Instance(0u8),
                 can_own: false,
             });

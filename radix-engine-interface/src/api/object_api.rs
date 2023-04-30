@@ -4,6 +4,7 @@ use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
+use scrypto_schema::InstanceSchema;
 
 #[repr(u8)]
 #[derive(
@@ -30,20 +31,20 @@ pub enum ObjectModuleId {
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
     /// Creates a new object of a given blueprint type
-    fn new_object(
+    fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object_with_schemas(blueprint_ident, fields, None, vec![])
+        self.new_object(blueprint_ident, None, fields, vec![])
     }
 
-    fn new_object_with_schemas(
+    fn new_object(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<Vec<u8>>,
         schema: Option<InstanceSchema>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>
+        fields: Vec<Vec<u8>>,
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

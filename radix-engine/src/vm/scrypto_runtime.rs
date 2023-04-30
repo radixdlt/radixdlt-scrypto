@@ -123,7 +123,7 @@ where
 
         let component_id = self
             .api
-            .new_object(blueprint_ident.as_ref(), object_states)?;
+            .new_simple_object(blueprint_ident.as_ref(), object_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 

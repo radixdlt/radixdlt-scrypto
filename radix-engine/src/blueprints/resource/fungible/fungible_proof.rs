@@ -90,7 +90,7 @@ impl FungibleProofBlueprint {
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&moveable).unwrap(),

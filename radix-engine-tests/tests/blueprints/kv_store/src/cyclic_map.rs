@@ -47,10 +47,10 @@ mod cyclic_map {
             let node_id = kv_store_id.as_node_id();
             let key = scrypto_encode(&0u32).unwrap();
             let substate = KeyValueStore::<(), ()> {
-                        id: kv_store_id,
-                        key: PhantomData,
-                        value: PhantomData,
-                    };
+                id: kv_store_id,
+                key: PhantomData,
+                value: PhantomData,
+            };
 
             let handle = ScryptoEnv
                 .key_value_store_lock_entry(node_id, &key, LockFlags::MUTABLE)

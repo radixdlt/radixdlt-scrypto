@@ -405,7 +405,7 @@ impl AccessControllerNativePackage {
 
         let substate =
             AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;

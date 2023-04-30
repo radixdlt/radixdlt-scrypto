@@ -10,13 +10,13 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{Blueprint, GlobalAddress, InstanceSchema};
+use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::KeyValueStoreInfo;
+use scrypto_schema::{InstanceSchema, KeyValueStoreInfo};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -26,7 +26,7 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
-    fn new_object(
+    fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
         object_states: Vec<Vec<u8>>,
@@ -44,10 +44,15 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn new_object_with_schemas(&mut self, blueprint_ident: &str, fields: Vec<Vec<u8>>, schema: Option<InstanceSchema>, kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>) -> Result<NodeId, ClientApiError> {
+    fn new_object(
+        &mut self,
+        _blueprint_ident: &str,
+        _schema: Option<InstanceSchema>,
+        _fields: Vec<Vec<u8>>,
+        _kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+    ) -> Result<NodeId, ClientApiError> {
         todo!()
     }
-
 
     fn globalize(
         &mut self,

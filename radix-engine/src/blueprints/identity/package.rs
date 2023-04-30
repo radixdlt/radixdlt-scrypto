@@ -270,7 +270,7 @@ impl IdentityBlueprint {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let object_id = api.new_object(IDENTITY_BLUEPRINT, vec![])?;
+        let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
             ObjectModuleId::SELF => Own(object_id),
