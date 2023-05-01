@@ -14,6 +14,7 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -48,12 +49,11 @@ use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSch
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
-use radix_engine_stores::hash_tree::{put_at_next_version, DbId, SubstateHashChange};
-use radix_engine_stores::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase,
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates,
 };
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
+use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
@@ -376,7 +376,7 @@ impl TestRunner {
 
         let metadata_entry = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 SysModuleId::Metadata.into(),
                 &SubstateKey::Map(key),
@@ -400,7 +400,7 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::Royalty.into(),
                 &RoyaltyOffset::RoyaltyAccumulator.into(),
@@ -410,7 +410,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -425,7 +425,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, PackageRoyaltySubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 SysModuleId::Object.into(),
                 &PackageOffset::Royalty.into(),
@@ -435,7 +435,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -481,7 +481,7 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 &FungibleVaultOffset::LiquidFungible.into(),
@@ -495,7 +495,7 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 SysModuleId::Object.into(),
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -508,7 +508,10 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_mapped_substates::<JmtMapper>(ids.as_node_id(), SysModuleId::Object.into());
+                .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                    ids.as_node_id(),
+                    SysModuleId::Object.into(),
+                );
             let id = substate_iter.next().map(|(_key, value)| {
                 let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
                 id
@@ -586,7 +589,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
-            .get_mapped_substate::<JmtMapper, ValidatorSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 SysModuleId::Object.into(),
                 &ValidatorOffset::Validator.into(),
@@ -597,7 +600,7 @@ impl TestRunner {
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
-            .get_mapped_substate::<JmtMapper, CurrentValidatorSetSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
                 SysModuleId::Object.into(),
                 &EpochManagerOffset::CurrentValidatorSet.into(),
@@ -1254,7 +1257,7 @@ impl TestRunner {
     ) -> Result<Vec<u8>, RuntimeError> {
         // Prepare data for creating kernel
         let substate_db = InMemorySubstateDatabase::standard();
-        let mut track = Track::<_, JmtMapper>::new(&substate_db);
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(&substate_db);
         let transaction_hash = hash(vec![0]);
         let mut id_allocator = IdAllocator::new(transaction_hash, BTreeSet::new());
         let execution_config = ExecutionConfig::standard();
@@ -1321,7 +1324,7 @@ impl TestRunner {
                     ObjectModuleId::SELF => {
                         let type_info = self
                             .substate_db()
-                            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                                 node_id,
                                 SysModuleId::TypeInfo.into(),
                                 &TypeInfoOffset::TypeInfo.into(),
@@ -1356,7 +1359,7 @@ impl TestRunner {
         (
             local_type_index,
             self.substate_db()
-                .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+                .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     SysModuleId::Object.into(),
                     &PackageOffset::Info.into(),
@@ -1415,10 +1418,10 @@ impl StateHashSupport {
 
     pub fn update_with(&mut self, db_updates: &DatabaseUpdates) {
         let mut hash_changes = Vec::new();
-        for (index_id, index_update) in db_updates {
-            for (key, db_update) in index_update {
+        for (db_partition_key, partition_update) in db_updates {
+            for (db_sort_key, db_update) in partition_update {
                 let hash_change = SubstateHashChange::new(
-                    DbId::new(index_id.clone(), key.clone()),
+                    (db_partition_key.clone(), db_sort_key.clone()),
                     match db_update {
                         DatabaseUpdate::Set(v) => Some(hash(v)),
                         DatabaseUpdate::Delete => None,

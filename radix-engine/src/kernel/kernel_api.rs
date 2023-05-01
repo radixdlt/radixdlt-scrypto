@@ -5,9 +5,9 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_stores::interface::NodeSubstates;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
