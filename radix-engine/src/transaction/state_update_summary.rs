@@ -374,8 +374,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         module_id: ModuleId,
         key: &SubstateKey,
     ) -> Option<D> {
-        self.substate_db
-            .get_mapped_substate::<M, D>(node_id, module_id, key)
+        self.substate_db.get_mapped::<M, D>(node_id, module_id, key)
     }
 
     fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(

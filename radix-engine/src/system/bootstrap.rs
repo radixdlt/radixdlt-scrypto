@@ -191,7 +191,7 @@ where
     )> {
         let xrd_info = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),

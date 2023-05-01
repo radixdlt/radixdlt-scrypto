@@ -181,7 +181,7 @@ fn test_genesis_resource_with_initial_allocation() {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
             SysModuleId::Object.into(),
             &FungibleResourceManagerOffset::TotalSupply.into(),
@@ -191,7 +191,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
+        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
             SysModuleId::Metadata.into(),
             &SubstateKey::Map(key),

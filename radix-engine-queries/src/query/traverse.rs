@@ -1,17 +1,17 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::types::SubstateKey;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
     ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
-use radix_engine_store_interface::interface::{DbSortKey, SubstateDatabase};
+use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
@@ -47,7 +47,7 @@ pub trait StateTreeVisitor {
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleId, DbSortKey)>,
+        _parent_id: Option<&(NodeId, ModuleId, SubstateKey)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -65,7 +65,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleId, DbSortKey)>,
+        parent_node_id: Option<&(NodeId, ModuleId, SubstateKey)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -73,7 +73,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleId, DbSortKey)>,
+        parent: Option<&(NodeId, ModuleId, SubstateKey)>,
         node_id: NodeId,
         depth: u32,
     ) {
@@ -87,7 +87,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         // Load type info
         let type_info = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &node_id,
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
@@ -96,9 +96,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (db_sort_key, value) in self
+                for (substate_key, value) in self
                     .substate_db
-                    .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                    .list_raw_with_mapped_keys::<SpreadPrefixKeyMapper>(
                         &node_id,
                         SysModuleId::Virtualized.into(),
                     )
@@ -111,7 +111,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             Some(&(
                                 node_id,
                                 SysModuleId::Virtualized.into(),
-                                db_sort_key.clone(),
+                                substate_key.clone(),
                             )),
                             child_node_id,
                             depth + 1,
@@ -130,7 +130,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             &node_id,
                             SysModuleId::Object.into(),
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -147,7 +147,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+                        .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                             &node_id,
                             SysModuleId::Object.into(),
                             &NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -160,16 +160,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &liquid,
                     );
 
-                    let ids = self
+                    let entries = self
                         .substate_db
-                        .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId>(
                             liquid.ids.as_node_id(),
                             SysModuleId::Object.into(),
                         );
-                    for (_key, value) in ids {
-                        let non_fungible_local_id: NonFungibleLocalId =
-                            scrypto_decode(&value).unwrap();
-
+                    for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
@@ -181,8 +178,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         let x = self
                             .substate_db
-                            .list_mapped_substates::<SpreadPrefixKeyMapper>(&node_id, t.into());
-                        for (db_sort_key, substate_value) in x {
+                            .list_raw_with_mapped_keys::<SpreadPrefixKeyMapper>(&node_id, t.into());
+                        for (substate_key, substate_value) in x {
                             let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
                                 .expect("Substate is not a scrypto value")
                                 .unpack();
@@ -191,7 +188,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                     Some(&(
                                         node_id,
                                         SysModuleId::Object.into(),
-                                        db_sort_key.clone(),
+                                        substate_key.clone(),
                                     )),
                                     child_node_id,
                                     depth + 1,
