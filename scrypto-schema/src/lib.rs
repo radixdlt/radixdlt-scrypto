@@ -117,7 +117,52 @@ impl Default for BlueprintSchema {
     }
 }
 
-impl BlueprintSchema {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedBlueprintSchema {
+    pub outer_blueprint: Option<String>,
+
+    pub schema: ScryptoSchema,
+    /// For each offset, there is a [`LocalTypeIndex`]
+    pub substates: Vec<LocalTypeIndex>,
+
+    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
+
+    /// For each function, there is a [`FunctionSchema`]
+    pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+}
+
+impl From<BlueprintSchema> for IndexedBlueprintSchema {
+    fn from(value: BlueprintSchema) -> Self {
+        Self {
+            outer_blueprint: value.outer_blueprint,
+            schema: value.schema,
+            substates: value.substates,
+            key_value_stores: value.key_value_stores,
+            functions: value.functions,
+            virtual_lazy_load_functions: value.virtual_lazy_load_functions,
+            event_schema: value.event_schema,
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedPackageSchema {
+    pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
+}
+
+impl From<PackageSchema> for IndexedPackageSchema {
+    fn from(value: PackageSchema) -> Self {
+        IndexedPackageSchema {
+            blueprints: value.blueprints.into_iter().map(|(name, b)| (name, b.into())).collect()
+        }
+    }
+}
+
+impl IndexedBlueprintSchema {
     // TODO: Cleanup
     pub fn has_kv(&self) -> bool {
         self.substates.is_empty()

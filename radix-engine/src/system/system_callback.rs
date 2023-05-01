@@ -17,11 +17,11 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::{BlueprintSchema, IndexedBlueprintSchema};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
     input: &IndexedScryptoValue,
@@ -58,7 +58,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {

@@ -19,7 +19,7 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, IndexedPackageSchema, PackageSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
@@ -428,7 +428,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema,
+            schema: schema.into(),
             dependent_resources: dependent_resources.into_iter().collect(),
             dependent_components: dependent_components.into_iter().collect(),
         };
@@ -562,7 +562,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema,
+            schema: schema.into(),
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };

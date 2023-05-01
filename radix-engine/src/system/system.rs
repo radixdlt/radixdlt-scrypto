@@ -37,9 +37,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema,
-};
+use radix_engine_interface::schema::{BlueprintSchema, IndexedBlueprintSchema, IndexedPackageSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -207,7 +205,7 @@ where
     fn get_blueprint_schema(
         &mut self,
         blueprint: &Blueprint,
-    ) -> Result<BlueprintSchema, RuntimeError> {
+    ) -> Result<IndexedBlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
             USER_BASE_MODULE,
