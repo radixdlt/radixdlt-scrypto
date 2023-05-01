@@ -1173,11 +1173,52 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         recovery_group.into(),
     );
 
-    // Confirmation Role Rules
-    let confirmation_group = "confirmation";
+    // Recovery || Confirmation Role Rules
+    let recovery_or_confirmation_group = "recovery_or_confirmation";
     access_rules.set_group_access_rule(
-        confirmation_group.into(),
-        rule_set.confirmation_role.clone(),
+        recovery_or_confirmation_group.into(),
+        access_rule_or(vec![
+            rule_set.recovery_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        recovery_or_confirmation_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        recovery_or_confirmation_group.into(),
+    );
+
+    // Primary || Confirmation Role Rules
+    let primary_or_confirmation_group = "primary_or_confirmation";
+    access_rules.set_group_access_rule(
+        primary_or_confirmation_group.into(),
+        access_rule_or(vec![
+            rule_set.primary_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        primary_or_confirmation_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        primary_or_confirmation_group.into(),
     );
 
     // Other methods
@@ -1194,46 +1235,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
             ]
             .into(),
         ),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
-        access_rule_or(
-            [
-                rule_set.recovery_role.clone(),
-                rule_set.confirmation_role.clone(),
-            ]
-            .into(),
-        ),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
-        access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
-        access_rule_or(
-            [
-                rule_set.primary_role.clone(),
-                rule_set.confirmation_role.clone(),
-            ]
-            .into(),
-        ),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
-        access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
     let non_fungible_local_id =
