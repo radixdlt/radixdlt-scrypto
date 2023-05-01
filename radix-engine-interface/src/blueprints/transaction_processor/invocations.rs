@@ -8,11 +8,12 @@ pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct TransactionProcessorRunInput {
+pub struct TransactionProcessorRunInput<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
     pub instructions: Vec<u8>,
-    pub blobs: BTreeMap<Hash, Vec<u8>>,
+    // Use `Cow` to avoid large blob copy
+    pub blobs: BTreeMap<Hash, Cow<'a, [u8]>>,
     pub references: BTreeSet<Reference>,
 }
 

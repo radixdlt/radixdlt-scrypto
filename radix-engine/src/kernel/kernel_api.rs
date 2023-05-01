@@ -177,15 +177,11 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
+    // TODO: gets cleaned up a little more
+    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
-
-    // TODO: Remove these, these are temporary until the architecture
-    // TODO: gets cleaned up a little more
-    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
-    fn kernel_load_package_package_dependencies(&mut self);
-    fn kernel_load_common(&mut self);
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
