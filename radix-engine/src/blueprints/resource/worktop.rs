@@ -44,7 +44,7 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let mut node_substates = api.kernel_drop_node(input.worktop.as_node_id())?;
+        let mut node_substates = api.kernel_drop_node(input.worktop.0.as_node_id())?;
         let substate = node_substates
             .remove(&SysModuleId::Object.into())
             .unwrap()
