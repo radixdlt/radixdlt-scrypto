@@ -133,7 +133,6 @@ pub trait MappedSubstateDatabase {
 
     /// Lists partially-mapped entries (i.e. business substate keys and raw database byte values) of
     /// the given node module.
-    /// TODO(resolve during review): this seems like a "half-way abstraction" - can be refactored?
     fn list_raw_with_mapped_keys<M: DatabaseKeyMapper>(
         &self,
         node_id: &NodeId,
