@@ -1,6 +1,11 @@
+use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
+use crate::constants::{METADATA_PACKAGE, ROYALTY_PACKAGE};
 use crate::types::*;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -26,6 +31,32 @@ pub enum ObjectModuleId {
     Metadata,
     Royalty,
     AccessRules,
+}
+
+impl ObjectModuleId {
+    pub fn base_module(&self) -> ModuleNumber {
+        match self {
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
+            ObjectModuleId::SELF => USER_BASE_MODULE,
+        }
+    }
+
+    pub fn static_blueprint(&self) -> Option<Blueprint> {
+        match self {
+            ObjectModuleId::Metadata => Some(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT)),
+            ObjectModuleId::Royalty => Some(Blueprint::new(
+                &ROYALTY_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+            )),
+            ObjectModuleId::AccessRules => Some(Blueprint::new(
+                &ACCESS_RULES_PACKAGE,
+                ACCESS_RULES_BLUEPRINT,
+            )),
+            ObjectModuleId::SELF => None,
+        }
+    }
 }
 
 /// A high level interface to manipulate objects in the actor's call frame

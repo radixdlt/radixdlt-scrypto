@@ -72,8 +72,8 @@ use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema};
 use radix_engine_interface::schema::PackageSchema;
+use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema};
 use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_stores::jmt_support::JmtMapper;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
@@ -347,7 +347,9 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
-pub fn export_package_schema(package_address: PackageAddress) -> Result<IndexedPackageSchema, Error> {
+pub fn export_package_schema(
+    package_address: PackageAddress,
+) -> Result<IndexedPackageSchema, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();

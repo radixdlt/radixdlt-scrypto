@@ -153,14 +153,13 @@ pub fn to_typed_object_module_substate_key(
     module_offset: u8,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, String> {
-    return to_typed_object_substate_key_internal(entity_type, module_offset, substate_key).map_err(
-        |_| {
+    return to_typed_object_substate_key_internal(entity_type, module_offset, substate_key)
+        .map_err(|_| {
             format!(
                 "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
                 entity_type, substate_key
             )
-        },
-    );
+        });
 }
 
 fn to_typed_object_substate_key_internal(
@@ -183,15 +182,17 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalNonFungibleResource => {
             let module_offset = NonFungibleResourceManagerModuleOffset::try_from(module_offset)?;
             match module_offset {
-                NonFungibleResourceManagerModuleOffset::Fields => TypedObjectModuleSubstateKey::NonFungibleResource(
-                    NonFungibleResourceManagerOffset::try_from(substate_key)?,
-                ),
+                NonFungibleResourceManagerModuleOffset::Fields => {
+                    TypedObjectModuleSubstateKey::NonFungibleResource(
+                        NonFungibleResourceManagerOffset::try_from(substate_key)?,
+                    )
+                }
                 NonFungibleResourceManagerModuleOffset::Data => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
                 }
             }
-        },
+        }
         EntityType::GlobalEpochManager => {
             TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
         }

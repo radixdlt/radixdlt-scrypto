@@ -23,9 +23,6 @@ use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
 use radix_engine_interface::api::substate_lock_api::{FieldLockHandle, LockFlags};
@@ -595,53 +592,23 @@ where
         for (module_id, node_id) in modules {
             match module_id {
                 ObjectModuleId::SELF => panic!("Should have been removed already"),
-                ObjectModuleId::AccessRules => {
+                ObjectModuleId::AccessRules
+                | ObjectModuleId::Metadata
+                | ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
-                    if !blueprint.eq(&expected) {
+                    let expected_blueprint = module_id.static_blueprint().unwrap();
+                    if !blueprint.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
-                                expected_blueprint: expected,
+                                expected_blueprint,
                                 actual_blueprint: blueprint,
                             }),
                         )));
                     }
 
-                    let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
-                    let access_rules = access_rule_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(ACCESS_RULES_BASE_MODULE, access_rules);
-                }
-                ObjectModuleId::Metadata => {
-                    let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
-                    if !blueprint.eq(&expected) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
-                            Box::new(InvalidModuleType {
-                                expected_blueprint: expected,
-                                actual_blueprint: blueprint,
-                            }),
-                        )));
-                    }
-
-                    let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
-                    let metadata = metadata_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(METADATA_BASE_MODULE, metadata);
-                }
-                ObjectModuleId::Royalty => {
-                    let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
-                    if !blueprint.eq(&expected) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
-                            Box::new(InvalidModuleType {
-                                expected_blueprint: expected,
-                                actual_blueprint: blueprint,
-                            }),
-                        )));
-                    }
-
-                    let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
-                    let royalty = royalty_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(ROYALTY_BASE_MODULE, royalty);
+                    let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
+                    let self_substates = cur_node_substates.remove(&USER_BASE_MODULE).unwrap();
+                    node_substates.insert(module_id.base_module(), self_substates);
                 }
             }
         }
@@ -696,11 +663,11 @@ where
     fn call_module_method(
         &mut self,
         receiver: &NodeId,
-        module_id: ObjectModuleId,
+        object_module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let (object_info, global_address) = match module_id {
+        let (object_info, global_address) = match object_module_id {
             ObjectModuleId::SELF => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
@@ -738,45 +705,20 @@ where
                     }
                 }
             }
-            ObjectModuleId::Metadata => {
-                // TODO: Check if type has metadata
-                (
-                    ObjectInfo {
-                        blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
-                        outer_object: None,
-                        global: true,
-                        instance_schema: None,
-                    },
-                    None,
-                )
-            }
-            ObjectModuleId::Royalty => {
-                // TODO: Check if type has royalty
-                (
-                    ObjectInfo {
-                        blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
-                        outer_object: None,
-                        global: true,
-                        instance_schema: None,
-                    },
-                    None,
-                )
-            }
-            ObjectModuleId::AccessRules => {
-                // TODO: Check if type has access rules
-                (
-                    ObjectInfo {
-                        blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
-                        outer_object: None,
-                        global: true,
-                        instance_schema: None,
-                    },
-                    None,
-                )
-            }
+            // TODO: Check if type has these object modules
+            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
+                ObjectInfo {
+                    blueprint: object_module_id.static_blueprint().unwrap(),
+                    outer_object: None,
+                    global: true,
+                    instance_schema: None,
+                },
+                None,
+            ),
         };
 
-        let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
+        let identifier =
+            MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
         let blueprint = object_info.blueprint.clone();
 
@@ -1394,25 +1336,18 @@ where
             }
         }
 
-        // Check if valid field_index
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let (module_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
-            field_info
-        } else {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                object_info.blueprint.clone(),
-                field,
-            )));
-        };
-
-        let base_module = match object_module_id {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => USER_BASE_MODULE,
-        };
-
-        let module_number = base_module.at_offset(module_offset);
+        let (module_number, field_type_index) =
+            if let Some((offset, field_type_index)) = schema.field(field) {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module.at_offset(offset);
+                (module_number, field_type_index)
+            } else {
+                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                    object_info.blueprint.clone(),
+                    field,
+                )));
+            };
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
@@ -1495,27 +1430,21 @@ where
             } => (node_id, module_id, object_info),
         };
 
-        // TODO: Add check if key value exists
-
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
 
-        let (module_offset, kv_schema) = schema
+        let (module_number, kv_schema) = schema
             .key_value_store_module_offset(kv_handle)
+            .map(|(module_offset, kv_schema)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module.at_offset(*module_offset);
+                (module_number, kv_schema)
+            })
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
                     object_info.blueprint.clone(),
                     kv_handle,
                 ))
             })?;
-
-        let base_module = match object_module_id {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => USER_BASE_MODULE,
-        };
-
-        let module_number = base_module.at_offset(*module_offset);
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
