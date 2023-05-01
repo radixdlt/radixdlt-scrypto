@@ -23,10 +23,9 @@ fn bench_transfer(c: &mut Criterion) {
         wasm_metering_config: WasmMeteringConfig::V0,
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let (_, _, receipt) = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
         .bootstrap_test_default()
         .unwrap();
-    let faucet_component = receipt.faucet_component();
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
@@ -40,7 +39,7 @@ fn bench_transfer(c: &mut Criterion) {
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             );
             let manifest = ManifestBuilder::new()
-                .lock_fee(faucet_component, 100.into())
+                .lock_fee(FAUCET, 100.into())
                 .new_account_advanced(config)
                 .build();
             let account = execute_and_commit_transaction(
@@ -63,8 +62,8 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(faucet_component, 100.into())
-        .call_method(faucet_component, "free", manifest_args!())
+        .lock_fee(FAUCET, 100.into())
+        .call_method(FAUCET, "free", manifest_args!())
         .call_method(
             account1,
             "deposit_batch",
@@ -85,7 +84,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(faucet_component, 100.into())
+        .lock_fee(FAUCET, 100.into())
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,

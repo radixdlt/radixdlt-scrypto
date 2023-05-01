@@ -7,7 +7,10 @@ fn test_large_data() {
     let schema = single_function_package_schema("Test", "f");
     let result = WasmValidator::default().validate(&code, &schema);
 
-    assert_eq!(Err(PrepareError::NotInstantiatable), result);
+    assert!(matches!(
+        result,
+        Err(PrepareError::NotInstantiatable { .. })
+    ));
 }
 
 #[test]
