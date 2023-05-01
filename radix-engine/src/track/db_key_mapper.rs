@@ -10,10 +10,10 @@ use utils::{combine, copy_u8_array};
 /// A mapper between the business RE Node / Module / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
     /// Converts the given RE Node and Module ID to the database partition's key.
+    /// Note: contrary to the sort key, we do not provide the inverse mapping here (i.e. if you
+    /// find yourself needing to map the database partition key back to RE Node and Module ID, then
+    /// you are most likely using the "partition vs sort key" construct in a wrong way).
     fn to_db_partition_key(node_id: &NodeId, module_id: ModuleId) -> DbPartitionKey;
-
-    /// Converts the given database partition's key to RE Node and Module ID.
-    fn from_db_partition_key(db_partition_key: &DbPartitionKey) -> (NodeId, ModuleId);
 
     /// Converts the given Substate key to the database's sort key.
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey;
@@ -24,23 +24,24 @@ pub trait DatabaseKeyMapper {
 
 /// A [`DatabaseKeyMapper`] tailored for databases which cannot tolerate long common prefixes
 /// among keys (for performance reasons). In other words, it spreads the keys "evenly" (i.e.
-/// pseudo-randomly) across the key space.
-/// For context: our actual use-case for it is the Jellyfish Merkle Tree.
+/// pseudo-randomly) across the key space. For context: our use-case for this is the Jellyfish
+/// Merkle Tree.
+///
+/// This implementation is the actual, protocol-enforced one, to be used in public Radix networks.
+///
+/// This implementation achieves the prefix-spreading by:
+/// - using a (long, ~100% unique) hash instead of plain RE Node and Module ID (please note that it
+///   makes this mapping effectively irreversible);
+/// - using a (shorter, but hard to crack) hash prefix for Substate key.
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn to_db_partition_key(node_id: &NodeId, module_id: ModuleId) -> DbPartitionKey {
-        let node_id_bytes = node_id.as_ref();
-        let module_id_byte = module_id.0;
-        let plain_bytes = [node_id_bytes, &[module_id_byte]].concat();
-        DbPartitionKey(Self::to_hash_prefixed(&plain_bytes))
-    }
-
-    fn from_db_partition_key(db_partition_key: &DbPartitionKey) -> (NodeId, ModuleId) {
-        let plain_bytes = Self::from_hash_prefixed(&db_partition_key.0);
-        let node_id_bytes = copy_u8_array(&plain_bytes[..NodeId::LENGTH]);
-        let module_id_byte = plain_bytes[NodeId::LENGTH];
-        (NodeId(node_id_bytes), ModuleId(module_id_byte))
+        let mut buffer = Vec::new();
+        buffer.extend(node_id.as_ref());
+        buffer.push(module_id.0);
+        let hash_bytes = hash(buffer).0[..Self::PARTITION_KEY_HASH_LENGTH].to_vec();
+        DbPartitionKey(hash_bytes)
     }
 
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey {
@@ -77,18 +78,23 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
 }
 
 impl SpreadPrefixKeyMapper {
+    /// Length of hashes that are used in the database *instead* of plain RE Node and Module IDs.
+    const PARTITION_KEY_HASH_LENGTH: usize = 26;
+
+    /// Discriminator bytes for telling apart different types of sort keys (needed for reversible
+    /// encoding).
     const TUPLE_DISCRIMINATOR: u8 = 1;
     const MAP_DISCRIMINATOR: u8 = 2;
     const SORTED_DISCRIMINATOR: u8 = 3;
 
-    /// A number of leading bytes populated with a hash of the key (for spreading purposes).
+    /// A number of leading bytes populated with a hash of the sort key (for spreading purposes).
     /// This number should be:
     /// - high enough to avoid being cracked (for crafting arbitrarily long key prefixes);
     /// - low enough to avoid inflating database key sizes.
     ///
     /// Note: hashing will not be applied to [`TupleKey`] (which is a single byte, and hence does
     /// not create the risk of long common prefixes).
-    const HASHED_PREFIX_LENGTH: usize = 10;
+    const HASHED_PREFIX_LENGTH: usize = 20;
 
     /// Returns the given bytes prefixed by their known-length hash (see [`HASHED_PREFIX_LENGTH`]).
     fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
