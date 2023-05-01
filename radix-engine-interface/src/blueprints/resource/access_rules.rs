@@ -9,6 +9,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use utils::rust::prelude::index_map;
 use utils::rust::prelude::IndexMap;
 
 use super::AccessRule;
@@ -91,12 +92,12 @@ pub struct AccessRulesConfig {
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
-            direct_method_auth: IndexMap::new(),
-            method_auth: IndexMap::new(),
-            grouped_auth: IndexMap::new(),
+            direct_method_auth: index_map::new(),
+            method_auth: index_map::new(),
+            grouped_auth: index_map::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            method_auth_mutability: IndexMap::new(),
-            grouped_auth_mutability: IndexMap::new(),
+            method_auth_mutability: index_map::new(),
+            grouped_auth_mutability: index_map::new(),
             default_auth_mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         }
     }
