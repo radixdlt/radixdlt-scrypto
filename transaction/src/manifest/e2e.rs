@@ -599,6 +599,22 @@ CREATE_ACCOUNT;
     }
 
     #[test]
+    fn test_create_account_complex() {
+        compile_and_decompile_with_inversion_test(
+            "create_account",
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/account/new_complex.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+            r##"
+CREATE_ACCOUNT_ADVANCED
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(0u8), "lock_fee"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]")))))), Tuple(Enum(0u8), "withdraw"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]")))))), Tuple(Enum(0u8), "create_proof"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]")))))), Tuple(Enum(0u8), "create_proof_by_ids"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]")))))), Tuple(Enum(0u8), "withdraw_non_fungibles"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]"))))))), Map<String, Enum>(), Enum(0u8, Enum(0u8)), Map<Tuple, Enum>(Tuple(Enum(0u8), "lock_fee"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[cedebe542c3294b26810b8861e24b7941ae5d4967b926a3f1769]"))))))), Map<String, Enum>(), Enum(0u8, Enum(0u8)));
+"##,
+        );
+    }
+
+    #[test]
     fn test_create_identity() {
         compile_and_decompile_with_inversion_test(
             "create_identity",
