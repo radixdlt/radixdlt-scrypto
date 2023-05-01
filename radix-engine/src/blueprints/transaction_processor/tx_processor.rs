@@ -91,7 +91,7 @@ impl TransactionProcessorBlueprint {
         // Decode instructions
         let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
 
-        let mut processor = TransactionProcessor::new(&input.blobs);
+        let mut processor = TransactionProcessor::new(input.blobs);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
@@ -278,7 +278,7 @@ impl TransactionProcessorBlueprint {
                         PACKAGE_BLUEPRINT,
                         PACKAGE_PUBLISH_WASM_IDENT,
                         scrypto_encode(&PackagePublishWasmInput {
-                            code: code.clone(),
+                            code: code.to_vec(), // TODO: cow?
                             schema: schema.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
@@ -311,7 +311,7 @@ impl TransactionProcessorBlueprint {
                         PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
                         scrypto_encode(&PackagePublishWasmAdvancedInput {
                             package_address: None,
-                            code: code.clone(),
+                            code: code.to_vec(), // TODO: cow?
                             schema: schema.clone(),
                             access_rules: access_rules.clone(),
                             royalty_config: royalty_config.clone(),
@@ -582,11 +582,11 @@ struct TransactionProcessor<'blob> {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: &'blob BTreeMap<Hash, Vec<u8>>,
+    blobs_by_hash: BTreeMap<Hash, Cow<'blob, [u8]>>,
 }
 
 impl<'blob> TransactionProcessor<'blob> {
-    fn new(blobs_by_hash: &'blob BTreeMap<Hash, Vec<u8>>) -> Self {
+    fn new(blobs_by_hash: BTreeMap<Hash, Cow<'blob, [u8]>>) -> Self {
         Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
@@ -616,10 +616,11 @@ impl<'blob> TransactionProcessor<'blob> {
         Ok(Bucket(Own(real_id)))
     }
 
-    fn get_blob(&mut self, blob_ref: &ManifestBlobRef) -> Result<&'blob Vec<u8>, RuntimeError> {
+    fn get_blob(&mut self, blob_ref: &ManifestBlobRef) -> Result<&[u8], RuntimeError> {
         let hash = Hash(blob_ref.0);
         self.blobs_by_hash
             .get(&hash)
+            .map(|x| x.as_ref())
             .ok_or(RuntimeError::ApplicationError(
                 ApplicationError::TransactionProcessorError(
                     TransactionProcessorError::BlobNotFound(hash),
@@ -785,6 +786,6 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     }
 
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, RuntimeError> {
-        Ok(self.processor.get_blob(&b)?.clone())
+        Ok(self.processor.get_blob(&b)?.to_vec())
     }
 }

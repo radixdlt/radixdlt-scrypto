@@ -3,9 +3,9 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_stores::interface::NodeSubstates;
 
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;

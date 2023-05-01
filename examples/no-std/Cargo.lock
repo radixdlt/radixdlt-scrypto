@@ -282,6 +282,7 @@ version = "0.10.0"
 dependencies = [
  "bitflags",
  "hex",
+ "lazy_static",
  "radix-engine-common",
  "radix-engine-derive",
  "sbor",

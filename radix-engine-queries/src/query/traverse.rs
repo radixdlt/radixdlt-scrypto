@@ -1,4 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
@@ -11,7 +12,7 @@ use radix_engine_interface::types::{
     OBJECT_BASE_MODULE, ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
-use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
+use radix_engine_store_interface::interface::{DbSortKey, SubstateDatabase};
 use sbor::rust::prelude::*;
 
 pub struct StateTreeTraverser<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> {
@@ -47,7 +48,7 @@ pub trait StateTreeVisitor {
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
+        _parent_id: Option<&(NodeId, ModuleNumber, DbSortKey)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -65,7 +66,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
+        parent_node_id: Option<&(NodeId, ModuleNumber, DbSortKey)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -73,7 +74,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
+        parent: Option<&(NodeId, ModuleNumber, DbSortKey)>,
         node_id: NodeId,
         depth: u32,
     ) {
@@ -87,7 +88,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
         // Load type info
         let type_info = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &node_id,
                 TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
@@ -96,16 +97,23 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (substate_key, value) in self
+                for (db_sort_key, value) in self
                     .substate_db
-                    .list_mapped_substates::<JmtMapper>(&node_id, OBJECT_BASE_MODULE)
+                    .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                        &node_id,
+                        OBJECT_BASE_MODULE,
+                    )
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
                         .unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(node_id, OBJECT_BASE_MODULE, substate_key.clone())),
+                            Some(&(
+                                node_id,
+                                OBJECT_BASE_MODULE,
+                                db_sort_key.clone(),
+                            )),
                             child_node_id,
                             depth + 1,
                         );
@@ -124,7 +132,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
+                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             &node_id,
                             OBJECT_BASE_MODULE,
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -141,7 +149,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                             &node_id,
                             OBJECT_BASE_MODULE,
                             &NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -154,10 +162,12 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &liquid,
                     );
 
-                    let ids = self.substate_db.list_mapped_substates::<JmtMapper>(
-                        liquid.ids.as_node_id(),
-                        OBJECT_BASE_MODULE,
-                    );
+                    let ids = self
+                        .substate_db
+                        .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                            liquid.ids.as_node_id(),
+                            OBJECT_BASE_MODULE,
+                        );
                     for (_key, value) in ids {
                         let non_fungible_local_id: NonFungibleLocalId =
                             scrypto_decode(&value).unwrap();
@@ -179,14 +189,18 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         let x = self
                             .substate_db
-                            .list_mapped_substates::<JmtMapper>(&node_id, t);
-                        for (db_key, substate_value) in x {
+                            .list_mapped_substates::<SpreadPrefixKeyMapper>(&node_id, t);
+                        for (db_sort_key, substate_value) in x {
                             let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
                                 .expect("Substate is not a scrypto value")
                                 .unpack();
                             for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&(node_id, OBJECT_BASE_MODULE, db_key.clone())),
+                                    Some(&(
+                                        node_id,
+                                        OBJECT_BASE_MODULE,
+                                        db_sort_key.clone(),
+                                    )),
                                     child_node_id,
                                     depth + 1,
                                 );

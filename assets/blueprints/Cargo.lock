@@ -664,7 +664,7 @@ dependencies = [
  "radix-engine-common",
  "radix-engine-constants",
  "radix-engine-interface",
- "radix-engine-stores",
+ "radix-engine-store-interface",
  "resources-tracker-macro",
  "sbor",
  "serde_json",
@@ -715,6 +715,7 @@ version = "0.10.0"
 dependencies = [
  "bitflags",
  "hex",
+ "lazy_static",
  "radix-engine-common",
  "radix-engine-derive",
  "sbor",
@@ -733,9 +734,21 @@ dependencies = [
  "radix-engine",
  "radix-engine-constants",
  "radix-engine-interface",
- "radix-engine-stores",
+ "radix-engine-store-interface",
  "sbor",
  "transaction",
+ "utils",
+]
+
+[[package]]
+name = "radix-engine-store-interface"
+version = "0.10.0"
+dependencies = [
+ "hex",
+ "itertools",
+ "radix-engine-common",
+ "radix-engine-derive",
+ "sbor",
  "utils",
 ]
 
@@ -745,8 +758,11 @@ version = "0.10.0"
 dependencies = [
  "hex",
  "itertools",
- "radix-engine-interface",
+ "radix-engine-common",
+ "radix-engine-derive",
+ "radix-engine-store-interface",
  "sbor",
+ "utils",
 ]
 
 [[package]]
@@ -950,6 +966,7 @@ dependencies = [
  "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-queries",
+ "radix-engine-store-interface",
  "radix-engine-stores",
  "sbor",
  "scrypto",

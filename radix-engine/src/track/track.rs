@@ -1,12 +1,22 @@
+use crate::track::db_key_mapper::DatabaseKeyMapper;
+use crate::track::interface::{
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_stores::interface::{
-    AcquireLockError, DatabaseMapper, DatabaseUpdate, NodeSubstates, SetSubstateError,
-    StateUpdates, SubstateDatabase, SubstateStore, TakeSubstateError,
+use radix_engine_store_interface::interface::{
+    DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct StateUpdates {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
+}
+pub type SystemUpdates = IndexMap<(NodeId, ModuleNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 pub struct SubstateLockError;
 
@@ -233,7 +243,7 @@ impl TrackedKey {
 
 #[derive(Debug)]
 pub struct TrackedModule {
-    pub substates: BTreeMap<Vec<u8>, TrackedSubstateKey>,
+    pub substates: BTreeMap<DbSortKey, TrackedSubstateKey>,
     pub range_read: Option<u32>,
 }
 
@@ -245,7 +255,7 @@ impl TrackedModule {
         }
     }
 
-    pub fn new_with_substates(substates: BTreeMap<Vec<u8>, TrackedSubstateKey>) -> Self {
+    pub fn new_with_substates(substates: BTreeMap<DbSortKey, TrackedSubstateKey>) -> Self {
         Self {
             substates,
             range_read: None,
@@ -253,7 +263,7 @@ impl TrackedModule {
     }
 
     pub fn revert_writes(&mut self) {
-        for (_key, tracked_key) in &mut self.substates {
+        for tracked_key in &mut self.substates.values_mut() {
             tracked_key.tracked.revert_writes();
         }
     }
@@ -283,19 +293,17 @@ impl TrackedNode {
     }
 }
 
-pub fn to_state_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
-    let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
-        index_map_new();
-    let mut system_updates: IndexMap<
-        (NodeId, ModuleNumber),
-        IndexMap<SubstateKey, DatabaseUpdate>,
-    > = index_map_new();
+pub fn to_state_updates<M: DatabaseKeyMapper>(
+    index: IndexMap<NodeId, TrackedNode>,
+) -> StateUpdates {
+    let mut database_updates: DatabaseUpdates = index_map_new();
+    let mut system_updates: SystemUpdates = index_map_new();
     for (node_id, tracked_node) in index {
         for (module_num, tracked_module) in tracked_node.tracked_modules {
-            let mut index_updates = index_map_new();
+            let mut db_partition_updates = index_map_new();
             let mut node_module_updates = index_map_new();
 
-            for (db_key, tracked) in tracked_module.substates {
+            for (db_sort_key, tracked) in tracked_module.substates {
                 let update = match tracked.tracked {
                     TrackedKey::ReadOnly(..) | TrackedKey::Garbage => None,
                     TrackedKey::ReadNonExistAndWrite(substate) | TrackedKey::New(substate) => {
@@ -311,13 +319,13 @@ pub fn to_state_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>)
                     }
                 };
                 if let Some(update) = update {
-                    index_updates.insert(db_key, update.clone());
+                    db_partition_updates.insert(db_sort_key, update.clone());
                     node_module_updates.insert(tracked.substate_key, update);
                 }
             }
 
-            let index_id = M::map_to_db_index(&node_id, module_num);
-            database_updates.insert(index_id, index_updates);
+            let db_partition_key = M::to_db_partition_key(&node_id, module_num);
+            database_updates.insert(db_partition_key, db_partition_updates);
             system_updates.insert((node_id.clone(), module_num), node_module_updates);
         }
     }
@@ -329,12 +337,12 @@ pub fn to_state_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>)
 }
 
 struct TrackedIter<'a> {
-    iter: Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + 'a>,
+    iter: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
     num_iterations: u32,
 }
 
 impl<'a> TrackedIter<'a> {
-    fn new(iter: Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + 'a>) -> Self {
+    fn new(iter: Box<dyn Iterator<Item = PartitionEntry> + 'a>) -> Self {
         Self {
             iter,
             num_iterations: 0u32,
@@ -343,7 +351,7 @@ impl<'a> TrackedIter<'a> {
 }
 
 impl<'a> Iterator for TrackedIter<'a> {
-    type Item = (Vec<u8>, Vec<u8>);
+    type Item = PartitionEntry;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.num_iterations = self.num_iterations + 1;
@@ -351,7 +359,7 @@ impl<'a> Iterator for TrackedIter<'a> {
     }
 }
 /// Transaction-wide states and side effects
-pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
+pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     substate_db: &'s S,
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
@@ -361,7 +369,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
     phantom_data: PhantomData<M>,
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
@@ -403,10 +411,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
 
         for (node_id, force_track_node) in force_writes {
             for (module_num, force_track_module) in force_track_node.tracked_modules {
-                for (db_key, force_track_key) in force_track_module.substates {
+                for (db_sort_key, force_track_key) in force_track_module.substates {
                     let tracked_node = self.tracked_nodes.get_mut(&node_id).unwrap();
                     let tracked_module = tracked_node.tracked_modules.get_mut(&module_num).unwrap();
-                    let tracked = &mut tracked_module.substates.get_mut(&db_key).unwrap().tracked;
+                    let tracked = &mut tracked_module
+                        .substates
+                        .get_mut(&db_sort_key)
+                        .unwrap()
+                        .tracked;
                     *tracked = force_track_key.tracked;
                 }
             }
@@ -449,7 +461,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         substate_key: SubstateKey,
         virtualize: F,
     ) -> (&mut TrackedKey, bool) {
-        let db_key = M::map_to_db_key(&substate_key);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let module_substates = &mut self
             .tracked_nodes
@@ -459,14 +471,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
             .entry(module_num)
             .or_insert(TrackedModule::new())
             .substates;
-        let entry = module_substates.entry(db_key.clone());
+        let entry = module_substates.entry(db_sort_key.clone());
 
         let found = match entry {
             Entry::Vacant(e) => {
-                let index_id = M::map_to_db_index(node_id, module_num);
+                let db_partition_key = M::to_db_partition_key(node_id, module_num);
                 let value = self
                     .substate_db
-                    .get_substate(&index_id, &db_key)
+                    .get_substate(&db_partition_key, &db_sort_key)
                     .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
                 if let Some(value) = value {
                     let tracked = TrackedSubstateKey {
@@ -498,7 +510,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         };
 
         (
-            &mut module_substates.get_mut(&db_key).unwrap().tracked,
+            &mut module_substates.get_mut(&db_sort_key).unwrap().tracked,
             found,
         )
     }
@@ -514,7 +526,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, M> {
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, S, M> {
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
         let tracked_modules = node_substates
             .into_iter()
@@ -522,12 +534,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                 let module_substates = module_substates
                     .into_iter()
                     .map(|(substate_key, value)| {
-                        let key = M::map_to_db_key(&substate_key);
+                        let db_sort_key = M::to_db_sort_key(&substate_key);
                         let tracked = TrackedSubstateKey {
                             substate_key,
                             tracked: TrackedKey::New(RuntimeSubstate::new(value)),
                         };
-                        (key, tracked)
+                        (db_sort_key, tracked)
                     })
                     .collect();
                 let tracked_module = TrackedModule::new_with_substates(module_substates);
@@ -551,7 +563,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError> {
-        let db_key = M::map_to_db_key(&substate_key);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let tracked_module = self
             .tracked_nodes
@@ -561,7 +573,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             .entry(module_num)
             .or_insert(TrackedModule::new());
 
-        let entry = tracked_module.substates.entry(db_key.clone());
+        let entry = tracked_module.substates.entry(db_sort_key);
 
         match entry {
             Entry::Vacant(e) => {
@@ -629,7 +641,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         let tracked_module = node_updates.and_then(|n| n.tracked_modules.get(&module_num));
 
         if let Some(tracked_module) = tracked_module {
-            for (_key, tracked) in tracked_module.substates.iter() {
+            for tracked in tracked_module.substates.values() {
                 if items.len() == count {
                     return items;
                 }
@@ -646,15 +658,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
             return items;
         }
 
-        let index_id = M::map_to_db_index(node_id, module_num);
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
-        for (key, substate) in &mut tracked_iter {
+        let db_partition_key = M::to_db_partition_key(node_id, module_num);
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
+        for (db_sort_key, substate) in &mut tracked_iter {
             if items.len() == count {
                 break;
             }
 
             if tracked_module
-                .map(|tracked_module| tracked_module.substates.contains_key(&key))
+                .map(|tracked_module| tracked_module.substates.contains_key(&db_sort_key))
                 .unwrap_or(false)
             {
                 continue;
@@ -693,7 +705,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         // Check what we've currently got so far without going into database
         let mut tracked_module = node_updates.and_then(|n| n.tracked_modules.get_mut(&module_num));
         if let Some(tracked_module) = tracked_module.as_mut() {
-            for (_key, tracked) in tracked_module.substates.iter_mut() {
+            for tracked in tracked_module.substates.values_mut() {
                 if items.len() == count {
                     return items;
                 }
@@ -711,18 +723,18 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         }
 
         // Read from database
-        let index_id = M::map_to_db_index(node_id, module_num);
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
+        let db_partition_key = M::to_db_partition_key(node_id, module_num);
+        let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
         let new_updates = {
             let mut new_updates = Vec::new();
-            for (key, substate) in &mut tracked_iter {
+            for (db_sort_key, substate) in &mut tracked_iter {
                 if items.len() == count {
                     break;
                 }
 
                 if tracked_module
                     .as_ref()
-                    .map(|tracked_module| tracked_module.substates.contains_key(&key))
+                    .map(|tracked_module| tracked_module.substates.contains_key(&db_sort_key))
                     .unwrap_or(false)
                 {
                     continue;
@@ -740,7 +752,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                     substate_key,
                     tracked: TrackedKey::ReadExistAndWrite(value.clone(), Write::Delete),
                 };
-                new_updates.push((key, tracked));
+                new_updates.push((db_sort_key, tracked));
                 items.push(value);
             }
             new_updates
@@ -755,8 +767,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                 .map(|cur| u32::max(cur, num_iterations))
                 .unwrap_or(num_iterations);
             tracked_module.range_read = Some(next_range_read);
-            for (key, tracked) in new_updates {
-                tracked_module.substates.insert(key, tracked);
+            for (db_sort_key, tracked) in new_updates {
+                tracked_module.substates.insert(db_sort_key, tracked);
             }
         }
 
@@ -797,8 +809,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         }
 
         // TODO: Add interleaving updates
-        let index_id = M::map_to_db_index(node_id, module_num);
-        let tracked_iter = TrackedIter::new(self.substate_db.list_substates(&index_id));
+        let db_partition_key = M::to_db_partition_key(node_id, module_num);
+        let tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
         let items: Vec<IndexedScryptoValue> = tracked_iter
             .take(count)
             .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())
@@ -891,7 +903,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
         substate.lock_state.unlock();
 
         if flags.contains(LockFlags::FORCE_WRITE) {
-            let db_key = M::map_to_db_key(&substate_key);
+            let db_sort_key = M::to_db_sort_key(&substate_key);
             let cloned_track = tracked.clone();
 
             self.force_write_tracked_nodes
@@ -905,7 +917,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
                 .or_insert(TrackedModule::new())
                 .substates
                 .insert(
-                    db_key,
+                    db_sort_key,
                     TrackedSubstateKey {
                         substate_key,
                         tracked: cloned_track,

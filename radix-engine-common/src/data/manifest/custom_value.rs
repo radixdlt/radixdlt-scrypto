@@ -1,8 +1,5 @@
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
-use crate::*;
-use sbor::value_kind::*;
-use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {
@@ -14,6 +11,23 @@ pub enum ManifestCustomValue {
     Decimal(ManifestDecimal),
     PreciseDecimal(ManifestPreciseDecimal),
     NonFungibleLocalId(ManifestNonFungibleLocalId),
+}
+
+impl ManifestCustomValue {
+    pub fn get_custom_value_kind(&self) -> ManifestCustomValueKind {
+        match self {
+            ManifestCustomValue::Address(_) => ManifestCustomValueKind::Address,
+            ManifestCustomValue::Bucket(_) => ManifestCustomValueKind::Bucket,
+            ManifestCustomValue::Proof(_) => ManifestCustomValueKind::Proof,
+            ManifestCustomValue::Expression(_) => ManifestCustomValueKind::Expression,
+            ManifestCustomValue::Blob(_) => ManifestCustomValueKind::Blob,
+            ManifestCustomValue::Decimal(_) => ManifestCustomValueKind::Decimal,
+            ManifestCustomValue::PreciseDecimal(_) => ManifestCustomValueKind::PreciseDecimal,
+            ManifestCustomValue::NonFungibleLocalId(_) => {
+                ManifestCustomValueKind::NonFungibleLocalId
+            }
+        }
+    }
 }
 
 impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>

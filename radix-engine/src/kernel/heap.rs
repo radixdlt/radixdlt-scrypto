@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
 };
-use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::btree_map::Entry;
 
 pub struct Heap {

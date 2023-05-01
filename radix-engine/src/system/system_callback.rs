@@ -303,9 +303,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
-            api.kernel_load_package_package_dependencies();
-
-            // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = match invocation.ident {
@@ -316,18 +313,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     ))
                 }
             };
-            // Make dependent resources/components visible
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            );
 
-            if let Ok(handle) = handle {
-                api.kernel_drop_lock(handle)?;
-            }
+            // TODO: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(
@@ -362,6 +349,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
+            // TODO: Load dependent resources/components
+
             let mut vm_instance = {
                 NativeVm::create_instance(
                     &invocation.blueprint.package_address,
@@ -390,10 +379,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SystemLockData::default(),
             )?;
             api.kernel_drop_lock(handle)?;
-
-            // TODO: Remove this weirdness or move to a kernel module if we still want to support this
-            // Make common resources/components visible
-            api.kernel_load_common();
 
             // Load schema
             let schema = {

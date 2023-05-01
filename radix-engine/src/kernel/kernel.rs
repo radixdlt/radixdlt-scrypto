@@ -16,11 +16,11 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::track::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -63,12 +63,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         for node_id in args.references() {
             if node_id.is_global_virtual() {
                 // For virtual accounts and native packages, create a reference directly
-                kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                continue;
-            } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_or_panic(node_id.0))
-            {
-                // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
             }
@@ -365,28 +359,6 @@ where
         }
 
         actor
-    }
-
-    // TODO: Remove
-    fn kernel_load_package_package_dependencies(&mut self) {
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-    }
-
-    // TODO: Remove
-    fn kernel_load_common(&mut self) {
-        self.current_frame
-            .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
