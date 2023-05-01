@@ -122,8 +122,8 @@ pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
-    /// For each offset, there is a [`LocalTypeIndex`]
-    pub substates: Vec<LocalTypeIndex>,
+
+    pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
 
     pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
 
@@ -136,15 +136,22 @@ pub struct IndexedBlueprintSchema {
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
-    fn from(value: BlueprintSchema) -> Self {
+    fn from(schema: BlueprintSchema) -> Self {
+
+        let tuple_module = if schema.substates.is_empty() {
+            None
+        } else {
+            Some((0u8, schema.substates))
+        };
+
         Self {
-            outer_blueprint: value.outer_blueprint,
-            schema: value.schema,
-            substates: value.substates,
-            key_value_stores: value.key_value_stores,
-            functions: value.functions,
-            virtual_lazy_load_functions: value.virtual_lazy_load_functions,
-            event_schema: value.event_schema,
+            outer_blueprint: schema.outer_blueprint,
+            tuple_module,
+            schema: schema.schema,
+            key_value_stores: schema.key_value_stores,
+            functions: schema.functions,
+            virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
+            event_schema: schema.event_schema,
         }
     }
 }
@@ -163,14 +170,15 @@ impl From<PackageSchema> for IndexedPackageSchema {
 }
 
 impl IndexedBlueprintSchema {
-    // TODO: Cleanup
-    pub fn has_kv(&self) -> bool {
-        self.substates.is_empty()
+    pub fn num_fields(&self) -> usize {
+        self.tuple_module.as_ref().map(|(_, fields)| fields.len()).unwrap_or(0)
     }
 
     pub fn field(&self, field_index: u8) -> Option<LocalTypeIndex> {
-        let field_index: usize = field_index.into();
-        self.substates.get(field_index).cloned()
+        self.tuple_module.as_ref().and_then(|(_, fields)| {
+            let field_index: usize = field_index.into();
+            fields.get(field_index).cloned()
+        })
     }
 
     pub fn key_value_store_module_offset(
@@ -178,7 +186,7 @@ impl IndexedBlueprintSchema {
         kv_handle: u8,
     ) -> Option<(u8, &BlueprintKeyValueStoreSchema)> {
         let mut module_offset = 0u8;
-        if !self.substates.is_empty() {
+        if self.tuple_module.is_some() {
             module_offset += 1;
         }
 

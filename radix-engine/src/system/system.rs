@@ -280,22 +280,22 @@ where
 
         // Fields
         {
-            if blueprint_schema.substates.len() != fields.len() {
+            if blueprint_schema.num_fields() != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfSubstates(
                         blueprint.clone(),
                         fields.len(),
-                        blueprint_schema.substates.len(),
+                        blueprint_schema.num_fields(),
                     )),
                 )));
             }
-            if blueprint_schema.substates.len() > 0 {
+            if let Some((_, field_type_index)) = &blueprint_schema.tuple_module {
                 let mut substate_fields = BTreeMap::new();
                 for (i, field) in fields.into_iter().enumerate() {
                     validate_payload_against_schema(
                         &field,
                         &blueprint_schema.schema,
-                        blueprint_schema.substates[i],
+                        field_type_index[i],
                         self,
                     )
                     .map_err(|err| {
