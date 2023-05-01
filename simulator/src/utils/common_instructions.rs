@@ -4,7 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use radix_engine_interface::schema::{BlueprintSchema, IndexedBlueprintSchema};
+use radix_engine_interface::schema::IndexedBlueprintSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use transaction::model::Instruction;
@@ -119,7 +119,7 @@ pub fn add_call_method_instruction_with_schema<'a>(
     method_name: &str,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
 ) -> Result<&'a mut ManifestBuilder, BuildCallInstructionError> {
     let function_schema = blueprint_schema
         .find_method(method_name)

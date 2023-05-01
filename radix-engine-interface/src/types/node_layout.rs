@@ -56,6 +56,21 @@ pub enum FungibleResourceManagerOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleResourceManagerModuleOffset {
+    Fields,
+    Data,
+}
+
+impl TryFrom<u8> for NonFungibleResourceManagerModuleOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleResourceManagerOffset {
     IdType,
     DataSchema,

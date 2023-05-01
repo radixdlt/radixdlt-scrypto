@@ -86,10 +86,10 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 
 fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
     let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, module_id), partition_updates) in system_updates.into_iter() {
+    for ((node_id, module_num), partition_updates) in system_updates.into_iter() {
         for (substate_key, database_update) in partition_updates.into_iter() {
             let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *module_id, substate_key)
+                to_typed_substate_key(node_id.entity_type().unwrap(), *module_num, substate_key)
                     .expect("Substate key should be typeable");
             if !typed_substate_key.value_is_mappable() {
                 continue;

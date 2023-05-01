@@ -72,7 +72,7 @@ use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{BlueprintSchema, IndexedBlueprintSchema, IndexedPackageSchema};
+use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_stores::interface::SubstateDatabase;
 use radix_engine_stores::jmt_support::JmtMapper;
