@@ -28,8 +28,8 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            self.instructions.clone(),
             &self.blobs,
+            &self.instructions,
             ExecutionContext {
                 transaction_hash,
                 payload_size: 0,

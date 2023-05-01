@@ -5,7 +5,7 @@ use radix_engine_interface::{
     math::Decimal,
     types::{NodeId, ResourceAddress},
 };
-use radix_engine_stores::interface::SubstateDatabase;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 

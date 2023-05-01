@@ -169,7 +169,7 @@ fn do_swap(
     .unwrap();
 
     // Execute & commit
-    executable.context.transaction_hash = hash(nonce.to_le_bytes());
+    executable.reset_transaction_hash(hash(nonce.to_le_bytes()));
     let receipt = test_runner.execute_transaction(executable);
     receipt.expect_commit_success();
 

@@ -7,11 +7,11 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::NodeSubstates;
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
