@@ -65,7 +65,7 @@ pub enum RefType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock<L> {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_id: ModuleNumber,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
@@ -117,7 +117,7 @@ pub struct CallFrame<L> {
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, ModuleId, SubstateKey),
+    SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -185,9 +185,11 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
     ) -> Option<TypeInfoSubstate> {
-        if let Some(substate) =
-            heap.get_substate(node_id, TYPE_INFO_BASE_MODULE, &TypeInfoOffset::TypeInfo.into())
-        {
+        if let Some(substate) = heap.get_substate(
+            node_id,
+            TYPE_INFO_BASE_MODULE,
+            &TypeInfoOffset::TypeInfo.into(),
+        ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
         } else if let Ok((handle, _)) = store.acquire_lock(
@@ -209,7 +211,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -466,7 +468,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn set_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         key: SubstateKey,
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
@@ -489,7 +491,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn remove_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -511,7 +513,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn scan_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -544,7 +546,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn take_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -580,7 +582,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn scan_sorted<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,

@@ -173,14 +173,21 @@ pub struct IndexedPackageSchema {
 impl From<PackageSchema> for IndexedPackageSchema {
     fn from(value: PackageSchema) -> Self {
         IndexedPackageSchema {
-            blueprints: value.blueprints.into_iter().map(|(name, b)| (name, b.into())).collect()
+            blueprints: value
+                .blueprints
+                .into_iter()
+                .map(|(name, b)| (name, b.into()))
+                .collect(),
         }
     }
 }
 
 impl IndexedBlueprintSchema {
     pub fn num_fields(&self) -> usize {
-        self.tuple_module.as_ref().map(|(_, fields)| fields.len()).unwrap_or(0)
+        self.tuple_module
+            .as_ref()
+            .map(|(_, fields)| fields.len())
+            .unwrap_or(0)
     }
 
     pub fn field(&self, field_index: u8) -> Option<(u8, LocalTypeIndex)> {

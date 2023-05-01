@@ -6,9 +6,9 @@ use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
-    FungibleVaultOffset, IndexedScryptoValue, ModuleId, NonFungibleVaultOffset, ObjectInfo,
-    ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE, ROYALTY_BASE_MODULE,
-    TYPE_INFO_BASE_MODULE, USER_BASE_MODULE,
+    FungibleVaultOffset, IndexedScryptoValue, ModuleNumber, NonFungibleVaultOffset, ObjectInfo,
+    ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE,
+    ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE, USER_BASE_MODULE,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
@@ -47,7 +47,7 @@ pub trait StateTreeVisitor {
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
+        _parent_id: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -65,7 +65,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleId, Vec<u8>)>,
+        parent_node_id: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -73,7 +73,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleId, Vec<u8>)>,
+        parent: Option<&(NodeId, ModuleNumber, Vec<u8>)>,
         node_id: NodeId,
         depth: u32,
     ) {

@@ -31,7 +31,7 @@ pub enum CostingEntry<'a> {
     /* substate */
     LockSubstate {
         node_id: &'a NodeId,
-        module_id: &'a ModuleId,
+        module_id: &'a ModuleNumber,
         substate_key: &'a SubstateKey,
     },
     LockSubstateFirstTime,

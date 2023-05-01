@@ -37,7 +37,9 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintSchema, IndexedBlueprintSchema, IndexedPackageSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema};
+use radix_engine_interface::schema::{
+    IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema,
+};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -194,7 +196,7 @@ where
 
         for (i, module_substates) in user_substates.into_iter().enumerate() {
             let module_number = 4u8 + (i as u8);
-            node_substates.insert(ModuleId(module_number), module_substates);
+            node_substates.insert(ModuleNumber(module_number), module_substates);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;
@@ -331,7 +333,8 @@ where
 
             if kv_entries.len() > 0 {
                 for (i, entries) in kv_entries.into_iter().enumerate() {
-                    let (_, blueprint_kv_schema) = blueprint_schema.key_value_stores.get(i).unwrap();
+                    let (_, blueprint_kv_schema) =
+                        blueprint_schema.key_value_stores.get(i).unwrap();
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {
@@ -580,10 +583,13 @@ where
             }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
-        node_substates.get_mut(&TYPE_INFO_BASE_MODULE).unwrap().insert(
-            TypeInfoOffset::TypeInfo.into(),
-            IndexedScryptoValue::from_typed(&type_info),
-        );
+        node_substates
+            .get_mut(&TYPE_INFO_BASE_MODULE)
+            .unwrap()
+            .insert(
+                TypeInfoOffset::TypeInfo.into(),
+                IndexedScryptoValue::from_typed(&type_info),
+            );
 
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
@@ -1836,7 +1842,7 @@ where
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -1881,7 +1887,7 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -1892,7 +1898,7 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.api
@@ -1902,7 +1908,7 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
@@ -1912,7 +1918,7 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_scan_substates(node_id, module_id, count)
@@ -1921,7 +1927,7 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api.kernel_take_substates(node_id, module_id, count)

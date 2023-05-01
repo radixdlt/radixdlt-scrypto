@@ -11,8 +11,8 @@ use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::{
-    ModuleId, NodeId, PackageAddress, SubstateKey, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE,
-    USER_BASE_MODULE,
+    ModuleNumber, NodeId, PackageAddress, SubstateKey, ACCESS_RULES_BASE_MODULE,
+    METADATA_BASE_MODULE, USER_BASE_MODULE,
 };
 use sbor::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
@@ -439,7 +439,7 @@ fn serialized_keys_are_strictly_increasing() {
 
 fn change(
     node_id_seed: u8,
-    module_id: ModuleId,
+    module_id: ModuleNumber,
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {

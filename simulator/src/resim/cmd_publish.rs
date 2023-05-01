@@ -55,7 +55,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let schema = manifest_decode(
+        let schema: PackageSchema = manifest_decode(
             &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
         .map_err(Error::SborDecodeError)?;
@@ -72,7 +72,7 @@ impl Publish {
 
             let substate_key_info: Vec<u8> = JmtMapper::map_to_db_key(&PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
-                schema,
+                schema: schema.into(),
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };

@@ -261,7 +261,7 @@ impl TrackedModule {
 
 #[derive(Debug)]
 pub struct TrackedNode {
-    pub tracked_modules: IndexMap<ModuleId, TrackedModule>,
+    pub tracked_modules: IndexMap<ModuleNumber, TrackedModule>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
     // The extra information, though awkward structurally, makes for a much
     // simpler iteration implementation as long as the invariant is maintained
@@ -286,8 +286,10 @@ impl TrackedNode {
 pub fn to_state_updates<M: DatabaseMapper>(index: IndexMap<NodeId, TrackedNode>) -> StateUpdates {
     let mut database_updates: IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>> =
         index_map_new();
-    let mut system_updates: IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>> =
-        index_map_new();
+    let mut system_updates: IndexMap<
+        (NodeId, ModuleNumber),
+        IndexMap<SubstateKey, DatabaseUpdate>,
+    > = index_map_new();
     for (node_id, tracked_node) in index {
         for (module_id, tracked_module) in tracked_node.tracked_modules {
             let mut index_updates = index_map_new();
@@ -354,7 +356,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseMapper> {
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
 
-    locks: IndexMap<u32, (NodeId, ModuleId, SubstateKey, LockFlags)>,
+    locks: IndexMap<u32, (NodeId, ModuleNumber, SubstateKey, LockFlags)>,
     next_lock_id: u32,
     phantom_data: PhantomData<M>,
 }
@@ -374,7 +376,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
     fn new_lock_handle(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> u32 {
@@ -416,7 +418,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
         self.tracked_nodes
     }
 
-    fn get_tracked_module(&mut self, node_id: &NodeId, module_id: ModuleId) -> &mut TrackedModule {
+    fn get_tracked_module(
+        &mut self,
+        node_id: &NodeId,
+        module_id: ModuleNumber,
+    ) -> &mut TrackedModule {
         self.tracked_nodes
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
@@ -437,7 +443,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
     fn get_tracked_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         virtualize: F,
     ) -> (&mut TrackedKey, bool) {
@@ -498,7 +504,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> Track<'s, S, M> {
     fn get_tracked_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
     ) -> &mut TrackedKey {
         self.get_tracked_substate_virtualize(node_id, module_id, substate_key, || None)
@@ -539,7 +545,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError> {
@@ -588,7 +594,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn take_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError> {
         let tracked = self.get_tracked_substate(node_id, module_id, substate_key.clone());
@@ -608,7 +614,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let count: usize = count.try_into().unwrap();
@@ -670,7 +676,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let count: usize = count.try_into().unwrap();
@@ -758,7 +764,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         // TODO: Add module dependencies/lock
@@ -813,7 +819,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseMapper> SubstateStore for Track<'s, S, 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,

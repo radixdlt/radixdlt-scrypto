@@ -264,9 +264,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 /// The unique identifier of a node module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
-pub struct ModuleId(pub u8);
+pub struct ModuleNumber(pub u8);
 
-impl ModuleId {
+impl ModuleNumber {
     pub fn at_offset(self, offset: u8) -> Self {
         let module_number = self.0.checked_add(offset).unwrap();
         Self(module_number)

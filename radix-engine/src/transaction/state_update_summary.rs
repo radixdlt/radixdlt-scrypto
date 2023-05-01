@@ -355,7 +355,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
@@ -369,7 +369,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate_from_database<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
@@ -379,7 +379,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked

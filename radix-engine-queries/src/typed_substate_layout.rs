@@ -118,7 +118,7 @@ fn error(descriptor: &'static str) -> String {
 
 pub fn to_typed_substate_key(
     entity_type: EntityType,
-    module_id: ModuleId,
+    module_id: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
     /*
@@ -126,10 +126,10 @@ pub fn to_typed_substate_key(
         .map_err(|_| format!("Could not convert ModuleId {:?}", module_id))?;
      */
     let substate_type = match module_id {
-        ModuleId(0u8) => TypedSubstateKey::TypeInfoModule(
+        ModuleNumber(0u8) => TypedSubstateKey::TypeInfoModule(
             TypeInfoOffset::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
         ),
-        ModuleId(1u8) => TypedSubstateKey::MetadataModule(
+        ModuleNumber(1u8) => TypedSubstateKey::MetadataModule(
             scrypto_decode(
                 substate_key
                     .for_map()
@@ -137,10 +137,10 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ModuleId(2u8) => TypedSubstateKey::RoyaltyModule(
+        ModuleNumber(2u8) => TypedSubstateKey::RoyaltyModule(
             RoyaltyOffset::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
         ),
-        ModuleId(3u8) => TypedSubstateKey::AccessRulesModule(
+        ModuleNumber(3u8) => TypedSubstateKey::AccessRulesModule(
             AccessRulesOffset::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
         _ => TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
@@ -154,7 +154,7 @@ pub fn to_typed_substate_key(
 
 pub fn to_typed_object_module_substate_key(
     entity_type: EntityType,
-    module_id: ModuleId,
+    module_id: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, String> {
     return to_typed_object_substate_key_internal(entity_type, module_id, substate_key).map_err(
@@ -169,7 +169,7 @@ pub fn to_typed_object_module_substate_key(
 
 fn to_typed_object_substate_key_internal(
     entity_type: EntityType,
-    module_id: ModuleId,
+    module_id: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, ()> {
     let substate_type = match entity_type {
@@ -185,10 +185,10 @@ fn to_typed_object_substate_key_internal(
             FungibleResourceManagerOffset::try_from(substate_key)?,
         ),
         EntityType::GlobalNonFungibleResource => match module_id {
-            ModuleId(4u8) => TypedObjectModuleSubstateKey::NonFungibleResource(
+            ModuleNumber(4u8) => TypedObjectModuleSubstateKey::NonFungibleResource(
                 NonFungibleResourceManagerOffset::try_from(substate_key)?,
             ),
-            ModuleId(5u8) => {
+            ModuleNumber(5u8) => {
                 let key = substate_key.for_map().ok_or(())?;
                 TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
             }

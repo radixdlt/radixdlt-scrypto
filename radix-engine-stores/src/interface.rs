@@ -40,23 +40,23 @@ pub fn decode_substate_id(slice: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AcquireLockError {
-    NotFound(NodeId, ModuleId, SubstateKey),
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleId, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
+    NotFound(NodeId, ModuleNumber, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
+    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SetSubstateError {
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeSubstateError {
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
 }
 
-pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+pub type NodeSubstates = BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 /// Represents the interface between Radix Engine and Track.
 ///
@@ -79,7 +79,7 @@ pub trait SubstateStore {
     fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError>;
@@ -92,28 +92,28 @@ pub trait SubstateStore {
     fn take_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError>;
 
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
@@ -123,7 +123,7 @@ pub trait SubstateStore {
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<(u32, bool), AcquireLockError> {
@@ -133,7 +133,7 @@ pub trait SubstateStore {
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
@@ -166,7 +166,7 @@ pub struct StateUpdates {
 }
 
 pub type DatabaseUpdates = IndexMap<Vec<u8>, IndexMap<Vec<u8>, DatabaseUpdate>>;
-pub type SystemUpdates = IndexMap<(NodeId, ModuleId), IndexMap<SubstateKey, DatabaseUpdate>>;
+pub type SystemUpdates = IndexMap<(NodeId, ModuleNumber), IndexMap<SubstateKey, DatabaseUpdate>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DatabaseUpdate {
@@ -175,7 +175,7 @@ pub enum DatabaseUpdate {
 }
 
 pub trait DatabaseMapper {
-    fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> Vec<u8>;
+    fn map_to_db_index(node_id: &NodeId, module_id: ModuleNumber) -> Vec<u8>;
     fn map_to_db_key(key: &SubstateKey) -> Vec<u8>;
 }
 
@@ -196,7 +196,7 @@ pub trait SubstateDatabase {
     fn get_mapped_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<D> {
         self.get_substate(
@@ -210,7 +210,7 @@ pub trait SubstateDatabase {
     fn list_mapped_substates<M: DatabaseMapper>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
         self.list_substates(&M::map_to_db_index(node_id, module_id))
     }

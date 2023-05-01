@@ -478,7 +478,11 @@ where
         if is_fungible {
             let substate = self
                 .heap
-                .get_substate(proof_id, TYPE_INFO_BASE_MODULE, &TypeInfoOffset::TypeInfo.into())
+                .get_substate(
+                    proof_id,
+                    TYPE_INFO_BASE_MODULE,
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
@@ -500,7 +504,11 @@ where
         } else {
             let substate = self
                 .heap
-                .get_substate(proof_id, TYPE_INFO_BASE_MODULE, &TypeInfoOffset::TypeInfo.into())
+                .get_substate(
+                    proof_id,
+                    TYPE_INFO_BASE_MODULE,
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
             let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
@@ -532,7 +540,7 @@ where
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -708,7 +716,7 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -729,7 +737,7 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
@@ -748,7 +756,7 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
@@ -761,7 +769,7 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
@@ -774,7 +782,7 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame

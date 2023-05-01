@@ -34,7 +34,7 @@ pub trait KernelNodeApi {
 /// Info regarding the substate locked as well as what type of lock
 pub struct LockInfo<L> {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_id: ModuleNumber,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
     pub data: L,
@@ -46,7 +46,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -56,7 +56,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         lock_data: L,
@@ -101,7 +101,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
@@ -113,7 +113,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
@@ -124,21 +124,21 @@ pub trait KernelSubstateApi<L> {
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 }

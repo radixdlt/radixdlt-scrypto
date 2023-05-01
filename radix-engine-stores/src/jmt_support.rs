@@ -1,14 +1,14 @@
 use crate::hash_tree::{DbIndex, DbKey};
 use crate::interface::DatabaseMapper;
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_interface::types::{ModuleNumber, NodeId, SubstateKey};
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 pub struct JmtMapper;
 
 impl DatabaseMapper for JmtMapper {
-    fn map_to_db_index(node_id: &NodeId, module_id: ModuleId) -> DbIndex {
+    fn map_to_db_index(node_id: &NodeId, module_id: ModuleNumber) -> DbIndex {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
         buffer.push(module_id.0);

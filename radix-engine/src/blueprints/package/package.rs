@@ -19,7 +19,7 @@ pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, IndexedPackageSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
@@ -178,7 +178,10 @@ where
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
-        node_modules.insert(ACCESS_RULES_BASE_MODULE, ModuleInit::AccessRules(access_rules));
+        node_modules.insert(
+            ACCESS_RULES_BASE_MODULE,
+            ModuleInit::AccessRules(access_rules),
+        );
     } else {
         node_modules.insert(
             ACCESS_RULES_BASE_MODULE,
