@@ -7,8 +7,8 @@ use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, ModuleId, NonFungibleVaultOffset, ObjectInfo,
-    ResourceAddress, TypeInfoOffset, ACCESS_RULES_MODULE, METADATA_MODULE, ROYALTY_MODULE,
-    TYPE_INFO_MODULE, USER_BASE_MODULE,
+    ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE, ROYALTY_BASE_MODULE,
+    TYPE_INFO_BASE_MODULE, USER_BASE_MODULE,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
@@ -89,7 +89,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             .substate_db
             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                 &node_id,
-                TYPE_INFO_MODULE,
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing TypeInfo substate");
@@ -170,10 +170,10 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 } else {
                     for t in [
-                        TYPE_INFO_MODULE,
-                        METADATA_MODULE,
-                        ROYALTY_MODULE,
-                        ACCESS_RULES_MODULE,
+                        TYPE_INFO_BASE_MODULE,
+                        METADATA_BASE_MODULE,
+                        ROYALTY_BASE_MODULE,
+                        ACCESS_RULES_BASE_MODULE,
                         USER_BASE_MODULE,
                     ] {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)

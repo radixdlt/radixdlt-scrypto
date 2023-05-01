@@ -253,7 +253,7 @@ impl AuthModule {
 
         let handle = api.kernel_lock_substate(
             receiver,
-            ACCESS_RULES_MODULE,
+            ACCESS_RULES_BASE_MODULE,
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
             M::LockData::default(),
@@ -280,7 +280,7 @@ impl AuthModule {
     ) -> Result<MethodAuthorization, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            ACCESS_RULES_MODULE,
+            ACCESS_RULES_BASE_MODULE,
             &AccessRulesOffset::AccessRules.into(),
             LockFlags::read_only(),
             M::LockData::default(),
@@ -448,7 +448,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 USER_BASE_MODULE => btreemap!(
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,

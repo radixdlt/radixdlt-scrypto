@@ -256,7 +256,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<JmtMapper, TypeInfoSubstate>(
                 node_id,
-                TYPE_INFO_MODULE,
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");

@@ -193,7 +193,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let entry = substate_db
         .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
-            METADATA_MODULE,
+            METADATA_BASE_MODULE,
             &SubstateKey::Map(key),
         )
         .unwrap();

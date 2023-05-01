@@ -124,7 +124,7 @@ where
         self.api
             .kernel_lock_substate(
                 node_id,
-                TYPE_INFO_MODULE,
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -182,7 +182,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_MODULE => ModuleInit::TypeInfo(
+            TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -331,7 +331,7 @@ where
 
             if kv_entries.len() > 0 {
                 for (i, entries) in kv_entries.into_iter().enumerate() {
-                    let blueprint_kv_schema = blueprint_schema.key_value_stores.get(i).unwrap();
+                    let (_, blueprint_kv_schema) = blueprint_schema.key_value_stores.get(i).unwrap();
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {
@@ -569,7 +569,7 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_MODULE)
+            .get_mut(&TYPE_INFO_BASE_MODULE)
             .unwrap()
             .remove(&TypeInfoOffset::TypeInfo.into())
             .unwrap();
@@ -580,7 +580,7 @@ where
             }
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
-        node_substates.get_mut(&TYPE_INFO_MODULE).unwrap().insert(
+        node_substates.get_mut(&TYPE_INFO_BASE_MODULE).unwrap().insert(
             TypeInfoOffset::TypeInfo.into(),
             IndexedScryptoValue::from_typed(&type_info),
         );
@@ -603,7 +603,7 @@ where
 
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(ACCESS_RULES_MODULE, access_rules);
+                    node_substates.insert(ACCESS_RULES_BASE_MODULE, access_rules);
                 }
                 ObjectModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -619,7 +619,7 @@ where
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(METADATA_MODULE, metadata);
+                    node_substates.insert(METADATA_BASE_MODULE, metadata);
                 }
                 ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
@@ -635,7 +635,7 @@ where
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates.remove(&USER_BASE_MODULE).unwrap();
-                    node_substates.insert(ROYALTY_MODULE, royalty);
+                    node_substates.insert(ROYALTY_BASE_MODULE, royalty);
                 }
             }
         }
@@ -968,7 +968,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -1067,7 +1067,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Index
                 ).to_substates(),
             ),
@@ -1178,7 +1178,7 @@ where
             node_id,
             btreemap!(
                 USER_BASE_MODULE => btreemap!(),
-                TYPE_INFO_MODULE => ModuleInit::TypeInfo(
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedIndex
                 ).to_substates(),
             ),
@@ -1390,8 +1390,8 @@ where
 
         // Check if valid field_index
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let field_type_index = if let Some(field_type_index) = schema.field(field) {
-            field_type_index
+        let (module_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
+            field_info
         } else {
             return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 object_info.blueprint.clone(),
@@ -1399,12 +1399,14 @@ where
             )));
         };
 
-        let module_id = match object_module_id {
-            ObjectModuleId::Metadata => METADATA_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_MODULE,
+        let base_module = match object_module_id {
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
             ObjectModuleId::SELF => USER_BASE_MODULE,
         };
+
+        let module_number = base_module.at_offset(module_offset);
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
@@ -1417,7 +1419,7 @@ where
 
         self.api.kernel_lock_substate(
             &node_id,
-            module_id,
+            module_number,
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
@@ -1437,14 +1439,16 @@ where
 
         let parent_info = self.get_object_info(parent.as_node_id())?;
         let schema = self.get_blueprint_schema(&parent_info.blueprint)?;
-        let field_type_index = if let Some(field_type_index) = schema.field(field) {
-            field_type_index
+        let (module_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
+            field_info
         } else {
             return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                 parent_info.blueprint.clone(),
                 field,
             )));
         };
+
+        let module_number = USER_BASE_MODULE.at_offset(module_offset);
 
         // TODO: Check if valid substate_key for node_id
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -1458,7 +1462,7 @@ where
 
         self.api.kernel_lock_substate(
             parent.as_node_id(),
-            USER_BASE_MODULE,
+            module_number,
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
@@ -1499,13 +1503,13 @@ where
             })?;
 
         let base_module = match object_module_id {
-            ObjectModuleId::Metadata => METADATA_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_MODULE,
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
             ObjectModuleId::SELF => USER_BASE_MODULE,
         };
 
-        let module_number = base_module.at_offset(module_offset);
+        let module_number = base_module.at_offset(*module_offset);
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;

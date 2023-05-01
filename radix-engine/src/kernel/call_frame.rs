@@ -186,13 +186,13 @@ impl<L: Clone> CallFrame<L> {
         store: &mut S,
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) =
-            heap.get_substate(node_id, TYPE_INFO_MODULE, &TypeInfoOffset::TypeInfo.into())
+            heap.get_substate(node_id, TYPE_INFO_BASE_MODULE, &TypeInfoOffset::TypeInfo.into())
         {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
         } else if let Ok((handle, _)) = store.acquire_lock(
             node_id,
-            TYPE_INFO_MODULE,
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
             LockFlags::read_only(),
         ) {

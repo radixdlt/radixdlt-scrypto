@@ -386,7 +386,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let type_info = substate_db
         .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
-            TYPE_INFO_MODULE,
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
@@ -423,7 +423,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     let type_info = substate_db
                         .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                             node_id,
-                            TYPE_INFO_MODULE,
+                            TYPE_INFO_BASE_MODULE,
                             &TypeInfoOffset::TypeInfo.into(),
                         )
                         .unwrap();

@@ -124,8 +124,7 @@ pub struct IndexedBlueprintSchema {
     pub schema: ScryptoSchema,
 
     pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
-
-    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
+    pub key_value_stores: Vec<(u8, BlueprintKeyValueStoreSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -137,18 +136,28 @@ pub struct IndexedBlueprintSchema {
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
+        let mut module_offset = 0u8;
 
         let tuple_module = if schema.substates.is_empty() {
             None
         } else {
-            Some((0u8, schema.substates))
+            let tuple_module = Some((module_offset, schema.substates));
+            module_offset += 1;
+            tuple_module
         };
+
+        let mut key_value_stores = Vec::new();
+
+        for kv_schema in schema.key_value_stores {
+            key_value_stores.push((module_offset, kv_schema));
+            module_offset += 1;
+        }
 
         Self {
             outer_blueprint: schema.outer_blueprint,
-            tuple_module,
             schema: schema.schema,
-            key_value_stores: schema.key_value_stores,
+            tuple_module,
+            key_value_stores,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -174,29 +183,18 @@ impl IndexedBlueprintSchema {
         self.tuple_module.as_ref().map(|(_, fields)| fields.len()).unwrap_or(0)
     }
 
-    pub fn field(&self, field_index: u8) -> Option<LocalTypeIndex> {
-        self.tuple_module.as_ref().and_then(|(_, fields)| {
+    pub fn field(&self, field_index: u8) -> Option<(u8, LocalTypeIndex)> {
+        self.tuple_module.as_ref().and_then(|(offset, fields)| {
             let field_index: usize = field_index.into();
-            fields.get(field_index).cloned()
+            fields.get(field_index).cloned().map(|f| (*offset, f))
         })
     }
 
     pub fn key_value_store_module_offset(
         &self,
         kv_handle: u8,
-    ) -> Option<(u8, &BlueprintKeyValueStoreSchema)> {
-        let mut module_offset = 0u8;
-        if self.tuple_module.is_some() {
-            module_offset += 1;
-        }
-
-        let kv_schema = if let Some(kv_schema) = self.key_value_stores.get(kv_handle as usize) {
-            kv_schema
-        } else {
-            return None;
-        };
-
-        Some((module_offset + kv_handle, kv_schema))
+    ) -> Option<&(u8, BlueprintKeyValueStoreSchema)> {
+        self.key_value_stores.get(kv_handle as usize)
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -218,7 +216,7 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
-        for kv_schema in &self.key_value_stores {
+        for (_offset, kv_schema) in &self.key_value_stores {
             match &kv_schema.key {
                 TypeSchema::Blueprint(..) => {}
                 TypeSchema::Instance(type_index) => {

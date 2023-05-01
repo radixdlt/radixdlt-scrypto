@@ -11,7 +11,7 @@ use itertools::Itertools;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::{
-    ModuleId, NodeId, PackageAddress, SubstateKey, ACCESS_RULES_MODULE, METADATA_MODULE,
+    ModuleId, NodeId, PackageAddress, SubstateKey, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE,
     USER_BASE_MODULE,
 };
 use sbor::rust::collections::{hashmap, hashset, HashMap, HashSet};
@@ -191,10 +191,10 @@ fn hash_of_different_re_node_nested_trees_is_same_when_contained_substates_are_s
         &mut store,
         None,
         vec![
-            change(1, METADATA_MODULE, 2, Some(30)),
-            change(1, METADATA_MODULE, 9, Some(40)),
-            change(7, ACCESS_RULES_MODULE, 2, Some(30)),
-            change(7, ACCESS_RULES_MODULE, 9, Some(40)),
+            change(1, METADATA_BASE_MODULE, 2, Some(30)),
+            change(1, METADATA_BASE_MODULE, 9, Some(40)),
+            change(7, ACCESS_RULES_BASE_MODULE, 2, Some(30)),
+            change(7, ACCESS_RULES_BASE_MODULE, 9, Some(40)),
         ],
     );
 
@@ -297,9 +297,9 @@ fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
         &mut store,
         None,
         vec![
-            change(1, METADATA_MODULE, 2, Some(30)),
-            change(1, METADATA_MODULE, 9, Some(40)),
-            change(1, ACCESS_RULES_MODULE, 3, Some(30)),
+            change(1, METADATA_BASE_MODULE, 2, Some(30)),
+            change(1, METADATA_BASE_MODULE, 9, Some(40)),
+            change(1, ACCESS_RULES_BASE_MODULE, 3, Some(30)),
         ],
     );
     assert_eq!(count_current_re_node_leafs(&store), 2);
@@ -307,15 +307,15 @@ fn deletes_re_node_layer_leaf_when_all_its_substates_deleted() {
         &mut store,
         Some(1),
         vec![
-            change(1, METADATA_MODULE, 2, None),
-            change(1, METADATA_MODULE, 9, None),
+            change(1, METADATA_BASE_MODULE, 2, None),
+            change(1, METADATA_BASE_MODULE, 9, None),
         ],
     );
     assert_eq!(count_current_re_node_leafs(&store), 1);
     put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(1, ACCESS_RULES_MODULE, 3, None)],
+        vec![change(1, ACCESS_RULES_BASE_MODULE, 3, None)],
     );
     assert_eq!(count_current_re_node_leafs(&store), 0);
 }

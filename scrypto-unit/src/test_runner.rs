@@ -378,7 +378,7 @@ impl TestRunner {
             .substate_db
             .get_mapped_substate::<JmtMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
-                METADATA_MODULE,
+                METADATA_BASE_MODULE,
                 &SubstateKey::Map(key),
             )?;
 
@@ -402,7 +402,7 @@ impl TestRunner {
             .substate_db
             .get_mapped_substate::<JmtMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_MODULE,
+                ROYALTY_BASE_MODULE,
                 &RoyaltyOffset::RoyaltyAccumulator.into(),
             )
         {
@@ -1323,7 +1323,7 @@ impl TestRunner {
                             .substate_db()
                             .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
                                 node_id,
-                                TYPE_INFO_MODULE,
+                                TYPE_INFO_BASE_MODULE,
                                 &TypeInfoOffset::TypeInfo.into(),
                             )
                             .unwrap();
