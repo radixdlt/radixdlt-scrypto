@@ -8,10 +8,10 @@ use sbor::rust::vec::Vec;
 pub struct JmtMapper;
 
 impl DatabaseMapper for JmtMapper {
-    fn map_to_db_index(node_id: &NodeId, module_id: ModuleNumber) -> DbIndex {
+    fn map_to_db_index(node_id: &NodeId, module_num: ModuleNumber) -> DbIndex {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
-        buffer.push(module_id.0);
+        buffer.push(module_num.0);
         hash(buffer).0[(Hash::LENGTH - 26)..Hash::LENGTH].to_vec() // 26 bytes
     }
 

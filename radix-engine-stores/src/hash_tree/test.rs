@@ -162,7 +162,7 @@ fn hash_differs_when_states_only_differ_by_module_id() {
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(1, OBJECT_BASE_MODULE, 3, Some(30))],
+        vec![change(1, METADATA_BASE_MODULE, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -447,7 +447,7 @@ fn change(
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateHashChange::new(
         DbId::new(
-            JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), module_num as u8),
+            JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), module_num),
             JmtMapper::map_to_db_key(&SubstateKey::Map(fake_kvs_entry_id)),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),

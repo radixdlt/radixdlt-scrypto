@@ -215,7 +215,7 @@ fn new_key_value_store(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_key_value_store(read_memory(
+        .key_value_store_new(read_memory(
             caller.as_context_mut(),
             memory,
             schema_id_ptr,
@@ -283,7 +283,7 @@ fn lock_key_value_store_entry(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_key_value_store_entry(node_id, substate_key, flags)
+    runtime.key_value_store_lock_entry(node_id, substate_key, flags)
 }
 
 fn key_value_entry_get(
@@ -310,7 +310,7 @@ fn unlock_key_value_entry(
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.unlock_key_value_entry(handle)
+    runtime.key_value_entry_release(handle)
 }
 
 fn key_value_entry_remove(
@@ -325,7 +325,7 @@ fn key_value_entry_remove(
     let key = read_memory(caller.as_context_mut(), memory, key_ptr, key_len)?;
 
     runtime
-        .key_value_entry_remove(node_id, key)
+        .key_value_store_remove_entry(node_id, key)
         .map(|buffer| buffer.0)
 }
 
@@ -335,7 +335,7 @@ fn lock_field(
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.lock_field(field as u8, flags)
+    runtime.actor_lock_field(field as u8, flags)
 }
 
 fn read_substate(
@@ -344,7 +344,7 @@ fn read_substate(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.read_substate(handle).map(|buffer| buffer.0)
+    runtime.field_lock_read(handle).map(|buffer| buffer.0)
 }
 
 fn write_substate(
@@ -357,7 +357,7 @@ fn write_substate(
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime.write_substate(handle, data)
+    runtime.field_lock_write(handle, data)
 }
 
 fn drop_lock(
@@ -366,7 +366,7 @@ fn drop_lock(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.drop_lock(handle)
+    runtime.field_lock_release(handle)
 }
 
 fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {

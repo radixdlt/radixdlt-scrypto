@@ -155,7 +155,7 @@ where
         Ok(())
     }
 
-    fn new_key_value_store(
+    fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -169,7 +169,7 @@ where
         self.allocate_buffer(key_value_store_id_encoded)
     }
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -203,12 +203,15 @@ where
         Ok(())
     }
 
-    fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_release(
+        &mut self,
+        handle: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.key_value_entry_release(handle)?;
         Ok(())
     }
 
-    fn key_value_entry_remove(
+    fn key_value_store_remove_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -221,7 +224,7 @@ where
         self.allocate_buffer(rtn)
     }
 
-    fn lock_field(
+    fn actor_lock_field(
         &mut self,
         field: u8,
         flags: u32,
@@ -232,7 +235,7 @@ where
         Ok(handle)
     }
 
-    fn read_substate(
+    fn field_lock_read(
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
@@ -241,7 +244,7 @@ where
         self.allocate_buffer(substate)
     }
 
-    fn write_substate(
+    fn field_lock_write(
         &mut self,
         handle: LockHandle,
         data: Vec<u8>,
@@ -251,7 +254,10 @@ where
         Ok(())
     }
 
-    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn field_lock_release(
+        &mut self,
+        handle: LockHandle,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.field_lock_release(handle)?;
 
         Ok(())
@@ -419,14 +425,14 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_key_value_store(
+    fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
@@ -450,11 +456,14 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn unlock_key_value_entry(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_release(
+        &mut self,
+        handle: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn key_value_entry_remove(
+    fn key_value_store_remove_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -462,15 +471,19 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_field(&mut self, field: u8, flags: u32) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn actor_lock_field(
+        &mut self,
+        field: u8,
+        flags: u32,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn read_substate(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn field_lock_read(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn write_substate(
+    fn field_lock_write(
         &mut self,
         handle: u32,
         data: Vec<u8>,
@@ -478,7 +491,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_lock(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn field_lock_release(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

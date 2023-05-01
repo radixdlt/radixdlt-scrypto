@@ -286,7 +286,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn new_key_value_store(
+        pub fn key_value_store_new(
             env: &WasmerInstanceEnv,
             schema_id_ptr: u32,
             schema_id_len: u32,
@@ -294,13 +294,13 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .new_key_value_store(read_memory(&instance, schema_id_ptr, schema_id_len)?)
+                .key_value_store_new(read_memory(&instance, schema_id_ptr, schema_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
         }
 
-        pub fn lock_key_value_store_entry(
+        pub fn key_value_store_lock_entry(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
             node_id_len: u32,
@@ -311,7 +311,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .lock_key_value_store_entry(
+                .key_value_store_lock_entry(
                     read_memory(&instance, node_id_ptr, node_id_len)?,
                     read_memory(&instance, key_ptr, key_len)?,
                     flags,
@@ -319,6 +319,25 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
+        }
+
+        pub fn key_value_store_remove_entry(
+            env: &WasmerInstanceEnv,
+            node_id_ptr: u32,
+            node_id_len: u32,
+            key_ptr: u32,
+            key_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .key_value_store_remove_entry(
+                    read_memory(&instance, node_id_ptr, node_id_len)?,
+                    read_memory(&instance, key_ptr, key_len)?,
+                )
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
         }
 
         pub fn key_value_entry_get(
@@ -332,6 +351,36 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
+        }
+
+        pub fn key_value_entry_set(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+            data_ptr: u32,
+            data_len: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let data = read_memory(&instance, data_ptr, data_len)?;
+
+            runtime
+                .key_value_entry_set(handle, data)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
+        }
+
+        pub fn key_value_entry_release(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<(), RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .key_value_entry_release(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
         }
 
         pub fn drop_object(
@@ -350,7 +399,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn lock_field(
+        pub fn actor_lock_field(
             env: &WasmerInstanceEnv,
             field: u8,
             flags: u32,
@@ -358,17 +407,17 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .lock_field(field, flags)
+                .actor_lock_field(field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
         }
 
-        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
+        pub fn field_lock_read(env: &WasmerInstanceEnv, handle: u32) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .read_substate(handle)
+                .field_lock_read(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -385,7 +434,7 @@ impl WasmerModule {
             let data = read_memory(&instance, data_ptr, data_len)?;
 
             runtime
-                .write_substate(handle, data)
+                .field_lock_write(handle, data)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -395,7 +444,7 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
-                .drop_lock(handle)
+                .field_lock_release(handle)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(())
@@ -520,11 +569,14 @@ impl WasmerModule {
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),
-                KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
-                KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_key_value_store_entry),
+                ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),
+                KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
+                KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_lock_entry),
+                KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
                 KEY_VALUE_ENTRY_GET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_get),
-                FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
+                KEY_VALUE_ENTRY_SET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_set),
+                KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_release),
+                FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_read),
                 FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
                 FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
