@@ -10,7 +10,7 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
-    // Instantiate component
+    // Run manifest
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
