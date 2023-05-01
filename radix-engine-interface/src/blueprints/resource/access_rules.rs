@@ -9,6 +9,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use utils::rust::prelude::IndexMap;
 
 use super::AccessRule;
 
@@ -78,24 +79,24 @@ impl From<String> for AccessRuleEntry {
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
-    direct_method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
-    method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
-    grouped_auth: BTreeMap<String, AccessRule>,
+    direct_method_auth: IndexMap<MethodKey, AccessRuleEntry>,
+    method_auth: IndexMap<MethodKey, AccessRuleEntry>,
+    grouped_auth: IndexMap<String, AccessRule>,
     default_auth: AccessRuleEntry,
-    method_auth_mutability: BTreeMap<MethodKey, AccessRuleEntry>,
-    grouped_auth_mutability: BTreeMap<String, AccessRule>,
+    method_auth_mutability: IndexMap<MethodKey, AccessRuleEntry>,
+    grouped_auth_mutability: IndexMap<String, AccessRule>,
     default_auth_mutability: AccessRuleEntry,
 }
 
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
-            direct_method_auth: BTreeMap::new(),
-            method_auth: BTreeMap::new(),
-            grouped_auth: BTreeMap::new(),
+            direct_method_auth: IndexMap::new(),
+            method_auth: IndexMap::new(),
+            grouped_auth: IndexMap::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            method_auth_mutability: BTreeMap::new(),
-            grouped_auth_mutability: BTreeMap::new(),
+            method_auth_mutability: IndexMap::new(),
+            grouped_auth_mutability: IndexMap::new(),
             default_auth_mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         }
     }
@@ -249,19 +250,19 @@ impl AccessRulesConfig {
             .insert(key.clone(), AccessRuleEntry::Group(group));
     }
 
-    pub fn get_all_method_auth(&self) -> &BTreeMap<MethodKey, AccessRuleEntry> {
+    pub fn get_all_method_auth(&self) -> &IndexMap<MethodKey, AccessRuleEntry> {
         &self.method_auth
     }
 
-    pub fn get_all_grouped_auth(&self) -> &BTreeMap<String, AccessRule> {
+    pub fn get_all_grouped_auth(&self) -> &IndexMap<String, AccessRule> {
         &self.grouped_auth
     }
 
-    pub fn get_all_method_mutability(&self) -> &BTreeMap<MethodKey, AccessRuleEntry> {
+    pub fn get_all_method_mutability(&self) -> &IndexMap<MethodKey, AccessRuleEntry> {
         &self.method_auth_mutability
     }
 
-    pub fn get_all_grouped_auth_mutability(&self) -> &BTreeMap<String, AccessRule> {
+    pub fn get_all_grouped_auth_mutability(&self) -> &IndexMap<String, AccessRule> {
         &self.grouped_auth_mutability
     }
 }
