@@ -1,8 +1,13 @@
+use sbor::rust::vec::Vec;
+use sbor::traversal::VecTraverser;
+use sbor::*;
+
+mod custom_traversal;
 mod custom_value;
 mod custom_value_kind;
 
 pub mod model;
-
+pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 
@@ -13,6 +18,7 @@ pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
 pub type ManifestDecoder<'a> = VecDecoder<'a, ManifestCustomValueKind>;
 pub type ManifestValueKind = ValueKind<ManifestCustomValueKind>;
 pub type ManifestValue = Value<ManifestCustomValueKind, ManifestCustomValue>;
+pub type ManifestTraverser<'a> = VecTraverser<'a, ManifestCustomTraversal>;
 
 pub trait ManifestCategorize: Categorize<ManifestCustomValueKind> {}
 impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {}
@@ -25,9 +31,6 @@ impl<T: for<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> + ?Sized> M
     for T
 {
 }
-
-use sbor::rust::vec::Vec;
-use sbor::*;
 
 pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     let mut buf = Vec::with_capacity(512);

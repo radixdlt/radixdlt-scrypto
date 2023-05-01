@@ -32,8 +32,8 @@ impl TestTransaction {
         let payload_size = payload.len();
 
         Executable::new(
-            self.manifest.instructions.clone(),
             &self.manifest.blobs,
+            &self.manifest.instructions,
             ExecutionContext {
                 transaction_hash,
                 payload_size,
