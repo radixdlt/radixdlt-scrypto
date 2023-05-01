@@ -195,8 +195,8 @@ where
         );
 
         for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = 4u8 + (i as u8);
-            node_substates.insert(ModuleNumber(module_number), module_substates);
+            let module_number = USER_BASE_MODULE.at_offset(i as u8);
+            node_substates.insert(module_number, module_substates);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;

@@ -10,7 +10,7 @@ pub const TYPE_INFO_BASE_MODULE: ModuleNumber = ModuleNumber(0u8);
 pub const METADATA_BASE_MODULE: ModuleNumber = ModuleNumber(1u8);
 pub const ROYALTY_BASE_MODULE: ModuleNumber = ModuleNumber(2u8);
 pub const ACCESS_RULES_BASE_MODULE: ModuleNumber = ModuleNumber(3u8);
-pub const USER_BASE_MODULE: ModuleNumber = ModuleNumber(4u8);
+pub const USER_BASE_MODULE: ModuleNumber = ModuleNumber(32u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
