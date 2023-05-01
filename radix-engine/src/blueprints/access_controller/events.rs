@@ -41,6 +41,3 @@ pub struct UnlockPrimaryRoleEvent;
 
 #[derive(ScryptoSbor, ScryptoEvent)]
 pub struct StopTimedRecoveryEvent;
-
-#[derive(ScryptoSbor, ScryptoEvent)]
-pub struct StopTimedBadgeWithdrawAttemptEvent;

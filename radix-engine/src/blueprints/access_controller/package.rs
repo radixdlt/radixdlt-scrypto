@@ -99,15 +99,7 @@ pub enum RecoveryRoleRecoveryState {
 pub enum RecoveryRoleBadgeWithdrawAttemptState {
     #[default]
     NoBadgeWithdrawAttempt,
-    BadgeWithdrawAttempt(RecoveryRoleWithdrawBadgeState),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RecoveryRoleWithdrawBadgeState {
-    UntimedWithdraw,
-    TimedWithdraw {
-        timed_recovery_allowed_after: Instant,
-    },
+    BadgeWithdrawAttempt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -136,17 +128,9 @@ pub enum AccessControllerError {
     /// the state that allows for it.
     NoTimedRecoveriesFound,
 
-    /// Occurs when there is no timed badge withdraw attempts on the controller - typically because
-    /// it isn't in the state that allows for it.
-    NoTimedBadgeWithdrawAttemptsFound,
-
     /// Occurs when trying to perform a timed confirm recovery on a recovery proposal that could
     /// be time-confirmed but whose delay has not yet elapsed.
     TimedRecoveryDelayHasNotElapsed,
-
-    /// Occurs when trying to perform a timed confirm on a badge withdraw attempt that could be
-    /// time-confirmed but whose delay has not yet elapsed.
-    TimedBadgeWithdrawDelayHasNotElapsed,
 
     /// Occurs when the expected recovery proposal doesn't match that which was found
     RecoveryProposalMismatch {
@@ -348,17 +332,6 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
-            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerTimedConfirmBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            },
-        );
-        functions.insert(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -380,17 +353,6 @@ impl AccessControllerNativePackage {
                 export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
-        functions.insert(
-            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccessControllerStopTimedBadgeWithdrawAttemptOutput>(),
-                export_name: ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
-            },
-        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -403,8 +365,7 @@ impl AccessControllerNativePackage {
                 StopTimedRecoveryEvent,
                 InitiateBadgeWithdrawAttemptEvent,
                 BadgeWithdrawEvent,
-                CancelBadgeWithdrawAttemptEvent,
-                StopTimedBadgeWithdrawAttemptEvent
+                CancelBadgeWithdrawAttemptEvent
             ]
         };
 
@@ -534,14 +495,6 @@ impl AccessControllerNativePackage {
                 ))?;
                 Self::quick_confirm_recovery_role_badge_withdraw_attempt(receiver, input, api)
             }
-            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                Self::timed_confirm_badge_withdraw_attempt(receiver, input, api)
-            }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -551,11 +504,6 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
-            }
-            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::stop_timed_badge_withdraw_attempt(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -934,37 +882,6 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    fn timed_confirm_badge_withdraw_attempt<Y>(
-        receiver: &NodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        input
-            .as_typed::<AccessControllerTimedConfirmBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
-
-        let bucket = transition_mut(
-            api,
-            AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput,
-        )?;
-
-        update_access_rules(api, receiver, locked_access_rules())?;
-
-        Runtime::emit_event(
-            api,
-            BadgeWithdrawEvent {
-                proposer: Proposer::Recovery,
-            },
-        )?;
-
-        Ok(IndexedScryptoValue::from_typed(&bucket))
-    }
-
     fn cancel_primary_role_recovery_proposal<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -1133,28 +1050,6 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
-
-    fn stop_timed_badge_withdraw_attempt<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        input
-            .as_typed::<AccessControllerStopTimedBadgeWithdrawAttemptInput>()
-            .map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?;
-
-        transition_mut(
-            api,
-            AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput,
-        )?;
-        Runtime::emit_event(api, StopTimedBadgeWithdrawAttemptEvent)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 }
 
 fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
@@ -1252,13 +1147,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
-        recovery_group.into(),
-    );
-    access_rules.set_method_access_rule_to_group(
-        MethodKey::new(
-            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         recovery_group.into(),
@@ -1297,20 +1185,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         MethodKey::new(
             ObjectModuleId::SELF,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
-        ),
-        access_rule_or(
-            [
-                rule_set.primary_role.clone(),
-                rule_set.recovery_role.clone(),
-                rule_set.confirmation_role.clone(),
-            ]
-            .into(),
-        ),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         access_rule_or(
             [

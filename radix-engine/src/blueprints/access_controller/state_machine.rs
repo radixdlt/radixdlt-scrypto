@@ -11,7 +11,6 @@ use sbor::rust::boxed::Box;
 
 use super::PrimaryRoleBadgeWithdrawAttemptState;
 use super::RecoveryRoleBadgeWithdrawAttemptState;
-use super::RecoveryRoleWithdrawBadgeState;
 use super::{
     AccessControllerError, AccessControllerSubstate, PrimaryRoleLockingState,
     PrimaryRoleRecoveryAttemptState, RecoveryRoleRecoveryAttemptState, RecoveryRoleRecoveryState,
@@ -222,7 +221,7 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMa
 
     fn transition_mut<Y>(
         &mut self,
-        api: &mut Y,
+        _api: &mut Y,
         _input: AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
@@ -235,28 +234,9 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMa
                 _,
                 _,
                 ref mut recovery_role_badge_withdraw_attempt_state @ RecoveryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt,
-            ) => match self.timed_recovery_delay_in_minutes {
-                Some(delay_in_minutes) => {
-                    let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
-                    let timed_recovery_allowed_after = current_time
-                        .add_minutes(delay_in_minutes as i64)
-                        .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
-                            Ok(instant)
-                        })?;
-
-                    *recovery_role_badge_withdraw_attempt_state = RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                        RecoveryRoleWithdrawBadgeState::TimedWithdraw {
-                            timed_recovery_allowed_after,
-                        },
-                    );
-                    Ok(())
-                }
-                None => {
-                    *recovery_role_badge_withdraw_attempt_state = RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                        RecoveryRoleWithdrawBadgeState::UntimedWithdraw,
-                    );
-                    Ok(())
-                }
+            ) => {
+                *recovery_role_badge_withdraw_attempt_state = RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt;
+                Ok(())
             },
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -404,16 +384,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
         Y: ClientApi<RuntimeError>,
     {
         match self.state {
-            (
-                _,
-                _,
-                _,
-                _,
-                RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                    RecoveryRoleWithdrawBadgeState::UntimedWithdraw
-                    | RecoveryRoleWithdrawBadgeState::TimedWithdraw { .. },
-                ),
-            ) => {
+            (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
                 Vault(self.controlled_asset).sys_take_all(api)
@@ -485,58 +456,6 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
                 }
             }
             _ => access_controller_runtime_error!(NoTimedRecoveriesFound),
-        }
-    }
-}
-
-pub(super) struct AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput;
-
-impl TransitionMut<AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
-{
-    type Output = Bucket;
-
-    fn transition_mut<Y>(
-        &mut self,
-        api: &mut Y,
-        _input: AccessControllerTimedConfirmBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Timed confirm recovery can only be performed by the recovery role (this is checked
-        // through access rules on the invocation itself) and can be performed in recovery mode
-        // regardless of whether primary is locked or unlocked.
-        match self.state {
-            (
-                _,
-                _,
-                _,
-                _,
-                RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                    RecoveryRoleWithdrawBadgeState::TimedWithdraw {
-                        ref timed_recovery_allowed_after,
-                    },
-                ),
-            ) => {
-                let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
-                    api,
-                    timed_recovery_allowed_after.clone(),
-                    TimePrecision::Minute,
-                    TimeComparisonOperator::Gte,
-                )?;
-
-                // If the timed recovery delay has elapsed, then we transition into normal
-                // operations mode with primary unlocked and return the ruleset that was found.
-                if !recovery_time_has_elapsed {
-                    access_controller_runtime_error!(TimedRecoveryDelayHasNotElapsed)
-                } else {
-                    self.state = Default::default();
-
-                    Vault(self.controlled_asset).sys_take_all(api)
-                }
-            }
-            _ => access_controller_runtime_error!(NoTimedBadgeWithdrawAttemptsFound),
         }
     }
 }
@@ -661,7 +580,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMa
         // A badge withdraw attempt can only be canceled when it exists regardless of whether
         // primary is locked or unlocked
         match self.state {
-            (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(..)) => {
+            (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition from the recovery state to the normal operations state
                 self.state.4 = RecoveryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt;
                 Ok(())
@@ -768,46 +687,6 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
             }
             // TODO: A more descriptive error is needed here.
             _ => access_controller_runtime_error!(NoTimedRecoveriesFound),
-        }
-    }
-}
-
-pub(super) struct AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput;
-
-impl TransitionMut<AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
-{
-    type Output = ();
-
-    fn transition_mut<Y>(
-        &mut self,
-        _api: &mut Y,
-        _input: AccessControllerStopTimedBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter
-        // if primary is locked or unlocked
-        match self.state {
-            (
-                _,
-                _,
-                _,
-                _,
-                RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                    RecoveryRoleWithdrawBadgeState::TimedWithdraw { .. },
-                ),
-            ) => {
-                // Transition from timed recovery to untimed recovery
-                self.state.4 = RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt(
-                    RecoveryRoleWithdrawBadgeState::UntimedWithdraw,
-                );
-
-                Ok(())
-            }
-            // TODO: A more descriptive error is needed here.
-            _ => access_controller_runtime_error!(NoTimedBadgeWithdrawAttemptsFound),
         }
     }
 }

@@ -164,18 +164,6 @@ pub struct AccessControllerTimedConfirmRecoveryInput {
 
 pub type AccessControllerTimedConfirmRecoveryOutput = ();
 
-//========================================================
-// Access Controller Timed Confirm Badge Withdraw Attempt
-//========================================================
-
-pub const ACCESS_CONTROLLER_TIMED_CONFIRM_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
-    "timed_confirm_badge_withdraw_attempt";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccessControllerTimedConfirmBadgeWithdrawAttemptInput;
-
-pub type AccessControllerTimedConfirmBadgeWithdrawAttemptOutput = Bucket;
-
 //=========================================================
 // Access Controller Cancel Primary Role Recovery Proposal
 //=========================================================
@@ -259,15 +247,3 @@ pub struct AccessControllerStopTimedRecoveryInput {
 }
 
 pub type AccessControllerStopTimedRecoveryOutput = ();
-
-//=====================================================
-// Access Controller Stop Timed Badge Withdraw Attempt
-//=====================================================
-
-pub const ACCESS_CONTROLLER_STOP_TIMED_BADGE_WITHDRAW_ATTEMPT_IDENT: &str =
-    "stop_timed_badge_withdraw_attempt";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccessControllerStopTimedBadgeWithdrawAttemptInput;
-
-pub type AccessControllerStopTimedBadgeWithdrawAttemptOutput = ();
