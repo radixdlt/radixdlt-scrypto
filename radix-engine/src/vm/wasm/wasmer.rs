@@ -321,6 +321,19 @@ impl WasmerModule {
             Ok(handle)
         }
 
+        pub fn key_value_entry_get(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .key_value_entry_get(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         pub fn drop_object(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
@@ -507,12 +520,13 @@ impl WasmerModule {
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),
-                NEW_KEY_VALUE_STORE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
-                LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_key_value_store_entry),
-                READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
-                WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                DROP_LOCK_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
+                ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_field),
+                KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_key_value_store),
+                KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_key_value_store_entry),
+                KEY_VALUE_ENTRY_GET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_get),
+                FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
+                FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
+                FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
                 GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),

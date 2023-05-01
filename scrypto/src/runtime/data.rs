@@ -1,5 +1,5 @@
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::ClientFieldLockApi;
 use radix_engine_interface::data::scrypto::{

@@ -1,8 +1,8 @@
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;

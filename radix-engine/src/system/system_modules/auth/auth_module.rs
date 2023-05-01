@@ -24,8 +24,8 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::convert;
 use crate::types::*;
 use radix_engine_interface::api::component::ComponentStateSubstate;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,

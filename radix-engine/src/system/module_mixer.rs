@@ -23,7 +23,7 @@ use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;

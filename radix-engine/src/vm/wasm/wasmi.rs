@@ -798,16 +798,16 @@ impl WasmiModule {
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
 
         linker_define!(
             linker,
-            NEW_KEY_VALUE_STORE_FUNCTION_NAME,
+            KEY_VALUE_STORE_NEW_FUNCTION_NAME,
             host_new_key_value_store
         );
         linker_define!(
             linker,
-            LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
         linker_define!(
@@ -822,18 +822,18 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME,
             host_unlock_key_value_entry
         );
         linker_define!(
             linker,
-            KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME,
+            KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME,
             host_key_value_entry_remove
         );
 
-        linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
-        linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
+        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
+        linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
+        linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
         linker_define!(
             linker,
             GET_GLOBAL_ADDRESS_FUNCTION_NAME,

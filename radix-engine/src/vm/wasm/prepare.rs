@@ -264,7 +264,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -283,7 +283,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -324,7 +324,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -337,12 +337,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -360,12 +360,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        LOCK_FIELD_FUNCTION_NAME => {
+                        ACTOR_LOCK_FIELD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -378,12 +378,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        LOCK_FIELD_FUNCTION_NAME.to_string(),
+                                        ACTOR_LOCK_FIELD_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        READ_SUBSTATE_FUNCTION_NAME => {
+                        FIELD_LOCK_READ_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -396,12 +396,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        READ_SUBSTATE_FUNCTION_NAME.to_string(),
+                                        FIELD_LOCK_READ_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        WRITE_SUBSTATE_FUNCTION_NAME => {
+                        FIELD_LOCK_WRITE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -414,12 +414,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        WRITE_SUBSTATE_FUNCTION_NAME.to_string(),
+                                        FIELD_LOCK_WRITE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        DROP_LOCK_FUNCTION_NAME => {
+                        FIELD_LOCK_RELEASE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -432,7 +432,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        DROP_LOCK_FUNCTION_NAME.to_string(),
+                                        FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -549,7 +549,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_NEW_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -561,7 +561,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_NEW_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -583,7 +583,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -595,7 +595,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

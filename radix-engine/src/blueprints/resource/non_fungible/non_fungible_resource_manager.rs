@@ -5,7 +5,7 @@ use crate::kernel::heap::DroppedNonFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -623,7 +623,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_key_value_entry_remove(&id.to_key())?;
+                api.actor_remove_key_value_entry(&id.to_key())?;
             }
         }
 

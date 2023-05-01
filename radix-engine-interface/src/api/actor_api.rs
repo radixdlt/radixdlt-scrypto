@@ -17,8 +17,6 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
-    // TODO: Add specific object read/write lock apis
-
     fn actor_lock_key_value_entry(
         &mut self,
         key: &Vec<u8>,
@@ -34,13 +32,13 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
-    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, E>;
+    fn actor_remove_key_value_entry(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, E>;
 
-    fn actor_key_value_entry_remove_typed<V: ScryptoDecode>(
+    fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
         &mut self,
         key: &Vec<u8>,
     ) -> Result<Option<V>, E> {
-        let removed = self.actor_key_value_entry_remove(key)?;
+        let removed = self.actor_remove_key_value_entry(key)?;
         let rtn = scrypto_decode(&removed).unwrap();
         Ok(rtn)
     }

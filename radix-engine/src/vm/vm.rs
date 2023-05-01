@@ -7,7 +7,7 @@ use crate::types::*;
 use crate::vm::vm::api::ClientApi;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVm, ScryptoVm};
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::*;
 
 pub struct Vm<'g, W: WasmEngine> {

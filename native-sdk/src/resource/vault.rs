@@ -1,4 +1,4 @@
-use radix_engine_interface::api::{ClientApi, ClientFieldLockApi, ClientObjectApi};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
@@ -15,7 +15,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             resource_address.as_node_id(),
@@ -33,7 +33,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -50,7 +50,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -63,7 +63,7 @@ impl Vault {
 
     pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
         let amount = self.sys_amount(api)?;
@@ -82,7 +82,7 @@ impl Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -98,7 +98,7 @@ impl Vault {
 
     pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -111,8 +111,7 @@ impl Vault {
 
     pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
-        E: Debug + ScryptoDecode,
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -163,7 +162,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -183,7 +182,7 @@ impl Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientFieldLockApi<E> + ClientObjectApi<E>,
+        Y: ClientApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

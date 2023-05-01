@@ -18,29 +18,31 @@ pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
 pub const DROP_OBJECT_FUNCTION_ID: usize = 0x35;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
-pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x36;
-pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
-pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x37;
-pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
-pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_ID: usize = 0x38;
-pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME: &str = "lock_key_value_store_entry";
-pub const KEY_VALUE_ENTRY_GET_FUNCTION_ID: usize = 0x39;
-pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "key_value_entry_get";
-pub const KEY_VALUE_ENTRY_SET_FUNCTION_ID: usize = 0x40;
-pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "key_value_entry_set";
-pub const UNLOCK_KEY_VALUE_ENTRY_FUNCTION_ID: usize = 0x41;
-pub const UNLOCK_KEY_VALUE_ENTRY_FUNCTION_NAME: &str = "unlock_key_value_entry";
-pub const KEY_VALUE_ENTRY_REMOVE_FUNCTION_ID: usize = 0x42;
-pub const KEY_VALUE_ENTRY_REMOVE_FUNCTION_NAME: &str = "key_value_entry_remove";
+pub const KEY_VALUE_STORE_NEW_FUNCTION_ID: usize = 0x36;
+pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
+pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_ID: usize = 0x37;
+pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
+pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_ID: usize = 0x38;
+pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
+pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_ID: usize = 0x39;
+pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 
-pub const LOCK_FIELD_FUNCTION_ID: usize = 0x40;
-pub const LOCK_FIELD_FUNCTION_NAME: &str = "lock_field";
-pub const READ_SUBSTATE_FUNCTION_ID: usize = 0x41;
-pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
-pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 0x42;
-pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
-pub const DROP_LOCK_FUNCTION_ID: usize = 0x43;
-pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_ID: usize = 0x3a;
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_ID: usize = 0x3b;
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
+pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_ID: usize = 0x3c;
+pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
+
+pub const ACTOR_LOCK_FIELD_FUNCTION_ID: usize = 0x43;
+pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
+
+pub const FIELD_LOCK_READ_FUNCTION_ID: usize = 0x44;
+pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
+pub const FIELD_LOCK_WRITE_FUNCTION_ID: usize = 0x45;
+pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
+pub const FIELD_LOCK_RELEASE_FUNCTION_ID: usize = 0x46;
+pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";

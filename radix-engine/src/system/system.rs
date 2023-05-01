@@ -18,6 +18,7 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::types::*;
+use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
@@ -25,7 +26,6 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
-use radix_engine_interface::api::substate_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -1481,7 +1481,7 @@ where
         )
     }
 
-    fn actor_key_value_entry_remove(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+    fn actor_remove_key_value_entry(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_handle_entry(0u8, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
