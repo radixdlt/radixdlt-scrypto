@@ -99,21 +99,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (db_sort_key, value) in self
                     .substate_db
-                    .list_mapped_substates::<SpreadPrefixKeyMapper>(
-                        &node_id,
-                        OBJECT_BASE_MODULE,
-                    )
+                    .list_mapped_substates::<SpreadPrefixKeyMapper>(&node_id, OBJECT_BASE_MODULE)
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
                         .unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(
-                                node_id,
-                                OBJECT_BASE_MODULE,
-                                db_sort_key.clone(),
-                            )),
+                            Some(&(node_id, OBJECT_BASE_MODULE, db_sort_key.clone())),
                             child_node_id,
                             depth + 1,
                         );
@@ -196,11 +189,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .unpack();
                             for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&(
-                                        node_id,
-                                        OBJECT_BASE_MODULE,
-                                        db_sort_key.clone(),
-                                    )),
+                                    Some(&(node_id, OBJECT_BASE_MODULE, db_sort_key.clone())),
                                     child_node_id,
                                     depth + 1,
                                 );

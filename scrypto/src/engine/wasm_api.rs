@@ -53,7 +53,7 @@ extern "C" {
         _modules_len: usize,
         _address_ptr: *const u8,
         _address_len: usize,
-    ) -> Buffer;
+    );
 
     pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
@@ -192,7 +192,7 @@ pub unsafe fn globalize_with_address(
     _modules_len: usize,
     _address_ptr: *const u8,
     _address_len: usize,
-) -> Buffer {
+) {
     unreachable!()
 }
 

@@ -43,7 +43,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_global_id));
         let config = AccessRulesConfig::new().default(withdraw_auth.clone(), withdraw_auth);
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .lock_fee(FAUCET, 100.into())
             .new_account_advanced(config)
             .build();
 
@@ -67,8 +67,8 @@ impl NewAccount {
 
             let account = commit_result.new_component_addresses()[0];
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 100.into())
-                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                .lock_fee(FAUCET, 100.into())
+                .call_method(FAUCET, "free", manifest_args!())
                 .add_instruction(Instruction::CallFunction {
                     package_address: RESOURCE_MANAGER_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),

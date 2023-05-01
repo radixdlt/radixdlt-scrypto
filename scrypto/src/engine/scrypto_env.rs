@@ -73,15 +73,15 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         let modules = scrypto_encode(&modules).unwrap();
         let address = scrypto_encode(&address).unwrap();
 
-        let bytes = copy_buffer(unsafe {
+        unsafe {
             globalize_with_address(
                 modules.as_ptr(),
                 modules.len(),
                 address.as_ptr(),
                 address.len(),
             )
-        });
-        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+        }
+        Ok(())
     }
 
     fn globalize_with_address_and_create_inner_object(

@@ -216,7 +216,9 @@ impl TestRunnerBuilder {
         let mut substate_db = InMemorySubstateDatabase::standard();
 
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter);
-        let (_, _, genesis_wrap_up_receipt) = match self.custom_genesis {
+        let GenesisReceipts {
+            wrap_up_receipt, ..
+        } = match self.custom_genesis {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
@@ -228,8 +230,6 @@ impl TestRunnerBuilder {
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
         };
-
-        let faucet_component = genesis_wrap_up_receipt.faucet_component();
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -247,10 +247,12 @@ impl TestRunnerBuilder {
             next_private_key,
             next_transaction_nonce,
             trace: self.trace,
-            faucet_component,
         };
 
-        let next_epoch = genesis_wrap_up_receipt.commit_result.next_epoch().unwrap();
+        let next_epoch = wrap_up_receipt
+            .expect_commit_success()
+            .next_epoch()
+            .unwrap();
         (runner, next_epoch.0)
     }
 
@@ -267,7 +269,6 @@ pub struct TestRunner {
     next_transaction_nonce: u64,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
-    faucet_component: ComponentAddress,
 }
 
 #[derive(Clone)]
@@ -307,7 +308,7 @@ impl TestRunner {
     }
 
     pub fn faucet_component(&self) -> ComponentAddress {
-        self.faucet_component
+        FAUCET
     }
 
     pub fn substate_db(&self) -> &InMemorySubstateDatabase {
@@ -510,7 +511,7 @@ impl TestRunner {
                 .substate_db()
                 .list_mapped_substates::<SpreadPrefixKeyMapper>(
                     ids.as_node_id(),
-                    OBJECT_BASE_MODULE
+                    OBJECT_BASE_MODULE,
                 );
             let id = substate_iter.next().map(|(_key, value)| {
                 let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();

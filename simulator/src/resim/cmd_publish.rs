@@ -67,7 +67,8 @@ impl Publish {
             Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_MODULE);
+            let db_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_MODULE);
             let code_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
@@ -101,7 +102,7 @@ impl Publish {
                 .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET_COMPONENT, 100u32.into())
+                .lock_fee(FAUCET, 100u32.into())
                 .publish_package_with_owner(code, schema, owner_badge_non_fungible_global_id)
                 .build();
 

@@ -1,5 +1,5 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::errors::RuntimeError;
+use crate::errors::{RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -70,6 +70,9 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .callback_obj
                         .scrypto_vm
                         .create_instance(address, &package_code.code)
+                        .map_err(|prepare_err| {
+                            RuntimeError::VmError(VmError::WasmPrepareError(prepare_err))
+                        })?
                 };
 
                 let output = { scrypto_vm_instance.invoke(receiver, &export_name, input, api)? };

@@ -20,10 +20,13 @@ impl IdAllocator {
         }
     }
 
+    /// Called on a new frame.
     pub fn push(&mut self) {
         self.frame_allocated_ids.push(BTreeSet::new());
     }
 
+    /// Called when the frame is over.
+    /// Ensures all allocated ids have been used.
     pub fn pop(&mut self) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.pop().expect("No frame found");
         if !ids.is_empty() {
@@ -34,6 +37,8 @@ impl IdAllocator {
         Ok(())
     }
 
+    /// Called when a node is created - the node id is specified at creation time,
+    /// this method ensures the id is already allocated.
     pub fn take_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         let ids = self.frame_allocated_ids.last_mut().expect("No frame found");
         let frame_allocated = ids.remove(&node_id);
@@ -56,6 +61,8 @@ impl IdAllocator {
         ids.insert(node_id);
     }
 
+    /// Called before a node is created to allocate an address.
+    /// This should only be used when not using a pre-allocated address.
     pub fn allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         let node_id = self
             .next_node_id(entity_type)

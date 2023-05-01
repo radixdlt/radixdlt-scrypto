@@ -1,5 +1,5 @@
-use radix_engine_interface::api::LockFlags;
 use crate::types::*;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
 
 /// Error when acquiring a lock.

@@ -22,7 +22,6 @@ struct TransactionFuzzer {
     rng: ChaCha8Rng,
     scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
-    faucet_component: ComponentAddress,
 }
 
 impl TransactionFuzzer {
@@ -35,16 +34,14 @@ impl TransactionFuzzer {
             wasm_metering_config: WasmMeteringConfig::V0,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        let (_, _, receipt) = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+        Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
             .bootstrap_test_default()
             .unwrap();
-        let faucet_component = receipt.faucet_component();
 
         Self {
             rng,
             scrypto_interpreter,
             substate_db,
-            faucet_component,
         }
     }
 
@@ -89,11 +86,7 @@ impl TransactionFuzzer {
                     builder.new_account_advanced(config);
                 }
                 3 => {
-                    builder.call_method(
-                        self.faucet_component,
-                        "lock_fee",
-                        manifest_args!(dec!("100")),
-                    );
+                    builder.call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }
