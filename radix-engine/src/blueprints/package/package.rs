@@ -7,6 +7,7 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
@@ -20,7 +21,6 @@ use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
-use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types

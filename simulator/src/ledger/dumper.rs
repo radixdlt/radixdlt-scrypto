@@ -3,12 +3,12 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_queries::query::ResourceAccounter;
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use utils::ContextualDisplay;
 
 /// Represents an error when displaying an entity.
@@ -27,7 +27,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let substate = substate_db
-        .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             &PackageOffset::Code.into(),
@@ -59,7 +59,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 
     let (package_address, blueprint_name, resources) = {
         let type_info = substate_db
-            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 SysModuleId::TypeInfo.into(),
                 &TypeInfoOffset::TypeInfo.into(),
@@ -135,14 +135,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let id_type = substate_db
-            .get_mapped_substate::<JmtMapper, NonFungibleIdType>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 &NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .get_mapped_substate::<JmtMapper, Decimal>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, Decimal>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 &NonFungibleResourceManagerOffset::TotalSupply.into(),
@@ -163,14 +163,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
     } else {
         let divisibility = substate_db
-            .get_mapped_substate::<JmtMapper, FungibleResourceManagerDivisibilitySubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 &FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
+            .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
                 SysModuleId::Object.into(),
                 &FungibleResourceManagerOffset::TotalSupply.into(),

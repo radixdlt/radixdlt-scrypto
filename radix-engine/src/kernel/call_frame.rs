@@ -1,5 +1,8 @@
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::interface::{
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -7,9 +10,6 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
-};
 
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
@@ -610,7 +610,7 @@ impl CallFrame {
     }
 
     pub fn new_root() -> Self {
-        let mut frame = Self {
+        Self {
             depth: 0,
             actor: None,
             immortal_node_refs: NonIterMap::new(),
@@ -618,36 +618,7 @@ impl CallFrame {
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
-        };
-
-        // Add well-known global refs to current frame
-        frame.add_ref(RADIX_TOKEN.into(), RefType::Normal);
-        frame.add_ref(SYSTEM_TRANSACTION_BADGE.into(), RefType::Normal);
-        frame.add_ref(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-            RefType::Normal,
-        );
-        frame.add_ref(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-            RefType::Normal,
-        );
-        frame.add_ref(PACKAGE_VIRTUAL_BADGE.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_OWNER_BADGE.into(), RefType::Normal);
-        frame.add_ref(VALIDATOR_OWNER_BADGE.into(), RefType::Normal);
-        frame.add_ref(IDENTITY_OWNER_BADGE.into(), RefType::Normal);
-        frame.add_ref(ACCOUNT_OWNER_BADGE.into(), RefType::Normal);
-        frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
-        frame.add_ref(CLOCK.into(), RefType::Normal);
-        frame.add_ref(ACCESS_CONTROLLER_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(ACCOUNT_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(CLOCK_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(EPOCH_MANAGER_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(RESOURCE_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(TRANSACTION_PROCESSOR_PACKAGE.into(), RefType::Normal);
-        frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
-
-        frame
+        }
     }
 
     pub fn new_child_from_parent(
@@ -879,6 +850,9 @@ impl CallFrame {
             Some((RefType::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
             Some((ref_data.ref_type, false))
+        } else if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+            // TODO: remove
+            Some((RefType::Normal, false))
         } else {
             None
         }

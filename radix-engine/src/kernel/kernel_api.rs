@@ -5,9 +5,9 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_stores::interface::NodeSubstates;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -177,15 +177,11 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
+    // TODO: gets cleaned up a little more
+    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
-
-    // TODO: Remove these, these are temporary until the architecture
-    // TODO: gets cleaned up a little more
-    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
-    fn kernel_load_package_package_dependencies(&mut self);
-    fn kernel_load_common(&mut self);
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;

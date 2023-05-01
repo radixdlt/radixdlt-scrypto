@@ -15,6 +15,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
@@ -33,7 +34,6 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, KeyValueStoreSchema};
-use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -1674,14 +1674,6 @@ where
 
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
         self.api.kernel_get_node_info(node_id)
-    }
-
-    fn kernel_load_common(&mut self) {
-        self.api.kernel_load_common()
-    }
-
-    fn kernel_load_package_package_dependencies(&mut self) {
-        self.api.kernel_load_package_package_dependencies()
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {

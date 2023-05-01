@@ -28,6 +28,7 @@ members = [
     "radix-engine-common",
     "radix-engine-interface",
     "radix-engine-derive",
+    "radix-engine-store-interface",
     "radix-engine-stores",
     "radix-engine-tests",
     "radix-engine-constants",

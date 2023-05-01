@@ -80,7 +80,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use itertools::Itertools;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_common::crypto::{hash, Hash};
 use sbor::rust::collections::hash_map::HashMap;
 use sbor::rust::ops::Range;
 use sbor::rust::string::String;
