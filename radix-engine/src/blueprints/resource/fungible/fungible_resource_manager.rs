@@ -153,7 +153,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility = {
-            let divisibility_handle = api.lock_field(
+            let divisibility_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
@@ -166,7 +166,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -200,7 +200,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -273,7 +273,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_field(
+        let divisibility_handle = api.actor_lock_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -288,7 +288,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let total_supply_handle = api.lock_field(
+        let total_supply_handle = api.actor_lock_field(
             FungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;

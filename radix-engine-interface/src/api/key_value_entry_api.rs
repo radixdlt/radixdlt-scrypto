@@ -5,7 +5,6 @@ use sbor::rust::prelude::*;
 
 pub type KeyValueEntryHandle = u32;
 
-// TODO: Add locked entry interface rather than using substate api
 pub trait ClientKeyValueEntryApi<E> {
     fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
 

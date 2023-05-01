@@ -227,7 +227,7 @@ where
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_field(field, flags)?;
+        let handle = self.api.actor_lock_field(field, flags)?;
 
         Ok(handle)
     }
@@ -258,14 +258,14 @@ where
     }
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let address = self.api.get_global_address()?;
+        let address = self.api.actor_get_global_address()?;
 
         let buffer = scrypto_encode(&address).expect("Failed to encode address");
         self.allocate_buffer(buffer)
     }
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.get_blueprint()?;
+        let actor = self.api.actor_get_blueprint()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)

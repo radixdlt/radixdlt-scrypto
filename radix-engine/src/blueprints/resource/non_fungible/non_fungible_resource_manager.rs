@@ -287,9 +287,10 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::read_only(),
             )?;
@@ -307,7 +308,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -338,11 +339,12 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         // Check id_type
         let id_type = {
-            let id_type_handle = api.lock_field(
+            let id_type_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -362,7 +364,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update Total Supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -396,11 +398,12 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         // Check type
         let id_type = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -419,7 +422,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -458,15 +461,16 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
-        let data_schema_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::DataSchema.into(),
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+        let data_schema_handle = api.actor_lock_field(
+            NonFungibleResourceManagerOffset::MutableFields.into(),
             LockFlags::read_only(),
         )?;
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
             api.field_lock_read_typed(data_schema_handle)?;
 
-        let mut instance_schema = api.get_info()?.instance_schema.unwrap();
+        let mut instance_schema = api.actor_get_info()?.instance_schema.unwrap();
         let kv_schema = instance_schema.schema;
         let local_index = instance_schema.type_index.remove(0);
 
@@ -544,7 +548,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         let non_fungible_handle =
             api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
@@ -606,7 +611,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -668,7 +673,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::read_only(),
         )?;
@@ -683,7 +688,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;

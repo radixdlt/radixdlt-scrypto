@@ -64,7 +64,7 @@ impl NodeMoveModule {
 
                 let handle = api.kernel_lock_substate(
                     &node_id,
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &FungibleProofOffset::Moveable.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),
@@ -118,7 +118,7 @@ impl NodeMoveModule {
 
                 let handle = api.kernel_lock_substate(
                     &node_id,
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &NonFungibleProofOffset::Moveable.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),

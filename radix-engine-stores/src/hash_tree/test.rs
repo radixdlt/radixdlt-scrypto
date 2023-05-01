@@ -12,7 +12,7 @@ use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::{
     ModuleNumber, NodeId, PackageAddress, SubstateKey, ACCESS_RULES_BASE_MODULE,
-    METADATA_BASE_MODULE, USER_BASE_MODULE,
+    METADATA_BASE_MODULE, OBJECT_BASE_MODULE,
 };
 use sbor::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
@@ -22,12 +22,12 @@ fn hash_of_next_version_differs_when_value_changed() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, USER_BASE_MODULE, 2, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(30))],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, USER_BASE_MODULE, 2, Some(70))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(70))],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -39,14 +39,14 @@ fn hash_of_next_version_same_when_write_repeated() {
         &mut store,
         None,
         vec![
-            change(4, USER_BASE_MODULE, 6, Some(30)),
-            change(3, USER_BASE_MODULE, 9, Some(40)),
+            change(4, OBJECT_BASE_MODULE, 6, Some(30)),
+            change(3, OBJECT_BASE_MODULE, 9, Some(40)),
         ],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(4, USER_BASE_MODULE, 6, Some(30))],
+        vec![change(4, OBJECT_BASE_MODULE, 6, Some(30))],
     );
     assert_eq!(hash_v1, hash_v2);
 }
@@ -58,8 +58,8 @@ fn hash_of_next_version_same_when_write_empty() {
         &mut store,
         None,
         vec![
-            change(1, USER_BASE_MODULE, 2, Some(30)),
-            change(3, USER_BASE_MODULE, 1, Some(40)),
+            change(1, OBJECT_BASE_MODULE, 2, Some(30)),
+            change(3, OBJECT_BASE_MODULE, 1, Some(40)),
         ],
     );
     let hash_v2 = put_at_next_version(&mut store, Some(1), vec![]);
@@ -72,12 +72,12 @@ fn hash_of_next_version_differs_when_substate_added() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, USER_BASE_MODULE, 2, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(30))],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, USER_BASE_MODULE, 8, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 8, Some(30))],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -89,14 +89,14 @@ fn hash_of_next_version_differs_when_substate_removed() {
         &mut store,
         None,
         vec![
-            change(1, USER_BASE_MODULE, 2, Some(30)),
-            change(4, USER_BASE_MODULE, 3, Some(20)),
+            change(1, OBJECT_BASE_MODULE, 2, Some(30)),
+            change(4, OBJECT_BASE_MODULE, 3, Some(20)),
         ],
     );
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, USER_BASE_MODULE, 2, None)],
+        vec![change(1, OBJECT_BASE_MODULE, 2, None)],
     );
     assert_ne!(hash_v1, hash_v2);
 }
@@ -108,26 +108,26 @@ fn hash_returns_to_same_when_previous_state_restored() {
         &mut store,
         None,
         vec![
-            change(1, USER_BASE_MODULE, 2, Some(30)),
-            change(3, USER_BASE_MODULE, 1, Some(40)),
+            change(1, OBJECT_BASE_MODULE, 2, Some(30)),
+            change(3, OBJECT_BASE_MODULE, 1, Some(40)),
         ],
     );
     put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, USER_BASE_MODULE, 2, Some(90)),
-            change(3, USER_BASE_MODULE, 1, None),
-            change(1, USER_BASE_MODULE, 5, Some(10)),
+            change(1, OBJECT_BASE_MODULE, 2, Some(90)),
+            change(3, OBJECT_BASE_MODULE, 1, None),
+            change(1, OBJECT_BASE_MODULE, 5, Some(10)),
         ],
     );
     let hash_v3 = put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, USER_BASE_MODULE, 2, Some(30)),
-            change(3, USER_BASE_MODULE, 1, Some(40)),
-            change(1, USER_BASE_MODULE, 5, None),
+            change(1, OBJECT_BASE_MODULE, 2, Some(30)),
+            change(3, OBJECT_BASE_MODULE, 1, Some(40)),
+            change(1, OBJECT_BASE_MODULE, 5, None),
         ],
     );
     assert_eq!(hash_v1, hash_v3);
@@ -139,13 +139,13 @@ fn hash_differs_when_states_only_differ_by_node_id() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, USER_BASE_MODULE, 3, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 3, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(2, USER_BASE_MODULE, 3, Some(30))],
+        vec![change(2, OBJECT_BASE_MODULE, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -156,13 +156,13 @@ fn hash_differs_when_states_only_differ_by_module_id() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, USER_BASE_MODULE, 3, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 3, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(1, USER_BASE_MODULE, 3, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -173,13 +173,13 @@ fn hash_differs_when_states_only_differ_by_offset() {
     let hash_1 = put_at_next_version(
         &mut store_1,
         None,
-        vec![change(1, USER_BASE_MODULE, 2, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(30))],
     );
     let mut store_2 = TypedInMemoryTreeStore::new();
     let hash_2 = put_at_next_version(
         &mut store_2,
         None,
-        vec![change(1, USER_BASE_MODULE, 3, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 3, Some(30))],
     );
     assert_ne!(hash_1, hash_2);
 }
@@ -328,13 +328,13 @@ fn supports_empty_state() {
     let hash_v2 = put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, USER_BASE_MODULE, 2, Some(30))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(30))],
     );
     assert_ne!(hash_v2, SPARSE_MERKLE_PLACEHOLDER_HASH);
     let hash_v3 = put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(1, USER_BASE_MODULE, 2, None)],
+        vec![change(1, OBJECT_BASE_MODULE, 2, None)],
     );
     assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
 }
@@ -345,17 +345,17 @@ fn records_stale_tree_node_keys() {
     put_at_next_version(
         &mut store,
         None,
-        vec![change(4, USER_BASE_MODULE, 6, Some(30))],
+        vec![change(4, OBJECT_BASE_MODULE, 6, Some(30))],
     );
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(3, USER_BASE_MODULE, 9, Some(70))],
+        vec![change(3, OBJECT_BASE_MODULE, 9, Some(70))],
     );
     put_at_next_version(
         &mut store,
         Some(2),
-        vec![change(3, USER_BASE_MODULE, 9, Some(80))],
+        vec![change(3, OBJECT_BASE_MODULE, 9, Some(80))],
     );
     let stale_versions = store
         .stale_key_buffer
@@ -420,13 +420,13 @@ fn serialized_keys_are_strictly_increasing() {
     put_at_next_version(
         &mut store,
         None,
-        vec![change(3, USER_BASE_MODULE, 4, Some(90))],
+        vec![change(3, OBJECT_BASE_MODULE, 4, Some(90))],
     );
     let previous_key = store.memory.keys().collect_vec()[0].clone();
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, USER_BASE_MODULE, 2, Some(80))],
+        vec![change(1, OBJECT_BASE_MODULE, 2, Some(80))],
     );
     let next_key = store
         .memory
@@ -439,7 +439,7 @@ fn serialized_keys_are_strictly_increasing() {
 
 fn change(
     node_id_seed: u8,
-    module_id: ModuleNumber,
+    module_num: ModuleNumber,
     substate_offset_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
@@ -447,7 +447,7 @@ fn change(
     let fake_kvs_entry_id = vec![substate_offset_seed; substate_offset_seed as usize];
     SubstateHashChange::new(
         DbId::new(
-            JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), module_id as u8),
+            JmtMapper::map_to_db_index(&NodeId(fake_pkg_address.into()), module_num as u8),
             JmtMapper::map_to_db_key(&SubstateKey::Map(fake_kvs_entry_id)),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),

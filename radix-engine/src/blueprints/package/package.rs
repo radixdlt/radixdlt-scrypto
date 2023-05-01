@@ -173,7 +173,7 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&USER_BASE_MODULE)
+            .remove(&OBJECT_BASE_MODULE)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
@@ -202,7 +202,7 @@ where
         .into_iter()
         .map(|(k, v)| (k, v.to_substates()))
         .collect();
-    modules.insert(USER_BASE_MODULE, node_init);
+    modules.insert(OBJECT_BASE_MODULE, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
@@ -607,7 +607,7 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
         let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -627,7 +627,7 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {

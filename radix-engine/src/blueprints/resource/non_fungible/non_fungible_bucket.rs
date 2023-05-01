@@ -14,7 +14,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleBucketOffset::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -28,7 +28,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleBucketOffset::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -44,7 +44,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleBucketOffset::Liquid.into(),
             LockFlags::read_only(),
         )?;
@@ -60,7 +60,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleBucketOffset::Locked.into(),
             LockFlags::read_only(),
         )?;
@@ -74,7 +74,8 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -93,7 +94,8 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
         let taken = substate
             .take_by_ids(ids)
@@ -112,7 +114,8 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -133,7 +136,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
         let max_locked: Decimal = locked.ids.len().into();
 
@@ -183,7 +187,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
 
         // Take from liquid if needed
@@ -223,7 +228,8 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(NonFungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
@@ -360,7 +366,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }

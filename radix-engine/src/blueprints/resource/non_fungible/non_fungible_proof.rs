@@ -79,7 +79,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleProofOffset::Moveable.into(),
                 LockFlags::read_only(),
             )?;
@@ -88,7 +88,7 @@ impl NonFungibleProofBlueprint {
             api.field_lock_release(handle)?;
             moveable
         };
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -114,7 +114,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -130,7 +130,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -145,7 +145,8 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
         Ok(address)
     }
 

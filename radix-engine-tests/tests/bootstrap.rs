@@ -183,7 +183,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &FungibleResourceManagerOffset::TotalSupply.into(),
         )
         .unwrap();

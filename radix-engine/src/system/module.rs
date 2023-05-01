@@ -134,7 +134,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _module_id: &ModuleNumber,
+        _module_num: &ModuleNumber,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

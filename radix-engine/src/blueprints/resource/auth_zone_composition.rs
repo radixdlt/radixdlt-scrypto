@@ -149,7 +149,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &FungibleProofOffset::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -200,7 +200,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &NonFungibleProofOffset::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
@@ -244,7 +244,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &FungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -329,7 +329,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),

@@ -13,7 +13,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::read_only())?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::read_only())?;
         let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
@@ -24,7 +25,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::read_only())?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::read_only())?;
         let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
@@ -35,7 +37,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -55,7 +58,8 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
         let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -76,7 +80,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let max_locked = locked.amount();
 
@@ -110,7 +115,8 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
 
         let max_locked = locked.amount();
@@ -136,7 +142,7 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_outer_object_field(
+        let divisibility_handle = api.actor_lock_outer_object_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -223,7 +229,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }

@@ -192,7 +192,7 @@ where
         );
 
         for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = USER_BASE_MODULE.at_offset(i as u8);
+            let module_number = OBJECT_BASE_MODULE.at_offset(i as u8);
             node_substates.insert(module_number, module_substates);
         }
 
@@ -207,7 +207,7 @@ where
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -245,7 +245,7 @@ where
     > {
         let handle = self.api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &PackageOffset::Info.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
@@ -607,7 +607,7 @@ where
                     }
 
                     let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
-                    let self_substates = cur_node_substates.remove(&USER_BASE_MODULE).unwrap();
+                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
                     node_substates.insert(module_id.base_module(), self_substates);
                 }
             }
@@ -804,7 +804,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&USER_BASE_MODULE).unwrap();
+        let user_substates = node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -915,7 +915,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                USER_BASE_MODULE => btreemap!(),
+                OBJECT_BASE_MODULE => btreemap!(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
@@ -984,7 +984,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1014,7 +1014,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                USER_BASE_MODULE => btreemap!(),
+                OBJECT_BASE_MODULE => btreemap!(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Index
                 ).to_substates(),
@@ -1049,7 +1049,7 @@ where
         }
 
         self.api
-            .kernel_set_substate(node_id, USER_BASE_MODULE, SubstateKey::Map(key), value)
+            .kernel_set_substate(node_id, OBJECT_BASE_MODULE, SubstateKey::Map(key), value)
     }
 
     fn remove_from_index(
@@ -1067,7 +1067,7 @@ where
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, USER_BASE_MODULE, &SubstateKey::Map(key))?
+            .kernel_remove_substate(node_id, OBJECT_BASE_MODULE, &SubstateKey::Map(key))?
             .map(|v| v.into());
 
         Ok(rtn)
@@ -1084,7 +1084,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_substates(node_id, USER_BASE_MODULE, count)?
+            .kernel_scan_substates(node_id, OBJECT_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1103,7 +1103,7 @@ where
 
         let substates = self
             .api
-            .kernel_take_substates(node_id, USER_BASE_MODULE, count)?
+            .kernel_take_substates(node_id, OBJECT_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1125,7 +1125,7 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                USER_BASE_MODULE => btreemap!(),
+                OBJECT_BASE_MODULE => btreemap!(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::SortedIndex
                 ).to_substates(),
@@ -1162,7 +1162,7 @@ where
 
         self.api.kernel_set_substate(
             node_id,
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
             value,
         )
@@ -1184,7 +1184,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, USER_BASE_MODULE, count)?
+            .kernel_scan_sorted_substates(node_id, OBJECT_BASE_MODULE, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1210,7 +1210,7 @@ where
             .api
             .kernel_remove_substate(
                 node_id,
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
             )?
             .map(|v| v.into());
@@ -1307,7 +1307,11 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, RuntimeError> {
+    fn actor_lock_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let (node_id, object_module_id, object_info) = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
@@ -1368,13 +1372,13 @@ where
     }
 
     #[trace_resources]
-    fn lock_outer_object_field(
+    fn actor_lock_outer_object_field(
         &mut self,
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let parent = self
-            .get_info()?
+            .actor_get_info()?
             .outer_object
             .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
 
@@ -1389,7 +1393,7 @@ where
             )));
         };
 
-        let module_number = USER_BASE_MODULE.at_offset(module_offset);
+        let module_number = OBJECT_BASE_MODULE.at_offset(module_offset);
 
         // TODO: Check if valid substate_key for node_id
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -1483,7 +1487,7 @@ where
     }
 
     #[trace_resources]
-    fn get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         let object_info = match &actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
@@ -1496,7 +1500,7 @@ where
     }
 
     #[trace_resources]
-    fn get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
         match actor {
             Actor::Method {
@@ -1509,7 +1513,7 @@ where
         }
     }
 
-    fn get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_current_actor().unwrap();

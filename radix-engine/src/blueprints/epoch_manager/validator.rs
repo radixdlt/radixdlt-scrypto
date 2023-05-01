@@ -81,7 +81,7 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
@@ -129,7 +129,7 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
@@ -150,14 +150,14 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.lock_outer_object_field(
+            let manager_handle = api.actor_lock_outer_object_field(
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
-            let config_handle = api.lock_outer_object_field(
+            let config_handle = api.actor_lock_outer_object_field(
                 EpochManagerOffset::Config.into(),
                 LockFlags::read_only(),
             )?;
@@ -196,7 +196,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
@@ -234,7 +234,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
-            ComponentAddress::new_or_panic(api.get_global_address()?.into());
+            ComponentAddress::new_or_panic(api.actor_get_global_address()?.into());
         let new_sorted_key =
             Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
@@ -264,7 +264,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let registered_handle = api.lock_outer_object_field(
+            let registered_handle = api.actor_lock_outer_object_field(
                 EpochManagerOffset::RegisteredValidators.into(),
                 LockFlags::read_only(),
             )?;
@@ -280,7 +280,8 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
+        let handle =
+            api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
         let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -294,7 +295,7 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.lock_outer_object_field(
+            let mgr_handle = api.actor_lock_outer_object_field(
                 EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
@@ -334,7 +335,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Update Epoch Manager
@@ -345,7 +346,7 @@ impl ValidatorBlueprint {
                     key,
                 };
 
-                let registered_handle = api.lock_outer_object_field(
+                let registered_handle = api.actor_lock_outer_object_field(
                     EpochManagerOffset::RegisteredValidators.into(),
                     LockFlags::read_only(),
                 )?;

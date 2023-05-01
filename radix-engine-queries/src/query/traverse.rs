@@ -8,7 +8,7 @@ use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::{
     FungibleVaultOffset, IndexedScryptoValue, ModuleNumber, NonFungibleVaultOffset, ObjectInfo,
     ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE,
-    ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE, USER_BASE_MODULE,
+    OBJECT_BASE_MODULE, ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_stores::{interface::SubstateDatabase, jmt_support::JmtMapper};
@@ -98,14 +98,14 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             TypeInfoSubstate::KeyValueStore(_) => {
                 for (substate_key, value) in self
                     .substate_db
-                    .list_mapped_substates::<JmtMapper>(&node_id, USER_BASE_MODULE)
+                    .list_mapped_substates::<JmtMapper>(&node_id, OBJECT_BASE_MODULE)
                 {
                     let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
                         .expect("Substate is not a scrypto value")
                         .unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
-                            Some(&(node_id, USER_BASE_MODULE, substate_key.clone())),
+                            Some(&(node_id, OBJECT_BASE_MODULE, substate_key.clone())),
                             child_node_id,
                             depth + 1,
                         );
@@ -126,7 +126,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .get_mapped_substate::<JmtMapper, LiquidFungibleResource>(
                             &node_id,
-                            USER_BASE_MODULE,
+                            OBJECT_BASE_MODULE,
                             &FungibleVaultOffset::LiquidFungible.into(),
                         )
                         .expect("Broken database");
@@ -143,7 +143,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
                             &node_id,
-                            USER_BASE_MODULE,
+                            OBJECT_BASE_MODULE,
                             &NonFungibleVaultOffset::LiquidNonFungible.into(),
                         )
                         .expect("Broken database");
@@ -156,7 +156,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     let ids = self.substate_db.list_mapped_substates::<JmtMapper>(
                         liquid.ids.as_node_id(),
-                        USER_BASE_MODULE,
+                        OBJECT_BASE_MODULE,
                     );
                     for (_key, value) in ids {
                         let non_fungible_local_id: NonFungibleLocalId =
@@ -174,7 +174,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         METADATA_BASE_MODULE,
                         ROYALTY_BASE_MODULE,
                         ACCESS_RULES_BASE_MODULE,
-                        USER_BASE_MODULE,
+                        OBJECT_BASE_MODULE,
                     ] {
                         // List all iterable modules (currently `ObjectState` & `Metadata`)
                         let x = self
@@ -186,7 +186,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .unpack();
                             for child_node_id in owned_nodes {
                                 self.traverse_recursive(
-                                    Some(&(node_id, USER_BASE_MODULE, db_key.clone())),
+                                    Some(&(node_id, OBJECT_BASE_MODULE, db_key.clone())),
                                     child_node_id,
                                     depth + 1,
                                 );

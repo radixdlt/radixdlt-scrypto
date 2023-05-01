@@ -39,7 +39,7 @@ impl ObjectModuleId {
             ObjectModuleId::Metadata => METADATA_BASE_MODULE,
             ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
             ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => USER_BASE_MODULE,
+            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
         }
     }
 
@@ -61,7 +61,7 @@ impl ObjectModuleId {
 
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
-    /// Creates a new object of a given blueprint type
+    /// Creates a new simple blueprint object of a given blueprint type
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
@@ -70,6 +70,7 @@ pub trait ClientObjectApi<E> {
         self.new_object(blueprint_ident, None, fields, vec![])
     }
 
+    /// Creates a new object of a given blueprint type
     fn new_object(
         &mut self,
         blueprint_ident: &str,

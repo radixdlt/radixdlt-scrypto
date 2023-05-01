@@ -228,7 +228,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -242,7 +242,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -258,7 +258,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -276,7 +276,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -290,7 +290,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -342,7 +342,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -380,7 +380,7 @@ impl NonFungibleVault {
 
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -412,7 +412,7 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -463,7 +463,7 @@ impl NonFungibleVault {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -504,7 +504,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleVaultOffset::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;

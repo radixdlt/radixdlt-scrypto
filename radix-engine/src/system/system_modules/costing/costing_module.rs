@@ -196,7 +196,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &PackageOffset::Royalty.into(),
             LockFlags::MUTABLE,
             SystemLockData::default(),
@@ -311,7 +311,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        module_num: &ModuleNumber,
         substate_key: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
@@ -323,7 +323,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::LockSubstate {
                         node_id,
-                        module_id,
+                        module_num,
                         substate_key,
                     })
                 },

@@ -141,7 +141,7 @@ pub fn to_typed_substate_key(
         ),
         _ => TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
             entity_type,
-            module_number.0 - USER_BASE_MODULE.0,
+            module_number.0 - OBJECT_BASE_MODULE.0,
             substate_key,
         )?),
     };
@@ -182,12 +182,12 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalNonFungibleResource => {
             let module_offset = NonFungibleResourceManagerModuleOffset::try_from(module_offset)?;
             match module_offset {
-                NonFungibleResourceManagerModuleOffset::Fields => {
+                NonFungibleResourceManagerModuleOffset::ResourceManager => {
                     TypedObjectModuleSubstateKey::NonFungibleResource(
                         NonFungibleResourceManagerOffset::try_from(substate_key)?,
                     )
                 }
-                NonFungibleResourceManagerModuleOffset::Data => {
+                NonFungibleResourceManagerModuleOffset::NonFungibleData => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
                 }
@@ -342,7 +342,7 @@ pub enum TypedFungibleResourceManagerSubstateValue {
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerSubstateValue {
     IdType(NonFungibleResourceManagerIdTypeSubstate),
-    DataSchema(NonFungibleResourceManagerMutableFieldsSubstate),
+    MutableFields(NonFungibleResourceManagerMutableFieldsSubstate),
     TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
 }
 
@@ -480,8 +480,10 @@ fn to_typed_object_substate_value(
                 NonFungibleResourceManagerOffset::IdType => {
                     TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
                 }
-                NonFungibleResourceManagerOffset::DataSchema => {
-                    TypedNonFungibleResourceManagerSubstateValue::DataSchema(scrypto_decode(data)?)
+                NonFungibleResourceManagerOffset::MutableFields => {
+                    TypedNonFungibleResourceManagerSubstateValue::MutableFields(scrypto_decode(
+                        data,
+                    )?)
                 }
                 NonFungibleResourceManagerOffset::TotalSupply => {
                     TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)

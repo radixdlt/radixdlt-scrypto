@@ -74,46 +74,46 @@ pub trait SubstateStore {
 
     /// Inserts a substate into the substate store.
     ///
-    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// Clients must ensure the `node_id`/`module_num` is a node which has been created; otherwise, the behavior
     /// is undefined.
     fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError>;
 
     /// Deletes a substate from the substate store.
     ///
-    /// Clients must ensure the `node_id`/`module_id` is a node which has been created;
+    /// Clients must ensure the `node_id`/`module_num` is a node which has been created;
     /// Clients must ensure this isn't called on a virtualized module;
     /// Otherwise, the behavior is undefined.
     fn take_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError>;
 
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
@@ -123,17 +123,17 @@ pub trait SubstateStore {
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<(u32, bool), AcquireLockError> {
-        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
+        self.acquire_lock_virtualize(node_id, module_num, substate_key, flags, || None)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
@@ -175,7 +175,7 @@ pub enum DatabaseUpdate {
 }
 
 pub trait DatabaseMapper {
-    fn map_to_db_index(node_id: &NodeId, module_id: ModuleNumber) -> Vec<u8>;
+    fn map_to_db_index(node_id: &NodeId, module_num: ModuleNumber) -> Vec<u8>;
     fn map_to_db_key(key: &SubstateKey) -> Vec<u8>;
 }
 
@@ -196,11 +196,11 @@ pub trait SubstateDatabase {
     fn get_mapped_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<D> {
         self.get_substate(
-            &M::map_to_db_index(node_id, module_id),
+            &M::map_to_db_index(node_id, module_num),
             &M::map_to_db_key(&substate_key),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
@@ -210,9 +210,9 @@ pub trait SubstateDatabase {
     fn list_mapped_substates<M: DatabaseMapper>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
     ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        self.list_substates(&M::map_to_db_index(node_id, module_id))
+        self.list_substates(&M::map_to_db_index(node_id, module_num))
     }
 }
 

@@ -29,7 +29,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     let substate = substate_db
         .get_mapped_substate::<JmtMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
-            USER_BASE_MODULE,
+            OBJECT_BASE_MODULE,
             &PackageOffset::Code.into(),
         )
         .ok_or(EntityDumpError::PackageNotFound)?;
@@ -137,14 +137,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let id_type = substate_db
             .get_mapped_substate::<JmtMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .get_mapped_substate::<JmtMapper, Decimal>(
                 resource_address.as_node_id(),
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &NonFungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
@@ -165,14 +165,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         let divisibility = substate_db
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
             .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &FungibleResourceManagerOffset::TotalSupply.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;

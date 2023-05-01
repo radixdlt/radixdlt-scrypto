@@ -24,7 +24,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_outer_object_field(
+        let handle = api.actor_lock_outer_object_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -86,7 +86,7 @@ impl FungibleVaultBlueprint {
     {
         // Check resource address and amount
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
         if resource_address != RADIX_TOKEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
@@ -101,7 +101,7 @@ impl FungibleVaultBlueprint {
         }
 
         // Lock the substate (with special flags)
-        let vault_handle = api.lock_field(
+        let vault_handle = api.actor_lock_field(
             FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -235,7 +235,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -249,7 +249,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -263,7 +263,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -291,7 +291,7 @@ impl FungibleVault {
 
         let event = DepositResourceEvent::Amount(resource.amount());
 
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -318,7 +318,7 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -352,7 +352,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleVaultOffset::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;

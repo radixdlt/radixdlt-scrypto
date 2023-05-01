@@ -276,13 +276,17 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
+    fn actor_lock_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
         let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
 
         Ok(handle)
     }
 
-    fn lock_outer_object_field(
+    fn actor_lock_outer_object_field(
         &mut self,
         _field: u8,
         _flags: LockFlags,
@@ -303,17 +307,17 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         todo!()
     }
 
-    fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

@@ -4,7 +4,6 @@ use radix_engine_interface::api::LockFlags;
 use sbor::rust::prelude::*;
 use scrypto_schema::KeyValueStoreInfo;
 
-// TODO: Add locked entry interface rather than using substate api
 pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
     fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, E>;

@@ -231,7 +231,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for (_module_id, tracked_module) in &tracked_node.tracked_modules {
+                for (_module_num, tracked_module) in &tracked_node.tracked_modules {
                     for (_substate_key, tracked_key) in &tracked_module.substates {
                         if let Some(value) = tracked_key.tracked.get() {
                             for own in value.owned_node_ids() {
@@ -274,14 +274,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
                     node_id,
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
                         node_id,
-                        USER_BASE_MODULE,
+                        OBJECT_BASE_MODULE,
                         &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
@@ -301,14 +301,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(vault) = self
                 .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
                     node_id,
-                    USER_BASE_MODULE,
+                    OBJECT_BASE_MODULE,
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
                 let vault_updates = self
                     .tracked
                     .get(vault.ids.as_node_id())
-                    .and_then(|n| n.tracked_modules.get(&USER_BASE_MODULE));
+                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE));
 
                 if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();
@@ -355,36 +355,36 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_num, key)
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_num, key))
     }
 
     fn fetch_substate_from_database<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
-            .get_mapped_substate::<M, D>(node_id, module_id, key)
+            .get_mapped_substate::<M, D>(node_id, module_num, key)
     }
 
     fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
+            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }

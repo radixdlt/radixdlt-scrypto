@@ -523,7 +523,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
         let (handle, _) = track
             .acquire_lock(
                 &node_id,
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &substate_key,
                 LockFlags::MUTABLE,
             )
@@ -558,7 +558,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
         let (handle, _) = track
             .acquire_lock(
                 &vault_id,
-                USER_BASE_MODULE,
+                OBJECT_BASE_MODULE,
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )
