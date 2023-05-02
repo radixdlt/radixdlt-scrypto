@@ -1,11 +1,12 @@
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_engine_common::types::{MapKey, SortedU16Key, TupleKey};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
 use radix_engine_store_interface::interface::{
     DbPartitionKey, DbSortKey, DbSubstateValue, SubstateDatabase,
 };
 use sbor::rust::prelude::*;
-use utils::{combine, copy_u8_array};
+use utils::copy_u8_array;
 
 /// A mapper between the business RE Node / Module / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
@@ -18,8 +19,8 @@ pub trait DatabaseKeyMapper {
     /// Converts the given Substate key to the database's sort key.
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey;
 
-    /// Converts the given database's sort key to a Substate key.
-    fn from_db_sort_key(db_sort_key: &DbSortKey) -> SubstateKey;
+    /// Converts the given database's sort key to a concrete type of Substate key.
+    fn from_db_sort_key<K: ConcreteSubstateKeyDecoding>(db_sort_key: &DbSortKey) -> K;
 }
 
 /// A [`DatabaseKeyMapper`] tailored for databases which cannot tolerate long common prefixes
@@ -40,53 +41,28 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
         buffer.push(module_id.0);
-        let hash_bytes = hash(buffer).0[..Self::PARTITION_KEY_HASH_LENGTH].to_vec();
-        DbPartitionKey(hash_bytes)
+        DbPartitionKey(hash(buffer).to_vec())
     }
 
     fn to_db_sort_key(key: &SubstateKey) -> DbSortKey {
-        let (discriminator_byte, rest_bytes) = match key {
-            SubstateKey::Tuple(field) => (Self::TUPLE_DISCRIMINATOR, vec![*field]),
-            SubstateKey::Map(key) => (Self::MAP_DISCRIMINATOR, Self::to_hash_prefixed(key)),
-            SubstateKey::Sorted((bucket, key)) => (
-                Self::SORTED_DISCRIMINATOR,
-                [
-                    bucket.to_be_bytes().as_slice(),
-                    &Self::to_hash_prefixed(key),
-                ]
-                .concat(),
-            ),
+        let bytes = match key {
+            SubstateKey::Tuple(field) => vec![*field],
+            SubstateKey::Map(key) => Self::to_hash_prefixed(key),
+            SubstateKey::Sorted((bucket, key)) => [
+                bucket.to_be_bytes().as_slice(),
+                &Self::to_hash_prefixed(key),
+            ]
+            .concat(),
         };
-        DbSortKey(combine(discriminator_byte, &rest_bytes))
+        DbSortKey(bytes)
     }
 
-    fn from_db_sort_key(db_sort_key: &DbSortKey) -> SubstateKey {
-        let bytes = &db_sort_key.0;
-        let (discriminator_byte, rest_bytes) = (bytes[0], &bytes[1..]);
-        match discriminator_byte {
-            Self::TUPLE_DISCRIMINATOR => SubstateKey::Tuple(rest_bytes[0]),
-            Self::MAP_DISCRIMINATOR => {
-                SubstateKey::Map(Self::from_hash_prefixed(rest_bytes).to_vec())
-            }
-            Self::SORTED_DISCRIMINATOR => SubstateKey::Sorted((
-                u16::from_be_bytes(copy_u8_array(&rest_bytes[..2])),
-                Self::from_hash_prefixed(&rest_bytes[2..]).to_vec(),
-            )),
-            unexpected_byte => panic!("unexpected discriminator byte: {}", unexpected_byte),
-        }
+    fn from_db_sort_key<K: ConcreteSubstateKeyDecoding>(db_sort_key: &DbSortKey) -> K {
+        K::decode(&db_sort_key.0)
     }
 }
 
 impl SpreadPrefixKeyMapper {
-    /// Length of hashes that are used in the database *instead* of plain RE Node and Module IDs.
-    const PARTITION_KEY_HASH_LENGTH: usize = 26;
-
-    /// Discriminator bytes for telling apart different types of sort keys (needed for reversible
-    /// encoding).
-    const TUPLE_DISCRIMINATOR: u8 = 1;
-    const MAP_DISCRIMINATOR: u8 = 2;
-    const SORTED_DISCRIMINATOR: u8 = 3;
-
     /// A number of leading bytes populated with a hash of the sort key (for spreading purposes).
     /// This number should be:
     /// - high enough to avoid being cracked (for crafting arbitrarily long key prefixes);
@@ -120,24 +96,24 @@ pub trait MappedSubstateDatabase {
 
     /// Lists fully-mapped entries (i.e. business substate keys and scrypto-decoded values) of the
     /// given node module.
-    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
+    fn list_mapped_values<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_> {
+    ) -> Box<dyn Iterator<Item = D> + '_> {
         let mapped_value_iter = self
-            .list_raw_with_mapped_keys::<M>(node_id, module_id)
-            .map(|(substate_key, db_value)| (substate_key, scrypto_decode(&db_value).unwrap()));
+            .list_raw_with_mapped_keys::<M, IrrelevantSubstateKey>(node_id, module_id)
+            .map(|(_substate_key, db_value)| scrypto_decode(&db_value).unwrap());
         Box::new(mapped_value_iter)
     }
 
     /// Lists partially-mapped entries (i.e. business substate keys and raw database byte values) of
     /// the given node module.
-    fn list_raw_with_mapped_keys<M: DatabaseKeyMapper>(
+    fn list_raw_with_mapped_keys<M: DatabaseKeyMapper, K: ConcreteSubstateKeyDecoding>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, DbSubstateValue)> + '_>;
+    ) -> Box<dyn Iterator<Item = (K, DbSubstateValue)> + '_>;
 }
 
 impl<S: SubstateDatabase> MappedSubstateDatabase for S {
@@ -154,14 +130,57 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
         .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
-    fn list_raw_with_mapped_keys<M: DatabaseKeyMapper>(
+    fn list_raw_with_mapped_keys<M: DatabaseKeyMapper, K: ConcreteSubstateKeyDecoding>(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, DbSubstateValue)> + '_> {
+    ) -> Box<dyn Iterator<Item = (K, DbSubstateValue)> + '_> {
         let mapped_key_iter = self
             .list_entries(&M::to_db_partition_key(node_id, module_id))
-            .map(|(db_sort_key, db_value)| (M::from_db_sort_key(&db_sort_key), db_value));
+            .map(|(db_sort_key, db_value)| (M::from_db_sort_key::<K>(&db_sort_key), db_value));
         Box::new(mapped_key_iter)
+    }
+}
+
+/// A "decode self" extension trait for concrete contents of the [`SubstateKey`] enum (used only
+/// internally by [`SpreadPrefixKeyMapper::from_db_sort_key()`]).
+pub trait ConcreteSubstateKeyDecoding {
+    /// Decodes self from the given bytes.
+    fn decode(bytes: &[u8]) -> Self;
+}
+
+impl ConcreteSubstateKeyDecoding for TupleKey {
+    fn decode(bytes: &[u8]) -> Self {
+        if bytes.len() != 1 {
+            panic!("unexpected length: {}", bytes.len());
+        }
+        bytes[0]
+    }
+}
+
+impl ConcreteSubstateKeyDecoding for MapKey {
+    fn decode(bytes: &[u8]) -> Self {
+        SpreadPrefixKeyMapper::from_hash_prefixed(bytes).to_vec()
+    }
+}
+
+impl ConcreteSubstateKeyDecoding for SortedU16Key {
+    fn decode(bytes: &[u8]) -> Self {
+        if bytes.len() < 2 {
+            panic!("insufficient length: {}", bytes.len());
+        }
+        (
+            u16::from_be_bytes(copy_u8_array(&bytes[..2])),
+            SpreadPrefixKeyMapper::from_hash_prefixed(&bytes[2..]).to_vec(),
+        )
+    }
+}
+
+/// A special "no-op" key decoding for cases where concrete key type is not important.
+type IrrelevantSubstateKey = ();
+
+impl ConcreteSubstateKeyDecoding for IrrelevantSubstateKey {
+    fn decode(_bytes: &[u8]) -> Self {
+        ()
     }
 }

@@ -507,13 +507,13 @@ impl TestRunner {
             });
 
         vault.map(|(amount, ids)| {
-            let mut entries = self
+            let mut values = self
                 .substate_db()
-                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId>(
+                .list_mapped_values::<SpreadPrefixKeyMapper, NonFungibleLocalId>(
                     ids.as_node_id(),
                     SysModuleId::Object.into(),
                 );
-            let id = entries.next().map(|(_key, value)| value);
+            let id = values.next();
             (amount, id)
         })
     }
