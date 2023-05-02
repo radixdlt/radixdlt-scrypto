@@ -153,7 +153,6 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // FIXME: check type before schema check is ready! applicable to all functions!
         let parent = api
             .get_object_info(proof.0.as_node_id())?
             .outer_object
