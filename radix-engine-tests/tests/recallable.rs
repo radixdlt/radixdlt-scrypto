@@ -1,6 +1,7 @@
 use radix_engine::errors::{KernelError, ModuleError, RejectionError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
+use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -107,4 +108,34 @@ fn can_take_on_recallable_vault() {
         .cloned()
         .unwrap();
     assert_eq!(other_amount, Decimal::one());
+}
+
+#[test]
+fn test_recall_from_scrypto() {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
+
+    // Instantiate component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .call_function(package_address, "RecallTest", "new", manifest_args!())
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
+
+    // Recall
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 100.into())
+            .call_method(component_address, "recall_on_self_vault", manifest_args!())
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_failure();
 }
