@@ -324,7 +324,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
-        Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
+        Self::on_execution_finish(api, &None, &CallFrameUpdate::default())
     }
 
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(

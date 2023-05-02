@@ -27,11 +27,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<SystemInvocation>,
-        input_size: usize,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            invocation.resolved_actor, input_size
+            invocation.resolved_actor,
+            invocation.args.len(),
         )
         .green();
 
@@ -45,8 +45,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         nodes_and_refs: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Sending nodes: {:?}", nodes_and_refs.owned_nodes);
+        log!(api, "Sending refs: {:?}", nodes_and_refs.references);
         Ok(())
     }
 
@@ -55,12 +55,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(
-            api,
-            "Returning refs: {:?}",
-            nodes_and_refs.node_refs_to_copy
-        );
+        log!(api, "Returning nodes: {:?}", nodes_and_refs.owned_nodes);
+        log!(api, "Returning refs: {:?}", nodes_and_refs.references);
         Ok(())
     }
 

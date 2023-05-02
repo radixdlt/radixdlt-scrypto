@@ -63,7 +63,6 @@ impl VirtualizationModule {
                         ident: FnIdent::System(virtual_func_id),
                         receiver: None,
                     },
-                    payload_size: 0,
                 };
 
                 let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();

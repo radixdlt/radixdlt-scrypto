@@ -158,7 +158,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
         call_frame_update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &call_frame_update.owned_nodes {
             // TODO: Move into system layer
             Self::prepare_move_downstream(*node_id, callee, api)?;
         }
@@ -171,7 +171,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
         _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &call_frame_update.owned_nodes {
             Self::prepare_move_upstream(*node_id, api)?;
         }
 

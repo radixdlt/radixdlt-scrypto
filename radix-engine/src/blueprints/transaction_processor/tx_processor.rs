@@ -682,7 +682,7 @@ impl<'blob> TransactionProcessor<'blob> {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for owned_node in value.owned_node_ids() {
+        for owned_node in value.owned_nodes() {
             let info = api.get_object_info(owned_node)?;
             match (
                 info.blueprint.package_address,

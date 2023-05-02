@@ -79,7 +79,6 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_invoke<Y>(
         identifier: &KernelInvocation<Self::Invocation>,
-        input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

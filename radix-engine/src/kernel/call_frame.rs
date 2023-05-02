@@ -14,38 +14,46 @@ use radix_engine_stores::interface::{
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameUpdate {
-    pub nodes_to_move: Vec<NodeId>,
-    pub node_refs_to_copy: IndexSet<NodeId>,
+    pub references: IndexSet<NodeId>,
+    pub owned_nodes: IndexSet<NodeId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ScryptoValueToCallFrameError {
+    ContainsDuplicatedOwn,
+    ContainsDuplicatedReference,
 }
 
 impl CallFrameUpdate {
-    pub fn empty() -> Self {
-        CallFrameUpdate {
-            nodes_to_move: Vec::new(),
-            node_refs_to_copy: index_set_new(),
+    pub fn from_indexed_scrypto_value(
+        value: &IndexedScryptoValue,
+    ) -> Result<Self, ScryptoValueToCallFrameError> {
+        let mut references = index_set_new();
+        let mut owned_nodes = index_set_new();
+        for r in value.references() {
+            if !references.insert(r.clone()) {
+                return Err(ScryptoValueToCallFrameError::ContainsDuplicatedReference);
+            }
         }
+        for o in value.owned_nodes() {
+            if !owned_nodes.insert(o.clone()) {
+                return Err(ScryptoValueToCallFrameError::ContainsDuplicatedOwn);
+            }
+        }
+        Ok(Self {
+            references,
+            owned_nodes,
+        })
     }
 
-    pub fn move_node(node_id: NodeId) -> Self {
-        CallFrameUpdate {
-            nodes_to_move: vec![node_id],
-            node_refs_to_copy: index_set_new(),
-        }
+    pub fn add_reference(&mut self, node_id: NodeId) -> bool {
+        self.references.insert(node_id)
     }
 
-    pub fn copy_ref(node_id: NodeId) -> Self {
-        let mut node_refs_to_copy = index_set_new();
-        node_refs_to_copy.insert(node_id);
-        CallFrameUpdate {
-            nodes_to_move: vec![],
-            node_refs_to_copy,
-        }
-    }
-
-    pub fn add_ref(&mut self, node_id: NodeId) {
-        self.node_refs_to_copy.insert(node_id);
+    pub fn add_owned_node(&mut self, node_id: NodeId) -> bool {
+        self.owned_nodes.insert(node_id)
     }
 }
 
@@ -68,7 +76,7 @@ pub struct SubstateLock {
     pub module_id: ModuleId,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
-    pub initial_owned_nodes: Vec<NodeId>,
+    pub initial_owned_nodes: IndexSet<NodeId>,
     pub flags: LockFlags,
     pub store_handle: Option<u32>,
 }
@@ -257,8 +265,9 @@ impl CallFrame {
 
         // Infer references and owns within the substate
         let references = substate_value.references();
-        let owned_nodes = substate_value.owned_node_ids();
+        let owned_nodes = substate_value.owned_nodes();
         let mut initial_references = index_set_new();
+        let mut initial_owned_nodes = index_set_new();
         for node_id in references {
             // TODO: fix this ugly condition
             if node_id.is_global() {
@@ -275,6 +284,7 @@ impl CallFrame {
         }
         for node_id in owned_nodes {
             initial_references.insert(node_id.clone());
+            initial_owned_nodes.insert(node_id.clone());
         }
 
         // Add initial references to ref count.
@@ -293,7 +303,7 @@ impl CallFrame {
                 module_id,
                 substate_key: substate_key.clone(),
                 initial_references,
-                initial_owned_nodes: owned_nodes.clone(),
+                initial_owned_nodes,
                 flags,
                 store_handle,
             },
@@ -331,7 +341,7 @@ impl CallFrame {
                     .expect("Substate locked but missing")
             };
             let references = substate.references();
-            let owned_nodes = substate.owned_node_ids();
+            let owned_nodes = substate.owned_nodes();
 
             // Reserving original Vec element order with `IndexSet`
             let mut new_children: IndexSet<NodeId> = index_set_new();
@@ -629,12 +639,12 @@ impl CallFrame {
         let mut owned_heap_nodes = index_map_new();
         let mut next_node_refs = NonIterMap::new();
 
-        for node_id in call_frame_update.nodes_to_move {
+        for node_id in call_frame_update.owned_nodes {
             parent.take_node_internal(&node_id)?;
             owned_heap_nodes.insert(node_id, 0u32);
         }
 
-        for node_id in call_frame_update.node_refs_to_copy {
+        for node_id in call_frame_update.references {
             let visibility = parent
                 .get_node_visibility(&node_id)
                 .ok_or_else(|| MoveError::RefNotFound(node_id))?;
@@ -659,13 +669,13 @@ impl CallFrame {
         to: &mut CallFrame,
         update: CallFrameUpdate,
     ) -> Result<(), MoveError> {
-        for node_id in update.nodes_to_move {
+        for node_id in update.owned_nodes {
             // move re nodes to upstream call frame.
             from.take_node_internal(&node_id)?;
             to.owned_root_nodes.insert(node_id, 0u32);
         }
 
-        for node_id in update.node_refs_to_copy {
+        for node_id in update.references {
             // Make sure not to allow owned nodes to be passed as references upstream
             let ref_data = from
                 .immortal_node_refs
@@ -726,7 +736,7 @@ impl CallFrame {
             for (_substate_key, substate_value) in module {
                 // FIXME there is a huge mismatch between drop_lock and create_node
                 // We need to apply the same checks!
-                for child_id in substate_value.owned_node_ids() {
+                for child_id in substate_value.owned_nodes() {
                     self.take_node_internal(child_id)
                         .map_err(UnlockSubstateError::MoveError)?;
                     if push_to_store {
@@ -775,7 +785,7 @@ impl CallFrame {
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
                 let refs = substate_value.references();
-                let child_nodes = substate_value.owned_node_ids();
+                let child_nodes = substate_value.owned_nodes();
                 for node_ref in refs {
                     self.immortal_node_refs.insert(
                         node_ref.clone(),
@@ -832,7 +842,7 @@ impl CallFrame {
                     }
                 }
 
-                for node in substate_value.owned_node_ids() {
+                for node in substate_value.owned_nodes() {
                     Self::move_node_to_store(heap, store, node)?;
                 }
             }

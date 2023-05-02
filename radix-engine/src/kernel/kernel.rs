@@ -158,7 +158,7 @@ where
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let mut call_frame_update = invocation.get_update();
+        let mut call_frame_update = invocation.get_update()?;
         let sys_invocation = invocation.sys_invocation;
         let actor = &invocation.resolved_actor;
         let args = &invocation.args;
@@ -194,11 +194,11 @@ where
 
             // Run
             let output = M::invoke_upstream(sys_invocation, args, self)?;
-
-            let mut update = CallFrameUpdate {
-                nodes_to_move: output.owned_node_ids().clone(),
-                node_refs_to_copy: output.references().clone(),
-            };
+            let mut update = CallFrameUpdate::from_indexed_scrypto_value(&output).map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameUpdateError(
+                    CallFrameUpdateError::ScryptoValueToCallFrameError(e),
+                ))
+            })?;
 
             // Handle execution finish
             M::on_execution_finish(&caller, &mut update, self)?;
@@ -670,7 +670,7 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_write_substate(lock_handle, value.as_slice().len(), self)?;
+        M::on_write_substate(lock_handle, value.len(), self)?;
 
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
@@ -769,7 +769,7 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
+        M::before_invoke(invocation.as_ref(), self)?;
 
         let rtn = self.invoke(invocation)?;
 

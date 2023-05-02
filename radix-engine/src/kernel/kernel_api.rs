@@ -133,30 +133,32 @@ pub trait KernelSubstateApi {
 #[derive(Debug)]
 pub struct KernelInvocation<I: Debug> {
     pub sys_invocation: I,
-
-    // TODO: Remove
-    pub payload_size: usize,
-
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,
     pub args: IndexedScryptoValue,
 }
 
 impl<I: Debug> KernelInvocation<I> {
-    pub fn get_update(&self) -> CallFrameUpdate {
-        let nodes_to_move = self.args.owned_node_ids().clone();
-        let mut node_refs_to_copy = self.args.references().clone();
+    pub fn get_update(&self) -> Result<CallFrameUpdate, RuntimeError> {
+        let mut call_frame_update = CallFrameUpdate::from_indexed_scrypto_value(&self.args)
+            .map_err(|e| {
+                RuntimeError::KernelError(KernelError::CallFrameUpdateError(
+                    CallFrameUpdateError::ScryptoValueToCallFrameError(e),
+                ))
+            })?;
         match self.resolved_actor {
             Actor::Method { node_id, .. } => {
-                node_refs_to_copy.insert(node_id);
+                if !call_frame_update.add_reference(node_id) {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::CallFrameUpdateError(
+                            CallFrameUpdateError::ReceiverInArguments(node_id),
+                        ),
+                    ));
+                }
             }
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
         }
-
-        CallFrameUpdate {
-            nodes_to_move,
-            node_refs_to_copy,
-        }
+        Ok(call_frame_update)
     }
 }
 

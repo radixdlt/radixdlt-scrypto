@@ -223,9 +223,12 @@ impl TransactionLimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation<SystemInvocation>,
-        input_size: usize,
+        invocation: &KernelInvocation<SystemInvocation>,
     ) -> Result<(), RuntimeError> {
+        let input_size = invocation.sys_invocation.blueprint.len()
+            + invocation.sys_invocation.ident.len()
+            + invocation.args.len();
+
         let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
 
         if input_size > tlimit.invoke_payload_max_size {

@@ -251,7 +251,7 @@ impl ResourceSummary {
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &call_frame_update.owned_nodes {
             if let Some(x) = api.kernel_read_bucket(node_id) {
                 buckets.insert(*node_id, x);
             }

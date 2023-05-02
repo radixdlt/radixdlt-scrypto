@@ -200,13 +200,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_invoke<Y>(
         identifier: &KernelInvocation<SystemInvocation>,
-        input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_invoke(api, identifier, input_size)
+        SystemModuleMixer::before_invoke(api, identifier)
     }
 
     fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
@@ -232,13 +231,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 ..
             } => {
                 if let Some(address) = global_address {
-                    update
-                        .node_refs_to_copy
-                        .insert(address.as_node_id().clone());
+                    update.references.insert(address.as_node_id().clone());
                 }
                 if let Some(blueprint_parent) = object_info.outer_object {
                     update
-                        .node_refs_to_copy
+                        .references
                         .insert(blueprint_parent.as_node_id().clone());
                 }
             }

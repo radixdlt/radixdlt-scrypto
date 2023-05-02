@@ -234,7 +234,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 for (_module_id, tracked_module) in &tracked_node.tracked_modules {
                     for (_substate_key, tracked_key) in &tracked_module.substates {
                         if let Some(value) = tracked_key.tracked.get() {
-                            for own in value.owned_node_ids() {
+                            for own in value.owned_nodes() {
                                 self.traverse_state_updates(
                                     balance_changes,
                                     accounted_vaults,

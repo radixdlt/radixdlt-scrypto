@@ -8,6 +8,7 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::kernel::call_frame::ScryptoValueToCallFrameError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
@@ -36,7 +37,7 @@ pub trait CanBeAbortion {
     fn abortion(&self) -> Option<&AbortReason>;
 }
 
-/// Represents an error which causes a tranasction to be rejected.
+/// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
@@ -128,17 +129,13 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
+    CallFrameUpdateError(CallFrameUpdateError),
 
     /// Interpreter
-    InterpreterError(SystemUpstreamError),
     WasmRuntimeError(WasmRuntimeError),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
-
-    // SBOR decoding
-    SborDecodeError(DecodeError),
-    SborEncodeError(EncodeError),
 
     // RENode
     InvalidDirectAccess,
@@ -148,6 +145,12 @@ pub enum KernelError {
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameUpdateError {
+    ScryptoValueToCallFrameError(ScryptoValueToCallFrameError),
+    ReceiverInArguments(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

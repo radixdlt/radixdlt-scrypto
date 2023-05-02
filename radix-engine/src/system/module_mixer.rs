@@ -222,35 +222,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
-        input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_invoke(api, identifier, input_size)?;
+            KernelTraceModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_invoke(api, identifier, input_size)?;
+            CostingModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_invoke(api, identifier, input_size)?;
+            NodeMoveModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_invoke(api, identifier, input_size)?;
+            AuthModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_invoke(api, identifier, input_size)?;
+            LoggerModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::before_invoke(api, identifier, input_size)?;
+            TransactionRuntimeModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::before_invoke(api, identifier, input_size)?;
+            ExecutionTraceModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::before_invoke(api, identifier, input_size)?;
+            TransactionLimitsModule::before_invoke(api, identifier)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_invoke(api, identifier, input_size)?;
+            EventsModule::before_invoke(api, identifier)?;
         }
         Ok(())
     }

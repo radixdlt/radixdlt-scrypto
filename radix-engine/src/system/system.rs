@@ -682,7 +682,6 @@ where
         };
 
         let identifier = MethodIdentifier(receiver.clone(), module_id, method_name.to_string());
-        let payload_size = args.len() + identifier.2.len();
         let blueprint = object_info.blueprint.clone();
 
         // TODO: Can we load this lazily when needed?
@@ -723,7 +722,6 @@ where
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            payload_size,
         };
 
         self.api
@@ -920,7 +918,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        if !value.owned_node_ids().is_empty() {
+        if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
                 SystemError::CannotStoreOwnedInIterable,
             ));
@@ -1040,7 +1038,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        if !value.owned_node_ids().is_empty() {
+        if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
                 SystemError::CannotStoreOwnedInIterable,
             ));
@@ -1118,7 +1116,6 @@ where
             Blueprint::new(&package_address, blueprint_name),
             function_name.to_string(),
         );
-        let payload_size = args.len() + identifier.size();
 
         let invocation = KernelInvocation {
             resolved_actor: Actor::function(identifier.clone()),
@@ -1130,7 +1127,6 @@ where
                 ident: FnIdent::Application(identifier.1),
                 receiver: None,
             },
-            payload_size,
         };
 
         self.api
