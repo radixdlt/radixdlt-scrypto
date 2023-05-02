@@ -55,7 +55,7 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     for blueprint in schema.blueprints.values() {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if blueprint.substates.len() > 0xff {
+        if blueprint.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
@@ -216,12 +216,12 @@ impl PackageNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -279,8 +279,9 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores: vec![],
+                    fields,
+                    kv_stores: vec![],
+                    indices: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -529,7 +530,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            key_value_stores,
+            kv_stores: key_value_stores,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..

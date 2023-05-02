@@ -318,12 +318,12 @@ where
 
         // KV Entries
         {
-            if blueprint_schema.key_value_stores.len() != kv_entries.len() {
+            if blueprint_schema.kv_store_modules.len() != kv_entries.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
                         blueprint.clone(),
                         kv_entries.len(),
-                        blueprint_schema.key_value_stores.len(),
+                        blueprint_schema.kv_store_modules.len(),
                     )),
                 )));
             }
@@ -331,7 +331,7 @@ where
             if kv_entries.len() > 0 {
                 for (i, entries) in kv_entries.into_iter().enumerate() {
                     let (_, blueprint_kv_schema) =
-                        blueprint_schema.key_value_stores.get(i).unwrap();
+                        blueprint_schema.kv_store_modules.get(i).unwrap();
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {

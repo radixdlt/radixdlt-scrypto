@@ -23,10 +23,10 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let substates = Vec::new();
+        let fields = Vec::new();
 
-        let mut key_value_stores = Vec::new();
-        key_value_stores.push(BlueprintKeyValueStoreSchema {
+        let mut kv_stores = Vec::new();
+        kv_stores.push(BlueprintKeyValueStoreSchema {
             key: TypeSchema::Blueprint(
                 aggregator.add_child_type_and_descendents::<ResourceAddress>(),
             ),
@@ -212,8 +212,9 @@ impl AccountNativePackage {
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores,
+                    fields,
+                    kv_stores,
+                    indices: vec![],
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into()

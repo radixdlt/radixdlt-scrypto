@@ -52,12 +52,12 @@ pub struct PackageSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
-
     pub schema: ScryptoSchema,
-    /// For each offset, there is a [`LocalTypeIndex`]
-    pub substates: Vec<LocalTypeIndex>,
 
-    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
+    /// State Schema
+    pub fields: Vec<LocalTypeIndex>,
+    pub kv_stores: Vec<BlueprintKeyValueStoreSchema>,
+    pub indices: Vec<BlueprintIndexSchema>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -78,6 +78,10 @@ pub struct BlueprintKeyValueStoreSchema {
     pub key: TypeSchema,
     pub value: TypeSchema,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintIndexSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -108,8 +112,9 @@ impl Default for BlueprintSchema {
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: Vec::default(),
-            key_value_stores: Vec::default(),
+            fields: Vec::default(),
+            kv_stores: Vec::default(),
+            indices: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
@@ -124,7 +129,8 @@ pub struct IndexedBlueprintSchema {
     pub schema: ScryptoSchema,
 
     pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
-    pub key_value_stores: Vec<(u8, BlueprintKeyValueStoreSchema)>,
+    pub kv_store_modules: Vec<(u8, BlueprintKeyValueStoreSchema)>,
+    pub index_modules: Vec<(u8, BlueprintIndexSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -138,18 +144,23 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
         let mut module_offset = 0u8;
 
-        let tuple_module = if schema.substates.is_empty() {
+        let tuple_module = if schema.fields.is_empty() {
             None
         } else {
-            let tuple_module = Some((module_offset, schema.substates));
+            let tuple_module = Some((module_offset, schema.fields));
             module_offset += 1;
             tuple_module
         };
 
-        let mut key_value_stores = Vec::new();
+        let mut kv_store_modules = Vec::new();
+        for kv_schema in schema.kv_stores {
+            kv_store_modules.push((module_offset, kv_schema));
+            module_offset += 1;
+        }
 
-        for kv_schema in schema.key_value_stores {
-            key_value_stores.push((module_offset, kv_schema));
+        let mut index_modules = Vec::new();
+        for index_schema in schema.indices {
+            index_modules.push((module_offset, index_schema));
             module_offset += 1;
         }
 
@@ -157,7 +168,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
             tuple_module,
-            key_value_stores,
+            kv_store_modules,
+            index_modules,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -201,7 +213,7 @@ impl IndexedBlueprintSchema {
         &self,
         kv_handle: u8,
     ) -> Option<&(u8, BlueprintKeyValueStoreSchema)> {
-        self.key_value_stores.get(kv_handle as usize)
+        self.kv_store_modules.get(kv_handle as usize)
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -223,7 +235,7 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
-        for (_offset, kv_schema) in &self.key_value_stores {
+        for (_offset, kv_schema) in &self.kv_store_modules {
             match &kv_schema.key {
                 TypeSchema::Blueprint(..) => {}
                 TypeSchema::Instance(type_index) => {

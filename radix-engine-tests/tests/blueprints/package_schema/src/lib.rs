@@ -37,8 +37,8 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 #[no_mangle]
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let mut substates = Vec::new();
-    substates.push(aggregator.add_child_type_and_descendents::<()>());
+    let mut fields = Vec::new();
+    fields.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
 
@@ -190,8 +190,9 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let schema = BlueprintSchema {
         outer_blueprint: None,
         schema: generate_full_schema(aggregator),
-        substates,
-        key_value_stores: vec![],
+        fields,
+        kv_stores: vec![],
+        indices: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),

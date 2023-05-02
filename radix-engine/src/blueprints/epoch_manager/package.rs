@@ -19,11 +19,11 @@ impl EpochManagerNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -97,8 +97,9 @@ impl EpochManagerNativePackage {
         let epoch_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            kv_stores: vec![],
+            indices: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
@@ -106,8 +107,8 @@ impl EpochManagerNativePackage {
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<ValidatorSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -192,8 +193,9 @@ impl EpochManagerNativePackage {
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            kv_stores: vec![],
+            indices: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
