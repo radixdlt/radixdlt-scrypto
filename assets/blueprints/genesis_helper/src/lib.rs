@@ -233,7 +233,7 @@ mod genesis_helper {
             }
 
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
                 scrypto_encode(

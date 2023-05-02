@@ -434,9 +434,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         for node_id in nodes {
             if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
                 match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
+                    (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_PACKAGE,
                             FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {
@@ -445,9 +445,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             .unwrap(),
                         )?;
                     }
-                    (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                    (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_PACKAGE,
                             NON_FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {

@@ -62,25 +62,25 @@ where
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
                 blueprint: Blueprint {
-                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
                 outer_object: None,
             }));
-        } else if node_id.eq(ECDSA_SECP256K1_TOKEN.as_node_id())
-            || node_id.eq(EDDSA_ED25519_TOKEN.as_node_id())
-            || node_id.eq(SYSTEM_TOKEN.as_node_id())
-            || node_id.eq(PACKAGE_TOKEN.as_node_id())
-            || node_id.eq(GLOBAL_OBJECT_TOKEN.as_node_id())
-            || node_id.eq(PACKAGE_OWNER_TOKEN.as_node_id())
-            || node_id.eq(VALIDATOR_OWNER_TOKEN.as_node_id())
-            || node_id.eq(IDENTITY_OWNER_TOKEN.as_node_id())
-            || node_id.eq(ACCOUNT_OWNER_TOKEN.as_node_id())
+        } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
+            || node_id.eq(PACKAGE_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(GLOBAL_ACTOR_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(PACKAGE_OWNER_BADGE.as_node_id())
+            || node_id.eq(VALIDATOR_OWNER_BADGE.as_node_id())
+            || node_id.eq(IDENTITY_OWNER_BADGE.as_node_id())
+            || node_id.eq(ACCOUNT_OWNER_BADGE.as_node_id())
         {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
                 blueprint: Blueprint {
-                    package_address: RESOURCE_MANAGER_PACKAGE,
+                    package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
                 global: true,
@@ -132,10 +132,8 @@ where
 
         let node_id = {
             let entity_type = match (package_address, blueprint_ident) {
-                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => {
-                    EntityType::InternalFungibleVault
-                }
-                (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
+                (RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT) => EntityType::InternalFungibleVault,
+                (RESOURCE_PACKAGE, NON_FUNGIBLE_VAULT_BLUEPRINT) => {
                     EntityType::InternalNonFungibleVault
                 }
                 (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::InternalAccount,
@@ -158,7 +156,7 @@ where
             .collect();
 
         let self_module_id = match (package_address, blueprint_ident) {
-            (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+            (METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
             _ => SysModuleId::Object,
         };
 
@@ -421,10 +419,10 @@ where
 
         let entity_type = match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
             (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
-            (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+            (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
                 EntityType::GlobalFungibleResource
             }
-            (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+            (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
                 EntityType::GlobalNonFungibleResource
             }
             (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
@@ -502,7 +500,8 @@ where
                 ObjectModuleId::SELF => panic!("Should have been removed already"),
                 ObjectModuleId::AccessRules => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT);
+                    let expected =
+                        Blueprint::new(&ACCESS_RULES_MODULE_PACKAGE, ACCESS_RULES_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
@@ -520,7 +519,7 @@ where
                 }
                 ObjectModuleId::Metadata => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT);
+                    let expected = Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
@@ -538,7 +537,8 @@ where
                 }
                 ObjectModuleId::Royalty => {
                     let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected = Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
+                    let expected =
+                        Blueprint::new(&ROYALTY_MODULE_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT);
                     if !blueprint.eq(&expected) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                             Box::new(InvalidModuleType {
@@ -650,7 +650,7 @@ where
                 // TODO: Check if type has metadata
                 (
                     ObjectInfo {
-                        blueprint: Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT),
+                        blueprint: Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT),
                         outer_object: None,
                         global: true,
                     },
@@ -661,7 +661,10 @@ where
                 // TODO: Check if type has royalty
                 (
                     ObjectInfo {
-                        blueprint: Blueprint::new(&ROYALTY_PACKAGE, COMPONENT_ROYALTY_BLUEPRINT),
+                        blueprint: Blueprint::new(
+                            &ROYALTY_MODULE_PACKAGE,
+                            COMPONENT_ROYALTY_BLUEPRINT,
+                        ),
                         outer_object: None,
                         global: true,
                     },
@@ -672,7 +675,10 @@ where
                 // TODO: Check if type has access rules
                 (
                     ObjectInfo {
-                        blueprint: Blueprint::new(&ACCESS_RULES_PACKAGE, ACCESS_RULES_BLUEPRINT),
+                        blueprint: Blueprint::new(
+                            &ACCESS_RULES_MODULE_PACKAGE,
+                            ACCESS_RULES_BLUEPRINT,
+                        ),
                         outer_object: None,
                         global: true,
                     },
@@ -846,7 +852,9 @@ where
                     match module_id {
                         ObjectModuleId::SELF => {
                             match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                                (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                                (METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT) => {
+                                    SysModuleId::Virtualized
+                                }
                                 _ => {
                                     return Err(RuntimeError::SystemError(
                                         SystemError::NotAKeyValueStore,
@@ -861,7 +869,7 @@ where
                     }
                 } else {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                        (METADATA_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
+                        (METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT) => SysModuleId::Virtualized,
                         _ => return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore)),
                     }
                 }
@@ -1206,10 +1214,7 @@ where
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info
-                .blueprint
-                .package_address
-                .eq(&RESOURCE_MANAGER_PACKAGE)
+            if !(object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && object_info
                     .blueprint
                     .blueprint_name
@@ -1225,7 +1230,7 @@ where
                     object_info.blueprint.package_address,
                     object_info.blueprint.blueprint_name.as_str(),
                 ) {
-                    (METADATA_PACKAGE, METADATA_BLUEPRINT) => {
+                    (METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT) => {
                         return Err(RuntimeError::SystemError(SystemError::NotATuple));
                     }
                     _ => SysModuleId::Object,
@@ -1398,15 +1403,15 @@ where
                     node_id, module_id, ..
                 }) => match module_id {
                     ObjectModuleId::AccessRules => Ok(Blueprint::new(
-                        &ACCESS_RULES_PACKAGE,
+                        &ACCESS_RULES_MODULE_PACKAGE,
                         ACCESS_RULES_BLUEPRINT,
                     )),
                     ObjectModuleId::Royalty => Ok(Blueprint::new(
-                        &ROYALTY_PACKAGE,
+                        &ROYALTY_MODULE_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT,
                     )),
                     ObjectModuleId::Metadata => {
-                        Ok(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT))
+                        Ok(Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
                     }
                     ObjectModuleId::SELF => self.get_object_info(&node_id).map(|x| x.blueprint),
                 },

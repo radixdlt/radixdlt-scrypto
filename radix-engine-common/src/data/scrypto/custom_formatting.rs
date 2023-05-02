@@ -71,22 +71,21 @@ impl FormattableCustomTypeExtension for ScryptoCustomTypeExtension {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::address::test_addresses::*;
     use crate::address::Bech32Encoder;
     use crate::data::scrypto::model::*;
-    use crate::types::NodeId;
 
     #[test]
     fn test_rustlike_string_format_with_network() {
         use crate::math::{Decimal, PreciseDecimal};
-
         let encoder = Bech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {
-                    value: ScryptoCustomValue::Reference(Reference(NodeId([0; NodeId::LENGTH]))),
+                    value: ScryptoCustomValue::Reference(Reference(FUNGIBLE_RESOURCE_NODE_ID)),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::Own(Own(NodeId([0; NodeId::LENGTH]))),
+                    value: ScryptoCustomValue::Own(Own(FUNGIBLE_RESOURCE_NODE_ID)),
                 },
                 Value::Custom {
                     value: ScryptoCustomValue::Decimal(Decimal::ONE),
@@ -118,7 +117,7 @@ mod tests {
             ],
         };
 
-        let expected = "Tuple(Reference(\"package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0x3dzh\"), Own(\"package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq0x3dzh\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}\"))";
+        let expected = format!("Tuple(Reference(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Own(\"{FUNGIBLE_RESOURCE_SIM_ADDRESS}\"), Decimal(\"1\"), Decimal(\"0.01\"), PreciseDecimal(\"0\"), NonFungibleLocalId(\"<hello>\"), NonFungibleLocalId(\"#123#\"), NonFungibleLocalId(\"[2345]\"), NonFungibleLocalId(\"{{1f52cb1e-86c4-47ae-9847-9cdb14662ebd}}\"))");
 
         let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
 
@@ -136,7 +135,7 @@ mod tests {
         });
 
         // They're both the same
-        assert_eq!(&actual_rustlike, expected);
-        assert_eq!(&actual_nested, expected);
+        assert_eq!(actual_rustlike, expected);
+        assert_eq!(actual_nested, expected);
     }
 }

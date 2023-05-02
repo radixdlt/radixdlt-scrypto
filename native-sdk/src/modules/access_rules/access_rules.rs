@@ -12,7 +12,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
 };
-use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
+use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::NodeId;
@@ -34,7 +34,7 @@ impl AccessRules {
         Y: ClientApi<E>,
     {
         let rtn = api.call_function(
-            ACCESS_RULES_PACKAGE,
+            ACCESS_RULES_MODULE_PACKAGE,
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
             scrypto_encode(&AccessRulesCreateInput {

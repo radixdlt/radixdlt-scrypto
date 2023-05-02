@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -413,7 +413,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 access_rules,
             } => ScryptoEnv
                 .call_function(
-                    RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&FungibleResourceManagerCreateInput {
@@ -432,7 +432,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 access_rules,
             } => ScryptoEnv
                 .call_function(
-                    RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
@@ -489,7 +489,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     pub fn mint_initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
         ScryptoEnv
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
@@ -537,7 +537,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     {
         ScryptoEnv
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
@@ -586,7 +586,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     {
         ScryptoEnv
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
@@ -635,7 +635,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     {
         ScryptoEnv
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
@@ -687,7 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     {
         ScryptoEnv
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(

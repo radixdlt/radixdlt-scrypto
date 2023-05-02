@@ -1,6 +1,6 @@
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
@@ -26,7 +26,7 @@ impl ResourceManager {
     {
         let result = api
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateInput {
@@ -53,7 +53,7 @@ impl ResourceManager {
     {
         let result = api
             .call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
@@ -81,7 +81,7 @@ impl ResourceManager {
     {
         let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
@@ -107,7 +107,7 @@ impl ResourceManager {
         Y: ClientApi<E>,
     {
         let result = api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
