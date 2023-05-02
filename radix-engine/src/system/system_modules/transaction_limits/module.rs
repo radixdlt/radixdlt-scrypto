@@ -225,12 +225,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         api: &mut Y,
         invocation: &KernelInvocation<SystemInvocation>,
     ) -> Result<(), RuntimeError> {
-        let input_size = invocation.sys_invocation.blueprint.len()
-            + invocation.sys_invocation.ident.len()
-            + invocation.args.len();
-
         let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
-
+        let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
         }

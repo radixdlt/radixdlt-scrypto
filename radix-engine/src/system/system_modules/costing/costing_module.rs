@@ -150,7 +150,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     CostingReason::Invoke,
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
-                            input_size: invocation.args.len() as u32,
+                            input_size: invocation.len() as u32,
                             identifier: &invocation.sys_invocation,
                         })
                     },

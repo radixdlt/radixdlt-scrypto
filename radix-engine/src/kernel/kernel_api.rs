@@ -3,6 +3,7 @@ use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::system::system_callback::SystemInvocation;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::types::*;
@@ -136,6 +137,12 @@ pub struct KernelInvocation<I: Debug> {
     // TODO: Make these two RENodes / Substates
     pub resolved_actor: Actor,
     pub args: IndexedScryptoValue,
+}
+
+impl KernelInvocation<SystemInvocation> {
+    pub fn len(&self) -> usize {
+        self.sys_invocation.blueprint.len() + self.sys_invocation.ident.len() + self.args.len()
+    }
 }
 
 impl<I: Debug> KernelInvocation<I> {
