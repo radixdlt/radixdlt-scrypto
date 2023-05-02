@@ -32,7 +32,6 @@ impl CallFrameUpdate {
             if !allow_local_references && r.is_local() {
                 return Err(CallFrameUpdateError::ContainsLocalReference(r.clone()));
             }
-            // Global references can be duplicated
             references.insert(r.clone());
         }
         for o in value.owned_nodes() {
@@ -96,11 +95,11 @@ impl RENodeRefData {
 /// owned objects by this function.
 pub struct CallFrame {
     /// The frame id
-    pub depth: usize,
+    depth: usize,
 
     /// The running application actor of this frame
     /// TODO: Move to an RENode
-    pub actor: Option<Actor>,
+    actor: Option<Actor>,
 
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
@@ -209,6 +208,14 @@ impl CallFrame {
         } else {
             None
         }
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
+
+    pub fn actor(&self) -> &Option<Actor> {
+        &self.actor
     }
 
     pub fn acquire_lock<S: SubstateStore>(

@@ -156,7 +156,7 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let caller = Box::new(self.current_frame.actor.clone());
+        let caller = Box::new(self.current_frame.actor().clone());
 
         let mut call_frame_update = invocation.get_update(self.kernel_get_current_depth() == 0)?;
         let sys_invocation = invocation.sys_invocation;
@@ -325,12 +325,12 @@ where
     }
 
     fn kernel_get_current_depth(&self) -> usize {
-        self.current_frame.depth
+        self.current_frame.depth()
     }
 
     // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
-        let actor = self.current_frame.actor.clone();
+        let actor = self.current_frame.actor().clone();
         if let Some(actor) = &actor {
             match actor {
                 Actor::Method {
