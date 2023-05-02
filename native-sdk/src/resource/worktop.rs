@@ -26,7 +26,10 @@ impl Worktop {
             RESOURCE_MANAGER_PACKAGE,
             WORKTOP_BLUEPRINT,
             WORKTOP_DROP_IDENT,
-            scrypto_encode(&WorktopDropInput { worktop: self.0 }).unwrap(),
+            scrypto_encode(&WorktopDropInput {
+                worktop: OwnedWorktop(self.0),
+            })
+            .unwrap(),
         )?;
 
         Ok(())

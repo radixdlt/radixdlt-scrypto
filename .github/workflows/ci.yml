@@ -170,7 +170,7 @@ jobs:
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
-          -p radix-engine-tests \
+          -p radix-engine-tests
         ./check_stack_usage.sh
 
   radix-engine-no-std:

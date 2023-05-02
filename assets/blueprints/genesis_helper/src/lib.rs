@@ -1,6 +1,7 @@
 use native_sdk::account::*;
 use native_sdk::epoch_manager::*;
 use scrypto::api::node_modules::metadata::MetadataValue;
+use scrypto::api::{ClientObjectApi, ObjectModuleId};
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -61,23 +62,43 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn new(
+            preallocated_address_bytes: [u8; 30],
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
             rounds_per_epoch: u64,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
-            Self {
+            let typed_component = Self {
                 epoch_manager,
                 rounds_per_epoch,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
                 resource_vaults: KeyValueStore::new(),
                 validators: KeyValueStore::new(),
             }
-            .instantiate()
-            .globalize_with_access_rules(AccessRulesConfig::new().default(
+            .instantiate();
+
+            let access_rules = AccessRules::new(AccessRulesConfig::new().default(
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
-            ))
+            ));
+            let metadata = Metadata::new();
+
+            let modules = btreemap!(
+                ObjectModuleId::SELF => typed_component.component.0.as_node_id().clone(),
+                ObjectModuleId::AccessRules => access_rules.0.0,
+                ObjectModuleId::Metadata => metadata.0.0,
+                ObjectModuleId::Royalty => Royalty::new(RoyaltyConfig::default()).0.0,
+            );
+
+            // See scrypto/src/component/component.rs if this breaks
+            ScryptoEnv
+                .globalize_with_address(
+                    modules,
+                    GlobalAddress::new_or_panic(preallocated_address_bytes),
+                )
+                .unwrap();
+
+            ComponentAddress::new_or_panic(preallocated_address_bytes)
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
