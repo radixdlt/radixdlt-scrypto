@@ -158,7 +158,7 @@ where
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let caller = Box::new(self.current_frame.actor.clone());
 
-        let mut call_frame_update = invocation.get_update()?;
+        let mut call_frame_update = invocation.get_update(self.kernel_get_current_depth() == 0)?;
         let sys_invocation = invocation.sys_invocation;
         let actor = &invocation.resolved_actor;
         let args = &invocation.args;
@@ -194,11 +194,8 @@ where
 
             // Run
             let output = M::invoke_upstream(sys_invocation, args, self)?;
-            let mut update = CallFrameUpdate::from_indexed_scrypto_value(&output).map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameUpdateError(
-                    CallFrameUpdateError::ScryptoValueToCallFrameError(e),
-                ))
-            })?;
+            let mut update = CallFrameUpdate::from_indexed_scrypto_value(&output, false)
+                .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameUpdateError(e)))?;
 
             // Handle execution finish
             M::on_execution_finish(&caller, &mut update, self)?;

@@ -8,7 +8,6 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::call_frame::ScryptoValueToCallFrameError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
@@ -149,8 +148,8 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameUpdateError {
-    ScryptoValueToCallFrameError(ScryptoValueToCallFrameError),
-    ReceiverInArguments(NodeId),
+    ContainsDuplicatedOwn(NodeId),
+    ContainsLocalReference(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

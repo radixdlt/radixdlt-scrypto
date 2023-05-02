@@ -1,3 +1,4 @@
+use crate::errors::CallFrameUpdateError;
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
@@ -20,26 +21,23 @@ pub struct CallFrameUpdate {
     pub owned_nodes: IndexSet<NodeId>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ScryptoValueToCallFrameError {
-    ContainsDuplicatedOwn,
-    ContainsDuplicatedReference,
-}
-
 impl CallFrameUpdate {
     pub fn from_indexed_scrypto_value(
         value: &IndexedScryptoValue,
-    ) -> Result<Self, ScryptoValueToCallFrameError> {
+        allow_local_references: bool,
+    ) -> Result<Self, CallFrameUpdateError> {
         let mut references = index_set_new();
         let mut owned_nodes = index_set_new();
         for r in value.references() {
-            if !references.insert(r.clone()) {
-                return Err(ScryptoValueToCallFrameError::ContainsDuplicatedReference);
+            if !allow_local_references && r.is_local() {
+                return Err(CallFrameUpdateError::ContainsLocalReference(r.clone()));
             }
+            // Global references can be duplicated
+            references.insert(r.clone());
         }
         for o in value.owned_nodes() {
             if !owned_nodes.insert(o.clone()) {
-                return Err(ScryptoValueToCallFrameError::ContainsDuplicatedOwn);
+                return Err(CallFrameUpdateError::ContainsDuplicatedOwn(o.clone()));
             }
         }
         Ok(Self {

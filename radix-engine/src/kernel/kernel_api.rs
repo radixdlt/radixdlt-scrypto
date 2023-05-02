@@ -139,22 +139,17 @@ pub struct KernelInvocation<I: Debug> {
 }
 
 impl<I: Debug> KernelInvocation<I> {
-    pub fn get_update(&self) -> Result<CallFrameUpdate, RuntimeError> {
-        let mut call_frame_update = CallFrameUpdate::from_indexed_scrypto_value(&self.args)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameUpdateError(
-                    CallFrameUpdateError::ScryptoValueToCallFrameError(e),
-                ))
-            })?;
+    pub fn get_update(
+        &self,
+        allow_local_references: bool,
+    ) -> Result<CallFrameUpdate, RuntimeError> {
+        let mut call_frame_update =
+            CallFrameUpdate::from_indexed_scrypto_value(&self.args, allow_local_references)
+                .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameUpdateError(e)))?;
+        // TODO: remove
         match self.resolved_actor {
             Actor::Method { node_id, .. } => {
-                if !call_frame_update.add_reference(node_id) {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::CallFrameUpdateError(
-                            CallFrameUpdateError::ReceiverInArguments(node_id),
-                        ),
-                    ));
-                }
+                call_frame_update.add_reference(node_id);
             }
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
         }
