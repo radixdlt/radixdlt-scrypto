@@ -64,7 +64,7 @@ impl CallMethod {
         let blueprint = get_blueprint(self.component_address.0)?;
 
         let manifest = manifest_builder
-            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .lock_fee(FAUCET, 100.into())
             .borrow_mut(|builder| {
                 add_call_method_instruction_with_schema(
                     builder,

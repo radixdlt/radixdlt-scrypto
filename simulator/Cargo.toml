@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor" }
 radix-engine = { path = "../radix-engine" }
+radix-engine-store-interface = { path = "../radix-engine-store-interface" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-constants = { path = "../radix-engine-constants" }

@@ -23,6 +23,8 @@ pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_ID: usize = 0x38;
 pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME: &str = "lock_key_value_store_entry";
+pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_ID: usize = 0x39;
+pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME: &str = "globalize_with_address";
 
 pub const LOCK_FIELD_FUNCTION_ID: usize = 0x40;
 pub const LOCK_FIELD_FUNCTION_NAME: &str = "lock_field";

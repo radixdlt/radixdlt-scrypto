@@ -1,16 +1,16 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisResource, GenesisResourceAllocation,
+    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
-use radix_engine_stores::interface::{DatabaseUpdate, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
@@ -36,17 +36,31 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (system_bootstrap_receipt, _, wrap_up_receipt) = bootstrapper
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        wrap_up_receipt,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     assert!(system_bootstrap_receipt
-        .commit_result
+        .expect_commit_success()
         .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
 
+    assert!(system_bootstrap_receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .contains(&GENESIS_HELPER));
+
+    assert!(wrap_up_receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .contains(&FAUCET));
+
     wrap_up_receipt
-        .commit_result
+        .expect_commit_success()
         .next_epoch()
         .expect("There should be a new epoch.");
 }
@@ -73,15 +87,21 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (system_bootstrap_receipt, chunk_receipts, wrap_up_receipt) = bootstrapper
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        data_ingestion_receipts,
+        wrap_up_receipt,
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
-    validate_receipt_substate_changes_which_can_be_typed(&system_bootstrap_receipt.commit_result);
-    for receipt in chunk_receipts.into_iter() {
+    validate_receipt_substate_changes_which_can_be_typed(
+        system_bootstrap_receipt.expect_commit_success(),
+    );
+    for receipt in data_ingestion_receipts.into_iter() {
         validate_receipt_substate_changes_which_can_be_typed(receipt.expect_commit_success());
     }
-    validate_receipt_substate_changes_which_can_be_typed(&wrap_up_receipt.commit_result);
+    validate_receipt_substate_changes_which_can_be_typed(wrap_up_receipt.expect_commit_success());
 }
 
 fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
@@ -122,7 +142,10 @@ fn test_genesis_xrd_allocation_to_accounts() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
@@ -176,12 +199,15 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, mut data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        mut data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped_substate::<JmtMapper, FungibleResourceManagerTotalSupplySubstate>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
             SysModuleId::Object.into(),
             &FungibleResourceManagerOffset::TotalSupply.into(),
@@ -191,7 +217,7 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
             SysModuleId::Metadata.into(),
             &SubstateKey::Map(key),
@@ -273,7 +299,10 @@ fn test_genesis_stake_allocation() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, mut data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        mut data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 

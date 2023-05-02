@@ -55,6 +55,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -74,8 +75,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::PackageSchema;
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -88,41 +88,6 @@ use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use utils::ContextualDisplay;
-
-/// The address of the faucet component, test network only.
-/// TODO: remove
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_or_panic([
-    EntityType::GlobalGenericComponent as u8,
-    1,
-    214,
-    31,
-    81,
-    94,
-    195,
-    164,
-    245,
-    22,
-    133,
-    219,
-    196,
-    153,
-    116,
-    249,
-    229,
-    98,
-    136,
-    55,
-    21,
-    2,
-    33,
-    180,
-    121,
-    11,
-    178,
-    57,
-    153,
-    132,
-]);
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -353,7 +318,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let package_info = substate_db
-        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             &PackageOffset::Info.into(),
@@ -384,7 +349,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let type_info = substate_db
-        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             SysModuleId::TypeInfo.into(),
             &TypeInfoOffset::TypeInfo.into(),
@@ -421,7 +386,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                 ),
                 ObjectModuleId::SELF => {
                     let type_info = substate_db
-                        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                        .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                             node_id,
                             SysModuleId::TypeInfo.into(),
                             &TypeInfoOffset::TypeInfo.into(),
@@ -448,7 +413,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let package_info = substate_db
-        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             SysModuleId::Object.into(),
             &PackageOffset::Info.into(),

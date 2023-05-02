@@ -16,11 +16,11 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::track::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 

@@ -42,6 +42,12 @@ pub trait WasmRuntime {
         modules: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
+    fn globalize_object_with_address(
+        &mut self,
+        modules: Vec<u8>,
+        address: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
     fn new_key_value_store(
         &mut self,
         schema: Vec<u8>,
@@ -137,5 +143,8 @@ pub trait WasmEngine {
     type WasmInstance: WasmInstance;
 
     /// Instantiate a Scrypto module.
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
+    fn instantiate(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Result<Self::WasmInstance, PrepareError>;
 }

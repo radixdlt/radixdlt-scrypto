@@ -241,6 +241,21 @@ fn globalize_object(
         .map(|buffer| buffer.0)
 }
 
+fn globalize_object_with_address(
+    mut caller: Caller<'_, HostState>,
+    modules_ptr: u32,
+    modules_len: u32,
+    address_ptr: u32,
+    address_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime.globalize_object_with_address(
+        read_memory(caller.as_context_mut(), memory, modules_ptr, modules_len)?,
+        read_memory(caller.as_context_mut(), memory, address_ptr, address_len)?,
+    )
+}
+
 fn get_object_info(
     mut caller: Caller<'_, HostState>,
     component_id_ptr: u32,
@@ -434,7 +449,9 @@ impl WasmiModule {
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
-            .map_err(|_| PrepareError::NotInstantiatable)?
+            .map_err(|err| PrepareError::NotInstantiatable {
+                reason: format!("{err:?}"),
+            })?
             .ensure_no_start(store.as_context_mut())
             .expect("WASM contains start function, prepare step missed?");
 
@@ -547,6 +564,25 @@ impl WasmiModule {
              modules_len: u32|
              -> Result<u64, Trap> {
                 globalize_object(caller, modules_ptr, modules_len).map_err(|e| e.into())
+            },
+        );
+
+        let host_globalize_object_with_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             modules_ptr: u32,
+             modules_len: u32,
+             address_ptr: u32,
+             address_len: u32|
+             -> Result<(), Trap> {
+                globalize_object_with_address(
+                    caller,
+                    modules_ptr,
+                    modules_len,
+                    address_ptr,
+                    address_len,
+                )
+                .map_err(|e| e.into())
             },
         );
 
@@ -718,6 +754,11 @@ impl WasmiModule {
             linker,
             GLOBALIZE_OBJECT_FUNCTION_NAME,
             host_globalize_object
+        );
+        linker_define!(
+            linker,
+            GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME,
+            host_globalize_object_with_address
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
@@ -948,7 +989,10 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+    fn instantiate(
+        &self,
+        instrumented_code: &InstrumentedCode,
+    ) -> Result<WasmiInstance, PrepareError> {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 
@@ -957,17 +1001,17 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                    return cached_module.instantiate();
+                    return Ok(cached_module.instantiate());
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-                return cached_module.as_ref().instantiate();
+                return Ok(cached_module.as_ref().instantiate());
             }
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code).unwrap();
+        let module = WasmiModule::new(code)?;
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -980,6 +1024,7 @@ impl WasmEngine for WasmiEngine {
             self.modules_cache
                 .insert(*metered_code_key, Arc::new(module));
         }
-        instance
+
+        Ok(instance)
     }
 }

@@ -43,7 +43,7 @@ pub enum PrepareError {
     /// Failed to inject stack metering
     RejectedByStackMetering,
     /// Not instantiatable
-    NotInstantiatable,
+    NotInstantiatable { reason: String },
     /// Not compilable
     NotCompilable,
 }
@@ -122,6 +122,8 @@ pub enum WasmRuntimeError {
     InvalidSchema(DecodeError),
     /// Invalid modules
     InvalidModules(DecodeError),
+    /// Invalid address
+    InvalidAddress(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata
