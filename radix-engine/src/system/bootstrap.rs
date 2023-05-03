@@ -270,7 +270,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![PACKAGE_TOKEN, PACKAGE_OWNER_TOKEN],
+                dependent_resources: vec![PACKAGE_VIRTUAL_BADGE, PACKAGE_OWNER_BADGE],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
@@ -281,8 +281,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(METADATA_PACKAGE.into());
-        let package_address = METADATA_PACKAGE.into();
+        pre_allocated_ids.insert(METADATA_MODULE_PACKAGE.into());
+        let package_address = METADATA_MODULE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -302,8 +302,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(ROYALTY_PACKAGE.into());
-        let package_address = ROYALTY_PACKAGE.into();
+        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
+        let package_address = ROYALTY_MODULE_PACKAGE.into();
 
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -324,8 +324,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(ACCESS_RULES_PACKAGE.into());
-        let package_address = ACCESS_RULES_PACKAGE.into();
+        pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
+        let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -345,8 +345,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RESOURCE_MANAGER_PACKAGE.into());
-        let package_address = RESOURCE_MANAGER_PACKAGE.into();
+        pre_allocated_ids.insert(RESOURCE_PACKAGE.into());
+        let package_address = RESOURCE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -379,7 +379,7 @@ pub fn create_system_bootstrap_transaction(
         let resource_address = RADIX_TOKEN.into();
         pre_allocated_ids.insert(RADIX_TOKEN.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
@@ -400,10 +400,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.into();
-        pre_allocated_ids.insert(PACKAGE_TOKEN.into());
+        let resource_address = PACKAGE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(PACKAGE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -421,10 +421,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = GLOBAL_OBJECT_TOKEN.into();
-        pre_allocated_ids.insert(GLOBAL_OBJECT_TOKEN.into());
+        let resource_address = GLOBAL_ACTOR_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(GLOBAL_ACTOR_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -443,13 +443,13 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&PACKAGE_PACKAGE).unwrap()).unwrap();
-        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        let global_id = NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(PACKAGE_OWNER_TOKEN.into());
+        let resource_address = PACKAGE_OWNER_BADGE.into();
+        pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -468,13 +468,13 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap();
-        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        let global_id = NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = IDENTITY_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(IDENTITY_OWNER_TOKEN.into());
+        let resource_address = IDENTITY_OWNER_BADGE.into();
+        pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -496,10 +496,10 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![
-                    ECDSA_SECP256K1_TOKEN,
-                    EDDSA_ED25519_TOKEN,
-                    IDENTITY_OWNER_TOKEN,
-                    PACKAGE_TOKEN,
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                    IDENTITY_OWNER_BADGE,
+                    PACKAGE_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_CODE_ID,
@@ -525,9 +525,9 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
                     RADIX_TOKEN,
-                    PACKAGE_TOKEN,
-                    SYSTEM_TOKEN,
-                    VALIDATOR_OWNER_TOKEN,
+                    PACKAGE_VIRTUAL_BADGE,
+                    SYSTEM_TRANSACTION_BADGE,
+                    VALIDATOR_OWNER_BADGE,
                 ],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
@@ -549,7 +549,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![SYSTEM_TOKEN],
+                dependent_resources: vec![SYSTEM_TRANSACTION_BADGE],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -564,10 +564,10 @@ pub fn create_system_bootstrap_transaction(
         let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ACCOUNT_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(ACCOUNT_OWNER_TOKEN.into());
+        let resource_address = ACCOUNT_OWNER_BADGE.into();
+        pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -591,10 +591,10 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
-                    ECDSA_SECP256K1_TOKEN,
-                    EDDSA_ED25519_TOKEN,
-                    ACCOUNT_OWNER_TOKEN,
-                    PACKAGE_TOKEN,
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                    ACCOUNT_OWNER_BADGE,
+                    PACKAGE_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
@@ -616,7 +616,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                dependent_resources: vec![PACKAGE_TOKEN],
+                dependent_resources: vec![PACKAGE_VIRTUAL_BADGE],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
@@ -650,10 +650,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ECDSA_SECP256K1_TOKEN.into();
-        pre_allocated_ids.insert(ECDSA_SECP256K1_TOKEN.into());
+        let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -671,10 +671,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = EDDSA_ED25519_TOKEN.into();
-        pre_allocated_ids.insert(EDDSA_ED25519_TOKEN.into());
+        let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -692,10 +692,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = SYSTEM_TOKEN.into();
-        pre_allocated_ids.insert(SYSTEM_TOKEN.into());
+        let resource_address = SYSTEM_TRANSACTION_BADGE.into();
+        pre_allocated_ids.insert(SYSTEM_TRANSACTION_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -769,9 +769,9 @@ pub fn create_system_bootstrap_transaction(
     // Create EpochManager
     {
         let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
-        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN);
+        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
-        pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
+        pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
 
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,

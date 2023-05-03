@@ -234,7 +234,7 @@ fn register_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
         .register_validator(validator_address)
         .build();
@@ -308,7 +308,7 @@ fn unregister_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -380,7 +380,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .call_method(
             validator_address,
             "update_accept_delegated_stake",
@@ -398,7 +398,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     builder.lock_fee(test_runner.faucet_component(), 10.into());
 
     if owner {
-        builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN);
+        builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
     }
 
     let manifest = builder
@@ -458,7 +458,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -559,7 +559,7 @@ fn registered_validator_test(
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -647,7 +647,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -710,7 +710,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         .public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_TOKEN)
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .call_method(
             validator_address,
             "update_key",
@@ -972,13 +972,13 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
+    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
             Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             1u64,
             10u32,
@@ -1011,14 +1011,14 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
-    pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
+    pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
 
     let instructions = vec![Instruction::CallFunction {
         package_address: EPOCH_MANAGER_PACKAGE,
         blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
         function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN),
+            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
             Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             1u64,
             10u32,

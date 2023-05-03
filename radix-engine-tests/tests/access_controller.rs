@@ -58,9 +58,9 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     let receipt = test_runner.quick_confirm_recovery(
         Role::Primary,
         Role::Recovery,
-        rule!(require(PACKAGE_TOKEN)),
-        rule!(require(PACKAGE_TOKEN)),
-        rule!(require(PACKAGE_TOKEN)),
+        rule!(require(PACKAGE_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_VIRTUAL_BADGE)),
         Some(10),
     );
 

@@ -202,7 +202,7 @@ impl ExecutionTrace {
     ) {
         if let Origin::ScryptoMethod(fn_identifier) = &self.origin {
             if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
-                && fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+                && fn_identifier.package_address == RESOURCE_PACKAGE
             {
                 if fn_identifier.ident == WORKTOP_PUT_IDENT {
                     for (_, bucket_snapshot) in self.input.buckets.iter() {

@@ -20,8 +20,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
-    RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
@@ -372,28 +371,28 @@ pub fn decompile_instruction<F: fmt::Write>(
                     write!(f, "CREATE_ACCESS_CONTROLLER")?;
                 }
                 (
-                    &RESOURCE_MANAGER_PACKAGE,
+                    &RESOURCE_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 ) => {
                     write!(f, "CREATE_FUNGIBLE_RESOURCE")?;
                 }
                 (
-                    &RESOURCE_MANAGER_PACKAGE,
+                    &RESOURCE_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 ) => {
                     write!(f, "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY")?;
                 }
                 (
-                    &RESOURCE_MANAGER_PACKAGE,
+                    &RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                 ) => {
                     write!(f, "CREATE_NON_FUNGIBLE_RESOURCE")?;
                 }
                 (
-                    &RESOURCE_MANAGER_PACKAGE,
+                    &RESOURCE_PACKAGE,
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 ) => {

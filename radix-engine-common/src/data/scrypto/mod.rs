@@ -3,6 +3,7 @@ mod custom_payload_wrappers;
 /// Defines the custom Scrypto schema types.
 mod custom_schema;
 /// Defines custom serialization of the types.
+#[cfg(feature = "serde")]
 mod custom_serde;
 /// Defines how to traverse scrypto custom types.
 mod custom_traversal;
@@ -21,6 +22,7 @@ pub mod model;
 pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
 pub use custom_schema::*;
+#[cfg(feature = "serde")]
 pub use custom_serde::*;
 pub use custom_traversal::*;
 pub use custom_validation::*;

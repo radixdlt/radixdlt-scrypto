@@ -384,8 +384,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         if let Some(actor) = &actor {
             let package_address = actor.package_address();
             let id = scrypto_encode(&package_address).unwrap();
-            let non_fungible_global_id =
-                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+            let non_fungible_global_id = NonFungibleGlobalId::new(
+                PACKAGE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(id).unwrap(),
+            );
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
 
             if let Actor::Method {
@@ -395,7 +397,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             {
                 let id = scrypto_encode(&address).unwrap();
                 let non_fungible_global_id = NonFungibleGlobalId::new(
-                    GLOBAL_OBJECT_TOKEN,
+                    GLOBAL_ACTOR_VIRTUAL_BADGE,
                     NonFungibleLocalId::bytes(id).unwrap(),
                 );
                 virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
@@ -444,7 +446,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                 })).to_substates()

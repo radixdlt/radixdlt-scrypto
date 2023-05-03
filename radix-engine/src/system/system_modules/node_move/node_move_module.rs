@@ -35,7 +35,7 @@ impl NodeMoveModule {
                 blueprint,
                 outer_object,
                 ..
-            }) if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
                 if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
@@ -53,10 +53,7 @@ impl NodeMoveModule {
                 if let Actor::Method { node_id, .. } = callee {
                     let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
                     if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
-                        if blueprint.eq(&Blueprint::new(
-                            &RESOURCE_MANAGER_PACKAGE,
-                            AUTH_ZONE_BLUEPRINT,
-                        )) {
+                        if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
                             changed_to_restricted = false;
                         }
                     }
@@ -88,7 +85,7 @@ impl NodeMoveModule {
                 blueprint,
                 outer_object,
                 ..
-            }) if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+            }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
                 if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
@@ -106,10 +103,7 @@ impl NodeMoveModule {
                 if let Actor::Method { node_id, .. } = callee {
                     let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
                     if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
-                        if blueprint.eq(&Blueprint::new(
-                            &RESOURCE_MANAGER_PACKAGE,
-                            AUTH_ZONE_BLUEPRINT,
-                        )) {
+                        if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
                             changed_to_restricted = false;
                         }
                     }

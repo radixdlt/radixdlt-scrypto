@@ -49,7 +49,10 @@ fn cannot_take_on_non_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .recall(LocalAddress::new_or_panic(vault_id.into()), Decimal::one())
+        .recall(
+            InternalAddress::new_or_panic(vault_id.into()),
+            Decimal::one(),
+        )
         .call_method(
             account,
             "deposit_batch",
@@ -81,7 +84,10 @@ fn can_take_on_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .recall(LocalAddress::new_or_panic(vault_id.into()), Decimal::one())
+        .recall(
+            InternalAddress::new_or_panic(vault_id.into()),
+            Decimal::one(),
+        )
         .call_method(
             other_account,
             "deposit_batch",
