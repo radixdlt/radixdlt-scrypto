@@ -1399,6 +1399,30 @@ fn setting_metadata_emits_correct_events() {
 }
 
 //=========
+// Account
+//=========
+
+#[test]
+fn create_account_events_can_be_looked_up() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .new_account_advanced(AccessRulesConfig::new())
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    {
+        let events = receipt.expect_commit(true).clone().application_events;
+        for (event_id, _) in events {
+            let _name = test_runner.event_name(&event_id);
+        }
+    }
+}
+
+//=========
 // Helpers
 //=========
 

@@ -377,7 +377,7 @@ impl TestRunner {
 
         let metadata_entry = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
                 METADATA_BASE_MODULE,
                 &SubstateKey::Map(key),
@@ -401,7 +401,7 @@ impl TestRunner {
     ) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
                 ROYALTY_BASE_MODULE,
                 &RoyaltyOffset::RoyaltyAccumulator.into(),
@@ -411,7 +411,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             OBJECT_BASE_MODULE,
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -426,7 +426,7 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         if let Some(output) = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &PackageOffset::Royalty.into(),
@@ -436,7 +436,7 @@ impl TestRunner {
                 .royalty_vault
                 .and_then(|vault| {
                     self.substate_db
-                        .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
                             OBJECT_BASE_MODULE,
                             &FungibleVaultOffset::LiquidFungible.into(),
@@ -482,7 +482,7 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
                 OBJECT_BASE_MODULE,
                 &FungibleVaultOffset::LiquidFungible.into(),
@@ -496,7 +496,7 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let vault = self
             .substate_db()
-            .get_mapped_substate::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 OBJECT_BASE_MODULE,
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
@@ -509,14 +509,11 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut substate_iter = self
                 .substate_db()
-                .list_mapped_substates::<SpreadPrefixKeyMapper>(
+                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     ids.as_node_id(),
                     OBJECT_BASE_MODULE,
                 );
-            let id = substate_iter.next().map(|(_key, value)| {
-                let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
-                id
-            });
+            let id = substate_iter.next().map(|(_key, id)| id);
             (amount, id)
         })
     }
@@ -590,7 +587,7 @@ impl TestRunner {
 
     pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
-            .get_mapped_substate::<SpreadPrefixKeyMapper, ValidatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &ValidatorOffset::Validator.into(),
@@ -601,7 +598,7 @@ impl TestRunner {
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
-            .get_mapped_substate::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &EpochManagerOffset::CurrentValidatorSet.into(),
@@ -1326,7 +1323,7 @@ impl TestRunner {
                     ObjectModuleId::SELF => {
                         let type_info = self
                             .substate_db()
-                            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                                 node_id,
                                 TYPE_INFO_BASE_MODULE,
                                 &TypeInfoOffset::TypeInfo.into(),
@@ -1361,7 +1358,7 @@ impl TestRunner {
         (
             local_type_index,
             self.substate_db()
-                .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+                .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
                     OBJECT_BASE_MODULE,
                     &PackageOffset::Info.into(),

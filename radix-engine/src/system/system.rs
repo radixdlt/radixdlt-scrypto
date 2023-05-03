@@ -553,6 +553,7 @@ where
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
+
         self.globalize_with_address(modules, global_address)?;
         Ok(global_address)
     }
@@ -586,6 +587,15 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::SELF,
             )))?;
+        self.api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .events
+            .add_replacement(
+                (node_id, ObjectModuleId::SELF),
+                (*address.as_node_id(), ObjectModuleId::SELF),
+            );
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
 
         // Update the `global` flag of the type info substate.
@@ -626,6 +636,16 @@ where
                             }),
                         )));
                     }
+
+                    self.api
+                        .kernel_get_system_state()
+                        .system
+                        .modules
+                        .events
+                        .add_replacement(
+                            (node_id, ObjectModuleId::SELF),
+                            (*address.as_node_id(), module_id),
+                        );
 
                     let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
                     let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();

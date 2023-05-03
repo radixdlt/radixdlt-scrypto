@@ -27,7 +27,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let substate = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageCodeSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageCodeSubstate>(
             package_address.as_node_id(),
             OBJECT_BASE_MODULE,
             &PackageOffset::Code.into(),
@@ -59,7 +59,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
 
     let (package_address, blueprint_name, resources) = {
         let type_info = substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
                 TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
@@ -135,14 +135,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 ) -> Result<(), EntityDumpError> {
     if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResource) {
         let id_type = substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, NonFungibleIdType>(
+            .get_mapped::<SpreadPrefixKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &NonFungibleResourceManagerOffset::IdType.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, Decimal>(
+            .get_mapped::<SpreadPrefixKeyMapper, Decimal>(
                 resource_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &NonFungibleResourceManagerOffset::TotalSupply.into(),
@@ -163,14 +163,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
     } else {
         let divisibility = substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
                 resource_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &FungibleResourceManagerOffset::Divisibility.into(),
             )
             .ok_or(EntityDumpError::ResourceManagerNotFound)?;
         let total_supply = substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
                 resource_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &FungibleResourceManagerOffset::TotalSupply.into(),
