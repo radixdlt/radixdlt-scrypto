@@ -1879,6 +1879,10 @@ where
         self.api.kernel_get_callback()
     }
 
+    fn kernel_get_state(&mut self) -> (&mut SystemConfig<V>, Option<&Actor>) {
+        self.api.kernel_get_state()
+    }
+
     fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.api.kernel_get_current_actor()
     }

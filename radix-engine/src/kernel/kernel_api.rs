@@ -188,6 +188,8 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Retrieves data associated with the kernel upstream layer (system)
     fn kernel_get_callback(&mut self) -> &mut M;
 
+    fn kernel_get_state(&mut self) -> (&mut M, Option<&Actor>);
+
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
     // TODO: gets cleaned up a little more
