@@ -172,6 +172,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     fields,
                     kv_stores: Vec::new(),
                     indices: Vec::new(),
+                    sorted_indices: Vec::new(),
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema
@@ -739,6 +740,7 @@ mod tests {
                             fields,
                             kv_stores: Vec::new(),
                             indices: Vec::new(),
+                            sorted_indices: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema

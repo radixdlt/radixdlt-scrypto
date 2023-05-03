@@ -43,6 +43,7 @@ impl TransactionProcessorNativePackage {
                     fields,
                     kv_stores: vec![],
                     indices: vec![],
+                    sorted_indices: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()

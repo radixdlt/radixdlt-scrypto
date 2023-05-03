@@ -68,7 +68,6 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
             TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::Index
             | TypeInfoSubstate::SortedIndex => {
                 panic!("Unexpected")
             }

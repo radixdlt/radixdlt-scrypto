@@ -400,7 +400,6 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             *local_type_index,
                         ),
                         TypeInfoSubstate::KeyValueStore(..)
-                        | TypeInfoSubstate::Index
                         | TypeInfoSubstate::SortedIndex => return None,
                     }
                 }

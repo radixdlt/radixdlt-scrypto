@@ -152,6 +152,7 @@ fn test_basic_package_missing_export() {
             fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
             kv_stores: vec![],
             indices: vec![],
+            sorted_indices: vec![],
             functions: btreemap!(
                 "f".to_string() => FunctionSchema {
                     receiver: Option::None,

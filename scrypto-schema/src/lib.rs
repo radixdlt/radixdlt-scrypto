@@ -58,6 +58,7 @@ pub struct BlueprintSchema {
     pub fields: Vec<LocalTypeIndex>,
     pub kv_stores: Vec<BlueprintKeyValueStoreSchema>,
     pub indices: Vec<BlueprintIndexSchema>,
+    pub sorted_indices: Vec<BlueprintSortedIndexSchema>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -82,6 +83,10 @@ pub struct BlueprintKeyValueStoreSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintIndexSchema {
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintSortedIndexSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -115,6 +120,7 @@ impl Default for BlueprintSchema {
             fields: Vec::default(),
             kv_stores: Vec::default(),
             indices: Vec::default(),
+            sorted_indices: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
@@ -131,6 +137,7 @@ pub struct IndexedBlueprintSchema {
     pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
     pub kv_store_modules: Vec<(u8, BlueprintKeyValueStoreSchema)>,
     pub index_modules: Vec<(u8, BlueprintIndexSchema)>,
+    pub sorted_index_modules: Vec<(u8, BlueprintSortedIndexSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -164,12 +171,19 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             module_offset += 1;
         }
 
+        let mut sorted_index_modules = Vec::new();
+        for sorted_index_schema in schema.sorted_indices {
+            sorted_index_modules.push((module_offset, sorted_index_schema));
+            module_offset += 1;
+        }
+
         Self {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
             tuple_module,
             kv_store_modules,
             index_modules,
+            sorted_index_modules,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
