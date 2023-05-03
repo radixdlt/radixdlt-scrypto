@@ -107,7 +107,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             let vault_id = vaults[0];
 
             builder
-                .recall(LocalAddress::new_or_panic(vault_id.into()), Decimal::ONE)
+                .recall(InternalAddress::new_or_panic(vault_id.into()), Decimal::ONE)
                 .call_method(
                     account,
                     "deposit_batch",

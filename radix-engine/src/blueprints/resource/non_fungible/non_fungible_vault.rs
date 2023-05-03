@@ -194,8 +194,6 @@ impl NonFungibleVaultBlueprint {
     // Protected method
     //===================
 
-    // FIXME: set up auth
-
     pub fn lock_non_fungibles<Y>(
         receiver: &NodeId,
         local_ids: BTreeSet<NonFungibleLocalId>,

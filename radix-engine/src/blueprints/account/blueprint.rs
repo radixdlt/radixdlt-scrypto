@@ -30,7 +30,7 @@ struct SecurifiedAccount;
 impl SecurifiedAccessRules for SecurifiedAccount {
     const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = ACCOUNT_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![
@@ -75,7 +75,7 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_TOKEN,
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
@@ -94,7 +94,7 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_TOKEN,
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;

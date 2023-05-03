@@ -1,7 +1,7 @@
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -264,7 +264,7 @@ impl ScryptoProof for Proof {
         // TODO: Clean this up
         let info = env.get_object_info(self.0.as_node_id()).unwrap();
         env.call_function(
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             info.blueprint.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {

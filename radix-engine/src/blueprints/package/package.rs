@@ -47,6 +47,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
+    WasmUnsupported(String),
 
     InvalidMetadataKey(String),
 }
@@ -110,7 +111,7 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = PACKAGE_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
 fn globalize_package<Y>(
@@ -304,7 +305,7 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string(),
                 PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             ),
-            rule!(require(SYSTEM_TOKEN)),
+            rule!(require(SYSTEM_TRANSACTION_BADGE)),
         );
         access_rules
     }
@@ -544,13 +545,17 @@ impl PackageNativePackage {
 
             if !virtual_lazy_load_functions.is_empty() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Lazy load functions not supported".to_string(),
+                    )),
                 ));
             }
 
             if !key_value_stores.is_empty() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Static Key Value Stores not supported".to_string(),
+                    )),
                 ));
             }
         }

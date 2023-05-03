@@ -226,7 +226,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         _identifier: &KernelInvocation<SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
+        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
 
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
@@ -250,7 +250,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .transaction_limits
             .call_frames_stack
@@ -260,7 +260,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
 
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // pop from internal stack
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .transaction_limits
             .call_frames_stack
@@ -273,7 +273,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
+        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
@@ -290,7 +290,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let tlimit = &mut api.kernel_get_callback().modules.transaction_limits;
+        let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;

@@ -164,8 +164,17 @@ pub struct ResourceSummary {
 // TODO: Clean up
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TraceActor {
-    Root,
-    Actor(Actor),
+    Method(NodeId),
+    NonMethod,
+}
+
+impl TraceActor {
+    pub fn from_actor(actor: &Actor) -> TraceActor {
+        match actor {
+            Actor::Method { node_id, .. } => TraceActor::Method(node_id.clone()),
+            _ => TraceActor::NonMethod,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -202,7 +211,7 @@ impl ExecutionTrace {
     ) {
         if let Origin::ScryptoMethod(fn_identifier) = &self.origin {
             if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
-                && fn_identifier.package_address == RESOURCE_MANAGER_PACKAGE
+                && fn_identifier.package_address == RESOURCE_PACKAGE
             {
                 if fn_identifier.ident == WORKTOP_PUT_IDENT {
                     for (_, bucket_snapshot) in self.input.buckets.iter() {
@@ -284,7 +293,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         _node_id: &NodeId,
         _node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system_state()
+            .system
             .modules
             .execution_trace
             .handle_before_create_node();
@@ -295,13 +305,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_callback()
+        let system_state = api.kernel_get_system_state();
+        system_state
+            .system
             .modules
             .execution_trace
-            .handle_after_create_node(current_actor, current_depth, resource_summary);
+            .handle_after_create_node(system_state.current, current_depth, resource_summary);
         Ok(())
     }
 
@@ -310,7 +321,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_callback()
+        api.kernel_get_system_state()
+            .system
             .modules
             .execution_trace
             .handle_before_drop_node(resource_summary);
@@ -318,12 +330,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     }
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
-        api.kernel_get_callback()
+        let system_state = api.kernel_get_system_state();
+        system_state
+            .system
             .modules
             .execution_trace
-            .handle_after_drop_node(current_actor, current_depth);
+            .handle_after_drop_node(system_state.current, current_depth);
         Ok(())
     }
 
@@ -333,27 +346,41 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         update: &mut CallFrameUpdate,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_current_actor();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.kernel_get_callback()
+        let system_state = api.kernel_get_system_state();
+        system_state
+            .system
             .modules
             .execution_trace
-            .handle_before_push_frame(current_actor, callee, resource_summary);
+            .handle_before_push_frame(system_state.current, callee, resource_summary);
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        api.kernel_get_callback()
+
+        let system_state = api.kernel_get_system_state();
+
+        let caller = system_state
+            .caller
+            .map(|a| TraceActor::from_actor(a))
+            .unwrap_or(TraceActor::NonMethod);
+
+        system_state
+            .system
             .modules
             .execution_trace
-            .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
+            .handle_on_execution_finish(
+                system_state.current,
+                current_depth,
+                &caller,
+                resource_summary,
+            );
+
         Ok(())
     }
 }
@@ -387,7 +414,7 @@ impl ExecutionTraceModule {
 
     fn handle_after_create_node(
         &mut self,
-        current_actor: Option<Actor>,
+        current_actor: Option<&Actor>,
         current_depth: usize,
         resource_summary: ResourceSummary,
     ) {
@@ -400,9 +427,8 @@ impl ExecutionTraceModule {
         }
 
         let current_actor = current_actor
-            .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -417,7 +443,7 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
     }
 
-    fn handle_after_drop_node(&mut self, current_actor: Option<Actor>, current_depth: usize) {
+    fn handle_after_drop_node(&mut self, current_actor: Option<&Actor>, current_depth: usize) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
 
@@ -429,15 +455,14 @@ impl ExecutionTraceModule {
         let traced_output = ResourceSummary::default();
 
         let current_actor = current_actor
-            .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
     fn handle_before_push_frame(
         &mut self,
-        current_actor: Option<Actor>,
+        current_actor: Option<&Actor>,
         callee: &Actor,
         resource_summary: ResourceSummary,
     ) {
@@ -481,7 +506,7 @@ impl ExecutionTraceModule {
             } if VaultUtil::is_vault_blueprint(&object_info.blueprint)
                 && ident.eq(VAULT_PUT_IDENT) =>
             {
-                self.handle_vault_put_input(&resource_summary, &current_actor, node_id)
+                self.handle_vault_put_input(&resource_summary, current_actor, node_id)
             }
             Actor::Method {
                 node_id,
@@ -491,7 +516,7 @@ impl ExecutionTraceModule {
             } if VaultUtil::is_vault_blueprint(&object_info.blueprint)
                 && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
-                self.handle_vault_lock_fee_input(&current_actor, node_id)
+                self.handle_vault_lock_fee_input(current_actor, node_id)
             }
             _ => {}
         }
@@ -499,12 +524,12 @@ impl ExecutionTraceModule {
 
     fn handle_on_execution_finish(
         &mut self,
-        current_actor: Option<Actor>,
+        current_actor: Option<&Actor>,
         current_depth: usize,
-        caller: &Option<Actor>,
+        caller: &TraceActor,
         resource_summary: ResourceSummary,
     ) {
-        match &current_actor {
+        match current_actor {
             Some(Actor::Method {
                 node_id,
                 object_info,
@@ -513,7 +538,7 @@ impl ExecutionTraceModule {
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
-                self.handle_vault_take_output(&resource_summary, caller, node_id)
+                self.handle_vault_take_output(&resource_summary, &caller, node_id)
             }
             Some(Actor::VirtualLazyLoad { .. }) => return,
             _ => {}
@@ -529,8 +554,8 @@ impl ExecutionTraceModule {
 
         let current_actor = current_actor
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -607,13 +632,12 @@ impl ExecutionTraceModule {
     fn handle_vault_put_input<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &Option<Actor>,
+        caller: Option<&Actor>,
         vault_id: &NodeId,
     ) {
         let actor = caller
-            .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -624,11 +648,10 @@ impl ExecutionTraceModule {
         }
     }
 
-    fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &NodeId) {
+    fn handle_vault_lock_fee_input<'s>(&mut self, caller: Option<&Actor>, vault_id: &NodeId) {
         let actor = caller
-            .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.vault_ops.push((
             actor,
             vault_id.clone(),
@@ -640,13 +663,9 @@ impl ExecutionTraceModule {
     fn handle_vault_take_output<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &Option<Actor>,
+        actor: &TraceActor,
         vault_id: &NodeId,
     ) {
-        let actor = caller
-            .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -672,7 +691,7 @@ pub fn calculate_resource_changes(
     let mut vault_changes =
         index_map_new::<usize, IndexMap<NodeId, IndexMap<NodeId, (ResourceAddress, Decimal)>>>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
-        if let TraceActor::Actor(Actor::Method { node_id, .. }) = actor {
+        if let TraceActor::Method(node_id) = actor {
             match vault_op {
                 VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {

@@ -1,11 +1,12 @@
 use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
-use crate::constants::{METADATA_PACKAGE, ROYALTY_PACKAGE};
+use crate::constants::{
+    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+};
 use crate::types::*;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -45,13 +46,15 @@ impl ObjectModuleId {
 
     pub fn static_blueprint(&self) -> Option<Blueprint> {
         match self {
-            ObjectModuleId::Metadata => Some(Blueprint::new(&METADATA_PACKAGE, METADATA_BLUEPRINT)),
+            ObjectModuleId::Metadata => {
+                Some(Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
+            }
             ObjectModuleId::Royalty => Some(Blueprint::new(
-                &ROYALTY_PACKAGE,
+                &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
             ObjectModuleId::AccessRules => Some(Blueprint::new(
-                &ACCESS_RULES_PACKAGE,
+                &ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
             )),
             ObjectModuleId::SELF => None,

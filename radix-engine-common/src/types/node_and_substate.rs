@@ -30,6 +30,10 @@ impl NodeId {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
     pub fn to_hex(&self) -> String {
         hex::encode(&self.0)
     }
@@ -41,126 +45,43 @@ impl NodeId {
     }
 
     pub const fn is_global(&self) -> bool {
-        match self.entity_type() {
-            Some(entity_type) => match entity_type {
-                EntityType::GlobalPackage
-                | EntityType::GlobalFungibleResource
-                | EntityType::GlobalNonFungibleResource
-                | EntityType::GlobalEpochManager
-                | EntityType::GlobalValidator
-                | EntityType::GlobalClock
-                | EntityType::GlobalAccessController
-                | EntityType::GlobalAccount
-                | EntityType::GlobalIdentity
-                | EntityType::GlobalGenericComponent
-                | EntityType::GlobalVirtualEcdsaAccount
-                | EntityType::GlobalVirtualEddsaAccount
-                | EntityType::GlobalVirtualEcdsaIdentity
-                | EntityType::GlobalVirtualEddsaIdentity => true,
-                EntityType::InternalFungibleVault
-                | EntityType::InternalNonFungibleVault
-                | EntityType::InternalAccount
-                | EntityType::InternalGenericComponent
-                | EntityType::InternalKeyValueStore
-                | EntityType::InternalIndex
-                | EntityType::InternalSortedIndex => false,
-            },
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global())
     }
 
-    pub const fn is_local(&self) -> bool {
-        !self.is_global()
+    pub const fn is_internal(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal())
     }
 
     pub const fn is_global_component(&self) -> bool {
-        match self.entity_type() {
-            Some(entity_type) => match entity_type {
-                EntityType::GlobalEpochManager |
-                EntityType::GlobalValidator |
-                EntityType::GlobalClock |
-                EntityType::GlobalAccessController |
-                EntityType::GlobalAccount |
-                EntityType::GlobalIdentity |
-                EntityType::GlobalGenericComponent |
-                EntityType::GlobalVirtualEcdsaAccount |
-                EntityType::GlobalVirtualEddsaAccount |
-                EntityType::GlobalVirtualEcdsaIdentity |
-                EntityType::GlobalVirtualEddsaIdentity => true,
-                EntityType::GlobalPackage | /* PackageAddress */
-                EntityType::GlobalFungibleResource | /* ResourceAddress */
-                EntityType::GlobalNonFungibleResource | /* ResourceAddress */
-                EntityType::InternalFungibleVault |
-                EntityType::InternalNonFungibleVault |
-                EntityType::InternalAccount |
-                EntityType::InternalGenericComponent |
-                EntityType::InternalKeyValueStore |
-                EntityType::InternalIndex |
-                EntityType::InternalSortedIndex => false,
-            },
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global_component())
     }
 
     pub const fn is_global_package(&self) -> bool {
-        match self.entity_type() {
-            Some(entity_type) => matches!(entity_type, EntityType::GlobalPackage),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global_package())
     }
 
     pub const fn is_global_resource(&self) -> bool {
-        match self.entity_type() {
-            Some(entity_type) => matches!(
-                entity_type,
-                EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
-            ),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global_resource())
     }
 
     pub const fn is_global_virtual(&self) -> bool {
-        match self.entity_type() {
-            Some(entity_type) => match entity_type {
-                EntityType::GlobalVirtualEcdsaAccount
-                | EntityType::GlobalVirtualEddsaAccount
-                | EntityType::GlobalVirtualEcdsaIdentity
-                | EntityType::GlobalVirtualEddsaIdentity => true,
-                _ => false,
-            },
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global_virtual())
     }
 
     pub const fn is_global_fungible_resource(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(t, EntityType::GlobalFungibleResource),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource())
     }
 
     pub const fn is_internal_kv_store(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(t, EntityType::InternalKeyValueStore),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_internal_kv_store())
     }
 
     pub const fn is_internal_fungible_vault(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(t, EntityType::InternalFungibleVault),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_internal_fungible_vault())
     }
 
     pub const fn is_internal_vault(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(
-                t,
-                EntityType::InternalFungibleVault | EntityType::InternalNonFungibleVault
-            ),
-            None => false,
-        }
+        matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
 }
 
@@ -188,8 +109,8 @@ impl From<GlobalAddress> for NodeId {
     }
 }
 
-impl From<LocalAddress> for NodeId {
-    fn from(value: LocalAddress) -> Self {
+impl From<InternalAddress> for NodeId {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }
@@ -245,14 +166,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
             match result {
                 Ok(_)
                 | Err(EncodeBech32AddressError::FormatError(_))
-                | Err(EncodeBech32AddressError::Bech32mEncodingError(_)) => return result,
+                | Err(EncodeBech32AddressError::Bech32mEncodingError(_))
+                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => return result,
                 // Only persistable NodeIds are guaranteed to have an address - so
                 // fall through to using hex if necessary.
-                Err(EncodeBech32AddressError::InvalidEntityTypeId(_))
-                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => {}
-            }
-            if let Ok(()) = encoder.encode_to_fmt(f, self.as_ref()) {
-                return Ok(());
+                Err(EncodeBech32AddressError::InvalidEntityTypeId(_)) => {}
             }
         }
 
@@ -267,9 +185,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 pub struct ModuleNumber(pub u8);
 
 impl ModuleNumber {
-    pub fn at_offset(self, offset: u8) -> Self {
-        let module_number = self.0.checked_add(offset).unwrap();
-        Self(module_number)
+    pub fn at_offset(self, offset: u8) -> Option<Self> {
+        self.0.checked_add(offset).map(|n| Self(n))
     }
 }
 

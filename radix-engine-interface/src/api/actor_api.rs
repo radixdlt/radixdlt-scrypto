@@ -19,7 +19,7 @@ pub trait ClientActorApi<E: Debug> {
 
     fn actor_lock_key_value_entry(
         &mut self,
-        key: &Vec<u8>,
+        key: &[u8],
         flags: LockFlags,
     ) -> Result<LockHandle, E> {
         self.actor_lock_key_value_handle_entry(0u8, key, flags)
@@ -28,7 +28,7 @@ pub trait ClientActorApi<E: Debug> {
     fn actor_lock_key_value_handle_entry(
         &mut self,
         kv_handle: u8,
-        key: &Vec<u8>,
+        key: &[u8],
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 

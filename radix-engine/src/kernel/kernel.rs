@@ -7,9 +7,8 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -89,7 +88,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 }) => {
                     if global {
                         kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                    } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
@@ -156,15 +155,13 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let caller = Box::new(self.current_frame.actor.clone());
-
         let mut call_frame_update = invocation.get_update();
         let sys_invocation = invocation.sys_invocation;
-        let actor = &invocation.resolved_actor;
+        let actor = invocation.resolved_actor;
         let args = &invocation.args;
 
         // Before push call frame
-        M::before_push_frame(actor, &mut call_frame_update, &args, self)?;
+        M::before_push_frame(&actor, &mut call_frame_update, &args, self)?;
 
         // Push call frame
         {
@@ -172,7 +169,7 @@ where
 
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor.clone(),
+                actor,
                 call_frame_update.clone(),
             )
             .map_err(CallFrameError::MoveError)
@@ -184,7 +181,7 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            M::on_execution_start(&caller, self)?;
+            M::on_execution_start(self)?;
 
             // Auto drop locks
             self.current_frame
@@ -201,7 +198,7 @@ where
             };
 
             // Handle execution finish
-            M::on_execution_finish(&caller, &mut update, self)?;
+            M::on_execution_finish(&mut update, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -323,42 +320,17 @@ where
         Some(info)
     }
 
-    fn kernel_get_callback(&mut self) -> &mut M {
-        &mut self.callback
-    }
-
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    // TODO: Remove
-    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
-        let actor = self.current_frame.actor.clone();
-        if let Some(actor) = &actor {
-            match actor {
-                Actor::Method {
-                    global_address,
-                    object_info,
-                    ..
-                } => {
-                    if let Some(address) = global_address {
-                        self.current_frame
-                            .add_ref(address.as_node_id().clone(), RefType::Normal);
-                    }
-
-                    if let Some(address) = object_info.outer_object {
-                        self.current_frame
-                            .add_ref(address.as_node_id().clone(), RefType::Normal);
-                    }
-                }
-                _ => {}
-            }
-            let package_address = actor.blueprint().package_address;
-            self.current_frame
-                .add_ref(package_address.as_node_id().clone(), RefType::Normal);
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
+        let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
+        SystemState {
+            system: &mut self.callback,
+            caller,
+            current: self.current_frame.actor.as_ref(),
         }
-
-        actor
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
@@ -373,7 +345,7 @@ where
                     blueprint,
                     outer_object,
                     ..
-                }) if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                }) if blueprint.package_address == RESOURCE_PACKAGE
                     && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                         || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
@@ -433,7 +405,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                    if blueprint.package_address == RESOURCE_PACKAGE
                         && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
                             || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {

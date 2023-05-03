@@ -92,7 +92,7 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     recipient: RoyaltyRecipient,
     recipient_vault_id: NodeId,
 ) -> Result<(), RuntimeError> {
-    api.kernel_get_callback()
+    api.kernel_get_system()
         .modules
         .costing
         .fee_reserve
@@ -104,7 +104,7 @@ fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let costing = &mut api.kernel_get_callback().modules.costing;
+        let costing = &mut api.kernel_get_system().modules.costing;
         let fee_reserve = &mut costing.fee_reserve;
         let fee_table = &costing.fee_table;
 
@@ -137,14 +137,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_callback().modules.costing.max_call_depth {
+        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
             return Err(RuntimeError::ModuleError(ModuleError::CostingError(
                 CostingError::MaxCallDepthLimitReached,
             )));
         }
 
         if current_depth > 0 {
-            api.kernel_get_callback()
+            api.kernel_get_system()
                 .modules
                 .costing
                 .apply_execution_cost(
@@ -281,7 +281,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -296,7 +296,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // TODO: calculate size
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -315,7 +315,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         substate_key: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -339,7 +339,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _size: usize,
     ) -> Result<(), RuntimeError> {
         if first_lock_from_db {
-            api.kernel_get_callback()
+            api.kernel_get_system()
                 .modules
                 .costing
                 .apply_execution_cost(
@@ -356,7 +356,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -374,7 +374,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -391,7 +391,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api: &mut Y,
         _lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -407,7 +407,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _entity_type: Option<EntityType>,
         virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(

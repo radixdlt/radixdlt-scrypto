@@ -139,11 +139,14 @@ pub fn to_typed_substate_key(
         ACCESS_RULES_BASE_MODULE => TypedSubstateKey::AccessRulesModule(
             AccessRulesOffset::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
-        _ => TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
-            entity_type,
-            module_number.0 - OBJECT_BASE_MODULE.0,
-            substate_key,
-        )?),
+        module_number @ _ if module_number >= OBJECT_BASE_MODULE => {
+            TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
+                entity_type,
+                module_number.0 - OBJECT_BASE_MODULE.0,
+                substate_key,
+            )?)
+        }
+        _ => return Err(format!("Unknown module {:?}", module_number)),
     };
     Ok(substate_type)
 }
@@ -205,15 +208,15 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalAccessController => TypedObjectModuleSubstateKey::AccessController(
             AccessControllerOffset::try_from(substate_key)?,
         ),
-        EntityType::GlobalVirtualEcdsaAccount
-        | EntityType::GlobalVirtualEddsaAccount
+        EntityType::GlobalVirtualSecp256k1Account
+        | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
             let key = substate_key.for_map().ok_or(())?;
             TypedObjectModuleSubstateKey::Account(key.clone())
         }
-        EntityType::GlobalVirtualEcdsaIdentity
-        | EntityType::GlobalVirtualEddsaIdentity
+        EntityType::GlobalVirtualSecp256k1Identity
+        | EntityType::GlobalVirtualEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
         EntityType::InternalFungibleVault => TypedObjectModuleSubstateKey::FungibleVault(
             FungibleVaultOffset::try_from(substate_key)?,

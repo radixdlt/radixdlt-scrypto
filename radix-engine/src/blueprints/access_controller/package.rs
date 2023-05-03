@@ -13,7 +13,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_TOKEN};
+use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_VIRTUAL_BADGE};
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
@@ -868,7 +868,8 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 
     let non_fungible_local_id =
         NonFungibleLocalId::bytes(scrypto_encode(&ACCESS_CONTROLLER_PACKAGE).unwrap()).unwrap();
-    let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+    let non_fungible_global_id =
+        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
 
     access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
 }

@@ -13,7 +13,7 @@ pub struct ObjectInfo {
     pub instance_schema: Option<InstanceSchema>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub struct Blueprint {
     pub package_address: PackageAddress,
     pub blueprint_name: String,

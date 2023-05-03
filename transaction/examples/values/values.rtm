@@ -1,12 +1,12 @@
 TAKE_FROM_WORKTOP
-    Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")
+    Address("${resource_address}")
     Bucket("temp1");
 CREATE_PROOF_FROM_AUTH_ZONE
-    Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp")
+    Address("${resource_address}")
     Proof("temp2");
 
 CALL_METHOD 
-    Address("component_sim1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdxh44")
+    Address("${component_address}")
     "aliases"
 
     # enum
@@ -28,30 +28,30 @@ CALL_METHOD
     Array<U8>(5u8, 10u8, 255u8)
 
     # non-fungible address
-    NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<value>")
-    NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#123#")
-    NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#456#")
-    NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
-    NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:#1234567890#")
-    Tuple(Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp"), NonFungibleLocalId("#1#"))
+    NonFungibleGlobalId("${non_fungible_resource_address}:<value>")
+    NonFungibleGlobalId("${non_fungible_resource_address}:#123#")
+    NonFungibleGlobalId("${non_fungible_resource_address}:#456#")
+    NonFungibleGlobalId("${non_fungible_resource_address}:[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
+    NonFungibleGlobalId("${non_fungible_resource_address}:#1234567890#")
+    Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#"))
 
     # array
     Array<Bytes>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
     Array<Array>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
-    Array<NonFungibleGlobalId>(NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<value>"), Tuple(Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp"), NonFungibleLocalId("#1#")))
-    Array<Tuple>(NonFungibleGlobalId("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp:<value>"), Tuple(Address("resource_sim1q2atsr8kvzrkdpqe7h94jp9vleraasdw348gn8zg9g6n6g50t6hwlp"), NonFungibleLocalId("#1#")));
+    Array<NonFungibleGlobalId>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#")))
+    Array<Tuple>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), Tuple(Address("${non_fungible_resource_address}"), NonFungibleLocalId("#1#")));
 
 CALL_METHOD 
-    Address("component_sim1pyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdxh44")
+    Address("${component_address}")
     "custom_types"
 
     # Address
-    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdrwrjwz")
-    Address("account_sim1ql02qtc2tm73h5dyl8grh2p8xfncgrfltagjm7adlg3edr0ejjmpvt")
-    Address("epochmanager_sim1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwh2t2a")
-    Address("clock_sim1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwdndun")
-    Address("validator_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8vsrns")
-    Address("accesscontroller_sim1qcqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkfz063")
+    Address("${package_address}")
+    Address("${account_address}")
+    Address("${epochmanager_address}")
+    Address("${clock_address}")
+    Address("${validator_address}")
+    Address("${accesscontroller_address}")
 
     Bucket("temp1")
     Proof("temp2")

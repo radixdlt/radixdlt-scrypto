@@ -43,7 +43,6 @@ pub enum AuthError {
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub callee: Actor,
     pub authorization: MethodAuthorization,
 }
 
@@ -66,7 +65,7 @@ impl AuthModule {
         }
     }
 
-    fn is_transaction_processor(actor: &Option<Actor>) -> bool {
+    fn is_transaction_processor(actor: Option<&Actor>) -> bool {
         match actor {
             Some(actor) => {
                 let blueprint = actor.blueprint();
@@ -324,12 +323,12 @@ impl AuthModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
-        Self::on_execution_start(api, &None)
+        Self::on_execution_start(api)
     }
 
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
-        Self::on_execution_finish(api, &None, &CallFrameUpdate::empty())
+        Self::on_execution_finish(api, &CallFrameUpdate::empty())
     }
 
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
@@ -353,7 +352,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         };
         let barrier_crossings_required = 0;
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
-        let auth_zone_id = api.kernel_get_callback().modules.auth.last_auth_zone();
+        let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
 
@@ -367,10 +366,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 &mut system,
             )? {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        callee: callee.clone(),
-                        authorization,
-                    })),
+                    AuthError::Unauthorized(Box::new(Unauthorized { authorization })),
                 )));
             }
         }
@@ -378,19 +374,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _caller: &Option<Actor>,
-    ) -> Result<(), RuntimeError> {
-        let actor = api.kernel_get_current_actor();
+    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let actor = api.kernel_get_system_state().current;
 
         // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        if let Some(actor) = &actor {
+        if let Some(actor) = actor {
             let package_address = actor.package_address();
             let id = scrypto_encode(&package_address).unwrap();
-            let non_fungible_global_id =
-                NonFungibleGlobalId::new(PACKAGE_TOKEN, NonFungibleLocalId::bytes(id).unwrap());
+            let non_fungible_global_id = NonFungibleGlobalId::new(
+                PACKAGE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(id).unwrap(),
+            );
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
 
             if let Actor::Method {
@@ -400,7 +395,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             {
                 let id = scrypto_encode(&address).unwrap();
                 let non_fungible_global_id = NonFungibleGlobalId::new(
-                    GLOBAL_OBJECT_TOKEN,
+                    GLOBAL_ACTOR_VIRTUAL_BADGE,
                     NonFungibleLocalId::bytes(id).unwrap(),
                 );
                 virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
@@ -408,14 +403,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         }
 
         // Prepare a new auth zone
-        let is_barrier = if let Some(actor) = &actor {
+        let is_barrier = if let Some(actor) = actor {
             Self::is_barrier(actor)
         } else {
             false
         };
-        let is_transaction_processor = Self::is_transaction_processor(&actor);
+        let is_transaction_processor = Self::is_transaction_processor(actor);
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_callback().modules.auth;
+            let auth_module = &api.kernel_get_system().modules.auth;
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -424,7 +419,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             (BTreeSet::new(), BTreeSet::new())
         };
         let parent = api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .auth
             .auth_zone_stack
@@ -449,7 +444,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                     AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                     instance_schema: None,
@@ -457,7 +452,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             ),
         )?;
 
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .auth
             .auth_zone_stack
@@ -468,11 +463,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _caller: &Option<Actor>,
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let auth_zone = api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .auth
             .auth_zone_stack

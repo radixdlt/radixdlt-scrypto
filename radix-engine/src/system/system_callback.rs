@@ -130,6 +130,9 @@ impl SystemLockData {
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
+    // TODO: We should be able to make this a more generic cache for
+    // TODO: immutable substates
+    pub blueprint_schema_cache: NonIterMap<Blueprint, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 
@@ -286,11 +289,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_start(api, &caller)
+        SystemModuleMixer::on_execution_start(api)
     }
 
     fn invoke_upstream<Y>(
@@ -456,15 +459,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
-        update: &CallFrameUpdate,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_finish(api, caller, update)
+        SystemModuleMixer::on_execution_finish(api, update)
     }
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
@@ -475,9 +474,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         for node_id in nodes {
             if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
                 match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
+                    (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_PACKAGE,
                             FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {
@@ -486,9 +485,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             .unwrap(),
                         )?;
                     }
-                    (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                    (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                         system.call_function(
-                            RESOURCE_MANAGER_PACKAGE,
+                            RESOURCE_PACKAGE,
                             NON_FUNGIBLE_PROOF_BLUEPRINT,
                             PROOF_DROP_IDENT,
                             scrypto_encode(&ProofDropInput {

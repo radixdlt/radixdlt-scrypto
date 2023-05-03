@@ -7,7 +7,7 @@ pub struct InstanceContext {
     pub instance_blueprint: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Method {
         global_address: Option<GlobalAddress>,

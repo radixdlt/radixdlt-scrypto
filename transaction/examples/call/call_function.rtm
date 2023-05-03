@@ -1,5 +1,5 @@
 CALL_FUNCTION
-    Address("package_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqdrwrjwz")
+    Address("${package_address}")
     "BlueprintName"
     "f"
     "string";

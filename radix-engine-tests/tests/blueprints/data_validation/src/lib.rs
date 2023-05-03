@@ -81,7 +81,7 @@ impl Describe<ScryptoCustomTypeKind> for CustomReference {
             metadata: TypeMetadata::no_child_names("CustomReference"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsTypedObject(
-                    RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_PACKAGE,
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 ),
             )),

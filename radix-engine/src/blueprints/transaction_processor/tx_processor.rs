@@ -78,7 +78,7 @@ impl TransactionProcessorBlueprint {
                 ),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, WORKTOP_BLUEPRINT),
+                        blueprint: Blueprint::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
                         outer_object: None,
                         instance_schema: None,
@@ -689,13 +689,13 @@ impl<'blob> TransactionProcessor<'blob> {
                 info.blueprint.package_address,
                 info.blueprint.blueprint_name.as_str(),
             ) {
-                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
-                | (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
+                (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
+                | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
                     worktop.sys_put(bucket, api)?;
                 }
-                (RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
-                | (RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
+                | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
                     ComponentAuthZone::sys_push(proof, api)?;
                 }

@@ -319,7 +319,7 @@ pub fn export_package_schema(
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let package_info = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             OBJECT_BASE_MODULE,
             &PackageOffset::Info.into(),
@@ -350,7 +350,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let type_info = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
             TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
@@ -371,23 +371,23 @@ pub fn get_event_schema<S: SubstateDatabase>(
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
                 ObjectModuleId::AccessRules => (
-                    ACCESS_RULES_PACKAGE,
+                    ACCESS_RULES_MODULE_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::Royalty => (
-                    ROYALTY_PACKAGE,
+                    ROYALTY_MODULE_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::Metadata => (
-                    METADATA_PACKAGE,
+                    METADATA_MODULE_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::SELF => {
                     let type_info = substate_db
-                        .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                             node_id,
                             TYPE_INFO_BASE_MODULE,
                             &TypeInfoOffset::TypeInfo.into(),
@@ -414,7 +414,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     };
 
     let package_info = substate_db
-        .get_mapped_substate::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
             OBJECT_BASE_MODULE,
             &PackageOffset::Info.into(),
