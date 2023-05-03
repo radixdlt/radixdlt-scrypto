@@ -1,5 +1,7 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::track::db_key_mapper::{
+    MappedSubstateDatabase, SpreadPrefixKeyMapper, SubstateKeyContent,
+};
 use radix_engine::types::{ScryptoValue, SubstateKey, TupleKey};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
@@ -173,55 +175,42 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         );
                     }
                 } else {
-                    for t in SysModuleId::iter() {
-                        match t {
+                    for module_id in SysModuleId::iter() {
+                        match module_id {
                             SysModuleId::Object
                             | SysModuleId::TypeInfo
                             | SysModuleId::Royalty
                             | SysModuleId::AccessRules => {
-                                // List all iterable modules (currently `ObjectState` & `Metadata`)
-                                let x = self
-                                    .substate_db
-                                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, TupleKey>(
-                                        &node_id,
-                                        t.into(),
-                                    );
-                                for (substate_key, substate_value) in x {
-                                    let (_, owned_nodes, _) =
-                                        IndexedScryptoValue::from_scrypto_value(substate_value)
-                                            .unpack();
-                                    for child_node_id in owned_nodes {
-                                        self.traverse_recursive(
-                                            Some(&(node_id, t.into(), substate_key.clone())),
-                                            child_node_id,
-                                            depth + 1,
-                                        );
-                                    }
-                                }
+                                self.traverse_substates::<TupleKey>(node_id, module_id, depth)
                             }
-
                             SysModuleId::Metadata | SysModuleId::Virtualized => {
-                                for (substate_key, value) in self
-                                    .substate_db
-                                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
-                                        &node_id,
-                                        SysModuleId::Virtualized.into(),
-                                    )
-                                {
-                                    let (_, owned_nodes, _) =
-                                        IndexedScryptoValue::from_scrypto_value(value).unpack();
-                                    for child_node_id in owned_nodes {
-                                        self.traverse_recursive(
-                                            Some(&(node_id, t.into(), substate_key.clone())),
-                                            child_node_id,
-                                            depth + 1,
-                                        );
-                                    }
-                                }
+                                self.traverse_substates::<MapKey>(node_id, module_id, depth)
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fn traverse_substates<K: SubstateKeyContent>(
+        &mut self,
+        node_id: NodeId,
+        module_id: SysModuleId,
+        depth: u32,
+    ) {
+        let entries = self
+            .substate_db
+            .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, K>(&node_id, module_id.into());
+        for (substate_key, substate_value) in entries {
+            let (_, owned_nodes, _) =
+                IndexedScryptoValue::from_scrypto_value(substate_value).unpack();
+            for child_node_id in owned_nodes {
+                self.traverse_recursive(
+                    Some(&(node_id, module_id.into(), substate_key.clone())),
+                    child_node_id,
+                    depth + 1,
+                );
             }
         }
     }
