@@ -1,5 +1,5 @@
 use crate::track::db_key_mapper::{
-    DatabaseKeyMapper, MappedSubstateDatabase, SortKey, SpreadPrefixKeyMapper,
+    DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper,
 };
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
@@ -386,7 +386,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         self.tracked
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.substates.get(&key.to_db_sort_key()))
+            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }
 }

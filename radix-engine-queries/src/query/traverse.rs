@@ -96,7 +96,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (map_key, value) in self
+                for (substate_key, value) in self
                     .substate_db
                     .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
                         &node_id,
@@ -110,7 +110,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             Some(&(
                                 node_id,
                                 SysModuleId::Virtualized.into(),
-                                SubstateKey::Map(map_key.clone()),
+                                substate_key.clone(),
                             )),
                             child_node_id,
                             depth + 1,
@@ -186,17 +186,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                         &node_id,
                                         t.into(),
                                     );
-                                for (tuple_key, substate_value) in x {
+                                for (substate_key, substate_value) in x {
                                     let (_, owned_nodes, _) =
                                         IndexedScryptoValue::from_scrypto_value(substate_value)
                                             .unpack();
                                     for child_node_id in owned_nodes {
                                         self.traverse_recursive(
-                                            Some(&(
-                                                node_id,
-                                                t.into(),
-                                                SubstateKey::Tuple(tuple_key),
-                                            )),
+                                            Some(&(node_id, t.into(), substate_key.clone())),
                                             child_node_id,
                                             depth + 1,
                                         );
@@ -205,7 +201,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             }
 
                             SysModuleId::Metadata | SysModuleId::Virtualized => {
-                                for (map_key, value) in self
+                                for (substate_key, value) in self
                                     .substate_db
                                     .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
                                         &node_id,
@@ -216,11 +212,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                         IndexedScryptoValue::from_scrypto_value(value).unpack();
                                     for child_node_id in owned_nodes {
                                         self.traverse_recursive(
-                                            Some(&(
-                                                node_id,
-                                                t.into(),
-                                                SubstateKey::Map(map_key.clone()),
-                                            )),
+                                            Some(&(node_id, t.into(), substate_key.clone())),
                                             child_node_id,
                                             depth + 1,
                                         );

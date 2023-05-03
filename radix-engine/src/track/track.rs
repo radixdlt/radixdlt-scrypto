@@ -1,4 +1,4 @@
-use crate::track::db_key_mapper::{DatabaseKeyMapper, SortKey};
+use crate::track::db_key_mapper::DatabaseKeyMapper;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
 };
@@ -455,7 +455,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         substate_key: SubstateKey,
         virtualize: F,
     ) -> (&mut TrackedKey, bool) {
-        let db_sort_key = substate_key.to_db_sort_key();
+        let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let module_substates = &mut self
             .tracked_nodes
@@ -528,7 +528,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 let module_substates = module_substates
                     .into_iter()
                     .map(|(substate_key, value)| {
-                        let db_sort_key = substate_key.to_db_sort_key();
+                        let db_sort_key = M::to_db_sort_key(&substate_key);
                         let tracked = TrackedSubstateKey {
                             substate_key,
                             tracked: TrackedKey::New(RuntimeSubstate::new(value)),
@@ -557,7 +557,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError> {
-        let db_sort_key = substate_key.to_db_sort_key();
+        let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let tracked_module = self
             .tracked_nodes
@@ -897,7 +897,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate.lock_state.unlock();
 
         if flags.contains(LockFlags::FORCE_WRITE) {
-            let db_sort_key = substate_key.to_db_sort_key();
+            let db_sort_key = M::to_db_sort_key(&substate_key);
             let cloned_track = tracked.clone();
 
             self.force_write_tracked_nodes
