@@ -543,7 +543,12 @@ fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
             .serialize(serializer, *context);
     }
     let array_metadata = context.schema.resolve_matching_array_metadata(type_index);
-    map_aggregator.add_initial_details(ValueKind::Array, array_metadata.array_name);
+    if array_header.element_value_kind == ValueKind::U8 {
+        map_aggregator
+            .add_initial_details_with_custom_value_kind_name("Bytes", array_metadata.array_name);
+    } else {
+        map_aggregator.add_initial_details(ValueKind::Array, array_metadata.array_name);
+    }
     map_aggregator
         .add_element_details(array_header.element_value_kind, array_metadata.element_name);
 
@@ -896,12 +901,12 @@ mod tests {
                     "elements": []
                 },
                 {
-                    "kind": "Array",
+                    "kind": "Bytes",
                     "element_kind": "U8",
                     "hex": ""
                 },
                 {
-                    "kind": "Array",
+                    "kind": "Bytes",
                     "element_kind": "U8",
                     "hex": "010203"
                 },
@@ -1234,12 +1239,12 @@ mod tests {
                     "elements": []
                 },
                 {
-                    "kind": "Array",
+                    "kind": "Bytes",
                     "element_kind": "U8",
                     "hex": ""
                 },
                 {
-                    "kind": "Array",
+                    "kind": "Bytes",
                     "element_kind": "U8",
                     "hex": "010203"
                 },

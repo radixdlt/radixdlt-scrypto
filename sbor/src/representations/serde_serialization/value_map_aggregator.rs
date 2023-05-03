@@ -154,6 +154,26 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
         }
     }
 
+    pub fn add_initial_details_with_custom_value_kind_name(
+        &mut self,
+        value_kind_name: &'a str,
+        type_name: Option<&'a str>,
+    ) {
+        if self.should_embed_value_in_contextual_json_map() {
+            self.fields.push((
+                "kind",
+                SerializableType::String(value_kind_name.to_string()),
+            ));
+            type_name.map(|type_name| {
+                self.fields
+                    .push(("type_name", SerializableType::Str(type_name)))
+            });
+        }
+        if let ValueContext::IncludeFieldName { field_name: key } = self.value_context {
+            self.fields.push(("field_name", SerializableType::Str(key)));
+        }
+    }
+
     pub fn add_element_details(
         &mut self,
         element_value_kind: ValueKind<E::CustomValueKind>,
