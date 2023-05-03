@@ -5,7 +5,7 @@ use sbor::rust::prelude::*;
 use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
-pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
+pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid
@@ -50,21 +50,16 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
 impl CustomTypeValidation for ScryptoCustomTypeValidation {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub struct ScryptoCustomTypeExtension {}
+pub struct ScryptoCustomSchema {}
 
 lazy_static::lazy_static! {
-    static ref EMPTY_SCHEMA: Schema<ScryptoCustomTypeExtension> = {
+    static ref EMPTY_SCHEMA: Schema<ScryptoCustomSchema> = {
         Schema::empty()
     };
 }
 
-impl CustomTypeExtension for ScryptoCustomTypeExtension {
-    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
-    const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
-
-    type CustomValueKind = ScryptoCustomValueKind;
+impl CustomSchema for ScryptoCustomSchema {
     type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind;
-    type CustomTraversal = ScryptoCustomTraversal;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
 
     fn linearize_type_kind(
@@ -152,34 +147,53 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
         }
     }
 
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
-        custom_type_kind: &Self::CustomTypeKind<L>,
-        value_kind: ValueKind<Self::CustomValueKind>,
+    fn empty_schema() -> &'static Schema<Self> {
+        &EMPTY_SCHEMA
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub struct ScryptoCustomExtension {}
+
+impl CustomExtension for ScryptoCustomExtension {
+    const MAX_DEPTH: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
+    const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
+
+    type CustomValueKind = ScryptoCustomValueKind;
+    type CustomTraversal = ScryptoCustomTraversal;
+    type CustomSchema = ScryptoCustomSchema;
+
+    fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
+        custom_value_kind: Self::CustomValueKind,
+        type_kind: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>, L>,
     ) -> bool {
-        match custom_type_kind {
-            ScryptoCustomTypeKind::Reference => matches!(
-                value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Reference)
+        match custom_value_kind {
+            ScryptoCustomValueKind::Reference => matches!(
+                type_kind,
+                TypeKind::Custom(ScryptoCustomTypeKind::Reference)
             ),
-            ScryptoCustomTypeKind::Own => {
-                matches!(value_kind, ValueKind::Custom(ScryptoCustomValueKind::Own))
+            ScryptoCustomValueKind::Own => {
+                matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
             }
-            ScryptoCustomTypeKind::Decimal => matches!(
-                value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::Decimal)
+            ScryptoCustomValueKind::Decimal => {
+                matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))
+            }
+            ScryptoCustomValueKind::PreciseDecimal => matches!(
+                type_kind,
+                TypeKind::Custom(ScryptoCustomTypeKind::PreciseDecimal)
             ),
-            ScryptoCustomTypeKind::PreciseDecimal => matches!(
-                value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
-            ),
-            ScryptoCustomTypeKind::NonFungibleLocalId => matches!(
-                value_kind,
-                ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
+            ScryptoCustomValueKind::NonFungibleLocalId => matches!(
+                type_kind,
+                TypeKind::Custom(ScryptoCustomTypeKind::NonFungibleLocalId)
             ),
         }
     }
 
-    fn empty_schema() -> &'static Schema<Self> {
-        &EMPTY_SCHEMA
+    fn custom_type_kind_matches_non_custom_value_kind<L: SchemaTypeLink>(
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>,
+        _: ValueKind<Self::CustomValueKind>,
+    ) -> bool {
+        // It's not possible for a custom type kind to match a non-custom value kind
+        false
     }
 }

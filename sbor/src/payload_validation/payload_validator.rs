@@ -3,13 +3,13 @@ use crate::traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PayloadValidationError<E: CustomTypeExtension> {
+pub enum PayloadValidationError<E: CustomExtension> {
     TraversalError(TypedTraversalError<E>),
     ValidationError(ValidationError),
     SchemaInconsistency,
 }
 
-impl<E: CustomTypeExtension> From<ValidationError> for PayloadValidationError<E> {
+impl<E: CustomExtension> From<ValidationError> for PayloadValidationError<E> {
     fn from(value: ValidationError) -> Self {
         Self::ValidationError(value)
     }
@@ -65,13 +65,13 @@ pub enum ValidationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocatedValidationError<'s, E: CustomTypeExtension> {
+pub struct LocatedValidationError<'s, E: CustomExtension> {
     error: PayloadValidationError<E>,
     location: FullLocation<'s, E>,
 }
 
-impl<'s, E: CustomTypeExtension> LocatedValidationError<'s, E> {
-    pub fn error_message(&self, schema: &Schema<E>) -> String {
+impl<'s, E: CustomExtension> LocatedValidationError<'s, E> {
+    pub fn error_message(&self, schema: &Schema<E::CustomSchema>) -> String {
         format!(
             "{:?} occurred at byte offset {}-{} and value path {}",
             self.error,
@@ -103,9 +103,9 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>, T>(
+pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     payload: &[u8],
-    schema: &'s Schema<E>,
+    schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
     context: &mut T,
 ) -> Result<(), LocatedValidationError<'s, E>> {
@@ -123,8 +123,8 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomTypeExtension<T>,
     }
 }
 
-fn validate_event_with_type<E: ValidatableCustomTypeExtension<T>, T>(
-    schema: &Schema<E>,
+fn validate_event_with_type<E: ValidatableCustomExtension<T>, T>(
+    schema: &Schema<E::CustomSchema>,
     event: &TypedTraversalEvent<E>,
     context: &mut T,
 ) -> Result<bool, PayloadValidationError<E>> {
@@ -146,8 +146,8 @@ fn validate_event_with_type<E: ValidatableCustomTypeExtension<T>, T>(
     }
 }
 
-pub fn validate_container<E: CustomTypeExtension>(
-    schema: &Schema<E>,
+pub fn validate_container<E: CustomExtension>(
+    schema: &Schema<E::CustomSchema>,
     header: &ContainerHeader<E::CustomTraversal>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
@@ -185,8 +185,8 @@ pub fn validate_container<E: CustomTypeExtension>(
     Ok(())
 }
 
-pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
-    schema: &Schema<E>,
+pub fn validate_terminal_value<'de, E: ValidatableCustomExtension<T>, T>(
+    schema: &Schema<E::CustomSchema>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
     context: &mut T,
@@ -249,8 +249,8 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomTypeExtension<T>, T>(
     Ok(())
 }
 
-pub fn validate_terminal_value_batch<'de, E: CustomTypeExtension>(
-    schema: &Schema<E>,
+pub fn validate_terminal_value_batch<'de, E: CustomExtension>(
+    schema: &Schema<E::CustomSchema>,
     value_batch: &TerminalValueBatchRef<'de>,
     type_index: LocalTypeIndex,
 ) -> Result<(), PayloadValidationError<E>> {
@@ -295,26 +295,36 @@ mod tests {
     #[test]
     pub fn identical_length_vec_and_array_are_interchangeable() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeSchema>();
         let payload = basic_encode(&TestStructVec {
             x: Vec::from([0; 16]),
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index, &mut ());
+        let result = validate_payload_against_schema::<NoCustomExtension, ()>(
+            &payload,
+            &schema,
+            type_index,
+            &mut (),
+        );
         assert!(result.is_ok())
     }
 
     #[test]
     pub fn longer_length_vec_is_not_interchangeable_with_array() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeSchema>();
         let payload = basic_encode(&TestStructVec {
             x: Vec::from([0; 17]),
         })
         .unwrap();
 
-        let result = validate_payload_against_schema(&payload, &schema, type_index, &mut ());
+        let result = validate_payload_against_schema::<NoCustomExtension, ()>(
+            &payload,
+            &schema,
+            type_index,
+            &mut (),
+        );
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -391,8 +401,13 @@ mod tests {
 
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeExtension>();
-        let result = validate_payload_against_schema(&bytes, &schema, type_index, &mut ());
+            generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeSchema>();
+        let result = validate_payload_against_schema::<NoCustomExtension, _>(
+            &bytes,
+            &schema,
+            type_index,
+            &mut (),
+        );
         assert!(result.is_ok())
     }
 
@@ -423,7 +438,7 @@ mod tests {
         };
 
         assert_eq!(
-            validate_payload_against_schema(
+            validate_payload_against_schema::<NoCustomExtension, _>(
                 &basic_encode(&vec![5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
@@ -433,7 +448,7 @@ mod tests {
         );
 
         assert_eq!(
-            validate_payload_against_schema(
+            validate_payload_against_schema::<NoCustomExtension, _>(
                 &basic_encode(&vec![8u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
@@ -452,7 +467,7 @@ mod tests {
         );
 
         assert_eq!(
-            validate_payload_against_schema(
+            validate_payload_against_schema::<NoCustomExtension, _>(
                 &basic_encode(&vec![5u8, 5u8]).unwrap(),
                 &schema,
                 LocalTypeIndex::SchemaLocalIndex(0),
@@ -515,9 +530,9 @@ mod tests {
         let cut_off_payload = &payload[0..payload.len() - 2];
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<MyStruct, NoCustomTypeSchema>();
 
-        let Err(error) = validate_payload_against_schema(
+        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &cut_off_payload,
             &schema,
             type_index,
@@ -551,9 +566,9 @@ mod tests {
         let payload = basic_encode(&value).unwrap();
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct2, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<MyStruct2, NoCustomTypeSchema>();
 
-        let Err(error) = validate_payload_against_schema(
+        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
             &schema,
             type_index,
@@ -583,9 +598,9 @@ mod tests {
         let payload = basic_encode(&value).unwrap();
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<(MyEnum,), NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<(MyEnum,), NoCustomTypeSchema>();
 
-        let Err(error) = validate_payload_against_schema(
+        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
             &schema,
             type_index,

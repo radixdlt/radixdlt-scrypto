@@ -1389,7 +1389,7 @@ impl TestRunner {
     ) -> bool {
         let expected_type_name = {
             let (local_type_index, schema) =
-                sbor::generate_full_schema_from_single_type::<T, ScryptoCustomTypeExtension>();
+                sbor::generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
             schema
                 .resolve_type_metadata(local_type_index)
                 .unwrap()

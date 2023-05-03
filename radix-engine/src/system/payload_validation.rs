@@ -14,14 +14,13 @@ use super::system::SystemService;
 use super::system_callback::SystemConfig;
 use super::system_callback_api::SystemCallbackObject;
 
-impl<'a, Y, V> ValidatableCustomTypeExtension<SystemService<'a, Y, V>>
-    for ScryptoCustomTypeExtension
+impl<'a, Y, V> ValidatableCustomExtension<SystemService<'a, Y, V>> for ScryptoCustomExtension
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     fn apply_custom_type_validation<'de>(
-        custom_type_validation: &Self::CustomTypeValidation,
+        custom_type_validation: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         value: &TerminalValueRef<'de, Self::CustomTraversal>,
         context: &mut SystemService<'a, Y, V>,
     ) -> Result<(), ValidationError> {

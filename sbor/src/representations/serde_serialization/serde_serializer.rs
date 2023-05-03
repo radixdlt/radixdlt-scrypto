@@ -63,13 +63,13 @@ pub enum SerializationMode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct SerializationContext<'s, 'a, E: SerializableCustomTypeExtension> {
-    pub schema: &'s Schema<E>,
+pub struct SerializationContext<'s, 'a, E: SerializableCustomExtension> {
+    pub schema: &'s Schema<E::CustomSchema>,
     pub mode: SerializationMode,
     pub custom_context: E::CustomDisplayContext<'a>,
 }
 
-pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomTypeExtension>(
+pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     payload: &[u8],
     context: &SerializationContext<'_, '_, E>,
@@ -82,7 +82,7 @@ pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomTypeExtensio
     Ok(success)
 }
 
-pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomTypeExtension>(
+pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     partial_payload: &[u8],
     expected_start: ExpectedStart<E::CustomValueKind>,
@@ -107,13 +107,13 @@ pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomType
     Ok(success)
 }
 
-fn consume_end_event<S: Serializer, E: SerializableCustomTypeExtension>(
+fn consume_end_event<S: Serializer, E: SerializableCustomExtension>(
     traverser: &mut TypedTraverser<E>,
 ) -> Result<(), S::Error> {
     traverser.consume_end_event().map_err(S::Error::custom)
 }
 
-fn consume_container_end_event<S: Serializer, E: SerializableCustomTypeExtension>(
+fn consume_container_end_event<S: Serializer, E: SerializableCustomExtension>(
     traverser: &mut TypedTraverser<E>,
 ) -> Result<(), S::Error> {
     traverser
@@ -121,7 +121,7 @@ fn consume_container_end_event<S: Serializer, E: SerializableCustomTypeExtension
         .map_err(S::Error::custom)
 }
 
-fn map_unexpected_event<S: Serializer, E: SerializableCustomTypeExtension>(
+fn map_unexpected_event<S: Serializer, E: SerializableCustomExtension>(
     context: &SerializationContext<'_, '_, E>,
     expected: &'static str,
     typed_event: TypedLocatedTraversalEvent<E>,
@@ -130,7 +130,7 @@ fn map_unexpected_event<S: Serializer, E: SerializableCustomTypeExtension>(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SerializationError<E: CustomTypeExtension> {
+pub enum SerializationError<E: CustomExtension> {
     TraversalError(TypedTraversalError<E>),
 }
 
@@ -144,12 +144,12 @@ pub enum ValueContext {
     IncludeFieldName { field_name: String },
 }
 
-struct SerializableValueTree<'t, 'de, 's1, E: CustomTypeExtension> {
+struct SerializableValueTree<'t, 'de, 's1, E: CustomExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
     value_context: ValueContext,
 }
 
-impl<'t, 'de, 's1, E: SerializableCustomTypeExtension> SerializableValueTree<'t, 'de, 's1, E> {
+impl<'t, 'de, 's1, E: SerializableCustomExtension> SerializableValueTree<'t, 'de, 's1, E> {
     fn new(traverser: &'t mut TypedTraverser<'de, 's1, E>, value_context: ValueContext) -> Self {
         Self {
             traverser: RefCell::new(traverser),
@@ -158,7 +158,7 @@ impl<'t, 'de, 's1, E: SerializableCustomTypeExtension> SerializableValueTree<'t,
     }
 }
 
-impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s, 'a, E>>
     for SerializableValueTree<'t, 'de, 's1, E>
 {
@@ -176,7 +176,7 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
     }
 }
 
-fn serialize_value_tree<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_value_tree<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
@@ -235,13 +235,13 @@ fn serialize_value_tree<S: Serializer, E: SerializableCustomTypeExtension>(
 ///
 /// Note that it doesn't consume the container end event, because it could also
 /// be used for a set of sub-fields.
-pub struct SerializableFields<'t, 'de, 's1, 's2, E: CustomTypeExtension> {
+pub struct SerializableFields<'t, 'de, 's1, 's2, E: CustomExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
     field_names: Option<&'s2 [Cow<'static, str>]>,
     length: usize,
 }
 
-impl<'t, 'de, 's1, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1, 's2, E> {
+impl<'t, 'de, 's1, 's2, E: CustomExtension> SerializableFields<'t, 'de, 's1, 's2, E> {
     fn new(
         traverser: &'t mut TypedTraverser<'de, 's1, E>,
         field_names: Option<&'s2 [Cow<'static, str>]>,
@@ -255,7 +255,7 @@ impl<'t, 'de, 's1, 's2, E: CustomTypeExtension> SerializableFields<'t, 'de, 's1,
     }
 }
 
-impl<'t, 'de, 's1, 's2, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's2, 's, 'a, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s, 'a, E>>
     for SerializableFields<'t, 'de, 's1, 's2, E>
 {
@@ -274,7 +274,7 @@ impl<'t, 'de, 's1, 's2, 's, 'a, E: SerializableCustomTypeExtension>
     }
 }
 
-fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_fields_to_value<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
@@ -324,11 +324,11 @@ fn serialize_fields_to_value<S: Serializer, E: SerializableCustomTypeExtension>(
     }
 }
 
-pub struct SerializableMapEntry<'t, 'de, 's1, E: CustomTypeExtension> {
+pub struct SerializableMapEntry<'t, 'de, 's1, E: CustomExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
 }
 
-impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableMapEntry<'t, 'de, 's1, E> {
+impl<'t, 'de, 's1, E: CustomExtension> SerializableMapEntry<'t, 'de, 's1, E> {
     fn new(traverser: &'t mut TypedTraverser<'de, 's1, E>) -> Self {
         Self {
             traverser: RefCell::new(traverser),
@@ -336,7 +336,7 @@ impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableMapEntry<'t, 'de, 's1, E>
     }
 }
 
-impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s, 'a, E>> for SerializableMapEntry<'t, 'de, 's1, E>
 {
     fn contextual_serialize<S: Serializer>(
@@ -360,12 +360,12 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
     }
 }
 
-pub struct SerializableArrayElements<'t, 'de, 's1, E: CustomTypeExtension> {
+pub struct SerializableArrayElements<'t, 'de, 's1, E: CustomExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
     length: usize,
 }
 
-impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableArrayElements<'t, 'de, 's1, E> {
+impl<'t, 'de, 's1, E: CustomExtension> SerializableArrayElements<'t, 'de, 's1, E> {
     fn new(traverser: &'t mut TypedTraverser<'de, 's1, E>, length: usize) -> Self {
         Self {
             traverser: RefCell::new(traverser),
@@ -374,7 +374,7 @@ impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableArrayElements<'t, 'de, 's
     }
 }
 
-impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s, 'a, E>>
     for SerializableArrayElements<'t, 'de, 's1, E>
 {
@@ -396,13 +396,13 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
     }
 }
 
-pub struct SerializableMapElements<'t, 'de, 's1, E: CustomTypeExtension> {
+pub struct SerializableMapElements<'t, 'de, 's1, E: CustomExtension> {
     traverser: RefCell<&'t mut TypedTraverser<'de, 's1, E>>,
     key_value_kind: ValueKind<E::CustomValueKind>,
     length: usize,
 }
 
-impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableMapElements<'t, 'de, 's1, E> {
+impl<'t, 'de, 's1, E: CustomExtension> SerializableMapElements<'t, 'de, 's1, E> {
     fn new(
         traverser: &'t mut TypedTraverser<'de, 's1, E>,
         key_value_kind: ValueKind<E::CustomValueKind>,
@@ -416,7 +416,7 @@ impl<'t, 'de, 's1, E: CustomTypeExtension> SerializableMapElements<'t, 'de, 's1,
     }
 }
 
-impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
+impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s, 'a, E>>
     for SerializableMapElements<'t, 'de, 's1, E>
 {
@@ -459,7 +459,7 @@ impl<'t, 'de, 's1, 's, 'a, E: SerializableCustomTypeExtension>
     }
 }
 
-fn serialize_tuple<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_tuple<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
@@ -496,7 +496,7 @@ fn serialize_tuple<S: Serializer, E: SerializableCustomTypeExtension>(
     Ok(success)
 }
 
-fn serialize_enum_variant<'s, S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_enum_variant<'s, S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'s, '_, E>,
@@ -526,7 +526,7 @@ fn serialize_enum_variant<'s, S: Serializer, E: SerializableCustomTypeExtension>
     Ok(success)
 }
 
-fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_array<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
@@ -584,7 +584,7 @@ fn serialize_array<S: Serializer, E: SerializableCustomTypeExtension>(
     map_aggregator.into_map(serializer)
 }
 
-fn serialize_map<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_map<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     traverser: &mut TypedTraverser<E>,
     context: &SerializationContext<'_, '_, E>,
@@ -620,7 +620,7 @@ fn serialize_map<S: Serializer, E: SerializableCustomTypeExtension>(
     map_aggregator.into_map(serializer)
 }
 
-fn serialize_terminal_value<S: Serializer, E: SerializableCustomTypeExtension>(
+fn serialize_terminal_value<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     context: &SerializationContext<'_, '_, E>,
     type_index: LocalTypeIndex,
@@ -841,7 +841,7 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn complex_value_encoding() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomTypeSchema>();
         let value = MyComplexTupleStruct(
             vec![1, 2, 3],
             vec![],

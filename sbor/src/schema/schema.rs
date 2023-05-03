@@ -7,17 +7,17 @@ use crate::*;
 // * Via TypeKind, E::CustomTypeKind<LocalTypeIndex> gets embedded
 // * Via TypeValidation, E::CustomTypeValidation gets embedded
 // So theses are the child types which need to be registered with the sbor macro for it to compile
-#[sbor(child_types = "E::CustomTypeKind<LocalTypeIndex>, E::CustomTypeValidation")]
-pub struct Schema<E: CustomTypeExtension> {
-    pub type_kinds: Vec<SchemaTypeKind<E>>,
+#[sbor(child_types = "S::CustomTypeKind<LocalTypeIndex>, S::CustomTypeValidation")]
+pub struct Schema<S: CustomSchema> {
+    pub type_kinds: Vec<SchemaTypeKind<S>>,
     pub type_metadata: Vec<TypeMetadata>, // TODO: reconsider adding type hash when it's ready!
-    pub type_validations: Vec<TypeValidation<E::CustomTypeValidation>>,
+    pub type_validations: Vec<TypeValidation<S::CustomTypeValidation>>,
 }
 
-pub type SchemaTypeKind<E> =
-    TypeKind<<E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>;
+pub type SchemaTypeKind<S> =
+    TypeKind<<S as CustomSchema>::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>;
 
-impl<E: CustomTypeExtension> Schema<E> {
+impl<S: CustomSchema> Schema<S> {
     pub fn empty() -> Self {
         Self {
             type_kinds: vec![],
@@ -29,10 +29,10 @@ impl<E: CustomTypeExtension> Schema<E> {
     pub fn resolve_type_kind(
         &self,
         type_index: LocalTypeIndex,
-    ) -> Option<&TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+    ) -> Option<&TypeKind<S::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
         match type_index {
             LocalTypeIndex::WellKnown(index) => {
-                E::resolve_well_known_type(index).map(|data| &data.kind)
+                S::resolve_well_known_type(index).map(|data| &data.kind)
             }
             LocalTypeIndex::SchemaLocalIndex(index) => self.type_kinds.get(index),
         }
@@ -41,7 +41,7 @@ impl<E: CustomTypeExtension> Schema<E> {
     pub fn resolve_type_metadata(&self, type_index: LocalTypeIndex) -> Option<&TypeMetadata> {
         match type_index {
             LocalTypeIndex::WellKnown(index) => {
-                E::resolve_well_known_type(index).map(|data| &data.metadata)
+                S::resolve_well_known_type(index).map(|data| &data.metadata)
             }
             LocalTypeIndex::SchemaLocalIndex(index) => self.type_metadata.get(index),
         }
@@ -107,10 +107,10 @@ impl<E: CustomTypeExtension> Schema<E> {
     pub fn resolve_type_validation(
         &self,
         type_index: LocalTypeIndex,
-    ) -> Option<&TypeValidation<E::CustomTypeValidation>> {
+    ) -> Option<&TypeValidation<S::CustomTypeValidation>> {
         match type_index {
             LocalTypeIndex::WellKnown(index) => {
-                E::resolve_well_known_type(index).map(|data| &data.validation)
+                S::resolve_well_known_type(index).map(|data| &data.validation)
             }
             LocalTypeIndex::SchemaLocalIndex(index) => self.type_validations.get(index),
         }

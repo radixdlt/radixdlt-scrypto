@@ -2,17 +2,17 @@ use super::*;
 use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
-    T: Describe<E::CustomTypeKind<GlobalTypeId>>,
-    E: CustomTypeExtension,
->() -> (LocalTypeIndex, Schema<E>) {
+    T: Describe<S::CustomTypeKind<GlobalTypeId>>,
+    S: CustomSchema,
+>() -> (LocalTypeIndex, Schema<S>) {
     let mut aggregator = TypeAggregator::new();
     let type_index = aggregator.add_child_type_and_descendents::<T>();
     (type_index, generate_full_schema(aggregator))
 }
 
-pub fn generate_full_schema<E: CustomTypeExtension>(
-    aggregator: TypeAggregator<E::CustomTypeKind<GlobalTypeId>>,
-) -> Schema<E> {
+pub fn generate_full_schema<S: CustomSchema>(
+    aggregator: TypeAggregator<S::CustomTypeKind<GlobalTypeId>>,
+) -> Schema<S> {
     let type_count = aggregator.types.len();
     let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
 
@@ -20,7 +20,7 @@ pub fn generate_full_schema<E: CustomTypeExtension>(
     let mut type_metadata = Vec::with_capacity(type_count);
     let mut type_validations = Vec::with_capacity(type_count);
     for (_type_hash, type_data) in aggregator.types {
-        type_kinds.push(linearize::<E>(type_data.kind, &type_indices));
+        type_kinds.push(linearize::<S>(type_data.kind, &type_indices));
         type_metadata.push(type_data.metadata);
         type_validations.push(type_data.validation);
     }
@@ -32,10 +32,10 @@ pub fn generate_full_schema<E: CustomTypeExtension>(
     }
 }
 
-fn linearize<E: CustomTypeExtension>(
-    type_kind: TypeKind<E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+fn linearize<S: CustomSchema>(
+    type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
     type_indices: &IndexSet<TypeHash>,
-) -> TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
+) -> TypeKind<S::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
         TypeKind::Bool => TypeKind::Bool,
@@ -79,7 +79,7 @@ fn linearize<E: CustomTypeExtension>(
             value_type: resolve_local_type_index(type_indices, &value_type),
         },
         TypeKind::Custom(custom_type_kind) => {
-            TypeKind::Custom(E::linearize_type_kind(custom_type_kind, type_indices))
+            TypeKind::Custom(S::linearize_type_kind(custom_type_kind, type_indices))
         }
     }
 }

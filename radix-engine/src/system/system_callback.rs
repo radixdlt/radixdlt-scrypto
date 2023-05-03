@@ -40,7 +40,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         ));
     }
 
-    validate_payload_against_schema(
+    validate_payload_against_schema::<ScryptoCustomExtension, _>(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
@@ -67,7 +67,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .get(fn_ident)
         .expect("Checked by `validate_input`");
 
-    validate_payload_against_schema(
+    validate_payload_against_schema::<ScryptoCustomExtension, _>(
         output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,

@@ -237,12 +237,17 @@ where
             )));
         }
         for i in 0..fields.len() {
-            validate_payload_against_schema(&fields[i], &schema.schema, schema.substates[i], self)
-                .map_err(|err| {
-                    RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                        CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
-                    )))
-                })?;
+            validate_payload_against_schema::<ScryptoCustomExtension, _>(
+                &fields[i],
+                &schema.schema,
+                schema.substates[i],
+                self,
+            )
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                    CreateObjectError::InvalidSubstateWrite(err.error_message(&schema.schema)),
+                )))
+            })?;
         }
 
         let parent_blueprint = schema.outer_blueprint.clone();
@@ -281,7 +286,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         match type_info {
             TypeInfoSubstate::KeyValueStore(store_schema) => {
-                if let Err(e) = validate_payload_against_schema(
+                if let Err(e) = validate_payload_against_schema::<ScryptoCustomExtension, _>(
                     &buffer,
                     &store_schema.schema,
                     store_schema.value,
@@ -326,11 +331,11 @@ where
                         // Validate the substate against the schema
                         if let SubstateKey::Tuple(offset) = substate_key {
                             if let Some(index) = blueprint_schema.substates.get(offset as usize) {
-                                if let Err(e) = validate_payload_against_schema(
-                                    &buffer,
-                                    &blueprint_schema.schema,
-                                    *index,
-                                    self,
+                                if let Err(e) = validate_payload_against_schema::<
+                                    ScryptoCustomExtension,
+                                    _,
+                                >(
+                                    &buffer, &blueprint_schema.schema, *index, self
                                 ) {
                                     return Err(RuntimeError::SystemError(
                                         SystemError::InvalidSubstateWrite(
@@ -1462,7 +1467,7 @@ where
         }?;
 
         // Validating the event data against the event schema
-        validate_payload_against_schema(
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,

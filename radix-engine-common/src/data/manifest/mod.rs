@@ -2,11 +2,13 @@ use sbor::rust::vec::Vec;
 use sbor::traversal::VecTraverser;
 use sbor::*;
 
+mod custom_extension;
 mod custom_traversal;
 mod custom_value;
 mod custom_value_kind;
 
 pub mod model;
+pub use custom_extension::*;
 pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;

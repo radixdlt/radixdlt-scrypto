@@ -4,9 +4,9 @@ use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 use sbor::*;
 
-impl ValidatableCustomTypeExtension<()> for ScryptoCustomTypeExtension {
+impl ValidatableCustomExtension<()> for ScryptoCustomExtension {
     fn apply_custom_type_validation<'de>(
-        _: &Self::CustomTypeValidation,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
         _: &mut (),
     ) -> Result<(), ValidationError> {
