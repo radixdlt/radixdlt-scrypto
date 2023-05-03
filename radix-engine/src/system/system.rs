@@ -5,7 +5,7 @@ use crate::errors::{
     InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, InstanceContext};
+use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
@@ -729,7 +729,7 @@ where
                                     .kernel_get_system_state()
                                     .current
                                     .and_then(|a| match a {
-                                        Actor::Method { global_address, .. } => {
+                                        Actor::Method(MethodActor { global_address, .. }) => {
                                             global_address.clone()
                                         }
                                         _ => None,
@@ -1357,23 +1357,21 @@ where
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.clone().unwrap();
-        let (node_id, object_module_id, object_info) = match actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method {
-                node_id,
-                module_id,
-                object_info,
-                ..
-            } => (node_id.clone(), module_id.clone(), object_info.clone()),
-        };
+        let system_state = self.api.kernel_get_system_state();
+        let actor = system_state.current.unwrap();
+        let method_actor = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                && object_info
+            if !(method_actor
+                .object_info
+                .blueprint
+                .package_address
+                .eq(&RESOURCE_PACKAGE)
+                && method_actor
+                    .object_info
                     .blueprint
                     .blueprint_name
                     .eq(FUNGIBLE_VAULT_BLUEPRINT))
@@ -1382,24 +1380,26 @@ where
             }
         }
 
-        let schema = self.get_blueprint_schema(&object_info.blueprint)?;
+        let node_id = method_actor.node_id;
+        let base_module = method_actor.module_id.base_module();
+        let blueprint = method_actor.object_info.blueprint.clone();
+        let schema = self.get_blueprint_schema(&blueprint)?;
+
         let (module_number, field_type_index) =
             if let Some((offset, field_type_index)) = schema.field(field) {
-                let base_module = object_module_id.base_module();
                 let module_number = base_module
                     .at_offset(offset)
                     .expect("Module number overflow");
                 (module_number, field_type_index)
             } else {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    object_info.blueprint.clone(),
-                    field,
+                    blueprint, field,
                 )));
             };
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                schema: schema.schema,
+                schema: schema.schema.clone(),
                 index: field_type_index,
             }
         } else {
@@ -1463,12 +1463,10 @@ where
     #[trace_resources]
     fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
-        let object_info = match actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method { object_info, .. } => object_info.clone(),
-        };
+        let object_info = actor
+            .try_as_method()
+            .map(|m| m.object_info.clone())
+            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         Ok(object_info)
     }
@@ -1477,10 +1475,10 @@ where
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
         match actor {
-            Actor::Method {
-                global_address: Some(address),
-                ..
-            } => Ok(address.clone()),
+            Actor::Method(MethodActor {
+                              global_address: Some(address),
+                              ..
+                          }) => Ok(address.clone()),
             _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
             )),
@@ -1509,24 +1507,18 @@ impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
-        let (node_id, object_module_id, object_info) = match actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method {
-                node_id,
-                module_id,
-                object_info,
-                ..
-            } => (node_id.clone(), module_id.clone(), object_info.clone()),
-        };
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
 
+        let node_id = method.node_id;
+        let base_module = method.module_id.base_module();
+        let object_info = method.object_info.clone();
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
 
         let (module_number, kv_schema) = schema
             .key_value_store_module_offset(kv_handle)
             .map(|(module_offset, kv_schema)| {
-                let base_module = object_module_id.base_module();
                 let module_number = base_module
                     .at_offset(*module_offset)
                     .expect("Module number overflow");
@@ -1534,7 +1526,7 @@ impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y
             })
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    object_info.blueprint.clone(),
+                    object_info.blueprint,
                     kv_handle,
                 ))
             })?;
@@ -1669,9 +1661,9 @@ where
         let (blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
-                Actor::Method {
+                Actor::Method(MethodActor {
                     ref object_info, ..
-                } => Ok(object_info.blueprint.clone()),
+                }) => Ok(object_info.blueprint.clone()),
                 Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),
@@ -1700,9 +1692,9 @@ where
         // Construct the event type identifier based on the current actor
         let actor = self.api.kernel_get_system_state().current.unwrap();
         let event_type_identifier = match actor {
-            Actor::Method {
+            Actor::Method(MethodActor {
                 node_id, module_id, ..
-            } => Ok(EventTypeIdentifier(
+            }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 local_type_index,
             )),

@@ -1,6 +1,6 @@
 use super::*;
 use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
@@ -172,7 +172,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         let (blueprint, ident, optional_component) = {
             let blueprint = callee.blueprint();
             let (maybe_component, ident) = match &callee {
-                Actor::Method { node_id, ident, .. } => {
+                Actor::Method(MethodActor { node_id, ident, .. }) => {
                     if node_id.is_global_component() {
                         (
                             Some(ComponentAddress::new_or_panic(node_id.clone().into())),
