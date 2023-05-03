@@ -43,7 +43,6 @@ pub enum AuthError {
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub callee: Actor,
     pub authorization: MethodAuthorization,
 }
 
@@ -368,7 +367,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             )? {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                     AuthError::Unauthorized(Box::new(Unauthorized {
-                        callee: callee.clone(),
                         authorization,
                     })),
                 )));
