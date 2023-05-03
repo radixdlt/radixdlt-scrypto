@@ -242,7 +242,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -254,7 +254,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -266,7 +266,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -278,7 +278,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -292,7 +292,7 @@ fn build_access_rules(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -301,7 +301,7 @@ fn build_access_rules(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -313,7 +313,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -325,7 +325,7 @@ fn build_access_rules(
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
             ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,

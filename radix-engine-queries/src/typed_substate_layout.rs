@@ -205,15 +205,15 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalAccessController => TypedObjectModuleSubstateKey::AccessController(
             AccessControllerOffset::try_from(substate_key)?,
         ),
-        EntityType::GlobalVirtualEcdsaAccount
-        | EntityType::GlobalVirtualEddsaAccount
+        EntityType::GlobalVirtualSecp256k1Account
+        | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
             let key = substate_key.for_map().ok_or(())?;
             TypedObjectModuleSubstateKey::Account(key.clone())
         }
-        EntityType::GlobalVirtualEcdsaIdentity
-        | EntityType::GlobalVirtualEddsaIdentity
+        EntityType::GlobalVirtualSecp256k1Identity
+        | EntityType::GlobalVirtualEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
         EntityType::InternalFungibleVault => TypedObjectModuleSubstateKey::FungibleVault(
             FungibleVaultOffset::try_from(substate_key)?,

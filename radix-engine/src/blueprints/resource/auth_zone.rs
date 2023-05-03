@@ -97,7 +97,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 OBJECT_BASE_MODULE => composed_proof.into(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, blueprint_name),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
                     instance_schema: None,
@@ -136,7 +136,7 @@ impl AuthZoneBlueprint {
                     btreemap!(
                 OBJECT_BASE_MODULE => composed_proof.into(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
                     instance_schema: None,
@@ -150,11 +150,12 @@ impl AuthZoneBlueprint {
                     btreemap!(
                 OBJECT_BASE_MODULE => composed_proof.into(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
                     instance_schema: None,
-                })).to_substates()))?;
+                })).to_substates()),
+                )?;
             }
         }
 
@@ -187,7 +188,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 OBJECT_BASE_MODULE => composed_proof.into(),
                 TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
                     instance_schema: None,

@@ -911,6 +911,7 @@ name = "radix-engine-interface"
 version = "0.10.0"
 dependencies = [
  "bitflags",
+ "const-sha1",
  "hex",
  "lazy_static",
  "radix-engine-common",
@@ -1518,7 +1519,6 @@ name = "utils"
 version = "0.10.0"
 dependencies = [
  "indexmap 2.0.0-pre",
- "serde",
 ]
 
 [[package]]

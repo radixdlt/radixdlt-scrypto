@@ -110,7 +110,7 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = PACKAGE_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
 fn globalize_package<Y>(
@@ -303,7 +303,7 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string(),
                 PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             ),
-            rule!(require(SYSTEM_TOKEN)),
+            rule!(require(SYSTEM_TRANSACTION_BADGE)),
         );
         access_rules
     }

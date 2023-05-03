@@ -184,7 +184,7 @@ struct SecurifiedIdentity;
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = IDENTITY_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {
@@ -229,7 +229,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_TOKEN,
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
@@ -245,7 +245,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_TOKEN,
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
             NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
         );
         let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;

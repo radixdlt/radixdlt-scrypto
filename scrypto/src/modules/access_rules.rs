@@ -11,7 +11,7 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
 };
-use radix_engine_interface::constants::ACCESS_RULES_PACKAGE;
+use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
@@ -25,7 +25,7 @@ impl AccessRules {
     pub fn new(access_rules: AccessRulesConfig) -> Self {
         let rtn = ScryptoEnv
             .call_function(
-                ACCESS_RULES_PACKAGE,
+                ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
                 scrypto_encode(&AccessRulesCreateInput {
