@@ -828,7 +828,6 @@ where
                     }
 
                     TypeInfoSubstate::KeyValueStore(..)
-                    | TypeInfoSubstate::SortedIndex
                     => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
@@ -904,8 +903,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..)
-            | TypeInfoSubstate::SortedIndex => {
+            TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -1062,8 +1060,7 @@ where
     ) -> Result<KeyValueStoreInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. }
-            | TypeInfoSubstate::SortedIndex => {
+            TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -1086,7 +1083,6 @@ where
 
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
-            TypeInfoSubstate::SortedIndex
             | TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }

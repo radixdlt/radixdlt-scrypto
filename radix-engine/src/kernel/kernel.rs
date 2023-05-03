@@ -99,8 +99,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::SortedIndex => {
+                TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -428,7 +427,7 @@ where
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+            let resource_address = ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
                 .heap
@@ -454,7 +453,7 @@ where
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+            let resource_address = ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
                 .heap

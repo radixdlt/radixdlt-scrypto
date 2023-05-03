@@ -118,7 +118,6 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 }
             }
-            TypeInfoSubstate::SortedIndex => {}
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
                 outer_object,
