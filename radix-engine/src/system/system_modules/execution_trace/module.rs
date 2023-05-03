@@ -308,7 +308,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
         let system_state = api.kernel_get_system_state();
-        system_state.system
+        system_state
+            .system
             .modules
             .execution_trace
             .handle_after_create_node(system_state.current, current_depth, resource_summary);
@@ -364,11 +365,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
         let system_state = api.kernel_get_system_state();
 
-        let caller = system_state.caller
+        let caller = system_state
+            .caller
             .map(|a| TraceActor::from_actor(a))
             .unwrap_or(TraceActor::NonMethod);
 
-        system_state.system.modules.execution_trace
+        system_state
+            .system
+            .modules
+            .execution_trace
             .handle_on_execution_finish(
                 system_state.current,
                 current_depth,
@@ -661,7 +666,6 @@ impl ExecutionTraceModule {
         actor: &TraceActor,
         vault_id: &NodeId,
     ) {
-
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),

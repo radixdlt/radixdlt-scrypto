@@ -205,29 +205,50 @@ where
         &mut self,
         blueprint: &Blueprint,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
-        let handle = self.api.kernel_lock_substate(
-            blueprint.package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Info.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
-        )?;
-        let package: PackageInfoSubstate =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let schema = package
-            .schema
-            .blueprints
-            .get(blueprint.blueprint_name.as_str())
-            .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                Box::new(CreateObjectError::BlueprintNotFound(
-                    blueprint.blueprint_name.to_string(),
-                )),
-            )))?
-            .clone();
+        let schema = self
+            .api
+            .kernel_get_system_state()
+            .system
+            .blueprint_schema_cache
+            .get(blueprint);
+        if let Some(schema) = schema {
+            return Ok(schema.clone());
+        } else {
+            let handle = self.api.kernel_lock_substate(
+                blueprint.package_address.as_node_id(),
+                OBJECT_BASE_MODULE,
+                &PackageOffset::Info.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
 
-        self.api.kernel_drop_lock(handle)?;
-
-        Ok(schema)
+            // TODO: We really need to split up PackageInfo into multiple substates
+            let mut package: PackageInfoSubstate =
+                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let schema = package
+                .schema
+                .blueprints
+                .remove(blueprint.blueprint_name.as_str())
+                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::BlueprintNotFound(
+                        blueprint.blueprint_name.to_string(),
+                    )),
+                )))?;
+            self.api
+                .kernel_get_system_state()
+                .system
+                .blueprint_schema_cache
+                .insert(blueprint.clone(), schema);
+            self.api.kernel_drop_lock(handle)?;
+            let schema = self
+                .api
+                .kernel_get_system_state()
+                .system
+                .blueprint_schema_cache
+                .get(blueprint)
+                .unwrap();
+            Ok(schema.clone())
+        }
     }
 
     fn verify_instance_schema_and_state(
@@ -683,12 +704,16 @@ where
                             let (visibility, on_heap) =
                                 self.api.kernel_get_node_info(receiver).unwrap();
                             match (visibility, on_heap) {
-                                (RefType::Normal, false) => {
-                                    self.api.kernel_get_system_state().current.and_then(|a| match a {
-                                        Actor::Method { global_address, .. } => global_address.clone(),
+                                (RefType::Normal, false) => self
+                                    .api
+                                    .kernel_get_system_state()
+                                    .current
+                                    .and_then(|a| match a {
+                                        Actor::Method { global_address, .. } => {
+                                            global_address.clone()
+                                        }
                                         _ => None,
-                                    })
-                                }
+                                    }),
                                 _ => None,
                             }
                         };

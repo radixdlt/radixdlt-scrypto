@@ -189,6 +189,7 @@ where
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemConfig {
+            blueprint_schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },

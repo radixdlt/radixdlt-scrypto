@@ -130,6 +130,9 @@ impl SystemLockData {
 
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
+    // TODO: We should be able to make this a more generic cache for
+    // TODO: immutable substates
+    pub blueprint_schema_cache: NonIterMap<Blueprint, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 
@@ -456,10 +459,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(
-        update: &CallFrameUpdate,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {

@@ -1269,6 +1269,7 @@ impl TestRunner {
         };
 
         let mut system = SystemConfig {
+            blueprint_schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: &scrypto_interpreter,
             },

@@ -54,9 +54,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_execution_start<Y: KernelApi<M>>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 

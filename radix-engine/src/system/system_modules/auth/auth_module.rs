@@ -366,9 +366,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 &mut system,
             )? {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        authorization,
-                    })),
+                    AuthError::Unauthorized(Box::new(Unauthorized { authorization })),
                 )));
             }
         }
@@ -376,9 +374,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_system_state().current;
 
         // Add Global Object and Package Actor Auth
