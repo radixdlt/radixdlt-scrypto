@@ -40,8 +40,6 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
-pub type SecondaryIndexSubstate = Own;
-
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
@@ -89,11 +87,6 @@ impl EpochManagerBlueprint {
             )?;
         };
 
-        let registered_validators = {
-            let sorted_validators = api.new_sorted_index()?;
-            Own(sorted_validators)
-        };
-
         let epoch_manager_id = {
             let config = EpochManagerConfigSubstate {
                 max_validators,
@@ -114,7 +107,6 @@ impl EpochManagerBlueprint {
                     scrypto_encode(&config).unwrap(),
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
-                    scrypto_encode(&registered_validators).unwrap(),
                 ],
             )?
         };
@@ -278,80 +270,12 @@ impl EpochManagerBlueprint {
         Ok((validator_address, owner_token_bucket))
     }
 
-    pub(crate) fn update_validator<Y>(
-        secondary_index: &NodeId,
-        update: UpdateSecondaryIndex,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        match update {
-            UpdateSecondaryIndex::Create {
-                index_key,
-                primary: address,
-                key,
-                stake,
-            } => {
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    index_key,
-                    (address, Validator { key, stake }),
-                )?;
-            }
-            UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) = api
-                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index,
-                        &index_key,
-                    )?
-                    .unwrap();
-                validator.key = key;
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    index_key,
-                    (address, validator),
-                )?;
-            }
-            UpdateSecondaryIndex::UpdateStake {
-                index_key,
-                new_index_key,
-                new_stake_amount,
-            } => {
-                let (address, mut validator) = api
-                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index,
-                        &index_key,
-                    )?
-                    .unwrap();
-                validator.stake = new_stake_amount;
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    new_index_key,
-                    (address, validator),
-                )?;
-            }
-            UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted_index(secondary_index, &index_key)?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn epoch_change<Y>(epoch: u64, max_validators: u32, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            EpochManagerOffset::RegisteredValidators.into(),
-            LockFlags::MUTABLE,
-        )?;
-
-        let secondary_index: SecondaryIndexSubstate = api.field_lock_read_typed(handle)?;
-
         let validators: Vec<(ComponentAddress, Validator)> =
-            api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
+            api.actor_sorted_index_scan_typed(0u8, max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 

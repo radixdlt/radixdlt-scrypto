@@ -11,7 +11,7 @@ pub mod object_api;
 pub mod sorted_index_api;
 
 // Re-exports
-pub use crate::api::sorted_index_api::ClientSortedIndexApi;
+pub use crate::api::sorted_index_api::ClientActorSortedIndexApi;
 pub use actor_api::{ClientActorApi, ClientActorKeyValueEntryApi};
 pub use blueprint_api::ClientBlueprintApi;
 pub use field_lock_api::ClientFieldLockApi;
@@ -37,7 +37,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientObjectApi<E>
     + ClientKeyValueStoreApi<E>
     + ClientKeyValueEntryApi<E>
-    + ClientSortedIndexApi<E>
+    + ClientActorSortedIndexApi<E>
     + ClientActorIndexApi<E>
     + ClientFieldLockApi<E>
     + ClientBlueprintApi<E>

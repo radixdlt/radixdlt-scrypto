@@ -237,6 +237,13 @@ impl IndexedBlueprintSchema {
         self.index_modules.get(index_handle as usize)
     }
 
+    pub fn sorted_index_module_offset(
+        &self,
+        handle: u8,
+    ) -> Option<&(u8, BlueprintSortedIndexSchema)> {
+        self.sorted_index_modules.get(handle as usize)
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {

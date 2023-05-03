@@ -197,7 +197,16 @@ fn to_typed_object_substate_key_internal(
             }
         }
         EntityType::GlobalEpochManager => {
-            TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
+            let module_offset = EpochManagerModuleOffset::try_from(module_offset)?;
+            match module_offset {
+                EpochManagerModuleOffset::EpochManager => {
+                    TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
+                }
+                EpochManagerModuleOffset::SecondaryIndex => {
+                    let key = substate_key.for_sorted().ok_or(())?;
+                    TypedObjectModuleSubstateKey::GenericSortedU16Index(key.clone())
+                }
+            }
         }
         EntityType::GlobalValidator => {
             TypedObjectModuleSubstateKey::Validator(ValidatorOffset::try_from(substate_key)?)
@@ -376,7 +385,6 @@ pub enum TypedEpochManagerSubstateValue {
     Config(EpochManagerConfigSubstate),
     EpochManager(EpochManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
-    RegisteredValidatorSet(SecondaryIndexSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -533,9 +541,6 @@ fn to_typed_object_substate_value(
                 }
                 EpochManagerOffset::CurrentValidatorSet => {
                     TypedEpochManagerSubstateValue::CurrentValidatorSet(scrypto_decode(data)?)
-                }
-                EpochManagerOffset::RegisteredValidators => {
-                    TypedEpochManagerSubstateValue::RegisteredValidatorSet(scrypto_decode(data)?)
                 }
             })
         }

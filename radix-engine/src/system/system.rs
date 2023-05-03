@@ -455,6 +455,63 @@ where
 
         Ok((node_id, module_number))
     }
+
+    fn get_actor_sorted_index(&mut self, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let node_id = method.node_id;
+        let blueprint = method.object_info.blueprint.clone();
+        let object_module_id = method.module_id;
+        let schema = self.get_blueprint_schema(&blueprint)?;
+
+        let module_number = schema
+            .sorted_index_module_offset(index_handle)
+            .map(|(module_offset, _)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    blueprint,
+                    index_handle,
+                ))
+            })?;
+
+        Ok((node_id, module_number))
+    }
+
+    fn get_outer_object_sorted_index(&mut self, handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+
+        let address = method.object_info.outer_object.unwrap();
+        let info = self.get_object_info(address.as_node_id())?;
+        let schema = self.get_blueprint_schema(&info.blueprint)?;
+
+        let module_number = schema
+            .sorted_index_module_offset(handle)
+            .map(|(module_offset, _)| {
+                let module_number = OBJECT_BASE_MODULE
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    info.blueprint,
+                    handle,
+                ))
+            })?;
+
+        Ok((address.into_node_id(), module_number))
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1142,43 +1199,19 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_sorted_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedIndex;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::SortedIndex
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id)
-    }
-
-    #[trace_resources]
-    fn insert_into_sorted_index(
+    fn actor_outer_object_sorted_index_insert(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
+        let (node_id, module_number) = self.get_outer_object_sorted_index(handle)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1191,30 +1224,45 @@ where
         }
 
         self.api.kernel_set_substate(
-            node_id,
-            OBJECT_BASE_MODULE,
+            &node_id,
+            module_number,
             SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
             value,
         )
     }
 
+
     #[trace_resources]
-    fn scan_sorted_index(
+    fn actor_outer_object_sorted_index_remove(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
+        sorted_key: &SortedKey,
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let (node_id, module_number) = self.get_outer_object_sorted_index(handle)?;
+
+        let rtn = self
+            .api
+            .kernel_remove_substate(
+                &node_id,
+                module_number,
+                &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
+            )?
+            .map(|v| v.into());
+
+        Ok(rtn)
+    }
+
+    #[trace_resources]
+    fn actor_sorted_index_scan(
+        &mut self,
+        handle: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
+        let (node_id, module_number) = self.get_actor_sorted_index(handle)?;
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(node_id, OBJECT_BASE_MODULE, count)?
+            .kernel_scan_sorted_substates(&node_id, module_number, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1222,31 +1270,6 @@ where
         Ok(substates)
     }
 
-    #[trace_resources]
-    fn remove_from_sorted_index(
-        &mut self,
-        node_id: &NodeId,
-        sorted_key: &SortedKey,
-    ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
-
-        let rtn = self
-            .api
-            .kernel_remove_substate(
-                node_id,
-                OBJECT_BASE_MODULE,
-                &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
-            )?
-            .map(|v| v.into());
-
-        Ok(rtn)
-    }
 }
 
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>

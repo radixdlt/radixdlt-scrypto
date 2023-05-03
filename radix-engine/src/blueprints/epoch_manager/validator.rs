@@ -1,6 +1,4 @@
-use crate::blueprints::epoch_manager::{
-    EpochManagerBlueprint, EpochManagerConfigSubstate, EpochManagerSubstate,
-};
+use crate::blueprints::epoch_manager::{EpochManagerConfigSubstate, EpochManagerSubstate, Validator};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -264,13 +262,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let registered_handle = api.actor_lock_outer_object_field(
-                EpochManagerOffset::RegisteredValidators.into(),
-                LockFlags::read_only(),
-            )?;
-            let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
-
-            EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
+            Self::update_validator(update, api)?;
         }
 
         Ok(new_sorted_key)
@@ -346,13 +338,7 @@ impl ValidatorBlueprint {
                     key,
                 };
 
-                let registered_handle = api.actor_lock_outer_object_field(
-                    EpochManagerOffset::RegisteredValidators.into(),
-                    LockFlags::read_only(),
-                )?;
-                let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
-
-                EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
+                Self::update_validator(update, api)?;
             }
         }
 
@@ -417,6 +403,66 @@ impl ValidatorBlueprint {
                 scrypto_encode(&address).unwrap(),
             ))
         }
+    }
+
+    pub(crate) fn update_validator<Y>(
+        update: UpdateSecondaryIndex,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: ClientApi<RuntimeError>,
+    {
+        match update {
+            UpdateSecondaryIndex::Create {
+                index_key,
+                primary: address,
+                key,
+                stake,
+            } => {
+                api.actor_outer_object_sorted_index_insert_typed(
+                    0u8,
+                    index_key,
+                    (address, Validator { key, stake }),
+                )?;
+            }
+            UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
+                let (address, mut validator) = api
+                    .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                        0u8,
+                        &index_key,
+                    )?
+                    .unwrap();
+                validator.key = key;
+                api.actor_outer_object_sorted_index_insert_typed(
+                    0u8,
+                    index_key,
+                    (address, validator),
+                )?;
+            }
+            UpdateSecondaryIndex::UpdateStake {
+                index_key,
+                new_index_key,
+                new_stake_amount,
+            } => {
+                let (address, mut validator) = api
+                    .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                        0u8,
+                        &index_key,
+                    )?
+                    .unwrap();
+                validator.stake = new_stake_amount;
+                api.actor_outer_object_sorted_index_insert_typed(
+                    0u8,
+                    new_index_key,
+                    (address, validator),
+                )?;
+            }
+            UpdateSecondaryIndex::Remove { index_key } => {
+                api.actor_outer_object_sorted_index_remove(0u8, &index_key)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -556,4 +602,5 @@ impl ValidatorCreator {
         )?;
         Ok((address.into(), owner_token_bucket))
     }
+
 }

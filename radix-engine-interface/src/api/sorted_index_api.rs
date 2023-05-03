@@ -1,7 +1,6 @@
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
@@ -24,58 +23,55 @@ impl Into<Vec<u8>> for SortedKey {
 }
 
 // TODO: Add locked entry interface
-pub trait ClientSortedIndexApi<E> {
-    /// Creates a new sorted index
-    fn new_sorted_index(&mut self) -> Result<NodeId, E>;
-
+pub trait ClientActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
-    fn insert_into_sorted_index(
+    fn actor_outer_object_sorted_index_insert(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
 
     /// Inserts an entry into a sorted index
-    fn insert_typed_into_sorted_index<V: ScryptoEncode>(
+    fn actor_outer_object_sorted_index_insert_typed<V: ScryptoEncode>(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         sorted_key: SortedKey,
         value: V,
     ) -> Result<(), E> {
-        self.insert_into_sorted_index(node_id, sorted_key, scrypto_encode(&value).unwrap())
+        self.actor_outer_object_sorted_index_insert(handle, sorted_key, scrypto_encode(&value).unwrap())
     }
 
     /// Removes an entry from a sorted index
-    fn remove_from_sorted_index(
+    fn actor_outer_object_sorted_index_remove(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, E>;
 
     /// Removes an entry from a sorted index
-    fn remove_typed_from_sorted_index<V: ScryptoDecode>(
+    fn actor_outer_object_sorted_index_remove_typed<V: ScryptoDecode>(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         sorted_key: &SortedKey,
     ) -> Result<Option<V>, E> {
         let rtn = self
-            .remove_from_sorted_index(node_id, sorted_key)?
+            .actor_outer_object_sorted_index_remove(handle, sorted_key)?
             .map(|e| scrypto_decode(&e).unwrap());
         Ok(rtn)
     }
 
     /// Scans the first elements of count from a sorted index
-    fn scan_sorted_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, E>;
+    fn actor_sorted_index_scan(&mut self, handle: u8, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     /// Scans the first elements of count from a sorted index
-    fn scap_typed_sorted_index<S: ScryptoDecode>(
+    fn actor_sorted_index_scan_typed<S: ScryptoDecode>(
         &mut self,
-        node_id: &NodeId,
+        handle: u8,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .scan_sorted_index(node_id, count)?
+            .actor_sorted_index_scan(handle, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();

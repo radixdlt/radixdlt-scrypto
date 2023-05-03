@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, Receiver};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
@@ -23,7 +23,9 @@ impl EpochManagerNativePackage {
         fields.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
+
+        let mut sorted_indices = Vec::new();
+        sorted_indices.push(BlueprintSortedIndexSchema {});
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -100,7 +102,7 @@ impl EpochManagerNativePackage {
             fields,
             kv_stores: vec![],
             indices: vec![],
-            sorted_indices: vec![],
+            sorted_indices,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,

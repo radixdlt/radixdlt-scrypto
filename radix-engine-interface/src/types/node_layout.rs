@@ -108,11 +108,25 @@ pub enum NonFungibleVaultOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum EpochManagerModuleOffset {
+    EpochManager,
+    SecondaryIndex,
+}
+
+impl TryFrom<u8> for EpochManagerModuleOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum EpochManagerOffset {
     Config,
     EpochManager,
     CurrentValidatorSet,
-    RegisteredValidators,
 }
 
 #[repr(u8)]
