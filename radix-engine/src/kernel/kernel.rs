@@ -100,7 +100,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     }
                 }
                 TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::Index
                 | TypeInfoSubstate::SortedIndex => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
