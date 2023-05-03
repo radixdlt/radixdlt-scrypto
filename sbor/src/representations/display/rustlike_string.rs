@@ -551,7 +551,7 @@ mod tests {
     #[test]
     fn complex_value_formatting() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomSchema>();
         let value = MyComplexTupleStruct(
             vec![1, 2, 3],
             vec![],

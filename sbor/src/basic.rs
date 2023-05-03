@@ -149,15 +149,15 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
 }
 
 lazy_static::lazy_static! {
-    static ref EMPTY_SCHEMA: Schema<NoCustomTypeSchema> = {
+    static ref EMPTY_SCHEMA: Schema<NoCustomSchema> = {
         Schema::empty()
     };
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum NoCustomTypeSchema {}
+pub enum NoCustomSchema {}
 
-impl CustomSchema for NoCustomTypeSchema {
+impl CustomSchema for NoCustomSchema {
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
     type CustomTypeValidation = NoCustomTypeValidation;
 
@@ -217,7 +217,7 @@ impl CustomExtension for NoCustomExtension {
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
     type CustomValueKind = NoCustomValueKind;
     type CustomTraversal = NoCustomTraversal;
-    type CustomSchema = NoCustomTypeSchema;
+    type CustomSchema = NoCustomSchema;
 
     fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
         _: Self::CustomValueKind,
@@ -239,7 +239,7 @@ pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomExtension>;
 pub type BasicRawValue<'a> = RawValue<'a, NoCustomExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
-pub type BasicSchema = Schema<NoCustomTypeSchema>;
+pub type BasicSchema = Schema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 
 impl<'a> CustomDisplayContext<'a> for () {

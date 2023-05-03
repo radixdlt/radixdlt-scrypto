@@ -295,7 +295,7 @@ mod tests {
     #[test]
     pub fn identical_length_vec_and_array_are_interchangeable() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomSchema>();
         let payload = basic_encode(&TestStructVec {
             x: Vec::from([0; 16]),
         })
@@ -313,7 +313,7 @@ mod tests {
     #[test]
     pub fn longer_length_vec_is_not_interchangeable_with_array() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<TestStructArray, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<TestStructArray, NoCustomSchema>();
         let payload = basic_encode(&TestStructVec {
             x: Vec::from([0; 17]),
         })
@@ -401,7 +401,7 @@ mod tests {
 
         let bytes = basic_encode(&x).unwrap();
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<SimpleStruct, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<SimpleStruct, NoCustomSchema>();
         let result = validate_payload_against_schema::<NoCustomExtension, _>(
             &bytes,
             &schema,
@@ -530,7 +530,7 @@ mod tests {
         let cut_off_payload = &payload[0..payload.len() - 2];
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<MyStruct, NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &cut_off_payload,
@@ -566,7 +566,7 @@ mod tests {
         let payload = basic_encode(&value).unwrap();
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct2, NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<MyStruct2, NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
@@ -598,7 +598,7 @@ mod tests {
         let payload = basic_encode(&value).unwrap();
 
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<(MyEnum,), NoCustomTypeSchema>();
+            generate_full_schema_from_single_type::<(MyEnum,), NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
