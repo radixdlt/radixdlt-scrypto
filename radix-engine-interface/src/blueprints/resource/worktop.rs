@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
-use crate::constants::RESOURCE_MANAGER_PACKAGE;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -30,10 +30,7 @@ impl Describe<ScryptoCustomTypeKind> for OwnedWorktop {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedWorktop"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(
-                    RESOURCE_MANAGER_PACKAGE,
-                    WORKTOP_BLUEPRINT.to_string(),
-                ),
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, WORKTOP_BLUEPRINT.to_string()),
             )),
         })
     }

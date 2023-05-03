@@ -1,5 +1,5 @@
 use crate::blueprints::package::PackageCodeTypeSubstate;
-use crate::errors::{RuntimeError, VmError};
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
