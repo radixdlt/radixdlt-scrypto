@@ -16,7 +16,7 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
             .lock_fee(account, 10u32.into())
             .take_from_worktop_by_amount(Decimal::ZERO, RADIX_TOKEN, |builder, bucket| {
                 builder.call_function(
-                    RESOURCE_MANAGER_PACKAGE,
+                    RESOURCE_PACKAGE,
                     WORKTOP_BLUEPRINT,
                     WORKTOP_DROP_IDENT,
                     manifest_args!(bucket),
