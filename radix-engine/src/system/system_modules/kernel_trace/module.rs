@@ -52,7 +52,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);

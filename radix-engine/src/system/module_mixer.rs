@@ -331,36 +331,35 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_execution_finish(api, caller, update)?;
+            KernelTraceModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_execution_finish(api, caller, update)?;
+            CostingModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_execution_finish(api, caller, update)?;
+            NodeMoveModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_execution_finish(api, caller, update)?;
+            AuthModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_execution_finish(api, caller, update)?;
+            LoggerModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_execution_finish(api, caller, update)?;
+            TransactionRuntimeModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_execution_finish(api, caller, update)?;
+            ExecutionTraceModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_execution_finish(api, caller, update)?;
+            TransactionLimitsModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_execution_finish(api, caller, update)?;
+            EventsModule::on_execution_finish(api, update)?;
         }
         Ok(())
     }

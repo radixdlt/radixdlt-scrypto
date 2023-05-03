@@ -164,7 +164,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {

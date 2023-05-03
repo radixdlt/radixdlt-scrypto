@@ -112,7 +112,6 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

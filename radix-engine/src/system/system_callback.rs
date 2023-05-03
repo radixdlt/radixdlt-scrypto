@@ -457,14 +457,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_finish(api, caller, update)
+        SystemModuleMixer::on_execution_finish(api, update)
     }
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>

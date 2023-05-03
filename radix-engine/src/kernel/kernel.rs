@@ -156,15 +156,13 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let caller = Box::new(self.current_frame.actor.clone());
-
         let mut call_frame_update = invocation.get_update();
         let sys_invocation = invocation.sys_invocation;
-        let actor = &invocation.resolved_actor;
+        let actor = invocation.resolved_actor;
         let args = &invocation.args;
 
         // Before push call frame
-        M::before_push_frame(actor, &mut call_frame_update, &args, self)?;
+        M::before_push_frame(&actor, &mut call_frame_update, &args, self)?;
 
         // Push call frame
         {
@@ -172,7 +170,7 @@ where
 
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor.clone(),
+                actor,
                 call_frame_update.clone(),
             )
             .map_err(CallFrameError::MoveError)
@@ -201,7 +199,7 @@ where
             };
 
             // Handle execution finish
-            M::on_execution_finish(&caller, &mut update, self)?;
+            M::on_execution_finish(&mut update, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame

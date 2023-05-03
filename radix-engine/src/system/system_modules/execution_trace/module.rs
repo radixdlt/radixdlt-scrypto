@@ -355,17 +355,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let caller = caller.as_ref()
-            .map(|a| TraceActor::from_actor(a))
-            .unwrap_or(TraceActor::NonMethod);
-
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
 
-        let (system, _caller, current_actor) = api.kernel_get_system_state();
+        let (system, caller, current_actor) = api.kernel_get_system_state();
+
+        let caller = caller
+            .map(|a| TraceActor::from_actor(a))
+            .unwrap_or(TraceActor::NonMethod);
+
         system.modules.execution_trace
             .handle_on_execution_finish(
                 current_actor,

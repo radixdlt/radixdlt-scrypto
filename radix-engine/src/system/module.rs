@@ -63,7 +63,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _caller: &Option<Actor>,
         _up_movement: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
