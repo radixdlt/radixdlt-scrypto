@@ -48,6 +48,11 @@ pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObj
     pub phantom: PhantomData<V>,
 }
 
+enum ActorObjectType {
+    SELF,
+    OuterObject,
+}
+
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -427,20 +432,34 @@ where
         Ok(current_value)
     }
 
-    fn get_actor_index(&mut self, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
+    fn get_actor_schema(&mut self, actor_object_type: ActorObjectType) -> Result<(NodeId, ModuleNumber, Blueprint, IndexedBlueprintSchema), RuntimeError>{
         let actor = self.api.kernel_get_system_state().current.unwrap();
         let method = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
-        let node_id = method.node_id;
-        let blueprint = method.object_info.blueprint.clone();
-        let object_module_id = method.module_id;
-        let schema = self.get_blueprint_schema(&blueprint)?;
+        match actor_object_type {
+            ActorObjectType::OuterObject => {
+                let address = method.object_info.outer_object.unwrap();
+                let info = self.get_object_info(address.as_node_id())?;
+                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                Ok((address.into_node_id(), OBJECT_BASE_MODULE, info.blueprint, schema))
+            }
+            ActorObjectType::SELF => {
+                let node_id = method.node_id;
+                let blueprint = method.object_info.blueprint.clone();
+                let object_module_id = method.module_id;
+                let schema = self.get_blueprint_schema(&blueprint)?;
+                Ok((node_id, object_module_id.base_module(), blueprint, schema))
+            }
+        }
+    }
+
+    fn get_actor_index(&mut self, actor_object_type: ActorObjectType, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
+        let (node_id, base_module, blueprint, schema) = self.get_actor_schema(actor_object_type)?;
 
         let module_number = schema
             .index_module_offset(index_handle)
             .map(|(module_offset, _)| {
-                let base_module = object_module_id.base_module();
                 let module_number = base_module
                     .at_offset(*module_offset)
                     .expect("Module number overflow");
@@ -456,20 +475,12 @@ where
         Ok((node_id, module_number))
     }
 
-    fn get_actor_sorted_index(&mut self, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let method = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
-        let node_id = method.node_id;
-        let blueprint = method.object_info.blueprint.clone();
-        let object_module_id = method.module_id;
-        let schema = self.get_blueprint_schema(&blueprint)?;
+    fn get_actor_sorted_index(&mut self, actor_object_type: ActorObjectType, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
+        let (node_id, base_module, blueprint, schema) = self.get_actor_schema(actor_object_type)?;
 
         let module_number = schema
             .sorted_index_module_offset(index_handle)
             .map(|(module_offset, _)| {
-                let base_module = object_module_id.base_module();
                 let module_number = base_module
                     .at_offset(*module_offset)
                     .expect("Module number overflow");
@@ -483,34 +494,6 @@ where
             })?;
 
         Ok((node_id, module_number))
-    }
-
-    fn get_outer_object_sorted_index(&mut self, handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let method = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
-
-        let address = method.object_info.outer_object.unwrap();
-        let info = self.get_object_info(address.as_node_id())?;
-        let schema = self.get_blueprint_schema(&info.blueprint)?;
-
-        let module_number = schema
-            .sorted_index_module_offset(handle)
-            .map(|(module_offset, _)| {
-                let module_number = OBJECT_BASE_MODULE
-                    .at_offset(*module_offset)
-                    .expect("Module number overflow");
-                module_number
-            })
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    info.blueprint,
-                    handle,
-                ))
-            })?;
-
-        Ok((address.into_node_id(), module_number))
     }
 }
 
@@ -1137,7 +1120,7 @@ where
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(index_handle)?;
+        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1158,7 +1141,7 @@ where
         index_handle: u8,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(index_handle)?;
+        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let rtn = self
             .api
@@ -1169,7 +1152,7 @@ where
     }
 
     fn actor_index_scan(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(index_handle)?;
+        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let substates = self
             .api
@@ -1182,7 +1165,7 @@ where
     }
 
     fn actor_index_take(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(index_handle)?;
+        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let substates = self
             .api
@@ -1207,7 +1190,7 @@ where
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let (node_id, module_number) = self.get_outer_object_sorted_index(handle)?;
+        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1234,7 +1217,7 @@ where
         handle: u8,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_outer_object_sorted_index(handle)?;
+        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
 
         let rtn = self
             .api
@@ -1254,7 +1237,7 @@ where
         handle: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_sorted_index(handle)?;
+        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::SELF, handle)?;
 
         let substates = self
             .api
