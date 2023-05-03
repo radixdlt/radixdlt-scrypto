@@ -458,10 +458,9 @@ pub fn build_describe_generics<'a>(
         };
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types = get_types_requiring_categorize_bound(&attributes, &child_types)?;
 
     let mut where_clause = where_clause.cloned();
-    if child_types.len() > 0 || categorize_types.len() > 0 {
+    if child_types.len() > 0 {
         let mut new_where_clause = where_clause.unwrap_or(WhereClause {
             where_token: Default::default(),
             predicates: Default::default(),
@@ -470,13 +469,6 @@ pub fn build_describe_generics<'a>(
             new_where_clause
                 .predicates
                 .push(parse_quote!(#child_type: ::sbor::Describe<#custom_type_kind_generic>));
-        }
-        for categorize_type in categorize_types {
-            new_where_clause
-                .predicates
-                .push(parse_quote!(#categorize_type: ::sbor::Categorize<<
-                    #custom_type_kind_generic as::sbor::CustomTypeKind<::sbor::GlobalTypeId>
-                >::CustomValueKind>));
         }
         where_clause = Some(new_where_clause);
     }

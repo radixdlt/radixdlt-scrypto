@@ -171,26 +171,22 @@ pub enum TypedTraversalError<E: CustomTypeExtension> {
 pub enum TypeMismatchError<E: CustomTypeExtension> {
     MismatchingType {
         expected_type_index: LocalTypeIndex,
-        expected_type_kind:
-            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        expected_type_kind: TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildElementType {
         expected_type_index: LocalTypeIndex,
-        expected_type_kind:
-            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        expected_type_kind: TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildKeyType {
         expected_type_index: LocalTypeIndex,
-        expected_type_kind:
-            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        expected_type_kind: TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildValueType {
         expected_type_index: LocalTypeIndex,
-        expected_type_kind:
-            TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
+        expected_type_kind: TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingTupleLength {

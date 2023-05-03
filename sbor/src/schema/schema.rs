@@ -14,11 +14,8 @@ pub struct Schema<E: CustomTypeExtension> {
     pub type_validations: Vec<TypeValidation<E::CustomTypeValidation>>,
 }
 
-pub type SchemaTypeKind<E> = TypeKind<
-    <E as CustomTypeExtension>::CustomValueKind,
-    <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>,
-    LocalTypeIndex,
->;
+pub type SchemaTypeKind<E> =
+    TypeKind<<E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>;
 
 impl<E: CustomTypeExtension> Schema<E> {
     pub fn empty() -> Self {
@@ -32,8 +29,7 @@ impl<E: CustomTypeExtension> Schema<E> {
     pub fn resolve_type_kind(
         &self,
         type_index: LocalTypeIndex,
-    ) -> Option<&TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>
-    {
+    ) -> Option<&TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
         match type_index {
             LocalTypeIndex::WellKnown(index) => {
                 E::resolve_well_known_type(index).map(|data| &data.kind)

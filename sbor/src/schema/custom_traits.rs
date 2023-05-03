@@ -3,7 +3,6 @@ use crate::traversal::*;
 use crate::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
-    type CustomValueKind: CustomValueKind;
     type CustomTypeValidation: CustomTypeValidation;
 }
 
@@ -16,7 +15,6 @@ pub trait CustomTypeExtension: Debug + Clone + PartialEq + Eq + 'static {
     type CustomTypeValidation: CustomTypeValidation;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,
-        CustomValueKind = Self::CustomValueKind,
         CustomTypeValidation = Self::CustomTypeValidation,
     >;
     type CustomTraversal: CustomTraversal<CustomValueKind = Self::CustomValueKind>;

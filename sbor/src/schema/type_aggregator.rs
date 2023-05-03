@@ -33,9 +33,9 @@ pub fn generate_full_schema<E: CustomTypeExtension>(
 }
 
 fn linearize<E: CustomTypeExtension>(
-    type_kind: TypeKind<E::CustomValueKind, E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+    type_kind: TypeKind<E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
     type_indices: &IndexSet<TypeHash>,
-) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
+) -> TypeKind<E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
         TypeKind::Bool => TypeKind::Bool,

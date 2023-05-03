@@ -145,7 +145,6 @@ pub enum NoCustomTypeValidation {}
 impl CustomTypeValidation for NoCustomTypeValidation {}
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
-    type CustomValueKind = NoCustomValueKind;
     type CustomTypeValidation = NoCustomTypeValidation;
 }
 
@@ -225,7 +224,7 @@ pub type BasicRawPayload<'a> = RawPayload<'a, NoCustomTypeExtension>;
 pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomTypeExtension>;
 pub type BasicRawValue<'a> = RawValue<'a, NoCustomTypeExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomTypeExtension>;
-pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
+pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
 pub type BasicSchema = Schema<NoCustomTypeExtension>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 

@@ -504,15 +504,9 @@ impl<'s, E: CustomTypeExtension> TypedTraverserState<'s, E> {
     }
 }
 
-type TypeKindFor<E> = TypeKind<
-    <E as CustomTypeExtension>::CustomValueKind,
-    <E as CustomTypeExtension>::CustomTypeKind<LocalTypeIndex>,
-    LocalTypeIndex,
->;
-
 fn value_kind_matches_type_kind<E: CustomTypeExtension>(
     value_kind: ValueKind<E::CustomValueKind>,
-    type_kind: &TypeKindFor<E>,
+    type_kind: &SchemaTypeKind<E>,
 ) -> bool {
     match type_kind {
         TypeKind::Any => true,

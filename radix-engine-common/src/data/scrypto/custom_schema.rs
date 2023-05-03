@@ -4,7 +4,7 @@ use crate::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
-pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind, L>;
+pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
 pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
@@ -44,7 +44,6 @@ pub enum OwnValidation {
 }
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
-    type CustomValueKind = ScryptoCustomValueKind;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
 }
 
