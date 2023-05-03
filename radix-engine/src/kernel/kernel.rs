@@ -333,32 +333,7 @@ where
 
     // TODO: Remove
     fn kernel_get_current_actor(&mut self) -> Option<Actor> {
-        let actor = self.current_frame.actor.clone();
-        if let Some(actor) = &actor {
-            match actor {
-                Actor::Method {
-                    global_address,
-                    object_info,
-                    ..
-                } => {
-                    if let Some(address) = global_address {
-                        self.current_frame
-                            .add_ref(address.as_node_id().clone(), RefType::Normal);
-                    }
-
-                    if let Some(address) = object_info.outer_object {
-                        self.current_frame
-                            .add_ref(address.as_node_id().clone(), RefType::Normal);
-                    }
-                }
-                _ => {}
-            }
-            let package_address = actor.blueprint().package_address;
-            self.current_frame
-                .add_ref(package_address.as_node_id().clone(), RefType::Normal);
-        }
-
-        actor
+        self.current_frame.actor.clone()
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
