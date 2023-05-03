@@ -60,12 +60,6 @@ mod tests {
                 where
                     T: ::sbor::Describe<
                         radix_engine_common::data::scrypto::ScryptoCustomTypeKind
-                    >,
-                    T: ::sbor::Categorize<
-                        <
-                            radix_engine_common::data::scrypto::ScryptoCustomTypeKind
-                            as ::sbor::CustomTypeKind<::sbor::GlobalTypeId>
-                        >::CustomValueKind
                     >
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
@@ -102,11 +96,7 @@ mod tests {
                 impl<T: Bound>
                     ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind > for MyEnum<T>
                 where
-                    T: ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind >,
-                    T: ::sbor::Categorize< <
-                        radix_engine_common::data::scrypto::ScryptoCustomTypeKind
-                        as ::sbor::CustomTypeKind<::sbor::GlobalTypeId>
-                    >::CustomValueKind >
+                    T: ::sbor::Describe<radix_engine_common::data::scrypto::ScryptoCustomTypeKind >
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(MyEnum),
