@@ -163,8 +163,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     let entries = self
                         .substate_db
                         .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
-                            liquid.ids.as_node_id(),
-                            OBJECT_BASE_MODULE,
+                            &node_id,
+                            OBJECT_BASE_MODULE.at_offset(1u8).unwrap(),
                         );
                     for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(

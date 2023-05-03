@@ -256,15 +256,8 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
-
-        let items: Vec<NonFungibleLocalId> = api.scan_typed_index(&substate_ref.ids.0, u32::MAX)?;
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(0u8, u32::MAX)?;
         let ids = items.into_iter().collect();
-        api.field_lock_release(handle)?;
         Ok(ids)
     }
 
@@ -319,7 +312,7 @@ impl NonFungibleVault {
 
         let taken = {
             let ids: Vec<NonFungibleLocalId> =
-                api.take_typed(substate_ref.ids.as_node_id(), amount_to_take)?;
+                api.actor_index_take_typed(0u8, amount_to_take)?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().collect(),
             }
@@ -351,7 +344,7 @@ impl NonFungibleVault {
         // TODO: Batch remove
         for id in ids {
             let removed =
-                api.remove_from_index(substate_ref.ids.as_node_id(), scrypto_encode(id).unwrap())?;
+                api.actor_index_remove(0u8, scrypto_encode(id).unwrap())?;
 
             if removed.is_none() {
                 return Err(RuntimeError::ApplicationError(
@@ -390,7 +383,7 @@ impl NonFungibleVault {
         // TODO: Batch update
         // TODO: Rather than insert, use create_unique?
         for id in resource.ids {
-            api.insert_typed_into_index(vault.ids.as_node_id(), scrypto_encode(&id).unwrap(), id)?;
+            api.actor_index_insert_typed(0u8, scrypto_encode(&id).unwrap(), id)?;
         }
 
         api.field_lock_write_typed(handle, &vault)?;

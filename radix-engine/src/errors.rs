@@ -196,6 +196,7 @@ pub enum SystemError {
     NotAFieldWriteLock,
     FieldDoesNotExist(Blueprint, u8),
     KeyValueStoreDoesNotExist(Blueprint, u8),
+    IndexDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,

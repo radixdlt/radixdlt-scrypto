@@ -221,9 +221,21 @@ fn to_typed_object_substate_key_internal(
         EntityType::InternalFungibleVault => TypedObjectModuleSubstateKey::FungibleVault(
             FungibleVaultOffset::try_from(substate_key)?,
         ),
-        EntityType::InternalNonFungibleVault => TypedObjectModuleSubstateKey::NonFungibleVault(
-            NonFungibleVaultOffset::try_from(substate_key)?,
-        ),
+        EntityType::InternalNonFungibleVault => {
+            let module_offset = NonFungibleVaultModuleOffset::try_from(module_offset)?;
+
+            match module_offset {
+                NonFungibleVaultModuleOffset::Balance => {
+                    TypedObjectModuleSubstateKey::NonFungibleVault(
+                        NonFungibleVaultOffset::try_from(substate_key)?,
+                    )
+                },
+                NonFungibleVaultModuleOffset::NonFungibles => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedObjectModuleSubstateKey::GenericIndex(key.clone())
+                }
+            }
+        },
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;

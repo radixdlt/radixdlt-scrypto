@@ -8,7 +8,7 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
@@ -666,6 +666,9 @@ impl ResourceManagerNativePackage {
             fields
                 .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
+            let mut indices = Vec::new();
+            indices.push(BlueprintIndexSchema {});
+
             let mut functions = BTreeMap::new();
             functions.insert(
                 VAULT_TAKE_IDENT.to_string(),
@@ -813,7 +816,7 @@ impl ResourceManagerNativePackage {
                 schema,
                 fields,
                 kv_stores: vec![],
-                indices: vec![],
+                indices,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,

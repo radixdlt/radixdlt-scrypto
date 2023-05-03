@@ -86,6 +86,21 @@ pub enum FungibleVaultOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleVaultModuleOffset {
+    Balance,
+    NonFungibles,
+}
+
+impl TryFrom<u8> for NonFungibleVaultModuleOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleVaultOffset {
     LiquidNonFungible,
     LockedNonFungible,

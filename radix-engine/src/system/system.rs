@@ -20,7 +20,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
-use radix_engine_interface::api::index_api::ClientIndexApi;
+use radix_engine_interface::api::index_api::ClientActorIndexApi;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
@@ -1047,41 +1047,41 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn new_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalIndex;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::Index
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id)
-    }
-
-    fn insert_into_index(
+    fn actor_index_insert(
         &mut self,
-        node_id: &NodeId,
+        index_handle: u8,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let node_id = method.node_id;
+        let blueprint = method.object_info.blueprint.clone();
+        let object_module_id = method.module_id;
+        let schema = self.get_blueprint_schema(&blueprint)?;
+
+        let module_number = schema
+            .index_module_offset(index_handle)
+            .map(|(module_offset, _)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    blueprint,
+                    index_handle,
+                ))
+            })?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1094,42 +1094,76 @@ where
         }
 
         self.api
-            .kernel_set_substate(node_id, OBJECT_BASE_MODULE, SubstateKey::Map(key), value)
+            .kernel_set_substate(&node_id, module_number, SubstateKey::Map(key), value)
     }
 
-    fn remove_from_index(
+    fn actor_index_remove(
         &mut self,
-        node_id: &NodeId,
+        index_handle: u8,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let node_id = method.node_id;
+        let blueprint = method.object_info.blueprint.clone();
+        let object_module_id = method.module_id;
+        let schema = self.get_blueprint_schema(&blueprint)?;
+
+        let module_number = schema
+            .index_module_offset(index_handle)
+            .map(|(module_offset, _)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    blueprint,
+                    index_handle,
+                ))
+            })?;
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, OBJECT_BASE_MODULE, &SubstateKey::Map(key))?
+            .kernel_remove_substate(&node_id, module_number, &SubstateKey::Map(key))?
             .map(|v| v.into());
 
         Ok(rtn)
     }
 
-    fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+    fn actor_index_scan(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let node_id = method.node_id;
+        let blueprint = method.object_info.blueprint.clone();
+        let object_module_id = method.module_id;
+        let schema = self.get_blueprint_schema(&blueprint)?;
+
+        let module_number = schema
+            .index_module_offset(index_handle)
+            .map(|(module_offset, _)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    blueprint,
+                    index_handle,
+                ))
+            })?;
 
         let substates = self
             .api
-            .kernel_scan_substates(node_id, OBJECT_BASE_MODULE, count)?
+            .kernel_scan_substates(&node_id, module_number, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1137,18 +1171,34 @@ where
         Ok(substates)
     }
 
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+    fn actor_index_take(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let node_id = method.node_id;
+        let blueprint = method.object_info.blueprint.clone();
+        let object_module_id = method.module_id;
+        let schema = self.get_blueprint_schema(&blueprint)?;
+        let module_number = schema
+            .index_module_offset(index_handle)
+            .map(|(module_offset, _)| {
+                let base_module = object_module_id.base_module();
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
+                module_number
+            })
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    blueprint,
+                    index_handle,
+                ))
+            })?;
 
         let substates = self
             .api
-            .kernel_take_substates(node_id, OBJECT_BASE_MODULE, count)?
+            .kernel_take_substates(&node_id, module_number, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();

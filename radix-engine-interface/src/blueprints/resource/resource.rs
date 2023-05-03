@@ -61,7 +61,7 @@ impl LiquidFungibleResource {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleVault {
     pub amount: Decimal,
-    pub ids: Own,
+    //pub ids: Own,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -216,6 +216,13 @@ impl IndexedBlueprintSchema {
         self.kv_store_modules.get(kv_handle as usize)
     }
 
+    pub fn index_module_offset(
+        &self,
+        index_handle: u8,
+    ) -> Option<&(u8, BlueprintIndexSchema)> {
+        self.index_modules.get(index_handle as usize)
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {

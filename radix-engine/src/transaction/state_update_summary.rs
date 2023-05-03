@@ -3,7 +3,7 @@ use crate::track::db_key_mapper::{
 };
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleVault,
+    LiquidFungibleResource,
 };
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
@@ -300,6 +300,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         } else {
             // If there is an update to the liquid resource
+            /*
             if let Some(vault) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                     node_id,
@@ -307,10 +308,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
+             */
                 let vault_updates = self
                     .tracked
-                    .get(vault.ids.as_node_id())
-                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE));
+                    .get(node_id)
+                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE.at_offset(1u8).unwrap()));
 
                 if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();
@@ -347,9 +349,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 } else {
                     None
                 }
+            /*
             } else {
                 None
             }
+             */
         }
         .map(|x| (resource_address, x))
     }

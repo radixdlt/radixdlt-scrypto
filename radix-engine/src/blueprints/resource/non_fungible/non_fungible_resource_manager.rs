@@ -651,10 +651,9 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let ids = Own(api.new_index()?);
+        //let ids = Own(api.new_index()?);
         let vault = LiquidNonFungibleVault {
             amount: Decimal::zero(),
-            ids,
         };
         let vault_id = api.new_simple_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,

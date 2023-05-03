@@ -494,28 +494,24 @@ impl TestRunner {
         &mut self,
         vault_id: NodeId,
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
-        let vault = self
+        let amount = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
                 OBJECT_BASE_MODULE,
                 &NonFungibleVaultOffset::LiquidNonFungible.into(),
             )
-            .map(|vault| {
-                let amount = vault.amount;
-                (amount, vault.ids)
-            });
+            .map(|vault| vault.amount);
 
-        vault.map(|(amount, ids)| {
-            let mut substate_iter = self
-                .substate_db()
-                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
-                    ids.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                );
-            let id = substate_iter.next().map(|(_key, id)| id);
-            (amount, id)
-        })
+        let mut substate_iter = self
+            .substate_db()
+            .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+                &vault_id,
+                OBJECT_BASE_MODULE.at_offset(1u8).unwrap(),
+            );
+        let id = substate_iter.next().map(|(_key, id)| id);
+
+        amount.map(|amount| (amount, id))
     }
 
     pub fn get_component_resources(
