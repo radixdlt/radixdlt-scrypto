@@ -164,8 +164,17 @@ pub struct ResourceSummary {
 // TODO: Clean up
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TraceActor {
-    Root,
-    Actor(Actor),
+    Method(NodeId),
+    NonMethod,
+}
+
+impl TraceActor {
+    pub fn from_actor(actor: &Actor) -> TraceActor {
+        match actor {
+            Actor::Method { node_id, .. } => TraceActor::Method(node_id.clone()),
+            _ => TraceActor::NonMethod,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -401,8 +410,8 @@ impl ExecutionTraceModule {
 
         let current_actor = current_actor
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -430,8 +439,8 @@ impl ExecutionTraceModule {
 
         let current_actor = current_actor
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
@@ -529,8 +538,8 @@ impl ExecutionTraceModule {
 
         let current_actor = current_actor
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.finalize_kernel_call_trace(resource_summary, current_actor, current_depth)
     }
 
@@ -612,8 +621,8 @@ impl ExecutionTraceModule {
     ) {
         let actor = caller
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -627,8 +636,8 @@ impl ExecutionTraceModule {
     fn handle_vault_lock_fee_input<'s>(&mut self, caller: &Option<Actor>, vault_id: &NodeId) {
         let actor = caller
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         self.vault_ops.push((
             actor,
             vault_id.clone(),
@@ -645,8 +654,8 @@ impl ExecutionTraceModule {
     ) {
         let actor = caller
             .clone()
-            .map(|a| TraceActor::Actor(a))
-            .unwrap_or(TraceActor::Root);
+            .map(|a| TraceActor::from_actor(&a))
+            .unwrap_or(TraceActor::NonMethod);
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
@@ -672,7 +681,7 @@ pub fn calculate_resource_changes(
     let mut vault_changes =
         index_map_new::<usize, IndexMap<NodeId, IndexMap<NodeId, (ResourceAddress, Decimal)>>>();
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
-        if let TraceActor::Actor(Actor::Method { node_id, .. }) = actor {
+        if let TraceActor::Method(node_id) = actor {
             match vault_op {
                 VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {

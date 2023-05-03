@@ -1879,7 +1879,7 @@ where
         self.api.kernel_get_callback()
     }
 
-    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
+    fn kernel_get_current_actor(&self) -> Option<Actor> {
         self.api.kernel_get_current_actor()
     }
 
