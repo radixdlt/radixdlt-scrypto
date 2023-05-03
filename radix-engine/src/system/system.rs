@@ -190,7 +190,7 @@ where
         );
 
         for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = OBJECT_BASE_MODULE.at_offset(i as u8);
+            let module_number = OBJECT_BASE_MODULE.at_offset(i as u8).expect("Module number overflow");
             node_substates.insert(module_number, module_substates);
         }
 
@@ -1339,7 +1339,7 @@ where
         let (module_number, field_type_index) =
             if let Some((offset, field_type_index)) = schema.field(field) {
                 let base_module = object_module_id.base_module();
-                let module_number = base_module.at_offset(offset);
+                let module_number = base_module.at_offset(offset).expect("Module number overflow");
                 (module_number, field_type_index)
             } else {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
@@ -1388,7 +1388,7 @@ where
             )));
         };
 
-        let module_number = OBJECT_BASE_MODULE.at_offset(module_offset);
+        let module_number = OBJECT_BASE_MODULE.at_offset(module_offset).expect("Module number overflow");
 
         // TODO: Check if valid substate_key for node_id
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -1435,7 +1435,7 @@ where
             .key_value_store_module_offset(kv_handle)
             .map(|(module_offset, kv_schema)| {
                 let base_module = object_module_id.base_module();
-                let module_number = base_module.at_offset(*module_offset);
+                let module_number = base_module.at_offset(*module_offset).expect("Module number overflow");
                 (module_number, kv_schema)
             })
             .ok_or_else(|| {
