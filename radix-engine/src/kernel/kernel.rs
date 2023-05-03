@@ -335,7 +335,7 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_get_state(&mut self) -> (&mut M, Option<&Actor>) {
+    fn kernel_get_system_state(&mut self) -> (&mut M, Option<&Actor>) {
         (&mut self.callback, self.current_frame.actor.as_ref())
     }
 
