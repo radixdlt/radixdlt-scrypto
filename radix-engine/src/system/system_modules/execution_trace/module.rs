@@ -356,13 +356,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
+        let caller = caller.as_ref()
+            .map(|a| TraceActor::from_actor(a))
+            .unwrap_or(TraceActor::NonMethod);
+
         let current_actor = api.kernel_get_current_actor();
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
         api.kernel_get_callback()
             .modules
             .execution_trace
-            .handle_on_execution_finish(current_actor, current_depth, caller, resource_summary);
+            .handle_on_execution_finish(current_actor, current_depth, &caller, resource_summary);
         Ok(())
     }
 }
@@ -510,7 +514,7 @@ impl ExecutionTraceModule {
         &mut self,
         current_actor: Option<Actor>,
         current_depth: usize,
-        caller: &Option<Actor>,
+        caller: &TraceActor,
         resource_summary: ResourceSummary,
     ) {
         match &current_actor {
@@ -522,7 +526,7 @@ impl ExecutionTraceModule {
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
-                self.handle_vault_take_output(&resource_summary, caller, node_id)
+                self.handle_vault_take_output(&resource_summary, &caller, node_id)
             }
             Some(Actor::VirtualLazyLoad { .. }) => return,
             _ => {}
@@ -649,13 +653,10 @@ impl ExecutionTraceModule {
     fn handle_vault_take_output<'s>(
         &mut self,
         resource_summary: &ResourceSummary,
-        caller: &Option<Actor>,
+        actor: &TraceActor,
         vault_id: &NodeId,
     ) {
-        let actor = caller
-            .clone()
-            .map(|a| TraceActor::from_actor(&a))
-            .unwrap_or(TraceActor::NonMethod);
+
         for (_, resource) in &resource_summary.buckets {
             self.vault_ops.push((
                 actor.clone(),
