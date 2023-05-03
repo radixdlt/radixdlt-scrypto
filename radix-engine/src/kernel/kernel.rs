@@ -184,7 +184,7 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            M::on_execution_start(&caller, self)?;
+            M::on_execution_start(self)?;
 
             // Auto drop locks
             self.current_frame
@@ -335,8 +335,9 @@ where
         self.current_frame.actor.clone()
     }
 
-    fn kernel_get_system_state(&mut self) -> (&mut M, Option<&Actor>) {
-        (&mut self.callback, self.current_frame.actor.as_ref())
+    fn kernel_get_system_state(&mut self) -> (&mut M, Option<&Actor>, Option<&Actor>) {
+        let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
+        (&mut self.callback, caller, self.current_frame.actor.as_ref())
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {

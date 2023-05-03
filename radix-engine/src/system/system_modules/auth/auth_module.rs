@@ -324,7 +324,7 @@ impl AuthModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Create sentinel node
-        Self::on_execution_start(api, &None)
+        Self::on_execution_start(api)
     }
 
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
@@ -380,7 +380,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let actor = api.kernel_get_current_actor();
 

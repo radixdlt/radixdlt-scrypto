@@ -286,11 +286,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_start(api, &caller)
+        SystemModuleMixer::on_execution_start(api)
     }
 
     fn invoke_upstream<Y>(

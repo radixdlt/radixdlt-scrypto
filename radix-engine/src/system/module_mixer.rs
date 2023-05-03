@@ -296,35 +296,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_execution_start(api, caller)?;
+            KernelTraceModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_execution_start(api, caller)?;
+            CostingModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_execution_start(api, caller)?;
+            NodeMoveModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_execution_start(api, caller)?;
+            AuthModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_execution_start(api, caller)?;
+            LoggerModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_execution_start(api, caller)?;
+            TransactionRuntimeModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_execution_start(api, caller)?;
+            ExecutionTraceModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_execution_start(api, caller)?;
+            TransactionLimitsModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_execution_start(api, caller)?;
+            EventsModule::on_execution_start(api)?;
         }
         Ok(())
     }

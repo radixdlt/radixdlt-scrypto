@@ -307,7 +307,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        let (system, current_actor) = api.kernel_get_system_state();
+        let (system, _caller, current_actor) = api.kernel_get_system_state();
         system
             .modules
             .execution_trace
@@ -330,7 +330,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        let (system, current_actor) = api.kernel_get_system_state();
+        let (system, _caller, current_actor) = api.kernel_get_system_state();
         system
             .modules
             .execution_trace
@@ -345,7 +345,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
-        let (system, current_actor) = api.kernel_get_system_state();
+        let (system, _caller, current_actor) = api.kernel_get_system_state();
         system
             .modules
             .execution_trace
@@ -365,7 +365,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_call_frame_update(api, update);
 
-        let (system, current_actor) = api.kernel_get_system_state();
+        let (system, _caller, current_actor) = api.kernel_get_system_state();
         system.modules.execution_trace
             .handle_on_execution_finish(
                 current_actor,

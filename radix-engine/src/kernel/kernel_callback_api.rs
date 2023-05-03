@@ -99,7 +99,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
