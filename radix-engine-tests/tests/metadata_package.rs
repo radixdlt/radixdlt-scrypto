@@ -71,7 +71,7 @@ fn can_set_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
+        .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
         .set_metadata(
             package_address.into(),
             "name".to_string(),
@@ -115,7 +115,7 @@ fn can_lock_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
+        .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
         .set_method_access_rule(
             package_address.into(),
             MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
@@ -131,7 +131,7 @@ fn can_lock_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account, PACKAGE_OWNER_TOKEN)
+        .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
         .set_metadata(
             package_address.into(),
             "name".to_string(),

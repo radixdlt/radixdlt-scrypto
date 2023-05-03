@@ -30,7 +30,7 @@ pub enum ReferenceValidation {
     IsGlobalPackage,
     IsGlobalComponent,
     IsGlobalResource,
-    IsLocal,
+    IsInternal,
     IsTypedObject(PackageAddress, String),
 }
 

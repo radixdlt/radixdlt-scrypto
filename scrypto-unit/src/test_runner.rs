@@ -1306,17 +1306,17 @@ impl TestRunner {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
                 match node_module {
                     ObjectModuleId::AccessRules => (
-                        ACCESS_RULES_PACKAGE,
+                        ACCESS_RULES_MODULE_PACKAGE,
                         ACCESS_RULES_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
                     ObjectModuleId::Royalty => (
-                        ROYALTY_PACKAGE,
+                        ROYALTY_MODULE_PACKAGE,
                         COMPONENT_ROYALTY_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
                     ObjectModuleId::Metadata => (
-                        METADATA_PACKAGE,
+                        METADATA_MODULE_PACKAGE,
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),

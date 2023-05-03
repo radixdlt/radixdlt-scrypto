@@ -218,7 +218,7 @@ fn test_instruction_traces() {
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
@@ -245,7 +245,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
             }),
@@ -268,7 +268,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
             }),
@@ -291,7 +291,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             Origin::ScryptoFunction(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
             }),
@@ -314,7 +314,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
@@ -338,7 +338,7 @@ fn test_instruction_traces() {
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
             Origin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
             }),

@@ -1,6 +1,6 @@
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
@@ -115,7 +115,7 @@ impl SysProof for Proof {
         let info = api.get_object_info(self.0.as_node_id())?;
         let blueprint = info.blueprint.blueprint_name;
         api.call_function(
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             blueprint.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {

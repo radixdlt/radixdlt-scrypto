@@ -121,7 +121,7 @@ pub enum Instruction {
     },
 
     RecallResource {
-        vault_id: LocalAddress,
+        vault_id: InternalAddress,
         amount: Decimal,
     },
 

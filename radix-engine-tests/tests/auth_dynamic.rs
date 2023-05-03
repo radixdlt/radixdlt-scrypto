@@ -223,11 +223,11 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let (other_public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
     let non_fungible_global_id = NonFungibleGlobalId::new(
-        ECDSA_SECP256K1_TOKEN,
+        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
         NonFungibleLocalId::bytes(pk.to_vec()).unwrap(),
     );
     let other_non_fungible_global_id = NonFungibleGlobalId::new(
-        ECDSA_SECP256K1_TOKEN,
+        ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
         NonFungibleLocalId::bytes(other_public_key.to_vec()).unwrap(),
     );
     let players = [non_fungible_global_id, other_non_fungible_global_id.clone()];
