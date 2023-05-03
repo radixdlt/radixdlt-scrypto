@@ -1,10 +1,11 @@
 use crate::blueprints::resource::*;
-use crate::constants::RESOURCE_PACKAGE;
+use crate::constants::*;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use sbor::rust::prelude::*;
 use sbor::*;
 

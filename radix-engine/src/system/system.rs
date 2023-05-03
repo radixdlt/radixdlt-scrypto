@@ -438,6 +438,7 @@ where
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
+
         self.globalize_with_address(modules, global_address)?;
         Ok(global_address)
     }
@@ -471,6 +472,14 @@ where
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::SELF,
             )))?;
+        self.api
+            .kernel_get_callback()
+            .modules
+            .events
+            .add_replacement(
+                (node_id, ObjectModuleId::SELF),
+                (*address.as_node_id(), ObjectModuleId::SELF),
+            );
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
 
         // Update the `global` flag of the type info substate.
@@ -511,6 +520,15 @@ where
                         )));
                     }
 
+                    self.api
+                        .kernel_get_callback()
+                        .modules
+                        .events
+                        .add_replacement(
+                            (node_id, ObjectModuleId::SELF),
+                            (*address.as_node_id(), ObjectModuleId::AccessRules),
+                        );
+
                     let mut access_rule_substates = self.api.kernel_drop_node(&node_id)?;
                     let access_rules = access_rule_substates
                         .remove(&SysModuleId::Object.into())
@@ -528,6 +546,15 @@ where
                             }),
                         )));
                     }
+
+                    self.api
+                        .kernel_get_callback()
+                        .modules
+                        .events
+                        .add_replacement(
+                            (node_id, ObjectModuleId::SELF),
+                            (*address.as_node_id(), ObjectModuleId::Metadata),
+                        );
 
                     let mut metadata_substates = self.api.kernel_drop_node(&node_id)?;
                     let metadata = metadata_substates
@@ -547,6 +574,15 @@ where
                             }),
                         )));
                     }
+
+                    self.api
+                        .kernel_get_callback()
+                        .modules
+                        .events
+                        .add_replacement(
+                            (node_id, ObjectModuleId::SELF),
+                            (*address.as_node_id(), ObjectModuleId::Royalty),
+                        );
 
                     let mut royalty_substates = self.api.kernel_drop_node(&node_id)?;
                     let royalty = royalty_substates
