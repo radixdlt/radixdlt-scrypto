@@ -6,7 +6,7 @@ use super::HardProofRule;
 use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::KernelApi;
@@ -57,7 +57,7 @@ impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         // FIXME update the rule to be consistent with internal design
         match actor {
-            Actor::Method { node_id, .. } => {
+            Actor::Method(MethodActor { node_id, .. }) => {
                 node_id.is_global_component() || node_id.is_global_resource()
             }
             Actor::Function { .. } => false,
@@ -339,12 +339,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let authorizations = match &callee {
-            Actor::Method {
+            Actor::Method(MethodActor {
                 node_id,
                 module_id,
                 ident,
                 ..
-            } => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
+            }) => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
             Actor::Function { blueprint, ident } => {
                 vec![Self::function_auth(blueprint, ident.as_str(), api)?]
             }
@@ -388,17 +388,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             );
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
 
-            if let Actor::Method {
-                global_address: Some(address),
-                ..
-            } = &actor
-            {
-                let id = scrypto_encode(&address).unwrap();
-                let non_fungible_global_id = NonFungibleGlobalId::new(
-                    GLOBAL_ACTOR_VIRTUAL_BADGE,
-                    NonFungibleLocalId::bytes(id).unwrap(),
-                );
-                virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+            if let Some(method) = actor.try_as_method() {
+                if let Some(address) = method.global_address {
+                    let id = scrypto_encode(&address).unwrap();
+                    let non_fungible_global_id = NonFungibleGlobalId::new(
+                        GLOBAL_ACTOR_VIRTUAL_BADGE,
+                        NonFungibleLocalId::bytes(id).unwrap(),
+                    );
+                    virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+                }
             }
         }
 

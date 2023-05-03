@@ -159,11 +159,8 @@ impl<I: Debug> KernelInvocation<I> {
     pub fn get_update(&self) -> CallFrameUpdate {
         let nodes_to_move = self.args.owned_node_ids().clone();
         let mut node_refs_to_copy = self.args.references().clone();
-        match self.resolved_actor {
-            Actor::Method { node_id, .. } => {
-                node_refs_to_copy.insert(node_id);
-            }
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
+        if let Some(method) = self.resolved_actor.try_as_method() {
+            node_refs_to_copy.insert(method.node_id);
         }
 
         CallFrameUpdate {

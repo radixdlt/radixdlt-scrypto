@@ -1,5 +1,5 @@
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -268,11 +268,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         match callee {
-            Actor::Method {
+            Actor::Method(MethodActor {
                 global_address,
                 object_info,
                 ..
-            } => {
+            }) => {
                 if let Some(address) = global_address {
                     update
                         .node_refs_to_copy
