@@ -294,19 +294,6 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn actor_lock_key_value_handle_entry(
-        &mut self,
-        _kv_handle: u8,
-        _key: &[u8],
-        _flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
-
-    fn actor_remove_key_value_entry(&mut self, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
-    }
-
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         todo!()
     }

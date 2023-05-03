@@ -17,6 +17,14 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
+
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
+
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, E>;
+}
+
+pub trait ClientActorKeyValueEntryApi<E: Debug> {
     fn actor_lock_key_value_entry(
         &mut self,
         key: &[u8],
@@ -42,10 +50,4 @@ pub trait ClientActorApi<E: Debug> {
         let rtn = scrypto_decode(&removed).unwrap();
         Ok(rtn)
     }
-
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
-
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
-
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, E>;
 }

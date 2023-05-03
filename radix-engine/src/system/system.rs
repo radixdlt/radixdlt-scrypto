@@ -1461,6 +1461,47 @@ where
     }
 
     #[trace_resources]
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let object_info = match actor {
+            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
+                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
+            }
+            Actor::Method { object_info, .. } => object_info.clone(),
+        };
+
+        Ok(object_info)
+    }
+
+    #[trace_resources]
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        match actor {
+            Actor::Method {
+                global_address: Some(address),
+                ..
+            } => Ok(address.clone()),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::GlobalAddressDoesNotExist,
+            )),
+        }
+    }
+
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        Ok(actor.blueprint().clone())
+    }
+}
+
+impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+    where
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+{
+
+    #[trace_resources]
     fn actor_lock_key_value_handle_entry(
         &mut self,
         kv_handle: u8,
@@ -1532,40 +1573,6 @@ where
     fn actor_remove_key_value_entry(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_handle_entry(0u8, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
-    }
-
-    #[trace_resources]
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let object_info = match actor {
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
-                return Err(RuntimeError::SystemError(SystemError::NotAMethod))
-            }
-            Actor::Method { object_info, .. } => object_info.clone(),
-        };
-
-        Ok(object_info)
-    }
-
-    #[trace_resources]
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        match actor {
-            Actor::Method {
-                global_address: Some(address),
-                ..
-            } => Ok(address.clone()),
-            _ => Err(RuntimeError::SystemError(
-                SystemError::GlobalAddressDoesNotExist,
-            )),
-        }
-    }
-
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
-
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        Ok(actor.blueprint().clone())
     }
 }
 
