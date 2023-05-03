@@ -1,10 +1,8 @@
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_common::types::EntityType;
+use radix_engine_common::types::{MapKey, SortedU16Key, TupleKey};
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey, SysModuleId};
-use radix_engine_store_interface::interface::{
-    DbPartitionKey, DbSortKey, DbSubstateValue, SubstateDatabase,
-};
+use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey, SubstateDatabase};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
 
@@ -15,16 +13,6 @@ pub trait DatabaseKeyMapper {
     /// find yourself needing to map the database partition key back to RE Node and Module ID, then
     /// you are most likely using the "partition vs sort key" construct in a wrong way).
     fn to_db_partition_key(node_id: &NodeId, module_id: ModuleId) -> DbPartitionKey;
-
-    /// Converts the given Substate key to the database's sort key.
-    fn to_db_sort_key(key: &SubstateKey) -> DbSortKey;
-
-    /// Converts the given database's sort key to a concrete type of Substate key.
-    fn from_db_sort_key(
-        node_id: &NodeId,
-        module_id: ModuleId,
-        db_sort_key: &DbSortKey,
-    ) -> SubstateKey;
 }
 
 /// A [`DatabaseKeyMapper`] tailored for databases which cannot tolerate long common prefixes
@@ -45,32 +33,15 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
         buffer.push(module_id.0);
-        DbPartitionKey(hash(buffer).to_vec())
-    }
-
-    fn to_db_sort_key(key: &SubstateKey) -> DbSortKey {
-        let bytes = match key {
-            SubstateKey::Tuple(field) => vec![*field],
-            SubstateKey::Map(key) => Self::to_hash_prefixed(key),
-            SubstateKey::Sorted((bucket, key)) => [
-                bucket.to_be_bytes().as_slice(),
-                &Self::to_hash_prefixed(key),
-            ]
-            .concat(),
-        };
-        DbSortKey(bytes)
-    }
-
-    fn from_db_sort_key(
-        node_id: &NodeId,
-        module_id: ModuleId,
-        db_sort_key: &DbSortKey,
-    ) -> SubstateKey {
-        Self::decode_substate_key(node_id.entity_type().unwrap(), module_id, &db_sort_key.0)
+        let hash_bytes = hash(buffer).0[..Self::PARTITION_KEY_HASH_LENGTH].to_vec();
+        DbPartitionKey(hash_bytes)
     }
 }
 
 impl SpreadPrefixKeyMapper {
+    /// Length of hashes that are used in the database *instead* of plain RE Node and Module IDs.
+    const PARTITION_KEY_HASH_LENGTH: usize = 26;
+
     /// A number of leading bytes populated with a hash of the sort key (for spreading purposes).
     /// This number should be:
     /// - high enough to avoid being cracked (for crafting arbitrarily long key prefixes);
@@ -90,78 +61,71 @@ impl SpreadPrefixKeyMapper {
     fn from_hash_prefixed(prefixed_bytes: &[u8]) -> &[u8] {
         &prefixed_bytes[Self::HASHED_PREFIX_LENGTH..]
     }
+}
 
-    fn decode_substate_key(
-        entity_type: EntityType,
-        module_id: ModuleId,
-        bytes: &[u8],
-    ) -> SubstateKey {
-        match SysModuleId::try_from(module_id).unwrap() {
-            SysModuleId::TypeInfo | SysModuleId::Royalty | SysModuleId::AccessRules => {
-                Self::decode_tuple(bytes)
-            }
-            SysModuleId::Metadata => Self::decode_map(bytes),
-            SysModuleId::Object => Self::decode_object_substate_key(entity_type, bytes),
-            SysModuleId::Virtualized => Self::decode_virtualized_substate_key(entity_type, bytes),
-        }
+pub trait SortKey {
+    fn from_db_sort_key(key: DbSortKey) -> Self;
+    fn to_db_sort_key(&self) -> DbSortKey;
+}
+
+/// This SubstateKey enum is probably the wrong interface for this. The proper way of
+/// exposing for execution is by using the SortKey generic all the way up the stack
+/// (and then replacing the current SubstateKey with SortKey). This would enforce the
+/// invariant that different types of keys should not be mixed together.
+///
+/// This may be more of a big implementation undertaking so this hack to use an enum
+/// is good enough for now.
+impl SortKey for SubstateKey {
+    /// Once abstraction is cleaned up we should be able to remove this
+    fn from_db_sort_key(_key: DbSortKey) -> Self {
+        panic!("Should never be called");
     }
 
-    fn decode_object_substate_key(entity_type: EntityType, bytes: &[u8]) -> SubstateKey {
-        match entity_type {
-            EntityType::InternalGenericComponent
-            | EntityType::GlobalGenericComponent
-            | EntityType::GlobalPackage
-            | EntityType::GlobalFungibleResource
-            | EntityType::GlobalNonFungibleResource
-            | EntityType::GlobalEpochManager
-            | EntityType::GlobalValidator
-            | EntityType::GlobalClock
-            | EntityType::GlobalAccessController
-            | EntityType::GlobalVirtualEcdsaAccount
-            | EntityType::GlobalVirtualEddsaAccount
-            | EntityType::InternalAccount
-            | EntityType::GlobalAccount
-            | EntityType::InternalFungibleVault
-            | EntityType::InternalNonFungibleVault => Self::decode_tuple(bytes),
-            EntityType::InternalKeyValueStore | EntityType::InternalIndex => {
-                Self::decode_map(bytes)
-            }
-            EntityType::InternalSortedIndex => Self::decode_sorted(bytes),
-            EntityType::GlobalVirtualEcdsaIdentity
-            | EntityType::GlobalVirtualEddsaIdentity
-            | EntityType::GlobalIdentity => panic!("identities don't have substates"),
+    fn to_db_sort_key(&self) -> DbSortKey {
+        match self {
+            SubstateKey::Tuple(field) => field.to_db_sort_key(),
+            SubstateKey::Map(key) => key.to_db_sort_key(),
+            SubstateKey::Sorted(sorted_key) => sorted_key.to_db_sort_key(),
         }
     }
+}
 
-    fn decode_virtualized_substate_key(entity_type: EntityType, bytes: &[u8]) -> SubstateKey {
-        match entity_type {
-            EntityType::InternalKeyValueStore | EntityType::InternalIndex => {
-                Self::decode_map(bytes)
-            }
-            EntityType::InternalSortedIndex => Self::decode_sorted(bytes),
-            _ => panic!("unexpected entity type in a virtualized module"),
-        }
+impl SortKey for MapKey {
+    fn from_db_sort_key(key: DbSortKey) -> Self {
+        SpreadPrefixKeyMapper::from_hash_prefixed(&key.0).to_vec()
     }
 
-    fn decode_tuple(bytes: &[u8]) -> SubstateKey {
-        if bytes.len() != 1 {
-            panic!("unexpected length: {}", bytes.len());
-        }
-        SubstateKey::Tuple(bytes[0])
+    fn to_db_sort_key(&self) -> DbSortKey {
+        DbSortKey(SpreadPrefixKeyMapper::to_hash_prefixed(self))
+    }
+}
+
+impl SortKey for TupleKey {
+    fn from_db_sort_key(key: DbSortKey) -> Self {
+        key.0[0]
     }
 
-    fn decode_map(bytes: &[u8]) -> SubstateKey {
-        SubstateKey::Map(SpreadPrefixKeyMapper::from_hash_prefixed(bytes).to_vec())
+    fn to_db_sort_key(&self) -> DbSortKey {
+        DbSortKey(vec![*self])
+    }
+}
+
+impl SortKey for SortedU16Key {
+    fn from_db_sort_key(key: DbSortKey) -> Self {
+        (
+            u16::from_be_bytes(copy_u8_array(&key.0[..2])),
+            SpreadPrefixKeyMapper::from_hash_prefixed(&key.0[2..]).to_vec(),
+        )
     }
 
-    fn decode_sorted(bytes: &[u8]) -> SubstateKey {
-        if bytes.len() < 2 {
-            panic!("insufficient length: {}", bytes.len());
-        }
-        SubstateKey::Sorted((
-            u16::from_be_bytes(copy_u8_array(&bytes[..2])),
-            SpreadPrefixKeyMapper::from_hash_prefixed(&bytes[2..]).to_vec(),
-        ))
+    fn to_db_sort_key(&self) -> DbSortKey {
+        DbSortKey(
+            [
+                self.0.to_be_bytes().as_slice(),
+                &SpreadPrefixKeyMapper::to_hash_prefixed(&self.1),
+            ]
+            .concat(),
+        )
     }
 }
 
@@ -175,25 +139,13 @@ pub trait MappedSubstateDatabase {
         substate_key: &SubstateKey,
     ) -> Option<D>;
 
-    /// Lists scrypto-decoded values of the given node module.
-    fn list_mapped_values<'a, M: DatabaseKeyMapper, D: ScryptoDecode>(
-        &'a self,
-        node_id: &'a NodeId,
+    /// Lists fully-mapped entries (i.e. business substate keys and scrypto-decoded values) of the
+    /// given node module.
+    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SortKey>(
+        &self,
+        node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = D> + 'a> {
-        let mapped_value_iter = self
-            .list_raw_with_mapped_keys::<M>(node_id, module_id)
-            .map(|(_substate_key, db_value)| scrypto_decode(&db_value).unwrap());
-        Box::new(mapped_value_iter)
-    }
-
-    /// Lists partially-mapped entries (i.e. business substate keys and raw database byte values) of
-    /// the given node module.
-    fn list_raw_with_mapped_keys<'a, M: DatabaseKeyMapper>(
-        &'a self,
-        node_id: &'a NodeId,
-        module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, DbSubstateValue)> + 'a>;
+    ) -> Box<dyn Iterator<Item = (K, D)> + '_>;
 }
 
 impl<S: SubstateDatabase> MappedSubstateDatabase for S {
@@ -205,24 +157,24 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
     ) -> Option<D> {
         self.get_substate(
             &M::to_db_partition_key(node_id, module_id),
-            &M::to_db_sort_key(&substate_key),
+            &substate_key.to_db_sort_key(),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
     }
 
-    fn list_raw_with_mapped_keys<'a, M: DatabaseKeyMapper>(
-        &'a self,
-        node_id: &'a NodeId,
+    fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SortKey>(
+        &self,
+        node_id: &NodeId,
         module_id: ModuleId,
-    ) -> Box<dyn Iterator<Item = (SubstateKey, DbSubstateValue)> + 'a> {
-        let mapped_key_iter = self
+    ) -> Box<dyn Iterator<Item = (K, D)> + '_> {
+        let mapped_value_iter = self
             .list_entries(&M::to_db_partition_key(node_id, module_id))
-            .map(move |(db_sort_key, db_value)| {
+            .map(|(db_sort_key, db_value)| {
                 (
-                    M::from_db_sort_key(node_id, module_id, &db_sort_key),
-                    db_value,
+                    K::from_db_sort_key(db_sort_key),
+                    scrypto_decode(&db_value).unwrap(),
                 )
             });
-        Box::new(mapped_key_iter)
+        Box::new(mapped_value_iter)
     }
 }

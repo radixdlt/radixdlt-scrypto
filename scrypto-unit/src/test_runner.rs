@@ -509,10 +509,11 @@ impl TestRunner {
         vault.map(|(amount, ids)| {
             let mut values = self
                 .substate_db()
-                .list_mapped_values::<SpreadPrefixKeyMapper, NonFungibleLocalId>(
+                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     ids.as_node_id(),
                     SysModuleId::Object.into(),
-                );
+                )
+                .map(|(_key, value)| value);
             let id = values.next();
             (amount, id)
         })

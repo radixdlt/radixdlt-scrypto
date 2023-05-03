@@ -220,12 +220,12 @@ fn test_balance_changes_when_transferring_non_fungibles() {
             account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
                     added: BTreeSet::new(),
-                    removed: btreeset!(NonFungibleLocalId::integer(2))
+                    removed: btreeset!(NonFungibleLocalId::integer(3))
                 }
             ),
             other_account.into() => indexmap!(
                 resource_address => BalanceChange::NonFungible {
-                    added: btreeset!(NonFungibleLocalId::integer(2)),
+                    added: btreeset!(NonFungibleLocalId::integer(3)),
                     removed: BTreeSet::new()
                 }
             ),

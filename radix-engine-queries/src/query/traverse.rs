@@ -1,14 +1,14 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use radix_engine::types::SubstateKey;
+use radix_engine::types::{ScryptoValue, SubstateKey, TupleKey};
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
-    FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, ModuleId, NonFungibleVaultOffset,
-    ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
+    FungibleVaultOffset, IndexedScryptoValue, IntoEnumIterator, MapKey, ModuleId,
+    NonFungibleVaultOffset, ObjectInfo, ResourceAddress, SysModuleId, TypeInfoOffset,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -96,22 +96,21 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
         match type_info {
             TypeInfoSubstate::KeyValueStore(_) => {
-                for (substate_key, value) in self
+                for (map_key, value) in self
                     .substate_db
-                    .list_raw_with_mapped_keys::<SpreadPrefixKeyMapper>(
+                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
                         &node_id,
                         SysModuleId::Virtualized.into(),
                     )
                 {
-                    let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(value)
-                        .expect("Substate is not a scrypto value")
-                        .unpack();
+                    let (_, owned_nodes, _) =
+                        IndexedScryptoValue::from_scrypto_value(value).unpack();
                     for child_node_id in owned_nodes {
                         self.traverse_recursive(
                             Some(&(
                                 node_id,
                                 SysModuleId::Virtualized.into(),
-                                substate_key.clone(),
+                                SubstateKey::Map(map_key.clone()),
                             )),
                             child_node_id,
                             depth + 1,
@@ -160,13 +159,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &liquid,
                     );
 
-                    let values = self
+                    let entries = self
                         .substate_db
-                        .list_mapped_values::<SpreadPrefixKeyMapper, NonFungibleLocalId>(
+                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                             liquid.ids.as_node_id(),
                             SysModuleId::Object.into(),
                         );
-                    for non_fungible_local_id in values {
+                    for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(outer_object.unwrap().into()),
@@ -175,24 +174,58 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 } else {
                     for t in SysModuleId::iter() {
-                        // List all iterable modules (currently `ObjectState` & `Metadata`)
-                        let x = self
-                            .substate_db
-                            .list_raw_with_mapped_keys::<SpreadPrefixKeyMapper>(&node_id, t.into());
-                        for (substate_key, substate_value) in x {
-                            let (_, owned_nodes, _) = IndexedScryptoValue::from_vec(substate_value)
-                                .expect("Substate is not a scrypto value")
-                                .unpack();
-                            for child_node_id in owned_nodes {
-                                self.traverse_recursive(
-                                    Some(&(
-                                        node_id,
-                                        SysModuleId::Object.into(),
-                                        substate_key.clone(),
-                                    )),
-                                    child_node_id,
-                                    depth + 1,
-                                );
+                        match t {
+                            SysModuleId::Object
+                            | SysModuleId::TypeInfo
+                            | SysModuleId::Royalty
+                            | SysModuleId::AccessRules => {
+                                // List all iterable modules (currently `ObjectState` & `Metadata`)
+                                let x = self
+                                    .substate_db
+                                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, TupleKey>(
+                                        &node_id,
+                                        t.into(),
+                                    );
+                                for (tuple_key, substate_value) in x {
+                                    let (_, owned_nodes, _) =
+                                        IndexedScryptoValue::from_scrypto_value(substate_value)
+                                            .unpack();
+                                    for child_node_id in owned_nodes {
+                                        self.traverse_recursive(
+                                            Some(&(
+                                                node_id,
+                                                t.into(),
+                                                SubstateKey::Tuple(tuple_key),
+                                            )),
+                                            child_node_id,
+                                            depth + 1,
+                                        );
+                                    }
+                                }
+                            }
+
+                            SysModuleId::Metadata | SysModuleId::Virtualized => {
+                                for (map_key, value) in self
+                                    .substate_db
+                                    .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, MapKey>(
+                                        &node_id,
+                                        SysModuleId::Virtualized.into(),
+                                    )
+                                {
+                                    let (_, owned_nodes, _) =
+                                        IndexedScryptoValue::from_scrypto_value(value).unpack();
+                                    for child_node_id in owned_nodes {
+                                        self.traverse_recursive(
+                                            Some(&(
+                                                node_id,
+                                                t.into(),
+                                                SubstateKey::Map(map_key.clone()),
+                                            )),
+                                            child_node_id,
+                                            depth + 1,
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
