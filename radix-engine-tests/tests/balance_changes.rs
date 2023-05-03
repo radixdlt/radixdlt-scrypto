@@ -1,3 +1,4 @@
+use radix_engine::transaction::CommitResult;
 use radix_engine::{transaction::BalanceChange, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -217,25 +218,60 @@ fn test_balance_changes_when_transferring_non_fungibles() {
 
     // Assert
     let result = receipt.expect_commit(true);
+
     assert_eq!(
-        result.balance_changes(),
-        &indexmap!(
-            account.into() => indexmap!(
-                resource_address => BalanceChange::NonFungible {
-                    added: BTreeSet::new(),
-                    removed: btreeset!(NonFungibleLocalId::integer(2))
-                }
-            ),
-            other_account.into() => indexmap!(
-                resource_address => BalanceChange::NonFungible {
-                    added: btreeset!(NonFungibleLocalId::integer(2)),
-                    removed: BTreeSet::new()
-                }
-            ),
-            test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
-            ),
-        )
+        result
+            .balance_changes()
+            .keys()
+            .cloned()
+            .collect::<HashSet<GlobalAddress>>(),
+        hashset![
+            account.into(),
+            other_account.into(),
+            test_runner.faucet_component().into()
+        ]
     );
+
+    let (account_added, account_removed) =
+        get_non_fungible_changes(result, &account, &resource_address);
+    assert_eq!(account_added, BTreeSet::new());
+    assert_eq!(account_removed.len(), 1);
+    let transferred_non_fungible = account_removed.first().unwrap().clone();
+
+    let (other_account_added, other_account_removed) =
+        get_non_fungible_changes(result, &other_account, &resource_address);
+    assert_eq!(other_account_added, btreeset!(transferred_non_fungible));
+    assert_eq!(other_account_removed, BTreeSet::new());
+
+    let faucet_changes = result
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.faucet_component()))
+        .unwrap();
+    let total_cost_xrd =
+        result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd;
+    assert_eq!(
+        faucet_changes,
+        &indexmap!(RADIX_TOKEN => BalanceChange::Fungible(-total_cost_xrd)),
+    );
+
     assert!(result.direct_vault_updates().is_empty())
+}
+
+fn get_non_fungible_changes(
+    result: &CommitResult,
+    account: &ComponentAddress,
+    resource_address: &ResourceAddress,
+) -> (BTreeSet<NonFungibleLocalId>, BTreeSet<NonFungibleLocalId>) {
+    let balance_change = result
+        .balance_changes()
+        .get(&GlobalAddress::from(account.clone()))
+        .unwrap()
+        .get(resource_address)
+        .unwrap();
+    let account_changes = if let BalanceChange::NonFungible { added, removed } = balance_change {
+        Some((added.clone(), removed.clone()))
+    } else {
+        None
+    };
+    account_changes.unwrap()
 }
