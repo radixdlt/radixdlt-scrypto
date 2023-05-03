@@ -47,6 +47,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
+    WasmUnsupported(String),
 
     InvalidMetadataKey(String),
 }
@@ -543,13 +544,17 @@ impl PackageNativePackage {
 
             if !virtual_lazy_load_functions.is_empty() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Lazy load functions not supported".to_string(),
+                    )),
                 ));
             }
 
             if !key_value_stores.is_empty() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Static Key Value Stores not supported".to_string(),
+                    )),
                 ));
             }
         }

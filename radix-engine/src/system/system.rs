@@ -190,7 +190,9 @@ where
         );
 
         for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = OBJECT_BASE_MODULE.at_offset(i as u8).expect("Module number overflow");
+            let module_number = OBJECT_BASE_MODULE
+                .at_offset(i as u8)
+                .expect("Module number overflow");
             node_substates.insert(module_number, module_substates);
         }
 
@@ -1339,7 +1341,9 @@ where
         let (module_number, field_type_index) =
             if let Some((offset, field_type_index)) = schema.field(field) {
                 let base_module = object_module_id.base_module();
-                let module_number = base_module.at_offset(offset).expect("Module number overflow");
+                let module_number = base_module
+                    .at_offset(offset)
+                    .expect("Module number overflow");
                 (module_number, field_type_index)
             } else {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
@@ -1388,7 +1392,9 @@ where
             )));
         };
 
-        let module_number = OBJECT_BASE_MODULE.at_offset(module_offset).expect("Module number overflow");
+        let module_number = OBJECT_BASE_MODULE
+            .at_offset(module_offset)
+            .expect("Module number overflow");
 
         // TODO: Check if valid substate_key for node_id
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -1413,7 +1419,7 @@ where
     fn actor_lock_key_value_handle_entry(
         &mut self,
         kv_handle: u8,
-        key: &Vec<u8>,
+        key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor = self.api.kernel_get_current_actor().unwrap();
@@ -1435,7 +1441,9 @@ where
             .key_value_store_module_offset(kv_handle)
             .map(|(module_offset, kv_schema)| {
                 let base_module = object_module_id.base_module();
-                let module_number = base_module.at_offset(*module_offset).expect("Module number overflow");
+                let module_number = base_module
+                    .at_offset(*module_offset)
+                    .expect("Module number overflow");
                 (module_number, kv_schema)
             })
             .ok_or_else(|| {
@@ -1469,7 +1477,7 @@ where
         self.api.kernel_lock_substate_with_default(
             &node_id,
             module_number,
-            &SubstateKey::Map(key.clone()),
+            &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
             SystemLockData::KeyValueEntry(lock_data),

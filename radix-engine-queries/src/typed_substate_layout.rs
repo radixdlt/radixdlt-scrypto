@@ -139,11 +139,14 @@ pub fn to_typed_substate_key(
         ACCESS_RULES_BASE_MODULE => TypedSubstateKey::AccessRulesModule(
             AccessRulesOffset::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
-        _ => TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
-            entity_type,
-            module_number.0 - OBJECT_BASE_MODULE.0,
-            substate_key,
-        )?),
+        module_number @ _ if module_number >= OBJECT_BASE_MODULE => {
+            TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
+                entity_type,
+                module_number.0 - OBJECT_BASE_MODULE.0,
+                substate_key,
+            )?)
+        }
+        _ => return Err(format!("Unknown module {:?}", module_number)),
     };
     Ok(substate_type)
 }
