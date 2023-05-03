@@ -66,7 +66,7 @@ impl AuthModule {
         }
     }
 
-    fn is_transaction_processor(actor: &Option<Actor>) -> bool {
+    fn is_transaction_processor(actor: Option<&Actor>) -> bool {
         match actor {
             Some(actor) => {
                 let blueprint = actor.blueprint();
@@ -353,7 +353,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         };
         let barrier_crossings_required = 0;
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
-        let auth_zone_id = api.kernel_get_callback().modules.auth.last_auth_zone();
+        let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
 
@@ -381,11 +381,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let actor = api.kernel_get_current_actor();
+        let actor = api.kernel_get_system_state().current;
 
         // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        if let Some(actor) = &actor {
+        if let Some(actor) = actor {
             let package_address = actor.package_address();
             let id = scrypto_encode(&package_address).unwrap();
             let non_fungible_global_id = NonFungibleGlobalId::new(
@@ -409,14 +409,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         }
 
         // Prepare a new auth zone
-        let is_barrier = if let Some(actor) = &actor {
+        let is_barrier = if let Some(actor) = actor {
             Self::is_barrier(actor)
         } else {
             false
         };
-        let is_transaction_processor = Self::is_transaction_processor(&actor);
+        let is_transaction_processor = Self::is_transaction_processor(actor);
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_callback().modules.auth;
+            let auth_module = &api.kernel_get_system().modules.auth;
             (
                 auth_module.params.virtual_resources.clone(),
                 auth_module.params.initial_proofs.clone(),
@@ -425,7 +425,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             (BTreeSet::new(), BTreeSet::new())
         };
         let parent = api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .auth
             .auth_zone_stack
@@ -458,7 +458,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             ),
         )?;
 
-        api.kernel_get_callback()
+        api.kernel_get_system()
             .modules
             .auth
             .auth_zone_stack
@@ -472,7 +472,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         let auth_zone = api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .auth
             .auth_zone_stack

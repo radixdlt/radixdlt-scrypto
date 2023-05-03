@@ -182,18 +182,24 @@ pub trait KernelInvokeApi<I: Debug> {
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
+pub struct SystemState<'a, M: KernelCallbackObject> {
+    pub system: &'a mut M,
+    pub current: Option<&'a Actor>,
+    pub caller: Option<&'a Actor>,
+}
+
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Retrieves data associated with the kernel upstream layer (system)
-    fn kernel_get_callback(&mut self) -> &mut M;
+    fn kernel_get_system(&mut self) -> &mut M {
+        self.kernel_get_system_state().system
+    }
 
-    fn kernel_get_system_state(&mut self) -> (&mut M, Option<&Actor>, Option<&Actor>);
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M>;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
-    // TODO: gets cleaned up a little more
-    fn kernel_get_current_actor(&self) -> Option<Actor>;
 
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;

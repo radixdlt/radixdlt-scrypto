@@ -7,9 +7,8 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -321,21 +320,17 @@ where
         Some(info)
     }
 
-    fn kernel_get_callback(&mut self) -> &mut M {
-        &mut self.callback
-    }
-
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    fn kernel_get_current_actor(&self) -> Option<Actor> {
-        self.current_frame.actor.clone()
-    }
-
-    fn kernel_get_system_state(&mut self) -> (&mut M, Option<&Actor>, Option<&Actor>) {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
-        (&mut self.callback, caller, self.current_frame.actor.as_ref())
+        SystemState {
+            system: &mut self.callback,
+            caller,
+            current: self.current_frame.actor.as_ref(),
+        }
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {

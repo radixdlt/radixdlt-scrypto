@@ -66,7 +66,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
             }
             PackageCodeTypeSubstate::Wasm => {
                 let mut scrypto_vm_instance = {
-                    api.kernel_get_callback()
+                    api.kernel_get_system()
                         .callback_obj
                         .scrypto_vm
                         .create_instance(address, &package_code.code)

@@ -482,7 +482,7 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor = self.api.kernel_get_system_state().current.unwrap();
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
@@ -684,8 +684,8 @@ where
                                 self.api.kernel_get_node_info(receiver).unwrap();
                             match (visibility, on_heap) {
                                 (RefType::Normal, false) => {
-                                    self.api.kernel_get_current_actor().and_then(|a| match a {
-                                        Actor::Method { global_address, .. } => global_address,
+                                    self.api.kernel_get_system_state().current.and_then(|a| match a {
+                                        Actor::Method { global_address, .. } => global_address.clone(),
                                         _ => None,
                                     })
                                 }
@@ -787,7 +787,7 @@ where
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.outer_object {
-            let actor = self.api.kernel_get_current_actor().unwrap();
+            let actor = self.api.kernel_get_system_state().current.unwrap();
             let instance_context = actor.instance_context();
             match instance_context {
                 Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
@@ -1270,7 +1270,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
@@ -1294,7 +1294,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
@@ -1312,8 +1312,8 @@ where
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let (node_id, object_module_id, object_info) = match &actor {
+        let actor = self.api.kernel_get_system_state().current.clone().unwrap();
+        let (node_id, object_module_id, object_info) = match actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
@@ -1322,7 +1322,7 @@ where
                 module_id,
                 object_info,
                 ..
-            } => (node_id, module_id, object_info),
+            } => (node_id.clone(), module_id.clone(), object_info.clone()),
         };
 
         // TODO: Remove
@@ -1422,7 +1422,7 @@ where
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor = self.api.kernel_get_system_state().current.unwrap();
         let (node_id, object_module_id, object_info) = match actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
@@ -1432,7 +1432,7 @@ where
                 module_id,
                 object_info,
                 ..
-            } => (node_id, module_id, object_info),
+            } => (node_id.clone(), module_id.clone(), object_info.clone()),
         };
 
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
@@ -1491,8 +1491,8 @@ where
 
     #[trace_resources]
     fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
-        let object_info = match &actor {
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let object_info = match actor {
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAMethod))
             }
@@ -1504,12 +1504,12 @@ where
 
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor = self.api.kernel_get_system_state().current.unwrap();
         match actor {
             Actor::Method {
                 global_address: Some(address),
                 ..
-            } => Ok(address),
+            } => Ok(address.clone()),
             _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
             )),
@@ -1519,7 +1519,7 @@ where
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_current_actor().unwrap();
+        let actor = self.api.kernel_get_system_state().current.unwrap();
         Ok(actor.blueprint().clone())
     }
 }
@@ -1533,7 +1533,7 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self.api.kernel_get_callback().modules.auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         Ok(auth_zone_id.into())
     }
@@ -1546,7 +1546,7 @@ where
         let authorization = convert_contextless(&rule);
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
-        let auth_zone_id = self.api.kernel_get_callback().modules.auth.last_auth_zone();
+        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         // Authenticate
         if !Authentication::verify_method_auth(
@@ -1576,7 +1576,7 @@ where
 
         let current_depth = self.api.kernel_get_current_depth();
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .transaction_limits
             .update_wasm_memory_usage(current_depth, consumed_memory)
@@ -1593,7 +1593,7 @@ where
         // No costing applied
 
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .execution_trace
             .update_instruction_index(new_index);
@@ -1611,16 +1611,16 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_current_actor();
+        let actor = self.api.kernel_get_system_state().current.unwrap();
 
         // Locking the package info substate associated with the emitter's package
         let (blueprint_schema, local_type_index) = {
             // Getting the package address and blueprint name associated with the actor
             let blueprint = match actor {
-                Some(Actor::Method {
+                Actor::Method {
                     ref object_info, ..
-                }) => Ok(object_info.blueprint.clone()),
-                Some(Actor::Function { ref blueprint, .. }) => Ok(blueprint.clone()),
+                } => Ok(object_info.blueprint.clone()),
+                Actor::Function { ref blueprint, .. } => Ok(blueprint.clone()),
                 _ => Err(RuntimeError::ApplicationError(
                     ApplicationError::EventError(Box::new(EventError::InvalidActor)),
                 )),
@@ -1646,14 +1646,15 @@ where
         };
 
         // Construct the event type identifier based on the current actor
+        let actor = self.api.kernel_get_system_state().current.unwrap();
         let event_type_identifier = match actor {
-            Some(Actor::Method {
+            Actor::Method {
                 node_id, module_id, ..
-            }) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id, module_id),
+            } => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id.clone(), module_id.clone()),
                 local_type_index,
             )),
-            Some(Actor::Function { ref blueprint, .. }) => Ok(EventTypeIdentifier(
+            Actor::Function { ref blueprint, .. } => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
                     ObjectModuleId::SELF,
@@ -1681,7 +1682,7 @@ where
 
         // Adding the event to the event store
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .events
             .add_event(event_type_identifier, event_data);
@@ -1699,7 +1700,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         self.api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .logger
             .add_log(level, message);
@@ -1718,7 +1719,7 @@ where
 
         Ok(self
             .api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .transaction_runtime
             .transaction_hash())
@@ -1730,7 +1731,7 @@ where
 
         Ok(self
             .api
-            .kernel_get_callback()
+            .kernel_get_system()
             .modules
             .transaction_runtime
             .generate_uuid())
@@ -1875,16 +1876,8 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_get_callback(&mut self) -> &mut SystemConfig<V> {
-        self.api.kernel_get_callback()
-    }
-
-    fn kernel_get_system_state(&mut self) -> (&mut SystemConfig<V>, Option<&Actor>, Option<&Actor>) {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, SystemConfig<V>> {
         self.api.kernel_get_system_state()
-    }
-
-    fn kernel_get_current_actor(&self) -> Option<Actor> {
-        self.api.kernel_get_current_actor()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
