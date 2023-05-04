@@ -43,6 +43,30 @@ pub enum OwnValidation {
     IsTypedObject(PackageAddress, String),
 }
 
+impl OwnValidation {
+    pub fn could_match_bucket(&self) -> bool {
+        match self {
+            OwnValidation::IsBucket => true,
+            OwnValidation::IsProof => false,
+            OwnValidation::IsVault => false,
+            OwnValidation::IsKeyValueStore => false,
+            // Hard to validate without knowing package addresses from engine, assume fine
+            OwnValidation::IsTypedObject(_, _) => true,
+        }
+    }
+
+    pub fn could_match_proof(&self) -> bool {
+        match self {
+            OwnValidation::IsBucket => false,
+            OwnValidation::IsProof => true,
+            OwnValidation::IsVault => false,
+            OwnValidation::IsKeyValueStore => false,
+            // Hard to validate without knowing package addresses from engine, assume fine
+            OwnValidation::IsTypedObject(_, _) => true,
+        }
+    }
+}
+
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
     type CustomTypeValidation = ScryptoCustomTypeValidation;
 }

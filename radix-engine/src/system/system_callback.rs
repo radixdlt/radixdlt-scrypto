@@ -44,7 +44,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         input.as_slice(),
         &blueprint_schema.schema,
         function_schema.input,
-        service,
+        &mut service.as_validation_context(),
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
@@ -71,7 +71,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         output.as_slice(),
         &blueprint_schema.schema,
         function_schema.output,
-        service,
+        &mut service.as_validation_context(),
     )
     .map_err(|err| {
         RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(

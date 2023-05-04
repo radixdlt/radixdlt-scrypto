@@ -1,3 +1,4 @@
+use super::payload_validation::SystemServiceTypeInfoLookup;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
@@ -54,6 +55,12 @@ where
             api,
             phantom: PhantomData::default(),
         }
+    }
+
+    pub fn as_validation_context(&mut self) -> ScryptoCustomValidationContext {
+        ScryptoCustomValidationContext::new_with_type_info(Box::new(
+            SystemServiceTypeInfoLookup::new(self),
+        ))
     }
 
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
@@ -241,7 +248,7 @@ where
                 &fields[i],
                 &schema.schema,
                 schema.substates[i],
-                self,
+                &mut self.as_validation_context(),
             )
             .map_err(|err| {
                 RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
@@ -290,7 +297,7 @@ where
                     &buffer,
                     &store_schema.schema,
                     store_schema.value,
-                    self,
+                    &mut self.as_validation_context(),
                 ) {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
@@ -331,12 +338,14 @@ where
                         // Validate the substate against the schema
                         if let SubstateKey::Tuple(offset) = substate_key {
                             if let Some(index) = blueprint_schema.substates.get(offset as usize) {
-                                if let Err(e) = validate_payload_against_schema::<
-                                    ScryptoCustomExtension,
-                                    _,
-                                >(
-                                    &buffer, &blueprint_schema.schema, *index, self
-                                ) {
+                                if let Err(e) =
+                                    validate_payload_against_schema::<ScryptoCustomExtension, _>(
+                                        &buffer,
+                                        &blueprint_schema.schema,
+                                        *index,
+                                        &mut self.as_validation_context(),
+                                    )
+                                {
                                     return Err(RuntimeError::SystemError(
                                         SystemError::InvalidSubstateWrite(
                                             e.error_message(&blueprint_schema.schema),
@@ -1471,7 +1480,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
-            self,
+            &mut self.as_validation_context(),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(

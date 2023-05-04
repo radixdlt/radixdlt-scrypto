@@ -259,12 +259,21 @@ impl FormattableCustomExtension for NoCustomExtension {
 }
 
 impl ValidatableCustomExtension<()> for NoCustomExtension {
-    fn apply_custom_type_validation<'de>(
+    fn apply_validation_for_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+        _: LocalTypeIndex,
+        _: &(),
+    ) -> Result<(), PayloadValidationError<Self>> {
+        unreachable!("No custom values exist")
+    }
+
+    fn apply_custom_type_validation_for_non_custom_value<'de>(
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
-        _: &mut (),
-    ) -> Result<(), ValidationError> {
-        unreachable!("No custom values exist")
+        _: &(),
+    ) -> Result<(), PayloadValidationError<Self>> {
+        unreachable!("No custom type validationss exist")
     }
 }
 

@@ -7,6 +7,7 @@ mod custom_traversal;
 mod custom_value;
 mod custom_value_kind;
 
+mod custom_validation;
 pub mod model;
 pub use custom_extension::*;
 pub use custom_traversal::*;

@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine_common::data::scrypto::{
-    scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema,
+    scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema, ScryptoCustomValidationContext,
 };
 use radix_engine_common::*;
 use sbor::rust::prelude::*;
@@ -55,11 +55,14 @@ fn bench_schema_new(b: &mut Criterion) {
         generate_full_schema_from_single_type::<SimpleStruct, ScryptoCustomSchema>();
     b.bench_function("Schema::validate_payload", |b| {
         b.iter(|| {
-            let result = validate_payload_against_schema::<ScryptoCustomExtension, ()>(
+            let result = validate_payload_against_schema::<
+                ScryptoCustomExtension,
+                ScryptoCustomValidationContext,
+            >(
                 &bytes,
                 &schema,
                 type_index,
-                &mut (),
+                &mut ScryptoCustomValidationContext::new_without_type_info(),
             );
             assert!(result.is_ok())
         })

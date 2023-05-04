@@ -66,8 +66,8 @@ pub enum ValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocatedValidationError<'s, E: CustomExtension> {
-    error: PayloadValidationError<E>,
-    location: FullLocation<'s, E>,
+    pub error: PayloadValidationError<E>,
+    pub location: FullLocation<'s, E>,
 }
 
 impl<'s, E: CustomExtension> LocatedValidationError<'s, E> {
@@ -107,7 +107,7 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
     payload: &[u8],
     schema: &'s Schema<E::CustomSchema>,
     index: LocalTypeIndex,
-    context: &mut T,
+    context: &T,
 ) -> Result<(), LocatedValidationError<'s, E>> {
     let mut traverser = traverse_payload_with_types::<E>(payload, &schema, index);
     loop {
@@ -126,7 +126,7 @@ pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
 fn validate_event_with_type<E: ValidatableCustomExtension<T>, T>(
     schema: &Schema<E::CustomSchema>,
     event: &TypedTraversalEvent<E>,
-    context: &mut T,
+    context: &T,
 ) -> Result<bool, PayloadValidationError<E>> {
     match event {
         TypedTraversalEvent::ContainerStart(type_index, header) => {
@@ -189,8 +189,20 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomExtension<T>, T>(
     schema: &Schema<E::CustomSchema>,
     value: &TerminalValueRef<'de, E::CustomTraversal>,
     type_index: LocalTypeIndex,
-    context: &mut T,
+    context: &T,
 ) -> Result<(), PayloadValidationError<E>> {
+    match value {
+        TerminalValueRef::Custom(custom_value) => {
+            return Ok(E::apply_validation_for_custom_value(
+                schema,
+                custom_value,
+                type_index,
+                context,
+            )?);
+        }
+        _ => {}
+    }
+
     match schema
         .resolve_type_validation(type_index)
         .ok_or(PayloadValidationError::SchemaInconsistency)?
@@ -243,7 +255,11 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomExtension<T>, T>(
             return Err(PayloadValidationError::SchemaInconsistency);
         }
         TypeValidation::Custom(custom_type_validation) => {
-            E::apply_custom_type_validation(custom_type_validation, value, context)?;
+            E::apply_custom_type_validation_for_non_custom_value(
+                custom_type_validation,
+                value,
+                context,
+            )?;
         }
     }
     Ok(())
