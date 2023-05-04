@@ -128,7 +128,6 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
-    CallFrameUpdateError(CallFrameUpdateError),
 
     /// Interpreter
     WasmRuntimeError(WasmRuntimeError),
@@ -144,12 +143,6 @@ pub enum KernelError {
 
     // Actor Constraints
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameUpdateError {
-    ContainsDuplicatedOwn(NodeId),
-    ContainsLocalReference(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

@@ -7,7 +7,7 @@ use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -328,13 +328,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         // Destroy sentinel node
-        Self::on_execution_finish(api, &CallFrameUpdate::default())
+        Self::on_execution_finish(api, &Message::default())
     }
 
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        _call_frame_update: &mut CallFrameUpdate,
+        _call_frame_update: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -461,7 +461,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _update: &CallFrameUpdate,
+        _update: &Message,
     ) -> Result<(), RuntimeError> {
         let auth_zone = api
             .kernel_get_system()

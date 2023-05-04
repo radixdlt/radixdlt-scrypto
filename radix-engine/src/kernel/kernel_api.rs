@@ -1,8 +1,6 @@
-use super::actor::MethodActor;
 use super::call_frame::RefType;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_callback::SystemInvocation;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
@@ -156,25 +154,6 @@ pub struct KernelInvocation<I: Debug> {
 impl KernelInvocation<SystemInvocation> {
     pub fn len(&self) -> usize {
         self.sys_invocation.blueprint.len() + self.sys_invocation.ident.len() + self.args.len()
-    }
-}
-
-impl<I: Debug> KernelInvocation<I> {
-    pub fn get_update(
-        &self,
-        allow_local_references: bool,
-    ) -> Result<CallFrameUpdate, RuntimeError> {
-        let mut call_frame_update =
-            CallFrameUpdate::from_indexed_scrypto_value(&self.args, allow_local_references)
-                .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameUpdateError(e)))?;
-        // TODO: remove
-        match self.resolved_actor {
-            Actor::Method(MethodActor { node_id, .. }) => {
-                call_frame_update.add_reference(node_id);
-            }
-            Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
-        }
-        Ok(call_frame_update)
     }
 }
 

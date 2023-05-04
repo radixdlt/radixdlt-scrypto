@@ -1,4 +1,3 @@
-use crate::errors::CallFrameUpdateError;
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
@@ -15,42 +14,29 @@ use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
 
+/// A message used for communication between call frames.
+///
+/// Not that it's just an intent, not checked/allowed by kernel yet.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct CallFrameUpdate {
-    pub references: IndexSet<NodeId>,
-    pub owned_nodes: IndexSet<NodeId>,
+pub struct Message {
+    pub copy_references: Vec<NodeId>,
+    pub move_nodes: Vec<NodeId>,
 }
 
-impl CallFrameUpdate {
-    pub fn from_indexed_scrypto_value(
-        value: &IndexedScryptoValue,
-        allow_local_references: bool,
-    ) -> Result<Self, CallFrameUpdateError> {
-        let mut references = index_set_new();
-        let mut owned_nodes = index_set_new();
-        for r in value.references() {
-            if !allow_local_references && r.is_internal() {
-                return Err(CallFrameUpdateError::ContainsLocalReference(r.clone()));
-            }
-            references.insert(r.clone());
+impl Message {
+    pub fn from_indexed_scrypto_value(value: &IndexedScryptoValue) -> Self {
+        Self {
+            copy_references: value.references().clone(),
+            move_nodes: value.owned_nodes().clone(),
         }
-        for o in value.owned_nodes() {
-            if !owned_nodes.insert(o.clone()) {
-                return Err(CallFrameUpdateError::ContainsDuplicatedOwn(o.clone()));
-            }
-        }
-        Ok(Self {
-            references,
-            owned_nodes,
-        })
     }
 
-    pub fn add_reference(&mut self, node_id: NodeId) -> bool {
-        self.references.insert(node_id)
+    pub fn add_copy_reference(&mut self, node_id: NodeId) {
+        self.copy_references.push(node_id)
     }
 
-    pub fn add_owned_node(&mut self, node_id: NodeId) -> bool {
-        self.owned_nodes.insert(node_id)
+    pub fn add_move_node(&mut self, node_id: NodeId) {
+        self.move_nodes.push(node_id)
     }
 }
 
@@ -638,17 +624,17 @@ impl<L: Clone> CallFrame<L> {
     pub fn new_child_from_parent(
         parent: &mut CallFrame<L>,
         actor: Actor,
-        call_frame_update: CallFrameUpdate,
+        call_frame_update: Message,
     ) -> Result<Self, MoveError> {
         let mut owned_heap_nodes = index_map_new();
         let mut next_node_refs = NonIterMap::new();
 
-        for node_id in call_frame_update.owned_nodes {
+        for node_id in call_frame_update.move_nodes {
             parent.take_node_internal(&node_id)?;
             owned_heap_nodes.insert(node_id, 0u32);
         }
 
-        for node_id in call_frame_update.references {
+        for node_id in call_frame_update.copy_references {
             let visibility = parent
                 .get_node_visibility(&node_id)
                 .ok_or_else(|| MoveError::RefNotFound(node_id))?;
@@ -671,15 +657,15 @@ impl<L: Clone> CallFrame<L> {
     pub fn update_upstream(
         from: &mut CallFrame<L>,
         to: &mut CallFrame<L>,
-        update: CallFrameUpdate,
+        update: Message,
     ) -> Result<(), MoveError> {
-        for node_id in update.owned_nodes {
+        for node_id in update.move_nodes {
             // move re nodes to upstream call frame.
             from.take_node_internal(&node_id)?;
             to.owned_root_nodes.insert(node_id, 0u32);
         }
 
-        for node_id in update.references {
+        for node_id in update.copy_references {
             // Make sure not to allow owned nodes to be passed as references upstream
             let ref_data = from
                 .immortal_node_refs

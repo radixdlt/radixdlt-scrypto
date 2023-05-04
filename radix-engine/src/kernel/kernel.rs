@@ -7,7 +7,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -155,25 +155,22 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let mut call_frame_update = invocation.get_update(self.kernel_get_current_depth() == 0)?;
+        let mut message = Message::from_indexed_scrypto_value(&invocation.args);
         let sys_invocation = invocation.sys_invocation;
         let actor = invocation.resolved_actor;
         let args = &invocation.args;
 
         // Before push call frame
-        M::before_push_frame(&actor, &mut call_frame_update, &args, self)?;
+        M::before_push_frame(&actor, &mut message, &args, self)?;
 
         // Push call frame
         {
             self.id_allocator.push();
 
-            let frame = CallFrame::new_child_from_parent(
-                &mut self.current_frame,
-                actor,
-                call_frame_update.clone(),
-            )
-            .map_err(CallFrameError::MoveError)
-            .map_err(KernelError::CallFrameError)?;
+            let frame =
+                CallFrame::new_child_from_parent(&mut self.current_frame, actor, message.clone())
+                    .map_err(CallFrameError::MoveError)
+                    .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -191,11 +188,10 @@ where
 
             // Run
             let output = M::invoke_upstream(sys_invocation, args, self)?;
-            let mut update = CallFrameUpdate::from_indexed_scrypto_value(&output, false)
-                .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameUpdateError(e)))?;
+            let mut message = Message::from_indexed_scrypto_value(&output);
 
             // Handle execution finish
-            M::on_execution_finish(&mut update, self)?;
+            M::on_execution_finish(&mut message, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -203,7 +199,7 @@ where
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
-            (output, update)
+            (output, message)
         };
 
         // Pop call frame

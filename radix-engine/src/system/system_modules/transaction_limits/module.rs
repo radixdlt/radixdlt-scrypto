@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelApi},
+    kernel::{call_frame::Message, kernel_api::KernelApi},
     types::Vec,
 };
 
@@ -245,7 +245,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut CallFrameUpdate,
+        _down_movement: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack

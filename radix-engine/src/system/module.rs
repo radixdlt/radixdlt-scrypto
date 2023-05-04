@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -46,7 +46,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_push_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut CallFrameUpdate,
+        _down_movement: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -60,7 +60,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _up_movement: &CallFrameUpdate,
+        _up_movement: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

@@ -1,6 +1,6 @@
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -259,30 +259,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        match callee {
-            Actor::Method(MethodActor {
-                global_address,
-                object_info,
-                ..
-            }) => {
-                if let Some(address) = global_address {
-                    update.references.insert(address.as_node_id().clone());
-                }
-                if let Some(blueprint_parent) = object_info.outer_object {
-                    update
-                        .references
-                        .insert(blueprint_parent.as_node_id().clone());
-                }
-            }
-            _ => {}
-        }
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
@@ -456,7 +439,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {

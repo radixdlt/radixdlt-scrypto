@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::NodeSubstates;
@@ -91,7 +91,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -110,7 +110,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
