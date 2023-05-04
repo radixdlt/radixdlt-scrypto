@@ -581,8 +581,27 @@ impl TxFuzzer {
                         args: to_manifest_value(&input),
                     })
                 }
-
-                20..=43 => None,
+                // CreateProofFromAuthZone
+                20 => Some(Instruction::CreateProofFromAuthZone { resource_address }),
+                // CreateProofFromAuthZoneByAmount
+                21 => {
+                    let amount = Decimal::arbitrary(&mut unstructured).unwrap();
+                    Some(Instruction::CreateProofFromAuthZoneByAmount {
+                        amount,
+                        resource_address,
+                    })
+                }
+                // CreateProofFromAuthZoneByIds
+                22 => Some(Instruction::CreateProofFromAuthZoneByIds {
+                    ids: non_fungible_ids.clone(),
+                    resource_address,
+                }),
+                // CreateProofFromBucket
+                23 => {
+                    let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
+                    Some(Instruction::CreateProofFromBucket { bucket_id })
+                }
+                24..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
