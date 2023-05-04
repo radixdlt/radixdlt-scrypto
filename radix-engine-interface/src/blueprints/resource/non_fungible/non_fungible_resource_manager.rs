@@ -1,6 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::types::*;
@@ -172,5 +174,15 @@ impl NonFungibleDataSchema {
             non_fungible: non_fungible_type,
             mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
         }
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
+    // At the moment I see no smart method to derive Arbitrary for type Schema, which is part of
+    // ScryptoSchema, therefore implementing arbitrary by hand.
+    // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
+    fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
+        Ok(Self::new_schema::<()>())
     }
 }
