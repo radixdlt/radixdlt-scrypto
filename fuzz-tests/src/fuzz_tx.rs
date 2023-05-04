@@ -710,7 +710,35 @@ impl TxFuzzer {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
                     Some(Instruction::PushToAuthZone { proof_id })
                 }
-                34..=43 => None,
+                // RecallResource
+                34 => {
+                    let amount = Decimal::arbitrary(&mut unstructured).unwrap();
+                    // TODO: crash when using arbitrary
+                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/blueprints/transaction_processor/tx_processor.rs:92:85
+                    // - vault_id: Address(000000000000000000000000000000000000000000000000000000000000)
+                    #[cfg(not(feature = "skip_crash"))]
+                    // TODO: try to find some valid vault_ids and randomly choose it or generate
+                    // if not found
+                    let vault_id = Some(LocalAddress::arbitrary(&mut unstructured).unwrap());
+
+                    #[cfg(feature = "skip_crash")]
+                    let vault_id = {
+                        let vaults = self
+                            .runner
+                            .get_component_vaults(component_address, resource_address);
+                        if vaults.len() > 0 {
+                            Some(*unstructured.choose(&vaults[..]).unwrap())
+                        } else {
+                            None
+                        }
+                    };
+
+                    vault_id.map(|vault_id| Instruction::RecallResource {
+                        vault_id: LocalAddress::new_unchecked(vault_id.into()),
+                        amount,
+                    })
+                }
+                35..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT

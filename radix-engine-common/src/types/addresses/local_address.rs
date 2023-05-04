@@ -7,11 +7,14 @@ use crate::types::NodeId;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
 /// Address to a local entity
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LocalAddress(NodeId); // private to ensure entity type check
 
