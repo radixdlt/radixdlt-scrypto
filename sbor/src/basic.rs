@@ -219,15 +219,20 @@ impl CustomExtension for NoCustomExtension {
     type CustomTraversal = NoCustomTraversal;
     type CustomSchema = NoCustomSchema;
 
-    fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
+    fn custom_value_kind_matches_type_kind(
+        _: &Schema<Self::CustomSchema>,
         _: Self::CustomValueKind,
-        _: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>, L>,
+        _: &TypeKind<
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+            LocalTypeIndex,
+        >,
     ) -> bool {
         unreachable!("No custom value kinds exist")
     }
 
-    fn custom_type_kind_matches_non_custom_value_kind<L: SchemaTypeLink>(
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>,
+    fn custom_type_kind_matches_non_custom_value_kind(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         unreachable!("No custom type kinds exist")
@@ -269,6 +274,7 @@ impl ValidatableCustomExtension<()> for NoCustomExtension {
     }
 
     fn apply_custom_type_validation_for_non_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
         _: &(),

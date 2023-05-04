@@ -256,6 +256,7 @@ pub fn validate_terminal_value<'de, E: ValidatableCustomExtension<T>, T>(
         }
         TypeValidation::Custom(custom_type_validation) => {
             E::apply_custom_type_validation_for_non_custom_value(
+                schema,
                 custom_type_validation,
                 value,
                 context,

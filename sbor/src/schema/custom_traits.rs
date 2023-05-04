@@ -65,9 +65,15 @@ pub trait CustomExtension: Debug + Clone + PartialEq + Eq + 'static {
     type CustomSchema: CustomSchema;
 
     /// Used in the typed traverser
-    fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
+    ///
+    /// This method is only called if the type_kind is not "Any"
+    fn custom_value_kind_matches_type_kind(
+        schema: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
-        type_kind: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>, L>,
+        type_kind: &TypeKind<
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+            LocalTypeIndex,
+        >,
     ) -> bool;
 
     /// Used in the typed traverser
@@ -75,8 +81,9 @@ pub trait CustomExtension: Debug + Clone + PartialEq + Eq + 'static {
     /// This method is only called if custom_value_kind_matches_type_kind didn't apply.
     /// It's a fallback for any custom type kinds which should match against non-custom
     /// value kinds (in most cases there won't be any such cases).
-    fn custom_type_kind_matches_non_custom_value_kind<L: SchemaTypeLink>(
-        custom_type_kind: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>,
+    fn custom_type_kind_matches_non_custom_value_kind(
+        schema: &Schema<Self::CustomSchema>,
+        custom_type_kind: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
         non_custom_value_kind: ValueKind<Self::CustomValueKind>,
     ) -> bool;
 }

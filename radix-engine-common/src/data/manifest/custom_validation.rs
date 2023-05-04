@@ -17,11 +17,15 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
         let ManifestCustomTerminalValueRef(custom_value) = custom_value;
         // Because of the mis-match between Manifest values and Scrypto TypeKinds/TypeValidations, it's easier to match over values first,
         // and then check over which validations apply.
-        // We also perform validation now that we have the values which we couldn't do in `custom_value_kind_matches_type_kind`:
         match custom_value {
             ManifestCustomValue::Expression(ManifestExpression::EntireWorktop) => {
-                let TypeKind::Array { element_type } = schema.resolve_type_kind(type_index).ok_or(PayloadValidationError::SchemaInconsistency)? else {
-                    return Err(PayloadValidationError::SchemaInconsistency);
+                let element_type = match schema
+                    .resolve_type_kind(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?
+                {
+                    TypeKind::Any => return Ok(()), // Can't do any validation on an any
+                    TypeKind::Array { element_type } => element_type,
+                    _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
                 let element_type_kind = schema
                     .resolve_type_kind(*element_type)
@@ -46,8 +50,13 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 };
             }
             ManifestCustomValue::Expression(ManifestExpression::EntireAuthZone) => {
-                let TypeKind::Array { element_type } = schema.resolve_type_kind(type_index).ok_or(PayloadValidationError::SchemaInconsistency)? else {
-                    return Err(PayloadValidationError::SchemaInconsistency);
+                let element_type = match schema
+                    .resolve_type_kind(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?
+                {
+                    TypeKind::Any => return Ok(()), // Can't do any validation on an any
+                    TypeKind::Array { element_type } => element_type,
+                    _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
                 let element_type_kind = schema
                     .resolve_type_kind(*element_type)
@@ -72,8 +81,13 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
                 };
             }
             ManifestCustomValue::Blob(_) => {
-                let TypeKind::Array { element_type } = schema.resolve_type_kind(type_index).ok_or(PayloadValidationError::SchemaInconsistency)? else {
-                    return Err(PayloadValidationError::SchemaInconsistency);
+                let element_type = match schema
+                    .resolve_type_kind(type_index)
+                    .ok_or(PayloadValidationError::SchemaInconsistency)?
+                {
+                    TypeKind::Any => return Ok(()), // Can't do any validation on an any
+                    TypeKind::Array { element_type } => element_type,
+                    _ => return Err(PayloadValidationError::SchemaInconsistency),
                 };
                 let element_type_kind = schema
                     .resolve_type_kind(*element_type)
@@ -172,6 +186,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
     }
 
     fn apply_custom_type_validation_for_non_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
         _: &(),
@@ -186,7 +201,7 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
 mod tests {
     use crate::data::manifest::model::*;
     use crate::data::scrypto::model::NonFungibleLocalId;
-    use crate::data::scrypto::well_known_scrypto_custom_types;
+    use crate::data::scrypto::{well_known_scrypto_custom_types, ScryptoValue};
     use crate::data::scrypto::{ScryptoCustomSchema, ScryptoDescribe};
     use crate::math::{Decimal, PreciseDecimal};
     use crate::native_addresses::*;
@@ -219,6 +234,8 @@ mod tests {
         Vec<Proof>,
         Vec<Bucket>,
     );
+
+    type Any = ScryptoValue;
 
     #[test]
     fn valid_manifest_composite_value_passes_validation_against_scrypto_schema() {
@@ -276,6 +293,7 @@ mod tests {
         .unwrap();
 
         expect_matches::<ResourceAddress>(&payload);
+        expect_matches::<Any>(&payload);
         expect_does_not_match::<PackageAddress>(&payload);
         expect_does_not_match::<Bucket>(&payload);
         expect_does_not_match::<u8>(&payload);
@@ -289,6 +307,7 @@ mod tests {
         .unwrap();
 
         expect_matches::<Vec<u8>>(&payload);
+        expect_matches::<Any>(&payload);
         expect_does_not_match::<Vec<Bucket>>(&payload);
         expect_does_not_match::<Vec<Proof>>(&payload);
         expect_does_not_match::<Proof>(&payload);
@@ -303,6 +322,7 @@ mod tests {
         .unwrap();
 
         expect_matches::<Vec<Bucket>>(&payload);
+        expect_matches::<Any>(&payload);
         expect_does_not_match::<Vec<Proof>>(&payload);
         expect_does_not_match::<Proof>(&payload);
         expect_does_not_match::<Bucket>(&payload);
@@ -317,6 +337,7 @@ mod tests {
         .unwrap();
 
         expect_matches::<Vec<Proof>>(&payload);
+        expect_matches::<Any>(&payload);
         expect_does_not_match::<Vec<Bucket>>(&payload);
         expect_does_not_match::<Proof>(&payload);
         expect_does_not_match::<Bucket>(&payload);

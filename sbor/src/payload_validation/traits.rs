@@ -13,6 +13,7 @@ pub trait ValidatableCustomExtension<T>: CustomExtension {
     ) -> Result<(), PayloadValidationError<Self>>;
 
     fn apply_custom_type_validation_for_non_custom_value<'de>(
+        schema: &Schema<Self::CustomSchema>,
         custom_type_validation: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         non_custom_value: &TerminalValueRef<'de, Self::CustomTraversal>,
         context: &T,

@@ -62,6 +62,7 @@ impl<'a> ValidatableCustomExtension<ScryptoCustomValidationContext<'a>> for Scry
     }
 
     fn apply_custom_type_validation_for_non_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
         _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
         _: &TerminalValueRef<'de, Self::CustomTraversal>,
         _: &ScryptoCustomValidationContext,

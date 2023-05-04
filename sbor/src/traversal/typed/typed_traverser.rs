@@ -356,7 +356,11 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                     element_type: element_type_index,
                 } => {
                     let element_type = look_up_type!(self, *element_type_index);
-                    if !value_kind_matches_type_kind::<E>(element_value_kind, element_type) {
+                    if !value_kind_matches_type_kind::<E>(
+                        &self.schema,
+                        element_value_kind,
+                        element_type,
+                    ) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildElementType {
@@ -389,7 +393,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                     value_type: value_type_index,
                 } => {
                     let key_type = look_up_type!(self, *key_type_index);
-                    if !value_kind_matches_type_kind::<E>(key_value_kind, key_type) {
+                    if !value_kind_matches_type_kind::<E>(&self.schema, key_value_kind, key_type) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildKeyType {
@@ -400,7 +404,11 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                         )
                     }
                     let value_type = look_up_type!(self, *value_type_index);
-                    if !value_kind_matches_type_kind::<E>(value_value_kind, value_type) {
+                    if !value_kind_matches_type_kind::<E>(
+                        &self.schema,
+                        value_value_kind,
+                        value_type,
+                    ) {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildValueType {
@@ -438,7 +446,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         let value_kind = value_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
-        if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E>(&self.schema, value_kind, type_kind) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -460,7 +468,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         let value_kind = value_batch_ref.value_kind();
         let type_kind = look_up_type!(self, type_index);
 
-        if !value_kind_matches_type_kind::<E>(value_kind, type_kind) {
+        if !value_kind_matches_type_kind::<E>(&self.schema, value_kind, type_kind) {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
@@ -508,6 +516,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
 }
 
 fn value_kind_matches_type_kind<E: CustomExtension>(
+    schema: &Schema<E::CustomSchema>,
     value_kind: ValueKind<E::CustomValueKind>,
     type_kind: &SchemaTypeKind<E::CustomSchema>,
 ) -> bool {
@@ -516,7 +525,7 @@ fn value_kind_matches_type_kind<E: CustomExtension>(
     }
     match value_kind {
         ValueKind::Custom(custom_value_kind) => {
-            return E::custom_value_kind_matches_type_kind(custom_value_kind, type_kind);
+            return E::custom_value_kind_matches_type_kind(schema, custom_value_kind, type_kind);
         }
         _ => {}
     }
@@ -539,7 +548,7 @@ fn value_kind_matches_type_kind<E: CustomExtension>(
         TypeKind::Enum { .. } => matches!(value_kind, ValueKind::Enum),
         TypeKind::Map { .. } => matches!(value_kind, ValueKind::Map),
         TypeKind::Custom(custom_type_kind) => {
-            E::custom_type_kind_matches_non_custom_value_kind(custom_type_kind, value_kind)
+            E::custom_type_kind_matches_non_custom_value_kind(schema, custom_type_kind, value_kind)
         }
     }
 }

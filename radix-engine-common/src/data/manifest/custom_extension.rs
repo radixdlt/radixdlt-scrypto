@@ -15,9 +15,13 @@ impl CustomExtension for ManifestCustomExtension {
     // NOTE: ManifestSbor is actually validated against Scrypto schemas
     type CustomSchema = ScryptoCustomSchema;
 
-    fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
+    fn custom_value_kind_matches_type_kind(
+        schema: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
-        type_kind: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>, L>,
+        type_kind: &TypeKind<
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+            LocalTypeIndex,
+        >,
     ) -> bool {
         match custom_value_kind {
             ManifestCustomValueKind::Address => matches!(
@@ -30,10 +34,24 @@ impl CustomExtension for ManifestCustomExtension {
             ManifestCustomValueKind::Proof => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Own))
             }
-            // Vec<Own> buckets - will check more in the payload_validator
-            ManifestCustomValueKind::Expression => matches!(type_kind, TypeKind::Array { .. }),
-            // Vec<u8> - will check more in the payload_validator
-            ManifestCustomValueKind::Blob => matches!(type_kind, TypeKind::Array { .. }),
+            // An Expression can only be a Vec<Proof> or Vec<Manifest> at the moment
+            // - in other words they're both a Vec<Own> at the TypeKind level
+            ManifestCustomValueKind::Expression => matches!(
+                type_kind,
+                TypeKind::Array { element_type }
+                    if match schema.resolve_type_kind(*element_type) {
+                        Some(TypeKind::Custom(ScryptoCustomTypeKind::Own)) => true,
+                        _ => false,
+                    }
+            ),
+            ManifestCustomValueKind::Blob => matches!(
+                type_kind,
+                TypeKind::Array { element_type }
+                    if match schema.resolve_type_kind(*element_type) {
+                        Some(TypeKind::U8) => true,
+                        _ => false,
+                    }
+            ),
             ManifestCustomValueKind::Decimal => {
                 matches!(type_kind, TypeKind::Custom(ScryptoCustomTypeKind::Decimal))
             }
@@ -48,8 +66,9 @@ impl CustomExtension for ManifestCustomExtension {
         }
     }
 
-    fn custom_type_kind_matches_non_custom_value_kind<L: SchemaTypeLink>(
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>,
+    fn custom_type_kind_matches_non_custom_value_kind(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         // No custom type kinds can match non-custom value kinds

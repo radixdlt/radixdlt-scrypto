@@ -14,9 +14,13 @@ impl CustomExtension for ScryptoCustomExtension {
     type CustomTraversal = ScryptoCustomTraversal;
     type CustomSchema = ScryptoCustomSchema;
 
-    fn custom_value_kind_matches_type_kind<L: SchemaTypeLink>(
+    fn custom_value_kind_matches_type_kind(
+        _: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
-        type_kind: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>, L>,
+        type_kind: &TypeKind<
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+            LocalTypeIndex,
+        >,
     ) -> bool {
         match custom_value_kind {
             ScryptoCustomValueKind::Reference => matches!(
@@ -40,8 +44,9 @@ impl CustomExtension for ScryptoCustomExtension {
         }
     }
 
-    fn custom_type_kind_matches_non_custom_value_kind<L: SchemaTypeLink>(
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<L>,
+    fn custom_type_kind_matches_non_custom_value_kind(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         // It's not possible for a custom type kind to match a non-custom value kind
