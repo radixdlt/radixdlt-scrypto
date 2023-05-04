@@ -43,6 +43,9 @@ pub trait ClientObjectApi<E> {
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
+    /// Pre-allocates a global address, for a future globalization.
+    fn preallocate_global_address(&mut self, entity_type: EntityType) -> Result<GlobalAddress, E>;
+
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
     fn globalize(&mut self, modules: BTreeMap<ObjectModuleId, NodeId>) -> Result<GlobalAddress, E>;

@@ -8,7 +8,7 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{Blueprint, GlobalAddress};
+use radix_engine_interface::types::{Blueprint, EntityType, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
@@ -38,6 +38,18 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
                 object_states.as_ptr(),
                 object_states.len(),
             )
+        });
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn preallocate_global_address(
+        &mut self,
+        entity_type: EntityType,
+    ) -> Result<GlobalAddress, ClientApiError> {
+        let entity_type = scrypto_encode(&entity_type).unwrap();
+
+        let bytes = copy_buffer(unsafe {
+            preallocate_global_address(entity_type.as_ptr(), entity_type.len())
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }

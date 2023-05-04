@@ -201,10 +201,11 @@ pub enum SystemError {
     InvalidKeyValueStoreOwnership,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
-    CannotGlobalize,
+    CannotGlobalize(Box<CannotGlobalizeError>),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
+    InvalidGlobalEntityType,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
@@ -257,6 +258,16 @@ pub enum ModuleError {
 pub struct InvalidModuleType {
     pub expected_blueprint: Blueprint,
     pub actual_blueprint: Blueprint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CannotGlobalizeError {
+    NotAnObject,
+    AlreadyGlobalized,
+    InvalidAddressEntityType {
+        expected: EntityType,
+        actual: Option<EntityType>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

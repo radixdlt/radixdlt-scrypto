@@ -224,6 +224,23 @@ fn new_key_value_store(
         .map(|buffer| buffer.0)
 }
 
+fn preallocate_global_address(
+    mut caller: Caller<'_, HostState>,
+    entity_type_ptr: u32,
+    entity_type_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .preallocate_global_address(read_memory(
+            caller.as_context_mut(),
+            memory,
+            entity_type_ptr,
+            entity_type_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
 fn globalize_object(
     mut caller: Caller<'_, HostState>,
     modules_ptr: u32,
@@ -557,6 +574,17 @@ impl WasmiModule {
             },
         );
 
+        let host_preallocate_global_address = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             entity_type_ptr: u32,
+             entity_type_len: u32|
+             -> Result<u64, Trap> {
+                preallocate_global_address(caller, entity_type_ptr, entity_type_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
         let host_globalize_object = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -749,6 +777,11 @@ impl WasmiModule {
             linker,
             NEW_KEY_VALUE_STORE_FUNCTION_NAME,
             host_new_key_value_store
+        );
+        linker_define!(
+            linker,
+            PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME,
+            host_preallocate_global_address
         );
         linker_define!(
             linker,

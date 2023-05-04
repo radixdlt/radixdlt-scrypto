@@ -11,7 +11,7 @@ mod child_component {
             Self { to_call }.instantiate()
         }
 
-        pub fn get_address(&self) -> ComponentAddress {
+        pub fn get_global_address(&self) -> ComponentAddress {
             Runtime::global_address()
         }
 
@@ -40,26 +40,68 @@ mod my_component {
             Self { child, to_call }.instantiate().globalize()
         }
 
-        pub fn get_address_in_parent(&self) -> ComponentAddress {
+        pub fn create_with_preallocated_address(to_call: ComponentAddress) -> ComponentAddress {
+            let component_address = Runtime::preallocate_global_component_address();
+            let child = ChildComponent::create(to_call);
+            Self { child, to_call }
+                .instantiate()
+                .globalize_at_address(component_address)
+        }
+
+        pub fn create_with_unused_preallocated_address_1(
+            to_call: ComponentAddress,
+        ) -> ComponentAddress {
+            let component_address = Runtime::preallocate_global_component_address();
+            Runtime::preallocate_global_component_address();
+            let child = ChildComponent::create(to_call);
+            Self { child, to_call }
+                .instantiate()
+                .globalize_at_address(component_address)
+        }
+
+        pub fn create_with_unused_preallocated_address_2(
+            to_call: ComponentAddress,
+        ) -> ComponentAddress {
+            Runtime::preallocate_global_component_address();
+            let child = ChildComponent::create(to_call);
+            Self { child, to_call }.instantiate().globalize()
+        }
+
+        pub fn create_two_with_same_address(
+            to_call: ComponentAddress,
+        ) -> (ComponentAddress, ComponentAddress) {
+            let component_address = Runtime::preallocate_global_component_address();
+            let child = ChildComponent::create(to_call);
+            let one = Self { child, to_call }
+                .instantiate()
+                .globalize_at_address(component_address);
+            let child = ChildComponent::create(to_call);
+            let two = Self { child, to_call }
+                .instantiate()
+                .globalize_at_address(component_address);
+            (one, two)
+        }
+
+        pub fn get_global_address_in_parent(&self) -> ComponentAddress {
             Runtime::global_address()
         }
 
-        pub fn get_address_in_owned(&self) -> ComponentAddress {
-            self.child.get_address()
+        pub fn get_global_address_in_owned(&self) -> ComponentAddress {
+            self.child.get_global_address()
         }
 
-        pub fn get_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
+        pub fn get_global_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
             let child = ChildComponent::create(to_call);
-            let address = child.get_address();
+            let address = child.get_global_address();
             Self { child, to_call }.instantiate().globalize();
             address
         }
 
-        pub fn get_address_in_local_of_parent_method(
+        pub fn get_global_address_in_local_of_parent_method(
             &self,
             to_call: ComponentAddress,
         ) -> ComponentAddress {
-            Self::get_address_in_local(to_call)
+            Self::get_global_address_in_local(to_call)
         }
 
         pub fn call_other_component_with_wrong_address(&self) {
