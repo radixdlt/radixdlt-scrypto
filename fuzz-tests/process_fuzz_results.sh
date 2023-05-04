@@ -121,9 +121,15 @@ function inspect_crashes() {
         cat <<EOF >> $SUMMARY_FILE
 Crash/hang info
 command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
-$(cat *.panic)
 EOF
-        rm -f output.log *.panic
+        for f in *.panic ; do
+            echo
+            grep ^panic $f
+            cnt=$(grep ^file $f | awk 'END{print NR}')
+            echo "count   : $cnt"
+            echo "list    : $f"
+        done >> $SUMMARY_FILE
+        rm -f output.log
 
     else
         echo "No crashes found" >> $SUMMARY_FILE
