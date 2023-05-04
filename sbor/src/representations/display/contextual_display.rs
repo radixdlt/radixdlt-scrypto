@@ -34,7 +34,7 @@ pub enum DisplayMode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomTypeExtension> {
+pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomExtension> {
     Schemaless {
         display_mode: DisplayMode,
         print_mode: PrintMode,
@@ -44,17 +44,17 @@ pub enum ValueDisplayParameters<'s, 'a, E: FormattableCustomTypeExtension> {
         display_mode: DisplayMode,
         print_mode: PrintMode,
         custom_context: E::CustomDisplayContext<'a>,
-        schema: &'s Schema<E>,
+        schema: &'s Schema<E::CustomSchema>,
         type_index: LocalTypeIndex,
     },
 }
 
-enum Context<'s, 'a, E: FormattableCustomTypeExtension> {
+enum Context<'s, 'a, E: FormattableCustomExtension> {
     Nested(NestedStringDisplayContext<'s, 'a, E>, LocalTypeIndex),
     RustLike(RustLikeDisplayContext<'s, 'a, E>, LocalTypeIndex),
 }
 
-impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E> {
+impl<'s, 'a, E: FormattableCustomExtension> ValueDisplayParameters<'s, 'a, E> {
     fn get_context_and_type_index(&self) -> Context<'s, 'a, E> {
         match self {
             Self::Schemaless {
@@ -63,7 +63,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                 custom_context,
             } => Context::Nested(
                 NestedStringDisplayContext {
-                    schema: E::empty_schema(),
+                    schema: E::CustomSchema::empty_schema(),
                     print_mode: *print_mode,
                     custom_context: *custom_context,
                 },
@@ -89,7 +89,7 @@ impl<'s, 'a, E: FormattableCustomTypeExtension> ValueDisplayParameters<'s, 'a, E
                 custom_context,
             } => Context::RustLike(
                 RustLikeDisplayContext {
-                    schema: E::empty_schema(),
+                    schema: E::CustomSchema::empty_schema(),
                     print_mode: *print_mode,
                     custom_context: *custom_context,
                 },
@@ -119,8 +119,8 @@ pub enum FormattingError {
     Sbor(String),
 }
 
-impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
-    ContextualDisplay<ValueDisplayParameters<'s, 'a, E>> for RawPayload<'b, E>
+impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayParameters<'s, 'a, E>>
+    for RawPayload<'b, E>
 {
     type Error = FormattingError;
 
@@ -141,8 +141,8 @@ impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
     }
 }
 
-impl<'s, 'a, 'b, E: FormattableCustomTypeExtension>
-    ContextualDisplay<ValueDisplayParameters<'s, 'a, E>> for RawValue<'b, E>
+impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayParameters<'s, 'a, E>>
+    for RawValue<'b, E>
 {
     type Error = FormattingError;
 

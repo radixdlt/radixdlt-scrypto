@@ -5,7 +5,7 @@ use serde::ser::*;
 use utils::*;
 
 // See https://www.possiblerust.com/pattern/3-things-to-try-when-you-can-t-make-a-trait-object
-pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtension> {
+pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomExtension> {
     String(String),
     Str(&'a str),
     Bool(bool),
@@ -20,7 +20,7 @@ pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtens
     SerializableMapElements(SerializableMapElements<'t, 'de, 's1, E>),
 }
 
-impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtension>
+impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomExtension>
     ContextualSerialize<SerializationContext<'s2, 'a2, E>>
     for SerializableType<'a, 't, 'de, 's1, 's2, E>
 {
@@ -62,23 +62,14 @@ impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomTypeExtension>
     }
 }
 
-pub struct SerdeValueMapAggregator<
-    'a,
-    'a2,
-    't,
-    'de,
-    's,
-    's1,
-    's2,
-    E: SerializableCustomTypeExtension,
-> {
+pub struct SerdeValueMapAggregator<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension> {
     context: &'a SerializationContext<'s, 'a2, E>,
     opt_into_kind_tag_in_simple_mode: bool,
     value_context: &'a ValueContext,
     fields: Vec<(&'a str, SerializableType<'a, 't, 'de, 's1, 's2, E>)>,
 }
 
-impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
+impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
     SerdeValueMapAggregator<'a, 'a2, 't, 'de, 's, 's1, 's2, E>
 {
     pub fn new(
@@ -144,6 +135,26 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomTypeExtension>
         if self.should_embed_value_in_contextual_json_map() {
             self.fields
                 .push(("kind", SerializableType::String(value_kind.to_string())));
+            type_name.map(|type_name| {
+                self.fields
+                    .push(("type_name", SerializableType::Str(type_name)))
+            });
+        }
+        if let ValueContext::IncludeFieldName { field_name: key } = self.value_context {
+            self.fields.push(("field_name", SerializableType::Str(key)));
+        }
+    }
+
+    pub fn add_initial_details_with_custom_value_kind_name(
+        &mut self,
+        value_kind_name: &'a str,
+        type_name: Option<&'a str>,
+    ) {
+        if self.should_embed_value_in_contextual_json_map() {
+            self.fields.push((
+                "kind",
+                SerializableType::String(value_kind_name.to_string()),
+            ));
             type_name.map(|type_name| {
                 self.fields
                     .push(("type_name", SerializableType::Str(type_name)))

@@ -35,9 +35,7 @@ pub enum SchemaValidationError {
     TypeValidationAttachedToCustomType,
 }
 
-pub fn validate_schema<E: CustomTypeExtension>(
-    schema: &Schema<E>,
-) -> Result<(), SchemaValidationError> {
+pub fn validate_schema<S: CustomSchema>(schema: &Schema<S>) -> Result<(), SchemaValidationError> {
     let Schema {
         type_kinds,
         type_metadata,
@@ -56,9 +54,9 @@ pub fn validate_schema<E: CustomTypeExtension>(
     };
 
     for i in 0..types_len {
-        validate_type_kind::<E>(&context, &type_kinds[i])?;
-        validate_type_metadata_with_type_kind::<E>(&context, &type_kinds[i], &type_metadata[i])?;
-        validate_custom_type_validation::<E>(&context, &type_kinds[i], &type_validations[i])?;
+        validate_type_kind::<S>(&context, &type_kinds[i])?;
+        validate_type_metadata_with_type_kind::<S>(&context, &type_kinds[i], &type_metadata[i])?;
+        validate_custom_type_validation::<S>(&context, &type_kinds[i], &type_validations[i])?;
     }
     Ok(())
 }
