@@ -2,6 +2,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "decode_tx_manifest")]
@@ -372,7 +373,7 @@ impl TxFuzzer {
                 }),
                 // CreateAccountAdvanced
                 13 => {
-                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // TODO: crash when using arbitrary
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - AccountCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {}, method_auth: {MethodKey { module_id: SELF, ident: "-!" }: AccessRule(DenyAll)}, grouped_auth: {"!LX": Protected(AllOf([AnyOf([]), AllOf([])])), "1)UZ": DenyAll, "t7": DenyAll}, default_auth: AccessRule(AllowAll), method_auth_mutability: {MethodKey { module_id: SELF, ident: "" }: AccessRule(Protected(AnyOf([AnyOf([AllOf([AllOf([]), ProofRule(AllOf(Static([StaticResource(ResourceAddress(dcd0c83141b9ff8080553b6190b5a7dc0cbde7854d9cf22b600480dcbc36)), Dynamic(SchemaPath([Field("\u{4}G<]y\u{5}\u{1f}")]))])))])]), AnyOf([ProofRule(AmountOf(Static(53647144799766708596252244031328084853448836832030149660791.749040275160793477), Static(ResourceAddress(d53666602d72af4e26da05ce175857e93a99a2ee5636a74734e7122ff9f2))))])])))}, grouped_auth_mutability: {"": DenyAll}, default_auth_mutability: AccessRule(DenyAll) } }
                     #[cfg(not(feature = "skip_crash"))]
@@ -397,7 +398,7 @@ impl TxFuzzer {
                 }
                 // CreateFungibleResource
                 14 => {
-                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // TODO: crash when using arbitrary
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - FungibleResourceManagerCreateInput { divisibility: 195, metadata: {"u\u{3}": ""}, access_rules: {UpdateNonFungibleData: (Protected(AnyOf([AllOf([ProofRule(AmountOf(Static(26154969881750291342967843398213318666330202269873300598763.295047154523616676), Static(ResourceAddress(6071567d817883153c3e5ad7505152a0cf52805d639e653336dca49f6c8d)))), ProofRule(Require(StaticNonFungible(ResourceAddress(4ba06972980bd34c26b0a3b4f9026d1fc145206120c7481aefff9bf9191c):#18136094832208207429#)))])])), DenyAll)} }
                     #[cfg(not(feature = "skip_crash"))]
@@ -429,7 +430,7 @@ impl TxFuzzer {
                 }
                 // CreateFungibleResourceWithInitialSupply
                 15 => {
-                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // TODO: crash when using arbitrary
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - FungibleResourceManagerCreateWithInitialSupplyInput { divisibility: 220, metadata: {}, access_rules: {Burn: (DenyAll, DenyAll), Withdraw: (Protected(AnyOf([])), Protected(ProofRule(AmountOf(Dynamic(SchemaPath([])), Static(ResourceAddress(6c7bbb0abab0bb8a458c42209dbb23d885d698ece363e52f77dd4832efa8)))))), Recall: (AllowAll, AllowAll)}, initial_supply: -2148955441104578335242117384818719057515562139924293906511.547848591891882845 }
                     #[cfg(not(feature = "skip_crash"))]
@@ -466,8 +467,44 @@ impl TxFuzzer {
                         ),
                     })
                 }
+                // CreateIdentity
+                16 => {
+                    let identity_create_input =
+                        IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
-                16..=43 => None,
+                    Some(Instruction::CallFunction {
+                        package_address: IDENTITY_PACKAGE,
+                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                        function_name: IDENTITY_CREATE_IDENT.to_string(),
+                        args: to_manifest_value(&identity_create_input),
+                    })
+                }
+                // CreateIdentityAdvanced
+                17 => {
+                    // TODO: crash when using arbitrary
+                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - IdentityCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {MethodKey { module_id: SELF, ident: "" }: AccessRule(AllowAll)}, method_auth: {MethodKey { module_id: SELF, ident: "" }: Group(""), MethodKey { module_id: AccessRules, ident: "" }: AccessRule(AllowAll)}, grouped_auth: {"": Protected(AnyOf([]))}, default_auth: AccessRule(DenyAll), method_auth_mutability: {MethodKey { module_id: AccessRules, ident: "" }: Group("ǧv")}, grouped_auth_mutability: {"": Protected(AnyOf([ProofRule(CountOf(Dynamic(SchemaPath([Index(10162409116604676426)])), Dynamic(SchemaPath([Index(13698182042123810480)])))), ProofRule(Require(StaticNonFungible(ResourceAddress(20f6a7a71967b9349d46c1323bf8b4a369b5c376733a910f29d1fdef33ec):#14463890316188986874#)))])), "irRD4": DenyAll}, default_auth_mutability: AccessRule(AllowAll) } }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let identity_create_advanced_input =
+                        IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let identity_create_advanced_input = {
+                        let owner_id =
+                            NonFungibleGlobalId::from_public_key(&self.accounts[0].public_key);
+                        let config = AccessRulesConfig::new()
+                            .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+                        IdentityCreateAdvancedInput { config };
+                    };
+
+                    Some(Instruction::CallFunction {
+                        package_address: IDENTITY_PACKAGE,
+                        blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+                        function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
+                        args: to_manifest_value(&identity_create_advanced_input),
+                    })
+                }
+
+                18..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
