@@ -377,10 +377,9 @@ impl TxFuzzer {
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - AccountCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {}, method_auth: {MethodKey { module_id: SELF, ident: "-!" }: AccessRule(DenyAll)}, grouped_auth: {"!LX": Protected(AllOf([AnyOf([]), AllOf([])])), "1)UZ": DenyAll, "t7": DenyAll}, default_auth: AccessRule(AllowAll), method_auth_mutability: {MethodKey { module_id: SELF, ident: "" }: AccessRule(Protected(AnyOf([AnyOf([AllOf([AllOf([]), ProofRule(AllOf(Static([StaticResource(ResourceAddress(dcd0c83141b9ff8080553b6190b5a7dc0cbde7854d9cf22b600480dcbc36)), Dynamic(SchemaPath([Field("\u{4}G<]y\u{5}\u{1f}")]))])))])]), AnyOf([ProofRule(AmountOf(Static(53647144799766708596252244031328084853448836832030149660791.749040275160793477), Static(ResourceAddress(d53666602d72af4e26da05ce175857e93a99a2ee5636a74734e7122ff9f2))))])])))}, grouped_auth_mutability: {"": DenyAll}, default_auth_mutability: AccessRule(DenyAll) } }
                     #[cfg(not(feature = "skip_crash"))]
-                    let account_create_advanced_input =
-                        AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
                     #[cfg(feature = "skip_crash")]
-                    let account_create_advanced_input = AccountCreateAdvancedInput {
+                    let input = AccountCreateAdvancedInput {
                         config: AccessRulesConfig::new()
                             .default(AccessRule::AllowAll, AccessRule::AllowAll),
                     };
@@ -393,7 +392,7 @@ impl TxFuzzer {
                         package_address: ACCOUNT_PACKAGE,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
                         function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-                        args: to_manifest_value(&account_create_advanced_input),
+                        args: to_manifest_value(&input),
                     })
                 }
                 // CreateFungibleResource
@@ -402,30 +401,29 @@ impl TxFuzzer {
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - FungibleResourceManagerCreateInput { divisibility: 195, metadata: {"u\u{3}": ""}, access_rules: {UpdateNonFungibleData: (Protected(AnyOf([AllOf([ProofRule(AmountOf(Static(26154969881750291342967843398213318666330202269873300598763.295047154523616676), Static(ResourceAddress(6071567d817883153c3e5ad7505152a0cf52805d639e653336dca49f6c8d)))), ProofRule(Require(StaticNonFungible(ResourceAddress(4ba06972980bd34c26b0a3b4f9026d1fc145206120c7481aefff9bf9191c):#18136094832208207429#)))])])), DenyAll)} }
                     #[cfg(not(feature = "skip_crash"))]
-                    let fungible_resource_manager_create_input =
+                    let input =
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
                     #[cfg(feature = "skip_crash")]
-                    let fungible_resource_manager_create_input =
-                        FungibleResourceManagerCreateInput {
-                            divisibility: 18,
-                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                            access_rules: BTreeMap::from([
-                                (
-                                    ResourceMethodAuthKey::Withdraw,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                                (
-                                    ResourceMethodAuthKey::Deposit,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                            ]),
-                        };
+                    let input = FungibleResourceManagerCreateInput {
+                        divisibility: 18,
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                    };
 
                     Some(Instruction::CallFunction {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&fungible_resource_manager_create_input),
+                        args: to_manifest_value(&input),
                     })
                 }
                 // CreateFungibleResourceWithInitialSupply
@@ -434,49 +432,44 @@ impl TxFuzzer {
                     // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - FungibleResourceManagerCreateWithInitialSupplyInput { divisibility: 220, metadata: {}, access_rules: {Burn: (DenyAll, DenyAll), Withdraw: (Protected(AnyOf([])), Protected(ProofRule(AmountOf(Dynamic(SchemaPath([])), Static(ResourceAddress(6c7bbb0abab0bb8a458c42209dbb23d885d698ece363e52f77dd4832efa8)))))), Recall: (AllowAll, AllowAll)}, initial_supply: -2148955441104578335242117384818719057515562139924293906511.547848591891882845 }
                     #[cfg(not(feature = "skip_crash"))]
-                    let fungible_resource_manager_create_with_initial_supply =
-                        FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
-                            &mut unstructured,
-                        )
-                        .unwrap();
+                    let input = FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
+                        &mut unstructured,
+                    )
+                    .unwrap();
                     #[cfg(feature = "skip_crash")]
-                    let fungible_resource_manager_create_with_initial_supply =
-                        FungibleResourceManagerCreateWithInitialSupplyInput {
-                            divisibility: 18,
-                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                            access_rules: BTreeMap::from([
-                                (
-                                    ResourceMethodAuthKey::Withdraw,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                                (
-                                    ResourceMethodAuthKey::Deposit,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                            ]),
-                            initial_supply: Decimal::arbitrary(&mut unstructured).unwrap(),
-                        };
+                    let input = FungibleResourceManagerCreateWithInitialSupplyInput {
+                        divisibility: 18,
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                        initial_supply: Decimal::arbitrary(&mut unstructured).unwrap(),
+                    };
 
                     Some(Instruction::CallFunction {
                         package_address: RESOURCE_MANAGER_PACKAGE,
                         blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                         function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                             .to_string(),
-                        args: to_manifest_value(
-                            &fungible_resource_manager_create_with_initial_supply,
-                        ),
+                        args: to_manifest_value(&input),
                     })
                 }
                 // CreateIdentity
                 16 => {
-                    let identity_create_input =
-                        IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
+                    let input = IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::CallFunction {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_IDENT.to_string(),
-                        args: to_manifest_value(&identity_create_input),
+                        args: to_manifest_value(&input),
                     })
                 }
                 // CreateIdentityAdvanced
@@ -485,10 +478,9 @@ impl TxFuzzer {
                     // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
                     // - IdentityCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {MethodKey { module_id: SELF, ident: "" }: AccessRule(AllowAll)}, method_auth: {MethodKey { module_id: SELF, ident: "" }: Group(""), MethodKey { module_id: AccessRules, ident: "" }: AccessRule(AllowAll)}, grouped_auth: {"": Protected(AnyOf([]))}, default_auth: AccessRule(DenyAll), method_auth_mutability: {MethodKey { module_id: AccessRules, ident: "" }: Group("ǧv")}, grouped_auth_mutability: {"": Protected(AnyOf([ProofRule(CountOf(Dynamic(SchemaPath([Index(10162409116604676426)])), Dynamic(SchemaPath([Index(13698182042123810480)])))), ProofRule(Require(StaticNonFungible(ResourceAddress(20f6a7a71967b9349d46c1323bf8b4a369b5c376733a910f29d1fdef33ec):#14463890316188986874#)))])), "irRD4": DenyAll}, default_auth_mutability: AccessRule(AllowAll) } }
                     #[cfg(not(feature = "skip_crash"))]
-                    let identity_create_advanced_input =
-                        IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
+                    let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
                     #[cfg(feature = "skip_crash")]
-                    let identity_create_advanced_input = {
+                    let input = {
                         let owner_id =
                             NonFungibleGlobalId::from_public_key(&self.accounts[0].public_key);
                         let config = AccessRulesConfig::new()
@@ -500,11 +492,97 @@ impl TxFuzzer {
                         package_address: IDENTITY_PACKAGE,
                         blueprint_name: IDENTITY_BLUEPRINT.to_string(),
                         function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-                        args: to_manifest_value(&identity_create_advanced_input),
+                        args: to_manifest_value(&input),
+                    })
+                }
+                // CreateNonFungibleResource
+                18 => {
+                    // TODO: crash when using arbitrary
+                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - NonFungibleResourceManagerCreateInput { id_type: Integer, non_fungible_schema: NonFungibleDataSchema { schema: Schema { type_kinds: [], type_metadata: [], type_validations: [] }, non_fungible: WellKnown(66), mutable_fields: {} }, metadata: {"": "", "%": "", "5": ""}, access_rules: {Burn: (Protected(AllOf([AllOf([AllOf([AllOf([]), AnyOf([ProofRule(AllOf(Static([StaticResource(ResourceAddress(6931f6c76e112721df1e958fb24ccf97497847a42429e23b27e22cae82b5))]))), AnyOf([]), ProofRule(AllOf(Dynamic(SchemaPath([])))), AllOf([ProofRule(CountOf(Dynamic(SchemaPath([])), Static([StaticNonFungible(ResourceAddress(5e3405cc2a8ff49842df0c42a192658f24f2380194fff3e1e8fe348952be):[])])))]), AllOf([])])])])])), AllowAll), UpdateMetadata: (AllowAll, DenyAll)} }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
+                        .unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let input = NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceMethodAuthKey::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                            (
+                                ResourceMethodAuthKey::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll),
+                            ),
+                        ]),
+                    };
+
+                    Some(Instruction::CallFunction {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                        args: to_manifest_value(&input),
                     })
                 }
 
-                18..=43 => None,
+                // CreateNonFungibleResourceWithInitialSupply
+                19 => {
+                    // TODO: crash when using arbitrary
+                    // thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: MaxDepthExceeded(24)', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:45
+                    // after increasing depth to 32
+                    // thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // NonFungibleResourceManagerCreateWithInitialSupplyManifestInput { id_type: Bytes, non_fungible_schema: NonFungibleDataSchema { schema: Schema { type_kinds: [], type_metadata: [], type_validations: [] }, non_fungible: WellKnown(66), mutable_fields: {} }, metadata: {"": "", "\u{1e}^ű": "", "<": "", ">%.": ""}, access_rules: {UpdateMetadata: (Protected(AnyOf([AllOf([AnyOf([]), AnyOf([AnyOf([AnyOf([AnyOf([]), AnyOf([ProofRule(AnyOf(Static([]))), AnyOf([])]), AllOf([AnyOf([AnyOf([]), AllOf([AllOf([AnyOf([AllOf([AnyOf([]), ProofRule(Require(StaticNonFungible(ResourceAddress(000000000000000000000000000000000000000000000000000000000000):<>)))])])])])])])])])])])])), AllowAll), Deposit: (Protected(ProofRule(CountOf(Static(234), Dynamic(SchemaPath([]))))), AllowAll)}, entries: {} }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let input =
+                        &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput::arbitrary(
+                            &mut unstructured,
+                        )
+                        .unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let input = {
+                        let mut entries = BTreeMap::new();
+                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
+                            let integer: u64 = unstructured.int_in_range(0..=1000).unwrap();
+                            entries.insert(
+                                NonFungibleLocalId::integer(integer),
+                                (to_manifest_value(&(
+                                    String::arbitrary(&mut unstructured).unwrap(),
+                                    Decimal::arbitrary(&mut unstructured).unwrap(),
+                                )),),
+                            );
+                        }
+                        NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                            id_type: NonFungibleIdType::Integer,
+                            non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                            access_rules: BTreeMap::from([
+                                (
+                                    ResourceMethodAuthKey::Withdraw,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                                (
+                                    ResourceMethodAuthKey::Deposit,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                            ]),
+                            entries,
+                        }
+                    };
+
+                    Some(Instruction::CallFunction {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        function_name:
+                            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                                .to_string(),
+                        args: to_manifest_value(&input),
+                    })
+                }
+
+                20..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT

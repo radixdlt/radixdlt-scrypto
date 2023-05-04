@@ -7,9 +7,12 @@ use crate::rust::fmt::Debug;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::value_kind::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 
 /// Y is the CustomValue type. This is likely an enum, capturing all the custom values for the
 /// particular SBOR extension.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
