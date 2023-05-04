@@ -1,4 +1,4 @@
-use super::payload_validation::SystemServiceTypeInfoLookup;
+use super::payload_validation::*;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
@@ -67,9 +67,8 @@ where
         schema: &'s ScryptoSchema,
         type_index: LocalTypeIndex,
     ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
-        let validation_context = ScryptoCustomValidationContext::new_with_type_info(Box::new(
-            SystemServiceTypeInfoLookup::new(self),
-        ));
+        let validation_context: Box<dyn TypeInfoLookup> =
+            Box::new(SystemServiceTypeInfoLookup::new(self));
         validate_payload_against_schema::<ScryptoCustomExtension, _>(
             payload,
             schema,
