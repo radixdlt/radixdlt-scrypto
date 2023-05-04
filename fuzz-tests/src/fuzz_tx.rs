@@ -629,7 +629,72 @@ impl TxFuzzer {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
                     Some(Instruction::DropProof { proof_id })
                 }
-                27..=43 => None,
+                // MintFungible
+                27 => {
+                    let amount = Decimal::arbitrary(&mut unstructured).unwrap();
+                    Some(Instruction::MintFungible {
+                        resource_address,
+                        amount,
+                    })
+                }
+                // MintNonFungible
+                28 => {
+                    // TODO: crash when using arbitrary
+                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // -  NonFungibleResourceManagerMintManifestInput { entries: {#13544282675100782418#: (I128 { value: -69359017762742067524339587899531658956 },), {0e66c9db-6a09-4c5a-760e-00d9e362d92c}: (U16 { value: 47995 },)} }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let input =
+                        NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
+                            .unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let input = {
+                        let mut entries = BTreeMap::new();
+                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
+                            let integer: u64 = unstructured.int_in_range(0..=1000).unwrap();
+                            entries.insert(
+                                NonFungibleLocalId::integer(integer),
+                                (to_manifest_value(&(
+                                    String::arbitrary(&mut unstructured).unwrap(),
+                                    Decimal::arbitrary(&mut unstructured).unwrap(),
+                                )),),
+                            );
+                        }
+                        NonFungibleResourceManagerMintManifestInput { entries }
+                    };
+
+                    Some(Instruction::MintNonFungible {
+                        resource_address,
+                        args: to_manifest_value(&input),
+                    })
+                }
+                // MintUuidNonFungible
+                29 => {
+                    // TODO: crash when using arbitrary
+                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: UnknownValueKind(123)', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - NonFungibleResourceManagerMintUuidManifestInput { entries: [(I8 { value: 105 },), (I32 { value: 1989327177 },), (Array { element_value_kind: I32, elements: [I16 { value: 8591 }, Map { key_value_kind: Tuple, value_value_kind: I64, entries: [] }, Tuple { fields: [] }, Custom { value: NonFungibleLocalId(UUID(134904843443897012489077351069999533053)) }, I64 { value: 6355796430128099618 }, I32 { value: -1022678464 }] },), (I32 { value: -40799505 },)] }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
+                        &mut unstructured,
+                    )
+                    .unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let input = {
+                        let mut entries = Vec::new();
+                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
+                            entries.push((to_manifest_value(&(
+                                String::arbitrary(&mut unstructured).unwrap(),
+                                Decimal::arbitrary(&mut unstructured).unwrap(),
+                            )),));
+                        }
+                        NonFungibleResourceManagerMintUuidManifestInput { entries }
+                    };
+
+                    Some(Instruction::MintUuidNonFungible {
+                        resource_address,
+                        args: to_manifest_value(&input),
+                    })
+                }
+                30..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT

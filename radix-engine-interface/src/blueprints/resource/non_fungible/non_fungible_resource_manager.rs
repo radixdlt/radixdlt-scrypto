@@ -113,6 +113,7 @@ pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
@@ -127,6 +128,7 @@ pub type NonFungibleResourceManagerMintOutput = Bucket;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintUuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
