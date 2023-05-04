@@ -141,9 +141,9 @@ where
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
-            .get_mapped_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             );
 

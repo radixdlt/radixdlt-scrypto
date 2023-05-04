@@ -189,6 +189,7 @@ where
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemConfig {
+            blueprint_schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
@@ -519,12 +520,11 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::Object;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
         let (handle, _) = track
             .acquire_lock(
                 &node_id,
-                module_id.into(),
+                OBJECT_BASE_MODULE,
                 &substate_key,
                 LockFlags::MUTABLE,
             )
@@ -559,7 +559,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         let (handle, _) = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::Object.into(),
+                OBJECT_BASE_MODULE,
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

@@ -1,12 +1,12 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{ModuleError, RuntimeError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
@@ -38,7 +38,7 @@ impl NodeMoveModule {
             }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(outer_object.unwrap().as_node_id()))
                 {
                     return Ok(());
                 }
@@ -50,8 +50,8 @@ impl NodeMoveModule {
                 // Change to restricted unless it's moved to auth zone.
                 // TODO: align with barrier design?
                 let mut changed_to_restricted = true;
-                if let Actor::Method { node_id, .. } = callee {
-                    let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                if let Some(method) = callee.try_as_method() {
+                    let type_info = TypeInfoBlueprint::get_type(&method.node_id, api)?;
                     if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
                         if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
                             changed_to_restricted = false;
@@ -61,9 +61,10 @@ impl NodeMoveModule {
 
                 let handle = api.kernel_lock_substate(
                     &node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &FungibleProofOffset::Moveable.into(),
                     LockFlags::MUTABLE,
+                    SystemLockData::default(),
                 )?;
                 let mut proof: ProofMoveableSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -88,7 +89,7 @@ impl NodeMoveModule {
             }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method { node_id, .. } if node_id.eq(outer_object.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(outer_object.unwrap().as_node_id()))
                 {
                     return Ok(());
                 }
@@ -100,8 +101,8 @@ impl NodeMoveModule {
                 // Change to restricted unless it's moved to auth zone.
                 // TODO: align with barrier design?
                 let mut changed_to_restricted = true;
-                if let Actor::Method { node_id, .. } = callee {
-                    let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                if let Some(method) = callee.try_as_method() {
+                    let type_info = TypeInfoBlueprint::get_type(&method.node_id, api)?;
                     if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
                         if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
                             changed_to_restricted = false;
@@ -111,9 +112,10 @@ impl NodeMoveModule {
 
                 let handle = api.kernel_lock_substate(
                     &node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &NonFungibleProofOffset::Moveable.into(),
                     LockFlags::MUTABLE,
+                    SystemLockData::default(),
                 )?;
                 let mut proof: ProofMoveableSubstate =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -162,7 +164,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _caller: &Option<Actor>,
         call_frame_update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {

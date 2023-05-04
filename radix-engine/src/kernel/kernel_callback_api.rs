@@ -5,10 +5,11 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;
+    type LockData: Default + Clone;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -40,7 +41,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_id: &ModuleId,
+        module_num: &ModuleNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -98,7 +99,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -110,11 +111,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
-        update: &CallFrameUpdate,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -128,7 +125,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

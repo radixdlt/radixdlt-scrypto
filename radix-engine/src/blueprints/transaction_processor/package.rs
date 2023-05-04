@@ -1,6 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
@@ -40,6 +41,7 @@ impl TransactionProcessorNativePackage {
                     outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -56,7 +58,7 @@ impl TransactionProcessorNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {

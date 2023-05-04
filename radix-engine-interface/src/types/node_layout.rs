@@ -6,43 +6,11 @@ use sbor::rust::prelude::*;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
-#[repr(u8)]
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestSbor,
-    FromRepr,
-    EnumIter,
-)]
-pub enum SysModuleId {
-    TypeInfo,
-    Metadata,
-    Royalty,
-    AccessRules,
-    Object,
-    Virtualized,
-}
-
-impl From<SysModuleId> for ModuleId {
-    fn from(value: SysModuleId) -> Self {
-        Self(value as u8)
-    }
-}
-
-impl TryFrom<ModuleId> for SysModuleId {
-    type Error = ();
-
-    fn try_from(key: ModuleId) -> Result<Self, Self::Error> {
-        Self::from_repr(key.0).ok_or(())
-    }
-}
+pub const TYPE_INFO_BASE_MODULE: ModuleNumber = ModuleNumber(0u8);
+pub const METADATA_BASE_MODULE: ModuleNumber = ModuleNumber(1u8);
+pub const ROYALTY_BASE_MODULE: ModuleNumber = ModuleNumber(2u8);
+pub const ACCESS_RULES_BASE_MODULE: ModuleNumber = ModuleNumber(3u8);
+pub const OBJECT_BASE_MODULE: ModuleNumber = ModuleNumber(32u8);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
@@ -88,11 +56,25 @@ pub enum FungibleResourceManagerOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleResourceManagerModuleOffset {
+    ResourceManager,
+    NonFungibleData,
+}
+
+impl TryFrom<u8> for NonFungibleResourceManagerModuleOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleResourceManagerOffset {
     IdType,
-    DataSchema,
+    MutableFields,
     TotalSupply,
-    Data,
 }
 
 #[repr(u8)]
@@ -166,12 +148,6 @@ pub enum ClockOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum AccountOffset {
-    Account,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerOffset {
     AccessController,
 }
@@ -228,6 +204,5 @@ substate_key!(ValidatorOffset);
 // Transient
 substate_key!(WorktopOffset);
 substate_key!(ClockOffset);
-substate_key!(AccountOffset);
 substate_key!(AccessControllerOffset);
 substate_key!(AuthZoneOffset);

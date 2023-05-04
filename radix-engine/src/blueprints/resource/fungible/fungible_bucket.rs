@@ -13,10 +13,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::read_only())?;
-        let substate_ref: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::read_only())?;
+        let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -24,10 +25,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::read_only())?;
-        let substate_ref: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::read_only())?;
+        let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -35,15 +37,16 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
-        let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.sys_write_substate_typed(handle, &substate)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
         Ok(taken)
     }
 
@@ -55,15 +58,16 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle = api.lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
-        let mut substate: LiquidFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Liquid.into(), LockFlags::MUTABLE)?;
+        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.sys_write_substate_typed(handle, &substate)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
         Ok(())
     }
 
@@ -76,8 +80,9 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
-        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -89,7 +94,7 @@ impl FungibleBucket {
         // Increase lock count
         locked.amounts.entry(amount).or_default().add_assign(1);
 
-        api.sys_write_substate_typed(handle, &locked)?;
+        api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(FungibleProof::new(
@@ -110,8 +115,9 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
-        let mut locked: LockedFungibleResource = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(FungibleBucketOffset::Locked.into(), LockFlags::MUTABLE)?;
+        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -122,7 +128,7 @@ impl FungibleBucket {
             locked.amounts.insert(amount, cnt - 1);
         }
 
-        api.sys_write_substate_typed(handle, &locked)?;
+        api.field_lock_write_typed(handle, &locked)?;
 
         let delta = max_locked - locked.amount();
         FungibleBucket::put(LiquidFungibleResource::new(delta), api)
@@ -136,12 +142,12 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_parent_field(
+        let divisibility_handle = api.actor_lock_outer_object_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
-        let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
-        api.sys_drop_lock(divisibility_handle)?;
+        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+        api.field_lock_release(divisibility_handle)?;
         Ok(divisibility)
     }
 
@@ -223,7 +229,7 @@ impl FungibleBucketBlueprint {
         })?;
 
         let resource_address =
-            ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
 
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
@@ -246,7 +252,7 @@ impl FungibleBucketBlueprint {
             let proof_info = ProofMoveableSubstate { restricted: false };
             let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
 
-            let proof_id = api.new_object(
+            let proof_id = api.new_simple_object(
                 FUNGIBLE_PROOF_BLUEPRINT,
                 vec![
                     scrypto_encode(&proof_info).unwrap(),

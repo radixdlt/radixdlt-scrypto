@@ -102,7 +102,7 @@ pub enum TypedObjectModuleSubstateKey {
     EpochManager(EpochManagerOffset),
     Clock(ClockOffset),
     Validator(ValidatorOffset),
-    Account(AccountOffset),
+    Account(MapKey),
     AccessController(AccessControllerOffset),
     // Generic Scrypto Components
     GenericScryptoComponent(ComponentOffset),
@@ -118,16 +118,14 @@ fn error(descriptor: &'static str) -> String {
 
 pub fn to_typed_substate_key(
     entity_type: EntityType,
-    module_id: ModuleId,
+    module_number: ModuleNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
-    let sys_module_id = SysModuleId::try_from(module_id)
-        .map_err(|_| format!("Could not convert ModuleId {:?}", module_id))?;
-    let substate_type = match sys_module_id {
-        SysModuleId::TypeInfo => TypedSubstateKey::TypeInfoModule(
+    let substate_type = match module_number {
+        TYPE_INFO_BASE_MODULE => TypedSubstateKey::TypeInfoModule(
             TypeInfoOffset::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
         ),
-        SysModuleId::Metadata => TypedSubstateKey::MetadataModule(
+        METADATA_BASE_MODULE => TypedSubstateKey::MetadataModule(
             scrypto_decode(
                 substate_key
                     .for_map()
@@ -135,38 +133,41 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        SysModuleId::Royalty => TypedSubstateKey::RoyaltyModule(
+        ROYALTY_BASE_MODULE => TypedSubstateKey::RoyaltyModule(
             RoyaltyOffset::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
         ),
-        SysModuleId::AccessRules => TypedSubstateKey::AccessRulesModule(
+        ACCESS_RULES_BASE_MODULE => TypedSubstateKey::AccessRulesModule(
             AccessRulesOffset::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
-        SysModuleId::Object => TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
-            entity_type,
-            substate_key,
-        )?),
-        // SysModuleId::Virtualized is just a very ugly workaround at the moment
-        SysModuleId::Virtualized => {
-            to_typed_virtualized_module_substate_key(entity_type, substate_key)?
+        module_number @ _ if module_number >= OBJECT_BASE_MODULE => {
+            TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
+                entity_type,
+                module_number.0 - OBJECT_BASE_MODULE.0,
+                substate_key,
+            )?)
         }
+        _ => return Err(format!("Unknown module {:?}", module_number)),
     };
     Ok(substate_type)
 }
 
 pub fn to_typed_object_module_substate_key(
     entity_type: EntityType,
+    module_offset: u8,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, String> {
-    return to_typed_object_substate_key_internal(entity_type, substate_key).map_err(|_| {
-        format!(
-            "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
-            entity_type, substate_key
-        )
-    });
+    return to_typed_object_substate_key_internal(entity_type, module_offset, substate_key)
+        .map_err(|_| {
+            format!(
+                "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
+                entity_type, substate_key
+            )
+        });
 }
 
 fn to_typed_object_substate_key_internal(
     entity_type: EntityType,
+    module_offset: u8,
     substate_key: &SubstateKey,
 ) -> Result<TypedObjectModuleSubstateKey, ()> {
     let substate_type = match entity_type {
@@ -181,9 +182,20 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalFungibleResource => TypedObjectModuleSubstateKey::FungibleResource(
             FungibleResourceManagerOffset::try_from(substate_key)?,
         ),
-        EntityType::GlobalNonFungibleResource => TypedObjectModuleSubstateKey::NonFungibleResource(
-            NonFungibleResourceManagerOffset::try_from(substate_key)?,
-        ),
+        EntityType::GlobalNonFungibleResource => {
+            let module_offset = NonFungibleResourceManagerModuleOffset::try_from(module_offset)?;
+            match module_offset {
+                NonFungibleResourceManagerModuleOffset::ResourceManager => {
+                    TypedObjectModuleSubstateKey::NonFungibleResource(
+                        NonFungibleResourceManagerOffset::try_from(substate_key)?,
+                    )
+                }
+                NonFungibleResourceManagerModuleOffset::NonFungibleData => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
+                }
+            }
+        }
         EntityType::GlobalEpochManager => {
             TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
         }
@@ -200,7 +212,8 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            TypedObjectModuleSubstateKey::Account(AccountOffset::try_from(substate_key)?)
+            let key = substate_key.for_map().ok_or(())?;
+            TypedObjectModuleSubstateKey::Account(key.clone())
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -332,9 +345,8 @@ pub enum TypedFungibleResourceManagerSubstateValue {
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerSubstateValue {
     IdType(NonFungibleResourceManagerIdTypeSubstate),
-    DataSchema(NonFungibleResourceManagerDataSchemaSubstate),
+    MutableFields(NonFungibleResourceManagerMutableFieldsSubstate),
     TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
-    Data(NonFungibleResourceManagerDataSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -367,7 +379,7 @@ pub enum TypedValidatorSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccountSubstateValue {
-    Account(AccountSubstate),
+    Account(Option<Own>),
 }
 
 #[derive(Debug, Clone)]
@@ -471,14 +483,13 @@ fn to_typed_object_substate_value(
                 NonFungibleResourceManagerOffset::IdType => {
                     TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
                 }
-                NonFungibleResourceManagerOffset::DataSchema => {
-                    TypedNonFungibleResourceManagerSubstateValue::DataSchema(scrypto_decode(data)?)
+                NonFungibleResourceManagerOffset::MutableFields => {
+                    TypedNonFungibleResourceManagerSubstateValue::MutableFields(scrypto_decode(
+                        data,
+                    )?)
                 }
                 NonFungibleResourceManagerOffset::TotalSupply => {
                     TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
-                }
-                NonFungibleResourceManagerOffset::Data => {
-                    TypedNonFungibleResourceManagerSubstateValue::Data(scrypto_decode(data)?)
                 }
             })
         }
@@ -530,11 +541,9 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedObjectModuleSubstateKey::Account(offset) => {
-            TypedObjectModuleSubstateValue::Account(match offset {
-                AccountOffset::Account => TypedAccountSubstateValue::Account(scrypto_decode(data)?),
-            })
-        }
+        TypedObjectModuleSubstateKey::Account(_) => TypedObjectModuleSubstateValue::Account(
+            TypedAccountSubstateValue::Account(scrypto_decode(data)?),
+        ),
         TypedObjectModuleSubstateKey::AccessController(offset) => {
             TypedObjectModuleSubstateValue::AccessController(match offset {
                 AccessControllerOffset::AccessController => {
