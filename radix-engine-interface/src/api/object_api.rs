@@ -70,7 +70,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, None, fields, vec![])
+        self.new_object(blueprint_ident, None, fields, btreemap![])
     }
 
     /// Creates a new object of a given blueprint type
@@ -79,7 +79,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

@@ -50,7 +50,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _blueprint_ident: &str,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, ClientApiError> {
         todo!()
     }

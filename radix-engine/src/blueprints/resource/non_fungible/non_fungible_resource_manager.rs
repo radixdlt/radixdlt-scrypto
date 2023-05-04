@@ -137,7 +137,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
             ],
-            vec![vec![]],
+            btreemap!(),
         )?;
 
         let resource_address = ResourceAddress::new_or_panic(resource_address);
@@ -177,7 +177,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let ids = entries.keys().cloned().collect();
 
-        let mut non_fungibles = Vec::new();
+        let mut non_fungibles = BTreeMap::new();
         for (id, (value,)) in entries {
             if id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
@@ -190,10 +190,10 @@ impl NonFungibleResourceManagerBlueprint {
                 ));
             }
 
-            non_fungibles.push((
+            non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
                 scrypto_encode(&value).unwrap(),
-            ));
+            );
         }
 
         let instance_schema = InstanceSchema {
@@ -209,7 +209,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            vec![non_fungibles],
+            btreemap!(0u8 => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -234,16 +234,16 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let mut ids = BTreeSet::new();
-        let mut non_fungibles = Vec::new();
+        let mut non_fungibles = BTreeMap::new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
             ids.insert(id.clone());
-            non_fungibles.push((
+            non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
                 scrypto_encode(&entry).unwrap(),
-            ));
+            );
         }
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
@@ -266,7 +266,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            vec![non_fungibles],
+            btreemap!(0u8 => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,

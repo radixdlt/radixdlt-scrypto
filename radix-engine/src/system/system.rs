@@ -152,7 +152,7 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
         let (expected_blueprint_parent, user_substates) =
             self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
@@ -261,7 +261,7 @@ where
         blueprint: &Blueprint,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<
         (
             Option<String>,
@@ -344,22 +344,12 @@ where
 
         // KV Entries
         {
-            if blueprint_schema.kv_store_modules.len() != kv_entries.len() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
-                        blueprint.clone(),
-                        kv_entries.len(),
-                        blueprint_schema.kv_store_modules.len(),
-                    )),
-                )));
-            }
+            for (i, (_, blueprint_kv_schema)) in blueprint_schema.kv_store_modules.iter().enumerate() {
+                let entries = kv_entries.remove(&(i as u8));
 
-            if kv_entries.len() > 0 {
-                for (i, entries) in kv_entries.into_iter().enumerate() {
-                    let (_, blueprint_kv_schema) =
-                        blueprint_schema.kv_store_modules.get(i).unwrap();
+                let mut kv_substates = BTreeMap::new();
 
-                    let mut kv_substates = BTreeMap::new();
+                if let Some(entries) = entries {
                     for (key, value) in entries {
                         self.validate_payload_against_blueprint_and_instance_schema(
                             &key,
@@ -367,13 +357,13 @@ where
                             &blueprint_schema.schema,
                             instance_schema,
                         )
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
+                            .map_err(|err| {
+                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                    CreateObjectError::InvalidSubstateWrite(
+                                        err.error_message(&blueprint_schema.schema),
+                                    ),
+                                )))
+                            })?;
 
                         self.validate_payload_against_blueprint_and_instance_schema(
                             &value,
@@ -381,13 +371,13 @@ where
                             &blueprint_schema.schema,
                             instance_schema,
                         )
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
+                            .map_err(|err| {
+                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                    CreateObjectError::InvalidSubstateWrite(
+                                        err.error_message(&blueprint_schema.schema),
+                                    ),
+                                )))
+                            })?;
 
                         let value: ScryptoValue = scrypto_decode(&value).unwrap();
                         let value = IndexedScryptoValue::from_typed(&Some(value));
@@ -402,9 +392,15 @@ where
 
                         kv_substates.insert(SubstateKey::Map(key), value);
                     }
-
-                    user_substates.push(kv_substates);
                 }
+
+                user_substates.push(kv_substates);
+            }
+
+            if !kv_entries.is_empty() {
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                    CreateObjectError::InvalidKeyValueStoreIndex
+                ))));
             }
         }
 
@@ -570,7 +566,7 @@ where
         blueprint_ident: &str,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
         let package_address = actor.package_address().clone();
@@ -755,7 +751,7 @@ where
             }),
             None,
             inner_object_fields,
-            vec![],
+            btreemap!(),
         )
     }
 
