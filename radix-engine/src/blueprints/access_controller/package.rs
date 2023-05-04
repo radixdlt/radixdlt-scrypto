@@ -37,9 +37,14 @@ pub struct AccessControllerSubstate {
 
     /// The states of the Access Controller.
     pub state: (
-        PrimaryRoleState,
-        PrimaryOperationState,
-        RecoveryOperationState,
+        // Controls whether the primary role is locked or unlocked
+        PrimaryRoleLockingState,
+        // Primary role recovery and withdraw states
+        PrimaryRoleRecoveryAttemptState,
+        PrimaryRoleBadgeWithdrawAttemptState,
+        // Recovery role recovery and withdraw states
+        RecoveryRoleRecoveryAttemptState,
+        RecoveryRoleBadgeWithdrawAttemptState,
     ),
 }
 
@@ -54,33 +59,47 @@ impl AccessControllerSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum PrimaryRoleState {
+pub enum PrimaryRoleLockingState {
     #[default]
     Unlocked,
     Locked,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum PrimaryOperationState {
+pub enum PrimaryRoleRecoveryAttemptState {
     #[default]
-    Normal,
-    Recovery(RecoveryProposal),
+    NoRecoveryAttempt,
+    RecoveryAttempt(RecoveryProposal),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub enum RecoveryOperationState {
+pub enum PrimaryRoleBadgeWithdrawAttemptState {
     #[default]
-    Normal,
-    Recovery(RecoveryRecoveryState),
+    NoBadgeWithdrawAttempt,
+    BadgeWithdrawAttempt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub enum RecoveryRoleRecoveryAttemptState {
+    #[default]
+    NoRecoveryAttempt,
+    RecoveryAttempt(RecoveryRoleRecoveryState),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RecoveryRecoveryState {
-    Untimed(RecoveryProposal),
-    Timed {
+pub enum RecoveryRoleRecoveryState {
+    UntimedRecovery(RecoveryProposal),
+    TimedRecovery {
         proposal: RecoveryProposal,
         timed_recovery_allowed_after: Instant,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
+pub enum RecoveryRoleBadgeWithdrawAttemptState {
+    #[default]
+    NoBadgeWithdrawAttempt,
+    BadgeWithdrawAttempt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -97,6 +116,13 @@ pub enum AccessControllerError {
 
     /// Occurs when no recovery can be found for a given proposer.
     NoRecoveryExistsForProposer { proposer: Proposer },
+
+    /// Occurs when a proposer attempts to initiate another badge withdraw when they already have a
+    /// recovery underway.
+    BadgeWithdrawAttemptAlreadyExistsForProposer { proposer: Proposer },
+
+    /// Occurs when no recovery can be found for a given proposer.
+    NoBadgeWithdrawAttemptExistsForProposer { proposer: Proposer },
 
     /// Occurs when there is no timed recoveries on the controller - typically because it isn't in
     /// the state that allows for it.
@@ -261,6 +287,72 @@ impl AccessControllerNativePackage {
                 export_name: ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string(),
             },
         );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput>(),
+                export_name: ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput>(),
+                export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -270,7 +362,10 @@ impl AccessControllerNativePackage {
                 CancelRecoveryProposalEvent,
                 LockPrimaryRoleEvent,
                 UnlockPrimaryRoleEvent,
-                StopTimedRecoveryEvent
+                StopTimedRecoveryEvent,
+                InitiateBadgeWithdrawAttemptEvent,
+                BadgeWithdrawEvent,
+                CancelBadgeWithdrawAttemptEvent
             ]
         };
 
@@ -373,6 +468,42 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::stop_timed_recovery(input, api)
+            }
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::initiate_badge_withdraw_attempt_as_primary(input, api)
+            }
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::initiate_badge_withdraw_attempt_as_recovery(input, api)
+            }
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::quick_confirm_primary_role_badge_withdraw_attempt(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                Self::quick_confirm_recovery_role_badge_withdraw_attempt(receiver, input, api)
+            }
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::cancel_primary_role_badge_withdraw_attempt(input, api)
+            }
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -510,6 +641,62 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
+    fn initiate_badge_withdraw_attempt_as_primary<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            InitiateBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn initiate_badge_withdraw_attempt_as_recovery<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            InitiateBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
     fn quick_confirm_primary_role_recovery_proposal<Y>(
         receiver: &NodeId,
         input: &IndexedScryptoValue,
@@ -590,6 +777,68 @@ impl AccessControllerNativePackage {
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn quick_confirm_primary_role_badge_withdraw_attempt<Y>(
+        receiver: &NodeId,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let bucket = transition_mut(
+            api,
+            AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        update_access_rules(api, receiver, locked_access_rules())?;
+
+        Runtime::emit_event(
+            api,
+            BadgeWithdrawEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
+    }
+
+    fn quick_confirm_recovery_role_badge_withdraw_attempt<Y>(
+        receiver: &NodeId,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let bucket = transition_mut(
+            api,
+            AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        update_access_rules(api, receiver, locked_access_rules())?;
+
+        Runtime::emit_event(
+            api,
+            BadgeWithdrawEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&bucket))
     }
 
     fn timed_confirm_recovery<Y>(
@@ -687,6 +936,62 @@ impl AccessControllerNativePackage {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
+    fn cancel_primary_role_badge_withdraw_attempt<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            CancelBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Primary,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn cancel_recovery_role_badge_withdraw_attempt<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        transition_mut(
+            api,
+            AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
+        )?;
+
+        Runtime::emit_event(
+            api,
+            CancelBadgeWithdrawAttemptEvent {
+                proposer: Proposer::Recovery,
+            },
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
     fn lock_primary_role<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
@@ -741,7 +1046,7 @@ impl AccessControllerNativePackage {
                 },
             },
         )?;
-        Runtime::emit_event(api, StopTimedRecoveryEvent {})?;
+        Runtime::emit_event(api, StopTimedRecoveryEvent)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -756,12 +1061,25 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
             AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
         }
     }
-    AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
+    if rule_nodes.len() != 0 {
+        AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
+    } else {
+        AccessRule::DenyAll
+    }
 }
 
 //=========
 // Helpers
 //=========
+
+fn locked_access_rules() -> AccessRulesConfig {
+    let rule_set = RuleSet {
+        primary_role: AccessRule::DenyAll,
+        recovery_role: AccessRule::DenyAll,
+        confirmation_role: AccessRule::DenyAll,
+    };
+    access_rules_from_rule_set(rule_set)
+}
 
 fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
@@ -787,6 +1105,20 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         ),
         primary_group.into(),
     );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
+        ),
+        primary_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        primary_group.into(),
+    );
 
     // Recovery Role Rules
     let recovery_group = "recovery";
@@ -795,6 +1127,13 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         MethodKey::new(
             ObjectModuleId::SELF,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
+        ),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
@@ -815,6 +1154,13 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
             ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        recovery_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
@@ -827,11 +1173,52 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         recovery_group.into(),
     );
 
-    // Confirmation Role Rules
-    let confirmation_group = "confirmation";
+    // Recovery || Confirmation Role Rules
+    let recovery_or_confirmation_group = "recovery_or_confirmation";
     access_rules.set_group_access_rule(
-        confirmation_group.into(),
-        rule_set.confirmation_role.clone(),
+        recovery_or_confirmation_group.into(),
+        access_rule_or(vec![
+            rule_set.recovery_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        recovery_or_confirmation_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        recovery_or_confirmation_group.into(),
+    );
+
+    // Primary || Confirmation Role Rules
+    let primary_or_confirmation_group = "primary_or_confirmation";
+    access_rules.set_group_access_rule(
+        primary_or_confirmation_group.into(),
+        access_rule_or(vec![
+            rule_set.primary_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ),
+        primary_or_confirmation_group.into(),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::SELF,
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ),
+        primary_or_confirmation_group.into(),
     );
 
     // Other methods
@@ -848,20 +1235,6 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
             ]
             .into(),
         ),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
-        access_rule_or([rule_set.recovery_role, rule_set.confirmation_role.clone()].into()),
-    );
-    access_rules.set_method_access_rule(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
-        access_rule_or([rule_set.primary_role, rule_set.confirmation_role].into()),
     );
 
     let non_fungible_local_id =
