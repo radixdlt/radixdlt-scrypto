@@ -694,6 +694,8 @@ impl TxFuzzer {
                         args: to_manifest_value(&input),
                     })
                 }
+                // PopFromAuthZone
+                30 => Some(Instruction::PopFromAuthZone {}),
                 // PublishPackage | PublishPackageAdvanced
                 31 | 32 => {
                     // Publishing package involves a compilation by scrypto compiler.
@@ -703,7 +705,12 @@ impl TxFuzzer {
                     //  binaries in AFL
                     None
                 }
-                33..=43 => None,
+                // PushToAuthZone
+                33 => {
+                    let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
+                    Some(Instruction::PushToAuthZone { proof_id })
+                }
+                34..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
