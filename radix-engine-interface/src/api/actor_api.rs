@@ -12,18 +12,9 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
-    // TODO: Should this be exposed as a virtual field instead?
-    /// Lock a field in the current object actor's parent for reading/writing
-    fn actor_lock_outer_object_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, E>;
-
     fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
 
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, E>;
 }
-

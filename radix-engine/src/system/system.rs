@@ -35,7 +35,10 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema};
+use radix_engine_interface::schema::{
+    BlueprintKeyValueStoreSchema, BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema,
+    KeyValueStoreInfo, TypeSchema,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -449,24 +452,14 @@ where
                 let address = method.object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
-                Ok((
-                    address.into_node_id(),
-                    OBJECT_BASE_PARTITION,
-                    info,
-                    schema,
-                ))
+                Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let info = method.object_info.clone();
                 let object_module_id = method.module_id;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
-                Ok((
-                    node_id,
-                    object_module_id.base_partition_num(),
-                    info,
-                    schema,
-                ))
+                Ok((node_id, object_module_id.base_partition_num(), info, schema))
             }
         }
     }
@@ -475,13 +468,22 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, ScryptoSchema, LocalTypeIndex, ObjectInfo), RuntimeError> {
-        let (node_id, base_partition, info, schema) =
-            self.get_actor_schema(actor_object_type)?;
+    ) -> Result<
+        (
+            NodeId,
+            PartitionNumber,
+            ScryptoSchema,
+            LocalTypeIndex,
+            ObjectInfo,
+        ),
+        RuntimeError,
+    > {
+        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
             RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                info.blueprint.clone(), field_index,
+                info.blueprint.clone(),
+                field_index,
             ))
         })?;
 
@@ -496,13 +498,26 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         partition_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, ScryptoSchema, BlueprintKeyValueStoreSchema, ObjectInfo), RuntimeError> {
-        let (node_id, base_partition, info, schema) =
-            self.get_actor_schema(actor_object_type)?;
+    ) -> Result<
+        (
+            NodeId,
+            PartitionNumber,
+            ScryptoSchema,
+            BlueprintKeyValueStoreSchema,
+            ObjectInfo,
+        ),
+        RuntimeError,
+    > {
+        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, schema, kv_schema) = schema.key_value_store_partition(partition_index).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::IndexDoesNotExist(info.blueprint.clone(), partition_index))
-        })?;
+        let (partition_offset, schema, kv_schema) = schema
+            .key_value_store_partition(partition_index)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    info.blueprint.clone(),
+                    partition_index,
+                ))
+            })?;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -520,7 +535,10 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = schema.index_partition_offset(handle).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::IndexDoesNotExist(object_info.blueprint, handle))
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                object_info.blueprint,
+                handle,
+            ))
         })?;
 
         let partition_num = base_partition
@@ -541,7 +559,10 @@ where
         let (partition_offset, _) = schema
             .sorted_index_partition_offset(index_handle)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(object_info.blueprint, index_handle))
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                    object_info.blueprint,
+                    index_handle,
+                ))
             })?;
 
         let partition_num = base_partition
@@ -1436,10 +1457,7 @@ where
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !( object_info
-                .blueprint
-                .package_address
-                .eq(&RESOURCE_PACKAGE)
+            if !(object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
                 && object_info
                     .blueprint
                     .blueprint_name
@@ -1462,51 +1480,6 @@ where
             &node_id,
             partition_num,
             &SubstateKey::Tuple(field_index),
-            flags,
-            SystemLockData::Field(lock_data),
-        )
-    }
-
-    #[trace_resources]
-    fn actor_lock_outer_object_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        let parent = self
-            .actor_get_info()?
-            .outer_object
-            .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
-
-        let parent_info = self.get_object_info(parent.as_node_id())?;
-        let schema = self.get_blueprint_schema(&parent_info.blueprint)?;
-        let (partition_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
-            field_info
-        } else {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                parent_info.blueprint.clone(),
-                field,
-            )));
-        };
-
-        let partition_num = OBJECT_BASE_PARTITION
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
-
-        // TODO: Check if valid substate_key for node_id
-        let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            FieldLockData::Write {
-                schema: schema.schema,
-                index: field_type_index,
-            }
-        } else {
-            FieldLockData::Read
-        };
-
-        self.api.kernel_lock_substate(
-            parent.as_node_id(),
-            partition_num,
-            &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
         )
@@ -1537,6 +1510,7 @@ where
         }
     }
 
+    #[trace_resources]
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
@@ -1600,7 +1574,12 @@ where
         partition_index: u8,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_entry(object_handle, partition_index, key, LockFlags::MUTABLE)?;
+        let handle = self.actor_lock_key_value_entry(
+            object_handle,
+            partition_index,
+            key,
+            LockFlags::MUTABLE,
+        )?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
 }

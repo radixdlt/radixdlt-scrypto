@@ -1,9 +1,9 @@
+use crate::api::ObjectHandle;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
 };
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
-use crate::api::ObjectHandle;
 
 /// Api to manage an iterable index
 pub trait ClientActorIndexApi<E> {
@@ -24,7 +24,12 @@ pub trait ClientActorIndexApi<E> {
         key: Vec<u8>,
         value: V,
     ) -> Result<(), E> {
-        self.actor_index_insert(object_handle, index_id, key, scrypto_encode(&value).unwrap())
+        self.actor_index_insert(
+            object_handle,
+            index_id,
+            key,
+            scrypto_encode(&value).unwrap(),
+        )
     }
 
     /// Removes an entry from an index

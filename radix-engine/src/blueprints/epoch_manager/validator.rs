@@ -158,14 +158,16 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.actor_lock_outer_object_field(
+            let manager_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
                 EpochManagerField::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
-            let config_handle = api.actor_lock_outer_object_field(
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
                 EpochManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
@@ -204,11 +206,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorField::Validator.into();
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            substate_key,
-            LockFlags::MUTABLE,
-        )?;
+        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
@@ -286,12 +284,11 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                ValidatorField::Validator.into(),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
         let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -305,7 +302,8 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.actor_lock_outer_object_field(
+            let mgr_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
                 EpochManagerField::EpochManager.into(),
                 LockFlags::read_only(),
             )?;

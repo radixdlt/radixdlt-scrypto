@@ -1,6 +1,6 @@
 pub mod actor_api;
-pub mod actor_key_value_entry_api;
 pub mod actor_index_api;
+pub mod actor_key_value_entry_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
 pub mod component;

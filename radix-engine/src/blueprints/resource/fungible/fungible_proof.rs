@@ -74,24 +74,22 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle =
-                api.actor_lock_field(
-                    OBJECT_HANDLE_SELF,
-                    FungibleProofField::Moveable.into(),
-                    LockFlags::read_only(),
-                )?;
+            let handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                FungibleProofField::Moveable.into(),
+                LockFlags::read_only(),
+            )?;
             let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
             let moveable = substate_ref.clone();
             api.field_lock_release(handle)?;
             moveable
         };
 
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleProofField::ProofRefs.into(),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleProofField::ProofRefs.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -114,12 +112,11 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleProofField::ProofRefs.into(),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleProofField::ProofRefs.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;

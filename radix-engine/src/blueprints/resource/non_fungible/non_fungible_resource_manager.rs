@@ -508,8 +508,12 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle =
-            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::MUTABLE)?;
+        let non_fungible_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            1u8,
+            &id.to_key(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
@@ -543,8 +547,12 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_handle =
-            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::read_only())?;
+        let non_fungible_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            1u8,
+            &id.to_key(),
+            LockFlags::read_only(),
+        )?;
         let non_fungible: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
@@ -562,8 +570,12 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
-        let non_fungible_handle =
-            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::read_only())?;
+        let non_fungible_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            1u8,
+            &id.to_key(),
+            LockFlags::read_only(),
+        )?;
         let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)

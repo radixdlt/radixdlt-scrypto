@@ -31,12 +31,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
@@ -59,12 +58,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         auth_zone.push(input.proof);
@@ -86,12 +84,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
@@ -131,12 +128,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::read_only(),
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::read_only(),
+        )?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
@@ -189,12 +185,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let composed_proof = {
             let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
@@ -283,12 +278,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_zone_handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs = auth_zone.drain();

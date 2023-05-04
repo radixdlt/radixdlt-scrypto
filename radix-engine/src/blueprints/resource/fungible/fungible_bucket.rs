@@ -3,7 +3,9 @@ use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct FungibleBucket;
@@ -13,12 +15,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Liquid.into(),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
@@ -29,12 +30,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Locked.into(),
-                LockFlags::read_only(),
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Locked.into(),
+            LockFlags::read_only(),
+        )?;
         let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
@@ -45,12 +45,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Liquid.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -70,12 +69,11 @@ impl FungibleBucket {
             return Ok(());
         }
 
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Liquid.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
@@ -96,12 +94,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Locked.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Locked.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
         let max_locked = locked.amount();
 
@@ -135,12 +132,11 @@ impl FungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(
-                OBJECT_HANDLE_SELF,
-                FungibleBucketField::Locked.into(),
-                LockFlags::MUTABLE,
-            )?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Locked.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
 
         let max_locked = locked.amount();
@@ -166,7 +162,8 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.actor_lock_outer_object_field(
+        let divisibility_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
