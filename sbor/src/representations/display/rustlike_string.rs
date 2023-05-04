@@ -7,13 +7,13 @@ use TypedTraversalEvent::*;
 // TODO - This file could do with a minor refactor to commonize logic to print fields
 
 #[derive(Debug, Clone, Copy)]
-pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomTypeExtension> {
-    pub schema: &'s Schema<E>,
+pub struct RustLikeDisplayContext<'s, 'a, E: FormattableCustomExtension> {
+    pub schema: &'s Schema<E::CustomSchema>,
     pub custom_context: E::CustomDisplayContext<'a>,
     pub print_mode: PrintMode,
 }
 
-pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
+pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     context: &RustLikeDisplayContext<'_, '_, E>,
     payload: &'_ [u8],
@@ -33,7 +33,7 @@ pub fn format_payload_as_rustlike_value<F: fmt::Write, E: FormattableCustomTypeE
 
 pub(crate) fn format_partial_payload_as_rustlike_value<
     F: fmt::Write,
-    E: FormattableCustomTypeExtension,
+    E: FormattableCustomExtension,
 >(
     f: &mut F,
     partial_payload: &[u8],
@@ -64,13 +64,13 @@ pub(crate) fn format_partial_payload_as_rustlike_value<
     Ok(())
 }
 
-pub fn consume_end_event<E: FormattableCustomTypeExtension>(
+pub fn consume_end_event<E: FormattableCustomExtension>(
     traverser: &mut TypedTraverser<E>,
 ) -> Result<(), FormattingError> {
     traverser.consume_end_event().map_err(FormattingError::Sbor)
 }
 
-fn consume_container_end<E: FormattableCustomTypeExtension>(
+fn consume_container_end<E: FormattableCustomExtension>(
     traverser: &mut TypedTraverser<E>,
 ) -> Result<(), FormattingError> {
     traverser
@@ -78,7 +78,7 @@ fn consume_container_end<E: FormattableCustomTypeExtension>(
         .map_err(FormattingError::Sbor)
 }
 
-fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_value_tree<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &RustLikeDisplayContext<'_, '_, E>,
@@ -112,7 +112,7 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomTypeExtension>(
     }
 }
 
-fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_tuple<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &RustLikeDisplayContext<'_, '_, E>,
@@ -217,7 +217,7 @@ fn format_tuple<F: fmt::Write, E: FormattableCustomTypeExtension>(
     Ok(())
 }
 
-fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_enum_variant<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &RustLikeDisplayContext<'_, '_, E>,
@@ -326,7 +326,7 @@ fn format_enum_variant<F: fmt::Write, E: FormattableCustomTypeExtension>(
     Ok(())
 }
 
-fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_array<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &RustLikeDisplayContext<'_, '_, E>,
@@ -407,7 +407,7 @@ fn format_array<F: fmt::Write, E: FormattableCustomTypeExtension>(
     Ok(())
 }
 
-fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_map<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     traverser: &mut TypedTraverser<E>,
     context: &RustLikeDisplayContext<'_, '_, E>,
@@ -468,7 +468,7 @@ fn format_map<F: fmt::Write, E: FormattableCustomTypeExtension>(
     Ok(())
 }
 
-fn format_terminal_value<F: fmt::Write, E: FormattableCustomTypeExtension>(
+fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
     f: &mut F,
     context: &RustLikeDisplayContext<'_, '_, E>,
     type_index: LocalTypeIndex,
@@ -551,7 +551,7 @@ mod tests {
     #[test]
     fn complex_value_formatting() {
         let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomTypeExtension>();
+            generate_full_schema_from_single_type::<MyComplexTupleStruct, NoCustomSchema>();
         let value = MyComplexTupleStruct(
             vec![1, 2, 3],
             vec![],

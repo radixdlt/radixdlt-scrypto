@@ -3,14 +3,15 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::event_schema;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
@@ -271,6 +272,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: None,
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -289,14 +291,19 @@ impl ResourceManagerNativePackage {
             );
             substates.push(
                 aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSchemaSubstate>(
+                    .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
                     ),
             );
             substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
-            substates.push(
-                aggregator
-                    .add_child_type_and_descendents::<NonFungibleResourceManagerDataSubstate>(),
-            );
+
+            let mut key_value_stores = Vec::new();
+            key_value_stores.push(BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
+                ),
+                value: TypeSchema::Instance(0u8),
+                can_own: false,
+            });
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -513,6 +520,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: None,
                 schema,
                 substates,
+                key_value_stores,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -637,6 +645,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -800,6 +809,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -890,6 +900,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1007,6 +1018,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1065,6 +1077,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1135,6 +1148,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 substates,
+                key_value_stores: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1238,6 +1252,7 @@ impl ResourceManagerNativePackage {
             outer_blueprint: None,
             schema,
             substates,
+            key_value_stores: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -1332,6 +1347,7 @@ impl ResourceManagerNativePackage {
             outer_blueprint: None,
             schema,
             substates,
+            key_value_stores: vec![],
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
@@ -1361,7 +1377,7 @@ impl ResourceManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         match export_name {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {

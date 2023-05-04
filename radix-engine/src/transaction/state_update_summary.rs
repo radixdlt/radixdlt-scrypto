@@ -1,3 +1,6 @@
+use crate::track::db_key_mapper::{
+    DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_engine_common::data::scrypto::ScryptoDecode;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleVault,
@@ -6,8 +9,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_stores::interface::{DatabaseMapper, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
@@ -231,8 +233,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for (_module_id, tracked_module) in &tracked_node.tracked_modules {
-                    for (_substate_key, tracked_key) in &tracked_module.substates {
+                for tracked_module in tracked_node.tracked_modules.values() {
+                    for tracked_key in tracked_module.substates.values() {
                         if let Some(value) = tracked_key.tracked.get() {
                             for own in value.owned_node_ids() {
                                 self.traverse_state_updates(
@@ -254,9 +256,9 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         node_id: &NodeId,
     ) -> Option<(ResourceAddress, BalanceChange)> {
         let type_info: TypeInfoSubstate = self
-            .fetch_substate::<JmtMapper, TypeInfoSubstate>(
+            .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");
@@ -272,16 +274,16 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         if resource_address.as_node_id().is_global_fungible_resource() {
             // If there is an update to the liquid resource
             if let Some(substate) = self
-                .fetch_substate_from_state_updates::<JmtMapper, LiquidFungibleResource>(
+                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                     node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
-                    .fetch_substate_from_database::<JmtMapper, LiquidFungibleResource>(
+                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                         node_id,
-                        SysModuleId::Object.into(),
+                        OBJECT_BASE_MODULE,
                         &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
@@ -299,23 +301,23 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         } else {
             // If there is an update to the liquid resource
             if let Some(vault) = self
-                .fetch_substate_from_state_updates::<JmtMapper, LiquidNonFungibleVault>(
+                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                     node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
-                let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
-                    let module_id: ModuleId = SysModuleId::Object.into();
-                    n.tracked_modules.get(&module_id)
-                });
+                let vault_updates = self
+                    .tracked
+                    .get(vault.ids.as_node_id())
+                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE));
 
                 if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();
                     let mut removed = BTreeSet::new();
 
-                    for (_key, tracked) in &tracked_module.substates {
-                        match &tracked.tracked {
+                    for tracked_key in tracked_module.substates.values() {
+                        match &tracked_key.tracked {
                             TrackedKey::New(substate)
                             | TrackedKey::ReadNonExistAndWrite(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
@@ -352,40 +354,40 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         .map(|x| (resource_address, x))
     }
 
-    fn fetch_substate<M: DatabaseMapper, D: ScryptoDecode>(
+    fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_num, key)
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_num, key))
     }
 
-    fn fetch_substate_from_database<M: DatabaseMapper, D: ScryptoDecode>(
+    fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
-            .get_mapped_substate::<M, D>(node_id, module_id, key)
+            .get_mapped::<M, D>(node_id, module_num, key)
     }
 
-    fn fetch_substate_from_state_updates<M: DatabaseMapper, D: ScryptoDecode>(
+    fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
-            .and_then(|tracked_module| tracked_module.substates.get(&M::map_to_db_key(key)))
+            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_num))
+            .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }
 }

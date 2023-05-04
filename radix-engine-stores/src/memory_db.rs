@@ -1,43 +1,41 @@
-use crate::interface::*;
-use sbor::rust::ops::Bound::Included;
-use sbor::rust::ops::Bound::Unbounded;
+use radix_engine_store_interface::interface::*;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct InMemorySubstateDatabase {
-    substates: BTreeMap<Vec<u8>, Vec<u8>>,
+    partitions: IndexMap<DbPartitionKey, BTreeMap<DbSortKey, DbSubstateValue>>,
 }
 
 impl InMemorySubstateDatabase {
     pub fn standard() -> Self {
         Self {
-            substates: btreemap!(),
+            partitions: index_map_new(),
         }
     }
 }
 
 impl SubstateDatabase for InMemorySubstateDatabase {
-    fn get_substate(&self, index_id: &Vec<u8>, db_key: &Vec<u8>) -> Option<Vec<u8>> {
-        let key = encode_substate_id(index_id, db_key);
-        self.substates.get(&key).map(|value| value.clone())
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+        self.partitions
+            .get(partition_key)
+            .and_then(|partition| partition.get(sort_key))
+            .cloned()
     }
 
-    fn list_substates(
+    fn list_entries(
         &self,
-        index_id: &Vec<u8>,
-    ) -> Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + '_> {
-        let start = encode_substate_id(index_id, &vec![0]);
-        let index_id = index_id.clone();
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let iter = self
-            .substates
-            .range((Included(start), Unbounded))
-            .map(|(k, v)| {
-                let id = decode_substate_id(k).expect("Failed to decode substate ID");
-                (id.0, id.1, v)
-            })
-            .take_while(move |(i, ..)| index_id.eq(i))
+            .partitions
+            .get(partition_key)
             .into_iter()
-            .map(|(_, db_key, value)| (db_key, value.clone()));
+            .flat_map(|partition| partition.iter())
+            .map(|(key, substate)| (key.clone(), substate.clone()));
 
         Box::new(iter)
     }
@@ -45,17 +43,21 @@ impl SubstateDatabase for InMemorySubstateDatabase {
 
 impl CommittableSubstateDatabase for InMemorySubstateDatabase {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
-        for (index_id, index_updates) in database_updates {
-            for (db_key, update) in index_updates {
-                let substate_id = encode_substate_id(index_id, db_key);
+        for (partition_key, partition_updates) in database_updates {
+            let partition = self
+                .partitions
+                .entry(partition_key.clone())
+                .or_insert_with(|| BTreeMap::new());
+            for (sort_key, update) in partition_updates {
                 match update {
                     DatabaseUpdate::Set(substate_value) => {
-                        self.substates.insert(substate_id, substate_value.clone());
+                        partition.insert(sort_key.clone(), substate_value.clone())
                     }
-                    DatabaseUpdate::Delete => {
-                        self.substates.remove(&substate_id);
-                    }
-                }
+                    DatabaseUpdate::Delete => partition.remove(sort_key),
+                };
+            }
+            if partition.is_empty() {
+                self.partitions.remove(partition_key);
             }
         }
     }

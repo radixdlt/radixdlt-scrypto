@@ -1,11 +1,12 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::PackageCodeSubstate;
 use radix_engine_interface::blueprints::package::PackageInfoSubstate;
-use radix_engine_stores::interface::DatabaseUpdate;
-use radix_engine_stores::interface::{CommittableSubstateDatabase, DatabaseMapper};
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -55,7 +56,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let schema = manifest_decode(
+        let schema: PackageSchema = manifest_decode(
             &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
         .map_err(Error::SborDecodeError)?;
@@ -66,23 +67,25 @@ impl Publish {
             Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::Object.into();
-            let index_id = JmtMapper::map_to_db_index(&node_id, module_id);
-            let substate_key_code: Vec<u8> = JmtMapper::map_to_db_key(&PackageOffset::Code.into());
+            let db_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_MODULE);
+            let code_db_sort_key =
+                SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
 
-            let substate_key_info: Vec<u8> = JmtMapper::map_to_db_key(&PackageOffset::Info.into());
+            let info_db_sort_key =
+                SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
-                schema,
+                schema: schema.into(),
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };
             let database_updates = indexmap!(
-                index_id => indexmap!(
-                    substate_key_code => DatabaseUpdate::Set(
+                db_partition_key => indexmap!(
+                    code_db_sort_key => DatabaseUpdate::Set(
                         scrypto_encode(&package_code).unwrap()
                     ),
-                    substate_key_info => DatabaseUpdate::Set(
+                    info_db_sort_key => DatabaseUpdate::Set(
                         scrypto_encode(&package_info).unwrap()
                     )
                 )

@@ -8,6 +8,7 @@ members = [
     "component",
     "core",
     "clock",
+    "cross_package_call",
     "data_validation",
     "deep_sbor",
     "epoch_manager",

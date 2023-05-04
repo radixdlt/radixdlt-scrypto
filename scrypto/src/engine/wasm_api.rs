@@ -62,20 +62,37 @@ extern "C" {
 
     pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
-    pub fn new_key_value_store(schema_ptr: *const u8, schema_len: usize) -> Buffer;
+    pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
-    pub fn get_key_value_store_info(
+    pub fn kv_store_get_info(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
     ) -> Buffer;
 
-    pub fn lock_key_value_store_entry(
+    pub fn kv_store_lock_entry(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
         offset: *const u8,
         offset_len: usize,
         flags: u32,
     ) -> u32;
+
+    pub fn kv_store_remove_entry(
+        _key_value_store_id_ptr: *const u8,
+        _key_value_store_id_len: usize,
+        _key: *const u8,
+        _key_len: usize,
+    ) -> Buffer;
+
+    pub fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer;
+
+    pub fn kv_entry_set(
+        _key_value_entry_lock_handle: u32,
+        _buffer_ptr: *const u8,
+        _buffer_len: usize,
+    );
+
+    pub fn kv_entry_release(_key_value_entry_lock_handle: u32);
 
     /// Invokes a method on a component.
     pub fn call_method(
@@ -104,20 +121,24 @@ extern "C" {
     pub fn drop_object(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
-    // Substate API
+    // Actor API
     //===============
 
     // Locks a field
-    pub fn lock_field(field: u32, flags: u32) -> u32;
+    pub fn actor_lock_field(field: u32, flags: u32) -> u32;
+
+    //===============
+    // Field Lock API
+    //===============
 
     // Reads a substate
-    pub fn read_substate(handle: u32) -> Buffer;
+    pub fn field_lock_read(handle: u32) -> Buffer;
 
     // Writes into a substate
-    pub fn write_substate(handle: u32, data_ptr: *const u8, data_len: usize);
+    pub fn field_lock_write(handle: u32, data_ptr: *const u8, data_len: usize);
 
     // Releases a lock
-    pub fn drop_lock(handle: u32);
+    pub fn field_lock_release(handle: u32);
 
     //===============
     // System API
@@ -194,12 +215,12 @@ pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: u
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn new_key_value_store(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
+pub unsafe fn kv_store_new(_schema_ptr: *const u8, _schema_len: usize) -> Buffer {
     unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_key_value_store_info(
+pub unsafe fn kv_store_get_info(
     _key_value_store_id_ptr: *const u8,
     _key_value_store_id_len: usize,
 ) -> Buffer {
@@ -207,13 +228,42 @@ pub unsafe fn get_key_value_store_info(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn lock_key_value_store_entry(
+pub unsafe fn kv_store_lock_entry(
     _key_value_store_id_ptr: *const u8,
     _key_value_store_id_len: usize,
     _offset: *const u8,
     _offset_len: usize,
     _flags: u32,
 ) -> u32 {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn kv_entry_get(_key_value_entry_lock_handle: u32) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn kv_entry_set(
+    _key_value_entry_lock_handle: u32,
+    _buffer_ptr: *const u8,
+    _buffer_len: usize,
+) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn kv_entry_release(_key_value_entry_lock_handle: u32) {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn kv_store_remove_entry(
+    _key_value_store_id_ptr: *const u8,
+    _key_value_store_id_len: usize,
+    _key: *const u8,
+    _key_len: usize,
+) -> Buffer {
     unreachable!()
 }
 
@@ -250,20 +300,20 @@ pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn lock_field(_field: u32, _flags: u32) -> u32 {
+pub unsafe fn actor_lock_field(_field: u32, _flags: u32) -> u32 {
     unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn read_substate(_handle: u32) -> Buffer {
+pub unsafe fn field_lock_read(_handle: u32) -> Buffer {
     unreachable!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn write_substate(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
+pub unsafe fn field_lock_write(_handle: u32, _data_ptr: *const u8, _data_len: usize) {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn drop_lock(_handle: u32) {
+pub unsafe fn field_lock_release(_handle: u32) {
     unreachable!()
 }
 

@@ -1,7 +1,7 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -75,22 +75,22 @@ impl FungibleProofBlueprint {
     {
         let moveable = {
             let handle =
-                api.lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
-            let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
+                api.actor_lock_field(FungibleProofOffset::Moveable.into(), LockFlags::read_only())?;
+            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
             moveable
         };
 
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&moveable).unwrap(),
@@ -99,7 +99,7 @@ impl FungibleProofBlueprint {
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -108,13 +108,13 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             FungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -123,7 +123,8 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
         Ok(address)
     }
 
@@ -131,8 +132,6 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // FIXME: check type before schema check is ready! applicable to all functions!
-
         let parent = api
             .get_object_info(proof.0.as_node_id())?
             .outer_object

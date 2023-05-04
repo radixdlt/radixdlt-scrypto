@@ -126,7 +126,7 @@ fn test_normal_transaction_flow() {
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();
-    let execution_config = ExecutionConfig::standard();
+    let execution_config = ExecutionConfig::standard().with_trace(true);
     let raw_transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: 5_000_000,
         start_epoch_inclusive: 0,

@@ -5,7 +5,7 @@ use crate::kernel::heap::DroppedFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -74,7 +74,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -125,7 +125,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             vec![
                 scrypto_encode(&divisibility).unwrap(),
@@ -153,11 +153,11 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility = {
-            let divisibility_handle = api.lock_field(
+            let divisibility_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
-            let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
+            let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
             divisibility
         };
 
@@ -166,14 +166,14 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply += amount;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
-            api.sys_drop_lock(total_supply_handle)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_release(total_supply_handle)?;
         }
 
         let bucket = Self::create_bucket(amount, api)?;
@@ -200,14 +200,14 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 FungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
-            api.sys_drop_lock(total_supply_handle)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_release(total_supply_handle)?;
         }
 
         Ok(())
@@ -241,7 +241,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket_id = api.new_object(
+        let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
@@ -256,7 +256,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let vault_id = api.new_object(
+        let vault_id = api.new_simple_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
@@ -273,12 +273,12 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.lock_field(
+        let divisibility_handle = api.actor_lock_field(
             FungibleResourceManagerOffset::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.sys_read_substate_typed(divisibility_handle)?;
+        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -288,11 +288,11 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let total_supply_handle = api.lock_field(
+        let total_supply_handle = api.actor_lock_field(
             FungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
-        let total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+        let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
         Ok(total_supply)
     }
 

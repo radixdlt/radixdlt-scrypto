@@ -3,11 +3,11 @@ use crate::errors::RuntimeError;
 use crate::system::system_modules::costing::*;
 use crate::types::*;
 use crate::vm::wasm::*;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::KeyValueStoreInfo;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -123,7 +123,7 @@ where
 
         let component_id = self
             .api
-            .new_object(blueprint_ident.as_ref(), object_states)?;
+            .new_simple_object(blueprint_ident.as_ref(), object_states)?;
         let component_id_encoded =
             scrypto_encode(&component_id).expect("Failed to encode component id");
 
@@ -173,20 +173,6 @@ where
         Ok(())
     }
 
-    fn new_key_value_store(
-        &mut self,
-        schema: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let schema = scrypto_decode::<KeyValueStoreSchema>(&schema)
-            .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
-
-        let key_value_store_id = self.api.new_key_value_store(schema)?;
-        let key_value_store_id_encoded =
-            scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
-
-        self.allocate_buffer(key_value_store_id_encoded)
-    }
-
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let node_id = NodeId(
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
@@ -198,7 +184,21 @@ where
         Ok(())
     }
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_new(
+        &mut self,
+        schema: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let schema = scrypto_decode::<KeyValueStoreInfo>(&schema)
+            .map_err(WasmRuntimeError::InvalidKeyValueStoreSchema)?;
+
+        let key_value_store_id = self.api.key_value_store_new(schema)?;
+        let key_value_store_id_encoded =
+            scrypto_encode(&key_value_store_id).expect("Failed to encode package address");
+
+        self.allocate_buffer(key_value_store_id_encoded)
+    }
+
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -210,56 +210,97 @@ where
         );
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_key_value_store_entry(&node_id, &key, flags)?;
+        let handle = self.api.key_value_store_lock_entry(&node_id, &key, flags)?;
 
         Ok(handle)
     }
 
-    fn lock_field(
+    fn key_value_entry_get(
+        &mut self,
+        handle: u32,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let value = self.api.key_value_entry_get(handle)?;
+        self.allocate_buffer(value)
+    }
+
+    fn key_value_entry_set(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.key_value_entry_set(handle, data)?;
+        Ok(())
+    }
+
+    fn key_value_entry_release(
+        &mut self,
+        handle: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.key_value_entry_release(handle)?;
+        Ok(())
+    }
+
+    fn key_value_store_remove_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let rtn = self.api.key_value_store_remove_entry(&node_id, &key)?;
+        self.allocate_buffer(rtn)
+    }
+
+    fn actor_lock_field(
         &mut self,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.lock_field(field, flags)?;
+        let handle = self.api.actor_lock_field(field, flags)?;
 
         Ok(handle)
     }
 
-    fn read_substate(
+    fn field_lock_read(
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let substate = self.api.sys_read_substate(handle)?;
+        let substate = self.api.field_lock_read(handle)?;
 
         self.allocate_buffer(substate)
     }
 
-    fn write_substate(
+    fn field_lock_write(
         &mut self,
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.sys_write_substate(handle, data)?;
+        self.api.field_lock_write(handle, data)?;
 
         Ok(())
     }
 
-    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.sys_drop_lock(handle)?;
+    fn field_lock_release(
+        &mut self,
+        handle: LockHandle,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.api.field_lock_release(handle)?;
 
         Ok(())
     }
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let address = self.api.get_global_address()?;
+        let address = self.api.actor_get_global_address()?;
 
         let buffer = scrypto_encode(&address).expect("Failed to encode address");
         self.allocate_buffer(buffer)
     }
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.get_blueprint()?;
+        let actor = self.api.actor_get_blueprint()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)
@@ -424,18 +465,18 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn new_key_value_store(
+    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
@@ -444,15 +485,14 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn lock_field(&mut self, field: u8, flags: u32) -> Result<u32, InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_get(
+        &mut self,
+        handle: u32,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn read_substate(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn write_substate(
+    fn key_value_entry_set(
         &mut self,
         handle: u32,
         data: Vec<u8>,
@@ -460,7 +500,42 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn drop_lock(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn key_value_entry_release(
+        &mut self,
+        handle: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn key_value_store_remove_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn actor_lock_field(
+        &mut self,
+        field: u8,
+        flags: u32,
+    ) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn field_lock_read(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn field_lock_write(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn field_lock_release(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

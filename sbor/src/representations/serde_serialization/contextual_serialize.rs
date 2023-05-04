@@ -5,7 +5,7 @@ use crate::*;
 use serde::Serializer;
 use utils::*;
 
-pub enum SerializationParameters<'s, 'a, E: SerializableCustomTypeExtension> {
+pub enum SerializationParameters<'s, 'a, E: SerializableCustomExtension> {
     Schemaless {
         mode: SerializationMode,
         custom_context: E::CustomDisplayContext<'a>,
@@ -13,12 +13,12 @@ pub enum SerializationParameters<'s, 'a, E: SerializableCustomTypeExtension> {
     WithSchema {
         mode: SerializationMode,
         custom_context: E::CustomDisplayContext<'a>,
-        schema: &'s Schema<E>,
+        schema: &'s Schema<E::CustomSchema>,
         type_index: LocalTypeIndex,
     },
 }
 
-impl<'s, 'a, E: SerializableCustomTypeExtension> SerializationParameters<'s, 'a, E> {
+impl<'s, 'a, E: SerializableCustomExtension> SerializationParameters<'s, 'a, E> {
     pub fn get_context_and_type_index(&self) -> (SerializationContext<'s, 'a, E>, LocalTypeIndex) {
         match self {
             SerializationParameters::Schemaless {
@@ -26,7 +26,7 @@ impl<'s, 'a, E: SerializableCustomTypeExtension> SerializationParameters<'s, 'a,
                 custom_context,
             } => (
                 SerializationContext {
-                    schema: E::empty_schema(),
+                    schema: E::CustomSchema::empty_schema(),
                     mode: *mode,
                     custom_context: *custom_context,
                 },
@@ -49,7 +49,7 @@ impl<'s, 'a, E: SerializableCustomTypeExtension> SerializationParameters<'s, 'a,
     }
 }
 
-impl<'s, 'a, 'b, E: SerializableCustomTypeExtension>
+impl<'s, 'a, 'b, E: SerializableCustomExtension>
     ContextualSerialize<SerializationParameters<'s, 'a, E>> for RawPayload<'b, E>
 {
     fn contextual_serialize<S: Serializer>(
@@ -62,7 +62,7 @@ impl<'s, 'a, 'b, E: SerializableCustomTypeExtension>
     }
 }
 
-impl<'s, 'a, 'b, E: SerializableCustomTypeExtension>
+impl<'s, 'a, 'b, E: SerializableCustomExtension>
     ContextualSerialize<SerializationParameters<'s, 'a, E>> for RawValue<'b, E>
 {
     fn contextual_serialize<S: Serializer>(

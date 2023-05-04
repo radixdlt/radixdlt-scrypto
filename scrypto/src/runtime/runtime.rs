@@ -36,11 +36,11 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn blueprint() -> Blueprint {
-        ScryptoEnv.get_blueprint().unwrap()
+        ScryptoEnv.actor_get_blueprint().unwrap()
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
         ComponentAddress::new_or_panic(address.into())
     }
 

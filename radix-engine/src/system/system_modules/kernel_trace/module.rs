@@ -7,7 +7,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
@@ -52,7 +52,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         nodes_and_refs: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
@@ -89,9 +88,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        let mut module_substate_keys = BTreeMap::<&ModuleId, Vec<&SubstateKey>>::new();
+        let mut module_substate_keys = BTreeMap::<&ModuleNumber, Vec<&SubstateKey>>::new();
         for (module_id, m) in node_module_init {
             for (substate_key, _) in m {
                 module_substate_keys
@@ -122,7 +121,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleId,
+        module_id: &ModuleNumber,
         offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

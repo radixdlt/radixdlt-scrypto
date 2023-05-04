@@ -170,6 +170,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
                     substates,
+                    key_value_stores: Vec::new(),
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema
@@ -729,6 +730,7 @@ mod tests {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
                             substates,
+                            key_value_stores: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema

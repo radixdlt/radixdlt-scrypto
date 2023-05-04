@@ -1,8 +1,11 @@
 use crate::engine::wasm_api::*;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
+use radix_engine_interface::api::key_value_entry_api::{
+    ClientKeyValueEntryApi, KeyValueEntryHandle,
+};
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ClientSubstateLockApi};
+use radix_engine_interface::api::{ClientActorApi, ClientFieldLockApi, ClientObjectApi};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -14,7 +17,7 @@ use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::{InstanceSchema, KeyValueStoreInfo};
 
 #[derive(Debug, Sbor)]
 pub enum ClientApiError {
@@ -24,7 +27,7 @@ pub enum ClientApiError {
 pub struct ScryptoEnv;
 
 impl ClientObjectApi<ClientApiError> for ScryptoEnv {
-    fn new_object(
+    fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
         object_states: Vec<Vec<u8>>,
@@ -40,6 +43,16 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
             )
         });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
+    }
+
+    fn new_object(
+        &mut self,
+        _blueprint_ident: &str,
+        _schema: Option<InstanceSchema>,
+        _fields: Vec<Vec<u8>>,
+        _kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+    ) -> Result<NodeId, ClientApiError> {
+        todo!()
     }
 
     fn preallocate_global_address(
@@ -139,35 +152,62 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
-    fn new_key_value_store(
+impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
+    fn key_value_entry_get(
         &mut self,
-        schema: KeyValueStoreSchema,
-    ) -> Result<NodeId, ClientApiError> {
+        handle: KeyValueEntryHandle,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let entry = copy_buffer(unsafe { kv_entry_get(handle) });
+
+        Ok(entry)
+    }
+
+    fn key_value_entry_set(
+        &mut self,
+        handle: KeyValueEntryHandle,
+        buffer: Vec<u8>,
+    ) -> Result<(), ClientApiError> {
+        unsafe { kv_entry_set(handle, buffer.as_ptr(), buffer.len()) };
+
+        Ok(())
+    }
+
+    fn key_value_entry_release(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<(), ClientApiError> {
+        unsafe { kv_entry_release(handle) };
+
+        Ok(())
+    }
+}
+
+impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
+    fn key_value_store_new(&mut self, schema: KeyValueStoreInfo) -> Result<NodeId, ClientApiError> {
         let schema = scrypto_encode(&schema).unwrap();
-        let bytes = copy_buffer(unsafe { new_key_value_store(schema.as_ptr(), schema.len()) });
+        let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_key_value_store_info(
+    fn key_value_store_get_info(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<KeyValueStoreSchema, ClientApiError> {
+    ) -> Result<KeyValueStoreInfo, ClientApiError> {
         let bytes = copy_buffer(unsafe {
-            get_key_value_store_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            kv_store_get_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
 
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
+    ) -> Result<KeyValueEntryHandle, ClientApiError> {
         let handle = unsafe {
-            lock_key_value_store_entry(
+            kv_store_lock_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
@@ -177,6 +217,22 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         };
 
         Ok(handle)
+    }
+
+    fn key_value_store_remove_entry(
+        &mut self,
+        node_id: &NodeId,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, ClientApiError> {
+        let removed = copy_buffer(unsafe {
+            kv_store_remove_entry(
+                node_id.as_ref().as_ptr(),
+                node_id.as_ref().len(),
+                key.as_ptr(),
+                key.len(),
+            )
+        });
+        Ok(removed)
     }
 }
 
@@ -207,38 +263,42 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientSubstateLockApi<ClientApiError> for ScryptoEnv {
-    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
-        let substate = copy_buffer(unsafe { read_substate(lock_handle) });
+impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
+    fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
+        let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
 
         Ok(substate)
     }
 
-    fn sys_write_substate(
+    fn field_lock_write(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), ClientApiError> {
-        unsafe { write_substate(lock_handle, buffer.as_ptr(), buffer.len()) };
+        unsafe { field_lock_write(lock_handle, buffer.as_ptr(), buffer.len()) };
 
         Ok(())
     }
 
-    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
-        unsafe { drop_lock(lock_handle) };
+    fn field_lock_release(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
+        unsafe { field_lock_release(lock_handle) };
 
         Ok(())
     }
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn lock_field(&mut self, field: u8, flags: LockFlags) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { lock_field(u32::from(field), flags.bits()) };
+    fn actor_lock_field(
+        &mut self,
+        field: u8,
+        flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
+        let handle = unsafe { actor_lock_field(u32::from(field), flags.bits()) };
 
         Ok(handle)
     }
 
-    fn lock_parent_field(
+    fn actor_lock_outer_object_field(
         &mut self,
         _field: u8,
         _flags: LockFlags,
@@ -246,17 +306,30 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+    fn actor_lock_key_value_handle_entry(
+        &mut self,
+        _kv_handle: u8,
+        _key: &[u8],
+        _flags: LockFlags,
+    ) -> Result<LockHandle, ClientApiError> {
         todo!()
     }
 
-    fn get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+    fn actor_remove_key_value_entry(&mut self, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
+        todo!()
+    }
+
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+        todo!()
+    }
+
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

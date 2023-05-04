@@ -1,5 +1,5 @@
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
-use crate::kernel::actor::Actor;
+use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -10,18 +10,18 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::BlueprintSchema;
+use radix_engine_interface::schema::IndexedBlueprintSchema;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     with_receiver: bool,
     input: &IndexedScryptoValue,
@@ -40,25 +40,25 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         ));
     }
 
-    validate_payload_against_schema(
-        input.as_slice(),
-        &blueprint_schema.schema,
-        function_schema.input,
-        service,
-    )
-    .map_err(|err| {
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
-            fn_ident.to_string(),
-            err.error_message(&blueprint_schema.schema),
-        ))
-    })?;
+    service
+        .validate_payload(
+            input.as_slice(),
+            &blueprint_schema.schema,
+            function_schema.input,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
+                fn_ident.to_string(),
+                err.error_message(&blueprint_schema.schema),
+            ))
+        })?;
 
     Ok(function_schema.export_name.clone())
 }
 
 fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
-    blueprint_schema: &BlueprintSchema,
+    blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
     output: &IndexedScryptoValue,
 ) -> Result<(), RuntimeError> {
@@ -67,18 +67,18 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .get(fn_ident)
         .expect("Checked by `validate_input`");
 
-    validate_payload_against_schema(
-        output.as_slice(),
-        &blueprint_schema.schema,
-        function_schema.output,
-        service,
-    )
-    .map_err(|err| {
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
-            fn_ident.to_string(),
-            err.error_message(&blueprint_schema.schema),
-        ))
-    })?;
+    service
+        .validate_payload(
+            output.as_slice(),
+            &blueprint_schema.schema,
+            function_schema.output,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
+                fn_ident.to_string(),
+                err.error_message(&blueprint_schema.schema),
+            ))
+        })?;
 
     Ok(())
 }
@@ -90,13 +90,55 @@ pub struct SystemInvocation {
     pub receiver: Option<MethodIdentifier>,
 }
 
+#[derive(Clone)]
+pub enum SystemLockData {
+    KeyValueEntry(KeyValueEntryLockData),
+    Field(FieldLockData),
+    Default,
+}
+
+impl Default for SystemLockData {
+    fn default() -> Self {
+        SystemLockData::Default
+    }
+}
+
+#[derive(Clone)]
+pub enum KeyValueEntryLockData {
+    Read,
+    Write {
+        schema: ScryptoSchema,
+        index: LocalTypeIndex,
+        can_own: bool,
+    },
+}
+
+#[derive(Clone)]
+pub enum FieldLockData {
+    Read,
+    Write {
+        schema: ScryptoSchema,
+        index: LocalTypeIndex,
+    },
+}
+
+impl SystemLockData {
+    pub fn is_kv_entry(&self) -> bool {
+        matches!(self, SystemLockData::KeyValueEntry(..))
+    }
+}
+
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
+    // TODO: We should be able to make this a more generic cache for
+    // TODO: immutable substates
+    pub blueprint_schema_cache: NonIterMap<Blueprint, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
+    type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -128,7 +170,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -139,7 +181,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_id: &ModuleId,
+        module_id: &ModuleNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -226,11 +268,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         match callee {
-            Actor::Method {
+            Actor::Method(MethodActor {
                 global_address,
                 object_info,
                 ..
-            } => {
+            }) => {
                 if let Some(address) = global_address {
                     update
                         .node_refs_to_copy
@@ -247,11 +289,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
-    fn on_execution_start<Y>(caller: &Option<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_start(api, &caller)
+        SystemModuleMixer::on_execution_start(api)
     }
 
     fn invoke_upstream<Y>(
@@ -264,9 +306,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
-            api.kernel_load_package_package_dependencies();
-
-            // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
             let export_name = match invocation.ident {
@@ -277,17 +316,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     ))
                 }
             };
-            // Make dependent resources/components visible
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-            );
 
-            if let Ok(handle) = handle {
-                api.kernel_drop_lock(handle)?;
-            }
+            // TODO: Load dependent resources/components
 
             let mut vm_instance = {
                 NativeVm::create_instance(
@@ -322,6 +352,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 }
             };
 
+            // TODO: Load dependent resources/components
+
             let mut vm_instance = {
                 NativeVm::create_instance(
                     &invocation.blueprint.package_address,
@@ -344,23 +376,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                SysModuleId::Object.into(),
+                OBJECT_BASE_MODULE,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
+                SystemLockData::default(),
             )?;
             api.kernel_drop_lock(handle)?;
-
-            // TODO: Remove this weirdness or move to a kernel module if we still want to support this
-            // Make common resources/components visible
-            api.kernel_load_common();
 
             // Load schema
             let schema = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &PackageOffset::Info.into(),
                     LockFlags::read_only(),
+                    SystemLockData::default(),
                 )?;
                 let package_info = api.kernel_read_substate(handle)?;
                 let package_info: PackageInfoSubstate = package_info.as_typed().unwrap();
@@ -429,15 +459,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(
-        caller: &Option<Actor>,
-        update: &CallFrameUpdate,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_finish(api, caller, update)
+        SystemModuleMixer::on_execution_finish(api, update)
     }
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
@@ -495,7 +521,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

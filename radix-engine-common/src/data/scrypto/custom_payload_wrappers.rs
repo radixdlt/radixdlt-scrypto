@@ -1,7 +1,7 @@
 use super::*;
 use sbor::*;
 
-pub type ScryptoRawPayload<'a> = RawPayload<'a, ScryptoCustomTypeExtension>;
-pub type ScryptoOwnedRawPayload = RawPayload<'static, ScryptoCustomTypeExtension>;
-pub type ScryptoRawValue<'a> = RawValue<'a, ScryptoCustomTypeExtension>;
-pub type ScryptoOwnedRawValue = RawValue<'static, ScryptoCustomTypeExtension>;
+pub type ScryptoRawPayload<'a> = RawPayload<'a, ScryptoCustomExtension>;
+pub type ScryptoOwnedRawPayload = RawPayload<'static, ScryptoCustomExtension>;
+pub type ScryptoRawValue<'a> = RawValue<'a, ScryptoCustomExtension>;
+pub type ScryptoOwnedRawValue = RawValue<'static, ScryptoCustomExtension>;

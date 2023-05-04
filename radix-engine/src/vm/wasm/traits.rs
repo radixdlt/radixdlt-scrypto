@@ -53,17 +53,35 @@ pub trait WasmRuntime {
         address: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn new_key_value_store(
+    fn key_value_store_new(
         &mut self,
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn lock_key_value_store_entry(
+    fn key_value_store_lock_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+
+    fn key_value_entry_get(&mut self, handle: u32)
+        -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn key_value_entry_set(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn key_value_entry_release(&mut self, handle: u32)
+        -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn key_value_store_remove_entry(
+        &mut self,
+        node_id: Vec<u8>,
+        key: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_object_info(
         &mut self,
@@ -72,24 +90,27 @@ pub trait WasmRuntime {
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn lock_field(
+    fn actor_lock_field(
         &mut self,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
-    fn read_substate(
+    fn field_lock_read(
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn write_substate(
+    fn field_lock_write(
         &mut self,
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn drop_lock(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn field_lock_release(
+        &mut self,
+        handle: LockHandle,
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
