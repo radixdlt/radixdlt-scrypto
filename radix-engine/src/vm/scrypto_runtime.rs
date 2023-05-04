@@ -241,11 +241,12 @@ where
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.actor_lock_field(field, flags)?;
+        let handle = self.api.actor_lock_field(object_handle, field, flags)?;
 
         Ok(handle)
     }
@@ -496,6 +497,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {

@@ -15,7 +15,7 @@ use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
@@ -614,7 +614,11 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.actor_lock_field(PackageField::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            PackageField::Royalty.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -634,7 +638,11 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.actor_lock_field(PackageField::Royalty.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            PackageField::Royalty.into(),
+            LockFlags::read_only(),
+        )?;
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {

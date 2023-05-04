@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -102,6 +102,7 @@ impl FungibleVaultBlueprint {
 
         // Lock the substate (with special flags)
         let vault_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
@@ -234,6 +235,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -248,6 +250,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
@@ -262,6 +265,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -290,6 +294,7 @@ impl FungibleVault {
         let event = DepositResourceEvent::Amount(resource.amount());
 
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -317,6 +322,7 @@ impl FungibleVault {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
@@ -351,6 +357,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;

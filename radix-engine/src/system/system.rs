@@ -471,6 +471,27 @@ where
         }
     }
 
+    fn get_actor_field(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        field_index: u8,
+    ) -> Result<(NodeId, PartitionNumber, ScryptoSchema, LocalTypeIndex, ObjectInfo), RuntimeError> {
+        let (node_id, base_partition, info, schema) =
+            self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                info.blueprint.clone(), field_index,
+            ))
+        })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num, schema.schema, type_index, info))
+    }
+
     fn get_actor_kv_partition(
         &mut self,
         actor_object_type: ActorObjectType,
@@ -1404,24 +1425,22 @@ where
     #[trace_resources]
     fn actor_lock_field(
         &mut self,
-        field: u8,
+        object_handle: ObjectHandle,
+        field_index: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let system_state = self.api.kernel_get_system_state();
-        let actor = system_state.current.unwrap();
-        let method_actor = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num, schema, type_index, object_info) =
+            self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(method_actor
-                .object_info
+            if !( object_info
                 .blueprint
                 .package_address
                 .eq(&RESOURCE_PACKAGE)
-                && method_actor
-                    .object_info
+                && object_info
                     .blueprint
                     .blueprint_name
                     .eq(FUNGIBLE_VAULT_BLUEPRINT))
@@ -1430,27 +1449,10 @@ where
             }
         }
 
-        let node_id = method_actor.node_id;
-        let base_partition = method_actor.module_id.base_partition_num();
-        let blueprint = method_actor.object_info.blueprint.clone();
-        let schema = self.get_blueprint_schema(&blueprint)?;
-
-        let (partition_num, field_type_index) =
-            if let Some((offset, field_type_index)) = schema.field(field) {
-                let partition_num = base_partition
-                    .at_offset(offset)
-                    .expect("Module number overflow");
-                (partition_num, field_type_index)
-            } else {
-                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    blueprint, field,
-                )));
-            };
-
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                schema: schema.schema.clone(),
-                index: field_type_index,
+                schema,
+                index: type_index,
             }
         } else {
             FieldLockData::Read
@@ -1459,7 +1461,7 @@ where
         self.api.kernel_lock_substate(
             &node_id,
             partition_num,
-            &SubstateKey::Tuple(field),
+            &SubstateKey::Tuple(field_index),
             flags,
             SystemLockData::Field(lock_data),
         )

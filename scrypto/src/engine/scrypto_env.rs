@@ -278,10 +278,11 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { actor_lock_field(u32::from(field), flags.bits()) };
+        let handle = unsafe { actor_lock_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
     }

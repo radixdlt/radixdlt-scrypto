@@ -171,6 +171,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             EpochManagerField::EpochManager.into(),
             LockFlags::read_only(),
         )?;
@@ -185,10 +186,15 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let config_handle =
-            api.actor_lock_field(EpochManagerField::Config.into(), LockFlags::read_only())?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                EpochManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
         let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
 
         let mgr_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             EpochManagerField::EpochManager.into(),
             LockFlags::read_only(),
         )?;
@@ -212,10 +218,18 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let config_handle =
-            api.actor_lock_field(EpochManagerField::Config.into(), LockFlags::read_only())?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                EpochManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
         let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
         let mgr_handle =
-            api.actor_lock_field(EpochManagerField::EpochManager.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                EpochManagerField::EpochManager.into(),
+                LockFlags::MUTABLE,
+            )?;
         let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
@@ -249,7 +263,11 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle =
-            api.actor_lock_field(EpochManagerField::EpochManager.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                EpochManagerField::EpochManager.into(),
+                LockFlags::MUTABLE,
+            )?;
 
         let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(handle)?;
         epoch_manager.epoch = epoch;
@@ -280,6 +298,7 @@ impl EpochManagerBlueprint {
             validators.into_iter().collect();
 
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             EpochManagerField::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;

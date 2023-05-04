@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::{FungibleResourceManagerField, NodeId};
@@ -154,6 +154,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let divisibility = {
             let divisibility_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
@@ -167,6 +168,7 @@ impl FungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -201,6 +203,7 @@ impl FungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
@@ -274,6 +277,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
@@ -289,6 +293,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let total_supply_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             FungibleResourceManagerField::TotalSupply.into(),
             LockFlags::read_only(),
         )?;

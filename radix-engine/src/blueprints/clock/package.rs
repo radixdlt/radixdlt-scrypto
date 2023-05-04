@@ -7,7 +7,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
@@ -208,6 +208,7 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             ClockField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
@@ -232,6 +233,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.actor_lock_field(
+                    OBJECT_HANDLE_SELF,
                     ClockField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
@@ -258,6 +260,7 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.actor_lock_field(
+                    OBJECT_HANDLE_SELF,
                     ClockField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;

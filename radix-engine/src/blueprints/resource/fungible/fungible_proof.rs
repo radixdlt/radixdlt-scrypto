@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -75,7 +75,11 @@ impl FungibleProofBlueprint {
     {
         let moveable = {
             let handle =
-                api.actor_lock_field(FungibleProofField::Moveable.into(), LockFlags::read_only())?;
+                api.actor_lock_field(
+                    OBJECT_HANDLE_SELF,
+                    FungibleProofField::Moveable.into(),
+                    LockFlags::read_only(),
+                )?;
             let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
             let moveable = substate_ref.clone();
             api.field_lock_release(handle)?;
@@ -83,7 +87,11 @@ impl FungibleProofBlueprint {
         };
 
         let handle =
-            api.actor_lock_field(FungibleProofField::ProofRefs.into(), LockFlags::read_only())?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                FungibleProofField::ProofRefs.into(),
+                LockFlags::read_only(),
+            )?;
         let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
@@ -107,7 +115,11 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle =
-            api.actor_lock_field(FungibleProofField::ProofRefs.into(), LockFlags::read_only())?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                FungibleProofField::ProofRefs.into(),
+                LockFlags::read_only(),
+            )?;
         let substate_ref: FungibleProof = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;

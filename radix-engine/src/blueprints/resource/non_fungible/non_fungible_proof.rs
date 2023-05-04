@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -80,6 +80,7 @@ impl NonFungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
@@ -89,6 +90,7 @@ impl NonFungibleProofBlueprint {
             moveable
         };
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -115,6 +117,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
@@ -131,6 +134,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;

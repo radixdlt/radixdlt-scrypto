@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT};
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -81,7 +81,11 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.actor_lock_field(ValidatorField::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
@@ -129,7 +133,11 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.actor_lock_field(ValidatorField::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
@@ -196,7 +204,11 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorField::Validator.into();
-        let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            substate_key,
+            LockFlags::MUTABLE,
+        )?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
@@ -275,7 +287,11 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle =
-            api.actor_lock_field(ValidatorField::Validator.into(), LockFlags::read_only())?;
+            api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ValidatorField::Validator.into(),
+                LockFlags::read_only(),
+            )?;
         let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -329,7 +345,11 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(ValidatorField::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Update Epoch Manager
