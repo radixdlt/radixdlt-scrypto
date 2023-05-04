@@ -441,7 +441,7 @@ where
     fn get_actor_schema(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, Blueprint, IndexedBlueprintSchema), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintSchema), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
         let method = actor
             .try_as_method()
@@ -454,19 +454,19 @@ where
                 Ok((
                     address.into_node_id(),
                     OBJECT_BASE_PARTITION,
-                    info.blueprint,
+                    info,
                     schema,
                 ))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
-                let blueprint = method.object_info.blueprint.clone();
+                let info = method.object_info.clone();
                 let object_module_id = method.module_id;
-                let schema = self.get_blueprint_schema(&blueprint)?;
+                let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((
                     node_id,
                     object_module_id.base_partition_num(),
-                    blueprint,
+                    info,
                     schema,
                 ))
             }
@@ -478,11 +478,11 @@ where
         actor_object_type: ActorObjectType,
         handle: u8,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, blueprint, schema) =
+        let (node_id, base_partition, object_info, schema) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = schema.index_partition_offset(handle).ok_or_else(|| {
-            RuntimeError::SystemError(SystemError::IndexDoesNotExist(blueprint, handle))
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(object_info.blueprint, handle))
         })?;
 
         let partition_num = base_partition
@@ -497,13 +497,13 @@ where
         actor_object_type: ActorObjectType,
         index_handle: u8,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, blueprint, schema) =
+        let (node_id, base_partition, object_info, schema) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = schema
             .sorted_index_partition_offset(index_handle)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(blueprint, index_handle))
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(object_info.blueprint, index_handle))
             })?;
 
         let partition_num = base_partition
@@ -1132,11 +1132,14 @@ where
 {
     fn actor_index_insert(
         &mut self,
-        handle: u8,
+        object_handle: ObjectHandle,
+        index_id: u8,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, handle)?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, index_id)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1154,10 +1157,13 @@ where
 
     fn actor_index_remove(
         &mut self,
-        index_handle: u8,
+        object_handle: ObjectHandle,
+        index_id: u8,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, index_id)?;
 
         let rtn = self
             .api
@@ -1169,10 +1175,13 @@ where
 
     fn actor_index_scan(
         &mut self,
-        index_handle: u8,
+        object_handle: ObjectHandle,
+        index_id: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, index_id)?;
 
         let substates = self
             .api
@@ -1186,10 +1195,13 @@ where
 
     fn actor_index_take(
         &mut self,
-        index_handle: u8,
+        object_handle: ObjectHandle,
+        index_id: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, index_id)?;
 
         let substates = self
             .api
