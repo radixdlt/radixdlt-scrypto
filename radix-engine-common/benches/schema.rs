@@ -62,7 +62,7 @@ fn bench_schema_new(b: &mut Criterion) {
                 &bytes,
                 &schema,
                 type_index,
-                &mut ScryptoCustomValidationContext::new_without_type_info(),
+                &ScryptoCustomValidationContext::new_without_type_info(),
             );
             assert!(result.is_ok())
         })

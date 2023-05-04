@@ -248,7 +248,7 @@ where
                 &fields[i],
                 &schema.schema,
                 schema.substates[i],
-                &mut self.as_validation_context(),
+                &self.as_validation_context(),
             )
             .map_err(|err| {
                 RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
@@ -297,7 +297,7 @@ where
                     &buffer,
                     &store_schema.schema,
                     store_schema.value,
-                    &mut self.as_validation_context(),
+                    &self.as_validation_context(),
                 ) {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidSubstateWrite(e.error_message(&store_schema.schema)),
@@ -343,7 +343,7 @@ where
                                         &buffer,
                                         &blueprint_schema.schema,
                                         *index,
-                                        &mut self.as_validation_context(),
+                                        &self.as_validation_context(),
                                     )
                                 {
                                     return Err(RuntimeError::SystemError(
@@ -1480,7 +1480,7 @@ where
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
-            &mut self.as_validation_context(),
+            &self.as_validation_context(),
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
