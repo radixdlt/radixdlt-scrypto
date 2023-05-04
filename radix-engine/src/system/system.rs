@@ -53,6 +53,17 @@ enum ActorObjectType {
     OuterObject,
 }
 
+impl TryFrom<ObjectHandle> for ActorObjectType {
+    type Error = RuntimeError;
+    fn try_from(value: ObjectHandle) -> Result<Self, Self::Error> {
+        match value {
+            OBJECT_HANDLE_SELF => Ok(ActorObjectType::SELF),
+            OBJECT_HANDLE_OUTER_OBJECT => Ok(ActorObjectType::OuterObject),
+            _ => Err(RuntimeError::SystemError(SystemError::InvalidObjectHandle)),
+        }
+    }
+}
+
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
@@ -1197,14 +1208,17 @@ where
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn actor_outer_object_sorted_index_insert(
+    fn actor_sorted_index_insert(
         &mut self,
-        handle: u8,
+        object_handle: ObjectHandle,
+        partition_index: u8,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
+            self.get_actor_sorted_index(actor_object_type, partition_index)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1225,13 +1239,16 @@ where
     }
 
     #[trace_resources]
-    fn actor_outer_object_sorted_index_remove(
+    fn actor_sorted_index_remove(
         &mut self,
-        handle: u8,
+        object_handle: ObjectHandle,
+        partition_index: u8,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
+            self.get_actor_sorted_index(actor_object_type, partition_index)?;
 
         let rtn = self
             .api
@@ -1248,11 +1265,14 @@ where
     #[trace_resources]
     fn actor_sorted_index_scan(
         &mut self,
-        handle: u8,
+        object_handle: ObjectHandle,
+        partition_index: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(ActorObjectType::SELF, handle)?;
+            self.get_actor_sorted_index(actor_object_type, partition_index)?;
 
         let substates = self
             .api

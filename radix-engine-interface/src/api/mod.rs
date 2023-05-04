@@ -28,6 +28,11 @@ use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::key_value_entry_api::ClientKeyValueEntryApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 
+pub type ObjectHandle = u32;
+
+pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
+pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
+
 /// Interface of the system, for blueprints and Node modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
