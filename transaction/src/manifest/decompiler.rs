@@ -83,8 +83,8 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn for_value_display(&'a self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_bech32_and_names(
+    pub fn for_value_display(&'a self) -> ManifestDecompilationDisplayContext<'a> {
+        ManifestDecompilationDisplayContext::with_bech32_and_names(
             self.bech32_encoder,
             &self.bucket_names,
             &self.proof_names,

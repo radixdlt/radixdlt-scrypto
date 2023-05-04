@@ -10,13 +10,13 @@ use sbor::*;
 use utils::ContextualDisplay;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ManifestValueDisplayContext<'a> {
+pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
 }
 
-impl<'a> ManifestValueDisplayContext<'a> {
+impl<'a> ManifestDecompilationDisplayContext<'a> {
     pub fn no_context() -> Self {
         Self {
             bech32_encoder: None,
@@ -56,25 +56,25 @@ impl<'a> ManifestValueDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for &'a Bech32Encoder {
-    fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_optional_bech32(Some(self))
+impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ManifestDecompilationDisplayContext<'a> {
+        ManifestDecompilationDisplayContext::with_optional_bech32(Some(self))
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
-    fn into(self) -> ManifestValueDisplayContext<'a> {
-        ManifestValueDisplayContext::with_optional_bech32(self)
+impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ManifestDecompilationDisplayContext<'a> {
+        ManifestDecompilationDisplayContext::with_optional_bech32(self)
     }
 }
 
-impl<'a> ContextualDisplay<ManifestValueDisplayContext<'a>> for ManifestValue {
+impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for ManifestValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ManifestValueDisplayContext<'a>,
+        context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_manifest_value(f, self, context)
     }
@@ -83,7 +83,7 @@ impl<'a> ContextualDisplay<ManifestValueDisplayContext<'a>> for ManifestValue {
 pub fn format_manifest_value<F: fmt::Write>(
     f: &mut F,
     value: &ManifestValue,
-    context: &ManifestValueDisplayContext,
+    context: &ManifestDecompilationDisplayContext,
 ) -> fmt::Result {
     match value {
         // primitive types
@@ -190,7 +190,7 @@ pub fn format_tuple<F: fmt::Write>(
     f: &mut F,
     name: &'static str,
     fields: &[ManifestValue],
-    context: &ManifestValueDisplayContext,
+    context: &ManifestDecompilationDisplayContext,
 ) -> fmt::Result {
     f.write_str(name)?;
     f.write_str("(")?;
@@ -245,7 +245,7 @@ impl<'a> fmt::Display for DisplayableManifestValueKind<'a> {
 pub fn format_elements<F: fmt::Write>(
     f: &mut F,
     values: &[ManifestValue],
-    context: &ManifestValueDisplayContext,
+    context: &ManifestDecompilationDisplayContext,
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
@@ -259,7 +259,7 @@ pub fn format_elements<F: fmt::Write>(
 pub fn format_kv_entries<F: fmt::Write>(
     f: &mut F,
     entries: &[(ManifestValue, ManifestValue)],
-    context: &ManifestValueDisplayContext,
+    context: &ManifestDecompilationDisplayContext,
 ) -> fmt::Result {
     for (i, x) in entries.iter().enumerate() {
         if i != 0 {
@@ -272,13 +272,13 @@ pub fn format_kv_entries<F: fmt::Write>(
     Ok(())
 }
 
-impl<'a> ContextualDisplay<ManifestValueDisplayContext<'a>> for ManifestCustomValue {
+impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for ManifestCustomValue {
     type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ManifestValueDisplayContext<'a>,
+        context: &ManifestDecompilationDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         format_custom_value(f, self, context)
     }
@@ -287,7 +287,7 @@ impl<'a> ContextualDisplay<ManifestValueDisplayContext<'a>> for ManifestCustomVa
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ManifestCustomValue,
-    context: &ManifestValueDisplayContext,
+    context: &ManifestDecompilationDisplayContext,
 ) -> fmt::Result {
     match value {
         ManifestCustomValue::Address(value) => {

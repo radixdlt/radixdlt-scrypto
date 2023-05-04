@@ -3,16 +3,27 @@ use sbor::traversal::VecTraverser;
 use sbor::*;
 
 mod custom_extension;
+mod custom_formatting;
+mod custom_payload_wrappers;
+#[cfg(feature = "serde")]
+mod custom_serde;
 mod custom_traversal;
 mod custom_value;
 mod custom_value_kind;
+mod display_context;
 
+pub mod converter;
 mod custom_validation;
 pub mod model;
 pub use custom_extension::*;
+pub use custom_formatting::*;
+pub use custom_payload_wrappers::*;
+#[cfg(feature = "serde")]
+pub use custom_serde::*;
 pub use custom_traversal::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
+pub use display_context::*;
 
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
