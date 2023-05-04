@@ -6,9 +6,12 @@ set -u
 
 SUMMARY_FILE=crash_summary.txt
 ARTIFACT_NAME=fuzz_transaction.tgz
+INSPECT_TIMEOUT=20000
 url_or_dir=$1
+inspect_timeout=${2:-$INSPECT_TIMEOUT}
 gh_run_id=
 local_dir=
+
 
 function usage() {
     echo "$0 <run-id>"
@@ -17,6 +20,9 @@ function usage() {
     echo "It also tries to reproduce the crashes if this is the case."
     echo "This is to classify crashes and filter out duplicates."
     echo "  <run-id|run-url|local-afl-output-dir>  - Github action run id or url or AFL output directory"
+    echo "  <inspect_timeout>                      - Abort inspection if it lasts longer than given timeout (default $INSPECT_TIMEOUT)"
+    echo "                                           This is a workaround for 5min cancellation timeout, which occurs when inspecting"
+    echo "                                           big number (+500) of crash files after the run was cancelled"
     exit
 }
 
@@ -102,6 +108,13 @@ function inspect_crashes() {
         popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
+            now=$(date +%s)
+            elapsed=$(( now - started ))
+            if [ $elapsed -gt $inspect_timeout ] ; then
+                echo "Inspection timeout $inspect_timeout exceeded - interrupt" >> $SUMMARY_FILE
+                break
+            fi
+
             # calling target directly to get rid of unnecessary debugs
             #./fuzz.sh simple run ../../$f >/dev/null || true
             cmd="${repo_dir}/target/release/transaction $f"
@@ -130,11 +143,9 @@ EOF
             echo "list    : $f"
         done >> $SUMMARY_FILE
         rm -f output.log
-
     else
         echo "No crashes found" >> $SUMMARY_FILE
     fi
-
 
     popd > /dev/null
 
@@ -153,6 +164,7 @@ EOF
     fi
 }
 
+started=$(date +%s)
 
 if [ $url_or_dir = "help" -o $url_or_dir = "h" ] ; then
     usage

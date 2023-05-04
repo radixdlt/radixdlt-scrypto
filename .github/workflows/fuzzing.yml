@@ -90,12 +90,22 @@ jobs:
       run: |
         ./afl.sh quit
 
-    - name: Process AFL results
-      if: success() || failure() || cancelled()
+    - name: Process AFL results (if success)
+      if: success()
       working-directory: fuzz-tests
       run: |
         # it is expected to generate afl/crash_summary.txt
         ./process_fuzz_results.sh afl/transaction
+
+    - name: Process AFL results (if not success)
+      if: failure() || cancelled()
+      working-directory: fuzz-tests
+      run: |
+        # it is expected to generate afl/crash_summary.txt
+        # Specify crash inspection timeout to workaround following issue:
+        #   "Runner fuzzing-runner did not respond to a cancelation request with 00:05:00"
+        # Setting timeout to 270s, remaining 30s is a safety margin
+        ./process_fuzz_results.sh afl/transaction 270
 
     - name: Generate summary
       if: success() || failure() || cancelled()
