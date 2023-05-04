@@ -16,7 +16,7 @@ use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
 ///
-/// Not that it's just an intent, not checked/allowed by kernel yet.
+/// Note that it's just an intent, not checked/allowed by kernel yet.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Message {
     pub copy_references: Vec<NodeId>,
@@ -127,8 +127,9 @@ pub enum UnlockSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MoveError {
     OwnNotFound(NodeId),
-    RefNotFound(NodeId),
     CantMoveLockedNode(NodeId),
+
+    RefNotFound(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -624,48 +625,35 @@ impl<L: Clone> CallFrame<L> {
     pub fn new_child_from_parent(
         parent: &mut CallFrame<L>,
         actor: Actor,
-        call_frame_update: Message,
+        message: Message,
     ) -> Result<Self, MoveError> {
-        let mut owned_heap_nodes = index_map_new();
-        let mut next_node_refs = NonIterMap::new();
-
-        for node_id in call_frame_update.move_nodes {
-            parent.take_node_internal(&node_id)?;
-            owned_heap_nodes.insert(node_id, 0u32);
-        }
-
-        for node_id in call_frame_update.copy_references {
-            let visibility = parent
-                .get_node_visibility(&node_id)
-                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
-            next_node_refs.insert(node_id, RENodeRefData::new(visibility.0));
-        }
-
-        let frame = Self {
+        let mut frame = Self {
             depth: parent.depth + 1,
             actor: Some(actor),
-            immortal_node_refs: next_node_refs,
+            immortal_node_refs: NonIterMap::new(),
             temp_node_refs: NonIterMap::new(),
-            owned_root_nodes: owned_heap_nodes,
+            owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
         };
 
+        Self::exchange(parent, &mut frame, message)?;
+
         Ok(frame)
     }
 
-    pub fn update_upstream(
+    pub fn exchange(
         from: &mut CallFrame<L>,
         to: &mut CallFrame<L>,
-        update: Message,
+        message: Message,
     ) -> Result<(), MoveError> {
-        for node_id in update.move_nodes {
+        for node_id in message.move_nodes {
             // move re nodes to upstream call frame.
             from.take_node_internal(&node_id)?;
             to.owned_root_nodes.insert(node_id, 0u32);
         }
 
-        for node_id in update.copy_references {
+        for node_id in message.copy_references {
             // Make sure not to allow owned nodes to be passed as references upstream
             let ref_data = from
                 .immortal_node_refs

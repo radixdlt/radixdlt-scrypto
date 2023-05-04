@@ -160,6 +160,8 @@ where
         let actor = invocation.resolved_actor;
         let args = &invocation.args;
 
+        // Note that validity of `resolved_actor` should have been checked before getting here.
+
         // Before push call frame
         M::before_push_frame(&actor, &mut message, &args, self)?;
 
@@ -167,16 +169,15 @@ where
         {
             self.id_allocator.push();
 
-            let frame =
-                CallFrame::new_child_from_parent(&mut self.current_frame, actor, message.clone())
-                    .map_err(CallFrameError::MoveError)
-                    .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
+                .map_err(CallFrameError::MoveError)
+                .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
 
         // Execute
-        let (output, update) = {
+        let (output, message) = {
             // Handle execution start
             M::on_execution_start(self)?;
 
@@ -207,7 +208,7 @@ where
             let mut parent = self.prev_frame_stack.pop().unwrap();
 
             // Move resource
-            CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)
+            CallFrame::exchange(&mut self.current_frame, &mut parent, message)
                 .map_err(CallFrameError::MoveError)
                 .map_err(KernelError::CallFrameError)?;
 
