@@ -35,9 +35,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema,
-};
+use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -471,6 +469,25 @@ where
                 ))
             }
         }
+    }
+
+    fn get_actor_kv_partition(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        partition_index: u8,
+    ) -> Result<(NodeId, PartitionNumber, ScryptoSchema, BlueprintKeyValueStoreSchema, ObjectInfo), RuntimeError> {
+        let (node_id, base_partition, info, schema) =
+            self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, schema, kv_schema) = schema.key_value_store_partition(partition_index).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(info.blueprint.clone(), partition_index))
+        })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num, schema, kv_schema, info))
     }
 
     fn get_actor_index(
@@ -1534,32 +1551,15 @@ where
     #[trace_resources]
     fn actor_lock_key_value_entry(
         &mut self,
-        partition_handle: u8,
+        object_handle: ObjectHandle,
+        partition_index: u8,
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let method = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let node_id = method.node_id;
-        let base_partition = method.module_id.base_partition_num();
-        let object_info = method.object_info.clone();
-        let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-
-        let (partition_offset, kv_schema) = schema
-            .key_value_store_partition(partition_handle)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    object_info.blueprint,
-                    partition_handle,
-                ))
-            })?;
-
-        let partition_num = base_partition
-            .at_offset(partition_offset)
-            .expect("Module number overflow");
+        let (node_id, partition_num, schema, kv_schema, object_info) =
+            self.get_actor_kv_partition(actor_object_type, partition_index)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
@@ -1573,7 +1573,7 @@ where
                     }
                 }
                 TypeSchema::Blueprint(index) => KeyValueEntryLockData::Write {
-                    schema: schema.schema,
+                    schema,
                     index,
                     can_own,
                 },
@@ -1594,10 +1594,11 @@ where
 
     fn actor_remove_key_value_entry(
         &mut self,
-        partition_handle: u8,
+        object_handle: ObjectHandle,
+        partition_index: u8,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_entry(partition_handle, key, LockFlags::MUTABLE)?;
+        let handle = self.actor_lock_key_value_entry(object_handle, partition_index, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
 }

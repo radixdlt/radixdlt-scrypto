@@ -1,4 +1,5 @@
 pub mod actor_api;
+pub mod actor_key_value_entry_api;
 pub mod actor_index_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
@@ -12,7 +13,8 @@ pub mod object_api;
 
 // Re-exports
 pub use crate::api::actor_sorted_index_api::ClientActorSortedIndexApi;
-pub use actor_api::{ClientActorApi, ClientActorKeyValueEntryApi};
+pub use actor_api::ClientActorApi;
+pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
 pub use blueprint_api::ClientBlueprintApi;
 pub use field_lock_api::ClientFieldLockApi;
 pub use field_lock_api::LockFlags;

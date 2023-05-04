@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -59,6 +59,7 @@ where
         }
 
         let non_fungible_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
             1u8,
             &non_fungible_local_id.to_key(),
             LockFlags::MUTABLE,
@@ -501,7 +502,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::MUTABLE)?;
+            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::MUTABLE)?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
@@ -536,7 +537,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::read_only())?;
+            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::read_only())?;
         let non_fungible: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
@@ -555,7 +556,7 @@ impl NonFungibleResourceManagerBlueprint {
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::read_only())?;
+            api.actor_lock_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key(), LockFlags::read_only())?;
         let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
@@ -626,7 +627,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_remove_key_value_entry(1u8, &id.to_key())?;
+                api.actor_remove_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key())?;
             }
         }
 

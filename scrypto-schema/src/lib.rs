@@ -230,12 +230,17 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn key_value_store_partition(
-        &self,
+        mut self,
         handle: u8,
-    ) -> Option<(PartitionOffset, &BlueprintKeyValueStoreSchema)> {
-        match self.partitions.get(handle as usize) {
-            Some(BlueprintPartitionSchema::KeyValueStore(schema)) => {
-                Some((PartitionOffset(handle), schema))
+    ) -> Option<(PartitionOffset, ScryptoSchema, BlueprintKeyValueStoreSchema)> {
+        let index = handle as usize;
+        if index >= self.partitions.len() {
+            return None;
+        }
+
+        match self.partitions.swap_remove(index) {
+            BlueprintPartitionSchema::KeyValueStore(schema) => {
+                Some((PartitionOffset(handle), self.schema, schema))
             }
             _ => None,
         }
