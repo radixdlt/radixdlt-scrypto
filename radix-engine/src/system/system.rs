@@ -300,12 +300,12 @@ where
         let mut user_substates = Vec::new();
 
         {
-            for (i, blueprint_partition_schema) in blueprint_schema.partitions.iter().enumerate() {
-                let handle = i as u8;
+            for (index, (_, blueprint_partition_schema)) in blueprint_schema.partitions.iter().enumerate() {
+                let index = index as u8;
                 let mut partition = BTreeMap::new();
                 match blueprint_partition_schema {
                     BlueprintPartitionSchema::Fields(field_type_index) => {
-                        let entries = kv_entries.remove(&handle);
+                        let entries = kv_entries.remove(&index);
                         if entries.is_some() {
                             return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                                 Box::new(CreateObjectError::InvalidModule),
@@ -345,7 +345,7 @@ where
                         }
                     }
                     BlueprintPartitionSchema::KeyValueStore(blueprint_kv_schema) => {
-                        let entries = kv_entries.remove(&handle);
+                        let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
                                 self.validate_payload_against_blueprint_and_instance_schema(
@@ -392,7 +392,7 @@ where
                         }
                     }
                     _ => {
-                        let entries = kv_entries.remove(&handle);
+                        let entries = kv_entries.remove(&index);
                         if entries.is_some() {
                             return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                                 Box::new(CreateObjectError::InvalidModule),

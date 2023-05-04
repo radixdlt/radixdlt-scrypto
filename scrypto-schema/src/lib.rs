@@ -141,8 +141,8 @@ pub struct IndexedBlueprintSchema {
 
     pub schema: ScryptoSchema,
 
-    pub partitions: Vec<BlueprintPartitionSchema>,
-    pub fields_partition_index: Option<PartitionOffset>,
+    pub partitions: Vec<(PartitionOffset, BlueprintPartitionSchema)>,
+    pub fields_partition_index: Option<u8>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -154,29 +154,34 @@ pub struct IndexedBlueprintSchema {
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
-        let mut paritions = Vec::new();
+        let mut partition_offset = 0u8;
+        let mut partitions = Vec::new();
         let mut fields_partition_index = None;
         if !schema.fields.is_empty() {
-            fields_partition_index = Some(PartitionOffset(0u8));
-            paritions.push(BlueprintPartitionSchema::Fields(schema.fields));
+            fields_partition_index = Some(partition_offset);
+            partitions.push((PartitionOffset(partition_offset), BlueprintPartitionSchema::Fields(schema.fields)));
+            partition_offset += 1;
         };
         for kv_schema in schema.kv_stores {
-            paritions.push(BlueprintPartitionSchema::KeyValueStore(kv_schema));
+            partitions.push((PartitionOffset(partition_offset), BlueprintPartitionSchema::KeyValueStore(kv_schema)));
+            partition_offset += 1;
         }
 
         for index_schema in schema.indices {
-            paritions.push(BlueprintPartitionSchema::Index(index_schema));
+            partitions.push((PartitionOffset(partition_offset), BlueprintPartitionSchema::Index(index_schema)));
+            partition_offset += 1;
         }
 
         for sorted_index_schema in schema.sorted_indices {
-            paritions.push(BlueprintPartitionSchema::SortedIndex(sorted_index_schema));
+            partitions.push((PartitionOffset(partition_offset), BlueprintPartitionSchema::SortedIndex(sorted_index_schema)));
+            partition_offset += 1;
         }
 
         Self {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
             fields_partition_index,
-            partitions: paritions,
+            partitions,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -202,26 +207,22 @@ impl From<PackageSchema> for IndexedPackageSchema {
 }
 
 impl IndexedBlueprintSchema {
-    pub fn fields(&self) -> Option<&Vec<LocalTypeIndex>> {
+    pub fn num_fields(&self) -> usize {
         match self.fields_partition_index {
-            Some(partition) => match self.partitions.get(partition.0 as usize).unwrap() {
-                BlueprintPartitionSchema::Fields(indices) => Some(indices),
+            Some(index) => match self.partitions.get(index as usize).unwrap() {
+                (_, BlueprintPartitionSchema::Fields(indices)) => indices.len(),
                 _ => panic!("Index broken!"),
             },
-            _ => None,
+            _ => 0usize,
         }
-    }
-
-    pub fn num_fields(&self) -> usize {
-        self.fields().map(|l| l.len()).unwrap_or(0usize)
     }
 
     pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, LocalTypeIndex)> {
         match self.fields_partition_index {
-            Some(offset) => match self.partitions.get(offset.0 as usize).unwrap() {
-                BlueprintPartitionSchema::Fields(fields) => {
+            Some(index) => match self.partitions.get(index as usize).unwrap() {
+                (offset, BlueprintPartitionSchema::Fields(fields)) => {
                     let field_index: usize = field_index.into();
-                    fields.get(field_index).cloned().map(|f| (offset, f))
+                    fields.get(field_index).cloned().map(|f| (offset.clone(), f))
                 }
                 _ => panic!("Index broken!"),
             },
@@ -231,16 +232,16 @@ impl IndexedBlueprintSchema {
 
     pub fn key_value_store_partition(
         mut self,
-        handle: u8,
+        partition_index: u8,
     ) -> Option<(PartitionOffset, ScryptoSchema, BlueprintKeyValueStoreSchema)> {
-        let index = handle as usize;
+        let index = partition_index as usize;
         if index >= self.partitions.len() {
             return None;
         }
 
         match self.partitions.swap_remove(index) {
-            BlueprintPartitionSchema::KeyValueStore(schema) => {
-                Some((PartitionOffset(handle), self.schema, schema))
+            (offset, BlueprintPartitionSchema::KeyValueStore(schema)) => {
+                Some((offset, self.schema, schema))
             }
             _ => None,
         }
@@ -248,11 +249,11 @@ impl IndexedBlueprintSchema {
 
     pub fn index_partition_offset(
         &self,
-        handle: u8,
+        partition_index: u8,
     ) -> Option<(PartitionOffset, &BlueprintIndexSchema)> {
-        match self.partitions.get(handle as usize) {
-            Some(BlueprintPartitionSchema::Index(schema)) => {
-                Some((PartitionOffset(handle), schema))
+        match self.partitions.get(partition_index as usize) {
+            Some((offset, BlueprintPartitionSchema::Index(schema))) => {
+                Some((offset.clone(), schema))
             }
             _ => None,
         }
@@ -260,11 +261,11 @@ impl IndexedBlueprintSchema {
 
     pub fn sorted_index_partition_offset(
         &self,
-        handle: u8,
+        partition_index: u8,
     ) -> Option<(PartitionOffset, &BlueprintSortedIndexSchema)> {
-        match self.partitions.get(handle as usize) {
-            Some(BlueprintPartitionSchema::SortedIndex(schema)) => {
-                Some((PartitionOffset(handle), schema))
+        match self.partitions.get(partition_index as usize) {
+            Some((offset, BlueprintPartitionSchema::SortedIndex(schema))) => {
+                Some((offset.clone(), schema))
             }
             _ => None,
         }
@@ -289,7 +290,7 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
-        for partition in &self.partitions {
+        for (_, partition) in &self.partitions {
             match partition {
                 BlueprintPartitionSchema::KeyValueStore(kv_schema) => {
                     match &kv_schema.key {
