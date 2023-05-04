@@ -1,6 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -9,6 +11,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub divisibility: u8,
@@ -21,6 +24,7 @@ pub type FungibleResourceManagerCreateOutput = ResourceAddress;
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub divisibility: u8,

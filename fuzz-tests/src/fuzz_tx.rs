@@ -395,8 +395,79 @@ impl TxFuzzer {
                         args: to_manifest_value(&account_create_advanced_input),
                     })
                 }
+                // CreateFungibleResource
+                14 => {
+                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - FungibleResourceManagerCreateInput { divisibility: 195, metadata: {"u\u{3}": ""}, access_rules: {UpdateNonFungibleData: (Protected(AnyOf([AllOf([ProofRule(AmountOf(Static(26154969881750291342967843398213318666330202269873300598763.295047154523616676), Static(ResourceAddress(6071567d817883153c3e5ad7505152a0cf52805d639e653336dca49f6c8d)))), ProofRule(Require(StaticNonFungible(ResourceAddress(4ba06972980bd34c26b0a3b4f9026d1fc145206120c7481aefff9bf9191c):#18136094832208207429#)))])])), DenyAll)} }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let fungible_resource_manager_create_input =
+                        FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let fungible_resource_manager_create_input =
+                        FungibleResourceManagerCreateInput {
+                            divisibility: 18,
+                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                            access_rules: BTreeMap::from([
+                                (
+                                    ResourceMethodAuthKey::Withdraw,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                                (
+                                    ResourceMethodAuthKey::Deposit,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                            ]),
+                        };
 
-                14..=43 => None,
+                    Some(Instruction::CallFunction {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                        args: to_manifest_value(&fungible_resource_manager_create_input),
+                    })
+                }
+                // CreateFungibleResourceWithInitialSupply
+                15 => {
+                    // TODO: crash when using arbitrary AccountCreateAdvancedInput
+                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
+                    // - FungibleResourceManagerCreateWithInitialSupplyInput { divisibility: 220, metadata: {}, access_rules: {Burn: (DenyAll, DenyAll), Withdraw: (Protected(AnyOf([])), Protected(ProofRule(AmountOf(Dynamic(SchemaPath([])), Static(ResourceAddress(6c7bbb0abab0bb8a458c42209dbb23d885d698ece363e52f77dd4832efa8)))))), Recall: (AllowAll, AllowAll)}, initial_supply: -2148955441104578335242117384818719057515562139924293906511.547848591891882845 }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let fungible_resource_manager_create_with_initial_supply =
+                        FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
+                            &mut unstructured,
+                        )
+                        .unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let fungible_resource_manager_create_with_initial_supply =
+                        FungibleResourceManagerCreateWithInitialSupplyInput {
+                            divisibility: 18,
+                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                            access_rules: BTreeMap::from([
+                                (
+                                    ResourceMethodAuthKey::Withdraw,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                                (
+                                    ResourceMethodAuthKey::Deposit,
+                                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                                ),
+                            ]),
+                            initial_supply: Decimal::arbitrary(&mut unstructured).unwrap(),
+                        };
+
+                    Some(Instruction::CallFunction {
+                        package_address: RESOURCE_MANAGER_PACKAGE,
+                        blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                        function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                            .to_string(),
+                        args: to_manifest_value(
+                            &fungible_resource_manager_create_with_initial_supply,
+                        ),
+                    })
+                }
+
+                16..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
