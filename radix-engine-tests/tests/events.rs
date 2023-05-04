@@ -636,7 +636,7 @@ fn epoch_manager_round_update_emits_correct_event() {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(
-            rounds_per_epoch - 1,
+            rounds_per_epoch - 1, 0
         )),
     }];
     let receipt = test_runner.execute_transaction(
@@ -677,7 +677,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch)),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

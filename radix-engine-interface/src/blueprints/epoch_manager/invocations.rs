@@ -57,28 +57,29 @@ pub struct EpochManagerNextRoundInput {
     /// on emission, according to leader reliability statistics (see `LeaderProposalMissHistory`).
     pub round: u64,
 
-    /// A captured history of leader proposal misses since the previous reported round.
-    pub leader_proposal_misses: LeaderProposalMissHistory,
+    /// A captured history of leader proposal reliability since the previously reported round.
+    pub leader_proposal_misses: LeaderProposalHistory,
 }
 
 impl EpochManagerNextRoundInput {
     /// Creates a "next round" input for a regular (happy-path, in terms of consensus) round
     /// progression, i.e. no missed proposals, no fallback rounds.
-    /// Please note that the round number passed here should be an immediate successor of the
-    /// previously reported round.
-    pub fn successful(consecutive_round: u64) -> Self {
+    /// Please note that the current round's number passed here should be an immediate successor of
+    /// the previously reported round.
+    pub fn successful(current_round: u64, current_leader: ValidatorIndex) -> Self {
         Self {
-            round: consecutive_round,
-            leader_proposal_misses: LeaderProposalMissHistory {
+            round: current_round,
+            leader_proposal_misses: LeaderProposalHistory {
                 gap_round_leaders: Vec::new(),
-                current_round_fallback_leader: None,
+                current_leader,
+                is_fallback: false,
             },
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct LeaderProposalMissHistory {
+pub struct LeaderProposalHistory {
     /// The validators which were leaders of the "gap" rounds (i.e. those that were not reported to
     /// the epoch manager since the previous call; see `EpochManagerNextRoundInput::round`).
     /// This list will contain exactly `current_call.round - previous_call.round - 1` elements; in
@@ -88,24 +89,25 @@ pub struct LeaderProposalMissHistory {
     /// epoch.
     pub gap_round_leaders: Vec<ValidatorIndex>,
 
-    /// An indication of the current round operating in a "fallback" mode (i.e. indicating a fault
+    /// The leader of the current round.
+    pub current_leader: ValidatorIndex,
+
+    /// Whether the current round was conducted in a "fallback" mode (i.e. indicating a fault
     /// of the current leader).
-    /// A `None` denotes a regular round (not a fallback).
-    /// A `Some(current_leader)` specifies the current round's leader and indicates that current
-    /// round is a fallback one (and that validator should be penalized during emissions, same as
-    /// `gap_round_leaders`).
-    /// Please note that this effect is independent from the gap rounds (i.e. the value of this
-    /// field does not affect the invariants of `gap_round_leaders` or the round numbers).
-    pub current_round_fallback_leader: Option<ValidatorIndex>,
+    /// When `true`, the `current_leader` should be penalized during emissions in the same way as
+    /// `gap_round_leaders`.
+    /// When `false`, the `current_leader` is considered to have made this round's proposal
+    /// successfully.
+    pub is_fallback: bool,
 }
 
 /// An index of a specific validator within the current validator set.
 /// To be exact: a `ValidatorIndex` equal to `k` references the `k-th` element returned by the
 /// iterator of `BTreeMap<ComponentAddress, Validator>`.
 /// This uniquely identifies the validator, while being shorter than `ComponentAddress` (we do care
-/// about the constant factor of the space taken by `LeaderProposalMissHistory` under prolonged
-/// liveness break scenarios).
-pub type ValidatorIndex = usize;
+/// about the constant factor of the space taken by `LeaderProposalHistory` under prolonged liveness
+/// break scenarios).
+pub type ValidatorIndex = u8;
 
 pub type EpochManagerNextRoundOutput = ();
 
