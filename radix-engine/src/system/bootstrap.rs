@@ -143,7 +143,7 @@ where
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             );
 

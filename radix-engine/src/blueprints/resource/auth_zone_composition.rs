@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
@@ -37,7 +38,7 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
 }
 
 /// Compose a proof by amount, given a list of proofs of any address.
-pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
@@ -93,7 +94,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 }
 
 /// Compose a proof by ids, given a list of proofs of any address.
-pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     ids: Option<BTreeSet<NonFungibleLocalId>>,
@@ -133,7 +134,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
 // Helper functions
 //====================
 
-fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     api: &mut Y,
@@ -148,11 +149,12 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &FungibleProofOffset::ProofRefs.into(),
                     LockFlags::read_only(),
+                    SystemLockData::default(),
                 )?;
-                let proof: FungibleProof = api.sys_read_substate_typed(handle)?;
+                let proof: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
                 for (container, locked_amount) in &proof.evidence {
                     if let Some(existing) = max.get_mut(container) {
                         *existing = Decimal::max(*existing, locked_amount.clone());
@@ -160,7 +162,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                         max.insert(container.clone(), locked_amount.clone());
                     }
                 }
-                api.sys_drop_lock(handle)?;
+                api.kernel_drop_lock(handle)?;
             }
         }
     }
@@ -173,7 +175,7 @@ fn max_amount_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     Ok((total, per_container))
 }
 
-fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     api: &mut Y,
@@ -198,11 +200,12 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &NonFungibleProofOffset::ProofRefs.into(),
                     LockFlags::read_only(),
+                    SystemLockData::default(),
                 )?;
-                let proof: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+                let proof: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
                 for (container, locked_ids) in &proof.evidence {
                     total.extend(locked_ids.clone());
                     if let Some(ids) = per_container.get_mut(container) {
@@ -217,7 +220,7 @@ fn max_ids_locked<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     Ok((total, per_container))
 }
 
-fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
@@ -241,11 +244,12 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            OBJECT_BASE_MODULE,
             &FungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
+            SystemLockData::default(),
         )?;
-        let substate: FungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
@@ -266,7 +270,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 evidence.insert(container.clone(), amount);
             }
         }
-        api.sys_drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
     }
 
     FungibleProof::new(amount, evidence)
@@ -279,7 +283,7 @@ enum NonFungiblesSpecification {
     Exact(BTreeSet<NonFungibleLocalId>),
 }
 
-fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
+fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     ids: NonFungiblesSpecification,
@@ -325,11 +329,12 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            SysModuleId::Object.into(),
+            OBJECT_BASE_MODULE,
             &NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
+            SystemLockData::default(),
         )?;
-        let substate: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {
@@ -352,7 +357,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi + ClientApi<RuntimeError>>(
                 evidence.insert(container.clone(), ids);
             }
         }
-        api.sys_drop_lock(handle)?;
+        api.kernel_drop_lock(handle)?;
     }
 
     NonFungibleProof::new(ids.clone(), evidence)

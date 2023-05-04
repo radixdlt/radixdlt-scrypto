@@ -1,27 +1,27 @@
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AcquireLockError {
-    NotFound(NodeId, ModuleId, SubstateKey),
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleId, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleId, SubstateKey),
+    NotFound(NodeId, ModuleNumber, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
+    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SetSubstateError {
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeSubstateError {
-    SubstateLocked(NodeId, ModuleId, SubstateKey),
+    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
 }
 
-pub type NodeSubstates = BTreeMap<ModuleId, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+pub type NodeSubstates = BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 /// Represents the interface between Radix Engine and Track.
 ///
@@ -44,7 +44,7 @@ pub trait SubstateStore {
     fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError>;
@@ -57,28 +57,28 @@ pub trait SubstateStore {
     fn take_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError>;
 
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue>;
 
@@ -88,7 +88,7 @@ pub trait SubstateStore {
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<(u32, bool), AcquireLockError> {
@@ -98,7 +98,7 @@ pub trait SubstateStore {
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,

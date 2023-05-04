@@ -10,25 +10,32 @@ use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreSchema {
-    pub schema: ScryptoSchema,
     pub key: LocalTypeIndex,
     pub value: LocalTypeIndex,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
-impl KeyValueStoreSchema {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct KeyValueStoreInfo {
+    pub schema: ScryptoSchema,
+    pub kv_store_schema: KeyValueStoreSchema,
+}
+
+impl KeyValueStoreInfo {
     pub fn new<K: ScryptoDescribe, V: ScryptoDescribe>(can_own: bool) -> Self {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
         let key_type_index = aggregator.add_child_type_and_descendents::<K>();
-        let value_type_index = aggregator.add_child_type_and_descendents::<Option<V>>();
+        let value_type_index = aggregator.add_child_type_and_descendents::<V>();
         let schema = generate_full_schema(aggregator);
         Self {
             schema,
-            key: key_type_index,
-            value: value_type_index,
-            can_own,
+            kv_store_schema: KeyValueStoreSchema {
+                key: key_type_index,
+                value: value_type_index,
+                can_own,
+            },
         }
     }
 }
@@ -49,12 +56,28 @@ pub struct BlueprintSchema {
     pub schema: ScryptoSchema,
     /// For each offset, there is a [`LocalTypeIndex`]
     pub substates: Vec<LocalTypeIndex>,
+
+    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
+
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
     /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum TypeSchema {
+    Blueprint(LocalTypeIndex),
+    Instance(u8),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintKeyValueStoreSchema {
+    pub key: TypeSchema,
+    pub value: TypeSchema,
+    pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -86,6 +109,7 @@ impl Default for BlueprintSchema {
                 type_validations: vec![],
             },
             substates: Vec::default(),
+            key_value_stores: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
@@ -93,7 +117,93 @@ impl Default for BlueprintSchema {
     }
 }
 
-impl BlueprintSchema {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedBlueprintSchema {
+    pub outer_blueprint: Option<String>,
+
+    pub schema: ScryptoSchema,
+
+    pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
+    pub key_value_stores: Vec<(u8, BlueprintKeyValueStoreSchema)>,
+
+    /// For each function, there is a [`FunctionSchema`]
+    pub functions: BTreeMap<String, FunctionSchema>,
+    /// For each virtual lazy load function, there is a [`VirtualLazyLoadSchema`]
+    pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
+    /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
+    pub event_schema: BTreeMap<String, LocalTypeIndex>,
+}
+
+impl From<BlueprintSchema> for IndexedBlueprintSchema {
+    fn from(schema: BlueprintSchema) -> Self {
+        let mut module_offset = 0u8;
+
+        let tuple_module = if schema.substates.is_empty() {
+            None
+        } else {
+            let tuple_module = Some((module_offset, schema.substates));
+            module_offset += 1;
+            tuple_module
+        };
+
+        let mut key_value_stores = Vec::new();
+
+        for kv_schema in schema.key_value_stores {
+            key_value_stores.push((module_offset, kv_schema));
+            module_offset += 1;
+        }
+
+        Self {
+            outer_blueprint: schema.outer_blueprint,
+            schema: schema.schema,
+            tuple_module,
+            key_value_stores,
+            functions: schema.functions,
+            virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
+            event_schema: schema.event_schema,
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct IndexedPackageSchema {
+    pub blueprints: BTreeMap<String, IndexedBlueprintSchema>,
+}
+
+impl From<PackageSchema> for IndexedPackageSchema {
+    fn from(value: PackageSchema) -> Self {
+        IndexedPackageSchema {
+            blueprints: value
+                .blueprints
+                .into_iter()
+                .map(|(name, b)| (name, b.into()))
+                .collect(),
+        }
+    }
+}
+
+impl IndexedBlueprintSchema {
+    pub fn num_fields(&self) -> usize {
+        self.tuple_module
+            .as_ref()
+            .map(|(_, fields)| fields.len())
+            .unwrap_or(0)
+    }
+
+    pub fn field(&self, field_index: u8) -> Option<(u8, LocalTypeIndex)> {
+        self.tuple_module.as_ref().and_then(|(offset, fields)| {
+            let field_index: usize = field_index.into();
+            fields.get(field_index).cloned().map(|f| (*offset, f))
+        })
+    }
+
+    pub fn key_value_store_module_offset(
+        &self,
+        kv_handle: u8,
+    ) -> Option<&(u8, BlueprintKeyValueStoreSchema)> {
+        self.key_value_stores.get(kv_handle as usize)
+    }
+
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
         if let Some(x) = self.functions.get(ident) {
             if x.receiver.is_none() {
@@ -111,4 +221,42 @@ impl BlueprintSchema {
         }
         None
     }
+
+    pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
+        for (_offset, kv_schema) in &self.key_value_stores {
+            match &kv_schema.key {
+                TypeSchema::Blueprint(..) => {}
+                TypeSchema::Instance(type_index) => {
+                    if let Some(instance_schema) = instance_schema {
+                        if instance_schema.type_index.len() < (*type_index as usize) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
+            match &kv_schema.value {
+                TypeSchema::Blueprint(..) => {}
+                TypeSchema::Instance(type_index) => {
+                    if let Some(instance_schema) = instance_schema {
+                        if instance_schema.type_index.len() < (*type_index as usize) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InstanceSchema {
+    pub schema: ScryptoSchema,
+    pub type_index: Vec<LocalTypeIndex>,
 }

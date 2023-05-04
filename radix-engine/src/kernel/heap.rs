@@ -30,7 +30,7 @@ impl Heap {
     pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> &IndexedScryptoValue {
@@ -38,7 +38,7 @@ impl Heap {
             .nodes
             .entry(*node_id)
             .or_insert(BTreeMap::new())
-            .entry(module_id)
+            .entry(module_num)
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
@@ -48,7 +48,7 @@ impl Heap {
 
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|node_substates| node_substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
             .unwrap()
     }
@@ -57,12 +57,12 @@ impl Heap {
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|node_substates| node_substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
     }
 
@@ -70,14 +70,14 @@ impl Heap {
     pub fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
         self.nodes
             .entry(node_id)
             .or_insert_with(|| NodeSubstates::default())
-            .entry(module_id)
+            .entry(module_num)
             .or_default()
             .insert(substate_key, substate_value);
     }
@@ -85,25 +85,25 @@ impl Heap {
     pub fn delete_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
         self.nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id))
+            .and_then(|n| n.get_mut(&module_num))
             .and_then(|s| s.remove(substate_key))
     }
 
     pub fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id));
+            .and_then(|n| n.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let substates: Vec<IndexedScryptoValue> = substates
                 .iter()
@@ -120,13 +120,13 @@ impl Heap {
     pub fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id));
+            .and_then(|n| n.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()

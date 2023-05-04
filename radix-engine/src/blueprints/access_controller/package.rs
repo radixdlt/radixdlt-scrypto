@@ -9,8 +9,8 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_VIRTUAL_BADGE};
@@ -376,6 +376,7 @@ impl AccessControllerNativePackage {
                     outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema
@@ -535,7 +536,7 @@ impl AccessControllerNativePackage {
 
         let substate =
             AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
-        let object_id = api.new_object(
+        let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;
@@ -1254,16 +1255,16 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.lock_field(substate_key, LockFlags::read_only())?;
+    let handle = api.actor_lock_field(substate_key, LockFlags::read_only())?;
 
     let access_controller = {
-        let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition(api, input)?;
 
-    api.sys_drop_lock(handle)?;
+    api.field_lock_release(handle)?;
 
     Ok(rtn)
 }
@@ -1277,20 +1278,20 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
+    let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerSubstate = api.sys_read_substate_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.sys_write_substate_typed(handle, &access_controller)?;
+        api.field_lock_write_typed(handle, &access_controller)?;
     }
 
-    api.sys_drop_lock(handle)?;
+    api.field_lock_release(handle)?;
 
     Ok(rtn)
 }

@@ -1,7 +1,7 @@
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_common::types::{MapKey, SortedU16Key, TupleKey};
+use radix_engine_common::types::{MapKey, ModuleNumber, SortedU16Key, TupleKey};
 use radix_engine_interface::crypto::hash;
-use radix_engine_interface::types::{ModuleId, NodeId, SubstateKey};
+use radix_engine_interface::types::{NodeId, SubstateKey};
 use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey, SubstateDatabase};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
@@ -12,7 +12,7 @@ pub trait DatabaseKeyMapper {
     /// Note: contrary to the sort key, we do not provide the inverse mapping here (i.e. if you
     /// find yourself needing to map the database partition key back to RE Node and Module ID, then
     /// you are most likely using the "partition vs sort key" construct in a wrong way).
-    fn to_db_partition_key(node_id: &NodeId, module_id: ModuleId) -> DbPartitionKey;
+    fn to_db_partition_key(node_id: &NodeId, module_num: ModuleNumber) -> DbPartitionKey;
 
     /// Converts the given [`SubstateKey`] to the database's sort key.
     /// This is a convenience method, which simply unwraps the [`SubstateKey`] and maps any specific
@@ -68,10 +68,10 @@ pub trait DatabaseKeyMapper {
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
-    fn to_db_partition_key(node_id: &NodeId, module_id: ModuleId) -> DbPartitionKey {
+    fn to_db_partition_key(node_id: &NodeId, module_num: ModuleNumber) -> DbPartitionKey {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
-        buffer.push(module_id.0);
+        buffer.push(module_num.0);
         DbPartitionKey(hash(buffer).to_vec())
     }
 
@@ -137,7 +137,7 @@ pub trait MappedSubstateDatabase {
     fn get_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<D>;
 
@@ -146,7 +146,7 @@ pub trait MappedSubstateDatabase {
     fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
     ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_>;
 }
 
@@ -154,11 +154,11 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
     fn get_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<D> {
         self.get_substate(
-            &M::to_db_partition_key(node_id, module_id),
+            &M::to_db_partition_key(node_id, module_num),
             &M::to_db_sort_key(substate_key),
         )
         .map(|buf| scrypto_decode(&buf).unwrap())
@@ -167,10 +167,10 @@ impl<S: SubstateDatabase> MappedSubstateDatabase for S {
     fn list_mapped<M: DatabaseKeyMapper, D: ScryptoDecode, K: SubstateKeyContent>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
     ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_> {
         let mapped_value_iter = self
-            .list_entries(&M::to_db_partition_key(node_id, module_id))
+            .list_entries(&M::to_db_partition_key(node_id, module_num))
             .map(|(db_sort_key, db_value)| {
                 (
                     M::from_db_sort_key::<K>(&db_sort_key),
