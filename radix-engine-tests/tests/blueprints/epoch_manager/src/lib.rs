@@ -17,7 +17,7 @@ mod epoch_manager_test {
                 .call_method(
                     &epoch_manager.into(),
                     EPOCH_MANAGER_NEXT_ROUND_IDENT,
-                    scrypto_encode(&EpochManagerNextRoundInput::successful(round)).unwrap(),
+                    scrypto_encode(&EpochManagerNextRoundInput::successful(round, 0)).unwrap(),
                 )
                 .unwrap();
         }

@@ -152,7 +152,8 @@ fn next_round_with_validator_auth_succeeds() {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(
-            rounds_per_epoch - 1, 0
+            rounds_per_epoch - 1,
+            0,
         )),
     }];
     let receipt = test_runner.execute_transaction(

@@ -58,7 +58,11 @@ pub struct EpochManagerNextRoundInput {
     pub round: u64,
 
     /// A captured history of leader proposal reliability since the previously reported round.
-    pub leader_proposal_misses: LeaderProposalHistory,
+    // TODO(post-babylon): we should change the approach here, so that the Engine drives the
+    // leader rotation, and the Node only informs it on round success/fallback/miss (in order to
+    // avoid certain byzantine quorum behaviors). The entire `leader_proposal_history` information
+    // will then no longer be required.
+    pub leader_proposal_history: LeaderProposalHistory,
 }
 
 impl EpochManagerNextRoundInput {
@@ -69,7 +73,7 @@ impl EpochManagerNextRoundInput {
     pub fn successful(current_round: u64, current_leader: ValidatorIndex) -> Self {
         Self {
             round: current_round,
-            leader_proposal_misses: LeaderProposalHistory {
+            leader_proposal_history: LeaderProposalHistory {
                 gap_round_leaders: Vec::new(),
                 current_leader,
                 is_fallback: false,
