@@ -2,6 +2,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
@@ -39,6 +40,7 @@ pub struct TxFuzzer {
     non_fungible_resource_addresses: Vec<ResourceAddress>,
     #[allow(unused)]
     package_addresses: Vec<PackageAddress>,
+    public_keys: Vec<EcdsaSecp256k1PublicKey>,
 }
 
 impl TxFuzzer {
@@ -73,6 +75,7 @@ impl TxFuzzer {
             ACCESS_RULES_PACKAGE,
             GENESIS_HELPER_PACKAGE,
         ];
+        let mut public_keys = vec![];
         let accounts: Vec<Account> = (0..2)
             .map(|_| {
                 let acc = runner.new_account(false);
@@ -87,6 +90,7 @@ impl TxFuzzer {
                 non_fungible_resource_addresses.append(&mut resources.clone()[2..4].to_vec());
                 println!("addr = {:?}", acc.2);
                 component_addresses.push(acc.2);
+                public_keys.push(acc.0);
 
                 Account {
                     public_key: acc.0,
@@ -107,6 +111,7 @@ impl TxFuzzer {
             fungible_resource_addresses,
             non_fungible_resource_addresses,
             package_addresses,
+            public_keys,
         }
     }
 
@@ -249,6 +254,11 @@ impl TxFuzzer {
         // TODO: to consider if this is ok to allow it.
         let mut unstructured = Unstructured::new(&data);
 
+        // Push some random key to the key vector. We will then randomly pick a key from this
+        // vector
+        self.public_keys
+            .push(EcdsaSecp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
+
         let mut builder = ManifestBuilder::new();
         let mut buckets: Vec<ManifestBucket> =
             vec![ManifestBucket::arbitrary(&mut unstructured).unwrap()];
@@ -277,6 +287,8 @@ impl TxFuzzer {
         // thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: UnexpectedSize { expected: 2, actual: 1 }', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-stores/src/interface.rs:200:41
         let non_fungible_ids =
             self.get_non_fungible_local_id(component_address, non_fungible_resource_address);
+
+        let public_key = unstructured.choose(&self.public_keys[..]).unwrap().clone();
 
         let fee = Decimal::arbitrary(&mut unstructured).unwrap();
         builder.lock_fee(component_address, fee);
@@ -601,7 +613,23 @@ impl TxFuzzer {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
                     Some(Instruction::CreateProofFromBucket { bucket_id })
                 }
-                24..=43 => None,
+                // CreateValidator
+                24 => {
+                    let input = EpochManagerCreateValidatorInput { key: public_key };
+                    Some(Instruction::CallMethod {
+                        component_address: EPOCH_MANAGER,
+                        method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                        args: to_manifest_value(&input),
+                    })
+                }
+                // DropAllProofs
+                25 => Some(Instruction::DropAllProofs),
+                // DropProof
+                26 => {
+                    let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
+                    Some(Instruction::DropProof { proof_id })
+                }
+                27..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
