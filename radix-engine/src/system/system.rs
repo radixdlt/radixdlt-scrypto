@@ -206,8 +206,7 @@ where
             ).to_substates(),
         );
 
-        for (i, partition) in user_substates.into_iter().enumerate() {
-            let offset = PartitionOffset(i as u8);
+        for (offset, partition) in user_substates.into_iter() {
             let partition_num = OBJECT_BASE_PARTITION
                 .at_offset(offset)
                 .expect("Module number overflow");
@@ -278,7 +277,7 @@ where
     ) -> Result<
         (
             Option<String>,
-            Vec<BTreeMap<SubstateKey, IndexedScryptoValue>>,
+            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
     > {
@@ -297,7 +296,7 @@ where
             }
         }
 
-        let mut user_substates = Vec::new();
+        let mut user_substates = BTreeMap::new();
 
         {
             for (index, (_, blueprint_partition_schema)) in blueprint_schema.partitions.iter().enumerate() {
@@ -401,7 +400,7 @@ where
                     }
                 }
 
-                user_substates.push(partition);
+                user_substates.insert(PartitionOffset(index), partition);
             }
 
             if !fields.is_empty() {
