@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_index_api::SortedKey;
+use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -420,7 +420,7 @@ impl ValidatorBlueprint {
                 stake,
             } => {
                 api.actor_outer_object_sorted_index_insert_typed(
-                    0u8,
+                    1u8,
                     index_key,
                     (address, Validator { key, stake }),
                 )?;
@@ -428,13 +428,13 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let (address, mut validator) = api
                     .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        0u8,
+                        1u8,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_outer_object_sorted_index_insert_typed(
-                    0u8,
+                    1u8,
                     index_key,
                     (address, validator),
                 )?;
@@ -446,19 +446,19 @@ impl ValidatorBlueprint {
             } => {
                 let (address, mut validator) = api
                     .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        0u8,
+                        1u8,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_outer_object_sorted_index_insert_typed(
-                    0u8,
+                    1u8,
                     new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.actor_outer_object_sorted_index_remove(0u8, &index_key)?;
+                api.actor_outer_object_sorted_index_remove(1u8, &index_key)?;
             }
         }
 

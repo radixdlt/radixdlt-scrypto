@@ -59,7 +59,7 @@ where
         }
 
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(&non_fungible_local_id.to_key(), LockFlags::MUTABLE)?;
+            api.actor_lock_key_value_entry(1u8, &non_fungible_local_id.to_key(), LockFlags::MUTABLE)?;
 
         if check_non_existence {
             let cur_non_fungible: Option<ScryptoValue> =
@@ -209,7 +209,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            btreemap!(0u8 => non_fungibles),
+            btreemap!(1u8 => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -266,7 +266,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            btreemap!(0u8 => non_fungibles),
+            btreemap!(1u8 => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -498,7 +498,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::MUTABLE)?;
+            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::MUTABLE)?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
@@ -533,7 +533,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
+            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::read_only())?;
         let non_fungible: Option<ScryptoValue> =
             api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
@@ -552,7 +552,7 @@ impl NonFungibleResourceManagerBlueprint {
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         let non_fungible_handle =
-            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
+            api.actor_lock_key_value_entry(1u8, &id.to_key(), LockFlags::read_only())?;
         let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
@@ -623,7 +623,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_remove_key_value_entry(&id.to_key())?;
+                api.actor_remove_key_value_entry(1u8, &id.to_key())?;
             }
         }
 

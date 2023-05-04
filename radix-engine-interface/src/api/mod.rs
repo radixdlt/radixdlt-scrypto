@@ -8,10 +8,10 @@ pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod node_modules;
 pub mod object_api;
-pub mod sorted_index_api;
+pub mod actor_sorted_index_api;
 
 // Re-exports
-pub use crate::api::sorted_index_api::ClientActorSortedIndexApi;
+pub use crate::api::actor_sorted_index_api::ClientActorSortedIndexApi;
 pub use actor_api::{ClientActorApi, ClientActorKeyValueEntryApi};
 pub use blueprint_api::ClientBlueprintApi;
 pub use field_lock_api::ClientFieldLockApi;

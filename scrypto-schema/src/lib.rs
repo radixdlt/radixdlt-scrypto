@@ -89,6 +89,14 @@ pub struct BlueprintIndexSchema {
 pub struct BlueprintSortedIndexSchema {
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintModuleSchema {
+    Fields(Vec<LocalTypeIndex>),
+    KeyValueStore(BlueprintKeyValueStoreSchema),
+    Index(BlueprintIndexSchema),
+    SortedIndex(BlueprintSortedIndexSchema),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
     pub receiver: Option<Receiver>,
@@ -134,10 +142,8 @@ pub struct IndexedBlueprintSchema {
 
     pub schema: ScryptoSchema,
 
-    pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
-    pub kv_store_modules: Vec<(u8, BlueprintKeyValueStoreSchema)>,
-    pub index_modules: Vec<(u8, BlueprintIndexSchema)>,
-    pub sorted_index_modules: Vec<(u8, BlueprintSortedIndexSchema)>,
+    pub modules: Vec<BlueprintModuleSchema>,
+    pub field_module: Option<u8>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -149,41 +155,29 @@ pub struct IndexedBlueprintSchema {
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
-        let mut module_offset = 0u8;
-
-        let tuple_module = if schema.fields.is_empty() {
-            None
-        } else {
-            let tuple_module = Some((module_offset, schema.fields));
-            module_offset += 1;
-            tuple_module
+        let mut modules = Vec::new();
+        let mut field_module = None;
+        if !schema.fields.is_empty() {
+            field_module = Some(0u8);
+            modules.push(BlueprintModuleSchema::Fields(schema.fields));
         };
-
-        let mut kv_store_modules = Vec::new();
         for kv_schema in schema.kv_stores {
-            kv_store_modules.push((module_offset, kv_schema));
-            module_offset += 1;
+            modules.push(BlueprintModuleSchema::KeyValueStore(kv_schema));
         }
 
-        let mut index_modules = Vec::new();
         for index_schema in schema.indices {
-            index_modules.push((module_offset, index_schema));
-            module_offset += 1;
+            modules.push(BlueprintModuleSchema::Index(index_schema));
         }
 
-        let mut sorted_index_modules = Vec::new();
         for sorted_index_schema in schema.sorted_indices {
-            sorted_index_modules.push((module_offset, sorted_index_schema));
-            module_offset += 1;
+            modules.push(BlueprintModuleSchema::SortedIndex(sorted_index_schema));
         }
 
         Self {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
-            tuple_module,
-            kv_store_modules,
-            index_modules,
-            sorted_index_modules,
+            field_module,
+            modules,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -209,39 +203,65 @@ impl From<PackageSchema> for IndexedPackageSchema {
 }
 
 impl IndexedBlueprintSchema {
+    pub fn fields(&self) -> Option<&Vec<LocalTypeIndex>> {
+        match self.field_module {
+            Some(module) => {
+                match self.modules.get(module as usize).unwrap() {
+                    BlueprintModuleSchema::Fields(indices) => Some(indices),
+                    _ => panic!("Index broken!"),
+                }
+            },
+            _ => None,
+        }
+    }
+
     pub fn num_fields(&self) -> usize {
-        self.tuple_module
-            .as_ref()
-            .map(|(_, fields)| fields.len())
-            .unwrap_or(0)
+        self.fields().map(|l| l.len()).unwrap_or(0usize)
     }
 
     pub fn field(&self, field_index: u8) -> Option<(u8, LocalTypeIndex)> {
-        self.tuple_module.as_ref().and_then(|(offset, fields)| {
-            let field_index: usize = field_index.into();
-            fields.get(field_index).cloned().map(|f| (*offset, f))
-        })
+        match self.field_module {
+            Some(module) => {
+                match self.modules.get(module as usize).unwrap() {
+                    BlueprintModuleSchema::Fields(fields) => {
+                        let field_index: usize = field_index.into();
+                        fields.get(field_index).cloned().map(|f| (module, f))
+                    },
+                    _ => panic!("Index broken!"),
+                }
+            },
+            _ => None,
+        }
     }
 
-    pub fn key_value_store_module_offset(
+    pub fn key_value_store_module(
         &self,
-        kv_handle: u8,
-    ) -> Option<&(u8, BlueprintKeyValueStoreSchema)> {
-        self.kv_store_modules.get(kv_handle as usize)
+        handle: u8,
+    ) -> Option<&BlueprintKeyValueStoreSchema> {
+        match self.modules.get(handle as usize) {
+            Some(BlueprintModuleSchema::KeyValueStore(schema)) => Some(schema),
+            _ => None,
+        }
     }
 
     pub fn index_module_offset(
         &self,
-        index_handle: u8,
-    ) -> Option<&(u8, BlueprintIndexSchema)> {
-        self.index_modules.get(index_handle as usize)
+        handle: u8,
+    ) -> Option<&BlueprintIndexSchema> {
+        match self.modules.get(handle as usize) {
+            Some(BlueprintModuleSchema::Index(schema)) => Some(schema),
+            _ => None,
+        }
     }
 
     pub fn sorted_index_module_offset(
         &self,
         handle: u8,
-    ) -> Option<&(u8, BlueprintSortedIndexSchema)> {
-        self.sorted_index_modules.get(handle as usize)
+    ) -> Option<&BlueprintSortedIndexSchema> {
+        match self.modules.get(handle as usize) {
+            Some(BlueprintModuleSchema::SortedIndex(schema)) => Some(schema),
+            _ => None,
+        }
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -263,31 +283,36 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
-        for (_offset, kv_schema) in &self.kv_store_modules {
-            match &kv_schema.key {
-                TypeSchema::Blueprint(..) => {}
-                TypeSchema::Instance(type_index) => {
-                    if let Some(instance_schema) = instance_schema {
-                        if instance_schema.type_index.len() < (*type_index as usize) {
-                            return false;
+        for module in &self.modules {
+            match module {
+                BlueprintModuleSchema::KeyValueStore(kv_schema) => {
+                    match &kv_schema.key {
+                        TypeSchema::Blueprint(..) => {}
+                        TypeSchema::Instance(type_index) => {
+                            if let Some(instance_schema) = instance_schema {
+                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
                         }
-                    } else {
-                        return false;
                     }
-                }
-            }
 
-            match &kv_schema.value {
-                TypeSchema::Blueprint(..) => {}
-                TypeSchema::Instance(type_index) => {
-                    if let Some(instance_schema) = instance_schema {
-                        if instance_schema.type_index.len() < (*type_index as usize) {
-                            return false;
+                    match &kv_schema.value {
+                        TypeSchema::Blueprint(..) => {}
+                        TypeSchema::Instance(type_index) => {
+                            if let Some(instance_schema) = instance_schema {
+                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
                         }
-                    } else {
-                        return false;
                     }
                 }
+                _ => {}
             }
         }
 

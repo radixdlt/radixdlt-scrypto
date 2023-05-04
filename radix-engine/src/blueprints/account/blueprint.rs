@@ -166,7 +166,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle =
-            api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
+            api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::read_only())?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
@@ -218,7 +218,7 @@ impl AccountBlueprint {
 
         // Getting an RW lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle =
-            api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
+            api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::MUTABLE)?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
@@ -265,7 +265,7 @@ impl AccountBlueprint {
 
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle =
-                api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
+                api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::MUTABLE)?;
 
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
@@ -312,7 +312,7 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
+            let handle = api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::read_only())?;
             handle
         };
 

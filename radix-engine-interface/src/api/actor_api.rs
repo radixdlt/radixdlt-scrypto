@@ -27,26 +27,19 @@ pub trait ClientActorApi<E: Debug> {
 pub trait ClientActorKeyValueEntryApi<E: Debug> {
     fn actor_lock_key_value_entry(
         &mut self,
-        key: &[u8],
-        flags: LockFlags,
-    ) -> Result<LockHandle, E> {
-        self.actor_lock_key_value_handle_entry(0u8, key, flags)
-    }
-
-    fn actor_lock_key_value_handle_entry(
-        &mut self,
-        kv_handle: u8,
+        handle: u8,
         key: &[u8],
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
-    fn actor_remove_key_value_entry(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, E>;
+    fn actor_remove_key_value_entry(&mut self, handle: u8, key: &Vec<u8>) -> Result<Vec<u8>, E>;
 
     fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
         &mut self,
+        handle: u8,
         key: &Vec<u8>,
     ) -> Result<Option<V>, E> {
-        let removed = self.actor_remove_key_value_entry(key)?;
+        let removed = self.actor_remove_key_value_entry(handle, key)?;
         let rtn = scrypto_decode(&removed).unwrap();
         Ok(rtn)
     }

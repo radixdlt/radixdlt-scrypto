@@ -275,7 +275,7 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validators: Vec<(ComponentAddress, Validator)> =
-            api.actor_sorted_index_scan_typed(0u8, max_validators)?;
+            api.actor_sorted_index_scan_typed(1u8, max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 

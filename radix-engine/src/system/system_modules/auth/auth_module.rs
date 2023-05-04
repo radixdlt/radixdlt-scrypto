@@ -214,8 +214,8 @@ impl AuthModule {
                 .get(&blueprint.blueprint_name)
                 .expect("Blueprint schema not found")
                 .clone();
-            let index = match &schema.tuple_module {
-                Some((_, index)) => index.get(0).unwrap().clone(),
+            let index = match &schema.field(0u8) {
+                Some((_, index)) => index.clone(),
                 None => {
                     return Self::method_authorization_stateless(
                         RefType::Normal,
