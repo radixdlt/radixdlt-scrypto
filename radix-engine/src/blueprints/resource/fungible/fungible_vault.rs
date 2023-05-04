@@ -25,7 +25,7 @@ impl FungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_outer_object_field(
-            FungibleResourceManagerOffset::Divisibility.into(),
+            FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
         let divisibility: u8 = api.field_lock_read_typed(handle)?;
@@ -102,7 +102,7 @@ impl FungibleVaultBlueprint {
 
         // Lock the substate (with special flags)
         let vault_handle = api.actor_lock_field(
-            FungibleVaultOffset::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
         )?;
 
@@ -234,7 +234,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
@@ -248,7 +248,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LockedFungible.into(),
+            FungibleVaultField::LockedFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
@@ -262,7 +262,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
@@ -290,7 +290,7 @@ impl FungibleVault {
         let event = DepositResourceEvent::Amount(resource.amount());
 
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LiquidFungible.into(),
+            FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
@@ -317,7 +317,7 @@ impl FungibleVault {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LockedFungible.into(),
+            FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
@@ -351,7 +351,7 @@ impl FungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            FungibleVaultOffset::LockedFungible.into(),
+            FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;

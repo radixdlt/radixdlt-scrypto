@@ -143,8 +143,8 @@ where
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
-                TYPE_INFO_BASE_MODULE,
-                &TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_BASE_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
             );
 
         if xrd_info.is_none() {

@@ -294,7 +294,7 @@ impl NonFungibleResourceManagerBlueprint {
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
             let handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::IdType.into(),
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
@@ -312,7 +312,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -348,7 +348,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Check id_type
         let id_type = {
             let id_type_handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::IdType.into(),
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
@@ -368,7 +368,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update Total Supply
         {
             let total_supply_handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -407,7 +407,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Check type
         let id_type = {
             let handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::IdType.into(),
+                NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
@@ -426,7 +426,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -467,7 +467,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let data_schema_handle = api.actor_lock_field(
-            NonFungibleResourceManagerOffset::MutableFields.into(),
+            NonFungibleResourceManagerField::MutableFields.into(),
             LockFlags::read_only(),
         )?;
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
@@ -615,7 +615,7 @@ impl NonFungibleResourceManagerBlueprint {
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         {
             let total_supply_handle = api.actor_lock_field(
-                NonFungibleResourceManagerOffset::TotalSupply.into(),
+                NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -676,7 +676,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleResourceManagerOffset::IdType.into(),
+            NonFungibleResourceManagerField::IdType.into(),
             LockFlags::read_only(),
         )?;
 
@@ -691,7 +691,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleResourceManagerOffset::TotalSupply.into(),
+            NonFungibleResourceManagerField::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
         let total_supply: Decimal = api.field_lock_read_typed(handle)?;

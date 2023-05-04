@@ -37,10 +37,10 @@ pub enum ObjectModuleId {
 impl ObjectModuleId {
     pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
+            ObjectModuleId::Metadata => METADATA_BASE_PARTITION,
+            ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
+            ObjectModuleId::SELF => OBJECT_BASE_PARTITION,
         }
     }
 

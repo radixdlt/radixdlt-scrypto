@@ -133,17 +133,17 @@ where
 
     // Prepare node init.
     let node_init = btreemap!(
-        PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
-        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code),
-        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
+        PackageField::Info.into() => IndexedScryptoValue::from_typed(&info),
+        PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
+        PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
+        PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+        PackageField::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        TYPE_INFO_BASE_MODULE,
+        TYPE_INFO_BASE_PARTITION,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
@@ -158,9 +158,9 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(METADATA_BASE_MODULE, ModuleInit::Metadata(metadata_init));
+    node_modules.insert(METADATA_BASE_PARTITION, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        ROYALTY_BASE_MODULE,
+        ROYALTY_BASE_PARTITION,
         ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
@@ -174,18 +174,18 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&OBJECT_BASE_MODULE)
+            .remove(&OBJECT_BASE_PARTITION)
             .unwrap()
-            .remove(&AccessRulesOffset::AccessRules.into())
+            .remove(&AccessRulesField::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
         node_modules.insert(
-            ACCESS_RULES_BASE_MODULE,
+            ACCESS_RULES_BASE_PARTITION,
             ModuleInit::AccessRules(access_rules),
         );
     } else {
         node_modules.insert(
-            ACCESS_RULES_BASE_MODULE,
+            ACCESS_RULES_BASE_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
                 child_blueprint_rules: BTreeMap::new(),
@@ -203,7 +203,7 @@ where
         .into_iter()
         .map(|(k, v)| (k, v.to_substates()))
         .collect();
-    modules.insert(OBJECT_BASE_MODULE, node_init);
+    modules.insert(OBJECT_BASE_PARTITION, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
@@ -614,7 +614,7 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(PackageField::Royalty.into(), LockFlags::MUTABLE)?;
 
         let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -634,7 +634,7 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(PackageField::Royalty.into(), LockFlags::read_only())?;
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {

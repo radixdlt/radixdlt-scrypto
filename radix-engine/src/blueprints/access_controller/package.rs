@@ -1256,7 +1256,7 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
-    let substate_key = AccessControllerOffset::AccessController.into();
+    let substate_key = AccessControllerField::AccessController.into();
     let handle = api.actor_lock_field(substate_key, LockFlags::read_only())?;
 
     let access_controller = {
@@ -1279,7 +1279,7 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
-    let substate_key = AccessControllerOffset::AccessController.into();
+    let substate_key = AccessControllerField::AccessController.into();
     let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {

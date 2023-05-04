@@ -9,7 +9,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::{FungibleResourceManagerOffset, NodeId};
+use radix_engine_interface::types::{FungibleResourceManagerField, NodeId};
 use radix_engine_interface::*;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
@@ -154,7 +154,7 @@ impl FungibleResourceManagerBlueprint {
     {
         let divisibility = {
             let divisibility_handle = api.actor_lock_field(
-                FungibleResourceManagerOffset::Divisibility.into(),
+                FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
             let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
@@ -167,7 +167,7 @@ impl FungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
-                FungibleResourceManagerOffset::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -201,7 +201,7 @@ impl FungibleResourceManagerBlueprint {
         // Update total supply
         {
             let total_supply_handle = api.actor_lock_field(
-                FungibleResourceManagerOffset::TotalSupply.into(),
+                FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
             let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
@@ -274,7 +274,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_lock_field(
-            FungibleResourceManagerOffset::Divisibility.into(),
+            FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
 
@@ -289,7 +289,7 @@ impl FungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let total_supply_handle = api.actor_lock_field(
-            FungibleResourceManagerOffset::TotalSupply.into(),
+            FungibleResourceManagerField::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
         let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;

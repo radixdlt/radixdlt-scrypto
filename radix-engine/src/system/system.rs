@@ -128,8 +128,8 @@ where
         self.api
             .kernel_lock_substate(
                 node_id,
-                TYPE_INFO_BASE_MODULE,
-                &TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_BASE_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )
@@ -184,7 +184,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+            TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -196,7 +196,7 @@ where
 
         for (i, partition) in user_substates.into_iter().enumerate() {
             let offset = PartitionOffset(i as u8);
-            let partition_num = OBJECT_BASE_MODULE
+            let partition_num = OBJECT_BASE_PARTITION
                 .at_offset(offset)
                 .expect("Module number overflow");
             node_substates.insert(partition_num, partition);
@@ -222,8 +222,8 @@ where
         } else {
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -442,7 +442,7 @@ where
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
                 Ok((
                     address.into_node_id(),
-                    OBJECT_BASE_MODULE,
+                    OBJECT_BASE_PARTITION,
                     info.blueprint,
                     schema,
                 ))
@@ -675,9 +675,9 @@ where
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
+            .get_mut(&TYPE_INFO_BASE_PARTITION)
             .unwrap()
-            .remove(&TypeInfoOffset::TypeInfo.into())
+            .remove(&TypeInfoField::TypeInfo.into())
             .unwrap();
         let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
         match type_info {
@@ -687,10 +687,10 @@ where
             _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
         };
         node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
+            .get_mut(&TYPE_INFO_BASE_PARTITION)
             .unwrap()
             .insert(
-                TypeInfoOffset::TypeInfo.into(),
+                TypeInfoField::TypeInfo.into(),
                 IndexedScryptoValue::from_typed(&type_info),
             );
 
@@ -723,7 +723,7 @@ where
                         );
 
                     let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
-                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
+                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
                     node_substates.insert(module_id.base_partition_num(), self_substates);
                 }
             }
@@ -920,7 +920,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
+        let user_substates = node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -1031,8 +1031,8 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+                OBJECT_BASE_PARTITION => btreemap!(),
+                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -1096,7 +1096,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            OBJECT_BASE_MODULE,
+            OBJECT_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1438,7 +1438,7 @@ where
             )));
         };
 
-        let partition_num = OBJECT_BASE_MODULE
+        let partition_num = OBJECT_BASE_PARTITION
             .at_offset(partition_offset)
             .expect("Module number overflow");
 

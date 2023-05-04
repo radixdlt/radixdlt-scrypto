@@ -196,8 +196,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Royalty.into(),
+            OBJECT_BASE_PARTITION,
+            &PackageField::Royalty.into(),
             LockFlags::MUTABLE,
             SystemLockData::default(),
         )?;
@@ -233,8 +233,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
-                ROYALTY_BASE_MODULE,
-                &RoyaltyOffset::RoyaltyConfig.into(),
+                ROYALTY_BASE_PARTITION,
+                &RoyaltyField::RoyaltyConfig.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -246,8 +246,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    ROYALTY_BASE_MODULE,
-                    &RoyaltyOffset::RoyaltyAccumulator.into(),
+                    ROYALTY_BASE_PARTITION,
+                    &RoyaltyField::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),
                 )?;

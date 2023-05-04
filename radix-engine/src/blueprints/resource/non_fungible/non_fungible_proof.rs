@@ -80,7 +80,7 @@ impl NonFungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_lock_field(
-                NonFungibleProofOffset::Moveable.into(),
+                NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
             let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
@@ -89,7 +89,7 @@ impl NonFungibleProofBlueprint {
             moveable
         };
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
@@ -115,7 +115,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
@@ -131,7 +131,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;

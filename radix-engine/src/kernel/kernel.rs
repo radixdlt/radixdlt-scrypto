@@ -74,8 +74,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 .store
                 .acquire_lock(
                     node_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_BASE_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
@@ -334,8 +334,8 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_BASE_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
@@ -366,8 +366,8 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleBucketOffset::Liquid.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
             let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
@@ -381,8 +381,8 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleBucketOffset::Liquid.into(),
+                    OBJECT_BASE_PARTITION,
+                    &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
             let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
@@ -397,8 +397,8 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_BASE_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
@@ -422,8 +422,8 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_BASE_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -434,8 +434,8 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: FungibleProof = substate.as_typed().unwrap();
@@ -449,8 +449,8 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_BASE_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
@@ -461,8 +461,8 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: NonFungibleProof = substate.as_typed().unwrap();
@@ -550,7 +550,7 @@ where
                             .store
                             .acquire_lock(
                                 node_id,
-                                OBJECT_BASE_MODULE,
+                                OBJECT_BASE_PARTITION,
                                 substate_key,
                                 LockFlags::read_only(),
                             )
@@ -566,7 +566,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                OBJECT_BASE_MODULE,
+                                OBJECT_BASE_PARTITION,
                                 substate_key,
                                 flags,
                                 None,

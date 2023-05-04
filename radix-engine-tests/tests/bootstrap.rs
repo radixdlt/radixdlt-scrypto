@@ -209,8 +209,8 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &FungibleResourceManagerOffset::TotalSupply.into(),
+            OBJECT_BASE_PARTITION,
+            &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap();
     assert_eq!(total_supply, allocation_amount);
@@ -219,7 +219,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let entry = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
-            METADATA_BASE_MODULE,
+            METADATA_BASE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap();

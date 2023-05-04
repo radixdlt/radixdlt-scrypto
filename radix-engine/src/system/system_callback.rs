@@ -376,8 +376,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -387,8 +387,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &PackageOffset::Info.into(),
+                    OBJECT_BASE_PARTITION,
+                    &PackageField::Info.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;

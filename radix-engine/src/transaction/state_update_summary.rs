@@ -256,8 +256,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
-                TYPE_INFO_BASE_MODULE,
-                &TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_BASE_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
             )
             .expect("Missing vault info");
 
@@ -274,15 +274,15 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                     node_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleVaultOffset::LiquidFungible.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleVaultField::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                         node_id,
-                        OBJECT_BASE_MODULE,
-                        &FungibleVaultOffset::LiquidFungible.into(),
+                        OBJECT_BASE_PARTITION,
+                        &FungibleVaultField::LiquidFungible.into(),
                     );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -300,8 +300,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
 
             let vault_updates = self.tracked.get(node_id).and_then(|n| {
-                n.tracked_parititions
-                    .get(&OBJECT_BASE_MODULE.at_offset(PartitionOffset(1u8)).unwrap())
+                n.tracked_parititions.get(
+                    &OBJECT_BASE_PARTITION
+                        .at_offset(PartitionOffset(1u8))
+                        .unwrap(),
+                )
             });
 
             if let Some(tracked_module) = vault_updates {
