@@ -694,7 +694,16 @@ impl TxFuzzer {
                         args: to_manifest_value(&input),
                     })
                 }
-                30..=43 => None,
+                // PublishPackage | PublishPackageAdvanced
+                31 | 32 => {
+                    // Publishing package involves a compilation by scrypto compiler.
+                    // In case of AFL invoking external tool breaks fuzzing.
+                    // For now we skip this step
+                    // TODO: compile some packages before starting AFL and read compiled
+                    //  binaries in AFL
+                    None
+                }
+                33..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
