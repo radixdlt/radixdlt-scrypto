@@ -507,7 +507,7 @@ impl TestRunner {
             .substate_db()
             .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                 &vault_id,
-                OBJECT_BASE_MODULE.at_offset(1u8).unwrap(),
+                OBJECT_BASE_MODULE.at_offset(PartitionOffset(1u8)).unwrap(),
             );
         let id = substate_iter.next().map(|(_key, id)| id);
 

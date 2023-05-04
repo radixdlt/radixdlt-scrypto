@@ -35,7 +35,7 @@ pub enum ObjectModuleId {
 }
 
 impl ObjectModuleId {
-    pub fn base_module(&self) -> ModuleNumber {
+    pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
             ObjectModuleId::Metadata => METADATA_BASE_MODULE,
             ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,

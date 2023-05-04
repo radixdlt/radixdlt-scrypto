@@ -67,8 +67,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::SortedIndex => {
+            TypeInfoSubstate::KeyValueStore(_) => {
                 panic!("Unexpected")
             }
         };

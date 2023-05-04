@@ -19,14 +19,14 @@ use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
+use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
+use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -35,7 +35,9 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintModuleSchema, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema};
+use radix_engine_interface::schema::{
+    BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -192,11 +194,12 @@ where
             ).to_substates(),
         );
 
-        for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = OBJECT_BASE_MODULE
-                .at_offset(i as u8)
+        for (i, partition) in user_substates.into_iter().enumerate() {
+            let offset = PartitionOffset(i as u8);
+            let partition_num = OBJECT_BASE_MODULE
+                .at_offset(offset)
                 .expect("Module number overflow");
-            node_substates.insert(module_number, module_substates);
+            node_substates.insert(partition_num, partition);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;
@@ -285,16 +288,16 @@ where
         let mut user_substates = Vec::new();
 
         {
-            for (i, blueprint_module_schema) in blueprint_schema.modules.iter().enumerate() {
+            for (i, blueprint_partition_schema) in blueprint_schema.partitions.iter().enumerate() {
                 let handle = i as u8;
-                let mut module_substates = BTreeMap::new();
-                match blueprint_module_schema {
-                    BlueprintModuleSchema::Fields(field_type_index) => {
+                let mut partition = BTreeMap::new();
+                match blueprint_partition_schema {
+                    BlueprintPartitionSchema::Fields(field_type_index) => {
                         let entries = kv_entries.remove(&handle);
                         if entries.is_some() {
-                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidModule
-                            ))));
+                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                                Box::new(CreateObjectError::InvalidModule),
+                            )));
                         }
 
                         if field_type_index.len() != fields.len() {
@@ -314,22 +317,22 @@ where
                                 field_type_index[i],
                                 self,
                             )
-                                .map_err(|err| {
-                                    RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                        CreateObjectError::InvalidSubstateWrite(
-                                            err.error_message(&blueprint_schema.schema),
-                                        ),
-                                    )))
-                                })?;
+                            .map_err(|err| {
+                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                    CreateObjectError::InvalidSubstateWrite(
+                                        err.error_message(&blueprint_schema.schema),
+                                    ),
+                                )))
+                            })?;
 
-                            module_substates.insert(
+                            partition.insert(
                                 SubstateKey::Tuple(i as u8),
                                 IndexedScryptoValue::from_vec(field)
                                     .expect("Checked by payload-schema validation"),
                             );
                         }
                     }
-                    BlueprintModuleSchema::KeyValueStore(blueprint_kv_schema) => {
+                    BlueprintPartitionSchema::KeyValueStore(blueprint_kv_schema) => {
                         let entries = kv_entries.remove(&handle);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
@@ -339,13 +342,13 @@ where
                                     &blueprint_schema.schema,
                                     instance_schema,
                                 )
-                                    .map_err(|err| {
-                                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                            CreateObjectError::InvalidSubstateWrite(
-                                                err.error_message(&blueprint_schema.schema),
-                                            ),
-                                        )))
-                                    })?;
+                                .map_err(|err| {
+                                    RuntimeError::SystemError(SystemError::CreateObjectError(
+                                        Box::new(CreateObjectError::InvalidSubstateWrite(
+                                            err.error_message(&blueprint_schema.schema),
+                                        )),
+                                    ))
+                                })?;
 
                                 self.validate_payload_against_blueprint_and_instance_schema(
                                     &value,
@@ -353,13 +356,13 @@ where
                                     &blueprint_schema.schema,
                                     instance_schema,
                                 )
-                                    .map_err(|err| {
-                                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                            CreateObjectError::InvalidSubstateWrite(
-                                                err.error_message(&blueprint_schema.schema),
-                                            ),
-                                        )))
-                                    })?;
+                                .map_err(|err| {
+                                    RuntimeError::SystemError(SystemError::CreateObjectError(
+                                        Box::new(CreateObjectError::InvalidSubstateWrite(
+                                            err.error_message(&blueprint_schema.schema),
+                                        )),
+                                    ))
+                                })?;
 
                                 let value: ScryptoValue = scrypto_decode(&value).unwrap();
                                 let value = IndexedScryptoValue::from_typed(&Some(value));
@@ -372,33 +375,33 @@ where
                                     }
                                 }
 
-                                module_substates.insert(SubstateKey::Map(key), value);
+                                partition.insert(SubstateKey::Map(key), value);
                             }
                         }
-                    },
+                    }
                     _ => {
                         let entries = kv_entries.remove(&handle);
                         if entries.is_some() {
-                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidModule
-                            ))));
+                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                                Box::new(CreateObjectError::InvalidModule),
+                            )));
                         }
                     }
                 }
 
-                user_substates.push(module_substates);
+                user_substates.push(partition);
             }
 
             if !fields.is_empty() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                    CreateObjectError::InvalidModule
-                ))));
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::InvalidModule),
+                )));
             }
 
             if !kv_entries.is_empty() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                    CreateObjectError::InvalidModule
-                ))));
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::InvalidModule),
+                )));
             }
         }
 
@@ -424,7 +427,10 @@ where
         Ok(current_value)
     }
 
-    fn get_actor_schema(&mut self, actor_object_type: ActorObjectType) -> Result<(NodeId, ModuleNumber, Blueprint, IndexedBlueprintSchema), RuntimeError>{
+    fn get_actor_schema(
+        &mut self,
+        actor_object_type: ActorObjectType,
+    ) -> Result<(NodeId, PartitionNumber, Blueprint, IndexedBlueprintSchema), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current.unwrap();
         let method = actor
             .try_as_method()
@@ -434,52 +440,66 @@ where
                 let address = method.object_info.outer_object.unwrap();
                 let info = self.get_object_info(address.as_node_id())?;
                 let schema = self.get_blueprint_schema(&info.blueprint)?;
-                Ok((address.into_node_id(), OBJECT_BASE_MODULE, info.blueprint, schema))
+                Ok((
+                    address.into_node_id(),
+                    OBJECT_BASE_MODULE,
+                    info.blueprint,
+                    schema,
+                ))
             }
             ActorObjectType::SELF => {
                 let node_id = method.node_id;
                 let blueprint = method.object_info.blueprint.clone();
                 let object_module_id = method.module_id;
                 let schema = self.get_blueprint_schema(&blueprint)?;
-                Ok((node_id, object_module_id.base_module(), blueprint, schema))
+                Ok((
+                    node_id,
+                    object_module_id.base_partition_num(),
+                    blueprint,
+                    schema,
+                ))
             }
         }
     }
 
-    fn get_actor_index(&mut self, actor_object_type: ActorObjectType, handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
-        let (node_id, base_module, blueprint, schema) = self.get_actor_schema(actor_object_type)?;
-        let module_number = base_module
-            .at_offset(handle)
+    fn get_actor_index(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        handle: u8,
+    ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
+        let (node_id, base_partition, blueprint, schema) =
+            self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, _) = schema.index_partition_offset(handle).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(blueprint, handle))
+        })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        schema
-            .index_module_offset(handle)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    blueprint,
-                    handle,
-                ))
-            })?;
-
-        Ok((node_id, module_number))
+        Ok((node_id, partition_num))
     }
 
-    fn get_actor_sorted_index(&mut self, actor_object_type: ActorObjectType, index_handle: u8) -> Result<(NodeId, ModuleNumber), RuntimeError> {
-        let (node_id, base_module, blueprint, schema) = self.get_actor_schema(actor_object_type)?;
-        let module_number = base_module
-            .at_offset(index_handle)
-            .expect("Module number overflow");
+    fn get_actor_sorted_index(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        index_handle: u8,
+    ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
+        let (node_id, base_partition, blueprint, schema) =
+            self.get_actor_schema(actor_object_type)?;
 
-        schema
-            .sorted_index_module_offset(index_handle)
+        let (partition_offset, _) = schema
+            .sorted_index_partition_offset(index_handle)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    blueprint,
-                    index_handle,
-                ))
+                RuntimeError::SystemError(SystemError::IndexDoesNotExist(blueprint, index_handle))
             })?;
 
-        Ok((node_id, module_number))
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num))
     }
 }
 
@@ -704,7 +724,7 @@ where
 
                     let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
                     let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
-                    node_substates.insert(module_id.base_module(), self_substates);
+                    node_substates.insert(module_id.base_partition_num(), self_substates);
                 }
             }
         }
@@ -796,8 +816,7 @@ where
                         (info, global_address)
                     }
 
-                    TypeInfoSubstate::KeyValueStore(..)
-                    => {
+                    TypeInfoSubstate::KeyValueStore(..) => {
                         return Err(RuntimeError::SystemError(
                             SystemError::CallMethodOnKeyValueStore,
                         ))
@@ -1052,7 +1071,7 @@ where
 
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
-            | TypeInfoSubstate::Object(..) => {
+            TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
         };
@@ -1106,7 +1125,7 @@ where
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, handle)?;
+        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, handle)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1119,7 +1138,7 @@ where
         }
 
         self.api
-            .kernel_set_substate(&node_id, module_number, SubstateKey::Map(key), value)
+            .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
     }
 
     fn actor_index_remove(
@@ -1127,22 +1146,26 @@ where
         index_handle: u8,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let rtn = self
             .api
-            .kernel_remove_substate(&node_id, module_number, &SubstateKey::Map(key))?
+            .kernel_remove_substate(&node_id, partition_num, &SubstateKey::Map(key))?
             .map(|v| v.into());
 
         Ok(rtn)
     }
 
-    fn actor_index_scan(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+    fn actor_index_scan(
+        &mut self,
+        index_handle: u8,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let substates = self
             .api
-            .kernel_scan_substates(&node_id, module_number, count)?
+            .kernel_scan_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1150,12 +1173,16 @@ where
         Ok(substates)
     }
 
-    fn actor_index_take(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
+    fn actor_index_take(
+        &mut self,
+        index_handle: u8,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let (node_id, partition_num) = self.get_actor_index(ActorObjectType::SELF, index_handle)?;
 
         let substates = self
             .api
-            .kernel_take_substates(&node_id, module_number, count)?
+            .kernel_take_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1176,7 +1203,8 @@ where
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1190,12 +1218,11 @@ where
 
         self.api.kernel_set_substate(
             &node_id,
-            module_number,
+            partition_num,
             SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
             value,
         )
     }
-
 
     #[trace_resources]
     fn actor_outer_object_sorted_index_remove(
@@ -1203,13 +1230,14 @@ where
         handle: u8,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(ActorObjectType::OuterObject, handle)?;
 
         let rtn = self
             .api
             .kernel_remove_substate(
                 &node_id,
-                module_number,
+                partition_num,
                 &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
             )?
             .map(|v| v.into());
@@ -1223,18 +1251,18 @@ where
         handle: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let (node_id, module_number) = self.get_actor_sorted_index(ActorObjectType::SELF, handle)?;
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(ActorObjectType::SELF, handle)?;
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(&node_id, module_number, count)?
+            .kernel_scan_sorted_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
 
         Ok(substates)
     }
-
 }
 
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1354,16 +1382,16 @@ where
         }
 
         let node_id = method_actor.node_id;
-        let base_module = method_actor.module_id.base_module();
+        let base_partition = method_actor.module_id.base_partition_num();
         let blueprint = method_actor.object_info.blueprint.clone();
         let schema = self.get_blueprint_schema(&blueprint)?;
 
-        let (module_number, field_type_index) =
+        let (partition_num, field_type_index) =
             if let Some((offset, field_type_index)) = schema.field(field) {
-                let module_number = base_module
+                let partition_num = base_partition
                     .at_offset(offset)
                     .expect("Module number overflow");
-                (module_number, field_type_index)
+                (partition_num, field_type_index)
             } else {
                 return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
                     blueprint, field,
@@ -1381,7 +1409,7 @@ where
 
         self.api.kernel_lock_substate(
             &node_id,
-            module_number,
+            partition_num,
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
@@ -1401,7 +1429,7 @@ where
 
         let parent_info = self.get_object_info(parent.as_node_id())?;
         let schema = self.get_blueprint_schema(&parent_info.blueprint)?;
-        let (module_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
+        let (partition_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
             field_info
         } else {
             return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
@@ -1410,8 +1438,8 @@ where
             )));
         };
 
-        let module_number = OBJECT_BASE_MODULE
-            .at_offset(module_offset)
+        let partition_num = OBJECT_BASE_MODULE
+            .at_offset(partition_offset)
             .expect("Module number overflow");
 
         // TODO: Check if valid substate_key for node_id
@@ -1426,7 +1454,7 @@ where
 
         self.api.kernel_lock_substate(
             parent.as_node_id(),
-            module_number,
+            partition_num,
             &SubstateKey::Tuple(field),
             flags,
             SystemLockData::Field(lock_data),
@@ -1449,9 +1477,9 @@ where
         let actor = self.api.kernel_get_system_state().current.unwrap();
         match actor {
             Actor::Method(MethodActor {
-                              global_address: Some(address),
-                              ..
-                          }) => Ok(address.clone()),
+                global_address: Some(address),
+                ..
+            }) => Ok(address.clone()),
             _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
             )),
@@ -1467,15 +1495,14 @@ where
 }
 
 impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
-    where
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
 {
-
     #[trace_resources]
     fn actor_lock_key_value_entry(
         &mut self,
-        handle: u8,
+        partition_handle: u8,
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
@@ -1485,21 +1512,22 @@ impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         let node_id = method.node_id;
-        let base_module = method.module_id.base_module();
+        let base_partition = method.module_id.base_partition_num();
         let object_info = method.object_info.clone();
         let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-        let module_number = base_module
-            .at_offset(handle)
-            .expect("Module number overflow");
 
-        let kv_schema = schema
-            .key_value_store_module(handle)
+        let (partition_offset, kv_schema) = schema
+            .key_value_store_partition(partition_handle)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
                     object_info.blueprint,
-                    handle,
+                    partition_handle,
                 ))
             })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
@@ -1524,7 +1552,7 @@ impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            module_number,
+            partition_num,
             &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1532,8 +1560,12 @@ impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y
         )
     }
 
-    fn actor_remove_key_value_entry(&mut self, handle: u8, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_entry(handle, key, LockFlags::MUTABLE)?;
+    fn actor_remove_key_value_entry(
+        &mut self,
+        partition_handle: u8,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let handle = self.actor_lock_key_value_entry(partition_handle, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_release_lock(handle)
     }
 }
@@ -1793,7 +1825,7 @@ where
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -1801,7 +1833,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         self.api.kernel_lock_substate_with_default(
             node_id,
-            module_id,
+            partition_num,
             substate_key,
             flags,
             default,
@@ -1838,50 +1870,52 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api
-            .kernel_set_substate(node_id, module_id, substate_key, value)
+            .kernel_set_substate(node_id, partition_num, substate_key, value)
     }
 
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_remove_substate(node_id, module_id, substate_key)
+            .kernel_remove_substate(node_id, partition_num, substate_key)
     }
 
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_scan_sorted_substates(node_id, module_id, count)
+            .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.api.kernel_scan_substates(node_id, module_id, count)
+        self.api
+            .kernel_scan_substates(node_id, partition_num, count)
     }
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.api.kernel_take_substates(node_id, module_id, count)
+        self.api
+            .kernel_take_substates(node_id, partition_num, count)
     }
 }
 

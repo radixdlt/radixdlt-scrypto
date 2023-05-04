@@ -58,8 +58,11 @@ where
             ));
         }
 
-        let non_fungible_handle =
-            api.actor_lock_key_value_entry(1u8, &non_fungible_local_id.to_key(), LockFlags::MUTABLE)?;
+        let non_fungible_handle = api.actor_lock_key_value_entry(
+            1u8,
+            &non_fungible_local_id.to_key(),
+            LockFlags::MUTABLE,
+        )?;
 
         if check_non_existence {
             let cur_non_fungible: Option<ScryptoValue> =

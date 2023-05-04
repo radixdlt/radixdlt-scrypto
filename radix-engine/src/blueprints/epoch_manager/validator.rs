@@ -1,4 +1,6 @@
-use crate::blueprints::epoch_manager::{EpochManagerConfigSubstate, EpochManagerSubstate, Validator};
+use crate::blueprints::epoch_manager::{
+    EpochManagerConfigSubstate, EpochManagerSubstate, Validator,
+};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -8,12 +10,12 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -409,8 +411,8 @@ impl ValidatorBlueprint {
         update: UpdateSecondaryIndex,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError>,
+    where
+        Y: ClientApi<RuntimeError>,
     {
         match update {
             UpdateSecondaryIndex::Create {
@@ -428,8 +430,7 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
                 let (address, mut validator) = api
                     .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        1u8,
-                        &index_key,
+                        1u8, &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
@@ -446,8 +447,7 @@ impl ValidatorBlueprint {
             } => {
                 let (address, mut validator) = api
                     .actor_outer_object_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
-                        1u8,
-                        &index_key,
+                        1u8, &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
@@ -602,5 +602,4 @@ impl ValidatorCreator {
         )?;
         Ok((address.into(), owner_token_bucket))
     }
-
 }

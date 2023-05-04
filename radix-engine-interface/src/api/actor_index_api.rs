@@ -64,7 +64,11 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_take(&mut self, index_handle: u8, count: u32) -> Result<Vec<Vec<u8>>, E>;
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_take_typed<S: ScryptoDecode>(&mut self, index_handle: u8, count: u32) -> Result<Vec<S>, E> {
+    fn actor_index_take_typed<S: ScryptoDecode>(
+        &mut self,
+        index_handle: u8,
+        count: u32,
+    ) -> Result<Vec<S>, E> {
         let entries = self
             .actor_index_take(index_handle, count)?
             .into_iter()

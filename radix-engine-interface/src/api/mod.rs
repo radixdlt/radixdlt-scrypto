@@ -1,14 +1,14 @@
 pub mod actor_api;
+pub mod actor_index_api;
+pub mod actor_sorted_index_api;
 pub mod blueprint_api;
 pub mod component;
 pub mod field_lock_api;
-pub mod actor_index_api;
 pub mod kernel_modules;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod node_modules;
 pub mod object_api;
-pub mod actor_sorted_index_api;
 
 // Re-exports
 pub use crate::api::actor_sorted_index_api::ClientActorSortedIndexApi;

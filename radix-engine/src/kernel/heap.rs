@@ -30,7 +30,7 @@ impl Heap {
     pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> &IndexedScryptoValue {
@@ -57,7 +57,7 @@ impl Heap {
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
@@ -70,7 +70,7 @@ impl Heap {
     pub fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
@@ -85,7 +85,7 @@ impl Heap {
     pub fn delete_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
         self.nodes
@@ -97,7 +97,7 @@ impl Heap {
     pub fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
@@ -120,7 +120,7 @@ impl Heap {
     pub fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self

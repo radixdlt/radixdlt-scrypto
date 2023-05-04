@@ -399,8 +399,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..)
-                        | TypeInfoSubstate::SortedIndex => return None,
+                        TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
             }

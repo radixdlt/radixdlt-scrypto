@@ -39,7 +39,11 @@ pub trait ClientActorSortedIndexApi<E> {
         sorted_key: SortedKey,
         value: V,
     ) -> Result<(), E> {
-        self.actor_outer_object_sorted_index_insert(handle, sorted_key, scrypto_encode(&value).unwrap())
+        self.actor_outer_object_sorted_index_insert(
+            handle,
+            sorted_key,
+            scrypto_encode(&value).unwrap(),
+        )
     }
 
     /// Removes an entry from a sorted index

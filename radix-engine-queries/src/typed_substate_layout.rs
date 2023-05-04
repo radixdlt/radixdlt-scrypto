@@ -118,7 +118,7 @@ fn error(descriptor: &'static str) -> String {
 
 pub fn to_typed_substate_key(
     entity_type: EntityType,
-    module_number: ModuleNumber,
+    module_number: PartitionNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match module_number {
@@ -200,7 +200,9 @@ fn to_typed_object_substate_key_internal(
             let module_offset = EpochManagerModuleOffset::try_from(module_offset)?;
             match module_offset {
                 EpochManagerModuleOffset::EpochManager => {
-                    TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
+                    TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(
+                        substate_key,
+                    )?)
                 }
                 EpochManagerModuleOffset::SecondaryIndex => {
                     let key = substate_key.for_sorted().ok_or(())?;
@@ -238,13 +240,13 @@ fn to_typed_object_substate_key_internal(
                     TypedObjectModuleSubstateKey::NonFungibleVault(
                         NonFungibleVaultOffset::try_from(substate_key)?,
                     )
-                },
+                }
                 NonFungibleVaultModuleOffset::NonFungibles => {
                     let key = substate_key.for_map().ok_or(())?;
                     TypedObjectModuleSubstateKey::GenericIndex(key.clone())
                 }
             }
-        },
+        }
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;

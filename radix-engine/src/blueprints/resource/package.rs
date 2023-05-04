@@ -8,9 +8,9 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use resources_tracker_macro::trace_resources;
 
@@ -666,8 +666,7 @@ impl ResourceManagerNativePackage {
             fields.push(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
             );
-            fields
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut indices = Vec::new();
             indices.push(BlueprintIndexSchema {});
@@ -926,10 +925,8 @@ impl ResourceManagerNativePackage {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
             let mut fields = Vec::new();
-            fields
-                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            fields
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(

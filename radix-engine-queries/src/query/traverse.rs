@@ -10,9 +10,9 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
-    FungibleVaultOffset, IndexedScryptoValue, ModuleNumber, NonFungibleVaultOffset, ObjectInfo,
-    ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE, METADATA_BASE_MODULE,
-    OBJECT_BASE_MODULE, ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE,
+    FungibleVaultOffset, IndexedScryptoValue, NonFungibleVaultOffset, ObjectInfo, PartitionNumber,
+    PartitionOffset, ResourceAddress, TypeInfoOffset, ACCESS_RULES_BASE_MODULE,
+    METADATA_BASE_MODULE, OBJECT_BASE_MODULE, ROYALTY_BASE_MODULE, TYPE_INFO_BASE_MODULE,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -51,7 +51,7 @@ pub trait StateTreeVisitor {
 
     fn visit_node_id(
         &mut self,
-        _parent_id: Option<&(NodeId, ModuleNumber, SubstateKey)>,
+        _parent_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         _node_id: &NodeId,
         _depth: u32,
     ) {
@@ -69,7 +69,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     pub fn traverse_all_descendents(
         &mut self,
-        parent_node_id: Option<&(NodeId, ModuleNumber, SubstateKey)>,
+        parent_node_id: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
     ) {
         self.traverse_recursive(parent_node_id, node_id, 0)
@@ -77,7 +77,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
     fn traverse_recursive(
         &mut self,
-        parent: Option<&(NodeId, ModuleNumber, SubstateKey)>,
+        parent: Option<&(NodeId, PartitionNumber, SubstateKey)>,
         node_id: NodeId,
         depth: u32,
     ) {
@@ -163,7 +163,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         .substate_db
                         .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                             &node_id,
-                            OBJECT_BASE_MODULE.at_offset(1u8).unwrap(),
+                            OBJECT_BASE_MODULE.at_offset(PartitionOffset(1u8)).unwrap(),
                         );
                     for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
@@ -199,7 +199,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
     fn traverse_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         depth: u32,
     ) {
         let entries = self

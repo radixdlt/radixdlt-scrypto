@@ -41,7 +41,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_num: &ModuleNumber,
+        module_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -125,7 +125,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

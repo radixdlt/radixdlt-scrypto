@@ -312,7 +312,8 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::read_only())?;
+            let handle =
+                api.actor_lock_key_value_entry(0u8, &encoded_key, LockFlags::read_only())?;
             handle
         };
 
