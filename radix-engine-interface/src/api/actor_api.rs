@@ -12,6 +12,7 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
+    // TODO: Remove
     fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
 
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;

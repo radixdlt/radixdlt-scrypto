@@ -11,7 +11,7 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), E>;
@@ -20,13 +20,13 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_insert_typed<V: ScryptoEncode>(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         key: Vec<u8>,
         value: V,
     ) -> Result<(), E> {
         self.actor_index_insert(
             object_handle,
-            index_id,
+            partition_index,
             key,
             scrypto_encode(&value).unwrap(),
         )
@@ -36,7 +36,7 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, E>;
 
@@ -44,11 +44,11 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_remove_typed<V: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         key: Vec<u8>,
     ) -> Result<Option<V>, E> {
         let rtn = self
-            .actor_index_remove(object_handle, index_id, key)?
+            .actor_index_remove(object_handle, partition_index, key)?
             .map(|e| scrypto_decode(&e).unwrap());
         Ok(rtn)
     }
@@ -57,7 +57,7 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_scan(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, E>;
 
@@ -65,11 +65,11 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_scan_typed<S: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .actor_index_scan(object_handle, index_id, count)?
+            .actor_index_scan(object_handle, partition_index, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();
@@ -84,7 +84,7 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_take(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, E>;
 
@@ -92,11 +92,11 @@ pub trait ClientActorIndexApi<E> {
     fn actor_index_take_typed<S: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
-        index_id: u8,
+        partition_index: u8,
         count: u32,
     ) -> Result<Vec<S>, E> {
         let entries = self
-            .actor_index_take(object_handle, index_id, count)?
+            .actor_index_take(object_handle, partition_index, count)?
             .into_iter()
             .map(|buf| {
                 let typed: S = scrypto_decode(&buf).unwrap();
