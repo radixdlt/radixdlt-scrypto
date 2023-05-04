@@ -215,7 +215,7 @@ fn new_key_value_store(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .new_key_value_store(read_memory(
+        .key_value_store_new(read_memory(
             caller.as_context_mut(),
             memory,
             schema_id_ptr,
@@ -298,7 +298,50 @@ fn lock_key_value_store_entry(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.lock_key_value_store_entry(node_id, substate_key, flags)
+    runtime.key_value_store_lock_entry(node_id, substate_key, flags)
+}
+
+fn key_value_entry_get(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime.key_value_entry_get(handle).map(|buffer| buffer.0)
+}
+
+fn key_value_entry_set(
+    mut caller: Caller<'_, HostState>,
+    handle: u32,
+    buffer_ptr: u32,
+    buffer_len: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+    let data = read_memory(caller.as_context_mut(), memory, buffer_ptr, buffer_len)?;
+    runtime.key_value_entry_set(handle, data)
+}
+
+fn unlock_key_value_entry(
+    caller: Caller<'_, HostState>,
+    handle: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+    runtime.key_value_entry_release(handle)
+}
+
+fn key_value_entry_remove(
+    mut caller: Caller<'_, HostState>,
+    node_id_ptr: u32,
+    node_id_len: u32,
+    key_ptr: u32,
+    key_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+    let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
+    let key = read_memory(caller.as_context_mut(), memory, key_ptr, key_len)?;
+
+    runtime
+        .key_value_store_remove_entry(node_id, key)
+        .map(|buffer| buffer.0)
 }
 
 fn lock_field(
@@ -307,7 +350,7 @@ fn lock_field(
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.lock_field(field as u8, flags)
+    runtime.actor_lock_field(field as u8, flags)
 }
 
 fn read_substate(
@@ -316,7 +359,7 @@ fn read_substate(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.read_substate(handle).map(|buffer| buffer.0)
+    runtime.field_lock_read(handle).map(|buffer| buffer.0)
 }
 
 fn write_substate(
@@ -329,7 +372,7 @@ fn write_substate(
 
     let data = read_memory(caller.as_context_mut(), memory, data_ptr, data_len)?;
 
-    runtime.write_substate(handle, data)
+    runtime.field_lock_write(handle, data)
 }
 
 fn drop_lock(
@@ -338,7 +381,7 @@ fn drop_lock(
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime.drop_lock(handle)
+    runtime.field_lock_release(handle)
 }
 
 fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -627,6 +670,44 @@ impl WasmiModule {
             },
         );
 
+        let host_key_value_entry_get = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
+                key_value_entry_get(caller, handle).map_err(|e| e.into())
+            },
+        );
+
+        let host_key_value_entry_set = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             handle: u32,
+             buffer_ptr: u32,
+             buffer_len: u32|
+             -> Result<(), Trap> {
+                key_value_entry_set(caller, handle, buffer_ptr, buffer_len).map_err(|e| e.into())
+            },
+        );
+
+        let host_unlock_key_value_entry = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
+                unlock_key_value_entry(caller, handle).map_err(|e| e.into())
+            },
+        );
+
+        let host_key_value_entry_remove = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             node_id_ptr: u32,
+             node_id_len: u32,
+             key_ptr: u32,
+             key_len: u32|
+             -> Result<u64, Trap> {
+                key_value_entry_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
+                    .map_err(|e| e.into())
+            },
+        );
+
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
@@ -745,11 +826,7 @@ impl WasmiModule {
         linker_define!(linker, CALL_METHOD_FUNCTION_NAME, host_call_method);
         linker_define!(linker, CALL_FUNCTION_FUNCTION_NAME, host_call_function);
         linker_define!(linker, NEW_OBJECT_FUNCTION_NAME, host_new_component);
-        linker_define!(
-            linker,
-            NEW_KEY_VALUE_STORE_FUNCTION_NAME,
-            host_new_key_value_store
-        );
+
         linker_define!(
             linker,
             GLOBALIZE_OBJECT_FUNCTION_NAME,
@@ -762,15 +839,42 @@ impl WasmiModule {
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+
         linker_define!(
             linker,
-            LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_STORE_NEW_FUNCTION_NAME,
+            host_new_key_value_store
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
-        linker_define!(linker, READ_SUBSTATE_FUNCTION_NAME, host_read_substate);
-        linker_define!(linker, WRITE_SUBSTATE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, DROP_LOCK_FUNCTION_NAME, host_drop_lock);
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_GET_FUNCTION_NAME,
+            host_key_value_entry_get
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_SET_FUNCTION_NAME,
+            host_key_value_entry_set
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME,
+            host_unlock_key_value_entry
+        );
+        linker_define!(
+            linker,
+            KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME,
+            host_key_value_entry_remove
+        );
+
+        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
+        linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
+        linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
         linker_define!(
             linker,
             GET_GLOBAL_ADDRESS_FUNCTION_NAME,

@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::constants::*;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;

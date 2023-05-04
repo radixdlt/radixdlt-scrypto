@@ -73,14 +73,15 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                SysModuleId::Object.into() => btreemap!(
+                OBJECT_BASE_MODULE => btreemap!(
                     WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
                         outer_object: None,
+                        instance_schema: None,
                     })
                 ).to_substates()
             ),

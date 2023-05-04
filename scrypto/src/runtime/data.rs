@@ -1,7 +1,7 @@
 use radix_engine_interface::api::component::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientActorApi;
-use radix_engine_interface::api::ClientSubstateLockApi;
+use radix_engine_interface::api::ClientFieldLockApi;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
 };
@@ -43,7 +43,7 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        env.sys_drop_lock(self.lock_handle).unwrap();
+        env.field_lock_release(self.lock_handle).unwrap();
     }
 }
 
@@ -88,8 +88,8 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
             ))
             .unwrap(),
         };
-        env.sys_write_substate(self.lock_handle, substate).unwrap();
-        env.sys_drop_lock(self.lock_handle).unwrap();
+        env.field_lock_write(self.lock_handle, substate).unwrap();
+        env.field_lock_release(self.lock_handle).unwrap();
     }
 }
 
@@ -121,9 +121,9 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     pub fn get(&self) -> DataRef<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
-            .lock_field(ComponentOffset::State0 as u8, LockFlags::read_only())
+            .actor_lock_field(ComponentOffset::State0 as u8, LockFlags::read_only())
             .unwrap();
-        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
+        let raw_substate = env.field_lock_read(lock_handle).unwrap();
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
@@ -131,9 +131,9 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
-            .lock_field(ComponentOffset::State0 as u8, LockFlags::MUTABLE)
+            .actor_lock_field(ComponentOffset::State0 as u8, LockFlags::MUTABLE)
             .unwrap();
-        let raw_substate = env.sys_read_substate(lock_handle).unwrap();
+        let raw_substate = env.field_lock_read(lock_handle).unwrap();
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,

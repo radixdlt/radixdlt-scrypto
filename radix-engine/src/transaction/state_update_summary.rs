@@ -258,7 +258,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
-                SysModuleId::TypeInfo.into(),
+                TYPE_INFO_BASE_MODULE,
                 &TypeInfoOffset::TypeInfo.into(),
             )
             .expect("Missing vault info");
@@ -276,14 +276,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                     node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &FungibleVaultOffset::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                         node_id,
-                        SysModuleId::Object.into(),
+                        OBJECT_BASE_MODULE,
                         &FungibleVaultOffset::LiquidFungible.into(),
                     );
 
@@ -303,14 +303,14 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(vault) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                     node_id,
-                    SysModuleId::Object.into(),
+                    OBJECT_BASE_MODULE,
                     &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
             {
-                let vault_updates = self.tracked.get(vault.ids.as_node_id()).and_then(|n| {
-                    let module_id: ModuleId = SysModuleId::Object.into();
-                    n.tracked_modules.get(&module_id)
-                });
+                let vault_updates = self
+                    .tracked
+                    .get(vault.ids.as_node_id())
+                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE));
 
                 if let Some(tracked_module) = vault_updates {
                     let mut added = BTreeSet::new();
@@ -357,36 +357,36 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_id, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_id, key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, module_num, key)
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_num, key))
     }
 
     fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
-            .get_mapped_substate::<M, D>(node_id, module_id, key)
+            .get_mapped::<M, D>(node_id, module_num, key)
     }
 
     fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_id))
+            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }

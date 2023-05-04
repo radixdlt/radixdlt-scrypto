@@ -1,3 +1,4 @@
+use super::actor::MethodActor;
 use super::call_frame::RefType;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
@@ -8,7 +9,7 @@ use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -33,37 +34,50 @@ pub trait KernelNodeApi {
 }
 
 /// Info regarding the substate locked as well as what type of lock
-pub struct LockInfo {
+pub struct LockInfo<L> {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_num: ModuleNumber,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
+    pub data: L,
 }
 
 /// API for managing substates within nodes
-pub trait KernelSubstateApi {
+pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        lock_data: L,
     ) -> Result<LockHandle, RuntimeError>;
 
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        lock_data: L,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(node_id, module_id, substate_key, flags, None)
+        self.kernel_lock_substate_with_default(
+            node_id,
+            module_num,
+            substate_key,
+            flags,
+            None,
+            lock_data,
+        )
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
+    fn kernel_get_lock_info(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<LockInfo<L>, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.
@@ -89,7 +103,7 @@ pub trait KernelSubstateApi {
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
@@ -101,7 +115,7 @@ pub trait KernelSubstateApi {
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
@@ -112,21 +126,21 @@ pub trait KernelSubstateApi {
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 }
@@ -155,7 +169,7 @@ impl<I: Debug> KernelInvocation<I> {
                 .map_err(|e| RuntimeError::KernelError(KernelError::CallFrameUpdateError(e)))?;
         // TODO: remove
         match self.resolved_actor {
-            Actor::Method { node_id, .. } => {
+            Actor::Method(MethodActor { node_id, .. }) => {
                 call_frame_update.add_reference(node_id);
             }
             Actor::Function { .. } | Actor::VirtualLazyLoad { .. } => {}
@@ -173,16 +187,24 @@ pub trait KernelInvokeApi<I: Debug> {
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
+pub struct SystemState<'a, M: KernelCallbackObject> {
+    pub system: &'a mut M,
+    pub current: Option<&'a Actor>,
+    pub caller: Option<&'a Actor>,
+}
+
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
 pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Retrieves data associated with the kernel upstream layer (system)
-    fn kernel_get_callback(&mut self) -> &mut M;
+    fn kernel_get_system(&mut self) -> &mut M {
+        self.kernel_get_system_state().system
+    }
+
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M>;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
-    // TODO: gets cleaned up a little more
-    fn kernel_get_current_actor(&mut self) -> Option<Actor>;
 
     // TODO: Cleanup
     fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
@@ -193,6 +215,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi + KernelInvokeApi<M::Invocation> + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::Invocation>
+    + KernelInternalApi<M>
 {
 }

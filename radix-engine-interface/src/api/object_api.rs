@@ -1,9 +1,16 @@
+use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
+use crate::constants::{
+    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+};
 use crate::types::*;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
+use scrypto_schema::InstanceSchema;
 
 #[repr(u8)]
 #[derive(
@@ -27,14 +34,52 @@ pub enum ObjectModuleId {
     AccessRules,
 }
 
+impl ObjectModuleId {
+    pub fn base_module(&self) -> ModuleNumber {
+        match self {
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
+            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
+        }
+    }
+
+    pub fn static_blueprint(&self) -> Option<Blueprint> {
+        match self {
+            ObjectModuleId::Metadata => {
+                Some(Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
+            }
+            ObjectModuleId::Royalty => Some(Blueprint::new(
+                &ROYALTY_MODULE_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+            )),
+            ObjectModuleId::AccessRules => Some(Blueprint::new(
+                &ACCESS_RULES_MODULE_PACKAGE,
+                ACCESS_RULES_BLUEPRINT,
+            )),
+            ObjectModuleId::SELF => None,
+        }
+    }
+}
+
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
-    // TODO: refine the interface
+    /// Creates a new simple blueprint object of a given blueprint type
+    fn new_simple_object(
+        &mut self,
+        blueprint_ident: &str,
+        fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E> {
+        self.new_object(blueprint_ident, None, fields, vec![])
+    }
+
     /// Creates a new object of a given blueprint type
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        schema: Option<InstanceSchema>,
+        fields: Vec<Vec<u8>>,
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

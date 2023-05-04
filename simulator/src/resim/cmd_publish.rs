@@ -56,7 +56,7 @@ impl Publish {
         };
 
         let code = fs::read(code_path).map_err(Error::IOError)?;
-        let schema = manifest_decode(
+        let schema: PackageSchema = manifest_decode(
             &fs::read(&schema_path).map_err(|err| Error::IOErrorAtPath(err, schema_path))?,
         )
         .map_err(Error::SborDecodeError)?;
@@ -67,8 +67,8 @@ impl Publish {
             Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let module_id: ModuleId = SysModuleId::Object.into();
-            let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, module_id);
+            let db_partition_key =
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_MODULE);
             let code_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Code.into());
             let package_code = PackageCodeSubstate { code };
@@ -76,7 +76,7 @@ impl Publish {
             let info_db_sort_key =
                 SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Info.into());
             let package_info = PackageInfoSubstate {
-                schema,
+                schema: schema.into(),
                 dependent_resources: BTreeSet::new(),
                 dependent_components: BTreeSet::new(),
             };

@@ -1,7 +1,7 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -79,24 +79,24 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleProofOffset::Moveable.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: ProofMoveableSubstate = api.sys_read_substate_typed(handle)?;
+            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.sys_drop_lock(handle)?;
+            api.field_lock_release(handle)?;
             moveable
         };
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
-        let proof_id = api.new_object(
+        let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&moveable).unwrap(),
@@ -105,7 +105,7 @@ impl NonFungibleProofBlueprint {
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -114,13 +114,13 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(amount)
     }
 
@@ -130,13 +130,13 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleProofOffset::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.sys_read_substate_typed(handle)?;
+        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
-        api.sys_drop_lock(handle)?;
+        api.field_lock_release(handle)?;
         Ok(ids)
     }
 
@@ -145,7 +145,8 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address = ResourceAddress::new_or_panic(api.get_info()?.outer_object.unwrap().into());
+        let address =
+            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
         Ok(address)
     }
 

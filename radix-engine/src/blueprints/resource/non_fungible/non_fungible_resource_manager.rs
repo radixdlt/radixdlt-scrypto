@@ -5,14 +5,13 @@ use crate::kernel::heap::DroppedNonFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::KeyValueStoreSchema;
+use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
-use sbor::rust::borrow::Cow;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -30,85 +29,15 @@ pub enum NonFungibleResourceManagerError {
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerDataSchemaSubstate {
-    pub non_fungible_type_index: LocalTypeIndex,
+pub struct NonFungibleResourceManagerMutableFieldsSubstate {
     pub mutable_fields: BTreeSet<String>, // TODO: Integrate with KeyValueStore schema check?
 }
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
 
-pub type NonFungibleResourceManagerDataSubstate = Own;
-
-fn build_non_fungible_resource_manager_data_substate<Y>(
-    non_fungible_schema: NonFungibleDataSchema,
-    api: &mut Y,
-) -> Result<(NonFungibleResourceManagerDataSchemaSubstate, NodeId), RuntimeError>
-where
-    Y: ClientApi<RuntimeError>,
-{
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let non_fungible_type = aggregator.add_child_type_and_descendents::<NonFungibleLocalId>();
-    let key_schema = generate_full_schema::<ScryptoCustomTypeExtension>(aggregator);
-
-    let mut kv_schema = non_fungible_schema.schema;
-
-    // Key
-    kv_schema.type_kinds.extend(key_schema.type_kinds);
-
-    // Optional Value
-    {
-        let mut variants = BTreeMap::new();
-        variants.insert(OPTION_VARIANT_NONE, vec![]);
-        variants.insert(OPTION_VARIANT_SOME, vec![non_fungible_schema.non_fungible]);
-        let type_kind = TypeKind::Enum { variants };
-        kv_schema.type_kinds.push(type_kind);
-    }
-
-    // Key
-    kv_schema.type_metadata.extend(key_schema.type_metadata);
-
-    // Optional value
-    {
-        let metadata = TypeMetadata {
-            type_name: Some(Cow::Borrowed("Option")),
-            child_names: Some(ChildNames::EnumVariants(btreemap!(
-                OPTION_VARIANT_NONE => TypeMetadata::no_child_names("None"),
-                OPTION_VARIANT_SOME => TypeMetadata::no_child_names("Some"),
-            ))),
-        };
-        kv_schema.type_metadata.push(metadata);
-    }
-
-    // Key
-    kv_schema
-        .type_validations
-        .extend(key_schema.type_validations);
-
-    // Optional value
-    kv_schema.type_validations.push(TypeValidation::None);
-    let value_index = LocalTypeIndex::SchemaLocalIndex(kv_schema.type_validations.len() - 1);
-
-    let kv_schema = KeyValueStoreSchema {
-        schema: kv_schema,
-        key: non_fungible_type,
-        value: value_index,
-        can_own: false, // Only allow NonFungibles to store data/references
-    };
-
-    let nf_store_id = api.new_key_value_store(kv_schema)?;
-
-    let update_data_substate = NonFungibleResourceManagerDataSchemaSubstate {
-        non_fungible_type_index: non_fungible_schema.non_fungible,
-        mutable_fields: non_fungible_schema.mutable_fields,
-    };
-
-    Ok((update_data_substate, nf_store_id))
-}
-
 fn create_non_fungibles<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    nf_store_id: NodeId,
     entries: BTreeMap<NonFungibleLocalId, ScryptoValue>,
     check_non_existence: bool,
     api: &mut Y,
@@ -129,15 +58,12 @@ where
             ));
         }
 
-        let non_fungible_handle = api.lock_key_value_store_entry(
-            &nf_store_id,
-            &non_fungible_local_id.to_key(),
-            LockFlags::MUTABLE,
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&non_fungible_local_id.to_key(), LockFlags::MUTABLE)?;
 
         if check_non_existence {
             let cur_non_fungible: Option<ScryptoValue> =
-                api.sys_read_substate_typed(non_fungible_handle)?;
+                api.key_value_entry_get_typed(non_fungible_handle)?;
 
             if let Some(..) = cur_non_fungible {
                 return Err(RuntimeError::ApplicationError(
@@ -150,9 +76,8 @@ where
             }
         }
 
-        // TODO: Change interface so that we accept Option instead
-        api.sys_write_substate(non_fungible_handle, scrypto_encode(&Some(value)).unwrap())?;
-        api.sys_drop_lock(non_fungible_handle)?;
+        api.key_value_entry_set_typed(non_fungible_handle, value)?;
+        api.key_value_entry_release(non_fungible_handle)?;
         ids.insert(non_fungible_local_id);
     }
 
@@ -195,19 +120,24 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // If address isn't user frame allocated or pre_allocated then
-        // using this node_id will fail on create_node below
-        let (resource_manager_substate, nf_store) =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
+
+        let instance_schema = InstanceSchema {
+            schema: non_fungible_schema.schema,
+            type_index: vec![non_fungible_schema.non_fungible],
+        };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&resource_manager_substate).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&Decimal::zero()).unwrap(),
-                scrypto_encode(&Own(nf_store)).unwrap(),
             ],
+            vec![vec![]],
         )?;
 
         let resource_address = ResourceAddress::new_or_panic(resource_address);
@@ -236,8 +166,9 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let (resource_manager, nf_store_id) =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
@@ -245,27 +176,40 @@ impl NonFungibleResourceManagerBlueprint {
         let supply: Decimal = Decimal::from(entries.len());
 
         let ids = entries.keys().cloned().collect();
-        let non_fungibles = entries
-            .into_iter()
-            .map(|(id, (value,))| (id, value))
-            .collect();
-        create_non_fungibles(
-            resource_address,
-            id_type,
-            nf_store_id,
-            non_fungibles,
-            false,
-            api,
-        )?;
+
+        let mut non_fungibles = Vec::new();
+        for (id, (value,)) in entries {
+            if id.id_type() != id_type {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                            id.id_type(),
+                            id_type,
+                        ),
+                    ),
+                ));
+            }
+
+            non_fungibles.push((
+                scrypto_encode(&id).unwrap(),
+                scrypto_encode(&value).unwrap(),
+            ));
+        }
+
+        let instance_schema = InstanceSchema {
+            schema: non_fungible_schema.schema,
+            type_index: vec![non_fungible_schema.non_fungible],
+        };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&resource_manager).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
-                scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
+            vec![non_fungibles],
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -290,38 +234,39 @@ impl NonFungibleResourceManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let mut ids = BTreeSet::new();
-        let mut non_fungibles = BTreeMap::new();
+        let mut non_fungibles = Vec::new();
         let supply = Decimal::from(entries.len());
         for (entry,) in entries {
             let uuid = Runtime::generate_uuid(api)?;
             let id = NonFungibleLocalId::uuid(uuid).unwrap();
             ids.insert(id.clone());
-            non_fungibles.insert(id, entry);
+            non_fungibles.push((
+                scrypto_encode(&id).unwrap(),
+                scrypto_encode(&entry).unwrap(),
+            ));
         }
 
-        let (data, nf_store_id) =
-            build_non_fungible_resource_manager_data_substate(non_fungible_schema, api)?;
+        let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
+            mutable_fields: non_fungible_schema.mutable_fields,
+        };
 
         let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
-        create_non_fungibles(
-            resource_address,
-            NonFungibleIdType::UUID,
-            nf_store_id,
-            non_fungibles,
-            false,
-            api,
-        )?;
+        let instance_schema = InstanceSchema {
+            schema: non_fungible_schema.schema,
+            type_index: vec![non_fungible_schema.non_fungible],
+        };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            Some(instance_schema),
             vec![
                 scrypto_encode(&NonFungibleIdType::UUID).unwrap(),
-                scrypto_encode(&data).unwrap(),
+                scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
-                scrypto_encode(&Own(nf_store_id)).unwrap(),
             ],
+            vec![non_fungibles],
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -342,15 +287,15 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
-
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
-            api.sys_drop_lock(handle)?;
+            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
+            api.field_lock_release(handle)?;
             if id_type == NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
@@ -363,35 +308,20 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let ids = {
-            let data_handle = api.lock_field(
-                NonFungibleResourceManagerOffset::Data.into(),
-                LockFlags::read_only(),
-            )?;
-            let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
-
             let ids: BTreeSet<NonFungibleLocalId> = entries.keys().cloned().collect();
             let non_fungibles = entries.into_iter().map(|(k, v)| (k, v.0)).collect();
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                nf_store.as_node_id().clone(),
-                non_fungibles,
-                true,
-                api,
-            )?;
-
-            api.sys_drop_lock(data_handle)?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, true, api)?;
 
             ids
         };
@@ -409,16 +339,17 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         // Check id_type
         let id_type = {
-            let id_type_handle = api.lock_field(
+            let id_type_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
-            let id_type: NonFungibleIdType = api.sys_read_substate_typed(id_type_handle)?;
-            api.sys_drop_lock(id_type_handle)?;
+            let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
+            api.field_lock_release(id_type_handle)?;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -433,37 +364,23 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update Total Supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply += 1;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let id = {
-            let data_handle = api.lock_field(
-                NonFungibleResourceManagerOffset::Data.into(),
-                LockFlags::read_only(),
-            )?;
-            let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
-
             // TODO: Is this enough bits to prevent hash collisions?
             // TODO: Possibly use an always incrementing timestamp
             let id = NonFungibleLocalId::uuid(Runtime::generate_uuid(api)?).unwrap();
             let non_fungibles = btreemap!(id.clone() => value);
 
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                nf_store.as_node_id().clone(),
-                non_fungibles,
-                false,
-                api,
-            )?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
 
-            api.sys_drop_lock(data_handle)?;
             id
         };
 
@@ -481,16 +398,17 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
         // Check type
         let id_type = {
-            let handle = api.lock_field(
+            let handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::IdType.into(),
                 LockFlags::MUTABLE,
             )?;
-            let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
-            api.sys_drop_lock(handle)?;
+            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
+            api.field_lock_release(handle)?;
 
             if id_type != NonFungibleIdType::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -504,23 +422,18 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Update total supply
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update data
         let ids = {
-            let data_handle = api.lock_field(
-                NonFungibleResourceManagerOffset::Data.into(),
-                LockFlags::read_only(),
-            )?;
-            let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
             let mut ids = BTreeSet::new();
             let mut non_fungibles = BTreeMap::new();
             for value in entries {
@@ -528,16 +441,7 @@ impl NonFungibleResourceManagerBlueprint {
                 ids.insert(id.clone());
                 non_fungibles.insert(id, value.0);
             }
-            create_non_fungibles(
-                resource_address,
-                id_type,
-                nf_store.as_node_id().clone(),
-                non_fungibles,
-                false,
-                api,
-            )?;
-
-            api.sys_drop_lock(data_handle)?;
+            create_non_fungibles(resource_address, id_type, non_fungibles, false, api)?;
 
             ids
         };
@@ -557,25 +461,24 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
-        let data_schema_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::DataSchema.into(),
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
+        let data_schema_handle = api.actor_lock_field(
+            NonFungibleResourceManagerOffset::MutableFields.into(),
             LockFlags::read_only(),
         )?;
-        let data_schema: NonFungibleResourceManagerDataSchemaSubstate =
-            api.sys_read_substate_typed(data_schema_handle)?;
-        let non_fungible_type_index = data_schema.non_fungible_type_index;
-        let mutable_fields = data_schema.mutable_fields.clone();
+        let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
+            api.field_lock_read_typed(data_schema_handle)?;
 
-        let nf_store_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::Data.into(),
-            LockFlags::read_only(),
-        )?;
-        let nf_store: Own = api.sys_read_substate_typed(nf_store_handle)?;
+        let mut instance_schema = api.actor_get_info()?.instance_schema.unwrap();
+        let kv_schema = instance_schema.schema;
+        let local_index = instance_schema.type_index.remove(0);
 
-        let kv_schema = api.get_key_value_store_info(nf_store.as_node_id())?;
+        let mutable_fields = mutable_fields.mutable_fields;
+
         let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
-        let sbor_path = schema_path.to_sbor_path(&kv_schema.schema, non_fungible_type_index);
+
+        let sbor_path = schema_path.to_sbor_path(&kv_schema, local_index);
         let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
             sbor_path
         } else {
@@ -594,20 +497,18 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.lock_key_value_store_entry(
-            nf_store.as_node_id(),
-            &id.to_key(),
-            LockFlags::MUTABLE,
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::MUTABLE)?;
 
         let mut non_fungible_entry: Option<ScryptoValue> =
-            api.sys_read_substate_typed(non_fungible_handle)?;
+            api.key_value_entry_get_typed(non_fungible_handle)?;
 
         if let Some(ref mut non_fungible) = non_fungible_entry {
             let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
             *value = data;
+            let buffer = scrypto_encode(non_fungible).unwrap();
 
-            api.sys_write_substate_typed(non_fungible_handle, &non_fungible_entry)?;
+            api.key_value_entry_set(non_fungible_handle, buffer)?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
             return Err(RuntimeError::ApplicationError(
@@ -619,7 +520,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.sys_drop_lock(non_fungible_handle)?;
+        api.key_value_entry_release(non_fungible_handle)?;
 
         Ok(())
     }
@@ -631,20 +532,10 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let data_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::Data.into(),
-            LockFlags::read_only(),
-        )?;
-
-        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
-
-        let non_fungible_handle = api.lock_key_value_store_entry(
-            nf_store.as_node_id(),
-            &id.to_key(),
-            LockFlags::read_only(),
-        )?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
         let non_fungible: Option<ScryptoValue> =
-            api.sys_read_substate_typed(non_fungible_handle)?;
+            api.key_value_entry_get_typed(non_fungible_handle)?;
         let exists = matches!(non_fungible, Option::Some(..));
 
         Ok(exists)
@@ -657,25 +548,16 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = ResourceAddress::new_or_panic(api.get_global_address()?.into());
-        let data_handle = api.lock_field(
-            NonFungibleResourceManagerOffset::Data.into(),
-            LockFlags::read_only(),
-        )?;
+        let resource_address =
+            ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
-        let nf_store: Own = api.sys_read_substate_typed(data_handle)?;
-
-        let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
-
-        let non_fungible_handle = api.lock_key_value_store_entry(
-            nf_store.as_node_id(),
-            &id.to_key(),
-            LockFlags::read_only(),
-        )?;
-        let wrapper: Option<ScryptoValue> = api.sys_read_substate_typed(non_fungible_handle)?;
+        let non_fungible_handle =
+            api.actor_lock_key_value_entry(&id.to_key(), LockFlags::read_only())?;
+        let wrapper: Option<ScryptoValue> = api.key_value_entry_get_typed(non_fungible_handle)?;
         if let Some(non_fungible) = wrapper {
             Ok(non_fungible)
         } else {
+            let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id.clone());
             Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleResourceManagerError(
                     NonFungibleResourceManagerError::NonFungibleNotFound(Box::new(
@@ -700,7 +582,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket_id = api.new_object(
+        let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
                 scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
@@ -729,33 +611,19 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         {
-            let total_supply_handle = api.lock_field(
+            let total_supply_handle = api.actor_lock_field(
                 NonFungibleResourceManagerOffset::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.sys_read_substate_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.sys_write_substate_typed(total_supply_handle, &total_supply)?;
+            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update
         {
-            let data_handle = api.lock_field(
-                NonFungibleResourceManagerOffset::Data.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let ids: NonFungibleResourceManagerDataSubstate =
-                api.sys_read_substate_typed(data_handle)?;
-
             for id in other_bucket.liquid.into_ids() {
-                let non_fungible_handle = api.lock_key_value_store_entry(
-                    ids.as_node_id(),
-                    &id.to_key(),
-                    LockFlags::MUTABLE,
-                )?;
-
-                api.sys_write_substate_typed(non_fungible_handle, None::<ScryptoValue>)?;
-                api.sys_drop_lock(non_fungible_handle)?;
+                api.actor_remove_key_value_entry(&id.to_key())?;
             }
         }
 
@@ -788,7 +656,7 @@ impl NonFungibleResourceManagerBlueprint {
             amount: Decimal::zero(),
             ids,
         };
-        let vault_id = api.new_object(
+        let vault_id = api.new_simple_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
                 scrypto_encode(&vault).unwrap(),
@@ -805,12 +673,12 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleResourceManagerOffset::IdType.into(),
             LockFlags::read_only(),
         )?;
 
-        let id_type: NonFungibleIdType = api.sys_read_substate_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
         let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
@@ -820,11 +688,11 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             NonFungibleResourceManagerOffset::TotalSupply.into(),
             LockFlags::read_only(),
         )?;
-        let total_supply: Decimal = api.sys_read_substate_typed(handle)?;
+        let total_supply: Decimal = api.field_lock_read_typed(handle)?;
         Ok(total_supply)
     }
 

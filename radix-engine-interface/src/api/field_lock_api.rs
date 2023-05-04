@@ -1,4 +1,3 @@
-use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
@@ -28,29 +27,28 @@ impl LockFlags {
     }
 }
 
-/// A high level api to read/write substates
-pub trait ClientSubstateLockApi<E: Debug> {
-    fn sys_read_substate(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
+pub type FieldLockHandle = u32;
 
-    fn sys_read_substate_typed<S: ScryptoDecode>(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<S, E> {
-        let buf = self.sys_read_substate(lock_handle)?;
+/// A high level api to read/write fields
+pub trait ClientFieldLockApi<E: Debug> {
+    fn field_lock_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, E>;
+
+    fn field_lock_read_typed<S: ScryptoDecode>(&mut self, handle: FieldLockHandle) -> Result<S, E> {
+        let buf = self.field_lock_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf).unwrap();
         Ok(typed_substate)
     }
 
-    fn sys_write_substate(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
+    fn field_lock_write(&mut self, handle: FieldLockHandle, buffer: Vec<u8>) -> Result<(), E>;
 
-    fn sys_write_substate_typed<S: ScryptoEncode>(
+    fn field_lock_write_typed<S: ScryptoEncode>(
         &mut self,
-        lock_handle: LockHandle,
+        handle: FieldLockHandle,
         substate: S,
     ) -> Result<(), E> {
         let buf = scrypto_encode(&substate).unwrap();
-        self.sys_write_substate(lock_handle, buf)
+        self.field_lock_write(handle, buf)
     }
 
-    fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
+    fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), E>;
 }

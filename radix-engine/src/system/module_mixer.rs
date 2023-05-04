@@ -24,7 +24,7 @@ use crate::track::interface::NodeSubstates;
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
@@ -135,7 +135,7 @@ impl SystemModuleMixer {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
 
         // Enable transaction limits
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
@@ -187,7 +187,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_teardown(api)?;
         }
@@ -223,7 +223,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         identifier: &KernelInvocation<SystemInvocation>,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_invoke(api, identifier)?;
         }
@@ -261,7 +261,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_push_frame(api, callee, update, args)?;
         }
@@ -293,37 +293,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        caller: &Option<Actor>,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_execution_start(api, caller)?;
+            KernelTraceModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_execution_start(api, caller)?;
+            CostingModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_execution_start(api, caller)?;
+            NodeMoveModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_execution_start(api, caller)?;
+            AuthModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_execution_start(api, caller)?;
+            LoggerModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_execution_start(api, caller)?;
+            TransactionRuntimeModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_execution_start(api, caller)?;
+            ExecutionTraceModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_execution_start(api, caller)?;
+            TransactionLimitsModule::on_execution_start(api)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_execution_start(api, caller)?;
+            EventsModule::on_execution_start(api)?;
         }
         Ok(())
     }
@@ -331,43 +328,42 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        caller: &Option<Actor>,
         update: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_execution_finish(api, caller, update)?;
+            KernelTraceModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_execution_finish(api, caller, update)?;
+            CostingModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_execution_finish(api, caller, update)?;
+            NodeMoveModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_execution_finish(api, caller, update)?;
+            AuthModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_execution_finish(api, caller, update)?;
+            LoggerModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_execution_finish(api, caller, update)?;
+            TransactionRuntimeModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_execution_finish(api, caller, update)?;
+            ExecutionTraceModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_execution_finish(api, caller, update)?;
+            TransactionLimitsModule::on_execution_finish(api, update)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_execution_finish(api, caller, update)?;
+            EventsModule::on_execution_finish(api, update)?;
         }
         Ok(())
     }
 
     #[trace_resources]
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_pop_frame(api)?;
         }
@@ -403,7 +399,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_invoke(api, output_size)?;
         }
@@ -440,7 +436,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         entity_type: Option<EntityType>,
         virtual_node: bool,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_allocate_node_id(api, entity_type, virtual_node)?;
         }
@@ -477,7 +473,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         node_id: &NodeId,
         node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_create_node(api, node_id, node_substates)?;
         }
@@ -513,7 +509,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_create_node(api, node_id)?;
         }
@@ -549,7 +545,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_drop_node(api, node_id)?;
         }
@@ -582,7 +578,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_drop_node(api)?;
         }
@@ -617,11 +613,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleId,
+        module_id: &ModuleNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
         }
@@ -677,7 +673,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         first_lock_from_db: bool,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::after_lock_substate(api, handle, first_lock_from_db, size)?;
         }
@@ -714,7 +710,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_read_substate(api, lock_handle, size)?;
         }
@@ -751,7 +747,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_write_substate(api, lock_handle, size)?;
         }
@@ -787,7 +783,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = api.kernel_get_callback().modules.enabled_modules;
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
             KernelTraceModule::on_drop_lock(api, lock_handle)?;
         }
