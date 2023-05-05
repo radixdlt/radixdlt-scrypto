@@ -1586,7 +1586,13 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        let auth_zone_id = self
+            .api
+            .kernel_get_system()
+            .modules
+            .auth
+            .last_auth_zone()
+            .expect("Auth zone missing");
 
         Ok(auth_zone_id.into())
     }
@@ -1598,7 +1604,13 @@ where
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        let auth_zone_id = self
+            .api
+            .kernel_get_system()
+            .modules
+            .auth
+            .last_auth_zone()
+            .expect("Auth zone missing");
 
         // Authenticate
         if !Authentication::verify_method_auth(
