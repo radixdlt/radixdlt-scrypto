@@ -435,7 +435,8 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 heap.get_substate(node_id, module_num, substate_key)
                     .expect("Substate locked but missing")
-            };
+            }
+            .clone();
 
             // Process owns
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();

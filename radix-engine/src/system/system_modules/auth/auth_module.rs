@@ -3,8 +3,6 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::call_frame::StableReferenceType;
-use crate::kernel::call_frame::Visibility;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -109,6 +107,7 @@ impl AuthModule {
     }
 
     fn method_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        is_direct_access: bool,
         node_id: &NodeId,
         module_id: &ObjectModuleId,
         ident: &str,
@@ -122,41 +121,38 @@ impl AuthModule {
                 )?]
             }
             (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(*module_id, ident);
+                let mut authorizations = Vec::new();
 
+                let method_key = MethodKey::new(*module_id, ident);
                 let object_info = {
                     let mut system = SystemService::new(api);
                     system.get_object_info(node_id)?
                 };
-
-                let mut auths = Vec::new();
-
                 if let Some(parent) = object_info.outer_object {
-                    let visibility = api.kernel_get_node_visibility(node_id);
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = Self::method_authorization_stateless(
-                        visibility,
+                        is_direct_access,
                         parent.as_node_id(),
                         ObjectKey::ChildBlueprint(object_info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
 
-                    auths.push(auth);
+                    authorizations.push(auth);
                 }
 
-                if info.global {
+                if object_info.global {
                     let auth = Self::method_authorization_stateless(
-                        RefType::Normal,
+                        is_direct_access,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
                         api,
                     )?;
-                    auths.push(auth);
+                    authorizations.push(auth);
                 }
 
-                auths
+                authorizations
             }
         };
 
@@ -164,7 +160,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
-        visibility: BTreeSet<Visibility>,
+        is_direct_access: bool,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -179,8 +175,6 @@ impl AuthModule {
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-        let is_direct_access = matches!(ref_type, Visibility::DirectAccess);
 
         let method_auth = match object_key {
             ObjectKey::SELF => access_rules
@@ -224,7 +218,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        _call_frame_update: &mut Message,
+        _message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -233,8 +227,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 node_id,
                 module_id,
                 ident,
+                is_direct_access,
                 ..
-            }) => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
+            }) => Self::method_auth(
+                *is_direct_access,
+                node_id,
+                module_id,
+                ident.as_str(),
+                &args,
+                api,
+            )?,
             Actor::Function { blueprint, ident } => {
                 vec![Self::function_auth(blueprint, ident.as_str(), api)?]
             }

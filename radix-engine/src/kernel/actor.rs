@@ -16,6 +16,7 @@ pub struct MethodActor {
     pub ident: String,
     pub object_info: ObjectInfo,
     pub instance_context: Option<InstanceContext>,
+    pub is_direct_access: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
@@ -82,6 +83,7 @@ impl Actor {
         method: MethodIdentifier,
         object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
+        is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
             global_address,
@@ -90,6 +92,7 @@ impl Actor {
             ident: method.2,
             object_info,
             instance_context,
+            is_direct_access,
         })
     }
 

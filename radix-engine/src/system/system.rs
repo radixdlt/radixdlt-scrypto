@@ -813,6 +813,7 @@ where
                 identifier.clone(),
                 object_info,
                 instance_context,
+                false, // TODO: add direct access
             ),
             sys_invocation: SystemInvocation {
                 blueprint,

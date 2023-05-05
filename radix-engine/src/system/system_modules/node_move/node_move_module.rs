@@ -151,10 +151,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        call_frame_update: &mut Message,
+        message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.move_nodes {
+        for node_id in &message.move_nodes {
             // TODO: Move into system layer
             Self::prepare_move_downstream(*node_id, callee, api)?;
         }
@@ -164,9 +164,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        call_frame_update: &Message,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.move_nodes {
+        for node_id in &message.move_nodes {
             Self::prepare_move_upstream(*node_id, api)?;
         }
 
