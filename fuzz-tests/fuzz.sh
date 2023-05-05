@@ -176,10 +176,9 @@ function generate_input() {
 
         else
             # Collect input data
-            #cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
             popd
 
-            cargo nextest run fuzz_tx  --release  --features skip_crash
+            cargo nextest run test_generate_fuzz_input_data  --release  --features skip_crash
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}

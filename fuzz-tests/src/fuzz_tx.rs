@@ -809,11 +809,11 @@ pub enum TxStatus {
     DecodeError,
 }
 
+// This test tries is supposed to generate fuzz input data.
+// It generates and executes manifest. If transaction successful then save the manifest data.
 #[test]
-// This test verifies whether it is still possible to parse manifest raw files and execute them.
-// If it fails with TxStatus::DecodeError then most likely that manifest format has changed and
-// input files shall be recreated.
-fn test_fuzz_tx() {
+#[cfg(not(feature = "decode_tx_manifest"))]
+fn test_generate_fuzz_input_data() {
     use rand::{Rng, RngCore};
     use rand_chacha::rand_core::SeedableRng;
     use rand_chacha::ChaCha8Rng;
@@ -837,6 +837,59 @@ fn test_fuzz_tx() {
             _ => {}
         }
     }
+}
+
+// This test tries is supposed to generate fuzz input data.
+// It runs radix-engine-tests tests with "dump_manifest_to_file" flag,
+// which writes each used transaction manifest to file.
+#[test]
+#[cfg(feature = "decode_tx_manifest")]
+fn test_generate_fuzz_input_data() {
+    /*
+    cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
+    mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${raw_dir}
+    */
+    use std::fs;
+
+    use std::io::{BufRead, BufReader};
+    use std::process::Command;
+    use std::process::Stdio;
+    const WORK_DIR: &str = "/Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto";
+    const PACKAGE: &str = "radix-engine-tests";
+
+    let mut child = Command::new("cargo")
+        .current_dir(WORK_DIR)
+        .stdin(Stdio::null())
+        .arg("nextest")
+        .arg("run")
+        .arg("-p")
+        .arg(PACKAGE)
+        .arg("--release")
+        .arg("--features")
+        .arg("dump_manifest_to_file")
+        .spawn()
+        .expect("failed to execute process");
+
+    if let Some(stdout) = &mut child.stdout {
+        let lines = BufReader::new(stdout).lines().enumerate().take(10);
+        for (_, line) in lines {
+            println!("{:?}", line);
+        }
+    }
+
+    child.wait().expect("failed to wait");
+
+    let entries = fs::read_dir(format!("{}/{}", WORK_DIR, PACKAGE)).unwrap();
+
+    entries
+        .filter_map(|entry| Some(entry.unwrap()))
+        .for_each(|entry| {
+            let path = entry.path();
+            let fname = path.file_name().unwrap().to_str().unwrap();
+            if fname.ends_with(".raw") && fname.starts_with("manifest_") {
+                fs::rename(entry.path(), fname).unwrap();
+            }
+        });
 }
 
 // Initialize static objects outside the fuzzing loop to assure deterministic instrumentation
