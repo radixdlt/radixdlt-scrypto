@@ -186,9 +186,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_take_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _first_scan_from_db: bool,
-    ) -> Result<(), RuntimeError>
-    {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
-
 }

@@ -86,10 +86,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(
-        first_scan_from_db: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_take_substates<Y>(first_scan_from_db: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

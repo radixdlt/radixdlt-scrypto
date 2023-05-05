@@ -512,12 +512,12 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, bool), CallFrameScanSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let substates = if heap.contains_node(node_id) {
-            heap.scan_substates(node_id, module_num, count)
+        let (substates, first_read_from_db) = if heap.contains_node(node_id) {
+            (heap.scan_substates(node_id, module_num, count), false)
         } else {
             store.scan_substates(node_id, module_num, count)
         };
@@ -535,7 +535,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok(substates)
+        Ok((substates, first_read_from_db))
     }
 
     pub fn take_substates<'f, S: SubstateStore>(
@@ -545,7 +545,7 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>,bool), CallFrameTakeSortedSubstatesError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, bool), CallFrameTakeSortedSubstatesError> {
         self.get_node_visibility(node_id).ok_or_else(|| {
             CallFrameTakeSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;

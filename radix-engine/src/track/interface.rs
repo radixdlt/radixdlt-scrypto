@@ -66,7 +66,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue>;
+    ) -> (Vec<IndexedScryptoValue>, bool);
 
     fn take_substates(
         &mut self,

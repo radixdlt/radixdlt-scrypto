@@ -239,17 +239,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>
+        Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_scan_substate(api, sorted, first_scan_from_db)
     }
 
-    fn on_take_substates<Y>(
-        first_scan_from_db: bool,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_take_substates<Y>(first_scan_from_db: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>
+        Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_take_substates(api, first_scan_from_db)
     }

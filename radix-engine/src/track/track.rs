@@ -610,7 +610,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, bool), TakeSubstateError> {
-        let (tracked, first_read) = self.get_tracked_substate(node_id, module_num, substate_key.clone());
+        let (tracked, first_read) =
+            self.get_tracked_substate(node_id, module_num, substate_key.clone());
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
                 return Err(TakeSubstateError::SubstateLocked(
@@ -629,7 +630,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> { //todo MS: return first read
+    ) -> (Vec<IndexedScryptoValue>, bool) {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -642,7 +643,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_module) = tracked_module {
             for tracked in tracked_module.substates.values() {
                 if items.len() == count {
-                    return items;
+                    return (items, false);
                 }
 
                 // TODO: Check that substate is not write locked
@@ -654,8 +655,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return items;
+            return (items, false);
         }
+
+        let first_read = tracked_module.is_none();
 
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
@@ -683,7 +686,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(num_iterations);
         tracked_module.range_read = Some(next_range_read);
 
-        items
+        (items, first_read)
     }
 
     fn take_substates(

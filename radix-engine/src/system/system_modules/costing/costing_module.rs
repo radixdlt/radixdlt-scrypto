@@ -409,13 +409,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         if first_scan_from_db {
             api.kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(
-                CostingReason::ScanSubstateFirstTime,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstateFirstTime),
-                1,
-            )?;
+                .modules
+                .costing
+                .apply_execution_cost(
+                    CostingReason::ScanSubstateFirstTime,
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstateFirstTime),
+                    1,
+                )?;
         }
         Ok(())
     }
@@ -426,13 +426,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         if first_scan_from_db {
             api.kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(
-                CostingReason::TakeSubstatesFirstTime,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstatesFirstTime),
-                1,
-            )?;
+                .modules
+                .costing
+                .apply_execution_cost(
+                    CostingReason::TakeSubstatesFirstTime,
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstatesFirstTime),
+                    1,
+                )?;
         }
         Ok(())
     }
