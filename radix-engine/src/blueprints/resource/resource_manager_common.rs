@@ -241,7 +241,7 @@ fn build_access_rules(
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -253,7 +253,7 @@ fn build_access_rules(
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -265,7 +265,7 @@ fn build_access_rules(
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -277,7 +277,7 @@ fn build_access_rules(
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -291,7 +291,7 @@ fn build_access_rules(
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -300,7 +300,7 @@ fn build_access_rules(
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -312,7 +312,7 @@ fn build_access_rules(
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
@@ -324,7 +324,7 @@ fn build_access_rules(
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
                 NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
