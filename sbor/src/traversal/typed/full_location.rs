@@ -6,7 +6,7 @@ use crate::traversal::*;
 use crate::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FullLocation<'s, E: CustomTypeExtension> {
+pub struct FullLocation<'s, E: CustomExtension> {
     pub start_offset: usize,
     pub end_offset: usize,
     pub ancestor_path: Vec<(ContainerState<E::CustomTraversal>, ContainerType<'s>)>,
@@ -14,13 +14,13 @@ pub struct FullLocation<'s, E: CustomTypeExtension> {
     pub error: Option<TypedTraversalError<E>>,
 }
 
-impl<'s, E: CustomTypeExtension> FullLocation<'s, E> {
+impl<'s, E: CustomExtension> FullLocation<'s, E> {
     /// This enables a full path to be provided in an error message, which can have a debug such as:
     /// EG: `MyStruct.hello[0]->MyEnum::Option2{1}.inner[0]->MyEnum::Option1{0}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key`
     ///
     /// As much information is extracted from the Type as possible, falling back to data from the value model
     /// if the Type is Any.
-    pub fn path_to_string(&self, schema: &Schema<E>) -> String {
+    pub fn path_to_string(&self, schema: &Schema<E::CustomSchema>) -> String {
         let mut buf = String::new();
         let mut is_first = true;
         for (container_state, container_type) in self.ancestor_path.iter() {

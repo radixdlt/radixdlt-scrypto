@@ -13,13 +13,13 @@ use crate::*;
 /// If you need to check the validity of a payload first:
 /// * If you have a schema - use the typed traverser
 /// * If it is schemaless - use the untyped traverser
-pub struct RawPayload<'a, E: CustomTypeExtension> {
+pub struct RawPayload<'a, E: CustomExtension> {
     full_payload: Cow<'a, [u8]>,
     root_value_kind: ValueKind<E::CustomValueKind>,
     custom_extension: PhantomData<E>,
 }
 
-impl<'a, E: CustomTypeExtension> RawPayload<'a, E> {
+impl<'a, E: CustomExtension> RawPayload<'a, E> {
     /// The bytes should include the prefix byte (eg 0x5b for basic SBOR).
     ///
     /// It is the caller's responsibility to ensure that a valid SBOR payload for extension E is
@@ -124,7 +124,7 @@ impl<'a, E: CustomTypeExtension> RawPayload<'a, E> {
     }
 }
 
-impl<'a, E: CustomTypeExtension> TryFrom<&'a [u8]> for RawPayload<'a, E> {
+impl<'a, E: CustomExtension> TryFrom<&'a [u8]> for RawPayload<'a, E> {
     type Error = ();
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
@@ -132,7 +132,7 @@ impl<'a, E: CustomTypeExtension> TryFrom<&'a [u8]> for RawPayload<'a, E> {
     }
 }
 
-impl<Ext: CustomTypeExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::CustomValueKind, E>
+impl<Ext: CustomExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::CustomValueKind, E>
     for RawPayload<'_, Ext>
 {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -153,13 +153,13 @@ impl<Ext: CustomTypeExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::Cus
 ///
 /// Categorize can't be implemented, because we can't guarantee the value kind is constant.
 /// This means RawValue can't be put as an immediate child to a Vec or Map.
-pub struct RawValue<'a, E: CustomTypeExtension> {
+pub struct RawValue<'a, E: CustomExtension> {
     value_kind: ValueKind<E::CustomValueKind>,
     value_body: Cow<'a, [u8]>,
     custom_extension: PhantomData<E>,
 }
 
-impl<'a, E: CustomTypeExtension> RawValue<'a, E> {
+impl<'a, E: CustomExtension> RawValue<'a, E> {
     /// The bytes should include the value kind byte, but not the payload prefix byte.
     ///
     /// The bytes must be at least 1 byte long, else this will panic.
@@ -205,7 +205,7 @@ impl<'a, E: CustomTypeExtension> RawValue<'a, E> {
     }
 }
 
-impl<Ext: CustomTypeExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::CustomValueKind, E>
+impl<Ext: CustomExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::CustomValueKind, E>
     for RawValue<'_, Ext>
 {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -217,7 +217,7 @@ impl<Ext: CustomTypeExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::Cus
     }
 }
 
-impl<Ext: CustomTypeExtension, D: Decoder<Ext::CustomValueKind>> Decode<Ext::CustomValueKind, D>
+impl<Ext: CustomExtension, D: Decoder<Ext::CustomValueKind>> Decode<Ext::CustomValueKind, D>
     for RawValue<'_, Ext>
 {
     fn decode_body_with_value_kind(
@@ -239,7 +239,7 @@ impl<Ext: CustomTypeExtension, D: Decoder<Ext::CustomValueKind>> Decode<Ext::Cus
     }
 }
 
-impl<Ext: CustomTypeExtension, C: CustomTypeKind<GlobalTypeId>> Describe<C> for RawValue<'_, Ext> {
+impl<Ext: CustomExtension, C: CustomTypeKind<GlobalTypeId>> Describe<C> for RawValue<'_, Ext> {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
 }
 

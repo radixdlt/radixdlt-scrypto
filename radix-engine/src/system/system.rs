@@ -1,3 +1,4 @@
+use super::payload_validation::*;
 use super::system_modules::auth::{convert_contextless, Authentication};
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
@@ -60,16 +61,32 @@ where
         }
     }
 
-    fn validate_payload_against_blueprint_and_instance_schema<'s>(
+    pub fn validate_payload<'s>(
+        &mut self,
+        payload: &[u8],
+        schema: &'s ScryptoSchema,
+        type_index: LocalTypeIndex,
+    ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
+        let validation_context: Box<dyn TypeInfoLookup> =
+            Box::new(SystemServiceTypeInfoLookup::new(self));
+        validate_payload_against_schema::<ScryptoCustomExtension, _>(
+            payload,
+            schema,
+            type_index,
+            &validation_context,
+        )
+    }
+
+    fn validate_payload_against_blueprint_or_instance_schema<'s>(
         &'s mut self,
         payload: &Vec<u8>,
         type_schema: &TypeSchema,
         blueprint_schema: &'s ScryptoSchema,
         instance_schema: &'s Option<InstanceSchema>,
-    ) -> Result<(), LocatedValidationError<ScryptoCustomTypeExtension>> {
+    ) -> Result<(), LocatedValidationError<ScryptoCustomExtension>> {
         match type_schema {
             TypeSchema::Blueprint(index) => {
-                validate_payload_against_schema(payload, blueprint_schema, index.clone(), self)?;
+                self.validate_payload(payload, blueprint_schema, *index)?;
             }
             TypeSchema::Instance(instance_index) => {
                 let instance_schema = instance_schema.as_ref().unwrap();
@@ -79,7 +96,7 @@ where
                     .unwrap()
                     .clone();
 
-                validate_payload_against_schema(&payload, &instance_schema.schema, index, self)?;
+                self.validate_payload(payload, &instance_schema.schema, index)?;
             }
         }
 
@@ -312,19 +329,14 @@ where
             if let Some((_, field_type_index)) = &blueprint_schema.tuple_module {
                 let mut substate_fields = BTreeMap::new();
                 for (i, field) in fields.into_iter().enumerate() {
-                    validate_payload_against_schema(
-                        &field,
-                        &blueprint_schema.schema,
-                        field_type_index[i],
-                        self,
-                    )
-                    .map_err(|err| {
-                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                            CreateObjectError::InvalidSubstateWrite(
-                                err.error_message(&blueprint_schema.schema),
-                            ),
-                        )))
-                    })?;
+                    self.validate_payload(&field, &blueprint_schema.schema, field_type_index[i])
+                        .map_err(|err| {
+                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                CreateObjectError::InvalidSubstateWrite(
+                                    err.error_message(&blueprint_schema.schema),
+                                ),
+                            )))
+                        })?;
 
                     substate_fields.insert(
                         SubstateKey::Tuple(i as u8),
@@ -356,7 +368,7 @@ where
 
                     let mut kv_substates = BTreeMap::new();
                     for (key, value) in entries {
-                        self.validate_payload_against_blueprint_and_instance_schema(
+                        self.validate_payload_against_blueprint_or_instance_schema(
                             &key,
                             &blueprint_kv_schema.key,
                             &blueprint_schema.schema,
@@ -370,7 +382,7 @@ where
                             )))
                         })?;
 
-                        self.validate_payload_against_blueprint_and_instance_schema(
+                        self.validate_payload_against_blueprint_or_instance_schema(
                             &value,
                             &blueprint_kv_schema.value,
                             &blueprint_schema.schema,
@@ -458,11 +470,12 @@ where
 
         match data {
             SystemLockData::Field(FieldLockData::Write { index, schema }) => {
-                if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidSubstateWrite(e.error_message(&schema)),
-                    ));
-                };
+                self.validate_payload(&buffer, &schema, index)
+                    .map_err(|e| {
+                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
+                            e.error_message(&schema),
+                        ))
+                    })?;
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteLock));
@@ -896,11 +909,12 @@ where
                 index,
                 can_own,
             }) => {
-                if let Err(e) = validate_payload_against_schema(&buffer, &schema, index, self) {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidSubstateWrite(e.error_message(&schema)),
-                    ));
-                };
+                self.validate_payload(&buffer, &schema, index)
+                    .map_err(|e| {
+                        RuntimeError::SystemError(SystemError::InvalidSubstateWrite(
+                            e.error_message(&schema),
+                        ))
+                    })?;
 
                 let substate = IndexedScryptoValue::from_slice(&buffer)
                     .expect("Should be valid due to payload check");
@@ -1009,13 +1023,12 @@ where
             }
         };
 
-        if let Err(e) =
-            validate_payload_against_schema(key, &info.schema, info.kv_store_schema.key, self)
-        {
-            return Err(RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
-                e.error_message(&info.schema),
-            )));
-        };
+        self.validate_payload(key, &info.schema, info.kv_store_schema.key)
+            .map_err(|e| {
+                RuntimeError::SystemError(SystemError::InvalidKeyValueKey(
+                    e.error_message(&info.schema),
+                ))
+            })?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Write {
@@ -1703,13 +1716,10 @@ where
                 ApplicationError::EventError(Box::new(EventError::InvalidActor)),
             )),
         }?;
-
-        // Validating the event data against the event schema
-        validate_payload_against_schema(
+        self.validate_payload(
             &event_data,
             &blueprint_schema.schema,
             event_type_identifier.1,
-            self,
         )
         .map_err(|err| {
             RuntimeError::ApplicationError(ApplicationError::EventError(Box::new(
