@@ -34,7 +34,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -85,7 +85,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -140,7 +140,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
         allocation_amount,
     )])];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         data_ingestion_receipts,
@@ -197,7 +197,7 @@ fn test_genesis_resource_with_initial_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -297,7 +297,7 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,

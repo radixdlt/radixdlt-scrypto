@@ -113,6 +113,7 @@ where
 {
     substate_db: &'s mut S,
     scrypto_vm: &'i ScryptoVm<W>,
+    trace: bool,
 }
 
 impl<'s, 'i, S, W> Bootstrapper<'s, 'i, S, W>
@@ -120,10 +121,15 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s mut S, scrypto_vm: &'i ScryptoVm<W>) -> Bootstrapper<'s, 'i, S, W> {
+    pub fn new(
+        substate_db: &'s mut S,
+        scrypto_vm: &'i ScryptoVm<W>,
+        trace: bool,
+    ) -> Bootstrapper<'s, 'i, S, W> {
         Bootstrapper {
             substate_db,
             scrypto_vm,
+            trace,
         }
     }
 
@@ -193,7 +199,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(self.trace),
             &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 

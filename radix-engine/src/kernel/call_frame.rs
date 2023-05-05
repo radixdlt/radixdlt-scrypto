@@ -264,15 +264,26 @@ impl<L: Clone> CallFrame<L> {
             to.owned_root_nodes.insert(node_id, 0);
         }
 
+        // Only allow move of `Global` and `DirectAccess` references
         for node_id in message.copy_references {
-            let reference_type = from
-                .stable_references
-                .get(&node_id)
-                .ok_or_else(|| ExchangeError::StableRefNotFound(node_id))?;
+            let visibility = from.get_node_visibility(&node_id);
 
-            // Note that GLOBAL and DirectAccess reference can't co-exist,
-            // so it's safe to overwrite.
-            to.stable_references.insert(node_id, reference_type.clone());
+            // Note that GLOBAL and DirectAccess references are mutually exclusive
+            if visibility
+                .iter()
+                .any(|x| matches!(x, Visibility::StableReference(StableReferenceType::Global)))
+            {
+                to.add_global_reference(GlobalAddress::new_or_panic(node_id.into()))
+            } else if visibility.iter().any(|x| {
+                matches!(
+                    x,
+                    Visibility::StableReference(StableReferenceType::DirectAccess)
+                )
+            }) {
+                to.add_direct_access_reference(InternalAddress::new_or_panic(node_id.into()))
+            } else {
+                return Err(ExchangeError::StableRefNotFound(node_id));
+            }
         }
 
         Ok(())

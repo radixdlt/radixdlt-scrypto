@@ -167,7 +167,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -234,7 +234,7 @@ pub fn handle_manifest<O: std::io::Write>(
         None => {
             let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
+            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -316,7 +316,7 @@ pub fn export_package_schema(
 ) -> Result<IndexedPackageSchema, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let package_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
@@ -347,7 +347,7 @@ pub fn export_blueprint_schema(
 pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
