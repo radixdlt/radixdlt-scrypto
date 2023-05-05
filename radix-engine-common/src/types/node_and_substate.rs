@@ -44,10 +44,13 @@ impl NodeId {
         EntityType::from_repr(self.0[0])
     }
 
+    /// `Global` means root nodes in the store
     pub const fn is_global(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global())
     }
 
+    /// `Internal` means non-global in current implementation.
+    /// It includes both non-root nodes in the store and ALL nodes in heap (regardless they're root or not)
     pub const fn is_internal(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal())
     }

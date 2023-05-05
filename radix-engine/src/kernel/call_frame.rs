@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
+use super::actor::MethodActor;
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
 
@@ -187,6 +188,103 @@ pub enum CallFrameTakeSortedSubstatesError {
 }
 
 impl<L: Clone> CallFrame<L> {
+    pub fn new_root() -> Self {
+        Self {
+            depth: 0,
+            actor: None,
+            stable_references: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
+            owned_root_nodes: index_map_new(),
+            next_lock_handle: 0u32,
+            locks: index_map_new(),
+        }
+    }
+
+    pub fn new_child_from_parent(
+        parent: &mut CallFrame<L>,
+        actor: Actor,
+        message: Message,
+    ) -> Result<Self, CreateFrameError> {
+        let optional_method_actor = actor.try_as_method().cloned();
+        let mut frame = Self {
+            depth: parent.depth + 1,
+            actor: Some(actor),
+            stable_references: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
+            owned_root_nodes: index_map_new(),
+            next_lock_handle: 0u32,
+            locks: index_map_new(),
+        };
+
+        // Copy references and move nodes
+        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::MoveError)?;
+
+        // Additional check on actor
+        if let Some(method_actor) = optional_method_actor {
+            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
+            }
+            if let Some(outer_global_object) = method_actor.object_info.outer_object {
+                frame.stable_references.insert(
+                    outer_global_object.into_node_id(),
+                    StableReferenceType::Global,
+                );
+            }
+        }
+
+        // Set up transient references
+        if let Some(MethodActor { node_id, .. }) = optional_method_actor {
+            if node_id.is_internal() {
+                frame
+                    .transient_references
+                    .entry(node_id)
+                    .or_default()
+                    .add_assign(1);
+            }
+        }
+        for node_id in &frame.owned_root_nodes {
+            // frame owned nodes are by nature non-Global
+            frame
+                .transient_references
+                .entry(node_id.0.clone())
+                .or_default()
+                .add_assign(1);
+        }
+
+        Ok(frame)
+    }
+
+    pub fn exchange(
+        from: &mut CallFrame<L>,
+        to: &mut CallFrame<L>,
+        message: Message,
+    ) -> Result<(), MoveError> {
+        for node_id in message.move_nodes {
+            // move re nodes to upstream call frame.
+            from.take_node_internal(&node_id)?;
+            to.owned_root_nodes.insert(node_id, 0u32);
+        }
+
+        for node_id in message.copy_references {
+            // Make sure not to allow owned nodes to be passed as references upstream
+            let ref_data = from
+                .stable_references
+                .get(&node_id)
+                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
+
+            to.stable_references
+                .entry(node_id)
+                .and_modify(|e| {
+                    if e.ref_type == ReferenceType::DirectAccess {
+                        e.ref_type = ref_data.ref_type
+                    }
+                })
+                .or_insert(ref_data.clone());
+        }
+
+        Ok(())
+    }
+
     // TODO: Remove
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
@@ -624,86 +722,6 @@ impl<L: Clone> CallFrame<L> {
         }
 
         Ok(substates)
-    }
-
-    pub fn new_root() -> Self {
-        Self {
-            depth: 0,
-            actor: None,
-            stable_references: NonIterMap::new(),
-            transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
-        }
-    }
-
-    pub fn new_child_from_parent(
-        parent: &mut CallFrame<L>,
-        actor: Actor,
-        message: Message,
-    ) -> Result<Self, CreateFrameError> {
-        let optional_method_actor = actor.try_as_method().cloned();
-        let mut frame = Self {
-            depth: parent.depth + 1,
-            actor: Some(actor),
-            stable_references: NonIterMap::new(),
-            transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
-        };
-
-        // Copy references and move nodes
-        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::MoveError)?;
-
-        // Additional check on actor
-        if let Some(method_actor) = optional_method_actor {
-            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
-            }
-            if let Some(outer_global_object) = method_actor.object_info.outer_object {
-                frame.stable_references.insert(
-                    outer_global_object.into_node_id(),
-                    StableReferenceType {
-                        ref_type: ReferenceType::Normal,
-                    },
-                );
-            }
-        }
-
-        Ok(frame)
-    }
-
-    pub fn exchange(
-        from: &mut CallFrame<L>,
-        to: &mut CallFrame<L>,
-        message: Message,
-    ) -> Result<(), MoveError> {
-        for node_id in message.move_nodes {
-            // move re nodes to upstream call frame.
-            from.take_node_internal(&node_id)?;
-            to.owned_root_nodes.insert(node_id, 0u32);
-        }
-
-        for node_id in message.copy_references {
-            // Make sure not to allow owned nodes to be passed as references upstream
-            let ref_data = from
-                .stable_references
-                .get(&node_id)
-                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
-
-            to.stable_references
-                .entry(node_id)
-                .and_modify(|e| {
-                    if e.ref_type == ReferenceType::DirectAccess {
-                        e.ref_type = ref_data.ref_type
-                    }
-                })
-                .or_insert(ref_data.clone());
-        }
-
-        Ok(())
     }
 
     pub fn drop_all_locks<S: SubstateStore>(
