@@ -88,10 +88,9 @@ pub struct CallFrame<L> {
     /// TODO: Move to an RENode
     actor: Option<Actor>,
 
-    /// Node refs which are immortal during the life time of this frame:
-    /// - Any node refs received from other frames;
-    /// - Global node refs obtained through substate locking.
-    immortal_node_refs: NonIterMap<NodeId, RENodeRefData>,
+    /// Stable references points to nodes in track, which can't moved/deleted.
+    /// Current two types: `GLOBAL` and `DirectAccess`.
+    stable_references: NonIterMap<NodeId, RENodeRefData>,
 
     /// Node refs obtained through substate locking, which will be dropped upon unlocking.
     temp_node_refs: NonIterMap<NodeId, u32>,
@@ -267,7 +266,7 @@ impl<L: Clone> CallFrame<L> {
             // TODO: fix this ugly condition
             if node_id.is_global() {
                 // May overwrite existing node refs (for better visibility origin)
-                self.immortal_node_refs.insert(
+                self.stable_references.insert(
                     node_id.clone(),
                     RENodeRefData {
                         ref_type: RefType::Normal,
@@ -534,7 +533,7 @@ impl<L: Clone> CallFrame<L> {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {
-                self.immortal_node_refs.insert(
+                self.stable_references.insert(
                     node_ref.clone(),
                     RENodeRefData {
                         ref_type: RefType::Normal,
@@ -568,7 +567,7 @@ impl<L: Clone> CallFrame<L> {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {
-                self.immortal_node_refs.insert(
+                self.stable_references.insert(
                     node_ref.clone(),
                     RENodeRefData {
                         ref_type: RefType::Normal,
@@ -604,7 +603,7 @@ impl<L: Clone> CallFrame<L> {
             let refs = substate.references();
             // TODO: verify that refs does not have local refs
             for node_ref in refs {
-                self.immortal_node_refs.insert(
+                self.stable_references.insert(
                     node_ref.clone(),
                     RENodeRefData {
                         ref_type: RefType::Normal,
@@ -620,7 +619,7 @@ impl<L: Clone> CallFrame<L> {
         Self {
             depth: 0,
             actor: None,
-            immortal_node_refs: NonIterMap::new(),
+            stable_references: NonIterMap::new(),
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
@@ -637,7 +636,7 @@ impl<L: Clone> CallFrame<L> {
         let mut frame = Self {
             depth: parent.depth + 1,
             actor: Some(actor),
-            immortal_node_refs: NonIterMap::new(),
+            stable_references: NonIterMap::new(),
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
@@ -653,7 +652,7 @@ impl<L: Clone> CallFrame<L> {
                 return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
             }
             if let Some(outer_global_object) = method_actor.object_info.outer_object {
-                frame.immortal_node_refs.insert(
+                frame.stable_references.insert(
                     outer_global_object.into_node_id(),
                     RENodeRefData {
                         ref_type: RefType::Normal,
@@ -679,11 +678,11 @@ impl<L: Clone> CallFrame<L> {
         for node_id in message.copy_references {
             // Make sure not to allow owned nodes to be passed as references upstream
             let ref_data = from
-                .immortal_node_refs
+                .stable_references
                 .get(&node_id)
                 .ok_or_else(|| MoveError::RefNotFound(node_id))?;
 
-            to.immortal_node_refs
+            to.stable_references
                 .entry(node_id)
                 .and_modify(|e| {
                     if e.ref_type == RefType::DirectAccess {
@@ -767,7 +766,7 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn add_ref(&mut self, node_id: NodeId, visibility: RefType) {
-        self.immortal_node_refs
+        self.stable_references
             .insert(node_id, RENodeRefData::new(visibility));
     }
 
@@ -788,7 +787,7 @@ impl<L: Clone> CallFrame<L> {
                 let refs = substate_value.references();
                 let child_nodes = substate_value.owned_nodes();
                 for node_ref in refs {
-                    self.immortal_node_refs.insert(
+                    self.stable_references.insert(
                         node_ref.clone(),
                         RENodeRefData {
                             ref_type: RefType::Normal,
@@ -859,7 +858,7 @@ impl<L: Clone> CallFrame<L> {
             Some((RefType::Normal, true))
         } else if let Some(_) = self.temp_node_refs.get(node_id) {
             Some((RefType::Normal, false))
-        } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
+        } else if let Some(ref_data) = self.stable_references.get(node_id) {
             Some((ref_data.ref_type, false))
         } else if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
             // TODO: remove
