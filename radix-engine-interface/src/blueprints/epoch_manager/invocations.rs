@@ -54,7 +54,7 @@ pub struct EpochManagerNextRoundInput {
     /// Current round number.
     /// Please note that in case of liveness breaks, this number may be different than previous
     /// reported `round + 1`. Such gaps are considered "round leader's fault" and are penalized
-    /// on emission, according to leader reliability statistics (see `LeaderProposalMissHistory`).
+    /// on emission, according to leader reliability statistics (see `LeaderProposalHistory`).
     pub round: u64,
 
     /// A captured history of leader proposal reliability since the previously reported round.
