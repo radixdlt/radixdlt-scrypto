@@ -16,19 +16,16 @@ use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::convert;
 use crate::types::*;
-use radix_engine_interface::api::component::ComponentStateSubstate;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    PackageInfoSubstate, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
@@ -157,23 +154,13 @@ impl AuthModule {
                 }
 
                 if info.global {
-                    // TODO: Clean this up
-                    let auth = if module_id.eq(&ObjectModuleId::SELF) {
-                        Self::method_authorization_stateful(
-                            &node_id,
-                            ObjectKey::SELF,
-                            method_key,
-                            api,
-                        )?
-                    } else {
-                        Self::method_authorization_stateless(
-                            RefType::Normal,
-                            &node_id,
-                            ObjectKey::SELF,
-                            method_key,
-                            api,
-                        )?
-                    };
+                    let auth = Self::method_authorization_stateless(
+                        RefType::Normal,
+                        &node_id,
+                        ObjectKey::SELF,
+                        method_key,
+                        api,
+                    )?;
                     auths.push(auth);
                 }
 
@@ -182,92 +169,6 @@ impl AuthModule {
         };
 
         Ok(auths)
-    }
-
-    fn method_authorization_stateful<Y: KernelApi<M>, M: KernelCallbackObject>(
-        receiver: &NodeId,
-        object_key: ObjectKey,
-        method_key: MethodKey,
-        api: &mut Y,
-    ) -> Result<MethodAuthorization, RuntimeError> {
-        let (blueprint_schema, index) = {
-            let type_info = TypeInfoBlueprint::get_type(receiver, api)?;
-            let blueprint = match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => blueprint,
-                TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::SortedIndex
-                | TypeInfoSubstate::Index => {
-                    return Err(RuntimeError::SystemError(SystemError::NotAnObject))
-                }
-            };
-
-            let handle = api.kernel_lock_substate(
-                blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
-                LockFlags::read_only(),
-                M::LockData::default(),
-            )?;
-            let package: PackageInfoSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let schema = package
-                .schema
-                .blueprints
-                .get(&blueprint.blueprint_name)
-                .expect("Blueprint schema not found")
-                .clone();
-            let index = match &schema.tuple_module {
-                Some((_, index)) => index.get(0).unwrap().clone(),
-                None => {
-                    return Self::method_authorization_stateless(
-                        RefType::Normal,
-                        receiver,
-                        object_key,
-                        method_key,
-                        api,
-                    );
-                }
-            };
-
-            api.kernel_drop_lock(handle)?;
-            (schema, index)
-        };
-
-        // TODO: Remove
-        let state = {
-            let substate_key = ComponentOffset::State0.into();
-            let handle = api.kernel_lock_substate(
-                receiver,
-                OBJECT_BASE_MODULE,
-                &substate_key,
-                LockFlags::read_only(),
-                M::LockData::default(),
-            )?;
-            let state: ComponentStateSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let state = IndexedScryptoValue::from_scrypto_value(state.0.clone());
-            api.kernel_drop_lock(handle)?;
-            state
-        };
-
-        let handle = api.kernel_lock_substate(
-            receiver,
-            ACCESS_RULES_BASE_MODULE,
-            &AccessRulesOffset::AccessRules.into(),
-            LockFlags::read_only(),
-            M::LockData::default(),
-        )?;
-        let access_rules: MethodAccessRulesSubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-        let method_auth = access_rules
-            .access_rules
-            .get_access_rule(false, &method_key);
-        let authorization = convert(&blueprint_schema.schema, index, &state, &method_auth);
-
-        api.kernel_drop_lock(handle)?;
-
-        Ok(authorization)
     }
 
     fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
