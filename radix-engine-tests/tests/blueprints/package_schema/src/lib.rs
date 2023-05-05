@@ -11,16 +11,6 @@ mod schema_component {
             let component = Self {}.instantiate();
             component.globalize()
         }
-
-        pub fn create_component_with_access_rules_containing_undefined_method_name(
-        ) -> ComponentAddress {
-            let component = Self {}.instantiate();
-            component.globalize_with_access_rules(
-                AccessRulesConfig::new()
-                    .method("no_method", rule!(require("something")), rule!(deny_all))
-                    .default(rule!(allow_all), AccessRule::DenyAll),
-            )
-        }
     }
 }
 

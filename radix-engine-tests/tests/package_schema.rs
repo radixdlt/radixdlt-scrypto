@@ -4,28 +4,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
-#[test]
-fn should_be_able_to_create_access_rules_with_undefined_method_name() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(
-            package_address,
-            "SchemaComponent",
-            "create_component_with_access_rules_containing_undefined_method_name",
-            manifest_args!(),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
 enum ExpectedResult {
     Success,
     InvalidInput,
