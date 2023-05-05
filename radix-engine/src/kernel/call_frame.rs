@@ -81,6 +81,34 @@ impl Visibility {
     }
 }
 
+pub struct NodeVisibility(pub BTreeSet<Visibility>);
+
+impl NodeVisibility {
+    /// Note that system may enforce further constraints on this.
+    /// For instance, system currently only allows substates of actor,
+    /// actor's outer object, and any visible key value store.
+    pub fn can_be_read(&self) -> bool {
+        self.0.iter().any(|x| x.is_normal())
+    }
+
+    pub fn can_be_invoked(&self) -> bool {
+        !self.0.is_empty()
+    }
+
+    pub fn can_be_referenced_in_substate(&self) -> bool {
+        self.0.iter().any(|x| x.is_normal())
+    }
+
+    pub fn can_be_reference_copied_to_frame(&self) -> Option<StableReferenceType> {
+        for v in &self.0 {
+            if let Visibility::StableReference(t) = v {
+                return Some(t.clone());
+            }
+        }
+        return None;
+    }
+}
+
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
 pub struct CallFrame<L> {
@@ -272,7 +300,10 @@ impl<L: Clone> CallFrame<L> {
 
         // Only allow move of `Global` and `DirectAccess` references
         for node_id in message.copy_references {
-            if let Some(t) = can_be_reference_copied_to_frame(&from.get_node_visibility(&node_id)) {
+            if let Some(t) = from
+                .get_node_visibility(&node_id)
+                .can_be_reference_copied_to_frame()
+            {
                 // Note that GLOBAL and DirectAccess references are mutually exclusive,
                 // so okay to overwrite
                 to.stable_references.insert(node_id, t);
@@ -331,7 +362,7 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(LockSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -488,7 +519,10 @@ impl<L: Clone> CallFrame<L> {
             }
             for reference in &new_references {
                 if !substate_lock.initial_references.contains(reference) {
-                    if !can_be_referenced_in_substate(&self.get_node_visibility(reference)) {
+                    if !self
+                        .get_node_visibility(reference)
+                        .can_be_referenced_in_substate()
+                    {
                         return Err(UnlockSubstateError::RefNotFound(reference.clone()));
                     }
 
@@ -617,7 +651,10 @@ impl<L: Clone> CallFrame<L> {
 
                 // Process reference
                 for reference in substate_value.references() {
-                    if !can_be_referenced_in_substate(&self.get_node_visibility(reference)) {
+                    if !self
+                        .get_node_visibility(reference)
+                        .can_be_referenced_in_substate()
+                    {
                         return Err(CreateNodeError::RefNotFound(reference.clone()));
                     }
                 }
@@ -696,7 +733,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(), CallFrameSetSubstateError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -720,7 +757,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -746,7 +783,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -779,7 +816,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameTakeSortedSubstatesError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -816,7 +853,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSortedSubstatesError> {
         // Check node visibility
-        if !can_be_read(&self.get_node_visibility(node_id)) {
+        if !self.get_node_visibility(node_id).can_be_read() {
             return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -925,7 +962,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         let mut visibilities = BTreeSet::<Visibility>::new();
 
         // Stable references
@@ -957,32 +994,6 @@ impl<L: Clone> CallFrame<L> {
             visibilities.insert(Visibility::Borrowed);
         }
 
-        visibilities
+        NodeVisibility(visibilities)
     }
-}
-
-/// Note that system may enforce further constraints on this.
-/// For instance, system currently only allows substates of actor,
-/// actor's outer object, and any visible key value store.
-pub fn can_be_read(visibilities: &BTreeSet<Visibility>) -> bool {
-    visibilities.iter().any(|x| x.is_normal())
-}
-
-pub fn can_be_invoked(visibilities: &BTreeSet<Visibility>) -> bool {
-    !visibilities.is_empty()
-}
-
-pub fn can_be_referenced_in_substate(visibilities: &BTreeSet<Visibility>) -> bool {
-    visibilities.iter().any(|x| x.is_normal())
-}
-
-pub fn can_be_reference_copied_to_frame(
-    visibilities: &BTreeSet<Visibility>,
-) -> Option<StableReferenceType> {
-    for v in visibilities {
-        if let Visibility::StableReference(t) = v {
-            return Some(t.clone());
-        }
-    }
-    return None;
 }

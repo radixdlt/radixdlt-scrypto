@@ -1,4 +1,4 @@
-use super::call_frame::Visibility;
+use super::call_frame::NodeVisibility;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -186,7 +186,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Cleanup
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility>;
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;

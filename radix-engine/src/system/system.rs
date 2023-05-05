@@ -7,7 +7,7 @@ use crate::errors::{
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
-use crate::kernel::call_frame::Visibility;
+use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -734,11 +734,12 @@ where
                             // TODO: Cleanup, this is a rather crude way of trying to figure out
                             // TODO: whether the node reference is a child of the current parent
                             // TODO: this should be cleaned up once call_frame is refactored
-                            let visibility = self.api.kernel_get_node_visibility(receiver);
+                            let node_visibility = self.api.kernel_get_node_visibility(receiver);
                             // FIXME I believe this logic is incorrect/inconsistent with design, it's
                             // to duplicate previous logic.
-                            if visibility.iter().any(|v| v.is_normal())
-                                && !visibility
+                            if node_visibility.0.iter().any(|v| v.is_normal())
+                                && !node_visibility
+                                    .0
                                     .iter()
                                     .any(|v| matches!(v, Visibility::FrameOwned))
                             {
@@ -1932,7 +1933,7 @@ where
         self.api.kernel_get_current_depth()
     }
 
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.api.kernel_get_node_visibility(node_id)
     }
 

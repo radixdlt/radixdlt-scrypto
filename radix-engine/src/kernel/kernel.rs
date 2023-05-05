@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, LockSubstateError, Visibility};
+use super::call_frame::{CallFrame, LockSubstateError, NodeVisibility};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
@@ -7,7 +7,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{can_be_invoked, Message};
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -68,7 +68,11 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 continue;
             }
 
-            if can_be_invoked(&kernel.current_frame.get_node_visibility(node_id)) {
+            if kernel
+                .current_frame
+                .get_node_visibility(node_id)
+                .can_be_invoked()
+            {
                 continue;
             }
 
@@ -306,7 +310,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
     }
 
