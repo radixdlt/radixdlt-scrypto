@@ -48,8 +48,8 @@ impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         // FIXME update the rule to be consistent with internal design
         match actor {
-            Actor::Method(MethodActor { node_id, .. }) => {
-                node_id.is_global_component() || node_id.is_global_resource()
+            Actor::Method(MethodActor { object_info, .. }) => {
+                object_info.global
             }
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
