@@ -54,6 +54,8 @@ pub trait SubstateStore {
     /// Clients must ensure the `node_id`/`module_id` is a node which has been created;
     /// Clients must ensure this isn't called on a virtualized module;
     /// Otherwise, the behavior is undefined.
+    ///
+    /// Returns tuple of substate and boolean which is true for the first database access.
     fn take_substate(
         &mut self,
         node_id: &NodeId,
@@ -61,6 +63,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, bool), TakeSubstateError>;
 
+    /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
@@ -68,6 +71,7 @@ pub trait SubstateStore {
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, bool);
 
+    /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn take_substates(
         &mut self,
         node_id: &NodeId,
@@ -75,6 +79,7 @@ pub trait SubstateStore {
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, bool);
 
+    /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,

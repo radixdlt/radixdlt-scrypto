@@ -610,7 +610,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, bool), TakeSubstateError> {
-        let (tracked, first_read) =
+        let (tracked, first_db_access) =
             self.get_tracked_substate(node_id, module_num, substate_key.clone());
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
@@ -622,7 +622,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        Ok((tracked.take(), first_read))
+        Ok((tracked.take(), first_db_access))
     }
 
     fn scan_substates(
@@ -658,7 +658,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             return (items, false);
         }
 
-        let first_read = tracked_module.is_none();
+        let first_db_access = tracked_module.is_none();
 
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
@@ -686,7 +686,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(num_iterations);
         tracked_module.range_read = Some(next_range_read);
 
-        (items, first_read)
+        (items, first_db_access)
     }
 
     fn take_substates(
@@ -724,7 +724,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             return (items, false);
         }
 
-        let first_read = tracked_module.is_none();
+        let first_db_access = tracked_module.is_none();
 
         // Read from database
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
@@ -776,10 +776,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        (items, first_read)
+        (items, first_db_access)
     }
 
-    // returns true if specified module wasn't tracked and was read from database for the first time
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
@@ -813,7 +812,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             return (items, false);
         }
 
-        let first_read = tracked_module.is_none();
+        let first_db_access = tracked_module.is_none();
 
         // TODO: Add interleaving updates
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
@@ -834,7 +833,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             tracked_module.range_read = Some(next_range_read);
         }
 
-        (items, first_read)
+        (items, first_db_access)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(

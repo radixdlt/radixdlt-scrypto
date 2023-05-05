@@ -684,7 +684,7 @@ where
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        let (substate, first_read_from_db) = self
+        let (substate, first_db_access) = self
             .current_frame
             .remove_substate(
                 node_id,
@@ -697,7 +697,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(first_read_from_db, self)?;
+        M::on_take_substates(first_db_access, self)?;
 
         Ok(substate)
     }
@@ -708,14 +708,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, first_read_from_db) = self
+        let (substates, first_db_access) = self
             .current_frame
             .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(true, first_read_from_db, self)?;
+        M::on_scan_substates(true, first_db_access, self)?;
 
         Ok(substates)
     }
@@ -726,14 +726,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, first_read_from_db) = self
+        let (substeates, first_db_access) = self
             .current_frame
             .scan_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(false, first_read_from_db, self)?;
+        M::on_scan_substates(false, first_db_access, self)?;
 
         Ok(substeates)
     }
@@ -744,14 +744,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, first_read_from_db) = self
+        let (substeates, first_db_access) = self
             .current_frame
             .take_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(first_read_from_db, self)?;
+        M::on_take_substates(first_db_access, self)?;
 
         Ok(substeates)
     }

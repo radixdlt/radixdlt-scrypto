@@ -422,9 +422,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        first_scan_from_db: bool,
+        first_take_from_db: bool,
     ) -> Result<(), RuntimeError> {
-        if first_scan_from_db {
+        if first_take_from_db {
             api.kernel_get_system()
                 .modules
                 .costing

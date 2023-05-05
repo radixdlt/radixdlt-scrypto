@@ -494,7 +494,7 @@ impl<L: Clone> CallFrame<L> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let (removed, first_read_from_db) = if heap.contains_node(node_id) {
+        let (removed, first_db_access) = if heap.contains_node(node_id) {
             (heap.delete_substate(node_id, module_num, key), false)
         } else {
             store
@@ -502,7 +502,7 @@ impl<L: Clone> CallFrame<L> {
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
-        Ok((removed, first_read_from_db))
+        Ok((removed, first_db_access))
     }
 
     pub fn scan_substates<'f, S: SubstateStore>(
@@ -516,7 +516,7 @@ impl<L: Clone> CallFrame<L> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let (substates, first_read_from_db) = if heap.contains_node(node_id) {
+        let (substates, first_db_access) = if heap.contains_node(node_id) {
             (heap.scan_substates(node_id, module_num, count), false)
         } else {
             store.scan_substates(node_id, module_num, count)
@@ -535,7 +535,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_read_from_db))
+        Ok((substates, first_db_access))
     }
 
     pub fn take_substates<'f, S: SubstateStore>(
@@ -550,7 +550,7 @@ impl<L: Clone> CallFrame<L> {
             CallFrameTakeSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;
 
-        let (substates, first_read_from_db) = if heap.contains_node(node_id) {
+        let (substates, first_db_access) = if heap.contains_node(node_id) {
             (heap.take_substates(node_id, module_num, count), false)
         } else {
             store.take_substates(node_id, module_num, count)
@@ -569,7 +569,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_read_from_db))
+        Ok((substates, first_db_access))
     }
 
     // Substate Virtualization does not apply to this call
@@ -586,7 +586,7 @@ impl<L: Clone> CallFrame<L> {
             CallFrameScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;
 
-        let (substates, first_read_from_db) = if heap.contains_node(node_id) {
+        let (substates, first_db_access) = if heap.contains_node(node_id) {
             todo!()
         } else {
             store.scan_sorted_substates(node_id, module_num, count)
@@ -605,7 +605,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_read_from_db))
+        Ok((substates, first_db_access))
     }
 
     pub fn new_root() -> Self {
