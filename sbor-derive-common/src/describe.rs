@@ -485,8 +485,7 @@ mod tests {
                 impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2>
                 where
                     T: ::sbor::Describe<C>,
-                    T2: ::sbor::Describe<C>,
-                    T2: ::sbor::Categorize< <C as ::sbor::CustomTypeKind<::sbor::GlobalTypeId> >::CustomValueKind>
+                    T2: ::sbor::Describe<C>
                 {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),

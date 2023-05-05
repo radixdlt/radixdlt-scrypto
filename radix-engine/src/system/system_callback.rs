@@ -40,18 +40,18 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         ));
     }
 
-    validate_payload_against_schema(
-        input.as_slice(),
-        &blueprint_schema.schema,
-        function_schema.input,
-        service,
-    )
-    .map_err(|err| {
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
-            fn_ident.to_string(),
-            err.error_message(&blueprint_schema.schema),
-        ))
-    })?;
+    service
+        .validate_payload(
+            input.as_slice(),
+            &blueprint_schema.schema,
+            function_schema.input,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
+                fn_ident.to_string(),
+                err.error_message(&blueprint_schema.schema),
+            ))
+        })?;
 
     Ok(function_schema.export_name.clone())
 }
@@ -67,18 +67,18 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         .get(fn_ident)
         .expect("Checked by `validate_input`");
 
-    validate_payload_against_schema(
-        output.as_slice(),
-        &blueprint_schema.schema,
-        function_schema.output,
-        service,
-    )
-    .map_err(|err| {
-        RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
-            fn_ident.to_string(),
-            err.error_message(&blueprint_schema.schema),
-        ))
-    })?;
+    service
+        .validate_payload(
+            output.as_slice(),
+            &blueprint_schema.schema,
+            function_schema.output,
+        )
+        .map_err(|err| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputSchemaNotMatch(
+                fn_ident.to_string(),
+                err.error_message(&blueprint_schema.schema),
+            ))
+        })?;
 
     Ok(())
 }

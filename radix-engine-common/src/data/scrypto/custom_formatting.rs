@@ -36,10 +36,10 @@ impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
 }
 
 impl<'a> CustomDisplayContext<'a> for ScryptoValueDisplayContext<'a> {
-    type CustomTypeExtension = ScryptoCustomTypeExtension;
+    type CustomExtension = ScryptoCustomExtension;
 }
 
-impl FormattableCustomTypeExtension for ScryptoCustomTypeExtension {
+impl FormattableCustomExtension for ScryptoCustomExtension {
     type CustomDisplayContext<'a> = ScryptoValueDisplayContext<'a>;
 
     fn display_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(

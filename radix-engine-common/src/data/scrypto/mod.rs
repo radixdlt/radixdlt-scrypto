@@ -1,3 +1,5 @@
+/// Defines the full Scrypto extension.
+mod custom_extension;
 mod custom_formatting;
 mod custom_payload_wrappers;
 /// Defines the custom Scrypto schema types.
@@ -19,6 +21,7 @@ mod schema_path;
 
 pub mod model;
 
+pub use custom_extension::*;
 pub use custom_formatting::*;
 pub use custom_payload_wrappers::*;
 pub use custom_schema::*;

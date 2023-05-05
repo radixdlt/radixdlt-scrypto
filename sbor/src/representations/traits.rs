@@ -3,10 +3,10 @@ use crate::traversal::*;
 use crate::*;
 
 pub trait CustomDisplayContext<'a>: Default + Copy {
-    type CustomTypeExtension: FormattableCustomTypeExtension<CustomDisplayContext<'a> = Self>;
+    type CustomExtension: FormattableCustomExtension<CustomDisplayContext<'a> = Self>;
 }
 
-pub trait FormattableCustomTypeExtension: CustomTypeExtension + Copy {
+pub trait FormattableCustomExtension: CustomExtension + Copy {
     type CustomDisplayContext<'a>: CustomDisplayContext<'a>;
 
     /// The gives the inner formatted representation of the value.
