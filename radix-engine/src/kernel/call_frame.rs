@@ -139,7 +139,7 @@ pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
-    MoveError(TakeNodeError),
+    TakeNodeError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     CantOwn(NodeId),
     CantStoreLocalReference(NodeId),
@@ -421,14 +421,29 @@ impl<L: Clone> CallFrame<L> {
                 heap.get_substate(node_id, module_num, substate_key)
                     .expect("Substate locked but missing")
             };
-            let references = substate.references();
-            let owned_nodes = substate.owned_nodes();
 
-            // Reserving original Vec element order with `IndexSet`
-            let mut new_children: IndexSet<NodeId> = index_set_new();
-            for own in owned_nodes {
-                if !new_children.insert(own.clone()) {
+            let mut new_own_set: IndexSet<NodeId> = index_set_new();
+            for own in substate.owned_nodes() {
+                if !new_own_set.insert(own.clone()) {
                     return Err(UnlockSubstateError::ContainsDuplicatedOwns);
+                }
+            }
+            for own in &new_own_set {
+                if !substate_lock.initial_owned_nodes.contains(own) {
+                    // Node no longer owned by frame
+                    self.take_node_internal(own)
+                        .map_err(UnlockSubstateError::TakeNodeError)?;
+                }
+            }
+            for own in &substate_lock.initial_owned_nodes {
+                if !new_own_set.contains(own) {
+                    // Node detached
+                    if !heap.contains_node(node_id) {
+                        return Err(UnlockSubstateError::CantDropNodeInStore(own.clone()));
+                    }
+                    // Owned nodes discarded by the substate go back to the call frame,
+                    // and must be explicitly dropped.
+                    self.owned_root_nodes.insert(old_child.clone(), 0);
                 }
             }
 
@@ -439,7 +454,7 @@ impl<L: Clone> CallFrame<L> {
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
-                if !new_children.remove(old_child) {
+                if !new_own_set.remove(old_child) {
                     // TODO: revisit logic here!
                     if !heap.contains_node(node_id) {
                         return Err(UnlockSubstateError::CantDropNodeInStore(old_child.clone()));
@@ -451,13 +466,13 @@ impl<L: Clone> CallFrame<L> {
                 }
             }
 
-            for child_id in &new_children {
+            for child_id in &new_own_set {
                 self.take_node_internal(child_id)
-                    .map_err(UnlockSubstateError::MoveError)?;
+                    .map_err(UnlockSubstateError::TakeNodeError)?;
             }
 
             if !heap.contains_node(&node_id) {
-                for child in &new_children {
+                for child in &new_own_set {
                     Self::move_node_to_store(heap, store, child)?;
                 }
             }
@@ -744,7 +759,7 @@ impl<L: Clone> CallFrame<L> {
                 // We need to apply the same checks!
                 for child_id in substate_value.owned_nodes() {
                     self.take_node_internal(child_id)
-                        .map_err(UnlockSubstateError::MoveError)?;
+                        .map_err(UnlockSubstateError::TakeNodeError)?;
                     if push_to_store {
                         Self::move_node_to_store(heap, store, child_id)?;
                     }

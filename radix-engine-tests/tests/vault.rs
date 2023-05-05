@@ -171,7 +171,7 @@ fn invalid_double_ownership_of_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::TakeNodeError(
                     TakeNodeError::OwnNotFound(_)
                 ))
             ))

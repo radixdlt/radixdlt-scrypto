@@ -95,7 +95,7 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
+                CallFrameError::UnlockSubstateError(UnlockSubstateError::TakeNodeError(
                     TakeNodeError::OwnLocked(_)
                 ))
             ))
