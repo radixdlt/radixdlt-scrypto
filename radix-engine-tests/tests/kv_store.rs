@@ -66,7 +66,7 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -306,7 +306,7 @@ fn cannot_directly_reference_inserted_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -335,7 +335,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -364,7 +364,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });

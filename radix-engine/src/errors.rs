@@ -11,7 +11,8 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    LockSubstateError, TakeNodeError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    LockSubstateError, PassMessageError, ReadSubstateError, UnlockSubstateError,
+    WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -170,6 +171,7 @@ impl From<CallFrameError> for KernelError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     CreateFrameError(CreateFrameError),
+    PassMessageError(PassMessageError),
     LockSubstateError(LockSubstateError),
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
@@ -179,7 +181,6 @@ pub enum CallFrameError {
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
-    MoveError(TakeNodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -459,8 +460,8 @@ impl From<UnlockSubstateError> for CallFrameError {
     }
 }
 
-impl From<TakeNodeError> for CallFrameError {
-    fn from(value: TakeNodeError) -> Self {
-        Self::MoveError(value)
+impl From<PassMessageError> for CallFrameError {
+    fn from(value: PassMessageError) -> Self {
+        Self::PassMessageError(value)
     }
 }

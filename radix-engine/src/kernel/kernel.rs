@@ -208,8 +208,8 @@ where
             let mut parent = self.prev_frame_stack.pop().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, &mut parent, message)
-                .map_err(CallFrameError::MoveError)
+            CallFrame::exchange(&mut self.current_frame, &mut parent, message)
+                .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
             // auto drop
@@ -540,7 +540,7 @@ where
                 match &err {
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    LockSubstateError::NodeNotInCallFrame(node_id)
+                    LockSubstateError::NodeNotVisible(node_id)
                         if node_id.is_global_package() =>
                     {
                         let (handle, first_lock_from_db) = self
