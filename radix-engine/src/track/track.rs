@@ -520,9 +520,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         node_id: &NodeId,
         module_num: ModuleNumber,
         substate_key: SubstateKey,
-    ) -> &mut TrackedKey {
+    ) -> (&mut TrackedKey, bool) {
         self.get_tracked_substate_virtualize(node_id, module_num, substate_key, || None)
-            .0
     }
 }
 
@@ -610,8 +609,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError> {
-        let tracked = self.get_tracked_substate(node_id, module_num, substate_key.clone());
+    ) -> Result<(Option<IndexedScryptoValue>, bool), TakeSubstateError> {
+        let (tracked, first_read) = self.get_tracked_substate(node_id, module_num, substate_key.clone());
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
                 return Err(TakeSubstateError::SubstateLocked(
@@ -622,7 +621,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        Ok(tracked.take())
+        Ok((tracked.take(), first_read))
     }
 
     fn scan_substates(
@@ -630,7 +629,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> Vec<IndexedScryptoValue> { //todo MS: return first read
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -899,7 +898,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let (node_id, module_num, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
-        let tracked = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
+        let (tracked, _) = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
 
         let substate = tracked
             .get_runtime_substate_mut()
@@ -938,7 +937,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let node_id = *node_id;
         let module_num = *module_num;
 
-        let tracked = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
+        let (tracked, _) = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
         tracked
             .get()
             .expect("Could not have created lock on non existent substate")
@@ -955,7 +954,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let node_id = *node_id;
         let module_num = *module_num;
 
-        let tracked = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
+        let (tracked, _) = self.get_tracked_substate(&node_id, module_num, substate_key.clone());
 
         match tracked {
             TrackedKey::New(substate)

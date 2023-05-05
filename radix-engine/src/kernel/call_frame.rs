@@ -490,19 +490,19 @@ impl<L: Clone> CallFrame<L> {
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
+    ) -> Result<(Option<IndexedScryptoValue>, bool), CallFrameRemoveSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let removed = if heap.contains_node(node_id) {
-            heap.delete_substate(node_id, module_num, key)
+        let (removed, first_read_from_db) = if heap.contains_node(node_id) {
+            (heap.delete_substate(node_id, module_num, key), false)
         } else {
             store
                 .take_substate(node_id, module_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
-        Ok(removed)
+        Ok((removed, first_read_from_db))
     }
 
     pub fn scan_substates<'f, S: SubstateStore>(

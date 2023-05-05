@@ -59,7 +59,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, TakeSubstateError>;
+    ) -> Result<(Option<IndexedScryptoValue>, bool), TakeSubstateError>;
 
     fn scan_substates(
         &mut self,

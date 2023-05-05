@@ -684,7 +684,7 @@ where
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substate, first_read_from_db) = self.current_frame
             .remove_substate(
                 node_id,
                 module_num,
@@ -694,7 +694,11 @@ where
             )
             .map_err(CallFrameError::RemoveSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_take_substates(first_read_from_db, self)?;
+
+        Ok(substate)
     }
 
     fn kernel_scan_sorted_substates(
