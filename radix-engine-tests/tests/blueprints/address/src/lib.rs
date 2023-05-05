@@ -144,6 +144,7 @@ mod called_component {
                 self.child.protected_method(component_address);
             } else {
                 Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
+                assert_ne!(Runtime::global_address(), component_address.into());
             }
         }
     }
@@ -160,6 +161,7 @@ mod called_component_child {
 
         pub fn protected_method(&self, component_address: ComponentAddress) {
             Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
+            assert_ne!(Runtime::global_address(), component_address.into());
         }
     }
 }

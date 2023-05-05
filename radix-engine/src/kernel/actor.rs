@@ -82,21 +82,15 @@ impl Actor {
     }
 
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        // Add Global Object and Package Actor Auth
-        let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        {
-            let package_proof =
-                NonFungibleGlobalId::package_of_caller_badge(*self.package_address());
-            virtual_non_fungibles_non_extending.insert(package_proof);
+        btreeset!(NonFungibleGlobalId::package_of_caller_badge(*self.package_address()))
+    }
 
-            // TODO: Fix this so that GLOBAL_A => GLOBAL_B => INTERNAL_B has INTERNAL_B see GLOBAL_A
-            if let Some(global_caller) = self.get_global_ancestor_as_global_caller() {
-                let global_caller_proof = NonFungibleGlobalId::global_caller_badge(global_caller);
-                virtual_non_fungibles_non_extending.insert(global_caller_proof);
-            }
+    pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+        if let Some(global_caller) = self.get_global_ancestor_as_global_caller() {
+            btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
+        } else {
+            btreeset!()
         }
-
-        virtual_non_fungibles_non_extending
     }
 
     pub fn package_address(&self) -> &PackageAddress {

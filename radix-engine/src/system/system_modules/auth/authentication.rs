@@ -42,8 +42,10 @@ impl Authentication {
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
-        P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
+        P: Fn(&AuthZone, usize, bool, &mut Y) -> Result<bool, RuntimeError>,
     {
+        let mut is_first_barrier = barrier_crossings_required == 0;
+
         let mut remaining_barrier_crossings_required = barrier_crossings_required;
         let mut remaining_barrier_crossings_allowed = barrier_crossings_allowed;
         let mut current_auth_zone_id = auth_zone_id;
@@ -63,14 +65,15 @@ impl Authentication {
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 
-            if remaining_barrier_crossings_required == 0 {
+            //if remaining_barrier_crossings_required == 0 {
                 // Check
-                if check(&auth_zone, rev_index, api)? {
+                if check(&auth_zone, rev_index, is_first_barrier, api)? {
                     pass = true;
                     break;
                 }
                 rev_index += 1;
-            }
+            //}
+            is_first_barrier = false;
 
             // Progress
             if auth_zone.is_barrier {
@@ -81,6 +84,9 @@ impl Authentication {
 
                 if remaining_barrier_crossings_required > 0 {
                     remaining_barrier_crossings_required -= 1;
+                    if remaining_barrier_crossings_required == 0u32 {
+                        is_first_barrier = true;
+                    }
                 }
             }
 
@@ -113,7 +119,7 @@ impl Authentication {
             barrier_crossings_allowed,
             auth_zone_id,
             api,
-            |auth_zone, _, api| {
+            |auth_zone, _, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
@@ -142,8 +148,17 @@ impl Authentication {
             barrier_crossings_allowed,
             auth_zone_id,
             api,
-            |auth_zone, rev_index, api| {
+            |auth_zone, rev_index, is_first_barrier, api| {
                 if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
+                    if is_first_barrier {
+                        if auth_zone
+                            .virtual_non_fungibles_non_extending_barrier()
+                            .contains(&non_fungible_global_id)
+                        {
+                            return Ok(true);
+                        }
+                    }
+
                     if rev_index == 0 {
                         if auth_zone
                             .virtual_non_fungibles_non_extending()

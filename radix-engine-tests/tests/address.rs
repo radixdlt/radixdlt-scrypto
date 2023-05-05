@@ -224,7 +224,17 @@ fn call_component_address_protected_method_in_parent_to_parent_should_succeed() 
 
 #[test]
 fn call_component_address_protected_method_in_child_to_parent_should_succeed() {
+    test_call_component_address_protected_method(true, false);
+}
+
+#[test]
+fn call_component_address_protected_method_in_parent_to_child_should_succeed() {
     test_call_component_address_protected_method(false, true);
+}
+
+#[test]
+fn call_component_address_protected_method_in_child_to_child_should_succeed() {
+    test_call_component_address_protected_method(false, false);
 }
 
 #[test]

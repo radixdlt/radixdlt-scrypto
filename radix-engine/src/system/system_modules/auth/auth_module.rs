@@ -261,6 +261,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
         // Add Global Object and Package Actor Auth
         let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
+        let virtual_non_fungibles_non_extending_barrier = actor.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
         let is_barrier = Self::is_barrier(actor);
@@ -286,6 +287,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
+            virtual_non_fungibles_non_extending_barrier,
             is_barrier,
             parent,
         );
