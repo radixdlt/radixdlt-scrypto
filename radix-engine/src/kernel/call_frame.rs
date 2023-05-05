@@ -101,10 +101,10 @@ pub struct CallFrame<L> {
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node, to prevent locked node from moving.
-    owned_root_nodes: IndexMap<NodeId, u32>,
+    owned_root_nodes: IndexMap<NodeId, usize>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
-    transient_references: NonIterMap<NodeId, u32>,
+    borrowed_references: NonIterMap<NodeId, usize>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
@@ -117,7 +117,13 @@ pub struct CallFrame<L> {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
     ActorBeingMoved(NodeId),
-    MoveError(MoveError),
+    MessagePassingError(PassMessageError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum PassMessageError {
+    MoveNodeError(TakeNodeError),
+    StableRefNotFound(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -133,7 +139,7 @@ pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
-    MoveError(MoveError),
+    MoveError(TakeNodeError),
     CantDropNodeInStore(NodeId),
     CantOwn(NodeId),
     CantStoreLocalReference(NodeId),
@@ -141,11 +147,9 @@ pub enum UnlockSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MoveError {
+pub enum TakeNodeError {
     OwnNotFound(NodeId),
-    CantMoveLockedNode(NodeId),
-
-    RefNotFound(NodeId),
+    OwnLocked(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -192,7 +196,7 @@ impl<L: Clone> CallFrame<L> {
             depth: 0,
             actor: None,
             stable_references: NonIterMap::new(),
-            transient_references: NonIterMap::new(),
+            borrowed_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
@@ -209,14 +213,15 @@ impl<L: Clone> CallFrame<L> {
             depth: parent.depth + 1,
             actor: Some(actor),
             stable_references: NonIterMap::new(),
-            transient_references: NonIterMap::new(),
+            borrowed_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
         };
 
         // Copy references and move nodes
-        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::MoveError)?;
+        Self::pass_message(parent, &mut frame, message)
+            .map_err(CreateFrameError::MessagePassingError)?;
 
         // Additional logic on actor
         if let Some(method_actor) = optional_method_actor {
@@ -231,57 +236,42 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        // Set up transient references
-        if let Some(MethodActor { node_id, .. }) = optional_method_actor {
-            if !node_id.is_global() {
-                frame
-                    .transient_references
-                    .entry(node_id)
-                    .or_default()
-                    .add_assign(1);
-            }
-        }
-        for node_id in &frame.owned_root_nodes {
-            // frame owned nodes are by nature non-Global
-            frame
-                .transient_references
-                .entry(node_id.0.clone())
-                .or_default()
-                .add_assign(1);
-        }
-
         Ok(frame)
     }
 
-    pub fn exchange(
+    pub fn pass_message(
         from: &mut CallFrame<L>,
         to: &mut CallFrame<L>,
         message: Message,
-    ) -> Result<(), MoveError> {
+    ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
-            // move re nodes to upstream call frame.
-            from.take_node_internal(&node_id)?;
-            to.owned_root_nodes.insert(node_id, 0u32);
+            // Note that this has no impact on the `borrowed_references` because
+            // we don't allow move of "locked nodes".
+            from.take_node_internal(&node_id)
+                .map_err(PassMessageError::MoveNodeError)?;
+            to.owned_root_nodes.insert(node_id, 0);
         }
 
         for node_id in message.copy_references {
-            // Make sure not to allow owned nodes to be passed as references upstream
-            let ref_data = from
+            let reference_type = from
                 .stable_references
                 .get(&node_id)
-                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| PassMessageError::StableRefNotFound(node_id))?;
 
-            to.stable_references
-                .entry(node_id)
-                .and_modify(|e| {
-                    if e.ref_type == Visibility::DirectAccess {
-                        e.ref_type = ref_data.ref_type
-                    }
-                })
-                .or_insert(ref_data.clone());
+            // Note that GLOBAL and DirectAccess reference can't co-exist,
+            // so it's safe to overwrite.
+            to.stable_references.insert(node_id, reference_type.clone());
         }
 
         Ok(())
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
+
+    pub fn actor(&self) -> &Option<Actor> {
+        &self.actor
     }
 
     // TODO: Remove
@@ -309,14 +299,6 @@ impl<L: Clone> CallFrame<L> {
         } else {
             None
         }
-    }
-
-    pub fn depth(&self) -> usize {
-        self.depth
-    }
-
-    pub fn actor(&self) -> &Option<Actor> {
-        &self.actor
     }
 
     pub fn acquire_lock<S: SubstateStore>(
@@ -391,7 +373,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Add initial references to ref count.
         for node_id in &initial_references {
-            self.transient_references
+            self.borrowed_references
                 .entry(node_id.clone())
                 .or_default()
                 .add_assign(1);
@@ -487,9 +469,9 @@ impl<L: Clone> CallFrame<L> {
 
         // TODO: revisit this reference shrinking
         for refed_node in substate_lock.initial_references {
-            let cnt = self.transient_references.remove(&refed_node).unwrap_or(0);
+            let cnt = self.borrowed_references.remove(&refed_node).unwrap_or(0);
             if cnt > 1 {
-                self.transient_references.insert(refed_node, cnt - 1);
+                self.borrowed_references.insert(refed_node, cnt - 1);
             }
         }
 
@@ -737,16 +719,16 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), MoveError> {
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
         match self.owned_root_nodes.remove(node_id) {
             None => {
-                return Err(MoveError::OwnNotFound(node_id.clone()));
+                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
             }
             Some(lock_count) => {
                 if lock_count == 0 {
                     Ok(())
                 } else {
-                    Err(MoveError::CantMoveLockedNode(node_id.clone()))
+                    Err(TakeNodeError::OwnLocked(node_id.clone()))
                 }
             }
         }
@@ -807,7 +789,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, MoveError> {
+    ) -> Result<NodeSubstates, TakeNodeError> {
         self.take_node_internal(node_id)?;
         let node_substates = heap.remove_node(node_id);
         for (_, module) in &node_substates {
@@ -906,7 +888,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Borrowed from substate loading
-        if self.transient_references.contains_key(node_id) {
+        if self.borrowed_references.contains_key(node_id) {
             visibilities.insert(Visibility::Borrowed);
         }
 

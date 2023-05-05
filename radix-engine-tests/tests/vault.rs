@@ -2,7 +2,7 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{MoveError, UnlockSubstateError};
+use radix_engine::kernel::call_frame::{TakeNodeError, UnlockSubstateError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
@@ -172,7 +172,7 @@ fn invalid_double_ownership_of_vault() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::OwnNotFound(_)
+                    TakeNodeError::OwnNotFound(_)
                 ))
             ))
         )

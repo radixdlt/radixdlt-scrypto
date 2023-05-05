@@ -208,7 +208,7 @@ where
             let mut parent = self.prev_frame_stack.pop().unwrap();
 
             // Move resource
-            CallFrame::exchange(&mut self.current_frame, &mut parent, message)
+            CallFrame::pass_message(&mut self.current_frame, &mut parent, message)
                 .map_err(CallFrameError::MoveError)
                 .map_err(KernelError::CallFrameError)?;
 
