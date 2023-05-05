@@ -540,9 +540,7 @@ where
                 match &err {
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    LockSubstateError::NodeNotVisible(node_id)
-                        if node_id.is_global_package() =>
-                    {
+                    LockSubstateError::NodeNotVisible(node_id) if node_id.is_global_package() => {
                         let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(

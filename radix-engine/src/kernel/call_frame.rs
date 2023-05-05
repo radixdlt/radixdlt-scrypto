@@ -41,12 +41,6 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RENodeLocation {
-    Heap,
-    Store,
-}
-
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock<L> {
@@ -87,10 +81,8 @@ impl Visibility {
     }
 }
 
-// TODO: reduce fields visibility
-
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
-/// owned objects by this function.
+/// owned objects and references by this function.
 pub struct CallFrame<L> {
     /// The frame id
     depth: usize,
@@ -117,11 +109,11 @@ pub struct CallFrame<L> {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
     ActorBeingMoved(NodeId),
-    MessagePassingError(PassMessageError),
+    ExchangeError(ExchangeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum PassMessageError {
+pub enum ExchangeError {
     MoveNodeError(MoveNodeError),
     StableRefNotFound(NodeId),
 }
@@ -129,30 +121,35 @@ pub enum PassMessageError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockSubstateError {
     NodeNotVisible(NodeId),
+    HeapError(LockHeapSubstateError),
+    TrackError(Box<AcquireLockError>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum LockHeapSubstateError {
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
-    TrackError(Box<AcquireLockError>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
-    RefNotFound(NodeId),
     MoveNodeError(MoveNodeError),
+    RefNotFound(NodeId),
     CantDropNodeInStore(NodeId),
-    MoveToStoreError(MoveToStoreError),
+    StoreNodeError(StoreNodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
-    RefNotFound(NodeId),
     MoveNodeError(MoveNodeError),
-    MoveToStoreError(MoveToStoreError),
+    RefNotFound(NodeId),
+    StoreNodeError(StoreNodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MoveToStoreError {
+pub enum StoreNodeError {
     CantStoreLocalReference(NodeId),
     CantBeStored(NodeId),
 }
@@ -231,8 +228,7 @@ impl<L: Clone> CallFrame<L> {
         };
 
         // Copy references and move nodes
-        Self::exchange(parent, &mut frame, message)
-            .map_err(CreateFrameError::MessagePassingError)?;
+        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::ExchangeError)?;
 
         // Additional logic on actor
         if let Some(method_actor) = optional_method_actor {
@@ -254,12 +250,12 @@ impl<L: Clone> CallFrame<L> {
         from: &mut CallFrame<L>,
         to: &mut CallFrame<L>,
         message: Message,
-    ) -> Result<(), PassMessageError> {
+    ) -> Result<(), ExchangeError> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
-                .map_err(PassMessageError::MoveNodeError)?;
+                .map_err(ExchangeError::MoveNodeError)?;
             to.owned_root_nodes.insert(node_id, 0);
         }
 
@@ -267,7 +263,7 @@ impl<L: Clone> CallFrame<L> {
             let reference_type = from
                 .stable_references
                 .get(&node_id)
-                .ok_or_else(|| PassMessageError::StableRefNotFound(node_id))?;
+                .ok_or_else(|| ExchangeError::StableRefNotFound(node_id))?;
 
             // Note that GLOBAL and DirectAccess reference can't co-exist,
             // so it's safe to overwrite.
@@ -334,18 +330,20 @@ impl<L: Clone> CallFrame<L> {
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
+                return Err(LockSubstateError::HeapError(
+                    LockHeapSubstateError::LockUnmodifiedBaseOnHeapNode,
+                ));
             }
             if let Some(compute_default) = default {
                 heap.get_substate_virtualize(node_id, module_num, substate_key, compute_default)
             } else {
                 heap.get_substate(node_id, module_num, substate_key)
                     .ok_or_else(|| {
-                        LockSubstateError::SubstateNotFound(
+                        LockSubstateError::HeapError(LockHeapSubstateError::SubstateNotFound(
                             node_id.clone(),
                             module_num,
                             substate_key.clone(),
-                        )
+                        ))
                     })?
             }
         } else {
@@ -386,6 +384,7 @@ impl<L: Clone> CallFrame<L> {
                 .add_assign(1);
         }
 
+        // Issue lock handle
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
             lock_handle,
@@ -450,7 +449,7 @@ impl<L: Clone> CallFrame<L> {
                     if !heap.contains_node(&node_id) {
                         for child in &new_owned_nodes {
                             Self::move_node_to_store(heap, store, child)
-                                .map_err(UnlockSubstateError::MoveToStoreError)?;
+                                .map_err(UnlockSubstateError::StoreNodeError)?;
                         }
                     }
                 }
@@ -463,7 +462,7 @@ impl<L: Clone> CallFrame<L> {
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
-                    // FIXME: Yulong suspects this is buggy as one can detach a locked non-root
+                    // FIXME: I suspect this is buggy as one can detach a locked non-root
                     // node, move and drop; which will cause invalid lock handle in previous frames.
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
@@ -480,12 +479,16 @@ impl<L: Clone> CallFrame<L> {
                     if !can_be_referenced_in_substate(&self.get_node_visibility(reference)) {
                         return Err(UnlockSubstateError::RefNotFound(reference.clone()));
                     }
+
+                    if heap.contains_node(reference) {
+                        // TODO: increase borrow count
+                    }
                 }
             }
             for reference in &substate_lock.initial_references {
                 if !new_references.contains(reference) {
                     if heap.contains_node(reference) {
-                        // TODO: this substate no longer borrows the node
+                        // TODO: decrease borrow count
                     }
                 }
             }
@@ -596,7 +599,7 @@ impl<L: Clone> CallFrame<L> {
                         .map_err(CreateNodeError::MoveNodeError)?;
                     if push_to_store {
                         Self::move_node_to_store(heap, store, own)
-                            .map_err(CreateNodeError::MoveToStoreError)?;
+                            .map_err(CreateNodeError::StoreNodeError)?;
                     }
                 }
 
@@ -631,26 +634,31 @@ impl<L: Clone> CallFrame<L> {
         let node_substates = heap.remove_node(node_id);
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
-                let refs = substate_value.references();
-                let child_nodes = substate_value.owned_nodes();
-                for node_ref in refs {
-                    self.stable_references.insert(
-                        node_ref.clone(),
-                        StableReferenceType {
-                            ref_type: Visibility::Normal,
-                        },
-                    );
+                // Process own
+                for own in substate_value.owned_nodes() {
+                    // FIXME This is problematic, as owned node must have been locked
+                    // In general, we'd like to move node locking/borrowing to heap.
+                    self.owned_root_nodes.insert(own.clone(), 0);
                 }
 
-                for child_node in child_nodes {
-                    self.owned_root_nodes.insert(child_node.clone(), 0u32);
+                // Process references
+                for reference in substate_value.references() {
+                    if reference.is_global() {
+                        // The previous behavior is to put global references back
+                        // to `stable_references`, but I don't think it's right.
+                    } else if heap.contains_node(reference) {
+                        // This substate is dropped and no longer borrows the heap node.
+                        // TODO: decrease borrow count
+                    } else {
+                        panic!("Substate contains references non-global nodes in store")
+                    }
                 }
             }
         }
         Ok(node_substates)
     }
 
-    // Note that the set/remove/scan/take APIs aren't compatible with our reference model.
+    // Note that set/remove/scan/take APIs aren't compatible with our reference model.
     // They're intended for internal use only and extra caution is required.
 
     // Substate Virtualization does not apply to this call
@@ -848,7 +856,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-    ) -> Result<(), MoveToStoreError> {
+    ) -> Result<(), StoreNodeError> {
         // FIXME: Clean this up
         let can_be_stored = if node_id.is_global() {
             true
@@ -871,7 +879,7 @@ impl<L: Clone> CallFrame<L> {
             }
         };
         if !can_be_stored {
-            return Err(MoveToStoreError::CantBeStored(node_id.clone()));
+            return Err(StoreNodeError::CantBeStored(node_id.clone()));
         }
 
         let node_substates = heap.remove_node(node_id);
@@ -879,7 +887,7 @@ impl<L: Clone> CallFrame<L> {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(MoveToStoreError::CantStoreLocalReference(*reference));
+                        return Err(StoreNodeError::CantStoreLocalReference(*reference));
                     }
                 }
 

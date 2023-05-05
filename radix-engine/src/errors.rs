@@ -10,9 +10,8 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    LockSubstateError, PassMessageError, ReadSubstateError, UnlockSubstateError,
-    WriteSubstateError,
+    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError, ExchangeError,
+    LockSubstateError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -171,7 +170,7 @@ impl From<CallFrameError> for KernelError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     CreateFrameError(CreateFrameError),
-    PassMessageError(PassMessageError),
+    PassMessageError(ExchangeError),
     LockSubstateError(LockSubstateError),
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
@@ -460,8 +459,8 @@ impl From<UnlockSubstateError> for CallFrameError {
     }
 }
 
-impl From<PassMessageError> for CallFrameError {
-    fn from(value: PassMessageError) -> Self {
+impl From<ExchangeError> for CallFrameError {
+    fn from(value: ExchangeError) -> Self {
         Self::PassMessageError(value)
     }
 }
