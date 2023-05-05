@@ -8,7 +8,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::call_frame::RefType;
+use crate::kernel::call_frame::ReferenceType;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -167,7 +167,7 @@ impl AuthModule {
                         )?
                     } else {
                         Self::method_authorization_stateless(
-                            RefType::Normal,
+                            ReferenceType::Normal,
                             &node_id,
                             ObjectKey::SELF,
                             method_key,
@@ -220,7 +220,7 @@ impl AuthModule {
                 Some((_, index)) => index.get(0).unwrap().clone(),
                 None => {
                     return Self::method_authorization_stateless(
-                        RefType::Normal,
+                        ReferenceType::Normal,
                         receiver,
                         object_key,
                         method_key,
@@ -271,7 +271,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
-        ref_type: RefType,
+        ref_type: ReferenceType,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -287,7 +287,7 @@ impl AuthModule {
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-        let is_direct_access = matches!(ref_type, RefType::DirectAccess);
+        let is_direct_access = matches!(ref_type, ReferenceType::DirectAccess);
 
         let method_auth = match object_key {
             ObjectKey::SELF => access_rules

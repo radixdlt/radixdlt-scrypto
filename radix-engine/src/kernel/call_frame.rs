@@ -46,12 +46,6 @@ pub enum RENodeLocation {
     Store,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RefType {
-    Normal,
-    DirectAccess,
-}
-
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock<L> {
@@ -66,13 +60,30 @@ pub struct SubstateLock<L> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct RENodeRefData {
-    ref_type: RefType,
+pub enum StableReferenceType {
+    Global,
+    DirectAccess,
 }
 
-impl RENodeRefData {
-    fn new(ref_type: RefType) -> Self {
-        RENodeRefData { ref_type }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReferenceType {
+    Transient,
+    Stable(StableReferenceType),
+}
+
+impl ReferenceType {
+    pub fn is_normal(&self) -> bool {
+        match self {
+            ReferenceType::Transient => true,
+            ReferenceType::Stable(t) => match t {
+                StableReferenceType::Global => true,
+                StableReferenceType::DirectAccess => false,
+            },
+        }
+    }
+
+    pub fn is_direct_access(&self) -> bool {
+        matches!(self, Self::Stable(StableReferenceType::DirectAccess))
     }
 }
 
@@ -88,16 +99,16 @@ pub struct CallFrame<L> {
     /// TODO: Move to an RENode
     actor: Option<Actor>,
 
-    /// Stable references points to nodes in track, which can't moved/deleted.
-    /// Current two types: `GLOBAL` and `DirectAccess`.
-    stable_references: NonIterMap<NodeId, RENodeRefData>,
-
-    /// Node refs obtained through substate locking, which will be dropped upon unlocking.
-    temp_node_refs: NonIterMap<NodeId, u32>,
-
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node, to prevent locked node from moving.
     owned_root_nodes: IndexMap<NodeId, u32>,
+
+    /// References to non-GLOBAL nodes, obtained from actor, owned nodes and substate expansion.
+    transient_references: NonIterMap<NodeId, u32>,
+
+    /// Stable references points to nodes in track, which can't moved/deleted.
+    /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
+    stable_references: NonIterMap<NodeId, StableReferenceType>,
 
     next_lock_handle: LockHandle,
     locks: IndexMap<LockHandle, SubstateLock<L>>,
@@ -268,8 +279,8 @@ impl<L: Clone> CallFrame<L> {
                 // May overwrite existing node refs (for better visibility origin)
                 self.stable_references.insert(
                     node_id.clone(),
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
+                    StableReferenceType {
+                        ref_type: ReferenceType::Normal,
                     },
                 );
             } else {
@@ -283,7 +294,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Add initial references to ref count.
         for node_id in &initial_references {
-            self.temp_node_refs
+            self.transient_references
                 .entry(node_id.clone())
                 .or_default()
                 .add_assign(1);
@@ -379,9 +390,9 @@ impl<L: Clone> CallFrame<L> {
 
         // TODO: revisit this reference shrinking
         for refed_node in substate_lock.initial_references {
-            let cnt = self.temp_node_refs.remove(&refed_node).unwrap_or(0);
+            let cnt = self.transient_references.remove(&refed_node).unwrap_or(0);
             if cnt > 1 {
-                self.temp_node_refs.insert(refed_node, cnt - 1);
+                self.transient_references.insert(refed_node, cnt - 1);
             }
         }
 
@@ -535,8 +546,8 @@ impl<L: Clone> CallFrame<L> {
             for node_ref in refs {
                 self.stable_references.insert(
                     node_ref.clone(),
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
+                    StableReferenceType {
+                        ref_type: ReferenceType::Normal,
                     },
                 );
             }
@@ -569,8 +580,8 @@ impl<L: Clone> CallFrame<L> {
             for node_ref in refs {
                 self.stable_references.insert(
                     node_ref.clone(),
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
+                    StableReferenceType {
+                        ref_type: ReferenceType::Normal,
                     },
                 );
             }
@@ -605,8 +616,8 @@ impl<L: Clone> CallFrame<L> {
             for node_ref in refs {
                 self.stable_references.insert(
                     node_ref.clone(),
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
+                    StableReferenceType {
+                        ref_type: ReferenceType::Normal,
                     },
                 );
             }
@@ -620,7 +631,7 @@ impl<L: Clone> CallFrame<L> {
             depth: 0,
             actor: None,
             stable_references: NonIterMap::new(),
-            temp_node_refs: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
@@ -637,7 +648,7 @@ impl<L: Clone> CallFrame<L> {
             depth: parent.depth + 1,
             actor: Some(actor),
             stable_references: NonIterMap::new(),
-            temp_node_refs: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
@@ -654,8 +665,8 @@ impl<L: Clone> CallFrame<L> {
             if let Some(outer_global_object) = method_actor.object_info.outer_object {
                 frame.stable_references.insert(
                     outer_global_object.into_node_id(),
-                    RENodeRefData {
-                        ref_type: RefType::Normal,
+                    StableReferenceType {
+                        ref_type: ReferenceType::Normal,
                     },
                 );
             }
@@ -685,7 +696,7 @@ impl<L: Clone> CallFrame<L> {
             to.stable_references
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.ref_type == RefType::DirectAccess {
+                    if e.ref_type == ReferenceType::DirectAccess {
                         e.ref_type = ref_data.ref_type
                     }
                 })
@@ -756,7 +767,7 @@ impl<L: Clone> CallFrame<L> {
 
         if push_to_store {
             store.create_node(node_id, node_substates);
-            self.add_ref(node_id, RefType::Normal);
+            self.add_ref(node_id, ReferenceType::Normal);
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
@@ -765,9 +776,9 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn add_ref(&mut self, node_id: NodeId, visibility: RefType) {
+    pub fn add_ref(&mut self, node_id: NodeId, visibility: ReferenceType) {
         self.stable_references
-            .insert(node_id, RENodeRefData::new(visibility));
+            .insert(node_id, StableReferenceType::new(visibility));
     }
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
@@ -789,8 +800,8 @@ impl<L: Clone> CallFrame<L> {
                 for node_ref in refs {
                     self.stable_references.insert(
                         node_ref.clone(),
-                        RENodeRefData {
-                            ref_type: RefType::Normal,
+                        StableReferenceType {
+                            ref_type: ReferenceType::Normal,
                         },
                     );
                 }
@@ -853,16 +864,11 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
-        if self.owned_root_nodes.contains_key(node_id) {
-            Some((RefType::Normal, true))
-        } else if let Some(_) = self.temp_node_refs.get(node_id) {
-            Some((RefType::Normal, false))
-        } else if let Some(ref_data) = self.stable_references.get(node_id) {
-            Some((ref_data.ref_type, false))
-        } else if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-            // TODO: remove
-            Some((RefType::Normal, false))
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<ReferenceType> {
+        if let Some(reference_type) = self.stable_references.get(node_id) {
+            Some(ReferenceType::Stable(reference_type.clone()))
+        } else if self.transient_references.contains_key(node_id) {
+            Some(ReferenceType::Transient)
         } else {
             None
         }
