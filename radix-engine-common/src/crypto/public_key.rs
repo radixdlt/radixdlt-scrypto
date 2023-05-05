@@ -1,8 +1,11 @@
 use crate::crypto::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::*;
 
 /// Represents any natively supported public key.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),

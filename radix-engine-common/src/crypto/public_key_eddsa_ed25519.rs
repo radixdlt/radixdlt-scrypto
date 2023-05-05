@@ -1,4 +1,6 @@
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -8,6 +10,7 @@ use sbor::*;
 use utils::copy_u8_array;
 
 /// Represents an ED25519 public key.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]

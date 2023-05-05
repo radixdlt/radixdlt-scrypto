@@ -1,5 +1,6 @@
 use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -758,7 +759,40 @@ impl TxFuzzer {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
                     Some(Instruction::ReturnToWorktop { bucket_id })
                 }
-                37..=43 => None,
+                // SetComponentRoyaltyConfig
+                37 => {
+                    let royalty_config = RoyaltyConfig::arbitrary(&mut unstructured).unwrap();
+                    Some(Instruction::SetComponentRoyaltyConfig {
+                        component_address,
+                        royalty_config,
+                    })
+                }
+                // SetMetadata
+                38 => {
+                    let addresses = vec![
+                        GlobalAddress::from(component_address),
+                        GlobalAddress::from(resource_address),
+                        GlobalAddress::from(package_address),
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap(),
+                    ];
+                    let entity_address = *unstructured.choose(&addresses[..]).unwrap();
+                    let key = String::arbitrary(&mut unstructured).unwrap();
+                    // TODO: crash if using arbitrary on whole MetadataEntry
+                    // - thread 'fuzz_tx::test_generate_fuzz_input_data' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/transaction/reference_extractor.rs:77:90
+                    // - SetMetadata { entity_address: Address(078e1d6def2b37e823e0d675a74ef0b790e8edab4d35db4c79cb40dd6f1a), key: "|\u{4}Ӕq?d,9", value: Value(Address(Address(a320d2a933e64e0461b08f89481dbcffe7007c90c1f188fbdcbb1c9c589d))) }
+                    #[cfg(not(feature = "skip_crash"))]
+                    let value = MetadataEntry::arbitrary(&mut unstructured).unwrap();
+                    #[cfg(feature = "skip_crash")]
+                    let value = MetadataEntry::Value(MetadataValue::Address(GlobalAddress::from(
+                        component_address,
+                    )));
+                    Some(Instruction::SetMetadata {
+                        entity_address,
+                        key,
+                        value,
+                    })
+                }
+                39..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
