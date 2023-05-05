@@ -122,7 +122,7 @@ pub enum CreateFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PassMessageError {
-    MoveNodeError(TakeNodeError),
+    MoveNodeError(MoveNodeError),
     StableRefNotFound(NodeId),
 }
 
@@ -139,20 +139,15 @@ pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     RefNotFound(NodeId),
-    TakeNodeError(TakeNodeError),
+    MoveNodeError(MoveNodeError),
     CantDropNodeInStore(NodeId),
-    CantOwn(NodeId),
     MoveToStoreError(MoveToStoreError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
-    LockNotFound(LockHandle),
-    ContainsDuplicatedOwns,
     RefNotFound(NodeId),
-    TakeNodeError(TakeNodeError),
-    CantDropNodeInStore(NodeId),
-    CantOwn(NodeId),
+    MoveNodeError(MoveNodeError),
     MoveToStoreError(MoveToStoreError),
 }
 
@@ -163,7 +158,7 @@ pub enum MoveToStoreError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TakeNodeError {
+pub enum MoveNodeError {
     OwnNotFound(NodeId),
     OwnLocked(NodeId),
 }
@@ -329,7 +324,7 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(LockSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -449,12 +444,13 @@ impl<L: Clone> CallFrame<L> {
                 if !substate_lock.initial_owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
-                        .map_err(UnlockSubstateError::TakeNodeError)?;
+                        .map_err(UnlockSubstateError::MoveNodeError)?;
 
                     // Move the taken node to store, if parent is in store
                     if !heap.contains_node(&node_id) {
                         for child in &new_owned_nodes {
-                            Self::move_node_to_store(heap, store, child)?;
+                            Self::move_node_to_store(heap, store, child)
+                                .map_err(UnlockSubstateError::MoveToStoreError)?;
                         }
                     }
                 }
@@ -481,11 +477,7 @@ impl<L: Clone> CallFrame<L> {
             }
             for reference in &new_references {
                 if !substate_lock.initial_references.contains(reference) {
-                    if !self
-                        .get_node_visibility(reference)
-                        .iter()
-                        .any(|v| v.is_normal())
-                    {
+                    if !can_be_referenced_in_substate(&self.get_node_visibility(reference)) {
                         return Err(UnlockSubstateError::RefNotFound(reference.clone()));
                     }
                 }
@@ -601,7 +593,7 @@ impl<L: Clone> CallFrame<L> {
                 // Process own
                 for own in substate_value.owned_nodes() {
                     self.take_node_internal(own)
-                        .map_err(CreateNodeError::TakeNodeError)?;
+                        .map_err(CreateNodeError::MoveNodeError)?;
                     if push_to_store {
                         Self::move_node_to_store(heap, store, own)
                             .map_err(CreateNodeError::MoveToStoreError)?;
@@ -610,11 +602,7 @@ impl<L: Clone> CallFrame<L> {
 
                 // Process reference
                 for reference in substate_value.references() {
-                    if !self
-                        .get_node_visibility(reference)
-                        .iter()
-                        .any(|v| v.is_normal())
-                    {
+                    if !can_be_referenced_in_substate(&self.get_node_visibility(reference)) {
                         return Err(CreateNodeError::RefNotFound(reference.clone()));
                     }
                 }
@@ -638,7 +626,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, TakeNodeError> {
+    ) -> Result<NodeSubstates, MoveNodeError> {
         self.take_node_internal(node_id)?;
         let node_substates = heap.remove_node(node_id);
         for (_, module) in &node_substates {
@@ -677,7 +665,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(), CallFrameSetSubstateError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -701,7 +689,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -727,7 +715,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -760,7 +748,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameTakeSortedSubstatesError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -797,7 +785,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSortedSubstatesError> {
         // Check node visibility
-        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+        if !can_be_read(&self.get_node_visibility(node_id)) {
             return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -837,16 +825,16 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), MoveNodeError> {
         match self.owned_root_nodes.remove(node_id) {
             None => {
-                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
+                return Err(MoveNodeError::OwnNotFound(node_id.clone()));
             }
             Some(lock_count) => {
                 if lock_count == 0 {
                     Ok(())
                 } else {
-                    Err(TakeNodeError::OwnLocked(node_id.clone()))
+                    Err(MoveNodeError::OwnLocked(node_id.clone()))
                 }
             }
         }
@@ -940,12 +928,16 @@ impl<L: Clone> CallFrame<L> {
 }
 
 /// Note that system may enforce further constraints on this.
-/// For instance, system currently only allow locking substates of actor,
-/// actor's outer object, any visible key value store.
-pub fn is_lock_substate_allowed(visibilities: &BTreeSet<Visibility>) -> bool {
+/// For instance, system currently only allows substates of actor,
+/// actor's outer object, and any visible key value store.
+pub fn can_be_read(visibilities: &BTreeSet<Visibility>) -> bool {
     visibilities.iter().any(|x| x.is_normal())
 }
 
-pub fn is_invoke_allowed(visibilities: &BTreeSet<Visibility>) -> bool {
+pub fn can_be_referenced_in_substate(visibilities: &BTreeSet<Visibility>) -> bool {
+    visibilities.iter().any(|x| x.is_normal())
+}
+
+pub fn can_be_invoked(visibilities: &BTreeSet<Visibility>) -> bool {
     !visibilities.is_empty()
 }
