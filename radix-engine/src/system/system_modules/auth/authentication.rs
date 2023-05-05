@@ -2,7 +2,6 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::auth::*;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
@@ -117,7 +116,9 @@ impl Authentication {
             |auth_zone, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
-                    if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)? && p.sys_amount(api)? >= amount {
+                    if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
+                        && p.sys_amount(api)? >= amount
+                    {
                         return Ok(true);
                     }
                 }
@@ -142,9 +143,7 @@ impl Authentication {
             auth_zone_id,
             api,
             |auth_zone, rev_index, api| {
-                if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) =
-                    resource_rule
-                {
+                if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
                     if rev_index == 0 {
                         if auth_zone
                             .virtual_non_fungibles_non_extending()
@@ -244,10 +243,7 @@ impl Authentication {
 
                 Ok(false)
             }
-            ProofRule::CountOf(
-                count,
-                resources,
-            ) => {
+            ProofRule::CountOf(count, resources) => {
                 let mut left = count.clone();
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
@@ -319,19 +315,19 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        method_auth: &MethodAuthorization,
+        method_auth: &AccessRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
-            MethodAuthorization::Protected(rule) => Self::verify_auth_rule(
+            AccessRule::Protected(rule) => Self::verify_auth_rule(
                 barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 rule,
                 api,
             ),
-            MethodAuthorization::AllowAll => Ok(true),
-            MethodAuthorization::DenyAll => Ok(false),
+            AccessRule::AllowAll => Ok(true),
+            AccessRule::DenyAll => Ok(false),
         }
     }
 }

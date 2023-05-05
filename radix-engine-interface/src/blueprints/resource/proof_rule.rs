@@ -25,12 +25,12 @@ impl From<ResourceAddress> for ResourceOrNonFungible {
 }
 
 pub struct ResourceOrNonFungibleList {
-    list: Vec<ResourceOrNonFungible>
+    list: Vec<ResourceOrNonFungible>,
 }
 
 impl<T> From<Vec<T>> for ResourceOrNonFungibleList
-    where
-        T: Into<ResourceOrNonFungible>,
+where
+    T: Into<ResourceOrNonFungible>,
 {
     fn from(addresses: Vec<T>) -> Self {
         ResourceOrNonFungibleList {

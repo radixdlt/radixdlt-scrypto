@@ -1,4 +1,3 @@
-use super::authorization::MethodAuthorization;
 use super::Authentication;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
@@ -27,7 +26,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::system::system_modules::auth::convert;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -37,7 +35,7 @@ pub enum AuthError {
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub authorization: MethodAuthorization,
+    pub access_rule: AccessRule,
 }
 
 #[derive(Debug, Clone)]
@@ -76,17 +74,17 @@ impl AuthModule {
         blueprint: &Blueprint,
         ident: &str,
         api: &mut Y,
-    ) -> Result<MethodAuthorization, RuntimeError> {
+    ) -> Result<AccessRule, RuntimeError> {
         let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
             if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
-                MethodAuthorization::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+                AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
                     ResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
             } else {
-                MethodAuthorization::AllowAll
+                AccessRule::AllowAll
             }
         } else {
             let handle = api.kernel_lock_substate(
@@ -103,7 +101,7 @@ impl AuthModule {
                 .access_rules
                 .get(&function_key)
                 .unwrap_or(&package_access_rules.default_auth);
-            convert(access_rule)
+            access_rule.clone()
         };
 
         Ok(auth)
@@ -115,7 +113,7 @@ impl AuthModule {
         ident: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
+    ) -> Result<Vec<AccessRule>, RuntimeError> {
         let auths = match (node_id, module_id, ident) {
             (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
                 vec![AccessRulesNativePackage::authorization(
@@ -174,7 +172,7 @@ impl AuthModule {
         object_key: ObjectKey,
         key: MethodKey,
         api: &mut Y,
-    ) -> Result<MethodAuthorization, RuntimeError> {
+    ) -> Result<AccessRule, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
             ACCESS_RULES_BASE_MODULE,
@@ -202,12 +200,9 @@ impl AuthModule {
             }
         };
 
-        // TODO: Remove
-        let authorization = convert(&method_auth);
-
         api.kernel_drop_lock(handle)?;
 
-        Ok(authorization)
+        Ok(method_auth)
     }
 
     pub fn last_auth_zone(&self) -> NodeId {
@@ -264,7 +259,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 &mut system,
             )? {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized { authorization })),
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        access_rule: authorization,
+                    })),
                 )));
             }
         }
