@@ -1,6 +1,5 @@
 use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::blueprints::resource::*;
-use crate::data::scrypto::SchemaPath;
 use crate::math::Decimal;
 use crate::*;
 use radix_engine_common::types::*;
@@ -10,7 +9,6 @@ use sbor::rust::vec::Vec;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftDecimal {
     Static(Decimal),
-    Dynamic(SchemaPath),
 }
 
 impl From<Decimal> for SoftDecimal {
@@ -19,23 +17,9 @@ impl From<Decimal> for SoftDecimal {
     }
 }
 
-impl From<SchemaPath> for SoftDecimal {
-    fn from(path: SchemaPath) -> Self {
-        SoftDecimal::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftDecimal {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftDecimal::Dynamic(schema_path)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftCount {
     Static(u8),
-    Dynamic(SchemaPath),
 }
 
 impl From<u8> for SoftCount {
@@ -44,23 +28,9 @@ impl From<u8> for SoftCount {
     }
 }
 
-impl From<SchemaPath> for SoftCount {
-    fn from(path: SchemaPath) -> Self {
-        SoftCount::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftCount {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftCount::Dynamic(schema_path)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftResource {
     Static(ResourceAddress),
-    Dynamic(SchemaPath),
 }
 
 impl From<ResourceAddress> for SoftResource {
@@ -69,24 +39,10 @@ impl From<ResourceAddress> for SoftResource {
     }
 }
 
-impl From<SchemaPath> for SoftResource {
-    fn from(path: SchemaPath) -> Self {
-        SoftResource::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftResource {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftResource::Dynamic(schema_path)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleGlobalId),
     StaticResource(ResourceAddress),
-    Dynamic(SchemaPath),
 }
 
 impl From<NonFungibleGlobalId> for SoftResourceOrNonFungible {
@@ -101,36 +57,9 @@ impl From<ResourceAddress> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<SchemaPath> for SoftResourceOrNonFungible {
-    fn from(path: SchemaPath) -> Self {
-        SoftResourceOrNonFungible::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftResourceOrNonFungible {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftResourceOrNonFungible::Dynamic(schema_path)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
-    Dynamic(SchemaPath),
-}
-
-impl From<SchemaPath> for SoftResourceOrNonFungibleList {
-    fn from(path: SchemaPath) -> Self {
-        SoftResourceOrNonFungibleList::Dynamic(path)
-    }
-}
-
-impl From<&str> for SoftResourceOrNonFungibleList {
-    fn from(path: &str) -> Self {
-        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
-        SoftResourceOrNonFungibleList::Dynamic(schema_path)
-    }
 }
 
 impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList

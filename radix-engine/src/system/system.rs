@@ -1,5 +1,5 @@
 use super::payload_validation::*;
-use super::system_modules::auth::{convert_contextless, Authentication};
+use super::system_modules::auth::{Authentication};
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
@@ -42,6 +42,7 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::system_modules::auth::convert;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
@@ -1593,7 +1594,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorization = convert_contextless(&rule);
+        let authorization = convert(&rule);
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();

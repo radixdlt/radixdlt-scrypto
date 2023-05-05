@@ -1,4 +1,3 @@
-use super::auth_converter::convert_contextless;
 use super::authorization::MethodAuthorization;
 use super::Authentication;
 use super::HardAuthRule;
@@ -31,6 +30,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::system::system_modules::auth::convert;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -106,7 +106,7 @@ impl AuthModule {
                 .access_rules
                 .get(&function_key)
                 .unwrap_or(&package_access_rules.default_auth);
-            convert_contextless(access_rule)
+            convert(access_rule)
         };
 
         Ok(auth)
@@ -206,7 +206,7 @@ impl AuthModule {
         };
 
         // TODO: Remove
-        let authorization = convert_contextless(&method_auth);
+        let authorization = convert(&method_auth);
 
         api.kernel_drop_lock(handle)?;
 
