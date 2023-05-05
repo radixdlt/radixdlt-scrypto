@@ -104,7 +104,7 @@ pub struct CallFrame<L> {
     owned_root_nodes: IndexMap<NodeId, usize>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
-    borrowed_references: NonIterMap<NodeId, usize>,
+    transient_references: NonIterMap<NodeId, usize>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
@@ -196,7 +196,7 @@ impl<L: Clone> CallFrame<L> {
             depth: 0,
             actor: None,
             stable_references: NonIterMap::new(),
-            borrowed_references: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
@@ -213,7 +213,7 @@ impl<L: Clone> CallFrame<L> {
             depth: parent.depth + 1,
             actor: Some(actor),
             stable_references: NonIterMap::new(),
-            borrowed_references: NonIterMap::new(),
+            transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
@@ -245,7 +245,7 @@ impl<L: Clone> CallFrame<L> {
         message: Message,
     ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
-            // Note that this has no impact on the `borrowed_references` because
+            // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
                 .map_err(PassMessageError::MoveNodeError)?;
@@ -313,8 +313,9 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
-        self.get_node_visibility(node_id)
-            .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
+        if !is_lock_substate_allowed(&self.get_node_visibility(node_id)) {
+            return Err(LockSubstateError::NodeNotInCallFrame(node_id.clone()));
+        }
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -347,33 +348,28 @@ impl<L: Clone> CallFrame<L> {
             store.read_substate(handle)
         };
 
-        // Infer references and owns within the substate
-        let references = substate_value.references();
-        let owned_nodes = substate_value.owned_nodes();
-        let mut initial_references = index_set_new();
+        // Analyze owns and references in the substate
+        let mut initial_references = index_set_new(); // du-duplicated
         let mut initial_owned_nodes = index_set_new();
-        for node_id in references {
-            // TODO: fix this ugly condition
+        for node_id in substate_value.references() {
             if node_id.is_global() {
-                // May overwrite existing node refs (for better visibility origin)
-                self.stable_references.insert(
-                    node_id.clone(),
-                    StableReferenceType {
-                        ref_type: Visibility::Normal,
-                    },
-                );
+                // Again, safe to overwrite because Global and DirectAccess are exclusive.
+                self.stable_references
+                    .insert(node_id.clone(), StableReferenceType::Global);
             } else {
                 initial_references.insert(node_id.clone());
             }
         }
-        for node_id in owned_nodes {
+        for node_id in substate_value.owned_nodes() {
             initial_references.insert(node_id.clone());
-            initial_owned_nodes.insert(node_id.clone());
+            if !initial_owned_nodes.insert(node_id.clone()) {
+                panic!("Duplicated own found in substate");
+            }
         }
 
-        // Add initial references to ref count.
+        // Expand transient references with new references released from the substate
         for node_id in &initial_references {
-            self.borrowed_references
+            self.transient_references
                 .entry(node_id.clone())
                 .or_default()
                 .add_assign(1);
@@ -469,9 +465,9 @@ impl<L: Clone> CallFrame<L> {
 
         // TODO: revisit this reference shrinking
         for refed_node in substate_lock.initial_references {
-            let cnt = self.borrowed_references.remove(&refed_node).unwrap_or(0);
+            let cnt = self.transient_references.remove(&refed_node).unwrap_or(0);
             if cnt > 1 {
-                self.borrowed_references.insert(refed_node, cnt - 1);
+                self.transient_references.insert(refed_node, cnt - 1);
             }
         }
 
@@ -888,10 +884,21 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Borrowed from substate loading
-        if self.borrowed_references.contains_key(node_id) {
+        if self.transient_references.contains_key(node_id) {
             visibilities.insert(Visibility::Borrowed);
         }
 
         visibilities
     }
+}
+
+/// Note that system may enforce further constraints on this.
+/// For instance, system currently only allow locking substates of actor,
+/// actor's outer object, any visible key value store.
+pub fn is_lock_substate_allowed(visibilities: &BTreeSet<Visibility>) -> bool {
+    visibilities.iter().any(|x| x.is_normal())
+}
+
+pub fn is_invoke_allowed(visibilities: &BTreeSet<Visibility>) -> bool {
+    !visibilities.is_empty()
 }
