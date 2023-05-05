@@ -561,8 +561,13 @@ pub fn create_system_bootstrap_transaction(
     {
         // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
-        let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
-        access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            (
+                rule!(require(package_of_caller(ACCOUNT_PACKAGE))),
+                rule!(deny_all),
+            ),
+        );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ACCOUNT_OWNER_BADGE.into();
         pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());

@@ -428,7 +428,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
-        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
@@ -436,7 +435,9 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-                    AccessRuleEntry::AccessRule(rule!(require(non_fungible_global_id))),
+                    AccessRuleEntry::AccessRule(rule!(require(package_of_caller(
+                        EPOCH_MANAGER_PACKAGE
+                    )))),
                 ),
             ),
         ]

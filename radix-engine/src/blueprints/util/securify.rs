@@ -112,8 +112,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let access_rules = Self::init_securified_rules(api)?;
 
-        let package_id = NonFungibleGlobalId::package_actor(Self::PACKAGE);
-        let this_package_rule = rule!(require(package_id));
+        let this_package_rule = rule!(require(package_of_caller(Self::PACKAGE)));
 
         let access_rule = rule!(require(owner_id));
         if let Some(securify_ident) = Self::SECURIFY_IDENT {

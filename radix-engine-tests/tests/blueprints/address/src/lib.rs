@@ -133,8 +133,7 @@ mod called_component {
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {
-            let global_id = NonFungibleGlobalId::from_component_address(&component_address);
-            Runtime::assert_access_rule(rule!(require(global_id)));
+            Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
         }
     }
 }
