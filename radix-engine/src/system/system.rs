@@ -36,8 +36,8 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintCollectionSchema, IndexedBlueprintSchema, InstanceSchema,
-    KeyValueStoreInfo, TypeSchema,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
+    InstanceSchema, KeyValueStoreInfo, TypeSchema,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -321,13 +321,13 @@ where
                         field_type_index[i],
                         self,
                     )
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
+                    .map_err(|err| {
+                        RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                            CreateObjectError::InvalidSubstateWrite(
+                                err.error_message(&blueprint_schema.schema),
+                            ),
+                        )))
+                    })?;
 
                     partition.insert(
                         SubstateKey::Tuple(i as u8),
@@ -342,7 +342,9 @@ where
 
         // Collections
         {
-            for (index, (offset, blueprint_partition_schema)) in blueprint_schema.collections.iter().enumerate() {
+            for (index, (offset, blueprint_partition_schema)) in
+                blueprint_schema.collections.iter().enumerate()
+            {
                 let index = index as u8;
                 let mut partition = BTreeMap::new();
                 match blueprint_partition_schema {
@@ -493,7 +495,7 @@ where
     fn get_actor_kv_partition(
         &mut self,
         actor_object_type: ActorObjectType,
-        partition_index: u8,
+        collection_index: CollectionIndex,
     ) -> Result<
         (
             NodeId,
@@ -507,11 +509,11 @@ where
         let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, schema, kv_schema) = schema
-            .key_value_store_partition(partition_index)
+            .key_value_store_partition(collection_index)
             .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
                     info.blueprint.clone(),
-                    partition_index,
+                    collection_index,
                 ))
             })?;
 
@@ -525,20 +527,17 @@ where
     fn get_actor_index(
         &mut self,
         actor_object_type: ActorObjectType,
-        partition_index: u8,
+        collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
         let (node_id, base_partition, object_info, schema) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) =
-            schema
-                .index_partition(partition_index)
-                .ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                        object_info.blueprint,
-                        partition_index,
-                    ))
-                })?;
+        let (partition_offset, _) = schema.index_partition(collection_index).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                object_info.blueprint,
+                collection_index,
+            ))
+        })?;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -550,19 +549,20 @@ where
     fn get_actor_sorted_index(
         &mut self,
         actor_object_type: ActorObjectType,
-        partition_index: u8,
+        collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
         let (node_id, base_partition, object_info, schema) =
             self.get_actor_schema(actor_object_type)?;
 
-        let (partition_offset, _) = schema
-            .sorted_index_partition(partition_index)
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    object_info.blueprint,
-                    partition_index,
-                ))
-            })?;
+        let (partition_offset, _) =
+            schema
+                .sorted_index_partition(collection_index)
+                .ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
+                        object_info.blueprint,
+                        collection_index,
+                    ))
+                })?;
 
         let partition_num = base_partition
             .at_offset(partition_offset)
@@ -1191,13 +1191,13 @@ where
     fn actor_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num) = self.get_actor_index(actor_object_type, partition_index)?;
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1216,12 +1216,12 @@ where
     fn actor_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num) = self.get_actor_index(actor_object_type, partition_index)?;
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let rtn = self
             .api
@@ -1234,12 +1234,12 @@ where
     fn actor_index_scan(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num) = self.get_actor_index(actor_object_type, partition_index)?;
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
@@ -1254,12 +1254,12 @@ where
     fn actor_index_take(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num) = self.get_actor_index(actor_object_type, partition_index)?;
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
@@ -1281,14 +1281,14 @@ where
     fn actor_sorted_index_insert(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(actor_object_type, partition_index)?;
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1312,13 +1312,13 @@ where
     fn actor_sorted_index_remove(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(actor_object_type, partition_index)?;
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         let rtn = self
             .api
@@ -1336,13 +1336,13 @@ where
     fn actor_sorted_index_scan(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) =
-            self.get_actor_sorted_index(actor_object_type, partition_index)?;
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
@@ -1527,14 +1527,14 @@ where
     fn actor_lock_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, schema, kv_schema, object_info) =
-            self.get_actor_kv_partition(actor_object_type, partition_index)?;
+            self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
@@ -1570,12 +1570,12 @@ where
     fn actor_remove_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
-        partition_index: u8,
+        collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.actor_lock_key_value_entry(
             object_handle,
-            partition_index,
+            collection_index,
             key,
             LockFlags::MUTABLE,
         )?;

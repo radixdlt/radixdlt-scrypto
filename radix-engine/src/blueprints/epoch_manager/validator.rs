@@ -1,5 +1,5 @@
 use crate::blueprints::epoch_manager::{
-    EpochManagerConfigSubstate, EpochManagerSubstate, Validator,
+    EpochManagerConfigSubstate, EpochManagerSubstate, Validator, EPOCH_MANAGER_SECONDARY_INDEX,
 };
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
@@ -441,7 +441,7 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    1u8,
+                    EPOCH_MANAGER_SECONDARY_INDEX,
                     index_key,
                     (address, Validator { key, stake }),
                 )?;
@@ -450,14 +450,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        1u8,
+                        EPOCH_MANAGER_SECONDARY_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    1u8,
+                    EPOCH_MANAGER_SECONDARY_INDEX,
                     index_key,
                     (address, validator),
                 )?;
@@ -470,20 +470,24 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        1u8,
+                        EPOCH_MANAGER_SECONDARY_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    1u8,
+                    EPOCH_MANAGER_SECONDARY_INDEX,
                     new_index_key,
                     (address, validator),
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
-                api.actor_sorted_index_remove(OBJECT_HANDLE_OUTER_OBJECT, 1u8, &index_key)?;
+                api.actor_sorted_index_remove(
+                    OBJECT_HANDLE_OUTER_OBJECT,
+                    EPOCH_MANAGER_SECONDARY_INDEX,
+                    &index_key,
+                )?;
             }
         }
 

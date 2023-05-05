@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -15,6 +15,8 @@ pub enum NonFungibleVaultError {
 }
 
 pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
+
+pub const NON_FUNGIBLE_VAULT_NON_FUNGIBLES: CollectionIndex = 0u8;
 
 pub struct NonFungibleVaultBlueprint;
 
@@ -258,8 +260,11 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let items: Vec<NonFungibleLocalId> =
-            api.actor_index_scan_typed(OBJECT_HANDLE_SELF, 1u8, u32::MAX)?;
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
+            OBJECT_HANDLE_SELF,
+            NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+            u32::MAX,
+        )?;
         let ids = items.into_iter().collect();
         Ok(ids)
     }
@@ -316,8 +321,11 @@ impl NonFungibleVault {
             .expect("Failed to convert amount to u32");
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> =
-                api.actor_index_take_typed(OBJECT_HANDLE_SELF, 1u8, amount_to_take)?;
+            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                amount_to_take,
+            )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().collect(),
             }
@@ -349,8 +357,11 @@ impl NonFungibleVault {
 
         // TODO: Batch remove
         for id in ids {
-            let removed =
-                api.actor_index_remove(OBJECT_HANDLE_SELF, 1u8, scrypto_encode(id).unwrap())?;
+            let removed = api.actor_index_remove(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                scrypto_encode(id).unwrap(),
+            )?;
 
             if removed.is_none() {
                 return Err(RuntimeError::ApplicationError(
@@ -392,7 +403,7 @@ impl NonFungibleVault {
         for id in resource.ids {
             api.actor_index_insert_typed(
                 OBJECT_HANDLE_SELF,
-                1u8,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
                 scrypto_encode(&id).unwrap(),
                 id,
             )?;

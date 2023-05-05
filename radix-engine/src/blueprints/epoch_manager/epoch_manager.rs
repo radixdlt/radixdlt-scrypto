@@ -11,7 +11,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -44,6 +44,8 @@ pub struct CurrentValidatorSetSubstate {
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
+
+pub const EPOCH_MANAGER_SECONDARY_INDEX: CollectionIndex = 0u8;
 
 pub struct EpochManagerBlueprint;
 
@@ -288,8 +290,11 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let validators: Vec<(ComponentAddress, Validator)> =
-            api.actor_sorted_index_scan_typed(OBJECT_HANDLE_SELF, 1u8, max_validators)?;
+        let validators: Vec<(ComponentAddress, Validator)> = api.actor_sorted_index_scan_typed(
+            OBJECT_HANDLE_SELF,
+            EPOCH_MANAGER_SECONDARY_INDEX,
+            max_validators,
+        )?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 

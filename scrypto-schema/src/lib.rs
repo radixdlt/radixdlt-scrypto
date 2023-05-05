@@ -162,17 +162,26 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
 
         let mut collections = Vec::new();
         for kv_schema in schema.kv_stores {
-            collections.push((PartitionOffset(partition_offset), BlueprintCollectionSchema::KeyValueStore(kv_schema)));
+            collections.push((
+                PartitionOffset(partition_offset),
+                BlueprintCollectionSchema::KeyValueStore(kv_schema),
+            ));
             partition_offset += 1;
         }
 
         for index_schema in schema.indices {
-            collections.push((PartitionOffset(partition_offset), BlueprintCollectionSchema::Index(index_schema)));
+            collections.push((
+                PartitionOffset(partition_offset),
+                BlueprintCollectionSchema::Index(index_schema),
+            ));
             partition_offset += 1;
         }
 
         for sorted_index_schema in schema.sorted_indices {
-            collections.push((PartitionOffset(partition_offset), BlueprintCollectionSchema::SortedIndex(sorted_index_schema)));
+            collections.push((
+                PartitionOffset(partition_offset),
+                BlueprintCollectionSchema::SortedIndex(sorted_index_schema),
+            ));
             partition_offset += 1;
         }
 
@@ -217,8 +226,11 @@ impl IndexedBlueprintSchema {
         match &self.fields {
             Some((offset, fields)) => {
                 let field_index: usize = field_index.into();
-                fields.get(field_index).cloned().map(|f| (offset.clone(), f))
-            },
+                fields
+                    .get(field_index)
+                    .cloned()
+                    .map(|f| (offset.clone(), f))
+            }
             _ => None,
         }
     }

@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -35,6 +35,8 @@ pub struct NonFungibleResourceManagerMutableFieldsSubstate {
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
 
+pub const NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE: CollectionIndex = 0u8;
+
 fn create_non_fungibles<Y>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
@@ -60,7 +62,7 @@ where
 
         let non_fungible_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            1u8,
+            NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &non_fungible_local_id.to_key(),
             LockFlags::MUTABLE,
         )?;
@@ -213,7 +215,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            btreemap!(1u8 => non_fungibles),
+            btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -270,7 +272,7 @@ impl NonFungibleResourceManagerBlueprint {
                 scrypto_encode(&mutable_fields).unwrap(),
                 scrypto_encode(&supply).unwrap(),
             ],
-            btreemap!(1u8 => non_fungibles),
+            btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
         let bucket = globalize_non_fungible_with_initial_supply(
             object_id,
@@ -510,7 +512,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            1u8,
+            NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
             LockFlags::MUTABLE,
         )?;
@@ -549,7 +551,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let non_fungible_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            1u8,
+            NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
             LockFlags::read_only(),
         )?;
@@ -572,7 +574,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let non_fungible_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            1u8,
+            NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
             LockFlags::read_only(),
         )?;
@@ -647,7 +649,11 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                api.actor_remove_key_value_entry(OBJECT_HANDLE_SELF, 1u8, &id.to_key())?;
+                api.actor_remove_key_value_entry(
+                    OBJECT_HANDLE_SELF,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
+                    &id.to_key(),
+                )?;
             }
         }
 

@@ -1,3 +1,4 @@
+use crate::api::FieldIndex;
 use crate::types::*;
 use radix_engine_interface::api::{LockFlags, ObjectHandle};
 use sbor::rust::fmt::Debug;
@@ -8,7 +9,7 @@ pub trait ClientActorApi<E: Debug> {
     fn actor_lock_field(
         &mut self,
         object_handle: ObjectHandle,
-        field: u8,
+        field: FieldIndex,
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 

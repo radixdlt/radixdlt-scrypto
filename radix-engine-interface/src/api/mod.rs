@@ -35,6 +35,9 @@ pub type ObjectHandle = u32;
 pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
 pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
 
+pub type FieldIndex = u8;
+pub type CollectionIndex = u8;
+
 /// Interface of the system, for blueprints and Node modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
