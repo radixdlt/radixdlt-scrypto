@@ -15,11 +15,11 @@ mod child_component {
             Runtime::global_address()
         }
 
-        pub fn call_other_component(&self) {
+        pub fn call_other_component(&self, child: bool) {
             let _: () = Runtime::call_method(
                 self.to_call,
                 "protected_method",
-                scrypto_args!(Runtime::global_address()),
+                scrypto_args!(Runtime::global_address(), child),
             );
         }
     }
@@ -106,30 +106,56 @@ mod my_component {
 
         pub fn call_other_component_with_wrong_address(&self) {
             let address = self.to_call;
-            Runtime::call_method(self.to_call, "protected_method", scrypto_args!(address))
+            Runtime::call_method(self.to_call, "protected_method", scrypto_args!(address, false))
         }
 
-        pub fn call_other_component_in_parent(&self) {
-            Runtime::call_method(
-                self.to_call,
-                "protected_method",
-                scrypto_args!(Runtime::global_address()),
-            )
-        }
-
-        pub fn call_other_component_in_child(&self) {
-            self.child.call_other_component();
+        pub fn call_other_component(&self, child: bool, called_child: bool) {
+            if child {
+                self.child.call_other_component(called_child);
+            } else {
+                Runtime::call_method(
+                    self.to_call,
+                    "protected_method",
+                    scrypto_args!(Runtime::global_address(), called_child),
+                )
+            }
         }
     }
 }
 
 #[blueprint]
 mod called_component {
-    struct CalledComponent {}
+    use called_component_child::*;
+
+    struct CalledComponent {
+        child: CalledComponentChildComponent,
+    }
 
     impl CalledComponent {
         pub fn create() -> ComponentAddress {
-            Self {}.instantiate().globalize()
+            let child = CalledComponentChild::create();
+            Self {
+                child,
+            }.instantiate().globalize()
+        }
+
+        pub fn protected_method(&self, component_address: ComponentAddress, child: bool) {
+            if child {
+                self.child.protected_method(component_address);
+            } else {
+                Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
+            }
+        }
+    }
+}
+
+#[blueprint]
+mod called_component_child {
+    struct CalledComponentChild {}
+
+    impl CalledComponentChild {
+        pub fn create() -> CalledComponentChildComponent {
+            Self {}.instantiate()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {
