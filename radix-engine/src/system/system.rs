@@ -691,16 +691,7 @@ where
         // FIXME ensure that only the package actor can globalize its own blueprints
 
         let blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        let entity_type = get_entity_type_for_blueprint(&blueprint);
-
-        if address.as_node_id().entity_type() != Some(entity_type) {
-            return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                Box::new(CannotGlobalizeError::InvalidAddressEntityType {
-                    expected: entity_type,
-                    actual: address.as_node_id().entity_type(),
-                }),
-            )));
-        }
+        check_address_allowed_for_blueprint(&address, &blueprint)?;
 
         self.globalize_with_address_internal(modules, address)
     }
@@ -714,16 +705,7 @@ where
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
-        let entity_type = get_entity_type_for_blueprint(&actor_blueprint);
-
-        if address.as_node_id().entity_type() != Some(entity_type) {
-            return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                Box::new(CannotGlobalizeError::InvalidAddressEntityType {
-                    expected: entity_type,
-                    actual: address.as_node_id().entity_type(),
-                }),
-            )));
-        }
+        check_address_allowed_for_blueprint(&address, &actor_blueprint)?;
 
         self.globalize_with_address_internal(modules, address)?;
 
@@ -1980,6 +1962,38 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
     }
+}
+
+pub fn check_address_allowed_for_blueprint(
+    address: &GlobalAddress,
+    blueprint: &Blueprint,
+) -> Result<(), RuntimeError> {
+    let entity_type = address.as_node_id().entity_type();
+
+    let valid_entity_types: IndexSet<EntityType> =
+        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            // Note - you can't manually preallocate key-originated addresses - so these must be from assigned from the virtualization process
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => indexset!(
+                EntityType::GlobalAccount,
+                EntityType::GlobalVirtualEd25519Account,
+                EntityType::GlobalVirtualSecp256k1Account
+            ),
+            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => indexset!(
+                EntityType::GlobalIdentity,
+                EntityType::GlobalVirtualEd25519Identity,
+                EntityType::GlobalVirtualSecp256k1Identity
+            ),
+            _ => indexset!(get_entity_type_for_blueprint(blueprint)),
+        };
+    if entity_type.is_some() && !valid_entity_types.contains(&entity_type.unwrap()) {
+        return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+            Box::new(CannotGlobalizeError::InvalidAddressEntityType {
+                expected: valid_entity_types.into_iter().collect::<Vec<_>>(),
+                actual: entity_type,
+            }),
+        )));
+    }
+    Ok(())
 }
 
 pub fn get_entity_type_for_blueprint(blueprint: &Blueprint) -> EntityType {

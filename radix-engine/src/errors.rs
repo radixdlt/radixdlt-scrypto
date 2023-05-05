@@ -272,7 +272,7 @@ pub enum CannotGlobalizeError {
     NotAnObject,
     AlreadyGlobalized,
     InvalidAddressEntityType {
-        expected: EntityType,
+        expected: Vec<EntityType>,
         actual: Option<EntityType>,
     },
 }
