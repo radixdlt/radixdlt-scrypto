@@ -452,21 +452,16 @@ impl ValidatorCreator {
         Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id);
-
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(non_fungible_global_id.clone())),
+                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -482,21 +477,17 @@ impl ValidatorCreator {
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id);
 
         unstake_token_auth.insert(
             Mint,
             (
-                rule!(require(non_fungible_global_id.clone())),
+                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
