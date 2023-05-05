@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, LockSubstateError, ReferenceType};
+use super::call_frame::{CallFrame, LockSubstateError, Visibility};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
@@ -62,7 +62,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         for node_id in args.references() {
             if node_id.is_global_virtual() {
                 // For virtual accounts and native packages, create a reference directly
-                kernel.current_frame.add_ref(*node_id, ReferenceType::Normal);
+                kernel.current_frame.add_ref(*node_id, Visibility::Normal);
                 continue;
             }
 
@@ -87,14 +87,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     blueprint, global, ..
                 }) => {
                     if global {
-                        kernel.current_frame.add_ref(*node_id, ReferenceType::Normal);
+                        kernel.current_frame.add_ref(*node_id, Visibility::Normal);
                     } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
                         kernel
                             .current_frame
-                            .add_ref(*node_id, ReferenceType::DirectAccess);
+                            .add_ref(*node_id, Visibility::DirectAccess);
                     } else {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
@@ -309,7 +309,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(ReferenceType, bool)> {
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(Visibility, bool)> {
         let info = self.current_frame.get_node_visibility(node_id)?;
         Some(info)
     }
@@ -556,7 +556,7 @@ where
                             .map_err(KernelError::CallFrameError)?;
                         self.store.release_lock(handle);
 
-                        self.current_frame.add_ref(*node_id, ReferenceType::Normal);
+                        self.current_frame.add_ref(*node_id, Visibility::Normal);
                         let (lock_handle, _) = self
                             .current_frame
                             .acquire_lock(

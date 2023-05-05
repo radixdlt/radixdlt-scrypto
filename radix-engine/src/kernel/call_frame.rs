@@ -60,31 +60,30 @@ pub struct SubstateLock<L> {
     pub data: L,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum StableReferenceType {
     Global,
     DirectAccess,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ReferenceType {
-    Transient,
-    Stable(StableReferenceType),
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Visibility {
+    StableReference(StableReferenceType),
+    FrameOwned,
+    Actor,
+    Borrowed,
 }
 
-impl ReferenceType {
-    pub fn is_normal(&self) -> bool {
-        match self {
-            ReferenceType::Transient => true,
-            ReferenceType::Stable(t) => match t {
-                StableReferenceType::Global => true,
-                StableReferenceType::DirectAccess => false,
-            },
-        }
+impl Visibility {
+    pub fn is_direct_access(&self) -> bool {
+        matches!(
+            self,
+            Self::StableReference(StableReferenceType::DirectAccess)
+        )
     }
 
-    pub fn is_direct_access(&self) -> bool {
-        matches!(self, Self::Stable(StableReferenceType::DirectAccess))
+    pub fn is_normal(&self) -> bool {
+        !self.is_direct_access()
     }
 }
 
@@ -104,7 +103,7 @@ pub struct CallFrame<L> {
     /// Also keeps track of number of locks on this node, to prevent locked node from moving.
     owned_root_nodes: IndexMap<NodeId, u32>,
 
-    /// References to non-GLOBAL nodes, obtained from actor, owned nodes and substate expansion.
+    /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
     transient_references: NonIterMap<NodeId, u32>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
@@ -219,7 +218,7 @@ impl<L: Clone> CallFrame<L> {
         // Copy references and move nodes
         Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::MoveError)?;
 
-        // Additional check on actor
+        // Additional logic on actor
         if let Some(method_actor) = optional_method_actor {
             if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
                 return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
@@ -234,7 +233,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Set up transient references
         if let Some(MethodActor { node_id, .. }) = optional_method_actor {
-            if node_id.is_internal() {
+            if !node_id.is_global() {
                 frame
                     .transient_references
                     .entry(node_id)
@@ -275,7 +274,7 @@ impl<L: Clone> CallFrame<L> {
             to.stable_references
                 .entry(node_id)
                 .and_modify(|e| {
-                    if e.ref_type == ReferenceType::DirectAccess {
+                    if e.ref_type == Visibility::DirectAccess {
                         e.ref_type = ref_data.ref_type
                     }
                 })
@@ -378,7 +377,7 @@ impl<L: Clone> CallFrame<L> {
                 self.stable_references.insert(
                     node_id.clone(),
                     StableReferenceType {
-                        ref_type: ReferenceType::Normal,
+                        ref_type: Visibility::Normal,
                     },
                 );
             } else {
@@ -645,7 +644,7 @@ impl<L: Clone> CallFrame<L> {
                 self.stable_references.insert(
                     node_ref.clone(),
                     StableReferenceType {
-                        ref_type: ReferenceType::Normal,
+                        ref_type: Visibility::Normal,
                     },
                 );
             }
@@ -679,7 +678,7 @@ impl<L: Clone> CallFrame<L> {
                 self.stable_references.insert(
                     node_ref.clone(),
                     StableReferenceType {
-                        ref_type: ReferenceType::Normal,
+                        ref_type: Visibility::Normal,
                     },
                 );
             }
@@ -715,7 +714,7 @@ impl<L: Clone> CallFrame<L> {
                 self.stable_references.insert(
                     node_ref.clone(),
                     StableReferenceType {
-                        ref_type: ReferenceType::Normal,
+                        ref_type: Visibility::Normal,
                     },
                 );
             }
@@ -785,7 +784,7 @@ impl<L: Clone> CallFrame<L> {
 
         if push_to_store {
             store.create_node(node_id, node_substates);
-            self.add_ref(node_id, ReferenceType::Normal);
+            self.add_ref(node_id, Visibility::Normal);
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
@@ -794,7 +793,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn add_ref(&mut self, node_id: NodeId, visibility: ReferenceType) {
+    pub fn add_ref(&mut self, node_id: NodeId, visibility: Visibility) {
         self.stable_references
             .insert(node_id, StableReferenceType::new(visibility));
     }
@@ -819,7 +818,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references.insert(
                         node_ref.clone(),
                         StableReferenceType {
-                            ref_type: ReferenceType::Normal,
+                            ref_type: Visibility::Normal,
                         },
                     );
                 }
@@ -882,13 +881,35 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn get_node_visibility(&self, node_id: &NodeId) -> Option<ReferenceType> {
+    pub fn get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+        let mut visibilities = BTreeSet::<Visibility>::new();
+
+        // Stable references
         if let Some(reference_type) = self.stable_references.get(node_id) {
-            Some(ReferenceType::Stable(reference_type.clone()))
-        } else if self.transient_references.contains_key(node_id) {
-            Some(ReferenceType::Transient)
-        } else {
-            None
+            visibilities.insert(Visibility::StableReference(reference_type.clone()));
         }
+
+        // Frame owned nodes
+        if self.owned_root_nodes.contains_key(node_id) {
+            visibilities.insert(Visibility::FrameOwned);
+        }
+
+        // Actor
+        if let Some(Actor::Method(MethodActor {
+            node_id: actor_node_id,
+            ..
+        })) = &self.actor
+        {
+            if actor_node_id == node_id {
+                visibilities.insert(Visibility::Actor);
+            }
+        }
+
+        // Borrowed from substate loading
+        if self.transient_references.contains_key(node_id) {
+            visibilities.insert(Visibility::Borrowed);
+        }
+
+        visibilities
     }
 }

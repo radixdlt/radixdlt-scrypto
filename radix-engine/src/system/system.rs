@@ -7,7 +7,7 @@ use crate::errors::{
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
-use crate::kernel::call_frame::ReferenceType;
+use crate::kernel::call_frame::Visibility;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -737,7 +737,7 @@ where
                             let (visibility, on_heap) =
                                 self.api.kernel_get_node_info(receiver).unwrap();
                             match (visibility, on_heap) {
-                                (ReferenceType::Normal, false) => self
+                                (Visibility::Normal, false) => self
                                     .api
                                     .kernel_get_system_state()
                                     .current
@@ -1927,7 +1927,7 @@ where
         self.api.kernel_get_current_depth()
     }
 
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(ReferenceType, bool)> {
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(Visibility, bool)> {
         self.api.kernel_get_node_info(node_id)
     }
 

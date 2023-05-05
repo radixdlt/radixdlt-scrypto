@@ -1,4 +1,4 @@
-use super::call_frame::ReferenceType;
+use super::call_frame::Visibility;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -186,7 +186,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(ReferenceType, bool)>;
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(Visibility, bool)>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
