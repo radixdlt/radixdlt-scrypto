@@ -36,7 +36,7 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintPartitionSchema, IndexedBlueprintSchema, InstanceSchema,
+    BlueprintKeyValueStoreSchema, BlueprintCollectionSchema, IndexedBlueprintSchema, InstanceSchema,
     KeyValueStoreInfo, TypeSchema,
 };
 use resources_tracker_macro::trace_resources;
@@ -272,7 +272,7 @@ where
         &mut self,
         blueprint: &Blueprint,
         instance_schema: &Option<InstanceSchema>,
-        mut fields: Vec<Vec<u8>>,
+        fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<
         (
@@ -296,54 +296,57 @@ where
             }
         }
 
-        let mut user_substates = BTreeMap::new();
+        let mut partitions = BTreeMap::new();
 
+        // Fields
         {
-            for (index, (_, blueprint_partition_schema)) in blueprint_schema.partitions.iter().enumerate() {
+            let expected_num_fields = blueprint_schema.num_fields();
+            if expected_num_fields != fields.len() {
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::WrongNumberOfSubstates(
+                        blueprint.clone(),
+                        fields.len(),
+                        expected_num_fields,
+                    )),
+                )));
+            }
+
+            if let Some((offset, field_type_index)) = blueprint_schema.fields {
+                let mut partition = BTreeMap::new();
+
+                for (i, field) in fields.into_iter().enumerate() {
+                    validate_payload_against_schema(
+                        &field,
+                        &blueprint_schema.schema,
+                        field_type_index[i],
+                        self,
+                    )
+                        .map_err(|err| {
+                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
+                                CreateObjectError::InvalidSubstateWrite(
+                                    err.error_message(&blueprint_schema.schema),
+                                ),
+                            )))
+                        })?;
+
+                    partition.insert(
+                        SubstateKey::Tuple(i as u8),
+                        IndexedScryptoValue::from_vec(field)
+                            .expect("Checked by payload-schema validation"),
+                    );
+                }
+
+                partitions.insert(offset, partition);
+            }
+        }
+
+        // Collections
+        {
+            for (index, (offset, blueprint_partition_schema)) in blueprint_schema.collections.iter().enumerate() {
                 let index = index as u8;
                 let mut partition = BTreeMap::new();
                 match blueprint_partition_schema {
-                    BlueprintPartitionSchema::Fields(field_type_index) => {
-                        let entries = kv_entries.remove(&index);
-                        if entries.is_some() {
-                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                                Box::new(CreateObjectError::InvalidModule),
-                            )));
-                        }
-
-                        if field_type_index.len() != fields.len() {
-                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                                Box::new(CreateObjectError::WrongNumberOfSubstates(
-                                    blueprint.clone(),
-                                    fields.len(),
-                                    field_type_index.len(),
-                                )),
-                            )));
-                        }
-                        let field_type_index = field_type_index.clone();
-                        for (i, field) in fields.drain(..).enumerate() {
-                            validate_payload_against_schema(
-                                &field,
-                                &blueprint_schema.schema,
-                                field_type_index[i],
-                                self,
-                            )
-                            .map_err(|err| {
-                                RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                    CreateObjectError::InvalidSubstateWrite(
-                                        err.error_message(&blueprint_schema.schema),
-                                    ),
-                                )))
-                            })?;
-
-                            partition.insert(
-                                SubstateKey::Tuple(i as u8),
-                                IndexedScryptoValue::from_vec(field)
-                                    .expect("Checked by payload-schema validation"),
-                            );
-                        }
-                    }
-                    BlueprintPartitionSchema::KeyValueStore(blueprint_kv_schema) => {
+                    BlueprintCollectionSchema::KeyValueStore(blueprint_kv_schema) => {
                         let entries = kv_entries.remove(&index);
                         if let Some(entries) = entries {
                             for (key, value) in entries {
@@ -400,13 +403,7 @@ where
                     }
                 }
 
-                user_substates.insert(PartitionOffset(index), partition);
-            }
-
-            if !fields.is_empty() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::InvalidModule),
-                )));
+                partitions.insert(offset.clone(), partition);
             }
 
             if !kv_entries.is_empty() {
@@ -418,7 +415,7 @@ where
 
         let parent_blueprint = blueprint_schema.outer_blueprint.clone();
 
-        Ok((parent_blueprint, user_substates))
+        Ok((parent_blueprint, partitions))
     }
 
     fn key_value_entry_remove_and_release_lock(
@@ -535,7 +532,7 @@ where
 
         let (partition_offset, _) =
             schema
-                .index_partition_offset(partition_index)
+                .index_partition(partition_index)
                 .ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::IndexDoesNotExist(
                         object_info.blueprint,
@@ -559,7 +556,7 @@ where
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = schema
-            .sorted_index_partition_offset(partition_index)
+            .sorted_index_partition(partition_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
                     object_info.blueprint,
