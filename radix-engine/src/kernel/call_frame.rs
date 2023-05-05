@@ -422,63 +422,68 @@ impl<L: Clone> CallFrame<L> {
                     .expect("Substate locked but missing")
             };
 
-            let mut new_own_set: IndexSet<NodeId> = index_set_new();
+            // Process owns
+            let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
-                if !new_own_set.insert(own.clone()) {
+                if !new_owned_nodes.insert(own.clone()) {
                     return Err(UnlockSubstateError::ContainsDuplicatedOwns);
                 }
             }
-            for own in &new_own_set {
+            for own in &new_owned_nodes {
                 if !substate_lock.initial_owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
                         .map_err(UnlockSubstateError::TakeNodeError)?;
+
+                    // Move the taken node to store, if parent is in store
+                    if !heap.contains_node(&node_id) {
+                        for child in &new_owned_nodes {
+                            Self::move_node_to_store(heap, store, child)?;
+                        }
+                    }
                 }
             }
             for own in &substate_lock.initial_owned_nodes {
-                if !new_own_set.contains(own) {
+                if !new_owned_nodes.contains(own) {
                     // Node detached
                     if !heap.contains_node(node_id) {
                         return Err(UnlockSubstateError::CantDropNodeInStore(own.clone()));
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
-                    self.owned_root_nodes.insert(old_child.clone(), 0);
+                    // FIXME: Yulong suspects this is buggy as one can detach a locked non-root
+                    // node, move and drop; which will cause invalid lock handle in previous frames.
+                    self.owned_root_nodes.insert(own.clone(), 0);
                 }
             }
 
-            // Check references exist
-            for reference in references {
-                self.get_node_visibility(reference)
-                    .ok_or_else(|| UnlockSubstateError::RefNotFound(reference.clone()))?;
+            // Process references
+            let mut new_references: IndexSet<NodeId> = index_set_new();
+            for own in substate.references() {
+                // Deduplicate
+                new_references.insert(own.clone());
             }
-
-            for old_child in &substate_lock.initial_owned_nodes {
-                if !new_own_set.remove(old_child) {
-                    // TODO: revisit logic here!
-                    if !heap.contains_node(node_id) {
-                        return Err(UnlockSubstateError::CantDropNodeInStore(old_child.clone()));
+            for reference in &new_references {
+                if !substate_lock.initial_references.contains(reference) {
+                    if !self
+                        .get_node_visibility(reference)
+                        .iter()
+                        .any(|v| v.is_normal())
+                    {
+                        return Err(UnlockSubstateError::RefNotFound(reference.clone()));
                     }
-
-                    // Owned nodes discarded by the substate go back to the call frame,
-                    // and must be explicitly dropped.
-                    self.owned_root_nodes.insert(old_child.clone(), 0);
                 }
             }
-
-            for child_id in &new_own_set {
-                self.take_node_internal(child_id)
-                    .map_err(UnlockSubstateError::TakeNodeError)?;
-            }
-
-            if !heap.contains_node(&node_id) {
-                for child in &new_own_set {
-                    Self::move_node_to_store(heap, store, child)?;
+            for reference in &substate_lock.initial_references {
+                if !new_references.contains(reference) {
+                    if heap.contains_node(reference) {
+                        // TODO: this substate no longer borrows the node
+                    }
                 }
             }
         }
 
-        // TODO: revisit this reference shrinking
+        // Made substate expanded owns/reference invisible.
         for refed_node in substate_lock.initial_references {
             let cnt = self.transient_references.remove(&refed_node).unwrap_or(0);
             if cnt > 1 {
