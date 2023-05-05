@@ -10,8 +10,8 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
-    ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
+    LockSubstateError, MoveError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -169,6 +169,7 @@ impl From<CallFrameError> for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
+    CreateFrameError(CreateFrameError),
     LockSubstateError(LockSubstateError),
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),

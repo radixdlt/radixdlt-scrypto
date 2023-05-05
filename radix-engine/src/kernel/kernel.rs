@@ -170,7 +170,7 @@ where
             self.id_allocator.push();
 
             let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
-                .map_err(CallFrameError::MoveError)
+                .map_err(CallFrameError::CreateFrameError)
                 .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);

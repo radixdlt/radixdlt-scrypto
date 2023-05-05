@@ -105,6 +105,12 @@ pub struct CallFrame<L> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CreateFrameError {
+    ActorBeingMoved(NodeId),
+    MoveError(MoveError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
@@ -626,7 +632,8 @@ impl<L: Clone> CallFrame<L> {
         parent: &mut CallFrame<L>,
         actor: Actor,
         message: Message,
-    ) -> Result<Self, MoveError> {
+    ) -> Result<Self, CreateFrameError> {
+        let optional_method_actor = actor.try_as_method().cloned();
         let mut frame = Self {
             depth: parent.depth + 1,
             actor: Some(actor),
@@ -637,7 +644,23 @@ impl<L: Clone> CallFrame<L> {
             locks: index_map_new(),
         };
 
-        Self::exchange(parent, &mut frame, message)?;
+        // Copy references and move nodes
+        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::MoveError)?;
+
+        // Additional check on actor
+        if let Some(method_actor) = optional_method_actor {
+            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
+            }
+            if let Some(outer_global_object) = method_actor.object_info.outer_object {
+                frame.immortal_node_refs.insert(
+                    outer_global_object.into_node_id(),
+                    RENodeRefData {
+                        ref_type: RefType::Normal,
+                    },
+                );
+            }
+        }
 
         Ok(frame)
     }
