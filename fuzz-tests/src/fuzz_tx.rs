@@ -738,7 +738,27 @@ impl TxFuzzer {
                         amount,
                     })
                 }
-                35..=43 => None,
+                // RemoveMetadata
+                35 => {
+                    let addresses = vec![
+                        GlobalAddress::from(component_address),
+                        GlobalAddress::from(resource_address),
+                        GlobalAddress::from(package_address),
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap(),
+                    ];
+                    let entity_address = *unstructured.choose(&addresses[..]).unwrap();
+                    let key = String::arbitrary(&mut unstructured).unwrap();
+                    Some(Instruction::RemoveMetadata {
+                        entity_address,
+                        key,
+                    })
+                }
+                // ReturnToWorktop
+                36 => {
+                    let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
+                    Some(Instruction::ReturnToWorktop { bucket_id })
+                }
+                37..=43 => None,
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match",
                     ast::Instruction::COUNT
