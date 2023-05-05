@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::UnlockSubstateError,
+    kernel::call_frame::{StoreNodeError, UnlockSubstateError},
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -30,7 +30,10 @@ fn verify_no_internal_ref_can_be_stored_in_track() {
         RuntimeError::KernelError(KernelError::CallFrameError(
             CallFrameError::UnlockSubstateError(x),
         )) => {
-            matches!(x, UnlockSubstateError::CantStoreLocalReference(_))
+            matches!(
+                x,
+                UnlockSubstateError::StoreNodeError(StoreNodeError::NonGlobalRefNotAllowed(_))
+            )
         }
         _ => false,
     });

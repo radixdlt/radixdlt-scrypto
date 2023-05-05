@@ -171,7 +171,7 @@ impl From<CallFrameError> for KernelError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
     CreateFrameError(CreateFrameError),
-    PassMessageError(ExchangeError),
+    ExchangeError(ExchangeError),
 
     CreateNodeError(CreateNodeError),
     RemoveNodeError(RemoveNodeError),
@@ -467,6 +467,6 @@ impl From<UnlockSubstateError> for CallFrameError {
 
 impl From<ExchangeError> for CallFrameError {
     fn from(value: ExchangeError) -> Self {
-        Self::PassMessageError(value)
+        Self::ExchangeError(value)
     }
 }

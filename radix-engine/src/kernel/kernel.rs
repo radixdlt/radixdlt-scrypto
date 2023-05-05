@@ -215,7 +215,7 @@ where
 
             // Move resource
             CallFrame::exchange(&mut self.current_frame, &mut parent, message)
-                .map_err(CallFrameError::PassMessageError)
+                .map_err(CallFrameError::ExchangeError)
                 .map_err(KernelError::CallFrameError)?;
 
             // auto drop

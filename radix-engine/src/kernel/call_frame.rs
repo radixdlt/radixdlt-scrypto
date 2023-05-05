@@ -155,8 +155,8 @@ pub enum RemoveNodeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StoreNodeError {
-    CantStoreLocalReference(NodeId),
     CantBeStored(NodeId),
+    NonGlobalRefNotAllowed(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -333,7 +333,7 @@ impl<L: Clone> CallFrame<L> {
         let mut store_handle = None;
         let mut first_time_lock = false;
         let substate_value = if heap.contains_node(node_id) {
-            // TODO: make Heap more like Store?
+            // FIXME: we will have to move locking logic to heap because references moves between frames.
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::HeapError(
                     LockHeapSubstateError::LockUnmodifiedBaseOnHeapNode,
@@ -675,7 +675,7 @@ impl<L: Clone> CallFrame<L> {
             .insert(address.into_node_id(), StableReferenceType::DirectAccess);
     }
 
-    // Note that set/remove/scan/take APIs aren't compatible with our reference model.
+    // Note that reference model isn't fully implemented for set/remove/scan/take APIs.
     // They're intended for internal use only and extra caution is required.
 
     // Substate Virtualization does not apply to this call
@@ -904,7 +904,7 @@ impl<L: Clone> CallFrame<L> {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(StoreNodeError::CantStoreLocalReference(*reference));
+                        return Err(StoreNodeError::NonGlobalRefNotAllowed(*reference));
                     }
                 }
 
