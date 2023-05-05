@@ -733,11 +733,15 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substeates, first_read_from_db) = self.current_frame
             .take_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_take_substates(first_read_from_db, self)?;
+
+        Ok(substeates)
     }
 }
 

@@ -851,4 +851,41 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         }
         Ok(())
     }
+
+    #[trace_resources]
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        first_scan_from_db: bool,
+    ) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_DEBUG) {
+            KernelTraceModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            CostingModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::NODE_MOVE) {
+            NodeMoveModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            AuthModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::LOGGER) {
+            LoggerModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            TransactionRuntimeModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            ExecutionTraceModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
+            TransactionLimitsModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        if modules.contains(EnabledModules::EVENTS) {
+            EventsModule::on_take_substates(api, first_scan_from_db)?;
+        }
+        Ok(())
+    }
+
 }

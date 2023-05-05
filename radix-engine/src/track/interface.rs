@@ -73,7 +73,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue>;
+    ) -> (Vec<IndexedScryptoValue>, bool);
 
     fn scan_sorted_substates(
         &mut self,

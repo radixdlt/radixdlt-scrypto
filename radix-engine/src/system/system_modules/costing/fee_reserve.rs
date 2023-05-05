@@ -105,6 +105,7 @@ pub enum CostingReason {
     ReadSubstate,
     WriteSubstate,
     ScanSubstateFirstTime,
+    TakeSubstatesFirstTime,
     DropLock,
     RunWasm,
     RunNative,

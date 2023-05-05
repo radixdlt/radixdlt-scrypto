@@ -420,6 +420,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        first_scan_from_db: bool,
+    ) -> Result<(), RuntimeError> {
+        if first_scan_from_db {
+            api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::TakeSubstatesFirstTime,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstatesFirstTime),
+                1,
+            )?;
+        }
+        Ok(())
+    }
+
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _entity_type: Option<EntityType>,

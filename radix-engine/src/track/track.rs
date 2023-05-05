@@ -692,7 +692,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> (Vec<IndexedScryptoValue>, bool) {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -707,7 +707,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_module) = tracked_module.as_mut() {
             for tracked in tracked_module.substates.values_mut() {
                 if items.len() == count {
-                    return items;
+                    return (items, false);
                 }
 
                 // TODO: Check that substate is not locked
@@ -719,8 +719,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return items;
+            return (items, false);
         }
+
+        let first_read = tracked_module.is_none();
 
         // Read from database
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
@@ -772,7 +774,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        items
+        (items, first_read)
     }
 
     // returns true if specified module wasn't tracked and was read from database for the first time
