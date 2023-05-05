@@ -80,7 +80,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue>;
+    ) -> (Vec<IndexedScryptoValue>, bool);
 
     /// Acquires a lock over a substate.
     /// Returns tuple of lock handle id and information if particular substate

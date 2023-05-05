@@ -41,6 +41,7 @@ pub enum CostingEntry<'a> {
     WriteSubstate {
         size: u32,
     },
+    ScanSubstateFirstTime,
     DropLock,
     // TODO: more costing after API becomes stable.
 }
@@ -288,6 +289,7 @@ impl FeeTable {
             CostingEntry::LockSubstateFirstTime => 100, // todo: determine correct value
             CostingEntry::ReadSubstate { size: _ } => 174,
             CostingEntry::WriteSubstate { size: _ } => 126,
+            CostingEntry::ScanSubstateFirstTime => 100, // todo: determine correct value
         }) as u64
             * COSTING_COEFFICENT
             >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32

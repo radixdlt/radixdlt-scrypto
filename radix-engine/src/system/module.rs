@@ -172,4 +172,13 @@ pub trait SystemModule<M: KernelCallbackObject> {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    #[inline(always)]
+    fn on_scan_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _sorted: bool,
+        _first_scan_from_db: bool,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }

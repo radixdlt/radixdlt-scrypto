@@ -703,11 +703,15 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substates, first_read_from_db) = self.current_frame
             .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_scan_substates(true, first_read_from_db, self)?;
+
+        Ok(substates)
     }
 
     fn kernel_scan_substates(

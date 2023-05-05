@@ -775,12 +775,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         items
     }
 
+    // returns true if specified module wasn't tracked and was read from database for the first time
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> (Vec<IndexedScryptoValue>, bool) {
         // TODO: Add module dependencies/lock
         let count: usize = count.try_into().unwrap();
         let node_updates = self.tracked_nodes.get_mut(node_id);
@@ -805,8 +806,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 }
             }
 
-            return items;
+            return (items, false);
         }
+
+        let first_read = tracked_module.is_none();
 
         // TODO: Add interleaving updates
         let db_partition_key = M::to_db_partition_key(node_id, module_num);
@@ -827,7 +830,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             tracked_module.range_read = Some(next_range_read);
         }
 
-        items
+        (items, first_read)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(

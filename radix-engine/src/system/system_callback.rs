@@ -233,6 +233,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_write_substate(api, lock_handle, size)
     }
 
+    fn on_scan_substates<Y>(
+        sorted: bool,
+        first_scan_from_db: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>
+    {
+        SystemModuleMixer::on_scan_substate(api, sorted, first_scan_from_db)
+    }
+
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
