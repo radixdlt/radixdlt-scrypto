@@ -1,5 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
@@ -29,6 +29,16 @@ impl Actor {
     pub fn try_as_method(&self) -> Option<&MethodActor> {
         match self {
             Actor::Method(actor) => Some(actor),
+            _ => None,
+        }
+    }
+
+    pub fn get_global_ancestor_as_global_caller(&self) -> Option<GlobalCaller> {
+        // TODO - technically this isn't right - we don't properly capture the global ancestor of our call frame.
+        // EG if the global ancestor of a method was a blueprint function call, we report it as a GlobalObject(package_address)
+        match self {
+            Actor::Method(actor) => actor.global_address.map(|address| address.into()),
+            Actor::Function { blueprint, .. } => Some(blueprint.clone().into()),
             _ => None,
         }
     }

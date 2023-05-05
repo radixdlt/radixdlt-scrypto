@@ -380,23 +380,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
         if let Some(actor) = actor {
-            let package_address = actor.package_address();
-            let id = scrypto_encode(&package_address).unwrap();
-            let non_fungible_global_id = NonFungibleGlobalId::new(
-                PACKAGE_OF_CALLER_VIRTUAL_BADGE,
-                NonFungibleLocalId::bytes(id).unwrap(),
-            );
-            virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
+            let package_proof =
+                NonFungibleGlobalId::package_of_caller_badge(*actor.package_address());
+            virtual_non_fungibles_non_extending.insert(package_proof);
 
-            if let Some(method) = actor.try_as_method() {
-                if let Some(address) = method.global_address {
-                    let id = scrypto_encode(&address).unwrap();
-                    let non_fungible_global_id = NonFungibleGlobalId::new(
-                        GLOBAL_CALLER_VIRTUAL_BADGE,
-                        NonFungibleLocalId::bytes(id).unwrap(),
-                    );
-                    virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
-                }
+            // TODO: Fix this so that GLOBAL_A => GLOBAL_B => INTERNAL_B has INTERNAL_B see GLOBAL_A
+            if let Some(global_caller) = actor.get_global_ancestor_as_global_caller() {
+                let global_caller_proof = NonFungibleGlobalId::global_caller_badge(global_caller);
+                virtual_non_fungibles_non_extending.insert(global_caller_proof);
             }
         }
 
