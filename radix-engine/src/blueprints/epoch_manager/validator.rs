@@ -454,7 +454,7 @@ impl ValidatorCreator {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+            NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id);
 
         liquidity_token_auth.insert(
             Mint,
@@ -484,7 +484,7 @@ impl ValidatorCreator {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+            NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id);
 
         unstake_token_auth.insert(
             Mint,

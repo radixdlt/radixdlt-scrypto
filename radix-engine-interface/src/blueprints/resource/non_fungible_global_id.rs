@@ -24,7 +24,7 @@ impl NonFungibleGlobalId {
     pub fn package_actor(package_address: PackageAddress) -> Self {
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id)
+        NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, local_id)
     }
 
     /// Returns the resource address.
@@ -123,7 +123,7 @@ impl FromComponent for NonFungibleGlobalId {
     fn from_component_address(component_address: &ComponentAddress) -> Self {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(GLOBAL_ACTOR_VIRTUAL_BADGE, non_fungible_local_id)
+        NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, non_fungible_local_id)
     }
 }
 

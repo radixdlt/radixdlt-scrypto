@@ -383,7 +383,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             let package_address = actor.package_address();
             let id = scrypto_encode(&package_address).unwrap();
             let non_fungible_global_id = NonFungibleGlobalId::new(
-                PACKAGE_VIRTUAL_BADGE,
+                PACKAGE_OF_CALLER_VIRTUAL_BADGE,
                 NonFungibleLocalId::bytes(id).unwrap(),
             );
             virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
@@ -392,7 +392,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 if let Some(address) = method.global_address {
                     let id = scrypto_encode(&address).unwrap();
                     let non_fungible_global_id = NonFungibleGlobalId::new(
-                        GLOBAL_ACTOR_VIRTUAL_BADGE,
+                        GLOBAL_CALLER_VIRTUAL_BADGE,
                         NonFungibleLocalId::bytes(id).unwrap(),
                     );
                     virtual_non_fungibles_non_extending.insert(non_fungible_global_id);

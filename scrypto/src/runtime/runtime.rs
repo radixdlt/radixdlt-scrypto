@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
-use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_VIRTUAL_BADGE};
+use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_OF_CALLER_VIRTUAL_BADGE};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
@@ -53,7 +53,7 @@ impl Runtime {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
                 .unwrap();
-        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id)
+        NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id)
     }
 
     /// Invokes a function on a blueprint.

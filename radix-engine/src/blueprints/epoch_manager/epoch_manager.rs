@@ -73,8 +73,10 @@ impl EpochManagerBlueprint {
                 let non_fungible_local_id =
                     NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap())
                         .unwrap();
-                let global_id =
-                    NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+                let global_id = NonFungibleGlobalId::new(
+                    PACKAGE_OF_CALLER_VIRTUAL_BADGE,
+                    non_fungible_local_id,
+                );
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
 
@@ -122,7 +124,7 @@ impl EpochManagerBlueprint {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let this_package_token =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+            NonFungibleGlobalId::new(PACKAGE_OF_CALLER_VIRTUAL_BADGE, non_fungible_local_id);
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule_and_mutability(
