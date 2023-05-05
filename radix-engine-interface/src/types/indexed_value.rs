@@ -153,7 +153,7 @@ impl fmt::Debug for IndexedScryptoValue {
     }
 }
 
-impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomTypeExtension>>
+impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomExtension>>
     for IndexedScryptoValue
 {
     type Error = sbor::representations::FormattingError;
@@ -161,7 +161,7 @@ impl<'s, 'a> ContextualDisplay<ValueDisplayParameters<'s, 'a, ScryptoCustomTypeE
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        context: &ValueDisplayParameters<'_, '_, ScryptoCustomTypeExtension>,
+        context: &ValueDisplayParameters<'_, '_, ScryptoCustomExtension>,
     ) -> Result<(), Self::Error> {
         ScryptoRawPayload::new_from_valid_slice(self.as_slice()).format(f, *context)
     }
