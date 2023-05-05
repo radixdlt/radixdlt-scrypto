@@ -246,6 +246,12 @@ impl<L: Clone> CallFrame<L> {
                     StableReferenceType::Global,
                 );
             }
+            // TODO: is this the right abstraction?
+            if let Some(global_address) = method_actor.global_address {
+                frame
+                    .stable_references
+                    .insert(global_address.into_node_id(), StableReferenceType::Global);
+            }
         }
 
         Ok(frame)
@@ -266,21 +272,10 @@ impl<L: Clone> CallFrame<L> {
 
         // Only allow move of `Global` and `DirectAccess` references
         for node_id in message.copy_references {
-            let visibility = from.get_node_visibility(&node_id);
-
-            // Note that GLOBAL and DirectAccess references are mutually exclusive
-            if visibility
-                .iter()
-                .any(|x| matches!(x, Visibility::StableReference(StableReferenceType::Global)))
-            {
-                to.add_global_reference(GlobalAddress::new_or_panic(node_id.into()))
-            } else if visibility.iter().any(|x| {
-                matches!(
-                    x,
-                    Visibility::StableReference(StableReferenceType::DirectAccess)
-                )
-            }) {
-                to.add_direct_access_reference(InternalAddress::new_or_panic(node_id.into()))
+            if let Some(t) = can_be_reference_copied_to_frame(&from.get_node_visibility(&node_id)) {
+                // Note that GLOBAL and DirectAccess references are mutually exclusive,
+                // so okay to overwrite
+                to.stable_references.insert(node_id, t);
             } else {
                 return Err(ExchangeError::StableRefNotFound(node_id));
             }
@@ -973,10 +968,21 @@ pub fn can_be_read(visibilities: &BTreeSet<Visibility>) -> bool {
     visibilities.iter().any(|x| x.is_normal())
 }
 
+pub fn can_be_invoked(visibilities: &BTreeSet<Visibility>) -> bool {
+    !visibilities.is_empty()
+}
+
 pub fn can_be_referenced_in_substate(visibilities: &BTreeSet<Visibility>) -> bool {
     visibilities.iter().any(|x| x.is_normal())
 }
 
-pub fn can_be_invoked(visibilities: &BTreeSet<Visibility>) -> bool {
-    !visibilities.is_empty()
+pub fn can_be_reference_copied_to_frame(
+    visibilities: &BTreeSet<Visibility>,
+) -> Option<StableReferenceType> {
+    for v in visibilities {
+        if let Visibility::StableReference(t) = v {
+            return Some(t.clone());
+        }
+    }
+    return None;
 }

@@ -96,10 +96,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             }
         }
         let message = format!(
-            "Creating node: id = {:?}, type = {:?}, substates = {:?}",
+            "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
             node_id,
             node_id.entity_type(),
-            module_substate_keys
+            module_substate_keys,
+            node_module_init.get(&ModuleNumber(0))
         )
         .red();
         log!(api, "{}", message);
