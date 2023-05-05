@@ -183,11 +183,11 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        proof_rule: &HardProofRule,
+        proof_rule: &ProofRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
-            HardProofRule::Require(resource) => {
+            ProofRule::Require(resource) => {
                 if Self::auth_zone_stack_matches_rule(
                     barrier_crossings_required,
                     barrier_crossings_allowed,
@@ -200,7 +200,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AmountOf(amount, resource) => {
+            ProofRule::AmountOf(amount, resource) => {
                 if Self::auth_zone_stack_has_amount(
                     barrier_crossings_required,
                     barrier_crossings_allowed,
@@ -214,7 +214,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AllOf(resources) => {
+            ProofRule::AllOf(resources) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -229,7 +229,7 @@ impl Authentication {
 
                 Ok(true)
             }
-            HardProofRule::AnyOf(resources) => {
+            ProofRule::AnyOf(resources) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -244,7 +244,7 @@ impl Authentication {
 
                 Ok(false)
             }
-            HardProofRule::CountOf(
+            ProofRule::CountOf(
                 count,
                 resources,
             ) => {

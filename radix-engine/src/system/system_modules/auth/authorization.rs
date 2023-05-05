@@ -1,18 +1,9 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::ResourceOrNonFungible;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum HardProofRule {
-    Require(ResourceOrNonFungible),
-    AmountOf(Decimal, ResourceAddress),
-    AllOf(Vec<ResourceOrNonFungible>),
-    AnyOf(Vec<ResourceOrNonFungible>),
-    CountOf(u8, Vec<ResourceOrNonFungible>),
-}
+use radix_engine_interface::blueprints::resource::ProofRule;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardAuthRule {
-    ProofRule(HardProofRule),
+    ProofRule(ProofRule),
     AnyOf(Vec<HardAuthRule>),
     AllOf(Vec<HardAuthRule>),
 }
