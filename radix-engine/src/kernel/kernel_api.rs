@@ -181,8 +181,8 @@ pub trait KernelInvokeApi<I: Debug> {
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: Option<&'a Actor>,
-    pub caller: Option<&'a Actor>,
+    pub current: &'a Actor,
+    pub caller: &'a Actor,
 }
 
 /// Internal API for kernel modules.

@@ -13,9 +13,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE,
-};
+use radix_engine_interface::constants::ACCESS_CONTROLLER_PACKAGE;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
@@ -1240,7 +1238,10 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         ),
     );
 
-    access_rules.default(rule!(deny_all), rule!(require(package_of_caller(ACCESS_CONTROLLER_PACKAGE))))
+    access_rules.default(
+        rule!(deny_all),
+        rule!(require(package_of_caller(ACCESS_CONTROLLER_PACKAGE))),
+    )
 }
 
 fn transition<Y, I>(

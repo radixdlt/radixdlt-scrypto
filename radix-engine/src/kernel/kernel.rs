@@ -7,6 +7,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -48,7 +49,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             heap: Heap::new(),
             store: self.store,
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(),
+            current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
             callback: self.callback,
         };
@@ -325,11 +326,17 @@ where
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
+        let caller = match self.prev_frame_stack.last() {
+            Some(call_frame) => &call_frame.actor,
+            None => {
+                // This will only occur on initialization
+                &self.current_frame.actor
+            }
+        };
         SystemState {
             system: &mut self.callback,
             caller,
-            current: self.current_frame.actor.as_ref(),
+            current: &self.current_frame.actor,
         }
     }
 

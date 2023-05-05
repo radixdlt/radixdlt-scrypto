@@ -23,7 +23,6 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -54,19 +53,7 @@ impl AuthModule {
             }
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
-        }
-    }
-
-    fn is_transaction_processor(actor: Option<&Actor>) -> bool {
-        match actor {
-            Some(actor) => {
-                let blueprint = actor.blueprint();
-                blueprint.eq(&Blueprint::new(
-                    &TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                ))
-            }
-            None => false,
+            Actor::Root { .. } => false,
         }
     }
 
@@ -241,7 +228,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             Actor::Function { blueprint, ident } => {
                 vec![Self::function_auth(blueprint, ident.as_str(), api)?]
             }
-            Actor::VirtualLazyLoad { .. } => return Ok(()),
+            Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
         };
         let barrier_crossings_required = 0;
         let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
@@ -273,26 +260,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         let actor = api.kernel_get_system_state().current;
 
         // Add Global Object and Package Actor Auth
-        let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        if let Some(actor) = actor {
-            let package_proof =
-                NonFungibleGlobalId::package_of_caller_badge(*actor.package_address());
-            virtual_non_fungibles_non_extending.insert(package_proof);
-
-            // TODO: Fix this so that GLOBAL_A => GLOBAL_B => INTERNAL_B has INTERNAL_B see GLOBAL_A
-            if let Some(global_caller) = actor.get_global_ancestor_as_global_caller() {
-                let global_caller_proof = NonFungibleGlobalId::global_caller_badge(global_caller);
-                virtual_non_fungibles_non_extending.insert(global_caller_proof);
-            }
-        }
+        let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
 
         // Prepare a new auth zone
-        let is_barrier = if let Some(actor) = actor {
-            Self::is_barrier(actor)
-        } else {
-            false
-        };
-        let is_transaction_processor = Self::is_transaction_processor(actor);
+        let is_barrier = Self::is_barrier(actor);
+        let is_transaction_processor = actor.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_system().modules.auth;
             (

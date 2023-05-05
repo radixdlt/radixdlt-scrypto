@@ -183,7 +183,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     }
                 }
                 Actor::Function { ident, .. } => (None, ident),
-                Actor::VirtualLazyLoad { .. } => {
+                Actor::VirtualLazyLoad { .. } | Actor::Root => {
                     return Ok(());
                 }
             };

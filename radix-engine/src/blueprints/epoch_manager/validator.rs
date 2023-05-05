@@ -461,7 +461,10 @@ impl ValidatorCreator {
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))), rule!(deny_all)),
+            (
+                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(deny_all),
+            ),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -487,7 +490,10 @@ impl ValidatorCreator {
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))), rule!(deny_all)),
+            (
+                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(deny_all),
+            ),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));

@@ -441,7 +441,13 @@ pub fn create_system_bootstrap_transaction(
     {
         // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(Mint, (rule!(require(package_of_caller(PACKAGE_PACKAGE))), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            (
+                rule!(require(package_of_caller(PACKAGE_PACKAGE))),
+                rule!(deny_all),
+            ),
+        );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_OWNER_BADGE.into();
         pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
@@ -463,7 +469,13 @@ pub fn create_system_bootstrap_transaction(
     {
         // TODO: Integrate this into package instantiation to remove circular dependency
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(Mint, (rule!(require(package_of_caller(IDENTITY_PACKAGE))), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            (
+                rule!(require(package_of_caller(IDENTITY_PACKAGE))),
+                rule!(deny_all),
+            ),
+        );
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = IDENTITY_OWNER_BADGE.into();
         pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());

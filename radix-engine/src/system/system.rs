@@ -642,7 +642,7 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
@@ -743,45 +743,31 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let (object_info, global_address) = match object_module_id {
             ObjectModuleId::SELF => {
-                let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
-                match type_info {
-                    TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
-                        let global_address = if global {
-                            Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                        } else {
-                            // See if we have a parent
+                let object_info = self.get_object_info(receiver)?;
+                let global_address = if object_info.global {
+                    Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                } else {
+                    // See if we have a parent
 
-                            // TODO: Cleanup, this is a rather crude way of trying to figure out
-                            // TODO: whether the node reference is a child of the current parent
-                            // TODO: this should be cleaned up once call_frame is refactored
-                            let (visibility, on_heap) =
-                                self.api.kernel_get_node_info(receiver).unwrap();
-                            match (visibility, on_heap) {
-                                (RefType::Normal, false) => self
-                                    .api
-                                    .kernel_get_system_state()
-                                    .current
-                                    .and_then(|a| match a {
-                                        Actor::Method(MethodActor { global_address, .. }) => {
-                                            global_address.clone()
-                                        }
-                                        _ => None,
-                                    }),
+                    // TODO: Cleanup, this is a rather crude way of trying to figure out
+                    // TODO: whether the node reference is a child of the current parent
+                    // TODO: this should be cleaned up once call_frame is refactored
+                    let (visibility, on_heap) = self.api.kernel_get_node_info(receiver).unwrap();
+                    match (visibility, on_heap) {
+                        (RefType::Normal, false) => {
+                            let actor = self.api.kernel_get_system_state().current;
+                            match actor {
+                                Actor::Method(MethodActor { global_address, .. }) => {
+                                    global_address.clone()
+                                }
                                 _ => None,
                             }
-                        };
-
-                        (info, global_address)
+                        }
+                        _ => None,
                     }
+                };
 
-                    TypeInfoSubstate::KeyValueStore(..)
-                    | TypeInfoSubstate::SortedIndex
-                    | TypeInfoSubstate::Index => {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::CallMethodOnKeyValueStore,
-                        ))
-                    }
-                }
+                (object_info, global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
@@ -865,7 +851,7 @@ where
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.outer_object {
-            let actor = self.api.kernel_get_system_state().current.unwrap();
+            let actor = self.api.kernel_get_system_state().current;
             let instance_context = actor.instance_context();
             match instance_context {
                 Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
@@ -1391,7 +1377,7 @@ where
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         let system_state = self.api.kernel_get_system_state();
-        let actor = system_state.current.unwrap();
+        let actor = system_state.current;
         let method_actor = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
@@ -1500,7 +1486,7 @@ where
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let method = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
@@ -1563,7 +1549,7 @@ where
 
     #[trace_resources]
     fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
             .map(|m| m.object_info.clone())
@@ -1574,7 +1560,7 @@ where
 
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         match actor {
             Actor::Method(MethodActor {
                 global_address: Some(address),
@@ -1589,7 +1575,7 @@ where
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
     }
 }
@@ -1680,7 +1666,7 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
         let (blueprint_schema, local_type_index) = {
@@ -1715,7 +1701,7 @@ where
         };
 
         // Construct the event type identifier based on the current actor
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
                 node_id, module_id, ..

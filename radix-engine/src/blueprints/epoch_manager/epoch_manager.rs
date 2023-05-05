@@ -115,7 +115,8 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let this_package_token = NonFungibleGlobalId::package_of_caller_badge(EPOCH_MANAGER_PACKAGE);
+        let this_package_token =
+            NonFungibleGlobalId::package_of_caller_badge(EPOCH_MANAGER_PACKAGE);
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule_and_mutability(

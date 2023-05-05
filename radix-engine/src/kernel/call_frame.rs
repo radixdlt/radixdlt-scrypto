@@ -95,7 +95,7 @@ pub struct CallFrame<L> {
 
     /// The running application actor of this frame
     /// TODO: Move to an RENode
-    pub actor: Option<Actor>,
+    pub actor: Actor,
 
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
@@ -608,10 +608,10 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn new_root() -> Self {
+    pub fn new_root(actor: Actor) -> Self {
         Self {
             depth: 0,
-            actor: None,
+            actor,
             immortal_node_refs: NonIterMap::new(),
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -642,7 +642,7 @@ impl<L: Clone> CallFrame<L> {
 
         let frame = Self {
             depth: parent.depth + 1,
-            actor: Some(actor),
+            actor,
             immortal_node_refs: next_node_refs,
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: owned_heap_nodes,
