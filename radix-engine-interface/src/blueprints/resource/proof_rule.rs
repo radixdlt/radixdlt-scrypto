@@ -7,45 +7,46 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftResourceOrNonFungible {
-    StaticNonFungible(NonFungibleGlobalId),
-    StaticResource(ResourceAddress),
+pub enum ResourceOrNonFungible {
+    NonFungible(NonFungibleGlobalId),
+    Resource(ResourceAddress),
 }
 
-impl From<NonFungibleGlobalId> for SoftResourceOrNonFungible {
+impl From<NonFungibleGlobalId> for ResourceOrNonFungible {
     fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
-        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_global_id)
+        ResourceOrNonFungible::NonFungible(non_fungible_global_id)
     }
 }
 
-impl From<ResourceAddress> for SoftResourceOrNonFungible {
+impl From<ResourceAddress> for ResourceOrNonFungible {
     fn from(resource_address: ResourceAddress) -> Self {
-        SoftResourceOrNonFungible::StaticResource(resource_address)
+        ResourceOrNonFungible::Resource(resource_address)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftResourceOrNonFungibleList {
-    Static(Vec<SoftResourceOrNonFungible>),
+pub struct ResourceOrNonFungibleList {
+    list: Vec<ResourceOrNonFungible>
 }
 
-impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList
-where
-    T: Into<SoftResourceOrNonFungible>,
+impl<T> From<Vec<T>> for ResourceOrNonFungibleList
+    where
+        T: Into<ResourceOrNonFungible>,
 {
     fn from(addresses: Vec<T>) -> Self {
-        SoftResourceOrNonFungibleList::Static(addresses.into_iter().map(|a| a.into()).collect())
+        ResourceOrNonFungibleList {
+            list: addresses.into_iter().map(|a| a.into()).collect(),
+        }
     }
 }
 
 /// Resource Proof Rules
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ProofRule {
-    Require(SoftResourceOrNonFungible),
+    Require(ResourceOrNonFungible),
     AmountOf(Decimal, ResourceAddress),
-    CountOf(u8, SoftResourceOrNonFungibleList),
-    AllOf(SoftResourceOrNonFungibleList),
-    AnyOf(SoftResourceOrNonFungibleList),
+    CountOf(u8, Vec<ResourceOrNonFungible>),
+    AllOf(Vec<ResourceOrNonFungible>),
+    AnyOf(Vec<ResourceOrNonFungible>),
 }
 
 impl From<ResourceAddress> for ProofRule {
@@ -85,31 +86,34 @@ impl AccessRuleNode {
 
 pub fn require<T>(resource: T) -> ProofRule
 where
-    T: Into<SoftResourceOrNonFungible>,
+    T: Into<ResourceOrNonFungible>,
 {
     ProofRule::Require(resource.into())
 }
 
 pub fn require_any_of<T>(resources: T) -> ProofRule
 where
-    T: Into<SoftResourceOrNonFungibleList>,
+    T: Into<ResourceOrNonFungibleList>,
 {
-    ProofRule::AnyOf(resources.into())
+    let list: ResourceOrNonFungibleList = resources.into();
+    ProofRule::AnyOf(list.list)
 }
 
 pub fn require_all_of<T>(resources: T) -> ProofRule
 where
-    T: Into<SoftResourceOrNonFungibleList>,
+    T: Into<ResourceOrNonFungibleList>,
 {
-    ProofRule::AllOf(resources.into())
+    let list: ResourceOrNonFungibleList = resources.into();
+    ProofRule::AllOf(list.list)
 }
 
 pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
     C: Into<u8>,
-    T: Into<SoftResourceOrNonFungibleList>,
+    T: Into<ResourceOrNonFungibleList>,
 {
-    ProofRule::CountOf(count.into(), resources.into())
+    let list: ResourceOrNonFungibleList = resources.into();
+    ProofRule::CountOf(count.into(), list.list)
 }
 
 pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule

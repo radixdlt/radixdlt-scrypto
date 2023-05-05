@@ -13,12 +13,12 @@ pub struct Authentication;
 
 impl Authentication {
     fn proof_matches<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
-        resource_rule: &HardResourceOrNonFungible,
+        resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match resource_rule {
-            HardResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
+            ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
                 let proof_resource_address = proof.sys_resource_address(api)?;
                 Ok(
                     proof_resource_address == non_fungible_global_id.resource_address()
@@ -27,14 +27,10 @@ impl Authentication {
                             .contains(non_fungible_global_id.local_id()),
                 )
             }
-            HardResourceOrNonFungible::Resource(resource_address) => {
+            ResourceOrNonFungible::Resource(resource_address) => {
                 let proof_resource_address = proof.sys_resource_address(api)?;
                 Ok(proof_resource_address == *resource_address)
             }
-            // TODO: I believe team wants to propagate these error codes?
-            HardResourceOrNonFungible::InvalidPath
-            | HardResourceOrNonFungible::NotResourceAddress
-            | HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId => Ok(false),
         }
     }
 
@@ -109,7 +105,7 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        resource_rule: &HardResourceOrNonFungible,
+        resource: &ResourceAddress,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -121,7 +117,7 @@ impl Authentication {
             |auth_zone, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
-                    if Self::proof_matches(resource_rule, p, api)? && p.sys_amount(api)? >= amount {
+                    if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)? && p.sys_amount(api)? >= amount {
                         return Ok(true);
                     }
                 }
@@ -137,7 +133,7 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        resource_rule: &HardResourceOrNonFungible,
+        resource_rule: &ResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
@@ -146,7 +142,7 @@ impl Authentication {
             auth_zone_id,
             api,
             |auth_zone, rev_index, api| {
-                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) =
+                if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) =
                     resource_rule
                 {
                     if rev_index == 0 {
@@ -204,7 +200,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
+            HardProofRule::AmountOf(amount, resource) => {
                 if Self::auth_zone_stack_has_amount(
                     barrier_crossings_required,
                     barrier_crossings_allowed,
@@ -218,7 +214,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
+            HardProofRule::AllOf(resources) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -233,7 +229,7 @@ impl Authentication {
 
                 Ok(true)
             }
-            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
+            HardProofRule::AnyOf(resources) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -249,8 +245,8 @@ impl Authentication {
                 Ok(false)
             }
             HardProofRule::CountOf(
-                HardCount::Count(count),
-                HardProofRuleResourceList::List(resources),
+                count,
+                resources,
             ) => {
                 let mut left = count.clone();
                 for resource in resources {
@@ -269,7 +265,6 @@ impl Authentication {
                 }
                 Ok(false)
             }
-            _ => Ok(false),
         }
     }
 

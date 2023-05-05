@@ -1,43 +1,13 @@
 use crate::types::*;
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum HardDecimal {
-    Amount(Decimal),
-    InvalidPath,
-    NotDecimal,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
-pub enum HardCount {
-    Count(u8),
-    InvalidPath,
-    NotU8,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum HardResourceOrNonFungible {
-    NonFungible(NonFungibleGlobalId),
-    Resource(ResourceAddress),
-    InvalidPath,
-    NotResourceAddress,
-    NotResourceAddressOrNonFungibleGlobalId,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum HardProofRuleResourceList {
-    List(Vec<HardResourceOrNonFungible>),
-    InvalidPath,
-    NotResourceAddressOrNonFungibleGlobalIdArray,
-}
+use radix_engine_interface::blueprints::resource::ResourceOrNonFungible;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum HardProofRule {
-    Require(HardResourceOrNonFungible),
-    AmountOf(HardDecimal, HardResourceOrNonFungible),
-    AllOf(HardProofRuleResourceList),
-    AnyOf(HardProofRuleResourceList),
-    CountOf(HardCount, HardProofRuleResourceList),
+    Require(ResourceOrNonFungible),
+    AmountOf(Decimal, ResourceAddress),
+    AllOf(Vec<ResourceOrNonFungible>),
+    AnyOf(Vec<ResourceOrNonFungible>),
+    CountOf(u8, Vec<ResourceOrNonFungible>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]

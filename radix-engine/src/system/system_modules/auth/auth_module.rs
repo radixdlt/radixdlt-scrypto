@@ -2,7 +2,6 @@ use super::authorization::MethodAuthorization;
 use super::Authentication;
 use super::HardAuthRule;
 use super::HardProofRule;
-use super::HardResourceOrNonFungible;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
@@ -86,7 +85,7 @@ impl AuthModule {
                 && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
                 MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(
-                    HardResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
+                    ResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
             } else {
                 MethodAuthorization::AllowAll
