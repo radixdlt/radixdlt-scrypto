@@ -1,5 +1,5 @@
 use super::payload_validation::*;
-use super::system_modules::auth::{convert_contextless, Authentication};
+use super::system_modules::auth::Authentication;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
@@ -1613,7 +1613,6 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorization = convert_contextless(&rule);
         let barrier_crossings_required = 1;
         let barrier_crossings_allowed = 1;
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
@@ -1623,7 +1622,7 @@ where
             barrier_crossings_required,
             barrier_crossings_allowed,
             auth_zone_id,
-            &authorization,
+            &rule,
             self,
         )? {
             return Err(RuntimeError::SystemError(

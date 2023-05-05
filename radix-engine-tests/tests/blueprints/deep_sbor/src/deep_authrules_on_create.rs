@@ -23,7 +23,7 @@ fn generate_deep_access_rules(
     exceed_depth: usize,
 ) -> AccessRulesConfig {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
-        SoftResourceOrNonFungible::StaticResource(resource_address),
+        ResourceOrNonFungible::Resource(resource_address),
     ));
     let mut curr_depth = 6; // The inner bit and the outer mapping
     while curr_depth < exceed_depth {
