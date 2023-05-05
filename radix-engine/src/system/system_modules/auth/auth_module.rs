@@ -1,6 +1,5 @@
 use super::authorization::MethodAuthorization;
 use super::Authentication;
-use super::HardAuthRule;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
@@ -83,7 +82,7 @@ impl AuthModule {
             if blueprint.blueprint_name.eq(PACKAGE_BLUEPRINT)
                 && ident.eq(PACKAGE_PUBLISH_NATIVE_IDENT)
             {
-                MethodAuthorization::Protected(HardAuthRule::ProofRule(ProofRule::Require(
+                MethodAuthorization::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
                     ResourceOrNonFungible::NonFungible(AuthAddresses::system_role()),
                 )))
             } else {

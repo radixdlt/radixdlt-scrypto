@@ -272,18 +272,18 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        auth_rule: &HardAuthRule,
+        auth_rule: &AccessRuleNode,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
-            HardAuthRule::ProofRule(rule) => Self::verify_proof_rule(
+            AccessRuleNode::ProofRule(rule) => Self::verify_proof_rule(
                 barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 rule,
                 api,
             ),
-            HardAuthRule::AnyOf(rules) => {
+            AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
                     if Self::verify_auth_rule(
                         barrier_crossings_required,
@@ -297,7 +297,7 @@ impl Authentication {
                 }
                 Ok(false)
             }
-            HardAuthRule::AllOf(rules) => {
+            AccessRuleNode::AllOf(rules) => {
                 for r in rules {
                     if !Self::verify_auth_rule(
                         barrier_crossings_required,
