@@ -7,7 +7,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::{can_be_invoked, Message};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -62,11 +62,13 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         for node_id in args.references() {
             if node_id.is_global_virtual() {
                 // For virtual accounts and native packages, create a reference directly
-                kernel.current_frame.add_ref(*node_id, Visibility::Normal);
+                kernel
+                    .current_frame
+                    .add_global_reference(GlobalAddress::new_or_panic(node_id.clone().into()));
                 continue;
             }
 
-            if kernel.current_frame.get_node_visibility(node_id).is_some() {
+            if can_be_invoked(&kernel.current_frame.get_node_visibility(node_id)) {
                 continue;
             }
 
@@ -87,14 +89,18 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     blueprint, global, ..
                 }) => {
                     if global {
-                        kernel.current_frame.add_ref(*node_id, Visibility::Normal);
+                        kernel
+                            .current_frame
+                            .add_global_reference(GlobalAddress::new_or_panic(
+                                node_id.clone().into(),
+                            ));
                     } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
-                        kernel
-                            .current_frame
-                            .add_ref(*node_id, Visibility::DirectAccess);
+                        kernel.current_frame.add_direct_access_reference(
+                            InternalAddress::new_or_panic(node_id.clone().into()),
+                        );
                     } else {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
@@ -249,9 +255,8 @@ where
         let node = self
             .current_frame
             .remove_node(&mut self.heap, node_id)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
-            })?;
+            .map_err(CallFrameError::RemoveNodeError)
+            .map_err(KernelError::CallFrameError)?;
 
         M::after_drop_node(self)?;
 
@@ -284,18 +289,10 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
-        let push_to_store = node_id.is_global();
-
         self.id_allocator.take_node_id(node_id)?;
         self.current_frame
-            .create_node(
-                node_id,
-                node_substates,
-                &mut self.heap,
-                self.store,
-                push_to_store,
-            )
-            .map_err(CallFrameError::UnlockSubstateError)
+            .create_node(node_id, node_substates, &mut self.heap, self.store)
+            .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 
         M::after_create_node(&node_id, self)?;
@@ -309,9 +306,8 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(Visibility, bool)> {
-        let info = self.current_frame.get_node_visibility(node_id)?;
-        Some(info)
+    fn kernel_get_node_info(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+        self.current_frame.get_node_visibility(node_id)
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -554,7 +550,10 @@ where
                             .map_err(KernelError::CallFrameError)?;
                         self.store.release_lock(handle);
 
-                        self.current_frame.add_ref(*node_id, Visibility::Normal);
+                        self.current_frame
+                            .add_global_reference(GlobalAddress::new_or_panic(
+                                node_id.clone().into(),
+                            ));
                         let (lock_handle, _) = self
                             .current_frame
                             .acquire_lock(

@@ -149,6 +149,11 @@ pub enum CreateNodeError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum RemoveNodeError {
+    MoveNodeError(MoveNodeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum StoreNodeError {
     CantStoreLocalReference(NodeId),
     CantBeStored(NodeId),
@@ -629,8 +634,9 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, MoveNodeError> {
-        self.take_node_internal(node_id)?;
+    ) -> Result<NodeSubstates, RemoveNodeError> {
+        self.take_node_internal(node_id)
+            .map_err(RemoveNodeError::MoveNodeError)?;
         let node_substates = heap.remove_node(node_id);
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
@@ -656,6 +662,16 @@ impl<L: Clone> CallFrame<L> {
             }
         }
         Ok(node_substates)
+    }
+
+    pub fn add_global_reference(&mut self, address: GlobalAddress) {
+        self.stable_references
+            .insert(address.into_node_id(), StableReferenceType::Global);
+    }
+
+    pub fn add_direct_access_reference(&mut self, address: InternalAddress) {
+        self.stable_references
+            .insert(address.into_node_id(), StableReferenceType::DirectAccess);
     }
 
     // Note that set/remove/scan/take APIs aren't compatible with our reference model.
@@ -908,6 +924,9 @@ impl<L: Clone> CallFrame<L> {
         // Stable references
         if let Some(reference_type) = self.stable_references.get(node_id) {
             visibilities.insert(Visibility::StableReference(reference_type.clone()));
+        }
+        if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+            visibilities.insert(Visibility::StableReference(StableReferenceType::Global));
         }
 
         // Frame owned nodes
