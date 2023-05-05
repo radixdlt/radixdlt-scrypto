@@ -306,7 +306,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
         self.current_frame.get_node_visibility(node_id)
     }
 

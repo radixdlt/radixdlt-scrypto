@@ -734,11 +734,15 @@ where
                             // TODO: Cleanup, this is a rather crude way of trying to figure out
                             // TODO: whether the node reference is a child of the current parent
                             // TODO: this should be cleaned up once call_frame is refactored
-                            let (visibility, on_heap) =
-                                self.api.kernel_get_node_info(receiver).unwrap();
-                            match (visibility, on_heap) {
-                                (Visibility::Normal, false) => self
-                                    .api
+                            let visibility = self.api.kernel_get_node_visibility(receiver);
+                            // FIXME I believe this logic is incorrect/inconsistent with design, it's
+                            // to duplicate previous logic.
+                            if visibility.iter().any(|v| v.is_normal())
+                                && !visibility
+                                    .iter()
+                                    .any(|v| matches!(v, Visibility::FrameOwned))
+                            {
+                                self.api
                                     .kernel_get_system_state()
                                     .current
                                     .and_then(|a| match a {
@@ -746,8 +750,9 @@ where
                                             global_address.clone()
                                         }
                                         _ => None,
-                                    }),
-                                _ => None,
+                                    })
+                            } else {
+                                None
                             }
                         };
 
@@ -1927,8 +1932,8 @@ where
         self.api.kernel_get_current_depth()
     }
 
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(Visibility, bool)> {
-        self.api.kernel_get_node_info(node_id)
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility> {
+        self.api.kernel_get_node_visibility(node_id)
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {

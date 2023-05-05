@@ -8,6 +8,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::StableReferenceType;
 use crate::kernel::call_frame::Visibility;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -131,24 +132,20 @@ impl AuthModule {
             (node_id, module_id, ..) => {
                 let method_key = MethodKey::new(*module_id, ident);
 
-                let info = {
+                let object_info = {
                     let mut system = SystemService::new(api);
                     system.get_object_info(node_id)?
                 };
 
                 let mut auths = Vec::new();
 
-                if let Some(parent) = info.outer_object {
-                    let (ref_type, _) =
-                        api.kernel_get_node_info(node_id)
-                            .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::VisibilityError(node_id.clone()),
-                            )))?;
+                if let Some(parent) = object_info.outer_object {
+                    let visibility = api.kernel_get_node_visibility(node_id);
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = Self::method_authorization_stateless(
-                        ref_type,
+                        visibility,
                         parent.as_node_id(),
-                        ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
+                        ObjectKey::ChildBlueprint(object_info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
@@ -156,7 +153,7 @@ impl AuthModule {
                     auths.push(auth);
                 }
 
-                if info.global {
+                if object_info.global {
                     // TODO: Clean this up
                     let auth = if module_id.eq(&ObjectModuleId::SELF) {
                         Self::method_authorization_stateful(
@@ -167,7 +164,7 @@ impl AuthModule {
                         )?
                     } else {
                         Self::method_authorization_stateless(
-                            Visibility::Normal,
+                            btreeset!(Visibility::StableReference(StableReferenceType::Global)),
                             &node_id,
                             ObjectKey::SELF,
                             method_key,
@@ -271,7 +268,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
-        ref_type: Visibility,
+        visibility: BTreeSet<Visibility>,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,

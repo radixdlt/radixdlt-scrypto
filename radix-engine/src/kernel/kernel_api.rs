@@ -186,7 +186,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> BTreeSet<Visibility>;
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> BTreeSet<Visibility>;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;

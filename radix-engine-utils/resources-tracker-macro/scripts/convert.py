@@ -88,8 +88,8 @@ for path in os.listdir(input_folder):
         if param:
             key += "::" + param[0]
 
-        # handle kernel_get_node_info
-        param = child.xpath("./self::kernel_get_node_info/@arg0")
+        # handle kernel_get_node_visibility
+        param = child.xpath("./self::kernel_get_node_visibility/@arg0")
         if param:
             key += "::" + param[0]
 
