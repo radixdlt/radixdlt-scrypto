@@ -7,39 +7,6 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftDecimal {
-    Static(Decimal),
-}
-
-impl From<Decimal> for SoftDecimal {
-    fn from(amount: Decimal) -> Self {
-        SoftDecimal::Static(amount)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftCount {
-    Static(u8),
-}
-
-impl From<u8> for SoftCount {
-    fn from(count: u8) -> Self {
-        SoftCount::Static(count)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SoftResource {
-    Static(ResourceAddress),
-}
-
-impl From<ResourceAddress> for SoftResource {
-    fn from(resource_address: ResourceAddress) -> Self {
-        SoftResource::Static(resource_address)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleGlobalId),
     StaticResource(ResourceAddress),
@@ -75,8 +42,8 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
-    AmountOf(SoftDecimal, SoftResource),
-    CountOf(SoftCount, SoftResourceOrNonFungibleList),
+    AmountOf(Decimal, ResourceAddress),
+    CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
 }
@@ -139,7 +106,7 @@ where
 
 pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
-    C: Into<SoftCount>,
+    C: Into<u8>,
     T: Into<SoftResourceOrNonFungibleList>,
 {
     ProofRule::CountOf(count.into(), resources.into())
@@ -147,8 +114,8 @@ where
 
 pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
-    D: Into<SoftDecimal>,
-    T: Into<SoftResource>,
+    D: Into<Decimal>,
+    T: Into<ResourceAddress>,
 {
     ProofRule::AmountOf(amount.into(), resource.into())
 }

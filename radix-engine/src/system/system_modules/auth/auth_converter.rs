@@ -5,22 +5,6 @@ use super::authorization::{
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
 
-fn soft_to_hard_decimal(
-    soft_decimal: &SoftDecimal,
-) -> HardDecimal {
-    match soft_decimal {
-        SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
-    }
-}
-
-fn soft_to_hard_count(
-    soft_count: &SoftCount,
-) -> HardCount {
-    match soft_count {
-        SoftCount::Static(count) => HardCount::Count(count.clone()),
-    }
-}
-
 fn soft_to_hard_resource_list(
     list: &SoftResourceOrNonFungibleList,
 ) -> HardProofRuleResourceList {
@@ -34,14 +18,6 @@ fn soft_to_hard_resource_list(
             }
             HardProofRuleResourceList::List(hard_resources)
         }
-    }
-}
-
-fn soft_to_hard_resource(
-    soft_resource: &SoftResource,
-) -> HardResourceOrNonFungible {
-    match soft_resource {
-        SoftResource::Static(resource) => HardResourceOrNonFungible::Resource(resource.clone()),
     }
 }
 
@@ -68,9 +44,9 @@ fn soft_to_hard_proof_rule(
             );
             HardProofRule::Require(resource)
         }
-        ProofRule::AmountOf(soft_decimal, resource) => {
-            let resource = soft_to_hard_resource(resource);
-            let hard_decimal = soft_to_hard_decimal(soft_decimal);
+        ProofRule::AmountOf(decimal, resource) => {
+            let resource = HardResourceOrNonFungible::Resource(*resource);
+            let hard_decimal = HardDecimal::Amount(*decimal);
             HardProofRule::AmountOf(hard_decimal, resource)
         }
         ProofRule::AllOf(resources) => {
@@ -81,8 +57,8 @@ fn soft_to_hard_proof_rule(
             let hard_resources = soft_to_hard_resource_list(resources);
             HardProofRule::AnyOf(hard_resources)
         }
-        ProofRule::CountOf(soft_count, resources) => {
-            let hard_count = soft_to_hard_count(soft_count);
+        ProofRule::CountOf(count, resources) => {
+            let hard_count = HardCount::Count(*count);
             let hard_resources = soft_to_hard_resource_list(resources);
             HardProofRule::CountOf(hard_count, hard_resources)
         }
