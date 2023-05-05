@@ -284,6 +284,12 @@ impl TxFuzzer {
             .choose(&self.non_fungible_resource_addresses[..])
             .unwrap()
             .clone();
+
+        let mut global_addresses = vec![
+            GlobalAddress::from(component_address),
+            GlobalAddress::from(resource_address),
+            GlobalAddress::from(package_address),
+        ];
         // TODO: if resource_address of not NonFungible resource is given then we got panic in get_mapped_substate
         // thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: UnexpectedSize { expected: 2, actual: 1 }', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-stores/src/interface.rs:200:41
         let non_fungible_ids =
@@ -741,13 +747,9 @@ impl TxFuzzer {
                 }
                 // RemoveMetadata
                 35 => {
-                    let addresses = vec![
-                        GlobalAddress::from(component_address),
-                        GlobalAddress::from(resource_address),
-                        GlobalAddress::from(package_address),
-                        GlobalAddress::arbitrary(&mut unstructured).unwrap(),
-                    ];
-                    let entity_address = *unstructured.choose(&addresses[..]).unwrap();
+                    global_addresses.push(
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
                     Some(Instruction::RemoveMetadata {
                         entity_address,
@@ -769,13 +771,9 @@ impl TxFuzzer {
                 }
                 // SetMetadata
                 38 => {
-                    let addresses = vec![
-                        GlobalAddress::from(component_address),
-                        GlobalAddress::from(resource_address),
-                        GlobalAddress::from(package_address),
-                        GlobalAddress::arbitrary(&mut unstructured).unwrap(),
-                    ];
-                    let entity_address = *unstructured.choose(&addresses[..]).unwrap();
+                    global_addresses.push(
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
                     // TODO: crash if using arbitrary on whole MetadataEntry
                     // - thread 'fuzz_tx::test_generate_fuzz_input_data' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/transaction/reference_extractor.rs:77:90
@@ -794,13 +792,9 @@ impl TxFuzzer {
                 }
                 // SetMethodAccessRule
                 39 => {
-                    let addresses = vec![
-                        GlobalAddress::from(component_address),
-                        GlobalAddress::from(resource_address),
-                        GlobalAddress::from(package_address),
-                        GlobalAddress::arbitrary(&mut unstructured).unwrap(),
-                    ];
-                    let entity_address = *unstructured.choose(&addresses[..]).unwrap();
+                    global_addresses.push(
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = MethodKey::arbitrary(&mut unstructured).unwrap();
                     // TODO: crash if using arbitrary on AccessRule
                     // - thread 'fuzz_tx::test_generate_fuzz_input_data' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/transaction/reference_extractor.rs:90:89
