@@ -13,7 +13,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::ACCESS_CONTROLLER_PACKAGE;
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
@@ -24,6 +23,7 @@ use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
+use crate::kernel::kernel_api::{KernelApi, KernelNodeApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -393,7 +393,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
@@ -517,7 +517,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -541,19 +541,22 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
+        let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
+        let address = GlobalAddress::new_or_panic(address.0);
+
         let access_rules =
-            AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), btreemap!(), api)?.0;
+            AccessRules::sys_new(access_rules_from_rule_set(address, input.rule_set), btreemap!(), api)?.0;
 
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(btreemap!(
+        api.globalize_with_address(btreemap!(
             ObjectModuleId::SELF => object_id,
             ObjectModuleId::AccessRules => access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
-        ))?;
+        ), address)?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -722,10 +725,13 @@ impl AccessControllerNativePackage {
             },
         )?;
 
+
+        let address = api.actor_get_global_address()?;
+
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -763,10 +769,11 @@ impl AccessControllerNativePackage {
             },
         )?;
 
+        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -799,7 +806,8 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        let address = api.actor_get_global_address()?;
+        update_access_rules(api, receiver, locked_access_rules(address))?;
 
         Runtime::emit_event(
             api,
@@ -830,7 +838,8 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        let address = api.actor_get_global_address()?;
+        update_access_rules(api, receiver, locked_access_rules(address))?;
 
         Runtime::emit_event(
             api,
@@ -866,10 +875,11 @@ impl AccessControllerNativePackage {
         )?;
 
         // Update the access rules
+        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -1073,16 +1083,16 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
 // Helpers
 //=========
 
-fn locked_access_rules() -> AccessRulesConfig {
+fn locked_access_rules(address: GlobalAddress) -> AccessRulesConfig {
     let rule_set = RuleSet {
         primary_role: AccessRule::DenyAll,
         recovery_role: AccessRule::DenyAll,
         confirmation_role: AccessRule::DenyAll,
     };
-    access_rules_from_rule_set(rule_set)
+    access_rules_from_rule_set(address, rule_set)
 }
 
-fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
+fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
 
     // Primary Role Rules
@@ -1240,7 +1250,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 
     access_rules.default(
         rule!(deny_all),
-        rule!(require(package_of_direct_caller(ACCESS_CONTROLLER_PACKAGE))),
+        rule!(require(global_caller(address))),
     )
 }
 
