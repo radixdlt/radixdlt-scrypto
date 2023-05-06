@@ -48,7 +48,7 @@ impl<
     }
 
     /// Returns the value that is associated with the given key.
-    pub fn get(&self, key: &K) -> Option<KeyValueEntryRef<V>> {
+    pub fn get(&self, key: &K) -> Option<KeyValueEntryRef<'_, V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
@@ -70,7 +70,7 @@ impl<
         }
     }
 
-    pub fn get_mut(&mut self, key: &K) -> Option<KeyValueEntryRefMut<V>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<KeyValueEntryRefMut<'_, V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
@@ -178,24 +178,29 @@ impl<
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
 }
 
-pub struct KeyValueEntryRef<V: ScryptoEncode> {
+pub struct KeyValueEntryRef<'a, V: ScryptoEncode> {
     lock_handle: KeyValueEntryHandle,
     value: V,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<V> {
+impl<'a, V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<'a, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: ScryptoEncode> KeyValueEntryRef<V> {
-    pub fn new(lock_handle: KeyValueEntryHandle, value: V) -> KeyValueEntryRef<V> {
-        KeyValueEntryRef { lock_handle, value }
+impl<'a, V: ScryptoEncode> KeyValueEntryRef<'a, V> {
+    pub fn new(lock_handle: KeyValueEntryHandle, value: V) -> KeyValueEntryRef<'a, V> {
+        KeyValueEntryRef {
+            lock_handle,
+            value,
+            phantom: PhantomData::default(),
+        }
     }
 }
 
-impl<V: ScryptoEncode> Deref for KeyValueEntryRef<V> {
+impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRef<'a, V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -203,34 +208,36 @@ impl<V: ScryptoEncode> Deref for KeyValueEntryRef<V> {
     }
 }
 
-impl<V: ScryptoEncode> Drop for KeyValueEntryRef<V> {
+impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRef<'a, V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
         env.key_value_entry_release(self.lock_handle).unwrap();
     }
 }
 
-pub struct KeyValueEntryRefMut<V: ScryptoEncode> {
+pub struct KeyValueEntryRefMut<'a, V: ScryptoEncode> {
     handle: KeyValueEntryHandle,
     value: V,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<V> {
+impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<'_, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.fmt(f)
     }
 }
 
-impl<V: ScryptoEncode> KeyValueEntryRefMut<V> {
-    pub fn new(lock_handle: LockHandle, value: V) -> KeyValueEntryRefMut<V> {
+impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
+    pub fn new(lock_handle: LockHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
         KeyValueEntryRefMut {
             handle: lock_handle,
             value,
+            phantom: PhantomData::default(),
         }
     }
 }
 
-impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
+impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRefMut<'a, V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
         let value = scrypto_encode(&self.value).unwrap();
@@ -239,7 +246,7 @@ impl<V: ScryptoEncode> Drop for KeyValueEntryRefMut<V> {
     }
 }
 
-impl<V: ScryptoEncode> Deref for KeyValueEntryRefMut<V> {
+impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRefMut<'a, V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -247,7 +254,7 @@ impl<V: ScryptoEncode> Deref for KeyValueEntryRefMut<V> {
     }
 }
 
-impl<V: ScryptoEncode> DerefMut for KeyValueEntryRefMut<V> {
+impl<'a, V: ScryptoEncode> DerefMut for KeyValueEntryRefMut<'a, V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
