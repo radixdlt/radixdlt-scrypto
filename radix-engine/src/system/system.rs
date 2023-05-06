@@ -12,7 +12,7 @@ use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData,
+    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
@@ -822,8 +822,6 @@ where
                 object_info,
                 instance_context,
             ),
-            sys_invocation: SystemInvocation {
-            },
             payload_size,
         };
 
@@ -1307,8 +1305,6 @@ where
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            sys_invocation: SystemInvocation {
-            },
             payload_size,
         };
 

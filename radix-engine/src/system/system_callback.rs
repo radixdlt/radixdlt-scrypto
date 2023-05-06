@@ -1,6 +1,7 @@
 use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -10,10 +11,9 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
-use crate::kernel::kernel_api::KernelSubstateApi;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -84,11 +84,6 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     Ok(())
 }
 
-// TODO: Remove
-#[derive(Debug)]
-pub struct SystemInvocation {
-}
-
 #[derive(Clone)]
 pub enum SystemLockData {
     KeyValueEntry(KeyValueEntryLockData),
@@ -136,7 +131,6 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
-    type Invocation = SystemInvocation;
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
@@ -241,7 +235,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation<Actor, SystemInvocation>,
+        identifier: &KernelInvocation<Actor>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -297,7 +291,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn invoke_upstream<Y>(
-        invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -323,26 +316,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // TODO: Load dependent resources/components
 
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &blueprint.package_address,
-                    &[PACKAGE_CODE_ID],
-                )?
-            };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref(),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let mut vm_instance =
+                { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
+            let output =
+                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
 
             output
-        } else if blueprint
-            .package_address
-            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-        {
+        } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
 
@@ -363,14 +343,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                vm_instance.invoke(
-                    receiver.as_ref(),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output =
+                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
 
             output
         } else {
@@ -390,13 +364,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             //  Validate input
             let export_name = match &ident {
                 FnIdent::Application(ident) => {
-                    let export_name = validate_input(
-                        &mut system,
-                        &schema,
-                        &ident,
-                        receiver.is_some(),
-                        &args,
-                    )?;
+                    let export_name =
+                        validate_input(&mut system, &schema, &ident, receiver.is_some(), &args)?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {

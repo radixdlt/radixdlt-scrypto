@@ -32,17 +32,16 @@ impl Actor {
         match self {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(MethodActor {
-                              object_info: ObjectInfo { blueprint, .. },
-                              ident, ..
-                          }) => {
-                (blueprint.clone(), FnIdent::Application(ident.to_string()))
-            },
+                object_info: ObjectInfo { blueprint, .. },
+                ident,
+                ..
+            }) => (blueprint.clone(), FnIdent::Application(ident.to_string())),
             Actor::Function { blueprint, ident } => {
                 (blueprint.clone(), FnIdent::Application(ident.to_string()))
             }
             Actor::VirtualLazyLoad { blueprint, ident } => {
                 (blueprint.clone(), FnIdent::System(*ident))
-            },
+            }
         }
     }
 

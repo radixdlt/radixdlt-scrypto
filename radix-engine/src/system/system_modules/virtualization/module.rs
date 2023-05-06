@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
@@ -59,8 +59,6 @@ impl VirtualizationModule {
                     additional_node_ref_to_copy: None,
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
                     call_frame_data: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
-                    sys_invocation: SystemInvocation {
-                    },
                     payload_size: 0,
                 };
 

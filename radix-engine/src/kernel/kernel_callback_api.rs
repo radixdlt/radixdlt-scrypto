@@ -7,7 +7,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 
 pub trait KernelCallbackObject: Sized {
-    type Invocation: Debug;
     type LockData: Default + Clone;
     type CallFrameData;
 
@@ -79,7 +78,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation<Self::CallFrameData, Self::Invocation>,
+        invocation: &KernelInvocation<Self::CallFrameData>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -104,7 +103,6 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn invoke_upstream<Y>(
-        invocation: Self::Invocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

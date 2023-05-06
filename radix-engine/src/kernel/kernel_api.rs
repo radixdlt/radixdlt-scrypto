@@ -143,17 +143,16 @@ pub trait KernelSubstateApi<L> {
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation<D, I: Debug> {
+pub struct KernelInvocation<D> {
     pub args: IndexedScryptoValue,
     pub additional_node_ref_to_copy: Option<NodeId>,
     pub call_frame_data: D,
-    pub sys_invocation: I,
 
     // TODO: Remove
     pub payload_size: usize,
 }
 
-impl<D, I: Debug> KernelInvocation<D, I> {
+impl<D> KernelInvocation<D> {
     pub fn get_update(&self) -> CallFrameUpdate {
         let nodes_to_move = self.args.owned_node_ids().clone();
         let mut node_refs_to_copy = self.args.references().clone();
@@ -170,10 +169,10 @@ impl<D, I: Debug> KernelInvocation<D, I> {
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi<D, I: Debug> {
+pub trait KernelInvokeApi<D> {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<D, I>>,
+        invocation: Box<KernelInvocation<D>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
@@ -207,7 +206,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 pub trait KernelApi<M: KernelCallbackObject>:
     KernelNodeApi
     + KernelSubstateApi<M::LockData>
-    + KernelInvokeApi<M::CallFrameData, M::Invocation>
+    + KernelInvokeApi<M::CallFrameData>
     + KernelInternalApi<M>
 {
 }

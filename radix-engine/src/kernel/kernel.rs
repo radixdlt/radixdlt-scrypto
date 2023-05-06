@@ -155,10 +155,9 @@ where
 {
     fn invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::CallFrameData, M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let mut call_frame_update = invocation.get_update();
-        let sys_invocation = invocation.sys_invocation;
         let actor = invocation.call_frame_data;
         let args = &invocation.args;
 
@@ -192,7 +191,7 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let output = M::invoke_upstream(sys_invocation, args, self)?;
+            let output = M::invoke_upstream(args, self)?;
 
             let mut update = CallFrameUpdate {
                 nodes_to_move: output.owned_node_ids().clone(),
@@ -745,7 +744,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeApi<M::CallFrameData, M::Invocation> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -753,7 +752,7 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::CallFrameData, M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
 

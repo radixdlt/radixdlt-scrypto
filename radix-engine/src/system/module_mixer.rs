@@ -4,7 +4,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
@@ -221,7 +221,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<Actor, SystemInvocation>,
+        identifier: &KernelInvocation<Actor>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
