@@ -51,10 +51,10 @@ impl Authentication {
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, bool, &mut Y) -> Result<bool, RuntimeError>,
     {
-        let (mut is_first_barrier, mut remaining_barrier_crossings_required, mut remaining_barrier_crossings_allowed) = match acting_location {
-            ActingLocation::AtBarrier => (true, 0, 0),
-            ActingLocation::AtLocalBarrier => (false, 1, 1),
-            ActingLocation::InCallFrame => (false, 1, 1),
+        let (mut is_first_barrier, mut waiting_for_barrier, mut remaining_barrier_crossings_allowed, mut skip) = match acting_location {
+            ActingLocation::AtBarrier => (true, 0, 0, 0),
+            ActingLocation::AtLocalBarrier => (false, 1, 1, 0),
+            ActingLocation::InCallFrame => (false, 1, 1, 1),
         };
 
         let mut current_auth_zone_id = auth_zone_id;
@@ -74,26 +74,28 @@ impl Authentication {
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 
-            //if remaining_barrier_crossings_required == 0 {
+            if skip > 0 {
+                skip -= 1;
+            } else {
                 // Check
                 if check(&auth_zone, rev_index, is_first_barrier, api)? {
                     pass = true;
                     break;
                 }
                 rev_index += 1;
-            //}
-            is_first_barrier = false;
+            }
 
             // Progress
+            is_first_barrier = false;
             if auth_zone.is_barrier {
                 if remaining_barrier_crossings_allowed == 0 {
                     break;
                 }
                 remaining_barrier_crossings_allowed -= 1;
 
-                if remaining_barrier_crossings_required > 0 {
-                    remaining_barrier_crossings_required -= 1;
-                    if remaining_barrier_crossings_required == 0u32 {
+                if waiting_for_barrier > 0 {
+                    waiting_for_barrier -= 1;
+                    if waiting_for_barrier == 0u32 {
                         is_first_barrier = true;
                     }
                 }

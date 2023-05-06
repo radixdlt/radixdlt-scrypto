@@ -238,6 +238,50 @@ fn call_component_address_protected_method_in_child_to_child_should_succeed() {
 }
 
 #[test]
+fn assert_self_package_on_parent_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "CalledComponent",
+            "create",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "MyComponent",
+            "create",
+            manifest_args!(called_component),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let component = receipt.expect_commit(true).new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            component,
+            "assert_check_on_package",
+            manifest_args!(package_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+}
+
+#[test]
 fn call_component_address_protected_method_in_parent_with_wrong_address_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();

@@ -120,6 +120,10 @@ mod my_component {
                 )
             }
         }
+
+        pub fn assert_check_on_package(&self, package_address: PackageAddress) {
+            Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+        }
     }
 }
 
