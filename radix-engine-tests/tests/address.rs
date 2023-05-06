@@ -1,5 +1,4 @@
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -441,50 +440,6 @@ fn errors_if_assigns_same_address_to_two_components() {
         vec![],
     );
     receipt.expect_commit_failure();
-}
-
-#[test]
-fn errors_if_assigns_wrong_entity_type() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
-
-    // Check it can be successful...
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::GlobalGenericComponent,
-    )
-    .expect_commit_success();
-
-    // And all these are failures...
-    create_component_as(&mut test_runner, package_address, EntityType::GlobalAccount)
-        .expect_commit_failure();
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::GlobalFungibleResource,
-    )
-    .expect_commit_failure();
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::InternalGenericComponent,
-    )
-    .expect_commit_failure();
-}
-
-fn create_component_as(
-    test_runner: &mut TestRunner,
-    package_address: PackageAddress,
-    entity_type: EntityType,
-) -> TransactionReceipt {
-    test_runner.call_function(
-        package_address,
-        "PreallocationComponent",
-        "create_with_allocated_address_for_entity_type",
-        manifest_args!(entity_type),
-    )
 }
 
 #[test]

@@ -146,12 +146,8 @@ where
 
     fn preallocate_global_address(
         &mut self,
-        entity_type: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let entity_type = scrypto_decode::<EntityType>(&entity_type)
-            .map_err(WasmRuntimeError::InvalidEntityType)?;
-
-        let object_address = self.api.preallocate_global_address(entity_type)?;
+        let object_address = self.api.preallocate_global_address()?;
         let object_address_encoded =
             scrypto_encode(&object_address).expect("Failed to encode object address");
 
@@ -445,7 +441,6 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn preallocate_global_address(
         &mut self,
-        entity_type: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }

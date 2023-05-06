@@ -47,8 +47,6 @@ extern "C" {
     ) -> Buffer;
 
     pub fn preallocate_global_address(
-        _entity_type_ptr: *const u8,
-        _entity_type_len: usize,
     ) -> Buffer;
 
     pub fn globalize_object(modules_ptr: *const u8, modules_len: usize) -> Buffer;
@@ -188,8 +186,6 @@ pub unsafe fn new_object(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn preallocate_global_address(
-    _entity_type_ptr: *const u8,
-    _entity_type_len: usize,
 ) -> Buffer {
     unreachable!()
 }

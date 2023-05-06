@@ -654,14 +654,8 @@ where
     #[trace_resources]
     fn preallocate_global_address(
         &mut self,
-        entity_type: EntityType,
     ) -> Result<GlobalAddress, RuntimeError> {
-        if !entity_type.is_global() {
-            return Err(RuntimeError::SystemError(
-                SystemError::InvalidGlobalEntityType,
-            ));
-        }
-        let allocated_node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        let allocated_node_id = self.api.kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 

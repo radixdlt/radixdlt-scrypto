@@ -1,4 +1,3 @@
-use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -173,21 +172,6 @@ mod preallocation_component {
                 .instantiate()
                 .globalize_at_address(component_address);
             (one, two)
-        }
-
-        pub fn create_with_allocated_address_for_entity_type(
-            entity_type: EntityType,
-        ) -> ComponentAddress {
-            let component_address = Self::preallocate_address(entity_type);
-            Self {}
-                .instantiate()
-                .globalize_at_address(component_address)
-        }
-
-        fn preallocate_address(entity_type: EntityType) -> ComponentAddress {
-            let mut env = scrypto_env::ScryptoEnv;
-            let global_address = env.preallocate_global_address(entity_type).unwrap();
-            unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
         }
     }
 }

@@ -39,7 +39,6 @@ pub trait WasmRuntime {
 
     fn preallocate_global_address(
         &mut self,
-        entity_type: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn globalize_object(
