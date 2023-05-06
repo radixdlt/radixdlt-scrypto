@@ -10,6 +10,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi};
@@ -83,6 +84,7 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     Ok(())
 }
 
+// TODO: Remove
 #[derive(Debug)]
 pub struct SystemInvocation {
     pub blueprint: Blueprint,
@@ -306,6 +308,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<SystemConfig<C>>,
     {
         let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
+            let mut system = SystemService::new(api);
+            let receiver = system.actor_get_receiver_node_id();
+
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
@@ -327,9 +332,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?
             };
             let output = {
-                let mut system = SystemService::new(api);
                 vm_instance.invoke(
-                    invocation.receiver.as_ref().map(|x| &x.0),
+                    receiver.as_ref(),
                     &export_name,
                     args,
                     &mut system,
@@ -344,6 +348,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
+
+            let mut system = SystemService::new(api);
+            let receiver = system.actor_get_receiver_node_id();
+
             let export_name = match invocation.ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
@@ -362,9 +370,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?
             };
             let output = {
-                let mut system = SystemService::new(api);
                 vm_instance.invoke(
-                    invocation.receiver.as_ref().map(|x| &x.0),
+                    receiver.as_ref(),
                     &export_name,
                     args,
                     &mut system,
@@ -373,20 +380,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             output
         } else {
+            let mut system = SystemService::new(api);
+            let receiver = system.actor_get_receiver_node_id();
+            let blueprint = system.actor_get_blueprint()?;
+            let schema = system.get_blueprint_schema(&blueprint)?;
+
             // Make dependent resources/components visible
 
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
+            let handle = system.kernel_lock_substate(
+                blueprint.package_address.as_node_id(),
                 OBJECT_BASE_MODULE,
                 &PackageOffset::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
-            api.kernel_drop_lock(handle)?;
-
-            let mut system = SystemService::new(api);
-            let blueprint = system.actor_get_blueprint()?;
-            let schema = system.get_blueprint_schema(&blueprint)?;
+            system.kernel_drop_lock(handle)?;
 
             //  Validate input
             let export_name = match &invocation.ident {
@@ -395,7 +403,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         &mut system,
                         &schema,
                         &ident,
-                        invocation.receiver.is_some(),
+                        receiver.is_some(),
                         &args,
                     )?;
                     export_name
@@ -416,7 +424,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let output = {
                 C::invoke(
                     &invocation.blueprint.package_address,
-                    invocation.receiver.as_ref().map(|x| &x.0),
+                    receiver.as_ref(),
                     &export_name,
                     args,
                     &mut system,

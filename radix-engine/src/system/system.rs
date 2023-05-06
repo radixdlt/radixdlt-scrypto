@@ -563,6 +563,11 @@ where
 
         Ok(())
     }
+
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+        let actor = self.api.kernel_get_system_state().current;
+        actor.try_as_method().map(|a| a.node_id)
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1573,6 +1578,8 @@ where
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
     }
+
+
 }
 
 impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>
