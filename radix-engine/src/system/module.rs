@@ -37,7 +37,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _identifier: &KernelInvocation<SystemInvocation>,
+        _identifier: &KernelInvocation<Actor, SystemInvocation>,
         _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())

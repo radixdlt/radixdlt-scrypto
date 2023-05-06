@@ -139,6 +139,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type Invocation = SystemInvocation;
     type LockData = SystemLockData;
+    type CallFrameData = Actor;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -241,7 +242,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation<SystemInvocation>,
+        identifier: &KernelInvocation<Actor, SystemInvocation>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

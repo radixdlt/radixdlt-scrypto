@@ -1,4 +1,3 @@
-use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
@@ -89,13 +88,13 @@ impl RENodeRefData {
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
-pub struct CallFrame<L> {
+pub struct CallFrame<D, L> {
     /// The frame id
     pub depth: usize,
 
     /// The running application actor of this frame
     /// TODO: Move to an RENode
-    pub actor: Actor,
+    pub data: D,
 
     /// Node refs which are immortal during the life time of this frame:
     /// - Any node refs received from other frames;
@@ -178,7 +177,7 @@ pub enum CallFrameTakeSortedSubstatesError {
     NodeNotInCallFrame(NodeId),
 }
 
-impl<L: Clone> CallFrame<L> {
+impl<D, L: Clone> CallFrame<D, L> {
     // TODO: Remove
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
@@ -608,10 +607,10 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn new_root(actor: Actor) -> Self {
+    pub fn new_root(data: D) -> Self {
         Self {
             depth: 0,
-            actor,
+            data,
             immortal_node_refs: NonIterMap::new(),
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -621,8 +620,8 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn new_child_from_parent(
-        parent: &mut CallFrame<L>,
-        actor: Actor,
+        parent: &mut CallFrame<D, L>,
+        data: D,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, MoveError> {
         let mut owned_heap_nodes = index_map_new();
@@ -642,7 +641,7 @@ impl<L: Clone> CallFrame<L> {
 
         let frame = Self {
             depth: parent.depth + 1,
-            actor,
+            data,
             immortal_node_refs: next_node_refs,
             temp_node_refs: NonIterMap::new(),
             owned_root_nodes: owned_heap_nodes,
@@ -654,8 +653,8 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn update_upstream(
-        from: &mut CallFrame<L>,
-        to: &mut CallFrame<L>,
+        from: &mut CallFrame<D, L>,
+        to: &mut CallFrame<D, L>,
         update: CallFrameUpdate,
     ) -> Result<(), MoveError> {
         for node_id in update.nodes_to_move {

@@ -56,8 +56,9 @@ impl VirtualizationModule {
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {
-                    resolved_actor: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
+                    additional_node_ref_to_copy: None,
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
+                    call_frame_data: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
                     sys_invocation: SystemInvocation {
                         blueprint: blueprint,
                         ident: FnIdent::System(virtual_func_id),

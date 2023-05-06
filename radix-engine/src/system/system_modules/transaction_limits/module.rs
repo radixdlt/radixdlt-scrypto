@@ -223,7 +223,7 @@ impl TransactionLimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation<SystemInvocation>,
+        _identifier: &KernelInvocation<Actor, SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;

@@ -805,7 +805,11 @@ where
         };
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(
+            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?,
+            additional_node_ref_to_copy: Some(receiver.clone()),
+            call_frame_data: Actor::method(
                 global_address,
                 identifier.clone(),
                 object_info,
@@ -816,9 +820,6 @@ where
                 ident: FnIdent::Application(identifier.2.clone()),
                 receiver: Some(identifier),
             },
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
             payload_size,
         };
 
@@ -1297,7 +1298,8 @@ where
         let payload_size = args.len() + identifier.size();
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::function(identifier.clone()),
+            call_frame_data: Actor::function(identifier.clone()),
+            additional_node_ref_to_copy: None,
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,

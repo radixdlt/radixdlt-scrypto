@@ -131,11 +131,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<M::LockData>,
+    current_frame: CallFrame<M::CallFrameData, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
     /// Heap
     heap: Heap,
     /// Store
@@ -155,11 +155,11 @@ where
 {
     fn invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData, M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let mut call_frame_update = invocation.get_update();
         let sys_invocation = invocation.sys_invocation;
-        let actor = invocation.resolved_actor;
+        let actor = invocation.call_frame_data;
         let args = &invocation.args;
 
         // Before push call frame
@@ -328,16 +328,16 @@ where
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let caller = match self.prev_frame_stack.last() {
-            Some(call_frame) => &call_frame.actor,
+            Some(call_frame) => &call_frame.data,
             None => {
                 // This will only occur on initialization
-                &self.current_frame.actor
+                &self.current_frame.data
             }
         };
         SystemState {
             system: &mut self.callback,
             caller,
-            current: &self.current_frame.actor,
+            current: &self.current_frame.data,
         }
     }
 
@@ -745,7 +745,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::CallFrameData, M::Invocation> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -753,7 +753,7 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData, M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
 

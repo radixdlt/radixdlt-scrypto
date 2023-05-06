@@ -10,6 +10,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;
     type LockData: Default + Clone;
+    type CallFrameData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -79,7 +80,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation<Self::Invocation>,
+        identifier: &KernelInvocation<Self::CallFrameData, Self::Invocation>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -91,7 +92,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Actor,
+        callee: &Self::CallFrameData,
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
         api: &mut Y,
