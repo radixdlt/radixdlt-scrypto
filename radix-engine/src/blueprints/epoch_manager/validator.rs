@@ -4,7 +4,6 @@ use crate::blueprints::epoch_manager::{
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -515,7 +514,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
@@ -541,17 +540,15 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_or_panic(global_node_id.into());
-        api.globalize_with_address(
+        let address = api.globalize(
             btreemap!(
                 ObjectModuleId::SELF => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address.into(),
         )?;
-        Ok((address.into(), owner_token_bucket))
+
+        Ok((ComponentAddress::new_or_panic(address.into()), owner_token_bucket))
     }
 }
