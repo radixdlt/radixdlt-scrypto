@@ -270,7 +270,10 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, PACKAGE_OWNER_BADGE],
+                dependent_resources: vec![
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
+                    PACKAGE_OWNER_BADGE,
+                ],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),

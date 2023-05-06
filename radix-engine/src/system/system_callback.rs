@@ -11,8 +11,8 @@ use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi};
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -383,7 +383,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SystemLockData::default(),
             )?;
             api.kernel_drop_lock(handle)?;
-
 
             let mut system = SystemService::new(api);
             let blueprint = system.actor_get_blueprint()?;

@@ -229,9 +229,7 @@ fn preallocate_global_address(
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
-    runtime
-        .preallocate_global_address()
-        .map(|buffer| buffer.0)
+    runtime.preallocate_global_address().map(|buffer| buffer.0)
 }
 
 fn globalize_object(
@@ -612,10 +610,8 @@ impl WasmiModule {
 
         let host_preallocate_global_address = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>|
-             -> Result<u64, Trap> {
-                preallocate_global_address(caller)
-                    .map_err(|e| e.into())
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                preallocate_global_address(caller).map_err(|e| e.into())
             },
         );
 

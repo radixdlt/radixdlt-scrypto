@@ -247,7 +247,9 @@ where
                 .schema
                 .blueprints
                 .remove(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint.clone())))?;
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::BlueprintDoesNotExist(blueprint.clone()),
+                ))?;
             self.api
                 .kernel_get_system_state()
                 .system
@@ -648,10 +650,10 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(
-        &mut self,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        let allocated_node_id = self.api.kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let allocated_node_id = self
+            .api
+            .kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 

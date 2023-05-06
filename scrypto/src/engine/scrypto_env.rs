@@ -55,12 +55,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
-    fn preallocate_global_address(
-        &mut self,
-    ) -> Result<GlobalAddress, ClientApiError> {
-        let bytes = copy_buffer(unsafe {
-            preallocate_global_address()
-        });
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        let bytes = copy_buffer(unsafe { preallocate_global_address() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 

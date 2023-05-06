@@ -70,10 +70,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(
-            blueprint,
-        )) = e
-        {
+        if let RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint)) = e {
             package_addr.eq(&blueprint.package_address)
                 && blueprint.blueprint_name.eq("NonExistentBlueprint")
         } else {

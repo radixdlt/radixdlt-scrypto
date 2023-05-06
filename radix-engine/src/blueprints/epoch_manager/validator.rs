@@ -540,15 +540,16 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = api.globalize(
-            btreemap!(
-                ObjectModuleId::SELF => validator_id,
-                ObjectModuleId::AccessRules => access_rules.0.0,
-                ObjectModuleId::Metadata => metadata.0,
-                ObjectModuleId::Royalty => royalty.0,
-            ),
-        )?;
+        let address = api.globalize(btreemap!(
+            ObjectModuleId::SELF => validator_id,
+            ObjectModuleId::AccessRules => access_rules.0.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ))?;
 
-        Ok((ComponentAddress::new_or_panic(address.into()), owner_token_bucket))
+        Ok((
+            ComponentAddress::new_or_panic(address.into()),
+            owner_token_bucket,
+        ))
     }
 }

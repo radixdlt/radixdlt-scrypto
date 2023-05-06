@@ -144,9 +144,7 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
-    fn preallocate_global_address(
-        &mut self,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn preallocate_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let object_address = self.api.preallocate_global_address()?;
         let object_address_encoded =
             scrypto_encode(&object_address).expect("Failed to encode object address");
@@ -439,9 +437,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn preallocate_global_address(
-        &mut self,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn preallocate_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

@@ -274,30 +274,37 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     let (method_name, args) = match package {
-        AssertAgainst::SelfPackage => {
-            ("assert_check_on_package", manifest_args!(package_address, child))
-        },
+        AssertAgainst::SelfPackage => (
+            "assert_check_on_package",
+            manifest_args!(package_address, child),
+        ),
         AssertAgainst::SelfBlueprint => {
             let blueprint = Blueprint::new(&package_address, "MyComponent");
-            ("assert_check_on_global_blueprint_caller", manifest_args!(blueprint, child))
-        },
-        AssertAgainst::TransactionProcessorPackage => {
-            ("assert_check_on_package", manifest_args!(TRANSACTION_PROCESSOR_PACKAGE, child))
-        },
+            (
+                "assert_check_on_global_blueprint_caller",
+                manifest_args!(blueprint, child),
+            )
+        }
+        AssertAgainst::TransactionProcessorPackage => (
+            "assert_check_on_package",
+            manifest_args!(TRANSACTION_PROCESSOR_PACKAGE, child),
+        ),
         AssertAgainst::TransactionProcessorBlueprint => {
-            let blueprint = Blueprint::new(&TRANSACTION_PROCESSOR_PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT);
-            ("assert_check_on_global_blueprint_caller", manifest_args!(blueprint, child))
-        },
+            let blueprint = Blueprint::new(
+                &TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+            );
+            (
+                "assert_check_on_global_blueprint_caller",
+                manifest_args!(blueprint, child),
+            )
+        }
     };
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_method(
-            component,
-            method_name,
-            args,
-        )
+        .call_method(component, method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -69,7 +69,8 @@ impl EpochManagerBlueprint {
 
             // TODO: remove mint and premint all tokens
             {
-                let global_id = NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
+                let global_id =
+                    NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
 
