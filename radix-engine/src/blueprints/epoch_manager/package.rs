@@ -1,6 +1,7 @@
 use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -226,7 +227,7 @@ impl EpochManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             EPOCH_MANAGER_CREATE_IDENT => {

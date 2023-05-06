@@ -2,6 +2,7 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::event_schema;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
@@ -23,7 +24,6 @@ use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::vec;
-use crate::kernel::kernel_api::{KernelApi, KernelNodeApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -544,19 +544,26 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-        let access_rules =
-            AccessRules::sys_new(access_rules_from_rule_set(address, input.rule_set), btreemap!(), api)?.0;
+        let access_rules = AccessRules::sys_new(
+            access_rules_from_rule_set(address, input.rule_set),
+            btreemap!(),
+            api,
+        )?
+        .0;
 
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        api.globalize_with_address(btreemap!(
-            ObjectModuleId::SELF => object_id,
-            ObjectModuleId::AccessRules => access_rules.0,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-        ), address)?;
+        api.globalize_with_address(
+            btreemap!(
+                ObjectModuleId::SELF => object_id,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
+            ),
+            address,
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -724,7 +731,6 @@ impl AccessControllerNativePackage {
                 proposal_to_confirm: proposal.clone(),
             },
         )?;
-
 
         let address = api.actor_get_global_address()?;
 
@@ -1248,10 +1254,7 @@ fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> Acce
         ),
     );
 
-    access_rules.default(
-        rule!(deny_all),
-        rule!(require(global_caller(address))),
-    )
+    access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))
 }
 
 fn transition<Y, I>(

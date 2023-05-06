@@ -4,6 +4,7 @@ use crate::blueprints::epoch_manager::{
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -434,6 +435,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+                    // TODO: Change to global caller
                     AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
                         EPOCH_MANAGER_PACKAGE
                     )))),
@@ -446,24 +448,21 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_liquidity_token<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
         liquidity_token_auth.insert(
             Mint,
-            (
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(
             Burn,
-            (
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -474,7 +473,10 @@ impl ValidatorCreator {
         Ok(liquidity_token_resource_manager.0)
     }
 
-    fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_unstake_nft<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -482,17 +484,11 @@ impl ValidatorCreator {
 
         unstake_token_auth.insert(
             Mint,
-            (
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(
             Burn,
-            (
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -514,12 +510,16 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let address = GlobalAddress::new_or_panic(
+            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
+        );
+
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let unstake_nft = Self::create_unstake_nft(api)?;
-        let liquidity_token = Self::create_liquidity_token(api)?;
+        let unstake_nft = Self::create_unstake_nft(address, api)?;
+        let liquidity_token = Self::create_liquidity_token(address, api)?;
 
         let substate = ValidatorSubstate {
             sorted_key: None,
@@ -540,12 +540,15 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = api.globalize(btreemap!(
-            ObjectModuleId::SELF => validator_id,
-            ObjectModuleId::AccessRules => access_rules.0.0,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-        ))?;
+        api.globalize_with_address(
+            btreemap!(
+                ObjectModuleId::SELF => validator_id,
+                ObjectModuleId::AccessRules => access_rules.0.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
+            ),
+            address,
+        )?;
 
         Ok((
             ComponentAddress::new_or_panic(address.into()),

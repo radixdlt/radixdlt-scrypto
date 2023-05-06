@@ -1,6 +1,7 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -265,7 +266,7 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
