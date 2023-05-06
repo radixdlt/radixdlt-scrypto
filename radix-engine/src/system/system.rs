@@ -569,7 +569,7 @@ where
         actor.try_as_method().map(|a| a.node_id)
     }
 
-    pub fn actor_get_fn_identifier(&mut self) -> Result<(Blueprint, FnIdent), RuntimeError> {
+    pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.fn_identifier())
     }
@@ -1300,7 +1300,7 @@ where
         let payload_size = args.len() + identifier.size();
 
         let invocation = KernelInvocation {
-            call_frame_data: Actor::function(identifier.clone()),
+            call_frame_data: Actor::function(identifier.0, identifier.1),
             additional_node_ref_to_copy: None,
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))

@@ -299,7 +299,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let mut system = SystemService::new(api);
         let receiver = system.actor_get_receiver_node_id();
-        let (blueprint, ident) = system.actor_get_fn_identifier()?;
+        let FnIdentifier { blueprint, ident } = system.actor_get_fn_identifier()?;
 
         let output = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up

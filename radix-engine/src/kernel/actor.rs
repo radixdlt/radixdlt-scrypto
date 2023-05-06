@@ -37,20 +37,25 @@ impl Actor {
         }
     }
 
-    pub fn fn_identifier(&self) -> (Blueprint, FnIdent) {
+    pub fn fn_identifier(&self) -> FnIdentifier {
         match self {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(MethodActor {
                 object_info: ObjectInfo { blueprint, .. },
                 ident,
                 ..
-            }) => (blueprint.clone(), FnIdent::Application(ident.to_string())),
-            Actor::Function { blueprint, ident } => {
-                (blueprint.clone(), FnIdent::Application(ident.to_string()))
-            }
-            Actor::VirtualLazyLoad { blueprint, ident } => {
-                (blueprint.clone(), FnIdent::System(*ident))
-            }
+            }) => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::Application(ident.to_string()),
+            },
+            Actor::Function { blueprint, ident } => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::Application(ident.to_string()),
+            },
+            Actor::VirtualLazyLoad { blueprint, ident } => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::System(*ident),
+            },
         }
     }
 
@@ -161,11 +166,8 @@ impl Actor {
         })
     }
 
-    pub fn function(ident: FunctionIdentifier) -> Self {
-        Self::Function {
-            blueprint: ident.0,
-            ident: ident.1,
-        }
+    pub fn function(blueprint: Blueprint, ident: String) -> Self {
+        Self::Function { blueprint, ident }
     }
 
     pub fn virtual_lazy_load(blueprint: Blueprint, ident: u8) -> Self {
