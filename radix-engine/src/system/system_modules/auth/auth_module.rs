@@ -25,6 +25,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::system::system_modules::auth::ActingLocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -230,8 +231,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             }
             Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
         };
-        let barrier_crossings_required = 0;
-        let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
+        let is_barrier = Self::is_barrier(callee);
+        let barrier_crossings_allowed = if is_barrier { 0 } else { 1 };
         let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
@@ -239,7 +240,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Authenticate
         for authorization in authorizations {
             if !Authentication::verify_method_auth(
-                barrier_crossings_required,
+                if is_barrier { ActingLocation::AtBarrier } else { ActingLocation::AtLocalBarrier },
                 barrier_crossings_allowed,
                 auth_zone_id,
                 &authorization,
