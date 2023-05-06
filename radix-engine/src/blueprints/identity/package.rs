@@ -16,8 +16,8 @@ use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use resources_tracker_macro::trace_resources;
 
-const IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
-const IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME: &str = "create_virtual_eddsa_25519";
+const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
+const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
 
 pub struct IdentityNativePackage;
 
@@ -60,10 +60,10 @@ impl IdentityNativePackage {
 
         let virtual_lazy_load_functions = btreemap!(
             IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
+                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
             IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME.to_string(),
+                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -140,7 +140,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -152,11 +152,14 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_ecdsa_virtual(input.id, api)?;
+                let public_key_hash =
+                    PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+
+                let rtn = IdentityBlueprint::create_virtual(public_key_hash, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -168,7 +171,10 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_eddsa_virtual(input.id, api)?;
+                let public_key_hash =
+                    PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+
+                let rtn = IdentityBlueprint::create_virtual(public_key_hash, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -221,34 +227,15 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn create_ecdsa_virtual<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual<Y>(
+        public_key_hash: PublicKeyHash,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
-
-        Self::create_object(access_rules, api)
-    }
-
-    pub fn create_eddsa_virtual<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
-        api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
+        let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
+        let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
         Self::create_object(access_rules, api)
     }

@@ -14,8 +14,8 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
-const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
-const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
+const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
+const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
 
 pub struct AccountNativePackage;
 
@@ -199,10 +199,10 @@ impl AccountNativePackage {
 
         let virtual_lazy_load_functions = btreemap!(
             ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
+                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
             ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME.to_string(),
+                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -233,7 +233,7 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -245,11 +245,14 @@ impl AccountNativePackage {
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_virtual_ecdsa_256k1(input.id, api)?;
+
+                let public_key_hash =
+                    PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+                let rtn = AccountBlueprint::create_virtual(public_key_hash, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -261,7 +264,10 @@ impl AccountNativePackage {
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_virtual_eddsa_25519(input.id, api)?;
+
+                let public_key_hash =
+                    PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+                let rtn = AccountBlueprint::create_virtual(public_key_hash, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

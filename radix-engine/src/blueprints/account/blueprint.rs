@@ -7,7 +7,6 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Proof};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
@@ -66,38 +65,16 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_ecdsa_256k1<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual<Y>(
+        public_key_hash: PublicKeyHash,
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
-
-        Ok(modules)
-    }
-
-    pub fn create_virtual_eddsa_25519<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
-        api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let account = Self::create_local(api)?;
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
+        let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
+        let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::SELF, account);
 
