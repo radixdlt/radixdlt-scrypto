@@ -28,6 +28,24 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn fn_identifier(&self) -> (Blueprint, FnIdent) {
+        match self {
+            Actor::Root => panic!("Should never be called"),
+            Actor::Method(MethodActor {
+                              object_info: ObjectInfo { blueprint, .. },
+                              ident, ..
+                          }) => {
+                (blueprint.clone(), FnIdent::Application(ident.to_string()))
+            },
+            Actor::Function { blueprint, ident } => {
+                (blueprint.clone(), FnIdent::Application(ident.to_string()))
+            }
+            Actor::VirtualLazyLoad { blueprint, ident } => {
+                (blueprint.clone(), FnIdent::System(*ident))
+            },
+        }
+    }
+
     pub fn is_transaction_processor(&self) -> bool {
         match self {
             Actor::Root => false,

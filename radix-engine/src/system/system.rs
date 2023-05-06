@@ -568,6 +568,11 @@ where
         let actor = self.api.kernel_get_system_state().current;
         actor.try_as_method().map(|a| a.node_id)
     }
+
+    pub fn actor_get_fn_identifier(&mut self) -> Result<(Blueprint, FnIdent), RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        Ok(actor.fn_identifier())
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -782,7 +787,6 @@ where
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
-        let blueprint = object_info.blueprint.clone();
 
         // TODO: Can we load this lazily when needed?
         let instance_context = if object_info.global {
@@ -819,9 +823,6 @@ where
                 instance_context,
             ),
             sys_invocation: SystemInvocation {
-                blueprint,
-                ident: FnIdent::Application(identifier.2.clone()),
-                receiver: Some(identifier),
             },
             payload_size,
         };
@@ -1307,9 +1308,6 @@ where
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
             sys_invocation: SystemInvocation {
-                blueprint: identifier.0,
-                ident: FnIdent::Application(identifier.1),
-                receiver: None,
             },
             payload_size,
         };
@@ -1578,8 +1576,6 @@ where
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
     }
-
-
 }
 
 impl<'a, Y, V> ClientAuthApi<RuntimeError> for SystemService<'a, Y, V>

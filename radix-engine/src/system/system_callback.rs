@@ -87,9 +87,6 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
 // TODO: Remove
 #[derive(Debug)]
 pub struct SystemInvocation {
-    pub blueprint: Blueprint,
-    pub ident: FnIdent,
-    pub receiver: Option<MethodIdentifier>,
 }
 
 #[derive(Clone)]
@@ -307,14 +304,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<SystemConfig<C>>,
     {
-        let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
-            let mut system = SystemService::new(api);
-            let receiver = system.actor_get_receiver_node_id();
+        let mut system = SystemService::new(api);
+        let receiver = system.actor_get_receiver_node_id();
+        let (blueprint, ident) = system.actor_get_fn_identifier()?;
 
+        let output = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
-            let export_name = match invocation.ident {
+            let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
@@ -327,7 +325,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance = {
                 NativeVm::create_instance(
-                    &invocation.blueprint.package_address,
+                    &blueprint.package_address,
                     &[PACKAGE_CODE_ID],
                 )?
             };
@@ -341,18 +339,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             };
 
             output
-        } else if invocation
-            .blueprint
+        } else if blueprint
             .package_address
             .eq(&TRANSACTION_PROCESSOR_PACKAGE)
         {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
 
-            let mut system = SystemService::new(api);
-            let receiver = system.actor_get_receiver_node_id();
-
-            let export_name = match invocation.ident {
+            let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
@@ -365,7 +359,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance = {
                 NativeVm::create_instance(
-                    &invocation.blueprint.package_address,
+                    &blueprint.package_address,
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
@@ -380,9 +374,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             output
         } else {
-            let mut system = SystemService::new(api);
-            let receiver = system.actor_get_receiver_node_id();
-            let blueprint = system.actor_get_blueprint()?;
             let schema = system.get_blueprint_schema(&blueprint)?;
 
             // Make dependent resources/components visible
@@ -397,7 +388,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_drop_lock(handle)?;
 
             //  Validate input
-            let export_name = match &invocation.ident {
+            let export_name = match &ident {
                 FnIdent::Application(ident) => {
                     let export_name = validate_input(
                         &mut system,
@@ -423,7 +414,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Execute
             let output = {
                 C::invoke(
-                    &invocation.blueprint.package_address,
+                    &blueprint.package_address,
                     receiver.as_ref(),
                     &export_name,
                     args,
@@ -432,7 +423,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             };
 
             // Validate output
-            match invocation.ident {
+            match ident {
                 FnIdent::Application(ident) => {
                     validate_output(&mut system, &schema, &ident, &output)?
                 }

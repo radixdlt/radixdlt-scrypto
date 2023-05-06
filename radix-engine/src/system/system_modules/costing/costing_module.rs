@@ -133,7 +133,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<Actor, SystemInvocation>,
+        invocation: &KernelInvocation<Actor, SystemInvocation>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -152,7 +152,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
                             input_size: input_size as u32,
-                            identifier: &identifier.sys_invocation,
+                            actor: &invocation.call_frame_data,
                         })
                     },
                     1,

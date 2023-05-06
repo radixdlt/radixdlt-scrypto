@@ -60,9 +60,6 @@ impl VirtualizationModule {
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
                     call_frame_data: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
                     sys_invocation: SystemInvocation {
-                        blueprint: blueprint,
-                        ident: FnIdent::System(virtual_func_id),
-                        receiver: None,
                     },
                     payload_size: 0,
                 };
