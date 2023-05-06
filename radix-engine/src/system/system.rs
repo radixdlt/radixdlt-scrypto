@@ -2,8 +2,8 @@ use super::payload_validation::*;
 use super::system_modules::auth::Authentication;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
-    ApplicationError, CreateObjectError, InvalidDropNodeAccess, InvalidModuleSet,
-    InvalidModuleType, KernelError, RuntimeError,
+    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
+    InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -438,6 +438,132 @@ where
         self.kernel_drop_lock(handle)?;
         Ok(current_value)
     }
+
+    fn resolve_blueprint_from_modules(
+        &mut self,
+        modules: &BTreeMap<ObjectModuleId, NodeId>,
+    ) -> Result<Blueprint, RuntimeError> {
+        let node_id = modules
+            .get(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
+
+        Ok(self.get_object_info(node_id)?.blueprint)
+    }
+
+    /// ASSUMPTIONS:
+    /// Assumes the caller has already checked that the entity type on the GlobalAddress is valid
+    /// against the given self module.
+    fn globalize_with_address_internal(
+        &mut self,
+        mut modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+    ) -> Result<(), RuntimeError> {
+        // Check module configuration
+        let module_ids = modules
+            .keys()
+            .cloned()
+            .collect::<BTreeSet<ObjectModuleId>>();
+        let standard_object = btreeset!(
+            ObjectModuleId::SELF,
+            ObjectModuleId::Metadata,
+            ObjectModuleId::Royalty,
+            ObjectModuleId::AccessRules
+        );
+        if module_ids != standard_object {
+            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
+                Box::new(InvalidModuleSet(module_ids)),
+            )));
+        }
+
+        // Drop the node
+        let node_id = modules
+            .remove(&ObjectModuleId::SELF)
+            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::SELF,
+            )))?;
+        self.api
+            .kernel_get_system_state()
+            .system
+            .modules
+            .events
+            .add_replacement(
+                (node_id, ObjectModuleId::SELF),
+                (*address.as_node_id(), ObjectModuleId::SELF),
+            );
+        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+
+        // Update the `global` flag of the type info substate.
+        let type_info_module = node_substates
+            .get_mut(&TYPE_INFO_BASE_MODULE)
+            .unwrap()
+            .remove(&TypeInfoOffset::TypeInfo.into())
+            .unwrap();
+        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
+        match type_info {
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) => {
+                if *global {
+                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                        Box::new(CannotGlobalizeError::AlreadyGlobalized),
+                    )));
+                }
+                *global = true
+            }
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                    Box::new(CannotGlobalizeError::NotAnObject),
+                )))
+            }
+        };
+        node_substates
+            .get_mut(&TYPE_INFO_BASE_MODULE)
+            .unwrap()
+            .insert(
+                TypeInfoOffset::TypeInfo.into(),
+                IndexedScryptoValue::from_typed(&type_info),
+            );
+
+        // Drop the module nodes and move the substates to the designated module ID.
+        for (module_id, node_id) in modules {
+            match module_id {
+                ObjectModuleId::SELF => panic!("Should have been removed already"),
+                ObjectModuleId::AccessRules
+                | ObjectModuleId::Metadata
+                | ObjectModuleId::Royalty => {
+                    let blueprint = self.get_object_info(&node_id)?.blueprint;
+                    let expected_blueprint = module_id.static_blueprint().unwrap();
+                    if !blueprint.eq(&expected_blueprint) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                            Box::new(InvalidModuleType {
+                                expected_blueprint,
+                                actual_blueprint: blueprint,
+                            }),
+                        )));
+                    }
+
+                    self.api
+                        .kernel_get_system_state()
+                        .system
+                        .modules
+                        .events
+                        .add_replacement(
+                            (node_id, ObjectModuleId::SELF),
+                            (*address.as_node_id(), module_id),
+                        );
+
+                    let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
+                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
+                    node_substates.insert(module_id.base_module(), self_substates);
+                }
+            }
+        }
+
+        self.api
+            .kernel_create_node(address.into(), node_substates)?;
+
+        Ok(())
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -525,154 +651,52 @@ where
     }
 
     #[trace_resources]
+    fn preallocate_global_address(
+        &mut self,
+        entity_type: EntityType,
+    ) -> Result<GlobalAddress, RuntimeError> {
+        if !entity_type.is_global() {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidGlobalEntityType,
+            ));
+        }
+        let allocated_node_id = self.api.kernel_allocate_node_id(entity_type)?;
+        Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
+    }
+
+    #[trace_resources]
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<GlobalAddress, RuntimeError> {
-        // FIXME check completeness of modules
+        // FIXME ensure that only the package actor can globalize its own blueprints
 
-        let node_id = modules
-            .get(&ObjectModuleId::SELF)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
-            )))?;
-
-        let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
-        let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint, global, ..
-            }) if !global => blueprint,
-            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
-        };
-
-        let entity_type = match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-            (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
-            (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-                EntityType::GlobalFungibleResource
-            }
-            (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-                EntityType::GlobalNonFungibleResource
-            }
-            (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
-            (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
-            (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => EntityType::GlobalClock,
-            (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-                EntityType::GlobalAccessController
-            }
-            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
-            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
-            _ => EntityType::GlobalGenericComponent,
-        };
+        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
+        let entity_type = get_entity_type_for_blueprint(&blueprint);
 
         let global_node_id = self.api.kernel_allocate_node_id(entity_type)?;
         let global_address = GlobalAddress::new_or_panic(global_node_id.into());
 
-        self.globalize_with_address(modules, global_address)?;
+        self.globalize_with_address_internal(modules, global_address)?;
+
         Ok(global_address)
     }
 
     #[trace_resources]
     fn globalize_with_address(
         &mut self,
-        mut modules: BTreeMap<ObjectModuleId, NodeId>,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
-        // Check module configuration
-        let module_ids = modules
-            .keys()
-            .cloned()
-            .collect::<BTreeSet<ObjectModuleId>>();
-        let standard_object = btreeset!(
-            ObjectModuleId::SELF,
-            ObjectModuleId::Metadata,
-            ObjectModuleId::Royalty,
-            ObjectModuleId::AccessRules
-        );
-        if module_ids != standard_object {
-            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(module_ids)),
-            )));
-        }
+        // FIXME ensure that only the package actor can globalize its own blueprints
 
-        // Drop the node
-        let node_id = modules
-            .remove(&ObjectModuleId::SELF)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
-            )))?;
-        self.api
-            .kernel_get_system_state()
-            .system
-            .modules
-            .events
-            .add_replacement(
-                (node_id, ObjectModuleId::SELF),
-                (*address.as_node_id(), ObjectModuleId::SELF),
-            );
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
+        let blueprint = self.resolve_blueprint_from_modules(&modules)?;
+        check_address_allowed_for_blueprint(&address, &blueprint)?;
 
-        // Update the `global` flag of the type info substate.
-        let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
-            .unwrap()
-            .remove(&TypeInfoOffset::TypeInfo.into())
-            .unwrap();
-        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
-                *global = true
-            }
-            _ => return Err(RuntimeError::SystemError(SystemError::CannotGlobalize)),
-        };
-        node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
-            .unwrap()
-            .insert(
-                TypeInfoOffset::TypeInfo.into(),
-                IndexedScryptoValue::from_typed(&type_info),
-            );
-
-        //  Drop the module nodes and move the substates to the designated module ID.
-        for (module_id, node_id) in modules {
-            match module_id {
-                ObjectModuleId::SELF => panic!("Should have been removed already"),
-                ObjectModuleId::AccessRules
-                | ObjectModuleId::Metadata
-                | ObjectModuleId::Royalty => {
-                    let blueprint = self.get_object_info(&node_id)?.blueprint;
-                    let expected_blueprint = module_id.static_blueprint().unwrap();
-                    if !blueprint.eq(&expected_blueprint) {
-                        return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
-                            Box::new(InvalidModuleType {
-                                expected_blueprint,
-                                actual_blueprint: blueprint,
-                            }),
-                        )));
-                    }
-
-                    self.api
-                        .kernel_get_system_state()
-                        .system
-                        .modules
-                        .events
-                        .add_replacement(
-                            (node_id, ObjectModuleId::SELF),
-                            (*address.as_node_id(), module_id),
-                        );
-
-                    let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
-                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
-                    node_substates.insert(module_id.base_module(), self_substates);
-                }
-            }
-        }
-
-        self.api
-            .kernel_create_node(address.into(), node_substates)?;
-
-        Ok(())
+        self.globalize_with_address_internal(modules, address)
     }
 
+    #[trace_resources]
     fn globalize_with_address_and_create_inner_object(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -680,14 +704,10 @@ where
         inner_object_blueprint: &str,
         inner_object_fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, RuntimeError> {
-        let node_id = modules
-            .get(&ObjectModuleId::SELF)
-            .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
-            )))?;
-        let actor_blueprint = self.get_object_info(node_id)?.blueprint;
+        let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
+        check_address_allowed_for_blueprint(&address, &actor_blueprint)?;
 
-        self.globalize_with_address(modules, address)?;
+        self.globalize_with_address_internal(modules, address)?;
 
         let blueprint = Blueprint::new(&actor_blueprint.package_address, inner_object_blueprint);
 
@@ -1940,5 +1960,59 @@ where
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
+    }
+}
+
+pub fn check_address_allowed_for_blueprint(
+    address: &GlobalAddress,
+    blueprint: &Blueprint,
+) -> Result<(), RuntimeError> {
+    let entity_type = address.as_node_id().entity_type();
+
+    let valid_entity_types: IndexSet<EntityType> =
+        match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+            // Note - you can't manually preallocate key-originated addresses - so these must be from assigned from the virtualization process
+            (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => indexset!(
+                EntityType::GlobalAccount,
+                EntityType::GlobalVirtualEd25519Account,
+                EntityType::GlobalVirtualSecp256k1Account
+            ),
+            (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => indexset!(
+                EntityType::GlobalIdentity,
+                EntityType::GlobalVirtualEd25519Identity,
+                EntityType::GlobalVirtualSecp256k1Identity
+            ),
+            _ => indexset!(get_entity_type_for_blueprint(blueprint)),
+        };
+    if entity_type.is_some() && !valid_entity_types.contains(&entity_type.unwrap()) {
+        return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+            Box::new(CannotGlobalizeError::InvalidAddressEntityType {
+                expected: valid_entity_types.into_iter().collect::<Vec<_>>(),
+                actual: entity_type,
+            }),
+        )));
+    }
+    Ok(())
+}
+
+pub fn get_entity_type_for_blueprint(blueprint: &Blueprint) -> EntityType {
+    // FIXME check completeness of modules
+    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+        (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
+        (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+            EntityType::GlobalFungibleResource
+        }
+        (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
+            EntityType::GlobalNonFungibleResource
+        }
+        (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
+        (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
+        (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => EntityType::GlobalClock,
+        (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+            EntityType::GlobalAccessController
+        }
+        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => EntityType::GlobalAccount,
+        (IDENTITY_PACKAGE, IDENTITY_BLUEPRINT) => EntityType::GlobalIdentity,
+        _ => EntityType::GlobalGenericComponent,
     }
 }

@@ -1,3 +1,4 @@
+use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -11,7 +12,7 @@ mod child_component {
             Self { to_call }.instantiate()
         }
 
-        pub fn get_address(&self) -> ComponentAddress {
+        pub fn get_global_address(&self) -> ComponentAddress {
             Runtime::global_address()
         }
 
@@ -40,26 +41,26 @@ mod my_component {
             Self { child, to_call }.instantiate().globalize()
         }
 
-        pub fn get_address_in_parent(&self) -> ComponentAddress {
+        pub fn get_global_address_in_parent(&self) -> ComponentAddress {
             Runtime::global_address()
         }
 
-        pub fn get_address_in_owned(&self) -> ComponentAddress {
-            self.child.get_address()
+        pub fn get_global_address_in_owned(&self) -> ComponentAddress {
+            self.child.get_global_address()
         }
 
-        pub fn get_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
+        pub fn get_global_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
             let child = ChildComponent::create(to_call);
-            let address = child.get_address();
+            let address = child.get_global_address();
             Self { child, to_call }.instantiate().globalize();
             address
         }
 
-        pub fn get_address_in_local_of_parent_method(
+        pub fn get_global_address_in_local_of_parent_method(
             &self,
             to_call: ComponentAddress,
         ) -> ComponentAddress {
-            Self::get_address_in_local(to_call)
+            Self::get_global_address_in_local(to_call)
         }
 
         pub fn call_other_component_with_wrong_address(&self) {
@@ -93,6 +94,143 @@ mod called_component {
         pub fn protected_method(&self, component_address: ComponentAddress) {
             let global_id = NonFungibleGlobalId::from_component_address(&component_address);
             Runtime::assert_access_rule(rule!(require(global_id)));
+        }
+    }
+}
+
+#[blueprint]
+mod preallocation_component {
+    struct PreallocationComponent {}
+
+    impl PreallocationComponent {
+        pub fn create_with_preallocated_address() -> ComponentAddress {
+            let component_address = Runtime::preallocate_global_component_address();
+            Self {}
+                .instantiate()
+                .globalize_at_address(component_address)
+        }
+
+        pub fn create_with_unused_preallocated_address_1() -> ComponentAddress {
+            let component_address = Runtime::preallocate_global_component_address();
+            Runtime::preallocate_global_component_address();
+            Self {}
+                .instantiate()
+                .globalize_at_address(component_address)
+        }
+
+        pub fn create_with_unused_preallocated_address_2() -> ComponentAddress {
+            Runtime::preallocate_global_component_address();
+            Self {}.instantiate().globalize()
+        }
+
+        pub fn create_two_with_same_address() -> (ComponentAddress, ComponentAddress) {
+            let component_address = Runtime::preallocate_global_component_address();
+            let one = Self {}
+                .instantiate()
+                .globalize_at_address(component_address);
+            let two = Self {}
+                .instantiate()
+                .globalize_at_address(component_address);
+            (one, two)
+        }
+
+        pub fn create_with_allocated_address_for_entity_type(
+            entity_type: EntityType,
+        ) -> ComponentAddress {
+            let component_address = Self::preallocate_address(entity_type);
+            Self {}
+                .instantiate()
+                .globalize_at_address(component_address)
+        }
+
+        fn preallocate_address(entity_type: EntityType) -> ComponentAddress {
+            let mut env = scrypto_env::ScryptoEnv;
+            let global_address = env.preallocate_global_address(entity_type).unwrap();
+            unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
+        }
+    }
+}
+
+#[blueprint]
+mod preallocation_smuggler_component {
+    struct PreallocationSmugglerComponent {
+        preallocated_address: Option<GlobalAddress>,
+    }
+
+    impl PreallocationSmugglerComponent {
+        pub fn create_empty() -> ComponentAddress {
+            Self {
+                preallocated_address: None,
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn create_empty_at_address_bytes(
+            preallocated_address_bytes: [u8; 30],
+        ) -> ComponentAddress {
+            let component_address =
+                unsafe { ComponentAddress::new_unchecked(preallocated_address_bytes) };
+            Self {
+                preallocated_address: None,
+            }
+            .instantiate()
+            .globalize_at_address(component_address)
+        }
+
+        pub fn create_empty_at_address(preallocated_address: ComponentAddress) -> ComponentAddress {
+            Self {
+                preallocated_address: None,
+            }
+            .instantiate()
+            .globalize_at_address(preallocated_address)
+        }
+
+        pub fn create_with_smuggled_address() -> ComponentAddress {
+            Self {
+                preallocated_address: Some(Runtime::preallocate_global_component_address().into()),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn create_with_smuggled_given_address(address: GlobalAddress) -> ComponentAddress {
+            Self {
+                preallocated_address: Some(address),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn create_with_smuggled_given_address_bytes(
+            preallocated_address_bytes: [u8; 30],
+        ) -> ComponentAddress {
+            let address = unsafe { GlobalAddress::new_unchecked(preallocated_address_bytes) };
+            Self {
+                preallocated_address: Some(address),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn smuggle_given_address(&mut self, address: GlobalAddress) {
+            self.preallocated_address = Some(address);
+        }
+
+        pub fn allocate_and_smuggle_address(&mut self) {
+            self.preallocated_address =
+                Some(Runtime::preallocate_global_component_address().into());
+        }
+
+        pub fn instantiate_with_smuggled_address(&self) -> ComponentAddress {
+            let component_address = unsafe {
+                ComponentAddress::new_unchecked(self.preallocated_address.unwrap().as_node_id().0)
+            };
+            Self {
+                preallocated_address: None,
+            }
+            .instantiate()
+            .globalize_at_address(component_address)
         }
     }
 }

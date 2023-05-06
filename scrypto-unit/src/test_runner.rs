@@ -850,6 +850,62 @@ impl TestRunner {
         )
     }
 
+    /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.
+    ///
+    /// Notes:
+    /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
+    /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
+    pub fn call_function(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: ManifestValue,
+    ) -> TransactionReceipt {
+        self.execute_manifest_ignoring_fee(
+            ManifestBuilder::new()
+                .call_function(package_address, blueprint_name, function_name, args)
+                .build(),
+            vec![],
+        )
+    }
+
+    /// Calls a package blueprint function with the given arguments, and assumes it constructs a single component successfully.
+    /// It returns the address of the first created component.
+    ///
+    /// Notes:
+    /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
+    pub fn construct_new(
+        &mut self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+        function_name: &str,
+        args: ManifestValue,
+    ) -> ComponentAddress {
+        self.call_function(package_address, blueprint_name, function_name, args)
+            .expect_commit_success()
+            .new_component_addresses()[0]
+    }
+
+    /// Calls a component method with the given arguments, paying the fee from the faucet.
+    ///
+    /// Notes:
+    /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
+    /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
+    pub fn call_method(
+        &mut self,
+        component_address: ComponentAddress,
+        method_name: &str,
+        args: ManifestValue,
+    ) -> TransactionReceipt {
+        self.execute_manifest_ignoring_fee(
+            ManifestBuilder::new()
+                .call_method(component_address, method_name, args)
+                .build(),
+            vec![],
+        )
+    }
+
     pub fn lock_resource_auth(
         &mut self,
         function: &str,
@@ -1203,6 +1259,25 @@ impl TestRunner {
             .as_ref()
             .expect("state hashing not enabled")
             .get_current()
+    }
+
+    pub fn execute_system_transaction(
+        &mut self,
+        instructions: Vec<Instruction>,
+        pre_allocated_ids: BTreeSet<NodeId>,
+    ) -> TransactionReceipt {
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+                pre_allocated_ids,
+            }
+            .get_executable(btreeset![]),
+        )
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {

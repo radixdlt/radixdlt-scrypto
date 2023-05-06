@@ -1,3 +1,4 @@
+use sbor::Sbor;
 use strum::FromRepr;
 
 //=========================================================================
@@ -7,7 +8,7 @@ use strum::FromRepr;
 
 /// An enum which represents the different addressable entities.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, FromRepr)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, Hash, PartialOrd, FromRepr, Sbor)]
 pub enum EntityType {
     //=========================================================================
     // Package (start with char p for package)
