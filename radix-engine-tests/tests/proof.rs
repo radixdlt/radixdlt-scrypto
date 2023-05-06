@@ -321,6 +321,33 @@ fn cant_move_restricted_proof() {
 }
 
 #[test]
+fn can_move_restricted_proofs_internally() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let component_address = {
+        let manifest = ManifestBuilder::new()
+            .call_function(package_address, "Outer", "instantiate", manifest_args!())
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        receipt.expect_commit_success().new_component_addresses()[0]
+    };
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof| {
+            builder.call_method(component_address, "pass_fungible_proof", manifest_args!(proof))
+        })
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&public_key)]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn can_move_locked_bucket() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
