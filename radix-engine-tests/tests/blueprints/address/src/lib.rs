@@ -110,7 +110,11 @@ mod my_component {
 
         pub fn call_other_component_with_wrong_address(&self) {
             let address = self.to_call;
-            Runtime::call_method(self.to_call, "protected_method", scrypto_args!(address, false))
+            Runtime::call_method(
+                self.to_call,
+                "protected_method",
+                scrypto_args!(address, false),
+            )
         }
 
         pub fn call_other_component(&self, child: bool, called_child: bool) {
@@ -146,9 +150,7 @@ mod called_component {
     impl CalledComponent {
         pub fn create() -> ComponentAddress {
             let child = CalledComponentChild::create();
-            Self {
-                child,
-            }.instantiate().globalize()
+            Self { child }.instantiate().globalize()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress, child: bool) {

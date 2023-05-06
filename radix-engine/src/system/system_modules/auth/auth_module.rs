@@ -15,6 +15,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -25,7 +26,6 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
-use crate::system::system_modules::auth::ActingLocation;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -49,9 +49,7 @@ impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         // FIXME update the rule to be consistent with internal design
         match actor {
-            Actor::Method(MethodActor { object_info, .. }) => {
-                object_info.global
-            }
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
             Actor::Root { .. } => false,
@@ -264,7 +262,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
         // Add Global Object and Package Actor Auth
         let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
-        let virtual_non_fungibles_non_extending_barrier = actor.get_virtual_non_extending_barrier_proofs();
+        let virtual_non_fungibles_non_extending_barrier =
+            actor.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
         let is_barrier = Self::is_barrier(actor);

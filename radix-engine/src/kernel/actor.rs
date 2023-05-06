@@ -82,7 +82,9 @@ impl Actor {
     }
 
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        btreeset!(NonFungibleGlobalId::package_of_caller_badge(*self.package_address()))
+        btreeset!(NonFungibleGlobalId::package_of_caller_badge(
+            *self.package_address()
+        ))
     }
 
     pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {

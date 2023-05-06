@@ -280,7 +280,12 @@ fn test_assert_self_package(child: bool, should_succeed: bool) {
     if should_succeed {
         receipt.expect_commit_success();
     } else {
-        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            )
+        });
     }
 }
 

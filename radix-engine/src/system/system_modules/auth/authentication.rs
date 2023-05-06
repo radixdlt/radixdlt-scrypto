@@ -51,7 +51,12 @@ impl Authentication {
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
         P: Fn(&AuthZone, usize, bool, &mut Y) -> Result<bool, RuntimeError>,
     {
-        let (mut is_first_barrier, mut waiting_for_barrier, mut remaining_barrier_crossings_allowed, mut skip) = match acting_location {
+        let (
+            mut is_first_barrier,
+            mut waiting_for_barrier,
+            mut remaining_barrier_crossings_allowed,
+            mut skip,
+        ) = match acting_location {
             ActingLocation::AtBarrier => (true, 0, 0, 0),
             ActingLocation::AtLocalBarrier => (false, 1, 1, 0),
             ActingLocation::InCallFrame => (false, 1, 1, 1),
@@ -208,12 +213,8 @@ impl Authentication {
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
             ProofRule::Require(resource) => {
-                if Self::auth_zone_stack_matches_rule(
-                    acting_location,
-                    auth_zone_id,
-                    resource,
-                    api,
-                )? {
+                if Self::auth_zone_stack_matches_rule(acting_location, auth_zone_id, resource, api)?
+                {
                     Ok(true)
                 } else {
                     Ok(false)
@@ -287,20 +288,12 @@ impl Authentication {
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
-            AccessRuleNode::ProofRule(rule) => Self::verify_proof_rule(
-                acting_location,
-                auth_zone_id,
-                rule,
-                api,
-            ),
+            AccessRuleNode::ProofRule(rule) => {
+                Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)
+            }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(
-                        acting_location,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )? {
+                    if Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
                         return Ok(true);
                     }
                 }
@@ -308,12 +301,7 @@ impl Authentication {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(
-                        acting_location,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )? {
+                    if !Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
                         return Ok(false);
                     }
                 }
@@ -330,12 +318,9 @@ impl Authentication {
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
-            AccessRule::Protected(rule) => Self::verify_auth_rule(
-                acting_location,
-                auth_zone_id,
-                rule,
-                api,
-            ),
+            AccessRule::Protected(rule) => {
+                Self::verify_auth_rule(acting_location, auth_zone_id, rule, api)
+            }
             AccessRule::AllowAll => Ok(true),
             AccessRule::DenyAll => Ok(false),
         }
