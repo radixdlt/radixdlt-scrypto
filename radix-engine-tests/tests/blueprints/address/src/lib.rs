@@ -24,7 +24,11 @@ mod child_component {
         }
 
         pub fn assert_check_on_package(&self, package_address: PackageAddress) {
-            Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+            Runtime::assert_access_rule(rule!(require(package_of_direct_caller(package_address))));
+        }
+
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint) {
+            Runtime::assert_access_rule(rule!(require(global_caller(blueprint))));
         }
     }
 }
@@ -87,11 +91,19 @@ mod my_component {
             }
         }
 
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint, child: bool) {
+            if child {
+                self.child.assert_check_on_global_blueprint_caller(blueprint);
+            } else {
+                Runtime::assert_access_rule(rule!(require(global_caller(blueprint))));
+            }
+        }
+
         pub fn assert_check_on_package(&self, package_address: PackageAddress, child: bool) {
             if child {
                 self.child.assert_check_on_package(package_address);
             } else {
-                Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+                Runtime::assert_access_rule(rule!(require(package_of_direct_caller(package_address))));
             }
         }
     }

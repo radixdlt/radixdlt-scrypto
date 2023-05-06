@@ -1,5 +1,6 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -237,12 +238,14 @@ fn call_component_address_protected_method_in_child_to_child_should_succeed() {
     test_call_component_address_protected_method(false, false);
 }
 
-enum TestPackage {
+enum AssertAgainst {
     SelfPackage,
-    TransactionProcessor,
+    TransactionProcessorPackage,
+    SelfBlueprint,
+    TransactionProcessorBlueprint,
 }
 
-fn test_assert_self_package(package: TestPackage, child: bool, should_succeed: bool) {
+fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
@@ -270,9 +273,21 @@ fn test_assert_self_package(package: TestPackage, child: bool, should_succeed: b
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
-    let package_address = match package {
-        TestPackage::SelfPackage => package_address,
-        TestPackage::TransactionProcessor => TRANSACTION_PROCESSOR_PACKAGE,
+    let (method_name, args) = match package {
+        AssertAgainst::SelfPackage => {
+            ("assert_check_on_package", manifest_args!(package_address, child))
+        },
+        AssertAgainst::SelfBlueprint => {
+            let blueprint = Blueprint::new(&package_address, "MyComponent");
+            ("assert_check_on_global_blueprint_caller", manifest_args!(blueprint, child))
+        },
+        AssertAgainst::TransactionProcessorPackage => {
+            ("assert_check_on_package", manifest_args!(TRANSACTION_PROCESSOR_PACKAGE, child))
+        },
+        AssertAgainst::TransactionProcessorBlueprint => {
+            let blueprint = Blueprint::new(&TRANSACTION_PROCESSOR_PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT);
+            ("assert_check_on_global_blueprint_caller", manifest_args!(blueprint, child))
+        },
     };
 
     // Act
@@ -280,8 +295,8 @@ fn test_assert_self_package(package: TestPackage, child: bool, should_succeed: b
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component,
-            "assert_check_on_package",
-            manifest_args!(package_address, child),
+            method_name,
+            args,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -301,22 +316,42 @@ fn test_assert_self_package(package: TestPackage, child: bool, should_succeed: b
 
 #[test]
 fn assert_self_package_on_parent_should_fail() {
-    test_assert_self_package(TestPackage::SelfPackage, false, false);
+    test_assert(AssertAgainst::SelfPackage, false, false);
+}
+
+#[test]
+fn assert_self_blueprint_on_parent_should_fail() {
+    test_assert(AssertAgainst::SelfBlueprint, false, false);
 }
 
 #[test]
 fn assert_tx_processor_package_on_parent_should_succeed() {
-    test_assert_self_package(TestPackage::TransactionProcessor, false, true);
+    test_assert(AssertAgainst::TransactionProcessorPackage, false, true);
+}
+
+#[test]
+fn assert_tx_processor_blueprint_on_parent_should_succeed() {
+    test_assert(AssertAgainst::TransactionProcessorBlueprint, false, true);
 }
 
 #[test]
 fn assert_self_package_on_child_should_succeed() {
-    test_assert_self_package(TestPackage::SelfPackage, true, true);
+    test_assert(AssertAgainst::SelfPackage, true, true);
 }
 
 #[test]
 fn assert_tx_processor_package_on_child_should_fail() {
-    test_assert_self_package(TestPackage::TransactionProcessor, true, false);
+    test_assert(AssertAgainst::TransactionProcessorPackage, true, false);
+}
+
+#[test]
+fn assert_self_blueprint_on_child_should_fail() {
+    test_assert(AssertAgainst::SelfBlueprint, true, false);
+}
+
+#[test]
+fn assert_tx_processor_blueprint_on_child_should_succeed() {
+    test_assert(AssertAgainst::TransactionProcessorBlueprint, true, true);
 }
 
 #[test]
