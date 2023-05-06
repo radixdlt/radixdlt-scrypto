@@ -11,7 +11,7 @@ use crate::system::system_modules::virtualization::VirtualizationModule;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
+use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
@@ -384,30 +384,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             )?;
             api.kernel_drop_lock(handle)?;
 
-            // Load schema
-            let schema = {
-                let handle = api.kernel_lock_substate(
-                    invocation.blueprint.package_address.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &PackageOffset::Info.into(),
-                    LockFlags::read_only(),
-                    SystemLockData::default(),
-                )?;
-                let package_info = api.kernel_read_substate(handle)?;
-                let package_info: PackageInfoSubstate = package_info.as_typed().unwrap();
-                let schema = package_info
-                    .schema
-                    .blueprints
-                    .get(&invocation.blueprint.blueprint_name)
-                    .ok_or(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::BlueprintNotFound(invocation.blueprint.clone()),
-                    ))?
-                    .clone();
-                api.kernel_drop_lock(handle)?;
-                Box::new(schema)
-            };
 
             let mut system = SystemService::new(api);
+            let blueprint = system.actor_get_blueprint()?;
+            let schema = system.get_blueprint_schema(&blueprint)?;
 
             //  Validate input
             let export_name = match &invocation.ident {

@@ -217,6 +217,7 @@ pub enum SystemError {
     InvalidInstanceSchema,
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
+    BlueprintDoesNotExist(Blueprint),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

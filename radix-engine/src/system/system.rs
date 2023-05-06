@@ -219,7 +219,7 @@ where
         Ok(node_id.into())
     }
 
-    fn get_blueprint_schema(
+    pub fn get_blueprint_schema(
         &mut self,
         blueprint: &Blueprint,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
@@ -247,11 +247,7 @@ where
                 .schema
                 .blueprints
                 .remove(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    )),
-                )))?;
+                .ok_or(RuntimeError::SystemError(SystemError::BlueprintDoesNotExist(blueprint.clone())))?;
             self.api
                 .kernel_get_system_state()
                 .system
