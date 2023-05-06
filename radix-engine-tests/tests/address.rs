@@ -237,8 +237,7 @@ fn call_component_address_protected_method_in_child_to_child_should_succeed() {
     test_call_component_address_protected_method(false, false);
 }
 
-#[test]
-fn assert_self_package_on_parent_should_fail() {
+fn test_assert_self_package(child: bool, should_succeed: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
@@ -272,13 +271,27 @@ fn assert_self_package_on_parent_should_fail() {
         .call_method(
             component,
             "assert_check_on_package",
-            manifest_args!(package_address),
+            manifest_args!(package_address, child),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+    if should_succeed {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)));
+    }
+}
+
+#[test]
+fn assert_self_package_on_parent_should_fail() {
+    test_assert_self_package(false, false);
+}
+
+#[test]
+fn assert_self_package_on_child_should_succeed() {
+    test_assert_self_package(true, true);
 }
 
 #[test]

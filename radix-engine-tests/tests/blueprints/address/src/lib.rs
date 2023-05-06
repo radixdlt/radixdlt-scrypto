@@ -22,6 +22,10 @@ mod child_component {
                 scrypto_args!(Runtime::global_address(), child),
             );
         }
+
+        pub fn assert_check_on_package(&self, package_address: PackageAddress) {
+            Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+        }
     }
 }
 
@@ -121,8 +125,12 @@ mod my_component {
             }
         }
 
-        pub fn assert_check_on_package(&self, package_address: PackageAddress) {
-            Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+        pub fn assert_check_on_package(&self, package_address: PackageAddress, child: bool) {
+            if child {
+                self.child.assert_check_on_package(package_address);
+            } else {
+                Runtime::assert_access_rule(rule!(require(package_of_caller(package_address))));
+            }
         }
     }
 }
