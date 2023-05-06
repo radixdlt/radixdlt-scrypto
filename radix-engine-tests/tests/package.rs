@@ -2,7 +2,6 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
