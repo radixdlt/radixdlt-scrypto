@@ -499,3 +499,25 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         )
     });
 }
+
+#[test]
+fn nested_kv_stores_works() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "NestedKvStores",
+            "instantiate",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
