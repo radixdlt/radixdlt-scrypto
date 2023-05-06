@@ -28,6 +28,15 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn is_barrier(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
+            Actor::Function { .. } => false,
+            Actor::VirtualLazyLoad { .. } => false,
+            Actor::Root { .. } => false,
+        }
+    }
+
     pub fn fn_identifier(&self) -> (Blueprint, FnIdent) {
         match self {
             Actor::Root => panic!("Should never be called"),
