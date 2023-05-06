@@ -1240,7 +1240,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
 
     access_rules.default(
         rule!(deny_all),
-        rule!(require(package_of_caller(ACCESS_CONTROLLER_PACKAGE))),
+        rule!(require(package_of_direct_caller(ACCESS_CONTROLLER_PACKAGE))),
     )
 }
 

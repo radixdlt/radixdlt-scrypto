@@ -85,8 +85,8 @@ impl AccessRuleNode {
 }
 
 /// A requirement for the immediate caller's package to equal the given package.
-pub fn package_of_caller(package: PackageAddress) -> ResourceOrNonFungible {
-    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::package_of_caller_badge(package))
+pub fn package_of_direct_caller(package: PackageAddress) -> ResourceOrNonFungible {
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::package_of_direct_caller_badge(package))
 }
 
 /// A requirement for the global ancestor of the actor who made the latest global call to either be:

@@ -434,7 +434,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-                    AccessRuleEntry::AccessRule(rule!(require(package_of_caller(
+                    AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
                         EPOCH_MANAGER_PACKAGE
                     )))),
                 ),
@@ -454,14 +454,14 @@ impl ValidatorCreator {
         liquidity_token_auth.insert(
             Mint,
             (
-                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );
         liquidity_token_auth.insert(
             Burn,
             (
-                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );
@@ -483,14 +483,14 @@ impl ValidatorCreator {
         unstake_token_auth.insert(
             Mint,
             (
-                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );
         unstake_token_auth.insert(
             Burn,
             (
-                rule!(require(package_of_caller(EPOCH_MANAGER_PACKAGE))),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
                 rule!(deny_all),
             ),
         );

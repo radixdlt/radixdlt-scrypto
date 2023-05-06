@@ -270,7 +270,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![PACKAGE_OF_CALLER_VIRTUAL_BADGE, PACKAGE_OWNER_BADGE],
+                dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, PACKAGE_OWNER_BADGE],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
@@ -400,8 +400,8 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = PACKAGE_OF_CALLER_VIRTUAL_BADGE.into();
-        pre_allocated_ids.insert(PACKAGE_OF_CALLER_VIRTUAL_BADGE.into());
+        let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -444,7 +444,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(
             Mint,
             (
-                rule!(require(package_of_caller(PACKAGE_PACKAGE))),
+                rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))),
                 rule!(deny_all),
             ),
         );
@@ -472,7 +472,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(
             Mint,
             (
-                rule!(require(package_of_caller(IDENTITY_PACKAGE))),
+                rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))),
                 rule!(deny_all),
             ),
         );
@@ -505,7 +505,7 @@ pub fn create_system_bootstrap_transaction(
                     ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
                     EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
                     IDENTITY_OWNER_BADGE,
-                    PACKAGE_OF_CALLER_VIRTUAL_BADGE,
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_CODE_ID,
@@ -531,7 +531,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
                     RADIX_TOKEN,
-                    PACKAGE_OF_CALLER_VIRTUAL_BADGE,
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
                     SYSTEM_TRANSACTION_BADGE,
                     VALIDATOR_OWNER_BADGE,
                 ],
@@ -570,7 +570,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(
             Mint,
             (
-                rule!(require(package_of_caller(ACCOUNT_PACKAGE))),
+                rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))),
                 rule!(deny_all),
             ),
         );
@@ -605,7 +605,7 @@ pub fn create_system_bootstrap_transaction(
                     ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
                     EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
                     ACCOUNT_OWNER_BADGE,
-                    PACKAGE_OF_CALLER_VIRTUAL_BADGE,
+                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
@@ -627,7 +627,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                dependent_resources: vec![PACKAGE_OF_CALLER_VIRTUAL_BADGE],
+                dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,

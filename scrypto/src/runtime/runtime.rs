@@ -49,7 +49,7 @@ impl Runtime {
     }
 
     pub fn package_token() -> NonFungibleGlobalId {
-        NonFungibleGlobalId::package_of_caller_badge(Runtime::package_address())
+        NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
     }
 
     /// Invokes a function on a blueprint.

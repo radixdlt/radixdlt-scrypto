@@ -120,7 +120,7 @@ where
         } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
-            || node_id.eq(PACKAGE_OF_CALLER_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OWNER_BADGE.as_node_id())
             || node_id.eq(VALIDATOR_OWNER_BADGE.as_node_id())
