@@ -224,6 +224,13 @@ fn can_set_public_key_metadata_through_manifest() {
 }
 
 #[test]
+fn can_set_instant_metadata_through_manifest() {
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Instant(Instant {
+        seconds_since_unix_epoch: 51,
+    })));
+}
+
+#[test]
 fn can_set_url_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Url(Url(
         "https://radixdlt.com/index.html".to_string(),

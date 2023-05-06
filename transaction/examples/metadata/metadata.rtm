@@ -149,7 +149,7 @@ SET_METADATA
     Enum(0u8, # Single item
         Enum(12u8, # Instant - ie Timestamp
             # Value in seconds since Unix Epoch
-            Tuple(10000i64)
+            10000i64
         )
     );
 

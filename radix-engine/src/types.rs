@@ -12,6 +12,7 @@ pub use radix_engine_interface::data::scrypto::*;
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::*;
 pub use radix_engine_interface::network::*;
+pub use radix_engine_interface::time::*;
 pub use radix_engine_interface::traits::*;
 pub use radix_engine_interface::types::*;
 pub use radix_engine_interface::*;
