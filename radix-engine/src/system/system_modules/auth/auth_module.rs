@@ -231,8 +231,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             }
             Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
         };
-        let is_barrier = Self::is_barrier(callee);
-        let barrier_crossings_allowed = if is_barrier { 0 } else { 1 };
+        let acting_location = if Self::is_barrier(callee) {
+            ActingLocation::AtBarrier
+        } else {
+            ActingLocation::AtLocalBarrier
+        };
         let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
@@ -240,8 +243,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Authenticate
         for authorization in authorizations {
             if !Authentication::verify_method_auth(
-                if is_barrier { ActingLocation::AtBarrier } else { ActingLocation::AtLocalBarrier },
-                barrier_crossings_allowed,
+                acting_location,
                 auth_zone_id,
                 &authorization,
                 &mut system,

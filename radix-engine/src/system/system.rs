@@ -1600,13 +1600,11 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let barrier_crossings_allowed = 1;
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         // Authenticate
         if !Authentication::verify_method_auth(
             ActingLocation::InCallFrame,
-            barrier_crossings_allowed,
             auth_zone_id,
             &rule,
             self,
