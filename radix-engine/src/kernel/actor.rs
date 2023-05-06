@@ -50,9 +50,7 @@ impl Actor {
         }
     }
 
-    pub fn get_global_ancestor_as_global_caller(&self) -> Option<GlobalCaller> {
-        // TODO - technically this isn't right - we don't properly capture the global ancestor of our call frame.
-        // EG if the global ancestor of a method was a blueprint function call, we report it as a GlobalObject(package_address)
+    pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
             Actor::Function { blueprint, .. } => Some(blueprint.clone().into()),
@@ -88,7 +86,7 @@ impl Actor {
     }
 
     pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        if let Some(global_caller) = self.get_global_ancestor_as_global_caller() {
+        if let Some(global_caller) = self.as_global_caller() {
             btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
         } else {
             btreeset!()

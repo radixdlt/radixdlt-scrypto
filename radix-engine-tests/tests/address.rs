@@ -237,7 +237,12 @@ fn call_component_address_protected_method_in_child_to_child_should_succeed() {
     test_call_component_address_protected_method(false, false);
 }
 
-fn test_assert_self_package(child: bool, should_succeed: bool) {
+enum TestPackage {
+    SelfPackage,
+    TransactionProcessor,
+}
+
+fn test_assert_self_package(package: TestPackage, child: bool, should_succeed: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
@@ -265,6 +270,11 @@ fn test_assert_self_package(child: bool, should_succeed: bool) {
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
+    let package_address = match package {
+        TestPackage::SelfPackage => package_address,
+        TestPackage::TransactionProcessor => TRANSACTION_PROCESSOR_PACKAGE,
+    };
+
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -291,12 +301,22 @@ fn test_assert_self_package(child: bool, should_succeed: bool) {
 
 #[test]
 fn assert_self_package_on_parent_should_fail() {
-    test_assert_self_package(false, false);
+    test_assert_self_package(TestPackage::SelfPackage, false, false);
+}
+
+#[test]
+fn assert_tx_processor_package_on_parent_should_succeed() {
+    test_assert_self_package(TestPackage::TransactionProcessor, false, true);
 }
 
 #[test]
 fn assert_self_package_on_child_should_succeed() {
-    test_assert_self_package(true, true);
+    test_assert_self_package(TestPackage::SelfPackage, true, true);
+}
+
+#[test]
+fn assert_tx_processor_package_on_child_should_fail() {
+    test_assert_self_package(TestPackage::TransactionProcessor, true, false);
 }
 
 #[test]
