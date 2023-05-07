@@ -317,19 +317,19 @@ fn test_flash_loan() {
     assert_eq!(
         4071 /* AllocateNodeId */
         + 6431 /* CreateNode */
-        + 19240 /* DropLock */
+        + 19166 /* DropLock */
         + 6195 /* DropNode */
         + 4691111 /* Invoke */
-        + 109798 /* LockSubstate */
+        + 109386 /* LockSubstate */
         + 1216 /* LockSubstateFirstTime */
-        + 1130782 /* ReadSubstate */
+        + 1129530 /* ReadSubstate */
         + 225000 /* RunNative */
         + 40000 /* RunSystem */
         + 1307765 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1876271, /* WriteSubstate */
+        + 1866189, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }

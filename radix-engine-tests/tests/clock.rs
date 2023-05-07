@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT};
+use radix_engine_interface::blueprints::clock::{CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT, CLOCK_SET_CURRENT_TIME_IDENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};
@@ -28,7 +28,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
+            .get_executable(btreeset![AuthAddresses::system_role()]),
     );
 
     // Assert
@@ -57,7 +57,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             nonce: 0,
             pre_allocated_ids,
         }
-        .get_executable(btreeset![]),
+            .get_executable(btreeset![]),
     );
 
     // Assert
@@ -70,17 +70,11 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
 fn set_current_time_should_fail_without_validator_auth() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(
-            package_address,
-            "ClockTest",
-            "set_current_time",
-            manifest_args!(CLOCK, 123 as i64),
-        )
+        .call_method(CLOCK, CLOCK_SET_CURRENT_TIME_IDENT, manifest_args!(123 as i64))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -102,12 +96,8 @@ fn validator_can_set_current_time() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(
-            package_address,
-            "ClockTest",
-            "set_current_time",
-            manifest_args!(CLOCK, time_to_set_ms),
-        )
+
+        .call_method(CLOCK, CLOCK_SET_CURRENT_TIME_IDENT, manifest_args!(time_to_set_ms))
         .call_function(
             package_address,
             "ClockTest",
@@ -157,12 +147,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(
-            package_address,
-            "ClockTest",
-            "set_current_time",
-            manifest_args!(CLOCK, 1669663688996 as i64),
-        )
+        .call_method(CLOCK, CLOCK_SET_CURRENT_TIME_IDENT, manifest_args!(1669663688996 as i64))
         .call_function(
             package_address,
             "ClockTest",

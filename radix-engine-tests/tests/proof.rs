@@ -320,7 +320,6 @@ fn cant_move_restricted_proof() {
     });
 }
 
-#[ignore]
 #[test]
 fn can_move_restricted_proofs_internally() {
     // Arrange
