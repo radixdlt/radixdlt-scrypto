@@ -6,6 +6,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, FUNGIBLE_VAULT_BLUEPRINT, MethodKey, ObjectKey, require, RESOURCE_MANAGER_BURN_IDENT};
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -45,17 +46,46 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .create_proof_from_account(account, admin_auth);
 
     let builder = if lock {
-        let function = match action {
-            ResourceAuth::Mint => "lock_mintable",
-            ResourceAuth::Burn => "lock_burnable",
-            ResourceAuth::Withdraw => "lock_withdrawable",
-            ResourceAuth::Deposit => "lock_depositable",
-            ResourceAuth::Recall => "lock_recallable",
-            ResourceAuth::UpdateMetadata => "lock_metadata_updateable",
-        };
-
-        let args = manifest_args!(token_address);
-        builder.call_function(package, "ResourceCreator", function, args)
+        match action {
+            ResourceAuth::Mint => {
+                builder.set_group_mutability(
+                    token_address.into(),
+                    ObjectKey::SELF,
+                    "mint".to_string(),
+                    DenyAll,
+                )
+            },
+            ResourceAuth::Burn => {
+                builder.call_function(package, "ResourceCreator", "lock_burnable", manifest_args!(token_address))
+            },
+            ResourceAuth::Withdraw => {
+                builder.set_group_mutability(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "withdraw".to_string(),
+                    DenyAll,
+                )
+            },
+            ResourceAuth::Deposit => {
+                builder.set_group_mutability(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "deposit".to_string(),
+                    DenyAll,
+                )
+            },
+            ResourceAuth::Recall => {
+                builder.set_group_mutability(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "recall".to_string(),
+                    DenyAll,
+                )
+            },
+            ResourceAuth::UpdateMetadata => {
+                builder.call_function(package, "ResourceCreator", "lock_metadata_updateable", manifest_args!(token_address))
+            },
+        }
     } else {
         match action {
             ResourceAuth::Mint => {
