@@ -539,6 +539,22 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn set_group_access_rule(
+        &mut self,
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        rule: AccessRule,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::SetGroupAccessRule {
+            entity_address,
+            object_key,
+            group,
+            rule,
+        })
+            .0
+    }
+
     pub fn set_metadata(
         &mut self,
         entity_address: GlobalAddress,

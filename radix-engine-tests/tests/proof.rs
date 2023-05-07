@@ -339,10 +339,17 @@ fn can_move_restricted_proofs_internally() {
     let manifest = ManifestBuilder::new()
         .create_proof_from_account(account, RADIX_TOKEN)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof| {
-            builder.call_method(component_address, "pass_fungible_proof", manifest_args!(proof))
+            builder.call_method(
+                component_address,
+                "pass_fungible_proof",
+                manifest_args!(proof),
+            )
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![NonFungibleGlobalId::from_public_key(&public_key)]);
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();

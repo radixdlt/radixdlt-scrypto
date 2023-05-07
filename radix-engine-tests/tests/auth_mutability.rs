@@ -3,7 +3,9 @@ extern crate core;
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::resource::{FromPublicKey, FUNGIBLE_VAULT_BLUEPRINT, MethodKey, ObjectKey, require, RESOURCE_MANAGER_BURN_IDENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -36,7 +38,6 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
 
     // Act
 
-
     let package = test_runner.compile_and_publish("./tests/blueprints/resource_creator");
     let mut builder = ManifestBuilder::new();
     builder
@@ -56,16 +57,52 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let args = manifest_args!(token_address);
         builder.call_function(package, "ResourceCreator", function, args)
     } else {
-        let function = match action {
-            ResourceAuth::Mint => "set_mintable",
-            ResourceAuth::Burn => "set_burnable",
-            ResourceAuth::Withdraw => "set_withdrawable",
-            ResourceAuth::Deposit => "set_depositable",
-            ResourceAuth::Recall => "set_recallable",
-            ResourceAuth::UpdateMetadata => "set_updateable_metadata",
-        };
-        let args = manifest_args!(token_address, updated_auth);
-        builder.call_function(package, "ResourceCreator", function, args)
+        match action {
+            ResourceAuth::Mint => {
+                builder.set_group_access_rule(
+                    token_address.into(),
+                    ObjectKey::SELF,
+                    "mint".to_string(),
+                    rule!(require(updated_auth)),
+                )
+            },
+            ResourceAuth::Burn => {
+                builder.set_method_access_rule(
+                    token_address.into(),
+                    MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    rule!(require(updated_auth)),
+                )
+            },
+            ResourceAuth::Withdraw => {
+                builder.set_group_access_rule(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "withdraw".to_string(),
+                    rule!(require(updated_auth)),
+                )
+            },
+            ResourceAuth::Deposit => builder.call_function(
+                package,
+                "ResourceCreator",
+                "set_depositable",
+                manifest_args!(token_address, updated_auth),
+            ),
+            ResourceAuth::Recall => {
+                builder.set_group_access_rule(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "deposit".to_string(),
+                    rule!(require(updated_auth)),
+                )
+            },
+            ResourceAuth::UpdateMetadata => {
+                builder.set_method_access_rule(
+                    token_address.into(),
+                    MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                    rule!(require(updated_auth)),
+                )
+            },
+        }
     };
 
     let manifest = builder

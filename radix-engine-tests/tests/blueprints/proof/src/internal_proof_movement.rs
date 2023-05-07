@@ -20,15 +20,15 @@ mod outer {
     use super::inner::{Inner, InnerComponent};
 
     struct Outer {
-        inner: InnerComponent
+        inner: InnerComponent,
     }
 
     impl Outer {
         pub fn instantiate() -> ComponentAddress {
             let inner = Inner::instantiate();
-            Self {
-                inner
-            }.instantiate().globalize_with_access_rules(AccessRulesConfig::new().default(rule!(allow_all), rule!(allow_all)))
+            Self { inner }.instantiate().globalize_with_access_rules(
+                AccessRulesConfig::new().default(rule!(allow_all), rule!(allow_all)),
+            )
         }
 
         pub fn pass_fungible_proof(&self, proof: Proof) {
