@@ -36,6 +36,7 @@ pub enum AuthError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub access_rule: AccessRule,
+    pub fn_identifier: FnIdentifier,
 }
 
 #[derive(Debug, Clone)]
@@ -229,16 +230,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         let mut system = SystemService::new(api);
 
         // Authenticate
-        for authorization in authorizations {
+        for access_rule in authorizations {
             if !Authentication::verify_method_auth(
                 acting_location,
                 auth_zone_id,
-                &authorization,
+                &access_rule,
                 &mut system,
             )? {
                 return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                     AuthError::Unauthorized(Box::new(Unauthorized {
-                        access_rule: authorization,
+                        access_rule,
+                        fn_identifier: callee.fn_identifier(),
                     })),
                 )));
             }

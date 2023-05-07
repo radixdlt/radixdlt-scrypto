@@ -81,17 +81,19 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
                     rule!(require(updated_auth)),
                 )
             },
-            ResourceAuth::Deposit => builder.call_function(
-                package,
-                "ResourceCreator",
-                "set_depositable",
-                manifest_args!(token_address, updated_auth),
-            ),
-            ResourceAuth::Recall => {
+            ResourceAuth::Deposit => {
                 builder.set_group_access_rule(
                     token_address.into(),
                     ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                     "deposit".to_string(),
+                    rule!(require(updated_auth)),
+                )
+            },
+            ResourceAuth::Recall => {
+                builder.set_group_access_rule(
+                    token_address.into(),
+                    ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                    "recall".to_string(),
                     rule!(require(updated_auth)),
                 )
             },

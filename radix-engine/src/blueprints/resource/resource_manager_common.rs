@@ -182,6 +182,7 @@ fn build_access_rules(
         "withdraw",
         DenyAll,
     );
+
     vault_access_rules.set_group_access_rule_and_mutability(
         "recall",
         recall_access_rule,
@@ -199,11 +200,17 @@ fn build_access_rules(
         "recall",
     );
 
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "deposit",
         deposit_access_rule,
         deposit_mutability,
     );
+    vault_access_rules.set_group_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
+        "deposit",
+        DenyAll,
+    );
+
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::SELF, VAULT_GET_AMOUNT_IDENT),
         AllowAll,

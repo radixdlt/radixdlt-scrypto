@@ -90,11 +90,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    method_key: MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    name: "deposit".to_string(),
+                    rule: access_rule,
                 })
                 .unwrap(),
             )
@@ -237,11 +237,11 @@ impl ResourceManager {
         let _rtn = ScryptoEnv.call_module_method(
             self.0.as_node_id(),
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                method_key: MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
-                mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                name: "deposit".to_string(),
+                mutability: AccessRule::DenyAll,
             })
             .unwrap(),
         );
