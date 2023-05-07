@@ -23,16 +23,30 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
+
+    let (object_key, group) = match action {
+        ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
+        ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
+        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+        ResourceAuth::Withdraw => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "withdraw"),
+        ResourceAuth::Deposit => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "deposit"),
+        ResourceAuth::Recall => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "recall"),
+    };
     {
-        let function = match action {
-            ResourceAuth::Mint => "lock_mintable",
-            ResourceAuth::Burn => "lock_burnable",
-            ResourceAuth::Withdraw => "lock_withdrawable",
-            ResourceAuth::Deposit => "lock_depositable",
-            ResourceAuth::Recall => "lock_recallable",
-            ResourceAuth::UpdateMetadata => "lock_metadata_updateable",
-        };
-        test_runner.lock_resource_auth(function, admin_auth, token_address, account, public_key);
+        let manifest = ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .create_proof_from_account(account, admin_auth)
+            .set_group_mutability(
+                token_address.into(),
+                object_key,
+                group.to_string(),
+                DenyAll,
+            )
+            .build();
+        test_runner.execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        ).expect_commit_success();
     }
 
     // Act
