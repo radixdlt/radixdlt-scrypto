@@ -35,7 +35,15 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     }
 
     // Act
-    let (function, args) = if lock {
+
+
+    let package = test_runner.compile_and_publish("./tests/blueprints/resource_creator");
+    let mut builder = ManifestBuilder::new();
+    builder
+        .lock_fee(test_runner.faucet_component(), 100u32.into())
+        .create_proof_from_account(account, admin_auth);
+
+    let builder = if lock {
         let function = match action {
             ResourceAuth::Mint => "lock_mintable",
             ResourceAuth::Burn => "lock_burnable",
@@ -46,7 +54,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         };
 
         let args = manifest_args!(token_address);
-        (function, args)
+        builder.call_function(package, "ResourceCreator", function, args)
     } else {
         let function = match action {
             ResourceAuth::Mint => "set_mintable",
@@ -57,14 +65,10 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::UpdateMetadata => "set_updateable_metadata",
         };
         let args = manifest_args!(token_address, updated_auth);
-        (function, args)
+        builder.call_function(package, "ResourceCreator", function, args)
     };
 
-    let package = test_runner.compile_and_publish("./tests/blueprints/resource_creator");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 100u32.into())
-        .create_proof_from_account(account, admin_auth)
-        .call_function(package, "ResourceCreator", function, args)
+    let manifest = builder
         .call_method(
             account,
             "deposit_batch",
