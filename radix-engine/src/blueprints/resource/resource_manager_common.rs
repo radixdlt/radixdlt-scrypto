@@ -28,56 +28,78 @@ fn build_access_rules(
         .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut resman_access_rules = AccessRulesConfig::new();
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-        update_metadata_access_rule,
-        update_metadata_mutability,
-    );
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "update_metadata",
+            update_metadata_access_rule,
+            update_metadata_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            "update_metadata",
+            DenyAll,
+        );
+    }
+
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_group_access_rule_and_mutability(
-        "mint",
-        mint_access_rule,
-        mint_mutability,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
-        "mint",
-        DenyAll,
-    );
 
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
-        burn_access_rule,
-        burn_mutability,
-    );
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "mint",
+            mint_access_rule,
+            mint_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::SELF,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::SELF,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::SELF,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
+            "mint",
+            DenyAll,
+        );
+    }
+
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "burn",
+            burn_access_rule,
+            burn_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::SELF,
+                RESOURCE_MANAGER_BURN_IDENT,
+            ),
+            "burn",
+            DenyAll,
+        );
+    }
+
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             ObjectModuleId::SELF,
