@@ -167,6 +167,13 @@ pub enum Instruction {
         rule: AccessRule,
     },
 
+    SetGroupMutability {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        mutability: AccessRule,
+    },
+
     MintFungible {
         resource_address: ResourceAddress,
         amount: Decimal,

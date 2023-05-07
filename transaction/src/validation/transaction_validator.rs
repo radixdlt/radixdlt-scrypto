@@ -293,6 +293,7 @@ impl NotarizedTransactionValidator {
                 | Instruction::ClaimComponentRoyalty { .. }
                 | Instruction::SetMethodAccessRule { .. }
                 | Instruction::SetGroupAccessRule { .. }
+                | Instruction::SetGroupMutability { .. }
                 | Instruction::MintFungible { .. }
                 | Instruction::MintNonFungible { .. }
                 | Instruction::MintUuidNonFungible { .. } => {}
