@@ -552,7 +552,7 @@ impl ManifestBuilder {
             group,
             rule,
         })
-            .0
+        .0
     }
 
     pub fn set_group_mutability(
@@ -568,7 +568,7 @@ impl ManifestBuilder {
             group,
             mutability,
         })
-            .0
+        .0
     }
 
     pub fn set_metadata(

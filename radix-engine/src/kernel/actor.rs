@@ -1,7 +1,7 @@
 use crate::types::*;
+use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
-use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
@@ -34,7 +34,7 @@ impl Actor {
             Actor::Method(MethodActor { object_info, .. }) => {
                 object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
                     && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
-            },
+            }
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
             Actor::Root { .. } => false,

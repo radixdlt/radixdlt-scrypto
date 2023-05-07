@@ -8,7 +8,11 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, AccessRulesSetGroupMutabilityInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
@@ -582,7 +586,7 @@ impl TransactionProcessorBlueprint {
                             name: group,
                             rule,
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
@@ -610,7 +614,7 @@ impl TransactionProcessorBlueprint {
                             name: group,
                             mutability,
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

@@ -91,10 +91,7 @@ fn build_access_rules(
             burn_mutability,
         );
         resman_access_rules.set_group_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::SELF,
-                RESOURCE_MANAGER_BURN_IDENT,
-            ),
+            MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
             "burn",
             DenyAll,
         );

@@ -89,7 +89,7 @@ fn set_up_package_and_component() -> (
                         .add_rule("paid_method", 2)
                         .add_rule("paid_method_panic", 2)
                         .default(0)
-                )
+                ),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

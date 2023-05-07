@@ -2,7 +2,9 @@ extern crate core;
 
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_interface::blueprints::resource::{FromPublicKey, FUNGIBLE_VAULT_BLUEPRINT, ObjectKey, require};
+use radix_engine_interface::blueprints::resource::{
+    require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -35,9 +37,18 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Mint => (ObjectKey::SELF, "mint"),
             Action::Burn => (ObjectKey::SELF, "burn"),
             Action::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
-            Action::Withdraw => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "withdraw"),
-            Action::Deposit => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "deposit"),
-            Action::Recall => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "recall"),
+            Action::Withdraw => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "withdraw",
+            ),
+            Action::Deposit => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "deposit",
+            ),
+            Action::Recall => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "recall",
+            ),
         };
 
         let manifest = ManifestBuilder::new()
@@ -50,10 +61,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 rule!(require(updated_auth)),
             )
             .build();
-        test_runner.execute_manifest(
-            manifest,
-            btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-        )
+        test_runner
+            .execute_manifest(
+                manifest,
+                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+            )
             .expect_commit_success();
     }
 

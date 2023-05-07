@@ -3,8 +3,10 @@ extern crate core;
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{FromPublicKey, FUNGIBLE_VAULT_BLUEPRINT, ObjectKey, require};
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
+use radix_engine_interface::blueprints::resource::{
+    require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -28,25 +30,31 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
         ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
         ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
-        ResourceAuth::Withdraw => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "withdraw"),
-        ResourceAuth::Deposit => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "deposit"),
-        ResourceAuth::Recall => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "recall"),
+        ResourceAuth::Withdraw => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "withdraw",
+        ),
+        ResourceAuth::Deposit => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "deposit",
+        ),
+        ResourceAuth::Recall => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "recall",
+        ),
     };
     {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_group_mutability(
-                token_address.into(),
-                object_key,
-                group.to_string(),
-                DenyAll,
-            )
+            .set_group_mutability(token_address.into(), object_key, group.to_string(), DenyAll)
             .build();
-        test_runner.execute_manifest(
-            manifest,
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        ).expect_commit_success();
+        test_runner
+            .execute_manifest(
+                manifest,
+                vec![NonFungibleGlobalId::from_public_key(&public_key)],
+            )
+            .expect_commit_success();
     }
 
     // Act
@@ -59,18 +67,22 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
         ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
         ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
-        ResourceAuth::Withdraw => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "withdraw"),
-        ResourceAuth::Deposit => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "deposit"),
-        ResourceAuth::Recall => (ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()), "recall"),
+        ResourceAuth::Withdraw => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "withdraw",
+        ),
+        ResourceAuth::Deposit => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "deposit",
+        ),
+        ResourceAuth::Recall => (
+            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            "recall",
+        ),
     };
 
     let builder = if lock {
-        builder.set_group_mutability(
-            token_address.into(),
-            object_key,
-            group.to_string(),
-            DenyAll,
-        )
+        builder.set_group_mutability(token_address.into(), object_key, group.to_string(), DenyAll)
     } else {
         builder.set_group_access_rule(
             token_address.into(),
