@@ -321,6 +321,7 @@ where
                 dest_node_id,
                 dest_module_id,
                 &mut self.heap,
+                self.store,
             )
             .map_err(CallFrameError::MoveModuleError)
             .map_err(KernelError::CallFrameError)

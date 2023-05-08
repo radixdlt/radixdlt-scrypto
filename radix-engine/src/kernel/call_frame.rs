@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::MethodActor;
-use super::heap::{Heap, HeapMoveModuleError};
+use super::heap::{Heap, HeapRemoveModuleErr};
 use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
@@ -87,7 +87,7 @@ impl NodeVisibility {
     /// Note that system may enforce further constraints on this.
     /// For instance, system currently only allows substates of actor,
     /// actor's outer object, and any visible key value store.
-    pub fn can_be_read(&self) -> bool {
+    pub fn can_be_read_or_write(&self) -> bool {
         self.0.iter().any(|x| x.is_normal())
     }
 
@@ -202,7 +202,8 @@ pub enum ListNodeModuleError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
-    HeapErr(HeapMoveModuleError),
+    HeapRemoveModuleErr(HeapRemoveModuleErr),
+    TrackError(SetSubstateError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -375,7 +376,7 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(LockSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -723,24 +724,44 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module(
+    pub fn move_module<'f, S: SubstateStore>(
         &mut self,
         src_node_id: &NodeId,
         src_module_id: ModuleNumber,
         dest_node_id: &NodeId,
         dest_module_id: ModuleNumber,
-        heap: &mut Heap,
+        heap: &'f mut Heap,
+        store: &'f mut S,
     ) -> Result<(), MoveModuleError> {
+        // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
             return Err(MoveModuleError::NodeNotAvailable(src_node_id.clone()));
         }
 
-        if self.owned_root_nodes.get(dest_node_id) != Some(&0) {
+        // Check visibility
+        if !self
+            .get_node_visibility(dest_node_id)
+            .can_be_read_or_write()
+        {
             return Err(MoveModuleError::NodeNotAvailable(dest_node_id.clone()));
         }
 
-        heap.move_module(src_node_id, src_module_id, dest_node_id, dest_module_id)
-            .map_err(MoveModuleError::HeapErr)
+        // Move
+        let module = heap
+            .remove_module(src_node_id, src_module_id)
+            .map_err(MoveModuleError::HeapRemoveModuleErr)?;
+        let to_heap = heap.contains_node(dest_node_id);
+        for (substate_key, substate_value) in module {
+            if to_heap {
+                heap.set_substate(*dest_node_id, dest_module_id, substate_key, substate_value);
+            } else {
+                store
+                    .set_substate(*dest_node_id, dest_module_id, substate_key, substate_value)
+                    .map_err(MoveModuleError::TrackError)?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn list_modules(
@@ -749,7 +770,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
     ) -> Result<BTreeSet<ModuleNumber>, ListNodeModuleError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(ListNodeModuleError::NodeNotVisible(node_id.clone()));
         }
 
@@ -785,7 +806,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(), CallFrameSetSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -809,7 +830,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -835,7 +856,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -868,7 +889,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameTakeSortedSubstatesError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -905,7 +926,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSortedSubstatesError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read() {
+        if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));

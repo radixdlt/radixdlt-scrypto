@@ -36,7 +36,9 @@ pub trait KernelNodeApi {
 
     /// Moves module substates from one node to another node.
     ///
-    /// Both source and destination nodes must be lock-free and in heap; otherwise a runtime error is returned.
+    /// The source node must be in heap and lock-free; otherwise a runtime error is returned.
+    ///
+    /// Note that implementation will not check if the destination already exists.
     fn kernel_move_module(
         &mut self,
         src_node_id: &NodeId,

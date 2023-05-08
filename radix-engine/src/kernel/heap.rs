@@ -12,10 +12,9 @@ pub struct Heap {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum HeapMoveModuleError {
+pub enum HeapRemoveModuleErr {
     NodeNotFound(NodeId),
-    SrcModuleNotFound(ModuleNumber),
-    DestModuleAlreadyExists(ModuleNumber),
+    ModuleNotFound(ModuleNumber),
 }
 
 impl Heap {
@@ -36,30 +35,18 @@ impl Heap {
             .map(|node_substates| node_substates.keys().cloned().collect())
     }
 
-    pub fn move_module(
+    pub fn remove_module(
         &mut self,
-        src_node_id: &NodeId,
-        src_module_id: ModuleNumber,
-        dest_node_id: &NodeId,
-        dest_module_id: ModuleNumber,
-    ) -> Result<(), HeapMoveModuleError> {
-        if let Some(modules) = self.nodes.get_mut(src_node_id) {
+        node_id: &NodeId,
+        module_number: ModuleNumber,
+    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleErr> {
+        if let Some(modules) = self.nodes.get_mut(node_id) {
             let module = modules
-                .remove(&src_module_id)
-                .ok_or(HeapMoveModuleError::SrcModuleNotFound(src_module_id))?;
-            if let Some(modules) = self.nodes.get_mut(src_node_id) {
-                if modules.insert(dest_module_id, module).is_none() {
-                    Ok(())
-                } else {
-                    Err(HeapMoveModuleError::DestModuleAlreadyExists(
-                        dest_module_id.clone(),
-                    ))
-                }
-            } else {
-                Err(HeapMoveModuleError::NodeNotFound(dest_node_id.clone()))
-            }
+                .remove(&module_number)
+                .ok_or(HeapRemoveModuleErr::ModuleNotFound(module_number))?;
+            Ok(module)
         } else {
-            Err(HeapMoveModuleError::NodeNotFound(src_node_id.clone()))
+            Err(HeapRemoveModuleErr::NodeNotFound(node_id.clone()))
         }
     }
 
