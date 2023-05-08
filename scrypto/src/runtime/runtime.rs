@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerGetCurrentEpochInput, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
-use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
+use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_VIRTUAL_BADGE};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{
@@ -36,12 +36,12 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn blueprint() -> Blueprint {
-        ScryptoEnv.get_blueprint().unwrap()
+        ScryptoEnv.actor_get_blueprint().unwrap()
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.get_global_address().unwrap();
-        ComponentAddress::new_unchecked(address.into())
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the current package address.
@@ -53,7 +53,7 @@ impl Runtime {
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&Runtime::package_address()).unwrap())
                 .unwrap();
-        NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id)
+        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id)
     }
 
     /// Invokes a function on a blueprint.
@@ -106,5 +106,13 @@ impl Runtime {
     pub fn assert_access_rule(access_rule: AccessRule) {
         let mut env = ScryptoEnv;
         env.assert_access_rule(access_rule).unwrap();
+    }
+
+    pub fn preallocate_global_component_address() -> ComponentAddress {
+        let mut env = ScryptoEnv;
+        let global_address = env
+            .preallocate_global_address(EntityType::GlobalGenericComponent)
+            .unwrap();
+        unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
     }
 }

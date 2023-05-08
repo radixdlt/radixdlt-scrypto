@@ -1,15 +1,19 @@
+use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::key_value_entry_api::{
+    ClientKeyValueEntryApi, KeyValueEntryHandle,
+};
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_interface::api::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_KEY_VALUE_STORE_ID;
 use radix_engine_interface::data::scrypto::*;
+use radix_engine_interface::types::LockHandle;
+use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
+use sbor::rust::ops::{Deref, DerefMut};
 use sbor::*;
-use scrypto_schema::KeyValueStoreSchema;
+use scrypto_schema::KeyValueStoreInfo;
 
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::runtime::{DataRef, DataRefMut, OriginalData};
 
 // TODO: optimize `rust_value -> bytes -> scrypto_value` conversion.
 
@@ -32,9 +36,9 @@ impl<
     pub fn new() -> Self {
         let mut env = ScryptoEnv;
 
-        let schema = KeyValueStoreSchema::new::<K, V>(true);
+        let schema = KeyValueStoreInfo::new::<K, V>(true);
 
-        let id = env.new_key_value_store(schema).unwrap();
+        let id = env.key_value_store_new(schema).unwrap();
 
         Self {
             id: Own(id),
@@ -44,49 +48,45 @@ impl<
     }
 
     /// Returns the value that is associated with the given key.
-    pub fn get(&self, key: &K) -> Option<DataRef<V>> {
+    pub fn get(&self, key: &K) -> Option<KeyValueEntryRef<'_, V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
-        let raw_bytes = env.sys_read_substate(handle).unwrap();
+        let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
         // Decode and create Ref
         let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
-            Option::Some(value) => Some(DataRef::new(
+            Option::Some(value) => Some(KeyValueEntryRef::new(
                 handle,
                 scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
             )),
             Option::None => {
-                env.sys_drop_lock(handle).unwrap();
+                env.key_value_entry_release(handle).unwrap();
                 None
             }
         }
     }
 
-    pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<KeyValueEntryRefMut<'_, V>> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
-        let raw_bytes = env.sys_read_substate(handle).unwrap();
+        let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
         // Decode and create RefMut
         let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
         match substate {
             Option::Some(value) => {
                 let rust_value = scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(DataRefMut::new(
-                    handle,
-                    OriginalData::KeyValueStoreEntry(value),
-                    rust_value,
-                ))
+                Some(KeyValueEntryRefMut::new(handle, rust_value))
             }
             Option::None => {
-                env.sys_drop_lock(handle).unwrap();
+                env.key_value_entry_release(handle).unwrap();
                 None
             }
         }
@@ -96,37 +96,27 @@ impl<
     pub fn insert(&self, key: K, value: V) {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
-        let value_payload = scrypto_encode(&value).unwrap();
         let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
-        let substate: Option<ScryptoValue> = Option::Some(scrypto_decode(&value_payload).unwrap());
-        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
-            .unwrap();
-        env.sys_drop_lock(handle).unwrap();
+        let value_payload = scrypto_encode(&value).unwrap();
+
+        let value: ScryptoValue = scrypto_decode(&value_payload).unwrap();
+        let buffer = scrypto_encode(&value).unwrap();
+
+        env.key_value_entry_set(handle, buffer).unwrap();
+        env.key_value_entry_release(handle).unwrap();
     }
 
     /// Remove an entry from the map and return the original value if it exists
     pub fn remove(&self, key: &K) -> Option<V> {
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
-        let handle = env
-            .lock_key_value_store_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+        let rtn = env
+            .key_value_store_remove_entry(self.id.as_node_id(), &key_payload)
             .unwrap();
 
-        let raw_bytes = env.sys_read_substate(handle).unwrap();
-        let substate: Option<ScryptoValue> = scrypto_decode(&raw_bytes).unwrap();
-        let rtn = substate.map(|v| {
-            let rust_value = scrypto_decode(&scrypto_encode(&v).unwrap()).unwrap();
-            rust_value
-        });
-
-        let substate: Option<ScryptoValue> = None;
-        env.sys_write_substate(handle, scrypto_encode(&substate).unwrap())
-            .unwrap();
-        env.sys_drop_lock(handle).unwrap();
-
-        rtn
+        scrypto_decode(&rtn).unwrap()
     }
 }
 
@@ -186,4 +176,86 @@ impl<
     > Describe<ScryptoCustomTypeKind> for KeyValueStore<K, V>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_KEY_VALUE_STORE_ID]);
+}
+
+pub struct KeyValueEntryRef<'a, V: ScryptoEncode> {
+    lock_handle: KeyValueEntryHandle,
+    value: V,
+    phantom: PhantomData<&'a ()>,
+}
+
+impl<'a, V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRef<'a, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+impl<'a, V: ScryptoEncode> KeyValueEntryRef<'a, V> {
+    pub fn new(lock_handle: KeyValueEntryHandle, value: V) -> KeyValueEntryRef<'a, V> {
+        KeyValueEntryRef {
+            lock_handle,
+            value,
+            phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRef<'a, V> {
+    type Target = V;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRef<'a, V> {
+    fn drop(&mut self) {
+        let mut env = ScryptoEnv;
+        env.key_value_entry_release(self.lock_handle).unwrap();
+    }
+}
+
+pub struct KeyValueEntryRefMut<'a, V: ScryptoEncode> {
+    handle: KeyValueEntryHandle,
+    value: V,
+    phantom: PhantomData<&'a ()>,
+}
+
+impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<'_, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
+    pub fn new(lock_handle: LockHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
+        KeyValueEntryRefMut {
+            handle: lock_handle,
+            value,
+            phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl<'a, V: ScryptoEncode> Drop for KeyValueEntryRefMut<'a, V> {
+    fn drop(&mut self) {
+        let mut env = ScryptoEnv;
+        let value = scrypto_encode(&self.value).unwrap();
+        env.key_value_entry_set(self.handle, value).unwrap();
+        env.key_value_entry_release(self.handle).unwrap();
+    }
+}
+
+impl<'a, V: ScryptoEncode> Deref for KeyValueEntryRefMut<'a, V> {
+    type Target = V;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<'a, V: ScryptoEncode> DerefMut for KeyValueEntryRefMut<'a, V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
 }

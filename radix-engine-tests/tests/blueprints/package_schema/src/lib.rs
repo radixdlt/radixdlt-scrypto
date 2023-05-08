@@ -11,16 +11,6 @@ mod schema_component {
             let component = Self {}.instantiate();
             component.globalize()
         }
-
-        pub fn create_component_with_access_rules_containing_undefined_method_name(
-        ) -> ComponentAddress {
-            let component = Self {}.instantiate();
-            component.globalize_with_access_rules(
-                AccessRulesConfig::new()
-                    .method("no_method", rule!(require("something")), rule!(deny_all))
-                    .default(rule!(allow_all), AccessRule::DenyAll),
-            )
-        }
     }
 }
 
@@ -188,9 +178,10 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
-        parent: None,
+        outer_blueprint: None,
         schema: generate_full_schema(aggregator),
         substates,
+        key_value_stores: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),

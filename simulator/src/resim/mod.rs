@@ -55,6 +55,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -72,10 +73,8 @@ use radix_engine_interface::blueprints::package::PackageInfoSubstate;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::BlueprintSchema;
-use radix_engine_interface::schema::PackageSchema;
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
+use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -88,41 +87,6 @@ use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use utils::ContextualDisplay;
-
-/// The address of the faucet component, test network only.
-/// TODO: remove
-pub const FAUCET_COMPONENT: ComponentAddress = ComponentAddress::new_unchecked([
-    EntityType::GlobalGenericComponent as u8,
-    1,
-    214,
-    31,
-    81,
-    94,
-    195,
-    164,
-    245,
-    22,
-    133,
-    219,
-    196,
-    153,
-    116,
-    249,
-    229,
-    98,
-    136,
-    55,
-    21,
-    2,
-    33,
-    180,
-    121,
-    11,
-    178,
-    57,
-    153,
-    132,
-]);
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -347,16 +311,18 @@ pub fn get_signing_keys(
     Ok(private_keys)
 }
 
-pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageSchema, Error> {
+pub fn export_package_schema(
+    package_address: PackageAddress,
+) -> Result<IndexedPackageSchema, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let package_info = substate_db
-        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
-            PackageOffset::Info.into(),
+            OBJECT_BASE_MODULE,
+            &PackageOffset::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
 
@@ -366,7 +332,7 @@ pub fn export_package_schema(package_address: PackageAddress) -> Result<PackageS
 pub fn export_blueprint_schema(
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<BlueprintSchema, Error> {
+) -> Result<IndexedBlueprintSchema, Error> {
     let schema = export_package_schema(package_address)?
         .blueprints
         .get(blueprint_name)
@@ -384,10 +350,10 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
 
     let type_info = substate_db
-        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
-            SysModuleId::TypeInfo.into(),
-            TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_BASE_MODULE,
+            &TypeInfoOffset::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
 
@@ -405,26 +371,26 @@ pub fn get_event_schema<S: SubstateDatabase>(
         EventTypeIdentifier(Emitter::Method(node_id, node_module), local_type_index) => {
             match node_module {
                 ObjectModuleId::AccessRules => (
-                    ACCESS_RULES_PACKAGE,
+                    ACCESS_RULES_MODULE_PACKAGE,
                     ACCESS_RULES_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::Royalty => (
-                    ROYALTY_PACKAGE,
+                    ROYALTY_MODULE_PACKAGE,
                     COMPONENT_ROYALTY_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::Metadata => (
-                    METADATA_PACKAGE,
+                    METADATA_MODULE_PACKAGE,
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
                 ObjectModuleId::SELF => {
                     let type_info = substate_db
-                        .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+                        .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                             node_id,
-                            SysModuleId::TypeInfo.into(),
-                            TypeInfoOffset::TypeInfo.into(),
+                            TYPE_INFO_BASE_MODULE,
+                            &TypeInfoOffset::TypeInfo.into(),
                         )
                         .unwrap();
                     match type_info {
@@ -441,17 +407,17 @@ pub fn get_event_schema<S: SubstateDatabase>(
             }
         }
         EventTypeIdentifier(Emitter::Function(node_id, _, blueprint_name), local_type_index) => (
-            PackageAddress::new_unchecked(node_id.clone().into()),
+            PackageAddress::new_or_panic(node_id.clone().into()),
             blueprint_name.to_owned(),
             *local_type_index,
         ),
     };
 
     let package_info = substate_db
-        .get_mapped_substate::<JmtMapper, PackageInfoSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            SysModuleId::Object.into(),
-            PackageOffset::Info.into(),
+            OBJECT_BASE_MODULE,
+            &PackageOffset::Info.into(),
         )
         .unwrap();
 

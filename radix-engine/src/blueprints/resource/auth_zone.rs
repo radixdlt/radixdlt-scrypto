@@ -1,7 +1,9 @@
+use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, LockFlags};
@@ -30,14 +32,14 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
-        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
             ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
         ))?;
 
-        api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
+        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(IndexedScryptoValue::from_typed(&proof))
     }
@@ -54,13 +56,13 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
-        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         auth_zone.push(input.proof);
 
-        api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
-        api.sys_drop_lock(auth_zone_handle)?;
+        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
+        api.field_lock_release(auth_zone_handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -70,30 +72,35 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
-        let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
 
-        api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
+        let blueprint_name = match &composed_proof {
+            ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
+            ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
+        };
+        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => composed_proof.into(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                OBJECT_BASE_MODULE => composed_proof.into(),
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
         )?;
@@ -106,33 +113,51 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByAmountInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::read_only())?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::read_only())?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_amount(&proofs, input.resource_address, Some(input.amount), api)?
         };
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-        api.kernel_create_node(
-            node_id,
-            btreemap!(
-                SysModuleId::Object.into() => composed_proof.into(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+        match composed_proof {
+            ComposedProof::Fungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
+                OBJECT_BASE_MODULE => composed_proof.into(),
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
-        )?;
+                )?;
+            }
+            ComposedProof::NonFungible(..) => {
+                api.kernel_create_node(
+                    node_id,
+                    btreemap!(
+                OBJECT_BASE_MODULE => composed_proof.into(),
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    global: false,
+                    outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
+                })).to_substates()),
+                )?;
+            }
+        }
 
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
@@ -142,17 +167,17 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: AuthZoneCreateProofByIdsInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_ids(&proofs, input.resource_address, Some(input.ids), api)?
         };
@@ -161,11 +186,12 @@ impl AuthZoneBlueprint {
         api.kernel_create_node(
             node_id,
             btreemap!(
-                SysModuleId::Object.into() => composed_proof.into(),
-                SysModuleId::TypeInfo.into() => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_MANAGER_PACKAGE, PROOF_BLUEPRINT),
+                OBJECT_BASE_MODULE => composed_proof.into(),
+                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    type_parent: None,
+                    outer_object: Some(input.resource_address.into()),
+                    instance_schema: None,
                 })).to_substates()
             ),
         )?;
@@ -184,12 +210,12 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
-        let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
+        let handle = api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+        let mut auth_zone: AuthZone = api.field_lock_read_typed(handle)?;
         auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
-        api.sys_write_substate_typed(handle, &auth_zone)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &auth_zone)?;
+        api.field_lock_release(handle)?;
 
         for proof in proofs {
             proof.sys_drop(api)?;
@@ -209,11 +235,11 @@ impl AuthZoneBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
-        let mut auth_zone: AuthZone = api.sys_read_substate_typed(handle)?;
+        let handle = api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+        let mut auth_zone: AuthZone = api.field_lock_read_typed(handle)?;
         auth_zone.clear_signature_proofs();
-        api.sys_write_substate_typed(handle, &auth_zone)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &auth_zone)?;
+        api.field_lock_release(handle)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -230,12 +256,12 @@ impl AuthZoneBlueprint {
         })?;
 
         let auth_zone_handle =
-            api.lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
+            api.actor_lock_field(AuthZoneOffset::AuthZone.into(), LockFlags::MUTABLE)?;
 
-        let mut auth_zone: AuthZone = api.sys_read_substate_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs = auth_zone.drain();
 
-        api.sys_write_substate_typed(auth_zone_handle, &auth_zone)?;
+        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(IndexedScryptoValue::from_typed(&proofs))
     }

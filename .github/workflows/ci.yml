@@ -10,13 +10,7 @@ on:
       - betanet
       - release\/*
   pull_request:
-    branches:
-      - main
-      - develop
-      - docs
-      - alphanet
-      - betanet
-      - release\/*
+    # Run on PR against any branch
 
 env:
   CARGO_TERM_COLOR: always
@@ -166,11 +160,12 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
+          --features serde \
           -p radix-engine-common \
           -p radix-engine-derive \
           -p radix-engine-interface \
           -p radix-engine \
-          -p radix-engine-tests \
+          -p radix-engine-tests
         ./check_stack_usage.sh
 
   radix-engine-no-std:
@@ -261,8 +256,8 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: transaction
-  cli-resim-rtmc:
-    name: Run CLI tests (resim & rtmc)
+  cli-resim-rtmc-rtmd:
+    name: Run CLI tests (resim & rtmc & rtmd)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

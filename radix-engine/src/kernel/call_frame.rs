@@ -1,14 +1,15 @@
 use crate::kernel::actor::Actor;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT, PROOF_BLUEPRINT,
-};
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
-use radix_engine_stores::interface::{
+use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
 };
+use crate::types::*;
+use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::blueprints::resource::{
+    FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
+    NON_FUNGIBLE_PROOF_BLUEPRINT,
+};
+use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
@@ -62,14 +63,15 @@ pub enum RefType {
 
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubstateLock {
+pub struct SubstateLock<L> {
     pub node_id: NodeId,
-    pub module_id: ModuleId,
+    pub module_num: ModuleNumber,
     pub substate_key: SubstateKey,
     pub initial_references: IndexSet<NodeId>,
     pub initial_owned_nodes: Vec<NodeId>,
     pub flags: LockFlags,
     pub store_handle: Option<u32>,
+    pub data: L,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,7 +89,7 @@ impl RENodeRefData {
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
-pub struct CallFrame {
+pub struct CallFrame<L> {
     /// The frame id
     pub depth: usize,
 
@@ -108,14 +110,14 @@ pub struct CallFrame {
     owned_root_nodes: IndexMap<NodeId, u32>,
 
     next_lock_handle: LockHandle,
-    locks: IndexMap<LockHandle, SubstateLock>,
+    locks: IndexMap<LockHandle, SubstateLock<L>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockSubstateError {
     NodeNotInCallFrame(NodeId),
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, ModuleId, SubstateKey),
+    SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -176,7 +178,7 @@ pub enum CallFrameTakeSortedSubstatesError {
     NodeNotInCallFrame(NodeId),
 }
 
-impl CallFrame {
+impl<L: Clone> CallFrame<L> {
     // TODO: Remove
     fn get_type_info<S: SubstateStore>(
         node_id: &NodeId,
@@ -185,14 +187,14 @@ impl CallFrame {
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
-        } else if let Ok(handle) = store.acquire_lock(
+        } else if let Ok((handle, _)) = store.acquire_lock(
             node_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
             LockFlags::read_only(),
         ) {
@@ -209,46 +211,44 @@ impl CallFrame {
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
-    ) -> Result<LockHandle, LockSubstateError> {
+        data: L,
+    ) -> Result<(LockHandle, bool), LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
+        let mut first_time_lock = false;
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::LockUnmodifiedBaseOnHeapNode);
             }
             if let Some(compute_default) = default {
-                heap.get_substate_virtualize(
-                    node_id,
-                    module_id.into(),
-                    substate_key,
-                    compute_default,
-                )
+                heap.get_substate_virtualize(node_id, module_num, substate_key, compute_default)
             } else {
-                heap.get_substate(node_id, module_id.into(), substate_key)
+                heap.get_substate(node_id, module_num, substate_key)
                     .ok_or_else(|| {
                         LockSubstateError::SubstateNotFound(
                             node_id.clone(),
-                            module_id,
+                            module_num,
                             substate_key.clone(),
                         )
                     })?
             }
         } else {
-            let handle = store
-                .acquire_lock_virtualize(node_id, module_id.into(), substate_key, flags, || {
+            let (handle, first_time) = store
+                .acquire_lock_virtualize(node_id, module_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
+            first_time_lock = first_time;
             store.read_substate(handle)
         };
 
@@ -287,12 +287,13 @@ impl CallFrame {
             lock_handle,
             SubstateLock {
                 node_id: node_id.clone(),
-                module_id,
+                module_num,
                 substate_key: substate_key.clone(),
                 initial_references,
                 initial_owned_nodes: owned_nodes.clone(),
                 flags,
                 store_handle,
+                data,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -302,7 +303,7 @@ impl CallFrame {
             *counter += 1;
         }
 
-        Ok(lock_handle)
+        Ok((lock_handle, first_time_lock))
     }
 
     pub fn drop_lock<S: SubstateStore>(
@@ -317,14 +318,14 @@ impl CallFrame {
             .ok_or(UnlockSubstateError::LockNotFound(lock_handle))?;
 
         let node_id = &substate_lock.node_id;
-        let module_id = substate_lock.module_id;
+        let module_num = substate_lock.module_num;
         let substate_key = &substate_lock.substate_key;
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
                 store.read_substate(handle)
             } else {
-                heap.get_substate(node_id, module_id.into(), substate_key)
+                heap.get_substate(node_id, module_num, substate_key)
                     .expect("Substate locked but missing")
             };
             let references = substate.references();
@@ -341,7 +342,7 @@ impl CallFrame {
             // Check references exist
             for reference in references {
                 self.get_node_visibility(reference)
-                    .ok_or(UnlockSubstateError::RefNotFound(reference.clone()))?;
+                    .ok_or_else(|| UnlockSubstateError::RefNotFound(reference.clone()))?;
             }
 
             for old_child in &substate_lock.initial_owned_nodes {
@@ -390,12 +391,13 @@ impl CallFrame {
         Ok(())
     }
 
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo> {
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
         self.locks.get(&lock_handle).map(|substate_lock| LockInfo {
             node_id: substate_lock.node_id,
-            module_id: substate_lock.module_id,
+            module_num: substate_lock.module_num,
             substate_key: substate_lock.substate_key.clone(),
             flags: substate_lock.flags,
+            data: substate_lock.data.clone(),
         })
     }
 
@@ -407,7 +409,7 @@ impl CallFrame {
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let SubstateLock {
             node_id,
-            module_id,
+            module_num,
             substate_key,
             store_handle,
             ..
@@ -420,7 +422,7 @@ impl CallFrame {
             Ok(store.read_substate(*store_handle))
         } else {
             Ok(heap
-                .get_substate(node_id, *module_id, substate_key)
+                .get_substate(node_id, *module_num, substate_key)
                 .expect("Substate missing in heap"))
         }
     }
@@ -434,7 +436,7 @@ impl CallFrame {
     ) -> Result<(), WriteSubstateError> {
         let SubstateLock {
             node_id,
-            module_id,
+            module_num,
             substate_key,
             store_handle,
             flags,
@@ -451,7 +453,7 @@ impl CallFrame {
         if let Some(store_handle) = store_handle {
             store.update_substate(*store_handle, substate);
         } else {
-            heap.set_substate(*node_id, *module_id, substate_key.clone(), substate);
+            heap.set_substate(*node_id, *module_num, substate_key.clone(), substate);
         }
         Ok(())
     }
@@ -461,7 +463,7 @@ impl CallFrame {
     pub fn set_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: SubstateKey,
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
@@ -471,10 +473,10 @@ impl CallFrame {
             .ok_or_else(|| CallFrameSetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         if heap.contains_node(node_id) {
-            heap.set_substate(*node_id, module_id.into(), key, value);
+            heap.set_substate(*node_id, module_num, key, value);
         } else {
             store
-                .set_substate(*node_id, module_id, key, value)
+                .set_substate(*node_id, module_num, key, value)
                 .map_err(|e| CallFrameSetSubstateError::StoreError(e))?;
         };
 
@@ -484,7 +486,7 @@ impl CallFrame {
     pub fn remove_substate<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -493,10 +495,10 @@ impl CallFrame {
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let removed = if heap.contains_node(node_id) {
-            heap.delete_substate(node_id, module_id.into(), key)
+            heap.delete_substate(node_id, module_num, key)
         } else {
             store
-                .take_substate(node_id, module_id.into(), key)
+                .take_substate(node_id, module_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
@@ -506,7 +508,7 @@ impl CallFrame {
     pub fn scan_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -515,9 +517,9 @@ impl CallFrame {
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let substates = if heap.contains_node(node_id) {
-            heap.scan_substates(node_id, module_id.into(), count)
+            heap.scan_substates(node_id, module_num, count)
         } else {
-            store.scan_substates(node_id, module_id.into(), count)
+            store.scan_substates(node_id, module_num, count)
         };
 
         for substate in &substates {
@@ -539,7 +541,7 @@ impl CallFrame {
     pub fn take_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -549,9 +551,9 @@ impl CallFrame {
         })?;
 
         let substates = if heap.contains_node(node_id) {
-            heap.take_substates(node_id, module_id.into(), count)
+            heap.take_substates(node_id, module_num, count)
         } else {
-            store.take_substates(node_id, module_id.into(), count)
+            store.take_substates(node_id, module_num, count)
         };
 
         for substate in &substates {
@@ -575,7 +577,7 @@ impl CallFrame {
     pub fn scan_sorted<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -587,7 +589,7 @@ impl CallFrame {
         let substates = if heap.contains_node(node_id) {
             todo!()
         } else {
-            store.scan_sorted_substates(node_id, module_id, count)
+            store.scan_sorted_substates(node_id, module_num, count)
         };
 
         for substate in &substates {
@@ -607,7 +609,7 @@ impl CallFrame {
     }
 
     pub fn new_root() -> Self {
-        let mut frame = Self {
+        Self {
             depth: 0,
             actor: None,
             immortal_node_refs: NonIterMap::new(),
@@ -615,27 +617,11 @@ impl CallFrame {
             owned_root_nodes: index_map_new(),
             next_lock_handle: 0u32,
             locks: index_map_new(),
-        };
-
-        // Add well-known global refs to current frame
-        frame.add_ref(RADIX_TOKEN.into(), RefType::Normal);
-        frame.add_ref(SYSTEM_TOKEN.into(), RefType::Normal);
-        frame.add_ref(ECDSA_SECP256K1_TOKEN.into(), RefType::Normal);
-        frame.add_ref(EDDSA_ED25519_TOKEN.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_TOKEN.into(), RefType::Normal);
-        frame.add_ref(PACKAGE_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(VALIDATOR_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(IDENTITY_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(ACCOUNT_OWNER_TOKEN.into(), RefType::Normal);
-        frame.add_ref(EPOCH_MANAGER.into(), RefType::Normal);
-        frame.add_ref(CLOCK.into(), RefType::Normal);
-        frame.add_ref(FAUCET_PACKAGE.into(), RefType::Normal);
-
-        frame
+        }
     }
 
     pub fn new_child_from_parent(
-        parent: &mut CallFrame,
+        parent: &mut CallFrame<L>,
         actor: Actor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, MoveError> {
@@ -650,7 +636,7 @@ impl CallFrame {
         for node_id in call_frame_update.node_refs_to_copy {
             let visibility = parent
                 .get_node_visibility(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
             next_node_refs.insert(node_id, RENodeRefData::new(visibility.0));
         }
 
@@ -668,8 +654,8 @@ impl CallFrame {
     }
 
     pub fn update_upstream(
-        from: &mut CallFrame,
-        to: &mut CallFrame,
+        from: &mut CallFrame<L>,
+        to: &mut CallFrame<L>,
         update: CallFrameUpdate,
     ) -> Result<(), MoveError> {
         for node_id in update.nodes_to_move {
@@ -683,7 +669,7 @@ impl CallFrame {
             let ref_data = from
                 .immortal_node_refs
                 .get(&node_id)
-                .ok_or(MoveError::RefNotFound(node_id))?;
+                .ok_or_else(|| MoveError::RefNotFound(node_id))?;
 
             to.immortal_node_refs
                 .entry(node_id)
@@ -818,10 +804,11 @@ impl CallFrame {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                        if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
+                        if blueprint.package_address == RESOURCE_PACKAGE
                             && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
                                 || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint.blueprint_name == PROOF_BLUEPRINT) =>
+                                || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                                || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }
@@ -862,6 +849,9 @@ impl CallFrame {
             Some((RefType::Normal, false))
         } else if let Some(ref_data) = self.immortal_node_refs.get(node_id) {
             Some((ref_data.ref_type, false))
+        } else if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+            // TODO: remove
+            Some((RefType::Normal, false))
         } else {
             None
         }

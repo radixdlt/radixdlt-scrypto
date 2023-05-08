@@ -1,11 +1,18 @@
+use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
+use crate::constants::{
+    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+};
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
+use scrypto_schema::InstanceSchema;
 
 #[repr(u8)]
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -30,21 +37,62 @@ pub enum ObjectModuleId {
     AccessRules,
 }
 
+impl ObjectModuleId {
+    pub fn base_module(&self) -> ModuleNumber {
+        match self {
+            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
+            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
+            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
+            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
+        }
+    }
+
+    pub fn static_blueprint(&self) -> Option<Blueprint> {
+        match self {
+            ObjectModuleId::Metadata => {
+                Some(Blueprint::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
+            }
+            ObjectModuleId::Royalty => Some(Blueprint::new(
+                &ROYALTY_MODULE_PACKAGE,
+                COMPONENT_ROYALTY_BLUEPRINT,
+            )),
+            ObjectModuleId::AccessRules => Some(Blueprint::new(
+                &ACCESS_RULES_MODULE_PACKAGE,
+                ACCESS_RULES_BLUEPRINT,
+            )),
+            ObjectModuleId::SELF => None,
+        }
+    }
+}
+
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
-    // TODO: refine the interface
+    /// Creates a new simple blueprint object of a given blueprint type
+    fn new_simple_object(
+        &mut self,
+        blueprint_ident: &str,
+        fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E> {
+        self.new_object(blueprint_ident, None, fields, vec![])
+    }
+
     /// Creates a new object of a given blueprint type
     fn new_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        schema: Option<InstanceSchema>,
+        fields: Vec<Vec<u8>>,
+        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
     ) -> Result<NodeId, E>;
 
-    /// Drops an object
-    fn drop_object(&mut self, node_id: NodeId) -> Result<(), E>;
+    /// Drops an object, returns the fields of the object
+    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
     /// Get info regarding a visible object
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
+
+    /// Pre-allocates a global address, for a future globalization.
+    fn preallocate_global_address(&mut self, entity_type: EntityType) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
@@ -57,6 +105,14 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address: GlobalAddress,
     ) -> Result<(), E>;
+
+    fn globalize_with_address_and_create_inner_object(
+        &mut self,
+        modules: BTreeMap<ObjectModuleId, NodeId>,
+        address: GlobalAddress,
+        inner_object_blueprint: &str,
+        inner_object_fields: Vec<Vec<u8>>,
+    ) -> Result<NodeId, E>;
 
     /// Calls a method on an object
     fn call_method(

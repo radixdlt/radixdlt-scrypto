@@ -3,9 +3,9 @@ use crate::schema::*;
 
 pub const MAX_NUMBER_OF_FIELDS: usize = 1024;
 
-pub fn validate_type_kind<'a, E: CustomTypeExtension>(
-    context: &TypeValidationContext,
-    type_kind: &SchemaTypeKind<E>,
+pub fn validate_type_kind<'a, S: CustomSchema>(
+    context: &SchemaContext,
+    type_kind: &SchemaTypeKind<S>,
 ) -> Result<(), SchemaValidationError> {
     match type_kind {
         TypeKind::Any
@@ -24,7 +24,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             // Nothing to check
         }
         TypeKind::Array { element_type } => {
-            validate_index::<E>(context, element_type)?;
+            validate_index::<S>(context, element_type)?;
         }
         TypeKind::Tuple { field_types } => {
             if field_types.len() > MAX_NUMBER_OF_FIELDS {
@@ -33,7 +33,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
                 });
             }
             for field_type in field_types.iter() {
-                validate_index::<E>(context, field_type)?;
+                validate_index::<S>(context, field_type)?;
             }
         }
         TypeKind::Enum { variants } => {
@@ -44,7 +44,7 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
                     });
                 }
                 for field_type in field_types.iter() {
-                    validate_index::<E>(context, field_type)?;
+                    validate_index::<S>(context, field_type)?;
                 }
             }
         }
@@ -52,24 +52,24 @@ pub fn validate_type_kind<'a, E: CustomTypeExtension>(
             key_type,
             value_type,
         } => {
-            validate_index::<E>(context, key_type)?;
-            validate_index::<E>(context, value_type)?;
+            validate_index::<S>(context, key_type)?;
+            validate_index::<S>(context, value_type)?;
         }
         TypeKind::Custom(custom_type_kind) => {
-            E::validate_type_kind(context, custom_type_kind)?;
+            S::validate_custom_type_kind(context, custom_type_kind)?;
         }
     }
 
     Ok(())
 }
 
-pub fn validate_index<E: CustomTypeExtension>(
-    context: &TypeValidationContext,
+pub fn validate_index<S: CustomSchema>(
+    context: &SchemaContext,
     type_index: &LocalTypeIndex,
 ) -> Result<(), SchemaValidationError> {
     match type_index {
         LocalTypeIndex::WellKnown(well_known_index) => {
-            if E::resolve_well_known_type(*well_known_index).is_none() {
+            if S::resolve_well_known_type(*well_known_index).is_none() {
                 return Err(SchemaValidationError::TypeKindInvalidWellKnownIndex);
             }
         }

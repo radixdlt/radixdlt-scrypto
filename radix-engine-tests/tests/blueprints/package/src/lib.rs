@@ -41,9 +41,10 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
-        parent: None,
+        outer_blueprint: None,
         schema: generate_full_schema(aggregator),
         substates,
+        key_value_stores: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
@@ -72,9 +73,10 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
-        parent: None,
+        outer_blueprint: None,
         schema: generate_full_schema(aggregator),
         substates,
+        key_value_stores: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
@@ -104,9 +106,10 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     );
 
     let schema = BlueprintSchema {
-        parent: None,
+        outer_blueprint: None,
         schema: generate_full_schema(aggregator),
         substates,
+        key_value_stores: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),

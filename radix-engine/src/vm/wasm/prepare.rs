@@ -264,7 +264,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -283,30 +283,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        LOCK_FIELD_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I32],
-                                ) {
-                                    continue;
-                                }
-
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        LOCK_FIELD_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
-                        READ_SUBSTATE_FUNCTION_NAME => {
+                        KEY_VALUE_ENTRY_GET_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -319,12 +301,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        READ_SUBSTATE_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_ENTRY_GET_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        WRITE_SUBSTATE_FUNCTION_NAME => {
+                        KEY_VALUE_ENTRY_SET_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -337,12 +319,12 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        WRITE_SUBSTATE_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_ENTRY_SET_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
                         }
-                        DROP_LOCK_FUNCTION_NAME => {
+                        KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -355,7 +337,102 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        DROP_LOCK_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        ACTOR_LOCK_FIELD_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I32],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        ACTOR_LOCK_FIELD_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        FIELD_LOCK_READ_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        FIELD_LOCK_READ_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        FIELD_LOCK_WRITE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32, ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        FIELD_LOCK_WRITE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        FIELD_LOCK_RELEASE_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -455,6 +532,23 @@ impl WasmModule {
                                 ));
                             }
                         }
+                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
                         GLOBALIZE_OBJECT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
@@ -472,7 +566,29 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        NEW_KEY_VALUE_STORE_FUNCTION_NAME => {
+                        GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                        ValueType::I32,
+                                    ],
+                                    vec![],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        KEY_VALUE_STORE_NEW_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -484,7 +600,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        NEW_KEY_VALUE_STORE_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_NEW_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -506,7 +622,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -518,7 +634,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -1001,13 +1117,14 @@ mod tests {
         package_schema.blueprints.insert(
             "Test".to_string(),
             BlueprintSchema {
-                parent: None,
+                outer_blueprint: None,
                 schema: ScryptoSchema {
                     type_kinds: vec![],
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
                 substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                key_value_stores: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,

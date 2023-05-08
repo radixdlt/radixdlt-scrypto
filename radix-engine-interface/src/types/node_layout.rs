@@ -1,69 +1,44 @@
+use crate::types::*;
 use crate::*;
-use radix_engine_common::types::{ModuleId, SubstateKey};
 use sbor::rust::prelude::*;
-use strum::{EnumIter, FromRepr};
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
-#[repr(u8)]
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    ScryptoSbor,
-    ManifestSbor,
-    FromRepr,
-    EnumIter,
-)]
-pub enum SysModuleId {
-    TypeInfo,
-    Metadata,
-    Royalty,
-    AccessRules,
-    Object,
-    Virtualized,
-}
-
-impl Into<ModuleId> for SysModuleId {
-    fn into(self) -> ModuleId {
-        ModuleId(self as u8)
-    }
-}
+pub const TYPE_INFO_BASE_MODULE: ModuleNumber = ModuleNumber(0u8);
+pub const METADATA_BASE_MODULE: ModuleNumber = ModuleNumber(1u8);
+pub const ROYALTY_BASE_MODULE: ModuleNumber = ModuleNumber(2u8);
+pub const ACCESS_RULES_BASE_MODULE: ModuleNumber = ModuleNumber(3u8);
+pub const OBJECT_BASE_MODULE: ModuleNumber = ModuleNumber(32u8);
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessRulesOffset {
     AccessRules,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum TypeInfoOffset {
     TypeInfo,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum RoyaltyOffset {
     RoyaltyConfig,
     RoyaltyAccumulator,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ComponentOffset {
     State0,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum PackageOffset {
     Info,
     CodeType,
@@ -73,117 +48,161 @@ pub enum PackageOffset {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ResourceManagerOffset {
-    ResourceManager,
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleResourceManagerOffset {
+    Divisibility,
+    TotalSupply,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleResourceManagerModuleOffset {
+    ResourceManager,
+    NonFungibleData,
+}
+
+impl TryFrom<u8> for NonFungibleResourceManagerModuleOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleResourceManagerOffset {
+    IdType,
+    MutableFields,
+    TotalSupply,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum FungibleVaultOffset {
-    Info,
     LiquidFungible,
     LockedFungible,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum NonFungibleVaultOffset {
-    Info,
     LiquidNonFungible,
     LockedNonFungible,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum EpochManagerOffset {
+    Config,
     EpochManager,
     CurrentValidatorSet,
-    RegisteredValidatorSet,
+    RegisteredValidators,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ValidatorOffset {
     Validator,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum BucketOffset {
-    Info,
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleBucketOffset {
     Liquid,
     Locked,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ProofOffset {
-    Info,
-    Fungible,
-    NonFungible,
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleBucketOffset {
+    Liquid,
+    Locked,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum FungibleProofOffset {
+    Moveable,
+    ProofRefs,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum NonFungibleProofOffset {
+    Moveable,
+    ProofRefs,
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum WorktopOffset {
     Worktop,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum AccountOffset {
-    Account,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AccessControllerOffset {
     AccessController,
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum AuthZoneOffset {
     AuthZone,
 }
 
-macro_rules! into_substate_key {
+macro_rules! substate_key {
     ($t:ty) => {
-        impl Into<SubstateKey> for $t {
-            fn into(self) -> SubstateKey {
-                SubstateKey::Tuple(self as u8)
+        impl From<$t> for SubstateKey {
+            fn from(value: $t) -> Self {
+                SubstateKey::Tuple(value as u8)
             }
         }
 
-        impl Into<u8> for $t {
-            fn into(self) -> u8 {
-                self as u8
+        impl From<$t> for u8 {
+            fn from(value: $t) -> Self {
+                value as u8
+            }
+        }
+
+        impl TryFrom<&SubstateKey> for $t {
+            type Error = ();
+
+            fn try_from(key: &SubstateKey) -> Result<Self, Self::Error> {
+                match key {
+                    SubstateKey::Tuple(x) => Self::from_repr(*x).ok_or(()),
+                    _ => Err(()),
+                }
             }
         }
     };
 }
 
-into_substate_key!(AccessRulesOffset);
-into_substate_key!(TypeInfoOffset);
-into_substate_key!(RoyaltyOffset);
-into_substate_key!(ComponentOffset);
-into_substate_key!(PackageOffset);
-into_substate_key!(ResourceManagerOffset);
-into_substate_key!(FungibleVaultOffset);
-into_substate_key!(NonFungibleVaultOffset);
-into_substate_key!(EpochManagerOffset);
-into_substate_key!(ValidatorOffset);
-into_substate_key!(BucketOffset);
-into_substate_key!(ProofOffset);
-into_substate_key!(WorktopOffset);
-into_substate_key!(ClockOffset);
-into_substate_key!(AccountOffset);
-into_substate_key!(AccessControllerOffset);
-into_substate_key!(AuthZoneOffset);
+substate_key!(AccessRulesOffset);
+substate_key!(TypeInfoOffset);
+substate_key!(RoyaltyOffset);
+substate_key!(ComponentOffset);
+substate_key!(PackageOffset);
+substate_key!(FungibleResourceManagerOffset);
+substate_key!(FungibleVaultOffset);
+substate_key!(FungibleBucketOffset);
+substate_key!(FungibleProofOffset);
+substate_key!(NonFungibleResourceManagerOffset);
+substate_key!(NonFungibleVaultOffset);
+substate_key!(NonFungibleBucketOffset);
+substate_key!(NonFungibleProofOffset);
+substate_key!(EpochManagerOffset);
+substate_key!(ValidatorOffset);
+
+// Transient
+substate_key!(WorktopOffset);
+substate_key!(ClockOffset);
+substate_key!(AccessControllerOffset);
+substate_key!(AuthZoneOffset);

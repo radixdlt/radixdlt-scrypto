@@ -1,13 +1,13 @@
-use super::PackageCodeTypeSubstate;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
@@ -16,13 +16,19 @@ use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::{ClientApi, LockFlags};
-use radix_engine_interface::blueprints::package::*;
+pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
-use radix_engine_stores::interface::NodeSubstates;
 use resources_tracker_macro::trace_resources;
+
+// Import and re-export substate types
+pub use super::substates::PackageCodeTypeSubstate;
+pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
+pub use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -41,6 +47,7 @@ pub enum PackageError {
     InvalidEventSchema,
     InvalidSystemFunction,
     InvalidTypeParent,
+    WasmUnsupported(String),
 
     InvalidMetadataKey(String),
 }
@@ -104,7 +111,7 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = PACKAGE_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
 fn globalize_package<Y>(
@@ -119,7 +126,7 @@ fn globalize_package<Y>(
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+    Y: KernelNodeApi + ClientApi<RuntimeError>,
 {
     // Use kernel API to commit substates directly.
     // Can't use the ClientApi because of chicken-and-egg issue.
@@ -127,20 +134,21 @@ where
     // Prepare node init.
     let node_init = btreemap!(
         PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type ),
-        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code ),
-        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty ),
-        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(& function_access_rules ),
+        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
+        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code),
+        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        SysModuleId::TypeInfo,
+        TYPE_INFO_BASE_MODULE,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
-            type_parent: None,
+            outer_object: None,
+            instance_schema: None,
         })),
     );
     let mut metadata_init = BTreeMap::new();
@@ -150,9 +158,9 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(SysModuleId::Metadata, ModuleInit::Metadata(metadata_init));
+    node_modules.insert(METADATA_BASE_MODULE, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        SysModuleId::Royalty,
+        ROYALTY_BASE_MODULE,
         ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
@@ -166,18 +174,18 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&SysModuleId::Object.into())
+            .remove(&OBJECT_BASE_MODULE)
             .unwrap()
             .remove(&AccessRulesOffset::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
         node_modules.insert(
-            SysModuleId::AccessRules,
+            ACCESS_RULES_BASE_MODULE,
             ModuleInit::AccessRules(access_rules),
         );
     } else {
         node_modules.insert(
-            SysModuleId::AccessRules,
+            ACCESS_RULES_BASE_MODULE,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
                 child_blueprint_rules: BTreeMap::new(),
@@ -193,13 +201,13 @@ where
 
     let mut modules: NodeSubstates = node_modules
         .into_iter()
-        .map(|(k, v)| (k.into(), v.to_substates()))
+        .map(|(k, v)| (k, v.to_substates()))
         .collect();
-    modules.insert(SysModuleId::Object.into(), node_init);
+    modules.insert(OBJECT_BASE_MODULE, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
-    let package_address = PackageAddress::new_unchecked(node_id.into());
+    let package_address = PackageAddress::new_or_panic(node_id.into());
     Ok(package_address)
 }
 
@@ -209,7 +217,12 @@ impl PackageNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let substates = Vec::new();
+        let mut substates = Vec::new();
+        substates.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
+        substates.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -265,9 +278,10 @@ impl PackageNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -290,7 +304,7 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string(),
                 PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             ),
-            rule!(require(SYSTEM_TOKEN)),
+            rule!(require(SYSTEM_TRANSACTION_BADGE)),
         );
         access_rules
     }
@@ -303,7 +317,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
@@ -408,7 +422,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)
@@ -418,7 +432,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema,
+            schema: schema.into(),
             dependent_resources: dependent_resources.into_iter().collect(),
             dependent_components: dependent_components.into_iter().collect(),
         };
@@ -456,7 +470,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
         let address = Self::publish_wasm_internal(
@@ -482,7 +496,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedPackage::create_advanced(config, api)?;
         let address = Self::publish_wasm_internal(
@@ -508,7 +522,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(&schema)
@@ -516,7 +530,8 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            parent,
+            key_value_stores,
+            outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
         } in schema.blueprints.values()
@@ -529,7 +544,17 @@ impl PackageNativePackage {
 
             if !virtual_lazy_load_functions.is_empty() {
                 return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::InvalidSystemFunction),
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Lazy load functions not supported".to_string(),
+                    )),
+                ));
+            }
+
+            if !key_value_stores.is_empty() {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                        "Static Key Value Stores not supported".to_string(),
+                    )),
                 ));
             }
         }
@@ -545,7 +570,7 @@ impl PackageNativePackage {
 
         // Build node init
         let info = PackageInfoSubstate {
-            schema,
+            schema: schema.into(),
             dependent_resources: BTreeSet::new(),
             dependent_components: BTreeSet::new(),
         };
@@ -587,12 +612,12 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
 
-        let mut substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
+        let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
-        api.sys_write_substate_typed(handle, &substate)?;
-        api.sys_drop_lock(handle)?;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
@@ -607,9 +632,9 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
 
-        let substate: PackageRoyaltySubstate = api.sys_read_substate_typed(handle)?;
+        let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
             Some(vault) => Vault(vault).sys_take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,

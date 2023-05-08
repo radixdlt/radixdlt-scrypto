@@ -12,8 +12,10 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -28,9 +30,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_stores::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use radix_engine_stores::jmt_support::JmtMapper;
-use radix_engine_stores::query::TypeInfoSubstate;
+use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use transaction::model::{Instruction, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
@@ -38,6 +38,7 @@ const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
+const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -99,50 +100,10 @@ pub enum GenesisDataChunk {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct SystemBootstrapReceipt {
-    pub commit_result: CommitResult,
-}
-
-impl SystemBootstrapReceipt {
-    pub fn genesis_helper(&self) -> ComponentAddress {
-        self.commit_result
-            .new_component_addresses()
-            .last()
-            .unwrap()
-            .clone()
-    }
-}
-
-impl From<TransactionReceipt> for SystemBootstrapReceipt {
-    fn from(receipt: TransactionReceipt) -> Self {
-        SystemBootstrapReceipt {
-            commit_result: receipt.expect_commit_success().clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, ScryptoSbor)]
-pub struct GenesisWrapUpReceipt {
-    pub commit_result: CommitResult,
-}
-
-impl GenesisWrapUpReceipt {
-    pub fn faucet_component(&self) -> ComponentAddress {
-        // TODO: Remove this when appropriate syscalls are implemented for Scrypto
-        self.commit_result
-            .new_component_addresses()
-            .last()
-            .unwrap()
-            .clone()
-    }
-}
-
-impl From<TransactionReceipt> for GenesisWrapUpReceipt {
-    fn from(receipt: TransactionReceipt) -> Self {
-        GenesisWrapUpReceipt {
-            commit_result: receipt.expect_commit_success().clone(),
-        }
-    }
+pub struct GenesisReceipts {
+    pub system_bootstrap_receipt: TransactionReceipt,
+    pub data_ingestion_receipts: Vec<TransactionReceipt>,
+    pub wrap_up_receipt: TransactionReceipt,
 }
 
 pub struct Bootstrapper<'s, 'i, S, W>
@@ -166,13 +127,7 @@ where
         }
     }
 
-    pub fn bootstrap_test_default(
-        &mut self,
-    ) -> Option<(
-        SystemBootstrapReceipt,
-        Vec<TransactionReceipt>,
-        GenesisWrapUpReceipt,
-    )> {
+    pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
         self.bootstrap_with_genesis_data(vec![], 1u64, 10u32, 1u64, 1u64)
     }
 
@@ -183,17 +138,13 @@ where
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
-    ) -> Option<(
-        SystemBootstrapReceipt,
-        Vec<TransactionReceipt>,
-        GenesisWrapUpReceipt,
-    )> {
+    ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
-            .get_mapped_substate::<JmtMapper, TypeInfoSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &RADIX_TOKEN.into(),
-                SysModuleId::TypeInfo.into(),
-                TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_BASE_MODULE,
+                &TypeInfoOffset::TypeInfo.into(),
             );
 
         if xrd_info.is_none() {
@@ -207,23 +158,18 @@ where
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
             for chunk in genesis_data_chunks.into_iter() {
-                let receipt = self.ingest_genesis_data_chunk(
-                    &system_bootstrap_receipt.genesis_helper(),
-                    chunk,
-                    next_nonce,
-                );
+                let receipt = self.ingest_genesis_data_chunk(chunk, next_nonce);
                 next_nonce += 1;
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt: GenesisWrapUpReceipt = self
-                .execute_genesis_wrap_up(&system_bootstrap_receipt.genesis_helper(), next_nonce);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
 
-            Some((
+            Some(GenesisReceipts {
                 system_bootstrap_receipt,
                 data_ingestion_receipts,
-                genesis_wrap_up_receipt,
-            ))
+                wrap_up_receipt: genesis_wrap_up_receipt,
+            })
         } else {
             None
         }
@@ -235,7 +181,7 @@ where
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
-    ) -> SystemBootstrapReceipt {
+    ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
             max_validators,
@@ -253,38 +199,35 @@ where
 
         let commit_result = receipt.expect_commit(true);
 
-        self.substate_db.commit(&commit_result.state_updates);
-
-        receipt.into()
-    }
-
-    fn ingest_genesis_data_chunk(
-        &mut self,
-        genesis_helper: &ComponentAddress,
-        chunk: GenesisDataChunk,
-        nonce: u64,
-    ) -> TransactionReceipt {
-        let transaction = create_genesis_data_ingestion_transaction(genesis_helper, chunk, nonce);
-        let receipt = execute_transaction(
-            self.substate_db,
-            self.scrypto_vm,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
-            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
-        );
-
-        let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
         receipt
     }
 
-    fn execute_genesis_wrap_up(
+    fn ingest_genesis_data_chunk(
         &mut self,
-        genesis_helper: &ComponentAddress,
+        chunk: GenesisDataChunk,
         nonce: u64,
-    ) -> GenesisWrapUpReceipt {
-        let transaction = create_genesis_wrap_up_transaction(genesis_helper, nonce);
+    ) -> TransactionReceipt {
+        let transaction = create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, nonce);
+        let receipt = execute_transaction(
+            self.substate_db,
+            self.scrypto_vm,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::genesis(),
+            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+        );
+
+        let commit_result = receipt.expect_commit(true);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
+
+        receipt
+    }
+
+    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(nonce);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -295,9 +238,10 @@ where
         );
 
         let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(&commit_result.state_updates);
+        self.substate_db
+            .commit(&commit_result.state_updates.database_updates);
 
-        receipt.into()
+        receipt
     }
 }
 
@@ -326,7 +270,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 native_package_code_id: PACKAGE_CODE_ID,
                 schema: PackageNativePackage::schema(),
-                dependent_resources: vec![PACKAGE_TOKEN, PACKAGE_OWNER_TOKEN],
+                dependent_resources: vec![PACKAGE_VIRTUAL_BADGE, PACKAGE_OWNER_BADGE],
                 dependent_components: vec![],
                 metadata: BTreeMap::new(),
                 package_access_rules: PackageNativePackage::function_access_rules(),
@@ -337,8 +281,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Metadata Package
     {
-        pre_allocated_ids.insert(METADATA_PACKAGE.into());
-        let package_address = METADATA_PACKAGE.into();
+        pre_allocated_ids.insert(METADATA_MODULE_PACKAGE.into());
+        let package_address = METADATA_MODULE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -358,8 +302,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Royalty Package
     {
-        pre_allocated_ids.insert(ROYALTY_PACKAGE.into());
-        let package_address = ROYALTY_PACKAGE.into();
+        pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
+        let package_address = ROYALTY_MODULE_PACKAGE.into();
 
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
@@ -380,8 +324,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Access Rules Package
     {
-        pre_allocated_ids.insert(ACCESS_RULES_PACKAGE.into());
-        let package_address = ACCESS_RULES_PACKAGE.into();
+        pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
+        let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -401,8 +345,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Resource Package
     {
-        pre_allocated_ids.insert(RESOURCE_MANAGER_PACKAGE.into());
-        let package_address = RESOURCE_MANAGER_PACKAGE.into();
+        pre_allocated_ids.insert(RESOURCE_PACKAGE.into());
+        let package_address = RESOURCE_PACKAGE.into();
         instructions.push(Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -427,6 +371,7 @@ pub fn create_system_bootstrap_transaction(
         metadata.insert("name".to_owned(), XRD_NAME.to_owned());
         metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
+        metadata.insert("icon_url".to_owned(), XRD_ICON_URL.to_owned());
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
@@ -434,7 +379,7 @@ pub fn create_system_bootstrap_transaction(
         let resource_address = RADIX_TOKEN.into();
         pre_allocated_ids.insert(RADIX_TOKEN.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
                 .to_string(),
@@ -455,10 +400,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = PACKAGE_TOKEN.into();
-        pre_allocated_ids.insert(PACKAGE_TOKEN.into());
+        let resource_address = PACKAGE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(PACKAGE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -476,10 +421,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
-        let resource_address = GLOBAL_OBJECT_TOKEN.into();
-        pre_allocated_ids.insert(GLOBAL_OBJECT_TOKEN.into());
+        let resource_address = GLOBAL_ACTOR_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(GLOBAL_ACTOR_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -498,13 +443,13 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&PACKAGE_PACKAGE).unwrap()).unwrap();
-        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        let global_id = NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = PACKAGE_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(PACKAGE_OWNER_TOKEN.into());
+        let resource_address = PACKAGE_OWNER_BADGE.into();
+        pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -523,13 +468,13 @@ pub fn create_system_bootstrap_transaction(
         let mut access_rules = BTreeMap::new();
         let local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&IDENTITY_PACKAGE).unwrap()).unwrap();
-        let global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, local_id);
+        let global_id = NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = IDENTITY_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(IDENTITY_OWNER_TOKEN.into());
+        let resource_address = IDENTITY_OWNER_BADGE.into();
+        pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -551,10 +496,10 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(package_address), // TODO: Clean this up
                 schema: IdentityNativePackage::schema(),
                 dependent_resources: vec![
-                    ECDSA_SECP256K1_TOKEN,
-                    EDDSA_ED25519_TOKEN,
-                    IDENTITY_OWNER_TOKEN,
-                    PACKAGE_TOKEN,
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                    IDENTITY_OWNER_BADGE,
+                    PACKAGE_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 native_package_code_id: IDENTITY_CODE_ID,
@@ -580,9 +525,9 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
                     RADIX_TOKEN,
-                    PACKAGE_TOKEN,
-                    SYSTEM_TOKEN,
-                    VALIDATOR_OWNER_TOKEN,
+                    PACKAGE_VIRTUAL_BADGE,
+                    SYSTEM_TRANSACTION_BADGE,
+                    VALIDATOR_OWNER_BADGE,
                 ],
                 dependent_components: vec![],
                 package_access_rules: EpochManagerNativePackage::package_access_rules(),
@@ -604,7 +549,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: ClockNativePackage::schema(),
                 native_package_code_id: CLOCK_CODE_ID,
                 metadata: BTreeMap::new(),
-                dependent_resources: vec![SYSTEM_TOKEN],
+                dependent_resources: vec![SYSTEM_TRANSACTION_BADGE],
                 dependent_components: vec![],
                 package_access_rules: ClockNativePackage::package_access_rules(),
                 default_package_access_rule: AccessRule::DenyAll,
@@ -619,10 +564,10 @@ pub fn create_system_bootstrap_transaction(
         let global_id = NonFungibleGlobalId::package_actor(ACCOUNT_PACKAGE);
         access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ACCOUNT_OWNER_TOKEN.into();
-        pre_allocated_ids.insert(ACCOUNT_OWNER_TOKEN.into());
+        let resource_address = ACCOUNT_OWNER_BADGE.into();
+        pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -646,10 +591,10 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: BTreeMap::new(),
                 dependent_resources: vec![
-                    ECDSA_SECP256K1_TOKEN,
-                    EDDSA_ED25519_TOKEN,
-                    ACCOUNT_OWNER_TOKEN,
-                    PACKAGE_TOKEN,
+                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                    ACCOUNT_OWNER_BADGE,
+                    PACKAGE_VIRTUAL_BADGE,
                 ],
                 dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
@@ -671,7 +616,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: AccessControllerNativePackage::schema(),
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
-                dependent_resources: vec![PACKAGE_TOKEN],
+                dependent_resources: vec![PACKAGE_VIRTUAL_BADGE],
                 dependent_components: vec![CLOCK],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
@@ -693,7 +638,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
                 dependent_resources: vec![],
-                dependent_components: vec![],
+                dependent_components: vec![EPOCH_MANAGER],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -705,10 +650,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = ECDSA_SECP256K1_TOKEN.into();
-        pre_allocated_ids.insert(ECDSA_SECP256K1_TOKEN.into());
+        let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -726,10 +671,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = EDDSA_ED25519_TOKEN.into();
-        pre_allocated_ids.insert(EDDSA_ED25519_TOKEN.into());
+        let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
+        pre_allocated_ids.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -747,10 +692,10 @@ pub fn create_system_bootstrap_transaction(
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let resource_address = SYSTEM_TOKEN.into();
-        pre_allocated_ids.insert(SYSTEM_TOKEN.into());
+        let resource_address = SYSTEM_TRANSACTION_BADGE.into();
+        pre_allocated_ids.insert(SYSTEM_TRANSACTION_BADGE.into());
         instructions.push(Instruction::CallFunction {
-            package_address: RESOURCE_MANAGER_PACKAGE,
+            package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerCreateWithAddressInput {
@@ -776,7 +721,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: faucet_code,
-                schema: scrypto_decode(&faucet_abi).unwrap(),
+                schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
@@ -800,7 +745,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value(&PackagePublishWasmAdvancedInput {
                 package_address: Some(package_address),
                 code: genesis_helper_code,
-                schema: scrypto_decode(&genesis_helper_abi).unwrap(),
+                schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
@@ -824,9 +769,9 @@ pub fn create_system_bootstrap_transaction(
     // Create EpochManager
     {
         let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
-        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_TOKEN);
+        let validator_owner_token = Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE);
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
-        pre_allocated_ids.insert(VALIDATOR_OWNER_TOKEN.into());
+        pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
 
         instructions.push(Instruction::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
@@ -852,11 +797,14 @@ pub fn create_system_bootstrap_transaction(
             }
             .into(),
         );
+        pre_allocated_ids.insert(GENESIS_HELPER.into());
+        let address_bytes = GENESIS_HELPER.as_node_id().0;
         instructions.push(Instruction::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: manifest_args!(
+                address_bytes,
                 whole_lotta_xrd,
                 EPOCH_MANAGER,
                 rounds_per_epoch,
@@ -904,15 +852,12 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(
-    genesis_helper: &ComponentAddress,
-    nonce: u64,
-) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
     instructions.push(Instruction::CallMethod {
-        component_address: genesis_helper.clone(),
+        component_address: GENESIS_HELPER,
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });
@@ -925,17 +870,18 @@ pub fn create_genesis_wrap_up_transaction(
     );
 
     let bucket = id_allocator.new_bucket_id().unwrap();
+    let address_bytes = FAUCET.as_node_id().0;
 
     instructions.push(Instruction::CallFunction {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
-        args: manifest_args!(bucket),
+        args: manifest_args!(address_bytes, bucket),
     });
 
     SystemTransaction {
         instructions,
-        pre_allocated_ids: BTreeSet::new(),
+        pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
         blobs: Vec::new(),
         nonce,
     }

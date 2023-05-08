@@ -60,7 +60,7 @@ pub enum IndirectRecursiveEnum3 {
 #[test]
 fn create_unit_struct_schema_works_correctly() {
     let (type_index, schema) =
-        generate_full_schema_from_single_type::<UnitStruct, NoCustomTypeExtension>(); // The original type should be the first type in the schema
+        generate_full_schema_from_single_type::<UnitStruct, NoCustomSchema>(); // The original type should be the first type in the schema
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.type_kinds.len(), 1);
     assert_eq!(schema.type_metadata.len(), 1);
@@ -72,7 +72,7 @@ fn create_unit_struct_schema_works_correctly() {
 #[test]
 fn create_basic_sample_schema_works_correctly() {
     let (root_type_index, schema) =
-        generate_full_schema_from_single_type::<BasicSample, NoCustomTypeExtension>(); // The original type should be the first type in the schema
+        generate_full_schema_from_single_type::<BasicSample, NoCustomSchema>(); // The original type should be the first type in the schema
 
     assert!(matches!(
         root_type_index,
@@ -117,10 +117,8 @@ fn create_basic_sample_schema_works_correctly() {
 
 #[test]
 fn create_advanced_sample_schema_works_correctly() {
-    let (type_index, schema) = generate_full_schema_from_single_type::<
-        AdvancedSample<UnitStruct, u128>,
-        NoCustomTypeExtension,
-    >();
+    let (type_index, schema) =
+        generate_full_schema_from_single_type::<AdvancedSample<UnitStruct, u128>, NoCustomSchema>();
 
     // The original type should be the first type in the schema
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));
@@ -197,7 +195,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
         LocalTypeIndex::SchemaLocalIndex(0)
     )); // Repeats the first one
 
-    let schema = generate_full_schema(aggregator);
+    let schema = generate_full_schema::<NoCustomSchema>(aggregator);
 
     // Check that the AdvancedSample references UnitStruct at the correct index
     let kind = schema
@@ -214,7 +212,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
 fn create_recursive_schema_works_correctly() {
     // Most of this test is checking that such recursive schemas can: (A) happily compile and (B) don't panic when a schema is generated
     let (type_index, schema) =
-        generate_full_schema_from_single_type::<IndirectRecursive1, NoCustomTypeExtension>();
+        generate_full_schema_from_single_type::<IndirectRecursive1, NoCustomSchema>();
 
     // The original type should be the first type in the schema
     assert!(matches!(type_index, LocalTypeIndex::SchemaLocalIndex(0)));

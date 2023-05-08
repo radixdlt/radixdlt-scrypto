@@ -1,9 +1,11 @@
+use crate::address::{AddressDisplayContext, EncodeBech32AddressError};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
+use utils::ContextualDisplay;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -31,83 +33,58 @@ impl NodeId {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
     pub fn to_hex(&self) -> String {
         hex::encode(&self.0)
     }
 
     // TODO: gradually remove dependency on the following entity-type related methods
 
-    pub fn entity_type(&self) -> Option<EntityType> {
+    pub const fn entity_type(&self) -> Option<EntityType> {
         EntityType::from_repr(self.0[0])
     }
 
-    pub fn is_global_fungible_resource(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(t, EntityType::GlobalFungibleResource),
-            None => false,
-        }
+    pub const fn is_global(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global())
     }
 
-    pub fn is_internal_fungible_vault(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => matches!(t, EntityType::InternalFungibleVault),
-            None => false,
-        }
+    pub const fn is_internal(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal())
     }
 
-    pub fn is_global(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global(),
-            None => false,
-        }
+    pub const fn is_global_component(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_component())
     }
 
-    pub fn is_global_component(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_component(),
-            None => false,
-        }
+    pub const fn is_global_package(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_package())
     }
 
-    pub fn is_global_resource(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_resource(),
-            None => false,
-        }
+    pub const fn is_global_resource(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_resource())
     }
 
-    pub fn is_global_package(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_package(),
-            None => false,
-        }
+    pub const fn is_global_virtual(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_virtual())
     }
 
-    pub fn is_global_virtual(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_global_virtual(),
-            None => false,
-        }
-    }
-    pub fn is_local(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_local(),
-            None => false,
-        }
+    pub const fn is_global_fungible_resource(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource())
     }
 
-    pub fn is_internal_kv_store(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_internal_kv_store(),
-            None => false,
-        }
+    pub const fn is_internal_kv_store(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_kv_store())
     }
 
-    pub fn is_internal_vault(&self) -> bool {
-        match self.entity_type() {
-            Some(t) => t.is_internal_vault(),
-            None => false,
-        }
+    pub const fn is_internal_fungible_vault(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_fungible_vault())
+    }
+
+    pub const fn is_internal_vault(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
 }
 
@@ -135,8 +112,8 @@ impl From<GlobalAddress> for NodeId {
     }
 }
 
-impl From<LocalAddress> for NodeId {
-    fn from(value: LocalAddress) -> Self {
+impl From<InternalAddress> for NodeId {
+    fn from(value: InternalAddress) -> Self {
         Self(value.into())
     }
 }
@@ -179,15 +156,74 @@ impl Debug for NodeId {
     }
 }
 
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
+    type Error = EncodeBech32AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            let result = encoder.encode_to_fmt(f, self.as_ref());
+            match result {
+                Ok(_)
+                | Err(EncodeBech32AddressError::FormatError(_))
+                | Err(EncodeBech32AddressError::Bech32mEncodingError(_))
+                | Err(EncodeBech32AddressError::MissingEntityTypeByte) => return result,
+                // Only persistable NodeIds are guaranteed to have an address - so
+                // fall through to using hex if necessary.
+                Err(EncodeBech32AddressError::InvalidEntityTypeId(_)) => {}
+            }
+        }
+
+        // This could be made more performant by streaming the hex into the formatter
+        write!(f, "NodeId({})", hex::encode(&self.0)).map_err(EncodeBech32AddressError::FormatError)
+    }
+}
+
 /// The unique identifier of a node module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
-pub struct ModuleId(pub u8);
+pub struct ModuleNumber(pub u8);
+
+impl ModuleNumber {
+    pub fn at_offset(self, offset: u8) -> Option<Self> {
+        self.0.checked_add(offset).map(|n| Self(n))
+    }
+}
 
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
-    Tuple(u8),
-    Map(Vec<u8>),
-    Sorted(u16, Vec<u8>),
+    Tuple(TupleKey),
+    Map(MapKey),
+    Sorted(SortedU16Key),
 }
+
+impl SubstateKey {
+    pub fn for_tuple(&self) -> Option<&TupleKey> {
+        match self {
+            SubstateKey::Tuple(key) => Some(key),
+            _ => None,
+        }
+    }
+
+    pub fn for_map(&self) -> Option<&MapKey> {
+        match self {
+            SubstateKey::Map(key) => Some(key),
+            _ => None,
+        }
+    }
+
+    pub fn for_sorted(&self) -> Option<&SortedU16Key> {
+        match self {
+            SubstateKey::Sorted(key) => Some(key),
+            _ => None,
+        }
+    }
+}
+
+pub type TupleKey = u8;
+pub type MapKey = Vec<u8>;
+pub type SortedU16Key = (u16, Vec<u8>);

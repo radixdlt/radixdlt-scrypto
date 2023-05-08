@@ -7,20 +7,19 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
+use crate::track::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_stores::interface::{AcquireLockError, NodeSubstates, SubstateStore};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -65,23 +64,17 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 // For virtual accounts and native packages, create a reference directly
                 kernel.current_frame.add_ref(*node_id, RefType::Normal);
                 continue;
-            } else if node_id.is_global_package()
-                && is_native_package(PackageAddress::new_unchecked(node_id.0))
-            {
-                // TODO: This is required for bootstrap, can we clean this up and remove it at some point?
-                kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                continue;
             }
 
             if kernel.current_frame.get_node_visibility(node_id).is_some() {
                 continue;
             }
 
-            let handle = kernel
+            let (handle, _) = kernel
                 .store
                 .acquire_lock(
                     node_id,
-                    SysModuleId::TypeInfo.into(),
+                    TYPE_INFO_BASE_MODULE,
                     &TypeInfoOffset::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
@@ -95,7 +88,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 }) => {
                     if global {
                         kernel.current_frame.add_ref(*node_id, RefType::Normal);
-                    } else if blueprint.package_address.eq(&RESOURCE_MANAGER_PACKAGE)
+                    } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
@@ -114,13 +107,14 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             }
         }
 
-        let mut system = SystemDownstream::new(&mut kernel);
+        let mut system = SystemService::new(&mut kernel);
 
         let rtn =
             system.call_function(package_address, blueprint_name, function_name, args.into())?;
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
+        kernel.id_allocator.on_teardown()?;
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)
@@ -136,11 +130,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame,
+    current_frame: CallFrame<M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame>,
+    prev_frame_stack: Vec<CallFrame<M::LockData>>,
     /// Heap
     heap: Heap,
     /// Store
@@ -162,15 +156,13 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let caller = Box::new(self.current_frame.actor.clone());
-
         let mut call_frame_update = invocation.get_update();
         let sys_invocation = invocation.sys_invocation;
-        let actor = &invocation.resolved_actor;
+        let actor = invocation.resolved_actor;
         let args = &invocation.args;
 
         // Before push call frame
-        M::before_push_frame(actor, &mut call_frame_update, &args, self)?;
+        M::before_push_frame(&actor, &mut call_frame_update, &args, self)?;
 
         // Push call frame
         {
@@ -178,7 +170,7 @@ where
 
             let frame = CallFrame::new_child_from_parent(
                 &mut self.current_frame,
-                actor.clone(),
+                actor,
                 call_frame_update.clone(),
             )
             .map_err(CallFrameError::MoveError)
@@ -190,7 +182,7 @@ where
         // Execute
         let (output, update) = {
             // Handle execution start
-            M::on_execution_start(&caller, self)?;
+            M::on_execution_start(self)?;
 
             // Auto drop locks
             self.current_frame
@@ -207,7 +199,7 @@ where
             };
 
             // Handle execution finish
-            M::on_execution_finish(&caller, &mut update, self)?;
+            M::on_execution_finish(&mut update, self)?;
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -329,243 +321,195 @@ where
         Some(info)
     }
 
-    fn kernel_get_callback(&mut self) -> &mut M {
-        &mut self.callback
-    }
-
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth
     }
 
-    // TODO: Remove
-    fn kernel_get_current_actor(&mut self) -> Option<Actor> {
-        let actor = self.current_frame.actor.clone();
-        if let Some(actor) = &actor {
-            match actor {
-                Actor::Method {
-                    global_address: Some(address),
-                    ..
-                } => {
-                    self.current_frame
-                        .add_ref(address.as_node_id().clone(), RefType::Normal);
-                }
-                _ => {}
-            }
-            let package_address = actor.blueprint().package_address;
-            self.current_frame
-                .add_ref(package_address.as_node_id().clone(), RefType::Normal);
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
+        let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
+        SystemState {
+            system: &mut self.callback,
+            caller,
+            current: self.current_frame.actor.as_ref(),
         }
-
-        actor
-    }
-
-    // TODO: Remove
-    fn kernel_load_package_package_dependencies(&mut self) {
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-    }
-
-    // TODO: Remove
-    fn kernel_load_common(&mut self) {
-        self.current_frame
-            .add_ref(EPOCH_MANAGER.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(CLOCK.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(RADIX_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(PACKAGE_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(ECDSA_SECP256K1_TOKEN.as_node_id().clone(), RefType::Normal);
-        self.current_frame
-            .add_ref(EDDSA_ED25519_TOKEN.as_node_id().clone(), RefType::Normal);
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) => {}
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint,
+                    outer_object,
+                    ..
+                }) if blueprint.package_address == RESOURCE_PACKAGE
+                    && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                {
+                    let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
+                    let parent = outer_object.unwrap();
+                    let resource_address: ResourceAddress =
+                        ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
+                    (is_fungible, resource_address)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            &bucket_id,
-            SysModuleId::Object.into(),
-            &BucketOffset::Info.into(),
-        ) {
-            let info: BucketInfoSubstate = substate.as_typed().unwrap();
+        if is_fungible_bucket {
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    OBJECT_BASE_MODULE,
+                    &FungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
 
-            let resource_address = ResourceAddress::new_unchecked(
-                self.heap
-                    .get_substate(
-                        bucket_id,
-                        SysModuleId::TypeInfo.into(),
-                        &TypeInfoOffset::TypeInfo.into(),
-                    )
-                    .unwrap()
-                    .as_typed::<TypeInfoSubstate>()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .into(),
-            );
-
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::Object.into(),
-                            &BucketOffset::Liquid.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::Fungible {
-                        resource_address: resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            bucket_id,
-                            SysModuleId::Object.into(),
-                            &BucketOffset::Liquid.into(),
-                        )
-                        .unwrap();
-                    let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
-
-                    Some(BucketSnapshot::NonFungible {
-                        resource_address: resource_address,
-                        resource_type: info.resource_type,
-                        liquid: liquid.ids().clone(),
-                    })
-                }
-            }
+            Some(BucketSnapshot::Fungible {
+                resource_address,
+                liquid: liquid.amount(),
+            })
         } else {
-            None
+            let substate = self
+                .heap
+                .get_substate(
+                    bucket_id,
+                    OBJECT_BASE_MODULE,
+                    &NonFungibleBucketOffset::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
+
+            Some(BucketSnapshot::NonFungible {
+                resource_address,
+                liquid: liquid.ids().clone(),
+            })
         }
     }
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        if let Some(substate) = self.heap.get_substate(
+        let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            SysModuleId::TypeInfo.into(),
+            TYPE_INFO_BASE_MODULE,
             &TypeInfoOffset::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo { blueprint, .. })
-                    if blueprint.package_address == RESOURCE_MANAGER_PACKAGE
-                        && blueprint.blueprint_name == PROOF_BLUEPRINT => {}
+                    if blueprint.package_address == RESOURCE_PACKAGE
+                        && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
+                    blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                }
                 _ => {
                     return None;
                 }
             }
         } else {
             return None;
-        }
+        };
 
-        if let Some(substate) = self.heap.get_substate(
-            proof_id,
-            SysModuleId::Object.into(),
-            &ProofOffset::Info.into(),
-        ) {
-            let info: ProofInfoSubstate = substate.as_typed().unwrap();
+        if is_fungible {
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    TYPE_INFO_BASE_MODULE,
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
 
-            match info.resource_type {
-                ResourceType::Fungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::Object.into(),
-                            &ProofOffset::Fungible.into(),
-                        )
-                        .unwrap();
-                    let proof: FungibleProof = substate.as_typed().unwrap();
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    OBJECT_BASE_MODULE,
+                    &FungibleProofOffset::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: FungibleProof = substate.as_typed().unwrap();
 
-                    Some(ProofSnapshot::Fungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.amount(),
-                    })
-                }
-                ResourceType::NonFungible { .. } => {
-                    let substate = self
-                        .heap
-                        .get_substate(
-                            proof_id,
-                            SysModuleId::Object.into(),
-                            &ProofOffset::NonFungible.into(),
-                        )
-                        .unwrap();
-                    let proof: NonFungibleProof = substate.as_typed().unwrap();
-
-                    Some(ProofSnapshot::NonFungible {
-                        resource_address: info.resource_address,
-                        resource_type: info.resource_type,
-                        restricted: info.restricted,
-                        total_locked: proof.non_fungible_local_ids().clone(),
-                    })
-                }
-            }
+            Some(ProofSnapshot::Fungible {
+                resource_address,
+                total_locked: proof.amount(),
+            })
         } else {
-            None
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    TYPE_INFO_BASE_MODULE,
+                    &TypeInfoOffset::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+
+            let substate = self
+                .heap
+                .get_substate(
+                    proof_id,
+                    OBJECT_BASE_MODULE,
+                    &NonFungibleProofOffset::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: NonFungibleProof = substate.as_typed().unwrap();
+
+            Some(ProofSnapshot::NonFungible {
+                resource_address,
+                total_locked: proof.non_fungible_local_ids().clone(),
+            })
         }
     }
 }
 
-impl<'g, M, S> KernelSubstateApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelSubstateApi<M::LockData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=module_id)]
+    #[trace_resources(log=node_id.entity_type(), log=module_num)]
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
+        data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_lock_substate(&node_id, &module_id, substate_key, &flags, self)?;
+        M::before_lock_substate(&node_id, &module_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
             self.store,
             node_id,
-            module_id,
+            module_num,
             substate_key,
             flags,
             default,
+            data,
         );
 
-        let lock_handle = match &maybe_lock_handle {
-            Ok(lock_handle) => *lock_handle,
+        let (lock_handle, first_lock_from_db) = match &maybe_lock_handle {
+            Ok((lock_handle, first_lock_from_db)) => (*lock_handle, *first_lock_from_db),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
-                        M::on_substate_lock_fault(*node_id, module_id, &substate_key, self)?;
+                        M::on_substate_lock_fault(*node_id, module_num, &substate_key, self)?;
 
                     if retry {
                         self.current_frame
@@ -573,15 +517,17 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_id,
+                                module_num,
                                 &substate_key,
                                 flags,
                                 None,
+                                M::LockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?
                     } else {
                         return maybe_lock_handle
+                            .map(|(lock_handle, _)| lock_handle)
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)
                             .map_err(RuntimeError::KernelError);
@@ -601,12 +547,11 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let module_id = SysModuleId::Object;
-                        let handle = self
+                        let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(
                                 node_id,
-                                module_id.into(),
+                                OBJECT_BASE_MODULE,
                                 substate_key,
                                 LockFlags::read_only(),
                             )
@@ -616,18 +561,21 @@ where
                         self.store.release_lock(handle);
 
                         self.current_frame.add_ref(*node_id, RefType::Normal);
-                        self.current_frame
+                        let (lock_handle, _) = self
+                            .current_frame
                             .acquire_lock(
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_id.into(),
+                                OBJECT_BASE_MODULE,
                                 substate_key,
                                 flags,
                                 None,
+                                M::LockData::default(),
                             )
                             .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?
+                            .map_err(KernelError::CallFrameError)?;
+                        (lock_handle, first_lock_from_db)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -639,13 +587,16 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, self)?;
+        M::after_lock_substate(lock_handle, 0, first_lock_from_db, self)?;
 
         Ok(lock_handle)
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError> {
+    fn kernel_get_lock_info(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<LockInfo<M::LockData>, RuntimeError> {
         self.current_frame
             .get_lock_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
@@ -710,14 +661,14 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.current_frame
             .set_substate(
                 node_id,
-                module_id,
+                module_num,
                 substate_key,
                 value,
                 &mut self.heap,
@@ -731,13 +682,13 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
             .remove_substate(
                 node_id,
-                module_id,
+                module_num,
                 &substate_key,
                 &mut self.heap,
                 self.store,
@@ -750,11 +701,11 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .scan_sorted(node_id, module_id, count, &mut self.heap, self.store)
+            .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
@@ -763,11 +714,11 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .scan_substates(node_id, module_id.into(), count, &mut self.heap, self.store)
+            .scan_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
@@ -776,11 +727,11 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: SysModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .take_substates(node_id, module_id, count, &mut self.heap, self.store)
+            .take_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)

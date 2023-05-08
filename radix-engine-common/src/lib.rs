@@ -14,11 +14,13 @@ pub mod crypto;
 pub mod data;
 /// RE math library.
 pub mod math;
+/// Fixed native addresses
+pub mod native_addresses;
 /// RE network identifier model.
 pub mod network;
 /// RE time library.
 pub mod time;
-/// RE types
+/// RE types.
 pub mod types;
 
 mod macros;

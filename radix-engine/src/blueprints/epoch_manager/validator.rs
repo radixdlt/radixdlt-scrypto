@@ -1,19 +1,21 @@
-use crate::blueprints::epoch_manager::EpochManagerSubstate;
+use crate::blueprints::epoch_manager::{
+    EpochManagerBlueprint, EpochManagerConfigSubstate, EpochManagerSubstate,
+};
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::sorted_index_api::SortedKey;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -79,9 +81,9 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
 
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Stake
         let (lp_token_bucket, new_stake_amount) = {
@@ -109,7 +111,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(lp_token_bucket)
@@ -117,7 +119,7 @@ impl ValidatorBlueprint {
 
     pub fn unstake<Y>(lp_tokens: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelSubstateApi,
+        Y: ClientApi<RuntimeError>,
     {
         // Prepare event and emit it once operations finish
         let event = {
@@ -127,11 +129,8 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
-
-        let manager = api.get_info()?.type_parent.unwrap();
-
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -151,17 +150,21 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.kernel_lock_substate(
-                manager.as_node_id(),
-                SysModuleId::Object.into(),
-                &EpochManagerOffset::EpochManager.into(),
+            let manager_handle = api.actor_lock_outer_object_field(
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: EpochManagerSubstate =
-                api.sys_read_substate_typed(manager_handle)?;
+            let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
-            let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
-            api.sys_drop_lock(manager_handle)?;
+
+            let config_handle = api.actor_lock_outer_object_field(
+                EpochManagerOffset::Config.into(),
+                LockFlags::read_only(),
+            )?;
+            let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            let epoch_unlocked = current_epoch + config.num_unstake_epochs;
+
+            api.field_lock_release(manager_handle)?;
 
             let data = UnstakeData {
                 epoch_unlocked,
@@ -182,7 +185,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
         Runtime::emit_event(api, event)?;
 
         Ok(unstake_bucket)
@@ -193,9 +196,9 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.lock_field(substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
 
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -210,7 +213,7 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -231,7 +234,7 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
-            ComponentAddress::new_unchecked(api.get_global_address()?.into());
+            ComponentAddress::new_or_panic(api.actor_get_global_address()?.into());
         let new_sorted_key =
             Self::to_sorted_key(new_registered, new_stake_amount, validator_address);
 
@@ -261,12 +264,13 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let manager = api.get_info()?.type_parent.unwrap();
-            api.call_method(
-                manager.as_node_id(),
-                EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                scrypto_encode(&EpochManagerUpdateValidatorInput { update }).unwrap(),
+            let registered_handle = api.actor_lock_outer_object_field(
+                EpochManagerOffset::RegisteredValidators.into(),
+                LockFlags::read_only(),
             )?;
+            let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
+
+            EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
         }
 
         Ok(new_sorted_key)
@@ -274,13 +278,13 @@ impl ValidatorBlueprint {
 
     pub fn claim_xrd<Y>(bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelSubstateApi,
+        Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
-        let validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let handle =
+            api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
+        let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
-        let manager = api.get_info()?.type_parent.unwrap();
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
@@ -291,15 +295,13 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.kernel_lock_substate(
-                manager.as_node_id(),
-                SysModuleId::Object.into(),
-                &EpochManagerOffset::EpochManager.into(),
+            let mgr_handle = api.actor_lock_outer_object_field(
+                EpochManagerOffset::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: EpochManagerSubstate = api.sys_read_substate_typed(mgr_handle)?;
+            let mgr_substate: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
-            api.sys_drop_lock(mgr_handle)?;
+            api.field_lock_release(mgr_handle)?;
             epoch
         };
 
@@ -333,27 +335,29 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
-        let mut validator: ValidatorSubstate = api.sys_read_substate_typed(handle)?;
+        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Update Epoch Manager
         {
             if let Some(index_key) = &validator.sorted_key {
-                let manager = api.get_info()?.type_parent.unwrap();
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
                     index_key: index_key.clone(),
                     key,
                 };
-                api.call_method(
-                    manager.as_node_id(),
-                    EPOCH_MANAGER_UPDATE_VALIDATOR_IDENT,
-                    scrypto_encode(&EpochManagerUpdateValidatorInput { update }).unwrap(),
+
+                let registered_handle = api.actor_lock_outer_object_field(
+                    EpochManagerOffset::RegisteredValidators.into(),
+                    LockFlags::read_only(),
                 )?;
+                let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
+
+                EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
             }
         }
 
         validator.key = key;
-        api.sys_write_substate_typed(handle, &validator)?;
+        api.field_lock_write_typed(handle, &validator)?;
 
         Ok(())
     }
@@ -421,7 +425,7 @@ struct SecurifiedValidator;
 impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_GROUP_NAME: &'static str = "owner";
-    const OWNER_TOKEN: ResourceAddress = VALIDATOR_OWNER_TOKEN;
+    const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
@@ -449,7 +453,8 @@ impl ValidatorCreator {
         let mut liquidity_token_auth = BTreeMap::new();
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+        let non_fungible_global_id =
+            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
 
         liquidity_token_auth.insert(
             Mint,
@@ -478,7 +483,8 @@ impl ValidatorCreator {
         let mut unstake_token_auth = BTreeMap::new();
         let non_fungible_local_id =
             NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id = NonFungibleGlobalId::new(PACKAGE_TOKEN, non_fungible_local_id);
+        let non_fungible_global_id =
+            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
 
         unstake_token_auth.insert(
             Mint,
@@ -513,8 +519,6 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_unchecked(global_node_id.into());
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
@@ -530,7 +534,7 @@ impl ValidatorCreator {
             is_registered,
         };
 
-        let validator_id = api.new_object(
+        let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;
@@ -539,6 +543,8 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
+        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
+        let address = ComponentAddress::new_or_panic(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::SELF => validator_id,

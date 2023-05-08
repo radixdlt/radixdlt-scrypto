@@ -6,9 +6,6 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 pub mod hash_tree;
-pub mod interface;
-pub mod jmt_support;
 pub mod memory_db;
-pub mod query;
 #[cfg(feature = "rocksdb")]
 pub mod rocks_db;

@@ -144,10 +144,8 @@ fn describe_is_correct() {
 }
 
 fn check_identical_schemas<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>() {
-    let (type_index1, schema1) =
-        generate_full_schema_from_single_type::<T1, NoCustomTypeExtension>();
-    let (type_index2, schema2) =
-        generate_full_schema_from_single_type::<T2, NoCustomTypeExtension>();
+    let (type_index1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
+    let (type_index2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
     assert_eq!(type_index1, type_index2);
     assert_eq!(schema1, schema2);
 }

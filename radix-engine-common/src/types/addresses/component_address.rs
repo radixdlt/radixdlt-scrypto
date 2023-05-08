@@ -16,7 +16,13 @@ use utils::{copy_u8_array, ContextualDisplay};
 pub struct ComponentAddress(NodeId); // private to ensure entity type check
 
 impl ComponentAddress {
-    pub const fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
+        let node_id = NodeId(raw);
+        assert!(node_id.is_global_component());
+        Self(node_id)
+    }
+
+    pub unsafe fn new_unchecked(raw: [u8; NodeId::LENGTH]) -> Self {
         Self(NodeId(raw))
     }
 
@@ -30,12 +36,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEcdsaAccount as u8;
+                node_id[0] = EntityType::GlobalVirtualSecp256k1Account as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEddsaAccount as u8;
+                node_id[0] = EntityType::GlobalVirtualEd25519Account as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -47,12 +53,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::EcdsaSecp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEcdsaIdentity as u8;
+                node_id[0] = EntityType::GlobalVirtualSecp256k1Identity as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::EddsaEd25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEddsaIdentity as u8;
+                node_id[0] = EntityType::GlobalVirtualEd25519Identity as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -60,6 +66,10 @@ impl ComponentAddress {
 
     pub fn as_node_id(&self) -> &NodeId {
         &self.0
+    }
+
+    pub const fn into_node_id(self) -> NodeId {
+        self.0
     }
 
     pub fn try_from_hex(s: &str) -> Option<Self> {
@@ -91,11 +101,10 @@ impl TryFrom<[u8; NodeId::LENGTH]> for ComponentAddress {
     type Error = ParseComponentAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        if EntityType::from_repr(value[0])
-            .ok_or(ParseComponentAddressError::InvalidEntityTypeId(value[0]))?
-            .is_global_component()
-        {
-            Ok(Self(NodeId(value)))
+        let node_id = NodeId(value);
+
+        if node_id.is_global_component() {
+            Ok(Self(node_id))
         } else {
             Err(ParseComponentAddressError::InvalidEntityTypeId(value[0]))
         }
@@ -121,7 +130,7 @@ impl Into<[u8; NodeId::LENGTH]> for ComponentAddress {
 
 impl From<ComponentAddress> for super::GlobalAddress {
     fn from(value: ComponentAddress) -> Self {
-        Self::new_unchecked(value.into())
+        Self::new_or_panic(value.into())
     }
 }
 

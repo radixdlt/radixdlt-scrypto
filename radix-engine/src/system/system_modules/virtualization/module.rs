@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::system::system::SystemDownstream;
+use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -24,7 +24,7 @@ pub struct VirtualizationModule;
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemConfig<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
-        _module_id: ModuleId,
+        _module_num: ModuleNumber,
         _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -33,19 +33,19 @@ impl VirtualizationModule {
             Some(entity_type) => {
                 // Lazy create component if missing
                 let (blueprint, virtual_func_id) = match entity_type {
-                    EntityType::GlobalVirtualEcdsaAccount => (
+                    EntityType::GlobalVirtualSecp256k1Account => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
                     ),
-                    EntityType::GlobalVirtualEddsaAccount => (
+                    EntityType::GlobalVirtualEd25519Account => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
                     ),
-                    EntityType::GlobalVirtualEcdsaIdentity => (
+                    EntityType::GlobalVirtualSecp256k1Identity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
                     ),
-                    EntityType::GlobalVirtualEddsaIdentity => (
+                    EntityType::GlobalVirtualEd25519Identity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
                     ),
@@ -72,11 +72,9 @@ impl VirtualizationModule {
                 let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
                 api.kernel_allocate_virtual_node_id(node_id)?;
 
-                let mut system = SystemDownstream::new(api);
-                system.globalize_with_address(
-                    modules,
-                    GlobalAddress::new_unchecked(node_id.into()),
-                )?;
+                let mut system = SystemService::new(api);
+                system
+                    .globalize_with_address(modules, GlobalAddress::new_or_panic(node_id.into()))?;
 
                 Ok(true)
             }

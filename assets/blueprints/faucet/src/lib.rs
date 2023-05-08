@@ -1,3 +1,5 @@
+use scrypto::api::node_modules::metadata::METADATA_SET_IDENT;
+use scrypto::api::ObjectModuleId;
 use scrypto::prelude::*;
 
 // Faucet - TestNet only
@@ -9,13 +11,28 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(bucket: Bucket) -> ComponentAddress {
+        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
+            let access_rules = AccessRules::new({
+                let mut config = AccessRulesConfig::new();
+                config.set_method_access_rule(
+                    MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                );
+                config.default(AccessRule::AllowAll, AccessRule::DenyAll)
+            });
+            let metadata = Metadata::new();
+
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize()
+            .globalize_at_address_with_modules(
+                ComponentAddress::new_or_panic(preallocated_address_bytes),
+                access_rules,
+                metadata,
+                Royalty::new(RoyaltyConfig::default()),
+            )
         }
 
         /// Gives away tokens.

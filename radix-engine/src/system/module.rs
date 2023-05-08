@@ -5,9 +5,9 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_callback::SystemInvocation;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
-use radix_engine_stores::interface::NodeSubstates;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================
@@ -54,17 +54,13 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_execution_start<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _caller: &Option<Actor>,
-    ) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _caller: &Option<Actor>,
         _up_movement: &CallFrameUpdate,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -134,7 +130,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _module_id: &ModuleId,
+        _module_num: &ModuleNumber,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
@@ -145,6 +141,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _first_lock_from_db: bool,
         _size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())

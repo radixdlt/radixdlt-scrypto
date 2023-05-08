@@ -105,30 +105,6 @@ fn build_access_rules(
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             ObjectModuleId::SELF,
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-        ),
-        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
-                RESOURCE_MANAGER_PACKAGE,
-            )),
-        ))),
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT,
-        ),
-        AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-            SoftResourceOrNonFungible::StaticNonFungible(NonFungibleGlobalId::package_actor(
-                RESOURCE_MANAGER_PACKAGE,
-            )),
-        ))),
-        DenyAll,
-    );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::SELF,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
         ),
         AllowAll,
@@ -163,6 +139,11 @@ fn build_access_rules(
             ObjectModuleId::SELF,
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
         ),
+        AllowAll,
+        DenyAll,
+    );
+    resman_access_rules.set_method_access_rule_and_mutability(
+        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_DROP_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -260,8 +241,8 @@ fn build_access_rules(
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -272,8 +253,8 @@ fn build_access_rules(
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -284,8 +265,8 @@ fn build_access_rules(
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -296,8 +277,8 @@ fn build_access_rules(
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -310,8 +291,8 @@ fn build_access_rules(
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -319,8 +300,8 @@ fn build_access_rules(
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -331,8 +312,8 @@ fn build_access_rules(
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -343,8 +324,8 @@ fn build_access_rules(
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(AccessRule::Protected(AccessRuleNode::ProofRule(
-            ProofRule::Require(SoftResourceOrNonFungible::StaticNonFungible(
-                NonFungibleGlobalId::package_actor(RESOURCE_MANAGER_PACKAGE),
+            ProofRule::Require(ResourceOrNonFungible::NonFungible(
+                NonFungibleGlobalId::package_actor(RESOURCE_PACKAGE),
             )),
         ))),
         DenyAll,
@@ -365,18 +346,28 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
-    let (vault_blueprint_name, bucket_blueprint_name) =
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
-            (FUNGIBLE_VAULT_BLUEPRINT, FUNGIBLE_BUCKET_BLUEPRINT)
+            (
+                FUNGIBLE_VAULT_BLUEPRINT,
+                FUNGIBLE_BUCKET_BLUEPRINT,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )
         } else {
-            (NON_FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT)
+            (
+                NON_FUNGIBLE_VAULT_BLUEPRINT,
+                NON_FUNGIBLE_BUCKET_BLUEPRINT,
+                NON_FUNGIBLE_PROOF_BLUEPRINT,
+            )
         };
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
         btreemap!(
             vault_blueprint_name.to_string() => vault_access_rules,
-            bucket_blueprint_name.to_string()=> bucket_access_rules
+            bucket_blueprint_name.to_string() => bucket_access_rules,
+            proof_blueprint_name.to_string() => proof_access_rules
         ),
         api,
     )?
@@ -396,4 +387,98 @@ where
     )?;
 
     Ok(())
+}
+
+pub fn globalize_fungible_with_initial_supply<Y>(
+    object_id: NodeId,
+    resource_address: ResourceAddress,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    metadata: BTreeMap<String, String>,
+    initial_supply: Decimal,
+    api: &mut Y,
+) -> Result<Bucket, RuntimeError>
+where
+    Y: ClientApi<RuntimeError>,
+{
+    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+        build_access_rules(access_rules);
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+
+    let resman_access_rules = AccessRules::sys_new(
+        resman_access_rules,
+        btreemap!(
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_access_rules,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
+        ),
+        api,
+    )?
+    .0;
+
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+
+    let bucket_id = api.globalize_with_address_and_create_inner_object(
+        btreemap!(
+            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ),
+        resource_address.into(),
+        FUNGIBLE_BUCKET_BLUEPRINT,
+        vec![
+            scrypto_encode(&LiquidFungibleResource::new(initial_supply)).unwrap(),
+            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+        ],
+    )?;
+
+    Ok(Bucket(Own(bucket_id)))
+}
+
+pub fn globalize_non_fungible_with_initial_supply<Y>(
+    object_id: NodeId,
+    resource_address: ResourceAddress,
+    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    metadata: BTreeMap<String, String>,
+    ids: BTreeSet<NonFungibleLocalId>,
+    api: &mut Y,
+) -> Result<Bucket, RuntimeError>
+where
+    Y: ClientApi<RuntimeError>,
+{
+    let (resman_access_rules, vault_access_rules, bucket_access_rules) =
+        build_access_rules(access_rules);
+    let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
+
+    let resman_access_rules = AccessRules::sys_new(
+        resman_access_rules,
+        btreemap!(
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_access_rules,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_access_rules
+        ),
+        api,
+    )?
+    .0;
+
+    let metadata = Metadata::sys_create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+
+    let bucket_id = api.globalize_with_address_and_create_inner_object(
+        btreemap!(
+            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+        ),
+        resource_address.into(),
+        NON_FUNGIBLE_BUCKET_BLUEPRINT,
+        vec![
+            scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
+            scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+        ],
+    )?;
+
+    Ok(Bucket(Own(bucket_id)))
 }

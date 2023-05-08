@@ -11,13 +11,18 @@ use crate::vm::NopWasmRuntime;
 pub enum ExtractSchemaError {
     InvalidWasm(PrepareError),
     RunSchemaGenError(InvokeError<WasmRuntimeError>),
-    DecodeError(DecodeError),
+    SchemaDecodeError(DecodeError),
+}
+
+impl From<PrepareError> for ExtractSchemaError {
+    fn from(value: PrepareError) -> Self {
+        ExtractSchemaError::InvalidWasm(value)
+    }
 }
 
 pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> {
     let function_exports = WasmModule::init(code)
-        .and_then(WasmModule::to_bytes)
-        .map_err(ExtractSchemaError::InvalidWasm)?
+        .and_then(WasmModule::to_bytes)?
         .1
         .into_iter()
         .filter(|s| s.ends_with("_schema"));
@@ -25,13 +30,13 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
     let wasm_engine = DefaultWasmEngine::default();
     let wasm_instrumenter = WasmInstrumenter::default();
     let instrumented_code = wasm_instrumenter.instrument(
-        PackageAddress::new_unchecked([0u8; NodeId::LENGTH]),
+        PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
         code,
         WasmMeteringConfig::V0,
-    );
+    )?;
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
-    let mut instance = wasm_engine.instantiate(&instrumented_code);
+    let mut instance = wasm_engine.instantiate(&instrumented_code)?;
     let mut blueprints = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
@@ -40,7 +45,7 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
 
         let name = function_export.replace("_schema", "").to_string();
         let schema: BlueprintSchema =
-            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::DecodeError)?;
+            scrypto_decode(rtn.as_slice()).map_err(ExtractSchemaError::SchemaDecodeError)?;
 
         blueprints.insert(name, schema);
     }

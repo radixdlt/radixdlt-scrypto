@@ -1,4 +1,3 @@
-use scrypto::api::substate_lock_api::LockFlags;
 use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -10,7 +9,7 @@ mod node_create {
     impl NodeCreate {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoEnv
-                .new_object(
+                .new_simple_object(
                     "invalid_blueprint",
                     vec![scrypto_encode(&NodeCreate {}).unwrap()],
                 )

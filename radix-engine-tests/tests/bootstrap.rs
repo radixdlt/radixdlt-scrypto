@@ -1,15 +1,16 @@
-use radix_engine::blueprints::resource::FungibleResourceManagerSubstate;
+use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisResource, GenesisResourceAllocation,
+    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::transaction::BalanceChange;
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
@@ -35,19 +36,94 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (system_bootstrap_receipt, _, wrap_up_receipt) = bootstrapper
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        wrap_up_receipt,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
     assert!(system_bootstrap_receipt
-        .commit_result
+        .expect_commit_success()
         .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
 
+    assert!(system_bootstrap_receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .contains(&GENESIS_HELPER));
+
+    assert!(wrap_up_receipt
+        .expect_commit_success()
+        .new_component_addresses()
+        .contains(&FAUCET));
+
     wrap_up_receipt
-        .commit_result
+        .expect_commit_success()
         .next_epoch()
         .expect("There should be a new epoch.");
+}
+
+#[test]
+fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let validator_key = EcdsaSecp256k1PublicKey([0; 33]);
+    let staker_address = ComponentAddress::virtual_account_from_public_key(
+        &EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    );
+    let stake = GenesisStakeAllocation {
+        account_index: 0,
+        xrd_amount: Decimal::one(),
+    };
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_address],
+            allocations: vec![(validator_key, vec![stake])],
+        },
+    ];
+
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        data_ingestion_receipts,
+        wrap_up_receipt,
+    } = bootstrapper
+        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .unwrap();
+
+    validate_receipt_substate_changes_which_can_be_typed(
+        system_bootstrap_receipt.expect_commit_success(),
+    );
+    for receipt in data_ingestion_receipts.into_iter() {
+        validate_receipt_substate_changes_which_can_be_typed(receipt.expect_commit_success());
+    }
+    validate_receipt_substate_changes_which_can_be_typed(wrap_up_receipt.expect_commit_success());
+}
+
+fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
+    let system_updates = &commit_result.state_updates.system_updates;
+    for ((node_id, module_num), partition_updates) in system_updates.into_iter() {
+        for (substate_key, database_update) in partition_updates.into_iter() {
+            let typed_substate_key =
+                to_typed_substate_key(node_id.entity_type().unwrap(), *module_num, substate_key)
+                    .expect("Substate key should be typeable");
+            if !typed_substate_key.value_is_mappable() {
+                continue;
+            }
+            match database_update {
+                DatabaseUpdate::Set(raw_value) => {
+                    // Check that typed value mapping works
+                    to_typed_substate_value(&typed_substate_key, raw_value)
+                        .expect("Substate value should be typeable");
+                }
+                DatabaseUpdate::Delete => {}
+            }
+        }
+    }
 }
 
 #[test]
@@ -66,7 +142,10 @@ fn test_genesis_xrd_allocation_to_accounts() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
@@ -88,7 +167,7 @@ fn test_genesis_resource_with_initial_allocation() {
         &PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key()),
     );
     let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
-    let resource_address = ResourceAddress::new_unchecked(
+    let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
             EntityType::GlobalFungibleResource as u8,
             &address_bytes_without_entity_id,
@@ -120,25 +199,28 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, mut data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        mut data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 
-    let resource_manager_substate = substate_db
-        .get_mapped_substate::<JmtMapper, FungibleResourceManagerSubstate>(
+    let total_supply = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            SysModuleId::Object.into(),
-            ResourceManagerOffset::ResourceManager.into(),
+            OBJECT_BASE_MODULE,
+            &FungibleResourceManagerOffset::TotalSupply.into(),
         )
         .unwrap();
-    assert_eq!(resource_manager_substate.total_supply, allocation_amount);
+    assert_eq!(total_supply, allocation_amount);
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped_substate::<JmtMapper, Option<MetadataEntry>>(
+        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
-            SysModuleId::Metadata.into(),
-            SubstateKey::Map(key),
+            METADATA_BASE_MODULE,
+            &SubstateKey::Map(key),
         )
         .unwrap();
 
@@ -217,7 +299,10 @@ fn test_genesis_stake_allocation() {
 
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
 
-    let (_, mut data_ingestion_receipts, _) = bootstrapper
+    let GenesisReceipts {
+        mut data_ingestion_receipts,
+        ..
+    } = bootstrapper
         .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
         .unwrap();
 

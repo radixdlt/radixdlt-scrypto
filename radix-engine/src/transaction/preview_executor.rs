@@ -3,7 +3,7 @@ use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_stores::interface::*;
+use radix_engine_store_interface::interface::*;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;

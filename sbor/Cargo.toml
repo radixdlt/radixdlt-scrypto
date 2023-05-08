@@ -19,7 +19,7 @@ serde_json = { version = "1.0.81", default-features = false }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["utils/std", "serde?/std", "serde_json/std", "hex/std"]
+std = ["utils/std", "serde?/std", "serde_json/std", "serde_json/preserve_order", "hex/std"] # preserve_order requires std
 alloc = ["utils/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
 
 # Enable serde derives for SBOR value and type models

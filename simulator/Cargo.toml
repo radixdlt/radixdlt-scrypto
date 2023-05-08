@@ -9,7 +9,9 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor" }
 radix-engine = { path = "../radix-engine" }
+radix-engine-store-interface = { path = "../radix-engine-store-interface" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
+radix-engine-queries = { path = "../radix-engine-queries" }
 radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface" }
 transaction = { path = "../transaction" }
@@ -39,6 +41,11 @@ bench = false
 [[bin]]
 name = "rtmc"
 path = "src/bin/rtmc.rs"
+bench = false
+
+[[bin]]
+name = "rtmd"
+path = "src/bin/rtmd.rs"
 bench = false
 
 [lib]

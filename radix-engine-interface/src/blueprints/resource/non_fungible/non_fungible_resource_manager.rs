@@ -149,18 +149,7 @@ pub struct NonFungibleResourceManagerMintSingleUuidInput {
 }
 pub type NonFungibleResourceManagerMintSingleUuidOutput = (Bucket, NonFungibleLocalId);
 
-// Protected
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_BUCKET_IDENT: &str = "create_bucket";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateBucketInput {
-    pub entries: BTreeSet<NonFungibleLocalId>,
-}
-
-pub type NonFungibleResourceManagerCreateBucketOutput = Bucket;
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleDataSchema {
     pub schema: ScryptoSchema,
     pub non_fungible: LocalTypeIndex,

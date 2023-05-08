@@ -17,14 +17,13 @@ pub use type_validation::*;
 /// * `validation` - The type's [`TypeValidation`] which includes extra validation instructions for the type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
-    pub kind: TypeKind<C::CustomValueKind, C, L>,
+    pub kind: TypeKind<C, L>,
     pub metadata: TypeMetadata,
-    pub validation:
-        TypeValidation<<C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation>,
+    pub validation: TypeValidation<C::CustomTypeValidation>,
 }
 
-impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> TypeData<C, L> {
-    pub fn new(kind: TypeKind<C::CustomValueKind, C, L>, metadata: TypeMetadata) -> Self {
+impl<C: CustomTypeKind<L>, L: SchemaTypeLink> TypeData<C, L> {
+    pub fn new(kind: TypeKind<C, L>, metadata: TypeMetadata) -> Self {
         Self {
             kind,
             metadata,
@@ -32,7 +31,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         }
     }
 
-    pub fn unnamed(kind: TypeKind<C::CustomValueKind, C, L>) -> Self {
+    pub fn unnamed(kind: TypeKind<C, L>) -> Self {
         Self {
             kind,
             metadata: TypeMetadata::unnamed(),
@@ -40,7 +39,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         }
     }
 
-    pub fn no_child_names(kind: TypeKind<C::CustomValueKind, C, L>, name: &'static str) -> Self {
+    pub fn no_child_names(kind: TypeKind<C, L>, name: &'static str) -> Self {
         Self {
             kind,
             metadata: TypeMetadata::no_child_names(name),
@@ -91,12 +90,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         )
     }
 
-    pub fn with_validation(
-        self,
-        type_validation: TypeValidation<
-            <C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation,
-        >,
-    ) -> Self {
+    pub fn with_validation(self, type_validation: TypeValidation<C::CustomTypeValidation>) -> Self {
         Self {
             kind: self.kind,
             metadata: self.metadata,

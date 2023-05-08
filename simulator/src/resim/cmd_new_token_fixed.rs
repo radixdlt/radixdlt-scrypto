@@ -68,7 +68,7 @@ impl NewTokenFixed {
         };
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .lock_fee(FAUCET, 100.into())
             .new_token_fixed(metadata, self.total_supply)
             .call_method(
                 default_account,

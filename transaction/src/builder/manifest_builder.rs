@@ -15,8 +15,7 @@ use radix_engine_interface::blueprints::identity::{
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE,
-    RESOURCE_MANAGER_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 #[cfg(feature = "dump_manifest_to_file")]
@@ -24,7 +23,7 @@ use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::data::manifest::{
     model::*, to_manifest_value, ManifestEncode, ManifestValue,
 };
-use radix_engine_interface::data::scrypto::{model::*, scrypto_encode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
@@ -291,7 +290,7 @@ impl ManifestBuilder {
             .collect();
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -304,7 +303,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
@@ -343,7 +342,7 @@ impl ManifestBuilder {
                 .collect();
 
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
@@ -359,7 +358,7 @@ impl ManifestBuilder {
             });
         } else {
             self.add_instruction(Instruction::CallFunction {
-                package_address: RESOURCE_MANAGER_PACKAGE,
+                package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
@@ -566,13 +565,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config,
             metadata,
             access_rules,
@@ -585,13 +580,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackage {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
         });
@@ -608,13 +599,9 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let schema = scrypto_encode(&schema).unwrap();
-        let schema_hash = hash(&schema);
-        self.blobs.insert(schema_hash, schema);
-
         self.add_instruction(Instruction::PublishPackageAdvanced {
             code: ManifestBlobRef(code_hash.0),
-            schema: ManifestBlobRef(schema_hash.0),
+            schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: package_access_rules_from_owner_badge(&owner_badge),
@@ -782,7 +769,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall(&mut self, vault_id: LocalAddress, amount: Decimal) -> &mut Self {
+    pub fn recall(&mut self, vault_id: InternalAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::RecallResource { vault_id, amount });
         self
     }

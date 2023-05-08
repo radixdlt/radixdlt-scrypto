@@ -4,10 +4,11 @@ version = "0.10.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false, features = ["serde"] }
-utils = { path = "../utils", default-features = false, features = ["serde"] }
+sbor = { path = "../sbor", default-features = false }
+utils = { path = "../utils", default-features = false }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
 
+serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-integer = { version = "0.1.45", default-features = false }
@@ -41,6 +42,7 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
+serde = ["dep:serde", "utils/serde", "sbor/serde", "hex/serde"]
 std = ["hex/std", "sbor/std", "utils/std", "radix-engine-derive/std", "serde_json/std", "blake2/std"]
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", "serde_json/alloc", "lazy_static/spin_no_std"]
 

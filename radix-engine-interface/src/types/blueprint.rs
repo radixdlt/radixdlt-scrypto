@@ -3,15 +3,17 @@ use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use scrypto_schema::InstanceSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub blueprint: Blueprint,
     pub global: bool,
-    pub type_parent: Option<GlobalAddress>,
+    pub outer_object: Option<GlobalAddress>,
+    pub instance_schema: Option<InstanceSchema>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub struct Blueprint {
     pub package_address: PackageAddress,
     pub blueprint_name: String,

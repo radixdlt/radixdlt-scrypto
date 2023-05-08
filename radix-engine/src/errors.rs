@@ -8,7 +8,6 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
@@ -23,7 +22,7 @@ use crate::system::system_modules::node_move::NodeMoveError;
 use crate::system::system_modules::transaction_limits::TransactionLimitsError;
 use crate::transaction::AbortReason;
 use crate::types::*;
-use crate::vm::wasm::WasmRuntimeError;
+use crate::vm::wasm::{PrepareError, WasmRuntimeError};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -153,7 +152,6 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidDropNodeAccess {
-    pub actor: Actor,
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -191,23 +189,32 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     GlobalAddressDoesNotExist,
+    NoParent,
     NotAnObject,
-    NotATuple,
+    NotAMethod,
+    NotAFieldLock,
+    NotAFieldWriteLock,
+    FieldDoesNotExist(Blueprint, u8),
+    KeyValueStoreDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,
     CannotStoreOwnedInIterable,
-    InvalidSubstateWrite,
+    InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
+    InvalidKeyValueKey(String),
+    NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
-    CannotGlobalize,
+    CannotGlobalize(Box<CannotGlobalizeError>),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
+    InvalidGlobalEntityType,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
-    SubstateValidationError(Box<SubstateValidationError>),
+    CreateObjectError(Box<CreateObjectError>),
+    InvalidInstanceSchema,
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
 }
@@ -234,13 +241,16 @@ pub enum SystemUpstreamError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum VmError {
     InvalidCode,
+    WasmPrepareError(PrepareError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SubstateValidationError {
+pub enum CreateObjectError {
     BlueprintNotFound(String),
-    WrongNumberOfSubstates(String, usize, usize),
-    SchemaValidationError(String, String),
+    WrongNumberOfKeyValueStores(Blueprint, usize, usize),
+    WrongNumberOfSubstates(Blueprint, usize, usize),
+    SchemaValidationError(Blueprint, String),
+    InvalidSubstateWrite(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -255,6 +265,16 @@ pub enum ModuleError {
 pub struct InvalidModuleType {
     pub expected_blueprint: Blueprint,
     pub actual_blueprint: Blueprint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CannotGlobalizeError {
+    NotAnObject,
+    AlreadyGlobalized,
+    InvalidAddressEntityType {
+        expected: Vec<EntityType>,
+        actual: Option<EntityType>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

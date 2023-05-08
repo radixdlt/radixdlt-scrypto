@@ -4,9 +4,9 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::substate_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
@@ -77,9 +77,10 @@ impl ClockNativePackage {
         PackageSchema {
             blueprints: btreemap!(
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
-                    parent: None,
+                    outer_blueprint: None,
                     schema,
                     substates,
+                    key_value_stores: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -150,7 +151,7 @@ impl ClockNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let clock_id = api.new_object(
+        let clock_id = api.new_simple_object(
             CLOCK_BLUEPRINT,
             vec![scrypto_encode(&ClockSubstate {
                 current_time_rounded_to_minutes_ms: 0,
@@ -175,7 +176,7 @@ impl ClockNativePackage {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let address = ComponentAddress::new_unchecked(input.component_address);
+        let address = ComponentAddress::new_or_panic(input.component_address);
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::SELF => clock_id,
@@ -204,13 +205,13 @@ impl ClockNativePackage {
         let current_time_rounded_to_minutes =
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
-        let handle = api.lock_field(
+        let handle = api.actor_lock_field(
             ClockOffset::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
+        let mut substate: ClockSubstate = api.field_lock_read_typed(handle)?;
         substate.current_time_rounded_to_minutes_ms = current_time_rounded_to_minutes;
-        api.sys_write_substate_typed(handle, &substate)?;
+        api.field_lock_write_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
@@ -228,11 +229,11 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.lock_field(
+                let handle = api.actor_lock_field(
                     ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
+                let substate: ClockSubstate = api.field_lock_read_typed(handle)?;
                 let instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
@@ -254,11 +255,11 @@ impl ClockNativePackage {
 
         match input.precision {
             TimePrecision::Minute => {
-                let handle = api.lock_field(
+                let handle = api.actor_lock_field(
                     ClockOffset::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let substate: ClockSubstate = api.sys_read_substate_typed(handle)?;
+                let substate: ClockSubstate = api.field_lock_read_typed(handle)?;
                 let current_time_instant = Instant::new(
                     substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );

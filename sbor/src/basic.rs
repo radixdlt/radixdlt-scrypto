@@ -1,5 +1,5 @@
-use crate::rust::collections::*;
-use crate::rust::vec::Vec;
+use crate::representations::*;
+use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
 
@@ -120,7 +120,7 @@ impl CustomTraversal for NoCustomTraversal {
         _reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
     where
-        R: decoder::PayloadTraverser<'de, Self::CustomValueKind>,
+        R: BorrowingDecoder<'de, Self::CustomValueKind>,
     {
         unreachable!("NoCustomTraversal can't exist")
     }
@@ -131,7 +131,7 @@ pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
     BasicTraverser::new(
         buf,
         BASIC_SBOR_V1_MAX_DEPTH,
-        Some(BASIC_SBOR_V1_PAYLOAD_PREFIX),
+        ExpectedStart::PayloadPrefix(BASIC_SBOR_V1_PAYLOAD_PREFIX),
         true,
     )
 }
@@ -139,29 +139,27 @@ pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeKind {}
 
-impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
-    type CustomValueKind = NoCustomValueKind;
-
-    type CustomTypeExtension = NoCustomTypeExtension;
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeValidation {}
 
 impl CustomTypeValidation for NoCustomTypeValidation {}
 
+impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
+    type CustomTypeValidation = NoCustomTypeValidation;
+}
+
+lazy_static::lazy_static! {
+    static ref EMPTY_SCHEMA: Schema<NoCustomSchema> = {
+        Schema::empty()
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum NoCustomTypeExtension {}
+pub enum NoCustomSchema {}
 
-create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
-
-impl CustomTypeExtension for NoCustomTypeExtension {
-    const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
-    const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
-    type CustomValueKind = NoCustomValueKind;
+impl CustomSchema for NoCustomSchema {
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
     type CustomTypeValidation = NoCustomTypeValidation;
-    type CustomTraversal = NoCustomTraversal;
 
     fn linearize_type_kind(
         _: Self::CustomTypeKind<GlobalTypeId>,
@@ -181,40 +179,109 @@ impl CustomTypeExtension for NoCustomTypeExtension {
         }
     }
 
-    fn validate_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
+    fn validate_custom_type_validation(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
+        _: &Self::CustomTypeValidation,
+    ) -> Result<(), SchemaValidationError> {
+        unreachable!("No custom type validation")
+    }
+
+    fn validate_custom_type_kind(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
-    fn validate_type_metadata_with_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
+    fn validate_type_metadata_with_custom_type_kind(
+        _: &SchemaContext,
+        _: &Self::CustomTypeKind<LocalTypeIndex>,
         _: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
-    fn validate_type_validation_with_type_kind(
-        _: &TypeValidationContext,
-        _: &SchemaCustomTypeKind<Self>,
-        _: &SchemaCustomTypeValidation<Self>,
-    ) -> Result<(), SchemaValidationError> {
-        unreachable!("No custom type kinds exist")
-    }
-
-    fn custom_type_kind_matches_value_kind<L: SchemaTypeLink>(
-        _: &Self::CustomTypeKind<L>,
-        _: ValueKind<Self::CustomValueKind>,
-    ) -> bool {
-        unreachable!("No custom value kinds exist")
+    fn empty_schema() -> &'static Schema<Self> {
+        &EMPTY_SCHEMA
     }
 }
 
-pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
-pub type BasicSchema = Schema<NoCustomTypeExtension>;
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum NoCustomExtension {}
+
+create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
+
+impl CustomExtension for NoCustomExtension {
+    const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;
+    const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
+    type CustomValueKind = NoCustomValueKind;
+    type CustomTraversal = NoCustomTraversal;
+    type CustomSchema = NoCustomSchema;
+
+    fn custom_value_kind_matches_type_kind(
+        _: &Schema<Self::CustomSchema>,
+        _: Self::CustomValueKind,
+        _: &TypeKind<
+            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+            LocalTypeIndex,
+        >,
+    ) -> bool {
+        unreachable!("No custom value kinds exist")
+    }
+
+    fn custom_type_kind_matches_non_custom_value_kind(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeIndex>,
+        _: ValueKind<Self::CustomValueKind>,
+    ) -> bool {
+        unreachable!("No custom type kinds exist")
+    }
+}
+
+pub type BasicRawPayload<'a> = RawPayload<'a, NoCustomExtension>;
+pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomExtension>;
+pub type BasicRawValue<'a> = RawValue<'a, NoCustomExtension>;
+pub type BasicOwnedRawValue = RawValue<'static, NoCustomExtension>;
+pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
+pub type BasicSchema = Schema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
+
+impl<'a> CustomDisplayContext<'a> for () {
+    type CustomExtension = NoCustomExtension;
+}
+
+impl FormattableCustomExtension for NoCustomExtension {
+    type CustomDisplayContext<'a> = ();
+
+    fn display_string_content<'s, 'de, 'a, 't, 's1, 's2, F: fmt::Write>(
+        _: &mut F,
+        _: &Self::CustomDisplayContext<'a>,
+        _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+    ) -> Result<(), fmt::Error> {
+        unreachable!("No custom values exist")
+    }
+}
+
+impl ValidatableCustomExtension<()> for NoCustomExtension {
+    fn apply_validation_for_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,
+        _: LocalTypeIndex,
+        _: &(),
+    ) -> Result<(), PayloadValidationError<Self>> {
+        unreachable!("No custom values exist")
+    }
+
+    fn apply_custom_type_validation_for_non_custom_value<'de>(
+        _: &Schema<Self::CustomSchema>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomTypeValidation,
+        _: &TerminalValueRef<'de, Self::CustomTraversal>,
+        _: &(),
+    ) -> Result<(), PayloadValidationError<Self>> {
+        unreachable!("No custom type validationss exist")
+    }
+}
 
 #[cfg(feature = "serde")]
 pub use self::serde_serialization::*;
@@ -222,16 +289,9 @@ pub use self::serde_serialization::*;
 #[cfg(feature = "serde")]
 mod serde_serialization {
     use super::*;
-    use crate::serde_serialization::*;
 
-    impl<'a> CustomSerializationContext<'a> for () {
-        type CustomTypeExtension = NoCustomTypeExtension;
-    }
-
-    impl SerializableCustomTypeExtension for NoCustomTypeExtension {
-        type CustomSerializationContext<'a> = ();
-
-        fn serialize_value<'s, 'de, 'a, 't, 's1, 's2>(
+    impl SerializableCustomExtension for NoCustomExtension {
+        fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
             _: &SerializationContext<'s, 'a, Self>,
             _: LocalTypeIndex,
             _: <Self::CustomTraversal as CustomTraversal>::CustomTerminalValueRef<'de>,

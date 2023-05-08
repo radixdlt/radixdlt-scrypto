@@ -1,5 +1,7 @@
 use radix_engine::blueprints::resource::VaultError;
-use radix_engine::errors::{ApplicationError, CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{
+    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
+};
 use radix_engine::kernel::call_frame::{MoveError, UnlockSubstateError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -28,11 +30,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::OwnNotFound(_)
-                ))
-            ))
+            RuntimeError::SystemError(SystemError::CreateObjectError(_))
         )
     });
 }
@@ -64,11 +62,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::OwnNotFound(_)
-                ))
-            ))
+            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
         )
     });
 }
@@ -95,11 +89,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::OwnNotFound(_)
-                ))
-            ))
+            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
         )
     });
 }
@@ -131,11 +121,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::OwnNotFound(_)
-                ))
-            ))
+            RuntimeError::SystemError(SystemError::InvalidSubstateWrite(_))
         )
     });
 }

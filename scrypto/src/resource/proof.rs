@@ -1,7 +1,7 @@
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_MANAGER_PACKAGE;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
@@ -240,8 +240,8 @@ impl ScryptoProof for Proof {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -261,9 +261,11 @@ impl ScryptoProof for Proof {
 
     fn drop(self) {
         let mut env = ScryptoEnv;
+        // TODO: Clean this up
+        let info = env.get_object_info(self.0.as_node_id()).unwrap();
         env.call_function(
-            RESOURCE_MANAGER_PACKAGE,
-            PROOF_BLUEPRINT,
+            RESOURCE_PACKAGE,
+            info.blueprint.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),
@@ -303,8 +305,8 @@ impl ValidatedProof {
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
-                PROOF_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-                scrypto_encode(&ProofGetNonFungibleLocalIdsInput {}).unwrap(),
+                NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+                scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

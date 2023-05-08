@@ -61,11 +61,18 @@ mod genesis_helper {
 
     impl GenesisHelper {
         pub fn new(
+            preallocated_address_bytes: [u8; 30],
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
             rounds_per_epoch: u64,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
+            let access_rules = AccessRules::new(AccessRulesConfig::new().default(
+                rule!(require(system_role.clone())),
+                rule!(require(system_role)),
+            ));
+            let metadata = Metadata::new();
+
             Self {
                 epoch_manager,
                 rounds_per_epoch,
@@ -74,10 +81,12 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_with_access_rules(AccessRulesConfig::new().default(
-                rule!(require(system_role.clone())),
-                rule!(require(system_role)),
-            ))
+            .globalize_at_address_with_modules(
+                ComponentAddress::new_or_panic(preallocated_address_bytes),
+                access_rules,
+                metadata,
+                Royalty::new(RoyaltyConfig::default()),
+            )
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
@@ -165,7 +174,7 @@ mod genesis_helper {
                 &resource.address_bytes_without_entity_id,
             )
             .0;
-            let resource_address = ResourceAddress::new_unchecked(address_bytes.clone());
+            let resource_address = ResourceAddress::new_or_panic(address_bytes.clone());
             let mut access_rules = BTreeMap::new();
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
@@ -212,7 +221,7 @@ mod genesis_helper {
             }
 
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
-                RESOURCE_MANAGER_PACKAGE,
+                RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
                 scrypto_encode(

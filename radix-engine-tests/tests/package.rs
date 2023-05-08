@@ -143,13 +143,14 @@ fn test_basic_package_missing_export() {
     package_schema.blueprints.insert(
         "Test".to_string(),
         BlueprintSchema {
-            parent: None,
+            outer_blueprint: None,
             schema: ScryptoSchema {
                 type_kinds: vec![],
                 type_metadata: vec![],
                 type_validations: vec![],
             },
             substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+            key_value_stores: vec![],
             functions: btreemap!(
                 "f".to_string() => FunctionSchema {
                     receiver: Option::None,

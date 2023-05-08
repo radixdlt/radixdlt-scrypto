@@ -1,4 +1,4 @@
-use super::{CodeKey, MeteredCodeKey, WasmMeteringParams};
+use super::{CodeKey, MeteredCodeKey, PrepareError, WasmMeteringParams};
 use crate::types::*;
 use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
 use sbor::rust::sync::Arc;
@@ -56,7 +56,7 @@ impl WasmInstrumenter {
         code_key: CodeKey,
         code: &[u8],
         wasm_metering_config: WasmMeteringConfig,
-    ) -> InstrumentedCode {
+    ) -> Result<InstrumentedCode, PrepareError> {
         let metered_code_key = (code_key, wasm_metering_config);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -64,23 +64,23 @@ impl WasmInstrumenter {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached) = self.cache.borrow_mut().get(&metered_code_key) {
-                    return InstrumentedCode {
+                    return Ok(InstrumentedCode {
                         metered_code_key,
                         code: cached.clone(),
-                    };
+                    });
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached) = self.cache.get(&metered_code_key) {
-                return InstrumentedCode {
+                return Ok(InstrumentedCode {
                     metered_code_key,
                     code: cached.clone(),
-                };
+                });
             }
         }
 
         let instrumented_ref =
-            Arc::new(self.instrument_no_cache(code, wasm_metering_config.parameters()));
+            Arc::new(self.instrument_no_cache(code, wasm_metering_config.parameters())?);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -93,18 +93,21 @@ impl WasmInstrumenter {
                 .insert(metered_code_key, instrumented_ref.clone());
         }
 
-        InstrumentedCode {
+        Ok(InstrumentedCode {
             metered_code_key,
             code: instrumented_ref,
-        }
+        })
     }
 
-    pub fn instrument_no_cache(&self, code: &[u8], metering_params: WasmMeteringParams) -> Vec<u8> {
+    pub fn instrument_no_cache(
+        &self,
+        code: &[u8],
+        metering_params: WasmMeteringParams,
+    ) -> Result<Vec<u8>, PrepareError> {
         WasmModule::init(code)
             .and_then(|m| m.inject_instruction_metering(metering_params.instruction_cost_rules()))
             .and_then(|m| m.inject_stack_metering(metering_params.max_stack_size()))
             .and_then(|m| m.to_bytes())
-            .expect("Failed to instrument WASM module")
-            .0
+            .map(|m| m.0)
     }
 }

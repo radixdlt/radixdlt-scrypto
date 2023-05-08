@@ -87,8 +87,8 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            intent.manifest.instructions.clone(),
-            &intent.manifest.blobs,
+            &intent.manifest.blobs.as_slice(),
+            &intent.manifest.instructions,
             ExecutionContext {
                 transaction_hash,
                 payload_size,
@@ -134,8 +134,8 @@ impl NotarizedTransactionValidator {
 
         let mut virtual_resources = BTreeSet::new();
         if flags.assume_all_signature_proofs {
-            virtual_resources.insert(ECDSA_SECP256K1_TOKEN);
-            virtual_resources.insert(EDDSA_ED25519_TOKEN);
+            virtual_resources.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE);
+            virtual_resources.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE);
         }
 
         let header = &intent.header;
@@ -151,8 +151,8 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            manifest.instructions.clone(),
             &manifest.blobs,
+            &manifest.instructions,
             ExecutionContext {
                 transaction_hash,
                 payload_size: 0,

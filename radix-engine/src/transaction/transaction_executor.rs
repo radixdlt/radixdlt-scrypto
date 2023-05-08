@@ -5,7 +5,9 @@ use crate::kernel::kernel::KernelBoot;
 use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
-use crate::track::{to_database_updates, Track};
+use crate::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
+use crate::track::interface::SubstateStore;
+use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
@@ -19,8 +21,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_engine_stores::interface::*;
-use radix_engine_stores::jmt_support::JmtMapper;
+use radix_engine_store_interface::interface::*;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -163,12 +164,10 @@ where
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
     ) -> TransactionReceipt {
-        let transaction_hash = executable.transaction_hash();
-
         #[cfg(not(feature = "alloc"))]
         if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
-            println!("Transaction hash: {}", transaction_hash);
+            println!("Transaction hash: {}", executable.transaction_hash());
             println!(
                 "Preallocated Node IDs: {:?}",
                 executable.pre_allocated_ids()
@@ -184,17 +183,18 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Prepare
-        let mut track = Track::<_, JmtMapper>::new(self.substate_db);
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
-            transaction_hash.clone(),
+            executable.transaction_hash().clone(),
             executable.pre_allocated_ids().clone(),
         );
         let mut system = SystemConfig {
+            blueprint_schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
             },
             modules: SystemModuleMixer::standard(
-                transaction_hash.clone(),
+                executable.transaction_hash().clone(),
                 executable.auth_zone_params().clone(),
                 fee_reserve,
                 fee_table,
@@ -216,11 +216,15 @@ where
                 TRANSACTION_PROCESSOR_BLUEPRINT,
                 TRANSACTION_PROCESSOR_RUN_IDENT,
                 scrypto_encode(&TransactionProcessorRunInput {
-                    transaction_hash: transaction_hash.clone(),
-                    runtime_validations: Cow::Borrowed(executable.runtime_validations()),
-                    instructions: Cow::Owned(manifest_encode(executable.instructions()).unwrap()),
-                    blobs: Cow::Borrowed(executable.blobs()),
-                    references: extract_refs_from_manifest(executable.instructions()),
+                    transaction_hash: executable.transaction_hash().clone(),
+                    runtime_validations: executable.runtime_validations().clone(),
+                    instructions: executable.instructions().clone(),
+                    blobs: executable
+                        .blobs()
+                        .into_iter()
+                        .map(|(hash, blob)| (*hash, Cow::from(*blob)))
+                        .collect(),
+                    references: executable.references().clone(),
                 })
                 .unwrap(),
             )
@@ -255,9 +259,10 @@ where
                 let tracked_nodes = track.finalize();
                 let state_update_summary =
                     StateUpdateSummary::new(self.substate_db, &tracked_nodes);
+                let track_updates = to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes);
 
                 TransactionResult::Commit(CommitResult {
-                    state_updates: to_database_updates::<JmtMapper>(tracked_nodes),
+                    state_updates: track_updates,
                     state_update_summary,
                     outcome: match outcome {
                         Ok(o) => TransactionOutcome::Success(o),
@@ -318,7 +323,7 @@ where
                     .map(|(k, v)| (k.to_string(), v))
                     .collect::<BTreeMap<String, &u32>>();
                 for (k, v) in break_down {
-                    println!("{:<30}: {:>10}", k, v);
+                    println!("        + {} /* {} */", v, k);
                 }
 
                 println!("{:-^80}", "Cost Totals");
@@ -375,6 +380,14 @@ where
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
+                println!("{:-^80}", "Outcome");
+                println!(
+                    "{}",
+                    match &commit.outcome {
+                        TransactionOutcome::Success(_) => "Success".to_string(),
+                        TransactionOutcome::Failure(error) => format!("Failure: {:?}", error),
+                    }
+                );
             }
             TransactionResult::Reject(e) => {
                 println!("{:-^80}", "Transaction Rejected");
@@ -407,7 +420,7 @@ pub fn execute_and_commit_transaction<
         transaction,
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(&commit.state_updates);
+        substate_db.commit(&commit.state_updates.database_updates);
     }
     receipt
 }
@@ -499,7 +512,7 @@ fn determine_result_type(
     TransactionResultType::Commit(invoke_result)
 }
 
-fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
+fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     track: &mut Track<S, M>,
     fee_reserve: SystemLoanFeeReserve,
     is_success: bool,
@@ -507,12 +520,11 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
     // Distribute royalty
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
-        let module_id = SysModuleId::Object;
         let substate_key = FungibleVaultOffset::LiquidFungible.into();
-        let handle = track
+        let (handle, _) = track
             .acquire_lock(
                 &node_id,
-                module_id.into(),
+                OBJECT_BASE_MODULE,
                 &substate_key,
                 LockFlags::MUTABLE,
             )
@@ -544,10 +556,10 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseMapper>(
         required -= amount;
 
         // Refund overpayment
-        let handle = track
+        let (handle, _) = track
             .acquire_lock(
                 &vault_id,
-                SysModuleId::Object.into(),
+                OBJECT_BASE_MODULE,
                 &FungibleVaultOffset::LiquidFungible.into(),
                 LockFlags::MUTABLE,
             )

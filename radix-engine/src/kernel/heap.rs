@@ -1,10 +1,10 @@
 use crate::blueprints::resource::*;
+use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
-    LockedNonFungibleResource, ResourceType,
+    LockedNonFungibleResource,
 };
-use radix_engine_stores::interface::NodeSubstates;
 use sbor::rust::collections::btree_map::Entry;
 
 pub struct Heap {
@@ -30,7 +30,7 @@ impl Heap {
     pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> &IndexedScryptoValue {
@@ -38,7 +38,7 @@ impl Heap {
             .nodes
             .entry(*node_id)
             .or_insert(BTreeMap::new())
-            .entry(module_id)
+            .entry(module_num)
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
@@ -48,21 +48,21 @@ impl Heap {
 
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|node_substates| node_substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
             .unwrap()
     }
 
     /// Reads a substate
     pub fn get_substate(
-        &mut self,
+        &self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_id))
+            .and_then(|node_substates| node_substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
     }
 
@@ -70,14 +70,14 @@ impl Heap {
     pub fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
         self.nodes
             .entry(node_id)
             .or_insert_with(|| NodeSubstates::default())
-            .entry(module_id)
+            .entry(module_num)
             .or_default()
             .insert(substate_key, substate_value);
     }
@@ -85,25 +85,25 @@ impl Heap {
     pub fn delete_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
         self.nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id))
+            .and_then(|n| n.get_mut(&module_num))
             .and_then(|s| s.remove(substate_key))
     }
 
     pub fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id));
+            .and_then(|n| n.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let substates: Vec<IndexedScryptoValue> = substates
                 .iter()
@@ -120,13 +120,13 @@ impl Heap {
     pub fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleId,
+        module_num: ModuleNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_id));
+            .and_then(|n| n.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()
@@ -165,94 +165,72 @@ impl Heap {
 
 #[derive(Debug)]
 pub struct DroppedFungibleBucket {
-    pub info: BucketInfoSubstate,
     pub liquid: LiquidFungibleResource,
     pub locked: LockedFungibleResource,
 }
 
 #[derive(Debug)]
 pub struct DroppedNonFungibleBucket {
-    pub info: BucketInfoSubstate,
     pub liquid: LiquidNonFungibleResource,
     pub locked: LockedNonFungibleResource,
 }
 
-impl Into<DroppedFungibleBucket> for NodeSubstates {
-    fn into(mut self) -> DroppedFungibleBucket {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedFungibleBucket {
+        let liquid: LiquidFungibleResource =
+            scrypto_decode(&self[FungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedFungibleResource =
+            scrypto_decode(&self[FungibleBucketOffset::Locked as usize]).unwrap();
 
-        DroppedFungibleBucket {
-            info: module
-                .remove(&BucketOffset::Info.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            liquid: module
-                .remove(&BucketOffset::Liquid.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            locked: module
-                .remove(&BucketOffset::Locked.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
+        DroppedFungibleBucket { liquid, locked }
+    }
+}
+
+impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedNonFungibleBucket {
+        let liquid: LiquidNonFungibleResource =
+            scrypto_decode(&self[NonFungibleBucketOffset::Liquid as usize]).unwrap();
+        let locked: LockedNonFungibleResource =
+            scrypto_decode(&self[NonFungibleBucketOffset::Locked as usize]).unwrap();
+
+        DroppedNonFungibleBucket { liquid, locked }
+    }
+}
+
+pub struct DroppedFungibleProof {
+    pub moveable: ProofMoveableSubstate,
+    pub fungible_proof: FungibleProof,
+}
+
+pub struct DroppedNonFungibleProof {
+    pub moveable: ProofMoveableSubstate,
+    pub non_fungible_proof: NonFungibleProof,
+}
+
+impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedFungibleProof {
+        let moveable: ProofMoveableSubstate =
+            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
+        let fungible_proof: FungibleProof =
+            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
+
+        DroppedFungibleProof {
+            moveable,
+            fungible_proof,
         }
     }
 }
 
-impl Into<DroppedNonFungibleBucket> for NodeSubstates {
-    fn into(mut self) -> DroppedNonFungibleBucket {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
+impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
+    fn into(self) -> DroppedNonFungibleProof {
+        let moveable: ProofMoveableSubstate =
+            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
+        let non_fungible_proof: NonFungibleProof =
+            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
 
-        DroppedNonFungibleBucket {
-            info: module
-                .remove(&BucketOffset::Info.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            liquid: module
-                .remove(&BucketOffset::Liquid.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
-            locked: module
-                .remove(&BucketOffset::Locked.into())
-                .map(|x| x.as_typed().unwrap())
-                .unwrap(),
+        DroppedNonFungibleProof {
+            moveable,
+            non_fungible_proof,
         }
-    }
-}
-
-pub struct DroppedProof {
-    pub info: ProofInfoSubstate,
-    pub proof: DroppedProofResource,
-}
-
-pub enum DroppedProofResource {
-    Fungible(FungibleProof),
-    NonFungible(NonFungibleProof),
-}
-
-impl Into<DroppedProof> for NodeSubstates {
-    fn into(mut self) -> DroppedProof {
-        let mut module = self.remove(&SysModuleId::Object.into()).unwrap();
-
-        let info: ProofInfoSubstate = module
-            .remove(&ProofOffset::Info.into())
-            .map(|x| x.as_typed().unwrap())
-            .unwrap();
-
-        let proof = match info.resource_type {
-            ResourceType::Fungible { .. } => DroppedProofResource::Fungible(
-                module
-                    .remove(&ProofOffset::Fungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-            ResourceType::NonFungible { .. } => DroppedProofResource::NonFungible(
-                module
-                    .remove(&ProofOffset::NonFungible.into())
-                    .map(|x| x.as_typed().unwrap())
-                    .unwrap(),
-            ),
-        };
-
-        DroppedProof { info, proof }
     }
 }

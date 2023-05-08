@@ -5,33 +5,49 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
+pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
+pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "preallocate_global_address";
+
 pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
-pub const NEW_KEY_VALUE_STORE_FUNCTION_ID: usize = 0x31;
-pub const NEW_KEY_VALUE_STORE_FUNCTION_NAME: &str = "new_key_value_store";
-pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x31;
 pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize_object";
+pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_ID: usize = 0x32;
+pub const GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME: &str = "globalize_with_address";
 pub const CALL_METHOD_FUNCTION_ID: usize = 0x33;
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_ID: usize = 0x34;
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_OBJECT_INFO_FUNCTION_ID: usize = 0x35;
 pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
-pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_ID: usize = 0x36;
-pub const GET_KEY_VALUE_STORE_INFO_FUNCTION_NAME: &str = "get_key_value_store_info";
-pub const DROP_OBJECT_FUNCTION_ID: usize = 0x37;
+pub const DROP_OBJECT_FUNCTION_ID: usize = 0x36;
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
-pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_ID: usize = 0x38;
-pub const LOCK_KEY_VALUE_STORE_ENTRY_FUNCTION_NAME: &str = "lock_key_value_store_entry";
 
-pub const LOCK_FIELD_FUNCTION_ID: usize = 0x40;
-pub const LOCK_FIELD_FUNCTION_NAME: &str = "lock_field";
-pub const READ_SUBSTATE_FUNCTION_ID: usize = 0x41;
-pub const READ_SUBSTATE_FUNCTION_NAME: &str = "read_substate";
-pub const WRITE_SUBSTATE_FUNCTION_ID: usize = 0x42;
-pub const WRITE_SUBSTATE_FUNCTION_NAME: &str = "write_substate";
-pub const DROP_LOCK_FUNCTION_ID: usize = 0x43;
-pub const DROP_LOCK_FUNCTION_NAME: &str = "drop_lock";
+pub const KEY_VALUE_STORE_NEW_FUNCTION_ID: usize = 0x37;
+pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
+pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_ID: usize = 0x38;
+pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
+pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_ID: usize = 0x39;
+pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
+pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_ID: usize = 0x3a;
+pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
+
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_ID: usize = 0x3b;
+pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_ID: usize = 0x3c;
+pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
+pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_ID: usize = 0x3d;
+pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
+
+pub const ACTOR_LOCK_FIELD_FUNCTION_ID: usize = 0x43;
+pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
+
+pub const FIELD_LOCK_READ_FUNCTION_ID: usize = 0x44;
+pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
+pub const FIELD_LOCK_WRITE_FUNCTION_ID: usize = 0x45;
+pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
+pub const FIELD_LOCK_RELEASE_FUNCTION_ID: usize = 0x46;
+pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";

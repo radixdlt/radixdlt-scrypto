@@ -1,64 +1,51 @@
 use crate::*;
+use lazy_static::lazy_static;
 use radix_engine_common::types::*;
+use sbor::rust::prelude::*;
 
-pub const RADIX_TOKEN: ResourceAddress = resource_address(EntityType::GlobalFungibleResource, 0);
+pub use radix_engine_common::native_addresses::*;
 
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 0);
-pub const EDDSA_ED25519_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 1);
-pub const SYSTEM_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 2);
-pub const PACKAGE_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 3);
-pub const GLOBAL_OBJECT_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 4);
-pub const PACKAGE_OWNER_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 5);
-pub const VALIDATOR_OWNER_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 6);
-pub const IDENTITY_OWNER_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 7);
-pub const ACCOUNT_OWNER_TOKEN: ResourceAddress =
-    resource_address(EntityType::GlobalNonFungibleResource, 8);
-
-pub const PACKAGE_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 0);
-pub const RESOURCE_MANAGER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 1);
-pub const IDENTITY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 2);
-pub const EPOCH_MANAGER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 3);
-pub const CLOCK_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 4);
-pub const ACCOUNT_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 5);
-pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 6);
-pub const TRANSACTION_PROCESSOR_PACKAGE: PackageAddress =
-    package_address(EntityType::GlobalPackage, 7);
-pub const METADATA_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 10);
-pub const ROYALTY_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 11);
-pub const ACCESS_RULES_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 12);
-pub const GENESIS_HELPER_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 13);
-pub const GENESIS_HELPER_BLUEPRINT: &str = "GenesisHelper";
-
-// There should be no need of this function, but many of our configurations are depending on it.
-// Having it in a single place to avoid out-of-sync.
-pub fn is_native_package(address: PackageAddress) -> bool {
-    match address {
-        PACKAGE_PACKAGE
-        | RESOURCE_MANAGER_PACKAGE
-        | IDENTITY_PACKAGE
-        | EPOCH_MANAGER_PACKAGE
-        | CLOCK_PACKAGE
-        | ACCOUNT_PACKAGE
-        | ACCESS_CONTROLLER_PACKAGE
-        | TRANSACTION_PROCESSOR_PACKAGE
-        | METADATA_PACKAGE
-        | ROYALTY_PACKAGE
-        | ACCESS_RULES_PACKAGE
-        | GENESIS_HELPER_PACKAGE => true,
-        _ => false,
-    }
+// Currently, functions and methods can reference these well-known nodes without declaring
+// the dependency in the package info.
+//
+// To avoid creating references from various places, a list of well-known nodes is crafted
+// and added to every call frame, as a temporary solution.
+//
+// TODO: to remove it, we will have to:
+// - Add Scrypto support for declaring dependencies
+// - Split bootstrapping into state flushing and transaction execution (the "chicken-and-egg" problem)
+//
+lazy_static! {
+    pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: BTreeSet<NodeId> = {
+        btreeset![
+            // resource managers
+            RADIX_TOKEN.into(),
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+            SYSTEM_TRANSACTION_BADGE.into(),
+            PACKAGE_VIRTUAL_BADGE.into(),
+            GLOBAL_ACTOR_VIRTUAL_BADGE.into(),
+            PACKAGE_OWNER_BADGE.into(),
+            VALIDATOR_OWNER_BADGE.into(),
+            IDENTITY_OWNER_BADGE.into(),
+            ACCOUNT_OWNER_BADGE.into(),
+            // packages
+            PACKAGE_PACKAGE.into(),
+            RESOURCE_PACKAGE.into(),
+            IDENTITY_PACKAGE.into(),
+            EPOCH_MANAGER_PACKAGE.into(),
+            CLOCK_PACKAGE.into(),
+            ACCOUNT_PACKAGE.into(),
+            ACCESS_CONTROLLER_PACKAGE.into(),
+            TRANSACTION_PROCESSOR_PACKAGE.into(),
+            METADATA_MODULE_PACKAGE.into(),
+            ROYALTY_MODULE_PACKAGE.into(),
+            ACCESS_RULES_MODULE_PACKAGE.into(),
+            GENESIS_HELPER_PACKAGE.into(),
+            FAUCET_PACKAGE.into(),
+            // components
+            CLOCK.into(),
+            EPOCH_MANAGER.into(),
+        ]
+    };
 }
-
-pub const FAUCET_PACKAGE: PackageAddress = package_address(EntityType::GlobalPackage, 64);
-pub const FAUCET_BLUEPRINT: &str = "Faucet";
-
-pub const CLOCK: ComponentAddress = component_address(EntityType::GlobalClock, 0);
-pub const EPOCH_MANAGER: ComponentAddress = component_address(EntityType::GlobalEpochManager, 0);
