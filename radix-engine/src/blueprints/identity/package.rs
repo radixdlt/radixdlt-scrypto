@@ -183,8 +183,11 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
-    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
+
+    fn securified_groups() -> Vec<&'static str> {
+        vec!["update_metadata"]
+    }
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {

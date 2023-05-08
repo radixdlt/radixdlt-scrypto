@@ -499,8 +499,11 @@ struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
-    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
+
+    fn securified_groups() -> Vec<&'static str> {
+        vec!["owner", "update_metadata"]
+    }
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![
@@ -509,7 +512,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             (
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
-                    AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
+                    AccessRuleEntry::group("owner"),
                     // TODO: Change to global caller
                     AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
                         EPOCH_MANAGER_PACKAGE

@@ -12,8 +12,9 @@ pub enum MethodType {
 
 pub trait SecurifiedAccessRules {
     const SECURIFY_IDENT: Option<&'static str> = None;
-    const OWNER_GROUP_NAME: &'static str;
     const OWNER_BADGE: ResourceAddress;
+
+    fn securified_groups() -> Vec<&'static str>;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![]
@@ -41,10 +42,15 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut access_rules = AccessRulesConfig::new();
-        access_rules = access_rules.default(
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-            AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-        );
+
+        // TODO: Fix this up
+        for securified_group in Self::securified_groups() {
+            access_rules = access_rules.default(
+                AccessRuleEntry::group(securified_group),
+                AccessRuleEntry::group(securified_group),
+            );
+        }
+
         Self::set_non_owner_rules(&mut access_rules);
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?;
         Ok(access_rules)
@@ -92,12 +98,16 @@ pub trait SecurifiedAccessRules {
             )?;
         }
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
-        access_rules.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            rule!(require(global_id)),
-            AccessRule::DenyAll,
-            api,
-        )?;
+
+        for securified_group in Self::securified_groups() {
+            access_rules.set_group_access_rule_and_mutability(
+                securified_group,
+                rule!(require(global_id.clone())),
+                AccessRule::DenyAll,
+                api,
+            )?;
+        }
+
 
         Ok(bucket)
     }
@@ -123,12 +133,16 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
                 api,
             )?;
         }
-        access_rules.set_group_access_rule_and_mutability(
-            Self::OWNER_GROUP_NAME,
-            access_rule,
-            this_package_rule,
-            api,
-        )?;
+
+        for securified_group in Self::securified_groups() {
+            access_rules.set_group_access_rule_and_mutability(
+                securified_group,
+                access_rule.clone(),
+                this_package_rule.clone(),
+                api,
+            )?;
+        }
+
 
         Ok(access_rules)
     }
