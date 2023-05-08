@@ -9,7 +9,8 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{
-    BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, Receiver,
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
+    PackageSchema, Receiver,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -26,8 +27,10 @@ impl EpochManagerNativePackage {
         fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
 
-        let mut sorted_indices = Vec::new();
-        sorted_indices.push(BlueprintSortedIndexSchema {});
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::SortedIndex(
+            BlueprintSortedIndexSchema {},
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -102,9 +105,7 @@ impl EpochManagerNativePackage {
             outer_blueprint: None,
             schema,
             fields,
-            kv_stores: vec![],
-            indices: vec![],
-            sorted_indices,
+            collections,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
@@ -199,9 +200,7 @@ impl EpochManagerNativePackage {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
             fields,
-            kv_stores: vec![],
-            indices: vec![],
-            sorted_indices: vec![],
+            collections: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,

@@ -638,8 +638,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let is_new = node_updates
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let tracked_partition =
-            node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
+        let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
@@ -790,8 +789,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .as_ref()
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
-        let tracked_partition =
-            node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
+        let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
         if is_new {
             let mut items = Vec::new();

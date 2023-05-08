@@ -57,9 +57,7 @@ pub struct BlueprintSchema {
 
     /// State Schema
     pub fields: Vec<LocalTypeIndex>,
-    pub kv_stores: Vec<BlueprintKeyValueStoreSchema>,
-    pub indices: Vec<BlueprintIndexSchema>,
-    pub sorted_indices: Vec<BlueprintSortedIndexSchema>,
+    pub collections: Vec<BlueprintCollectionSchema>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -124,9 +122,7 @@ impl Default for BlueprintSchema {
                 type_validations: vec![],
             },
             fields: Vec::default(),
-            kv_stores: Vec::default(),
-            indices: Vec::default(),
-            sorted_indices: Vec::default(),
+            collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
@@ -161,27 +157,8 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
         };
 
         let mut collections = Vec::new();
-        for kv_schema in schema.kv_stores {
-            collections.push((
-                PartitionOffset(partition_offset),
-                BlueprintCollectionSchema::KeyValueStore(kv_schema),
-            ));
-            partition_offset += 1;
-        }
-
-        for index_schema in schema.indices {
-            collections.push((
-                PartitionOffset(partition_offset),
-                BlueprintCollectionSchema::Index(index_schema),
-            ));
-            partition_offset += 1;
-        }
-
-        for sorted_index_schema in schema.sorted_indices {
-            collections.push((
-                PartitionOffset(partition_offset),
-                BlueprintCollectionSchema::SortedIndex(sorted_index_schema),
-            ));
+        for collection_schema in schema.collections {
+            collections.push((PartitionOffset(partition_offset), collection_schema));
             partition_offset += 1;
         }
 
@@ -189,7 +166,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
             fields,
-            collections: collections,
+            collections,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,

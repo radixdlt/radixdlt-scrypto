@@ -158,7 +158,10 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(METADATA_KV_STORE_PARTITION, ModuleInit::Metadata(metadata_init));
+    node_modules.insert(
+        METADATA_KV_STORE_PARTITION,
+        ModuleInit::Metadata(metadata_init),
+    );
     node_modules.insert(
         ROYALTY_FIELD_PARTITION,
         ModuleInit::Royalty(
@@ -281,9 +284,7 @@ impl PackageNativePackage {
                     outer_blueprint: None,
                     schema,
                     fields,
-                    kv_stores: vec![],
-                    indices: vec![],
-                    sorted_indices: vec![],
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -532,7 +533,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            kv_stores: key_value_stores,
+            collections,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
@@ -552,10 +553,10 @@ impl PackageNativePackage {
                 ));
             }
 
-            if !key_value_stores.is_empty() {
+            if !collections.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Static Key Value Stores not supported".to_string(),
+                        "Static collections not supported".to_string(),
                     )),
                 ));
             }

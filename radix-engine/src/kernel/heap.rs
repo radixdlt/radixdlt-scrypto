@@ -120,13 +120,13 @@ impl Heap {
     pub fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_num));
+            .and_then(|n| n.get_mut(&partition_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()

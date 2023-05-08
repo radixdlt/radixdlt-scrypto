@@ -8,8 +8,8 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use resources_tracker_macro::trace_resources;
@@ -272,9 +272,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: None,
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -298,14 +296,16 @@ impl ResourceManagerNativePackage {
             );
             fields.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
 
-            let mut key_value_stores = Vec::new();
-            key_value_stores.push(BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
-                    aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
-                ),
-                value: TypeSchema::Instance(0u8),
-                can_own: false,
-            });
+            let mut collections = Vec::new();
+            collections.push(BlueprintCollectionSchema::KeyValueStore(
+                BlueprintKeyValueStoreSchema {
+                    key: TypeSchema::Blueprint(
+                        aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
+                    ),
+                    value: TypeSchema::Instance(0u8),
+                    can_own: false,
+                },
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -522,9 +522,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: None,
                 schema,
                 fields,
-                kv_stores: key_value_stores,
-                indices: vec![],
-                sorted_indices: vec![],
+                collections,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -649,9 +647,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -668,8 +664,8 @@ impl ResourceManagerNativePackage {
             );
             fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
-            let mut indices = Vec::new();
-            indices.push(BlueprintIndexSchema {});
+            let mut collections = Vec::new();
+            collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -817,9 +813,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices,
-                sorted_indices: vec![],
+                collections,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -910,9 +904,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1028,9 +1020,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1089,9 +1079,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1162,9 +1150,7 @@ impl ResourceManagerNativePackage {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
                 fields,
-                kv_stores: vec![],
-                indices: vec![],
-                sorted_indices: vec![],
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1268,9 +1254,7 @@ impl ResourceManagerNativePackage {
             outer_blueprint: None,
             schema,
             fields,
-            kv_stores: vec![],
-            indices: vec![],
-            sorted_indices: vec![],
+            collections: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -1365,9 +1349,7 @@ impl ResourceManagerNativePackage {
             outer_blueprint: None,
             schema,
             fields,
-            kv_stores: vec![],
-            indices: vec![],
-            sorted_indices: vec![],
+            collections: vec![],
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),

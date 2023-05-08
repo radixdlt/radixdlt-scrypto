@@ -5,8 +5,8 @@ use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, Receiver,
-    TypeSchema, VirtualLazyLoadSchema,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
+    PackageSchema, Receiver, TypeSchema, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::AccountBlueprint;
@@ -25,14 +25,16 @@ impl AccountNativePackage {
 
         let fields = Vec::new();
 
-        let mut kv_stores = Vec::new();
-        kv_stores.push(BlueprintKeyValueStoreSchema {
-            key: TypeSchema::Blueprint(
-                aggregator.add_child_type_and_descendents::<ResourceAddress>(),
-            ),
-            value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
-            can_own: true,
-        });
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceAddress>(),
+                ),
+                value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
+                can_own: true,
+            },
+        ));
 
         let mut functions = BTreeMap::new();
 
@@ -213,9 +215,7 @@ impl AccountNativePackage {
                     outer_blueprint: None,
                     schema,
                     fields,
-                    kv_stores,
-                    indices: vec![],
-                    sorted_indices: vec![],
+                    collections,
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into()

@@ -376,9 +376,7 @@ impl AccessControllerNativePackage {
                     outer_blueprint: None,
                     schema,
                     fields,
-                    kv_stores: vec![],
-                    indices: vec![],
-                    sorted_indices: vec![],
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema

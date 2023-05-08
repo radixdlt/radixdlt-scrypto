@@ -277,9 +277,9 @@ pub fn to_typed_virtualized_partition_substate_key(
                 key.clone(),
             ))
         }
-        (EntityType::InternalIndex, SubstateKey::Map(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVaultIndex(key.clone()))
-        }
+        (EntityType::InternalIndex, SubstateKey::Map(key)) => TypedSubstateKey::ObjectModule(
+            TypedObjectModuleSubstateKey::NonFungibleVaultIndex(key.clone()),
+        ),
         (EntityType::InternalSortedIndex, SubstateKey::Sorted(key)) => {
             TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManagerSortedIndex(
                 key.clone(),
@@ -337,6 +337,7 @@ pub enum TypedObjectModuleSubstateValue {
     Package(TypedPackageSubstateValue),
     FungibleResource(TypedFungibleResourceManagerSubstateValue),
     NonFungibleResource(TypedNonFungibleResourceManagerSubstateValue),
+    NonFungibleResourceData(GenericScryptoSborPayload),
     FungibleVault(TypedFungibleVaultSubstateValue),
     NonFungibleVault(TypedNonFungibleVaultSubstateValue),
     EpochManager(TypedEpochManagerSubstateValue),
@@ -517,6 +518,11 @@ fn to_typed_object_substate_value(
                 }
             })
         }
+        TypedObjectModuleSubstateKey::NonFungibleResourceData(_) => {
+            TypedObjectModuleSubstateValue::NonFungibleResourceData(GenericScryptoSborPayload {
+                data: data.to_vec(),
+            })
+        }
         TypedObjectModuleSubstateKey::FungibleVault(offset) => {
             TypedObjectModuleSubstateValue::FungibleVault(match offset {
                 FungibleVaultField::LiquidFungible => {
@@ -533,6 +539,11 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
+            })
+        }
+        TypedObjectModuleSubstateKey::NonFungibleVaultIndex(_) => {
+            TypedObjectModuleSubstateValue::GenericIndex(GenericScryptoSborPayload {
+                data: data.to_vec(),
             })
         }
         TypedObjectModuleSubstateKey::EpochManagerField(offset) => {
@@ -583,11 +594,6 @@ fn to_typed_object_substate_value(
         }
         TypedObjectModuleSubstateKey::GenericKeyValueStore(_) => {
             TypedObjectModuleSubstateValue::GenericKeyValueStore(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
-        }
-        TypedObjectModuleSubstateKey::NonFungibleVaultIndex(_) => {
-            TypedObjectModuleSubstateValue::GenericIndex(GenericScryptoSborPayload {
                 data: data.to_vec(),
             })
         }
