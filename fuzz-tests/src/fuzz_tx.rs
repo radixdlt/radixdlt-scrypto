@@ -1,4 +1,5 @@
 use arbitrary::{Arbitrary, Unstructured};
+use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -9,8 +10,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "decode_tx_manifest")]
 use radix_engine_interface::data::manifest::manifest_decode;
-use radix_engine_stores::interface::SubstateDatabase;
-use radix_engine_stores::jmt_support::JmtMapper;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 use strum::EnumCount;
 use transaction::builder::ManifestBuilder;
@@ -47,34 +46,36 @@ pub struct TxFuzzer {
 impl TxFuzzer {
     pub fn new() -> Self {
         let mut runner = TestRunner::builder().without_trace().build();
-        let mut component_addresses = vec![runner.faucet_component()];
+        let mut component_addresses = vec![EPOCH_MANAGER, CLOCK, GENESIS_HELPER, FAUCET];
         let mut all_resource_addresses = vec![
             RADIX_TOKEN,
-            ECDSA_SECP256K1_TOKEN,
-            EDDSA_ED25519_TOKEN,
-            SYSTEM_TOKEN,
-            PACKAGE_TOKEN,
-            GLOBAL_OBJECT_TOKEN,
-            PACKAGE_OWNER_TOKEN,
-            VALIDATOR_OWNER_TOKEN,
-            IDENTITY_OWNER_TOKEN,
-            ACCOUNT_OWNER_TOKEN,
+            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+            SYSTEM_TRANSACTION_BADGE,
+            CONSENSUS_TRANSACTION_BADGE,
+            PACKAGE_VIRTUAL_BADGE,
+            GLOBAL_ACTOR_VIRTUAL_BADGE,
+            PACKAGE_OWNER_BADGE,
+            VALIDATOR_OWNER_BADGE,
+            IDENTITY_OWNER_BADGE,
+            ACCOUNT_OWNER_BADGE,
         ];
         let mut non_fungible_resource_addresses = vec![];
         let mut fungible_resource_addresses = vec![];
         let package_addresses = vec![
             PACKAGE_PACKAGE,
-            RESOURCE_MANAGER_PACKAGE,
+            RESOURCE_PACKAGE,
             IDENTITY_PACKAGE,
             EPOCH_MANAGER_PACKAGE,
             CLOCK_PACKAGE,
             ACCOUNT_PACKAGE,
             ACCESS_CONTROLLER_PACKAGE,
             TRANSACTION_PROCESSOR_PACKAGE,
-            METADATA_PACKAGE,
-            ROYALTY_PACKAGE,
-            ACCESS_RULES_PACKAGE,
+            METADATA_MODULE_PACKAGE,
+            ROYALTY_MODULE_PACKAGE,
+            ACCESS_CONTROLLER_PACKAGE,
             GENESIS_HELPER_PACKAGE,
+            FAUCET_PACKAGE,
         ];
         let mut public_keys = vec![];
         let accounts: Vec<Account> = (0..2)
@@ -224,10 +225,10 @@ impl TxFuzzer {
             let vault = self
                 .runner
                 .substate_db()
-                .get_mapped_substate::<JmtMapper, LiquidNonFungibleVault>(
+                .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                     &vault,
-                    SysModuleId::Object.into(),
-                    NonFungibleVaultOffset::LiquidNonFungible.into(),
+                    OBJECT_BASE_MODULE,
+                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
                 )
                 .map(|vault| vault.ids);
 
@@ -235,12 +236,11 @@ impl TxFuzzer {
                 let mut substate_iter = self
                     .runner
                     .substate_db()
-                    .list_mapped_substates::<JmtMapper>(
+                    .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                         ids.as_node_id(),
-                        SysModuleId::Object.into(),
+                        OBJECT_BASE_MODULE,
                     );
-                substate_iter.next().map(|(_key, value)| {
-                    let id: NonFungibleLocalId = scrypto_decode(value.as_slice()).unwrap();
+                substate_iter.next().map(|(_key, id)| {
                     btree_ids.insert(id);
                 });
             });
@@ -749,7 +749,7 @@ impl TxFuzzer {
                     #[cfg(not(feature = "skip_crash"))]
                     // TODO: try to find some valid vault_ids and randomly choose it or generate
                     // if not found
-                    let vault_id = Some(LocalAddress::arbitrary(&mut unstructured).unwrap());
+                    let vault_id = Some(InternalAddress::arbitrary(&mut unstructured).unwrap());
 
                     #[cfg(feature = "skip_crash")]
                     let vault_id = {
@@ -764,7 +764,7 @@ impl TxFuzzer {
                     };
 
                     vault_id.map(|vault_id| Instruction::RecallResource {
-                        vault_id: LocalAddress::new_unchecked(vault_id.into()),
+                        vault_id: InternalAddress::new_or_panic(vault_id.into()),
                         amount,
                     })
                 }

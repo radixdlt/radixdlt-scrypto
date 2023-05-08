@@ -72,7 +72,7 @@ impl<'a> Arbitrary<'a> for PackageAddress {
         let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
         let b = u.bytes(len).unwrap();
         right.copy_from_slice(&b);
-        Ok(Self::new_unchecked(node_id))
+        Ok(Self::new_or_panic(node_id))
     }
 }
 
