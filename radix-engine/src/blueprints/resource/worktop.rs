@@ -45,21 +45,25 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        // Recursively drop buckets
+        // Detach buckets from worktop
         let handle = api.kernel_lock_substate(
             input.worktop.0.as_node_id(),
             OBJECT_BASE_MODULE,
             &WorktopOffset::Worktop.into(),
-            LockFlags::read_only(),
+            LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let worktop_substate: WorktopSubstate =
+        let mut worktop_substate: WorktopSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        for (_, bucket) in worktop_substate.resources {
+        let resources = core::mem::replace(&mut worktop_substate.resources, BTreeMap::new());
+        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&worktop_substate))?;
+        api.kernel_drop_lock(handle)?;
+
+        // Recursively drop buckets
+        for (_, bucket) in resources {
             let bucket = Bucket(bucket);
             bucket.sys_drop_empty(api)?;
         }
-        api.kernel_drop_lock(handle)?;
 
         // Destroy self
         api.drop_object(input.worktop.0.as_node_id())?;
