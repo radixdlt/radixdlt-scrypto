@@ -194,29 +194,13 @@ impl AuthModule {
     pub fn last_auth_zone(&self) -> Option<NodeId> {
         self.auth_zone_stack.last().cloned()
     }
-}
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Create sentinel node
-        Self::on_execution_start(api)
-    }
-
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Destroy sentinel node
-        Self::on_execution_finish(api, &Message::default())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+    /// Check authorization
+    fn check_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        //=====================
-        // Check authorization
-        //=====================
-
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
             let authorizations = match &callee {
@@ -261,14 +245,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 }
             }
         }
+        Ok(())
+    }
 
-        //=====================================================
-        // Create a new auth zone and move it to next frame.
-        //
-        // Must be done before a new frame is created, as
-        // borrowed references must be wrapped and passed.
-        //======================================================
-
+    /// Create a new auth zone and move it to next frame.
+    ///
+    /// Must be done before a new frame is created, as
+    /// borrowed references must be wrapped and passed.
+    ///
+    fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        api: &mut Y,
+        callee: &Actor,
+        message: &mut Message,
+    ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
         let mut virtual_non_fungibles_non_extending = BTreeSet::new();
         let package_address = callee.package_address();
@@ -336,16 +325,39 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             ),
         )?;
 
+        // Move auth zone (containing borrowed reference)!
+        message.add_move_node(auth_zone_node_id);
+
+        // Update auth zone stack
         api.kernel_get_system()
             .modules
             .auth
             .auth_zone_stack
             .push(auth_zone_node_id);
 
-        // Move!
-        message.add_move_node(auth_zone_node_id);
-
         Ok(())
+    }
+}
+
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Create sentinel node
+        Self::on_execution_start(api)
+    }
+
+    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Destroy sentinel node
+        Self::on_execution_finish(api, &Message::default())
+    }
+
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        callee: &Actor,
+        message: &mut Message,
+        args: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        AuthModule::check_authorization(api, callee, args)
+            .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
@@ -354,7 +366,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     ) -> Result<(), RuntimeError> {
         if let Some(auth_zone) = api.kernel_get_system().modules.auth.auth_zone_stack.pop() {
             api.kernel_drop_node(&auth_zone)?;
-
             // Proofs in auth zone will be re-owned by the frame and auto dropped.
         }
         Ok(())
