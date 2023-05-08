@@ -167,7 +167,7 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        // Sanity check actor visibility
+        // Check actor visibility
         let can_be_invoked = match &invocation.resolved_actor {
             Actor::Method(MethodActor {
                 node_id,
@@ -177,10 +177,14 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => self
-                .current_frame
-                .get_node_visibility(blueprint.package_address.as_node_id())
-                .can_be_invoked(false),
+            Actor::Function { blueprint: _, .. } | Actor::VirtualLazyLoad { blueprint: _, .. } => {
+                true
+                // TODO: enable when package dependencies are explicitly declared.
+                // self
+                // .current_frame
+                // .get_node_visibility(blueprint.package_address.as_node_id())
+                // .can_be_invoked(false),
+            }
         };
         if !can_be_invoked {
             return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
