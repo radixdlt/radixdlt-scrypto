@@ -7,7 +7,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    use crate::{AccessRules, RoyaltyConfig};
+    use crate::RoyaltyConfig;
 
     struct ComponentModule {}
 
@@ -54,7 +54,7 @@ mod component_module {
 
             let address = ScryptoEnv
                 .globalize(btreemap!(
-                    ObjectModuleId::SELF => *component.component.0.as_node_id(),
+                    ObjectModuleId::Main => *component.component.0.as_node_id(),
                     ObjectModuleId::AccessRules => metadata.0,
                     ObjectModuleId::Metadata => royalty.0,
                     ObjectModuleId::Royalty => access_rules.0,

@@ -54,8 +54,8 @@ impl Authentication {
             // Load auth zone
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
-                OBJECT_BASE_MODULE,
-                &AuthZoneOffset::AuthZone.into(),
+                OBJECT_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;

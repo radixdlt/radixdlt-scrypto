@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -80,7 +80,8 @@ impl NonFungibleProofBlueprint {
     {
         let moveable = {
             let handle = api.actor_lock_field(
-                NonFungibleProofOffset::Moveable.into(),
+                OBJECT_HANDLE_SELF,
+                NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
             let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
@@ -89,7 +90,8 @@ impl NonFungibleProofBlueprint {
             moveable
         };
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
@@ -115,7 +117,8 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
@@ -131,7 +134,8 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleProofOffset::ProofRefs.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;

@@ -25,7 +25,7 @@ impl IdentityNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let substates = Vec::new();
+        let fields = Vec::new();
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -73,8 +73,8 @@ impl IdentityNativePackage {
                 IDENTITY_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores: vec![],
+                    fields,
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into()
@@ -273,7 +273,7 @@ impl IdentityBlueprint {
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            ObjectModuleId::SELF => Own(object_id),
+            ObjectModuleId::Main => Own(object_id),
             ObjectModuleId::AccessRules => access_rules.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,

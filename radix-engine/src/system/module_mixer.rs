@@ -614,7 +614,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        module_id: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

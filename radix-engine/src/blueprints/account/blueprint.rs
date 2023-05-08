@@ -5,7 +5,7 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Proof};
 
@@ -80,7 +80,7 @@ impl AccountBlueprint {
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
 
         Ok(modules)
     }
@@ -99,7 +99,7 @@ impl AccountBlueprint {
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
 
         Ok(modules)
     }
@@ -121,7 +121,7 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
         let address = api.globalize(modules)?;
@@ -136,7 +136,7 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
         let address = api.globalize(modules)?;
@@ -148,7 +148,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let account_id = api.new_object(ACCOUNT_BLUEPRINT, None, vec![], vec![vec![]])?;
+        let account_id = api.new_object(ACCOUNT_BLUEPRINT, None, vec![], btreemap!())?;
 
         Ok(Own(account_id))
     }
@@ -165,8 +165,12 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle =
-            api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            0u8,
+            &encoded_key,
+            LockFlags::read_only(),
+        )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
@@ -217,8 +221,12 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         // Getting an RW lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle =
-            api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            0u8,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
@@ -264,8 +272,12 @@ impl AccountBlueprint {
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
-            let kv_store_entry_lock_handle =
-                api.actor_lock_key_value_entry(&encoded_key, LockFlags::MUTABLE)?;
+            let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+                OBJECT_HANDLE_SELF,
+                0u8,
+                &encoded_key,
+                LockFlags::MUTABLE,
+            )?;
 
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
@@ -312,7 +324,12 @@ impl AccountBlueprint {
 
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(&encoded_key, LockFlags::read_only())?;
+            let handle = api.actor_lock_key_value_entry(
+                OBJECT_HANDLE_SELF,
+                0u8,
+                &encoded_key,
+                LockFlags::read_only(),
+            )?;
             handle
         };
 

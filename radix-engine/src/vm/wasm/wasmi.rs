@@ -363,11 +363,12 @@ fn key_value_entry_remove(
 
 fn lock_field(
     caller: Caller<'_, HostState>,
+    object_handle: u32,
     field: u32,
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.actor_lock_field(field as u8, flags)
+    runtime.actor_lock_field(object_handle, field as u8, flags)
 }
 
 fn read_substate(
@@ -738,8 +739,12 @@ impl WasmiModule {
 
         let host_lock_field = Func::wrap(
             store.as_context_mut(),
-            |caller: Caller<'_, HostState>, field: u32, lock_flags: u32| -> Result<u32, Trap> {
-                lock_field(caller, field, lock_flags).map_err(|e| e.into())
+            |caller: Caller<'_, HostState>,
+             object_handle: u32,
+             field: u32,
+             lock_flags: u32|
+             -> Result<u32, Trap> {
+                lock_field(caller, object_handle, field, lock_flags).map_err(|e| e.into())
             },
         );
 

@@ -92,6 +92,7 @@ pub trait WasmRuntime {
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
