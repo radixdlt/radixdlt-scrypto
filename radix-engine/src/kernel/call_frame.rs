@@ -203,7 +203,8 @@ pub enum ListNodeModuleError {
 pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
     HeapRemoveModuleErr(HeapRemoveModuleErr),
-    TrackError(SetSubstateError),
+    TrackSetSubstateError(SetSubstateError),
+    StoreNodeError(StoreNodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -755,9 +756,15 @@ impl<L: Clone> CallFrame<L> {
             if to_heap {
                 heap.set_substate(*dest_node_id, dest_module_id, substate_key, substate_value);
             } else {
+                // Recursively move nodes to store
+                for own in substate_value.owned_nodes() {
+                    Self::move_node_to_store(heap, store, own)
+                        .map_err(MoveModuleError::StoreNodeError)?;
+                }
+
                 store
                     .set_substate(*dest_node_id, dest_module_id, substate_key, substate_value)
-                    .map_err(MoveModuleError::TrackError)?;
+                    .map_err(MoveModuleError::TrackSetSubstateError)?;
             }
         }
 

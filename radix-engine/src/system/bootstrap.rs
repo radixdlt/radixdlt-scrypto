@@ -221,7 +221,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(self.trace),
             &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
