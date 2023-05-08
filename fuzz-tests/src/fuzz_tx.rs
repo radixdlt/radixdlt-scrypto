@@ -304,6 +304,7 @@ impl TxFuzzer {
             let next: u8 = unstructured
                 .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
                 .unwrap();
+
             let instruction = match next {
                 // AssertWorktopContains
                 0 => Some(Instruction::AssertWorktopContains { resource_address }),
@@ -788,15 +789,7 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
-                    // TODO: crash if using arbitrary on whole MetadataEntry
-                    // - thread 'fuzz_tx::test_generate_fuzz_input_data' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/transaction/reference_extractor.rs:77:90
-                    // - SetMetadata { entity_address: Address(078e1d6def2b37e823e0d675a74ef0b790e8edab4d35db4c79cb40dd6f1a), key: "|\u{4}Ӕq?d,9", value: Value(Address(Address(a320d2a933e64e0461b08f89481dbcffe7007c90c1f188fbdcbb1c9c589d))) }
-                    #[cfg(not(feature = "skip_crash"))]
                     let value = MetadataEntry::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let value = MetadataEntry::Value(MetadataValue::Address(GlobalAddress::from(
-                        component_address,
-                    )));
                     Some(Instruction::SetMetadata {
                         entity_address,
                         key,
