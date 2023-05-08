@@ -89,7 +89,6 @@ impl TxFuzzer {
                 all_resource_addresses.append(&mut resources.clone());
                 fungible_resource_addresses.append(&mut resources.clone()[0..2].to_vec());
                 non_fungible_resource_addresses.append(&mut resources.clone()[2..4].to_vec());
-                println!("addr = {:?}", acc.2);
                 component_addresses.push(acc.2);
                 public_keys.push(acc.0);
 
@@ -266,8 +265,6 @@ impl TxFuzzer {
         let mut proof_ids: Vec<ManifestProof> =
             vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
 
-        //println!("unstructured init len = {}", unstructured.len());
-
         let resource_address = unstructured
             .choose(&self.all_resource_addresses[..])
             .unwrap()
@@ -304,15 +301,9 @@ impl TxFuzzer {
 
         let mut i = 0;
         while i < INSTRUCTION_MAX_CNT && unstructured.len() > 0 {
-            //println!("unstructured remaining len = {}", unstructured.len());
             let next: u8 = unstructured
                 .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
                 .unwrap();
-            //println!(
-            //    "unstructured remaining len = {} next = {}",
-            //    unstructured.len(),
-            //    next
-            //);
             let instruction = match next {
                 // AssertWorktopContains
                 0 => Some(Instruction::AssertWorktopContains { resource_address }),
@@ -421,10 +412,6 @@ impl TxFuzzer {
                             .default(AccessRule::AllowAll, AccessRule::AllowAll),
                     };
 
-                    //println!(
-                    //    "account_create_advanced_input = {:?}",
-                    //    account_create_advanced_input
-                    //);
                     Some(Instruction::CallFunction {
                         package_address,
                         blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
@@ -895,7 +882,6 @@ impl TxFuzzer {
         }
 
         let manifest = builder.build();
-        println!("manifest = {:?}", manifest);
         Ok(manifest)
     }
 
@@ -957,7 +943,6 @@ fn test_generate_fuzz_input_data() {
         let len = rng.gen_range(0..1024);
         let mut bytes: Vec<u8> = (0..len).map(|_| rng.gen_range(0..u8::MAX)).collect();
         rng.fill_bytes(&mut bytes[..]);
-        println!("len = {}", len);
 
         fuzzer.reset_runner();
         match fuzzer.fuzz_tx_manifest(&bytes[..]) {
@@ -972,7 +957,7 @@ fn test_generate_fuzz_input_data() {
     }
 }
 
-// This test tries is supposed to generate fuzz input data.
+// This test is supposed to generate fuzz input data.
 // It runs radix-engine-tests tests with "dump_manifest_to_file" flag,
 // which writes each used transaction manifest to file.
 #[test]
