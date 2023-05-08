@@ -92,8 +92,7 @@ pub struct CallFrame<D, L> {
     /// The frame id
     pub depth: usize,
 
-    /// The running application actor of this frame
-    /// TODO: Move to an RENode
+    /// System layer specific data
     pub data: D,
 
     /// Node refs which are immortal during the life time of this frame:

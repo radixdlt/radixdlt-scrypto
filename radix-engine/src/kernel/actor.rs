@@ -101,6 +101,8 @@ impl Actor {
         }
     }
 
+    /// Proofs which exist only on the local call frame
+    /// TODO: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
             *self.package_address()

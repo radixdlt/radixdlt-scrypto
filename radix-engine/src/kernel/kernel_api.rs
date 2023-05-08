@@ -145,6 +145,8 @@ pub trait KernelSubstateApi<L> {
 #[derive(Debug)]
 pub struct KernelInvocation<D> {
     pub args: IndexedScryptoValue,
+    /// Used for receiver reference copying
+    /// TODO: Is there a better abstraction for this?
     pub additional_node_ref_to_copy: Option<NodeId>,
     pub call_frame_data: D,
 
