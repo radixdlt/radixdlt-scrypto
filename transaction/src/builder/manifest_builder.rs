@@ -536,7 +536,7 @@ impl ManifestBuilder {
             key,
             rule,
         })
-        .0
+            .0
     }
 
     pub fn set_group_access_rule(

@@ -489,6 +489,17 @@ pub fn generate_instruction(
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::SetGroupAccessRule {
+            entity_address,
+            object_key,
+            group,
+            rule,
+        } => Instruction::SetGroupAccessRule {
+            entity_address: generate_global_address(entity_address, bech32_decoder)?,
+            object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
+            group: generate_string(group)?,
+            rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
+        },
 
         ast::Instruction::MintFungible {
             resource_address,
