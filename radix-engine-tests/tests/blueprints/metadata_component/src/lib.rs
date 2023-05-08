@@ -18,9 +18,16 @@ mod metadata_component {
 
         pub fn new2(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
-            let component_address = component.globalize_with_access_rules(
-                AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::DenyAll),
+
+            let mut config = AccessRulesConfig::new()
+                .default(AccessRule::AllowAll, AccessRule::DenyAll);
+            config.set_group_access_rule_and_mutability(
+                "update_metadata",
+                AccessRule::AllowAll,
+                AccessRule::DenyAll,
             );
+
+            let component_address = component.globalize_with_access_rules(config);
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();
             let metadata = global.metadata();

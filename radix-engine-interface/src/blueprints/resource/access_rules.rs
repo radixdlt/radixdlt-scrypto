@@ -278,8 +278,8 @@ pub fn package_access_rules_from_owner_badge(
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+    access_rules.set_group_access_rule_and_mutability(
+        "update_metadata",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

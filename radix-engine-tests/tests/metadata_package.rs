@@ -2,9 +2,8 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataEntry, MetadataValue, METADATA_SET_IDENT,
+    MetadataEntry, MetadataValue,
 };
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
@@ -116,9 +115,10 @@ fn can_lock_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
-        .set_method_access_rule(
+        .set_group_access_rule(
             package_address.into(),
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            ObjectKey::SELF,
+            "update_metadata".to_string(),
             AccessRule::DenyAll,
         )
         .build();

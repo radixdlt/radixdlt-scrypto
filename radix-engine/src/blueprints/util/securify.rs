@@ -103,7 +103,7 @@ pub trait SecurifiedAccessRules {
             access_rules.set_group_access_rule_and_mutability(
                 securified_group,
                 rule!(require(global_id.clone())),
-                AccessRule::DenyAll,
+                rule!(require(global_id.clone())),
                 api,
             )?;
         }

@@ -1,14 +1,11 @@
 use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AuthAddresses, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-};
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -182,29 +179,36 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .method(
-            "borrow_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
+    let mut access_rules = AccessRulesConfig::new()
         .default(rule!(allow_all), rule!(deny_all));
+    access_rules
+        .set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Main, "deposit_funds"),
+            "owner",
+            DenyAll,
+        );
+    access_rules
+        .set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
+            "owner",
+            DenyAll,
+        );
+    access_rules.set_group_access_rule_and_mutability(
+        "owner",
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(virtual_badge_non_fungible_global_id.clone())),
+    );
+
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
-            .set_method_access_rule(
+            .set_group_access_rule(
                 test_runner.component_address.into(),
-                MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
-                to_rule,
-            )
+                ObjectKey::SELF,
+                "owner".to_string(), to_rule)
             .build(),
     );
 
@@ -230,63 +234,6 @@ fn component_access_rules_can_be_mutated_to_fungible_resource_through_manifest()
 fn component_access_rules_can_be_mutated_to_non_fungible_resource_through_manifest() {
     let non_fungible_global_id = AuthAddresses::system_role();
     component_access_rules_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
-}
-
-#[test]
-fn user_can_not_mutate_auth_on_methods_that_control_auth() {
-    // Arrange
-    for access_rule_key in [
-        MethodKey::new(
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-        ),
-        MethodKey::new(
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-        ),
-        MethodKey::new(
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-        ),
-        MethodKey::new(
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-        ),
-    ] {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
-        let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_global_id =
-            NonFungibleGlobalId::from_public_key(&public_key);
-
-        let access_rules: AccessRulesConfig = manifest_args!(
-            HashMap::<MethodKey, AccessRuleEntry>::new(),
-            HashMap::<MethodKey, AccessRuleEntry>::new(),
-            HashMap::<String, AccessRule>::new(),
-            AccessRuleEntry::AccessRule(AccessRule::AllowAll),
-            HashMap::<MethodKey, AccessRule>::new(),
-            HashMap::<String, AccessRule>::new(),
-            AccessRuleEntry::AccessRule(AccessRule::AllowAll)
-        );
-
-        let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-        test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
-
-        // Act
-        let receipt = test_runner.execute_manifest(
-            MutableAccessRulesTestRunner::manifest_builder()
-                .set_method_access_rule(
-                    test_runner.component_address.into(),
-                    access_rule_key,
-                    rule!(deny_all),
-                )
-                .build(),
-        );
-
-        // Assert
-        receipt.expect_specific_failure(|e| {
-            matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
-        });
-    }
 }
 
 #[test]

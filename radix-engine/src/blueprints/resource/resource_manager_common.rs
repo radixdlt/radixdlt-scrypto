@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -33,11 +33,6 @@ fn build_access_rules(
             "update_metadata",
             update_metadata_access_rule,
             update_metadata_mutability,
-        );
-        resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            "update_metadata",
-            DenyAll,
         );
     }
 
