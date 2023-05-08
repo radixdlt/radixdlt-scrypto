@@ -480,15 +480,6 @@ pub fn generate_instruction(
                 component_address: generate_component_address(component_address, bech32_decoder)?,
             }
         }
-        ast::Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        } => Instruction::SetMethodAccessRule {
-            entity_address: generate_global_address(entity_address, bech32_decoder)?,
-            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
-        },
         ast::Instruction::SetGroupAccessRule {
             entity_address,
             object_key,

@@ -526,17 +526,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
-        Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        } => {
-            f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
         Instruction::SetGroupAccessRule {
             entity_address,
             object_key,

@@ -1,7 +1,7 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AccessRulesConfig, ObjectKey,
 };
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
@@ -154,12 +154,6 @@ pub enum Instruction {
 
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
-    },
-
-    SetMethodAccessRule {
-        entity_address: GlobalAddress,
-        key: MethodKey,
-        rule: AccessRule,
     },
 
     SetGroupAccessRule {

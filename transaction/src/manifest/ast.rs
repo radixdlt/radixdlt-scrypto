@@ -150,12 +150,6 @@ pub enum Instruction {
         component_address: Value,
     },
 
-    SetMethodAccessRule {
-        entity_address: Value,
-        key: Value,
-        rule: Value,
-    },
-
     SetGroupAccessRule {
         entity_address: Value,
         object_key: Value,

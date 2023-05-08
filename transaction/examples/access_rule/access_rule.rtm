@@ -1,4 +1,5 @@
-SET_METHOD_ACCESS_RULE
+SET_GROUP_ACCESS_RULE
     Address("${resource_address}")
-    Tuple(Enum("TypedModuleId::ObjectState"), "test")
+    Enum(0u8)
+    "Group"
     Enum("AccessRule::AllowAll");

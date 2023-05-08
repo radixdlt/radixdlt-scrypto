@@ -389,9 +389,10 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-SET_METHOD_ACCESS_RULE
+SET_GROUP_ACCESS_RULE
     Address("${resource_address}")
-    Tuple(Enum(1u8), "test")
+    Enum(0u8)
+    "Group"
     Enum(0u8);
 "##,
             ),

@@ -205,11 +205,6 @@ impl Parser {
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
             },
-            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
-                entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-                rule: self.parse_value()?,
-            },
             TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
