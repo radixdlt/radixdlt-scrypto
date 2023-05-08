@@ -15,12 +15,13 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{AcquireLockError, NodeSubstates, SubstateStore};
+use crate::track::interface::{
+    AcquireLockError, NodeSubstates, SubstateStore, SubstateStoreAccessInfo,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_store_interface::interface::DbAccessInfo;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -504,8 +505,8 @@ where
             data,
         );
 
-        let (lock_handle, db_access): (u32, DbAccessInfo) = match &maybe_lock_handle {
-            Ok((lock_handle, db_access)) => (*lock_handle, db_access.clone()),
+        let (lock_handle, store_access): (u32, SubstateStoreAccessInfo) = match &maybe_lock_handle {
+            Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -547,7 +548,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let (handle, db_access) = self
+                        let (handle, store_access) = self
                             .store
                             .acquire_lock(
                                 node_id,
@@ -575,7 +576,7 @@ where
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        (lock_handle, db_access)
+                        (lock_handle, store_access)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -587,7 +588,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, &db_access, self)?;
+        M::after_lock_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
     }
@@ -685,7 +686,7 @@ where
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        let (substate, db_access) = self
+        let (substate, store_access) = self
             .current_frame
             .remove_substate(
                 node_id,
@@ -698,7 +699,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(&db_access, self)?;
+        M::on_take_substates(&store_access, self)?;
 
         Ok(substate)
     }
@@ -709,14 +710,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, db_access) = self
+        let (substates, store_access) = self
             .current_frame
             .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(true, &db_access, self)?;
+        M::on_scan_substates(true, &store_access, self)?;
 
         Ok(substates)
     }
@@ -727,14 +728,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, db_access) = self
+        let (substeates, store_access) = self
             .current_frame
             .scan_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(false, &db_access, self)?;
+        M::on_scan_substates(false, &store_access, self)?;
 
         Ok(substeates)
     }
@@ -745,14 +746,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, db_access) = self
+        let (substeates, store_access) = self
             .current_frame
             .take_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(&db_access, self)?;
+        M::on_take_substates(&store_access, self)?;
 
         Ok(substeates)
     }

@@ -1,7 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
-use radix_engine_store_interface::interface::DbAccessInfo;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -23,6 +22,11 @@ pub enum TakeSubstateError {
 }
 
 pub type NodeSubstates = BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+
+#[derive(Default, Debug, Clone)]
+pub struct SubstateStoreAccessInfo {
+    pub first_time_record_access: bool,
+}
 
 /// Represents the interface between Radix Engine and Track.
 ///
@@ -62,7 +66,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, DbAccessInfo), TakeSubstateError>;
+    ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreAccessInfo), TakeSubstateError>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_substates(
@@ -70,7 +74,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn take_substates(
@@ -78,7 +82,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_sorted_substates(
@@ -86,7 +90,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         module_id: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
     /// Acquires a lock over a substate.
     /// Returns tuple of lock handle id and information if particular substate
@@ -97,7 +101,7 @@ pub trait SubstateStore {
         module_id: ModuleNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<(u32, DbAccessInfo), AcquireLockError> {
+    ) -> Result<(u32, SubstateStoreAccessInfo), AcquireLockError> {
         self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
     }
 
@@ -108,7 +112,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<(u32, DbAccessInfo), AcquireLockError>;
+    ) -> Result<(u32, SubstateStoreAccessInfo), AcquireLockError>;
 
     /// Releases a lock.
     ///

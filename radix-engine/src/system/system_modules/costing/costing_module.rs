@@ -7,6 +7,7 @@ use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::SubstateStoreAccessInfo;
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
@@ -20,7 +21,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use radix_engine_store_interface::interface::DbAccessInfo;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -336,10 +336,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
-        if db_access.first_time_record_access {
+        if store_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing
@@ -406,9 +406,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _sorted: bool,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        if db_access.first_time_record_access {
+        if store_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing
@@ -423,9 +423,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        if db_access.first_time_record_access {
+        if store_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing

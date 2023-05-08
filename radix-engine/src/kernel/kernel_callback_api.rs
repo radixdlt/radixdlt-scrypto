@@ -3,10 +3,9 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, SubstateStoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_store_interface::interface::DbAccessInfo;
 
 pub trait KernelCallbackObject: Sized {
     type Invocation: Debug;
@@ -53,7 +52,7 @@ pub trait KernelCallbackObject: Sized {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -81,13 +80,16 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_scan_substates<Y>(
         sorted: bool,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(db_access: &DbAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_take_substates<Y>(
+        store_access: &SubstateStoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

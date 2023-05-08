@@ -4,12 +4,12 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::{SystemConfig, SystemInvocation};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::SubstateStoreAccessInfo;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::{EntityType, LockHandle, NodeId, SubstateKey};
-use radix_engine_store_interface::interface::DbAccessInfo;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -140,14 +140,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Substate locked: handle = {:?}, db_access = {:?}",
+            "Substate locked: handle = {:?}, store_access = {:?}",
             handle,
-            db_access
+            store_access
         );
         Ok(())
     }

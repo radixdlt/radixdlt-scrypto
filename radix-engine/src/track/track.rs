@@ -1,12 +1,13 @@
 use crate::track::db_key_mapper::DatabaseKeyMapper;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, SubstateStoreAccessInfo,
+    TakeSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbAccessInfo, DbSortKey, PartitionEntry, SubstateDatabase,
+    DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
@@ -609,7 +610,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, DbAccessInfo), TakeSubstateError> {
+    ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreAccessInfo), TakeSubstateError> {
         let (tracked, first_time_record_access) =
             self.get_tracked_substate(node_id, module_num, substate_key.clone());
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
@@ -624,7 +625,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         Ok((
             tracked.take(),
-            DbAccessInfo {
+            SubstateStoreAccessInfo {
                 first_time_record_access,
             },
         ))
@@ -635,7 +636,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo) {
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo) {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -648,7 +649,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_module) = tracked_module {
             for tracked in tracked_module.substates.values() {
                 if items.len() == count {
-                    return (items, DbAccessInfo::default());
+                    return (items, SubstateStoreAccessInfo::default());
                 }
 
                 // TODO: Check that substate is not write locked
@@ -660,7 +661,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return (items, DbAccessInfo::default());
+            return (items, SubstateStoreAccessInfo::default());
         }
 
         let first_time_record_access = tracked_module.is_none();
@@ -693,7 +694,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         (
             items,
-            DbAccessInfo {
+            SubstateStoreAccessInfo {
                 first_time_record_access,
             },
         )
@@ -704,7 +705,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo) {
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo) {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -719,7 +720,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_module) = tracked_module.as_mut() {
             for tracked in tracked_module.substates.values_mut() {
                 if items.len() == count {
-                    return (items, DbAccessInfo::default());
+                    return (items, SubstateStoreAccessInfo::default());
                 }
 
                 // TODO: Check that substate is not locked
@@ -731,7 +732,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return (items, DbAccessInfo::default());
+            return (items, SubstateStoreAccessInfo::default());
         }
 
         let first_time_record_access = tracked_module.is_none();
@@ -788,7 +789,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         (
             items,
-            DbAccessInfo {
+            SubstateStoreAccessInfo {
                 first_time_record_access,
             },
         )
@@ -799,7 +800,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         module_num: ModuleNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, DbAccessInfo) {
+    ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo) {
         // TODO: Add module dependencies/lock
         let count: usize = count.try_into().unwrap();
         let node_updates = self.tracked_nodes.get_mut(node_id);
@@ -824,7 +825,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 }
             }
 
-            return (items, DbAccessInfo::default());
+            return (items, SubstateStoreAccessInfo::default());
         }
 
         let first_time_record_access = tracked_module.is_none();
@@ -850,7 +851,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         (
             items,
-            DbAccessInfo {
+            SubstateStoreAccessInfo {
                 first_time_record_access,
             },
         )
@@ -863,7 +864,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<(u32, DbAccessInfo), AcquireLockError> {
+    ) -> Result<(u32, SubstateStoreAccessInfo), AcquireLockError> {
         // Load the substate from state track
         let (tracked, found) = self.get_tracked_substate_virtualize(
             node_id,
@@ -912,7 +913,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         Ok((
             self.new_lock_handle(node_id, module_num, substate_key, flags),
-            DbAccessInfo {
+            SubstateStoreAccessInfo {
                 first_time_record_access: !found,
             },
         ))

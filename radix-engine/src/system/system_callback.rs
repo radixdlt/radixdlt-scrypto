@@ -8,6 +8,7 @@ use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
+use crate::track::interface::SubstateStoreAccessInfo;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -18,7 +19,6 @@ use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
 use radix_engine_interface::schema::IndexedBlueprintSchema;
-use radix_engine_store_interface::interface::DbAccessInfo;
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
@@ -196,13 +196,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, db_access, size)
+        SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
     }
 
     fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
@@ -236,20 +236,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_scan_substates<Y>(
         sorted: bool,
-        db_access: &DbAccessInfo,
+        store_access: &SubstateStoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_scan_substate(api, sorted, db_access)
+        SystemModuleMixer::on_scan_substate(api, sorted, store_access)
     }
 
-    fn on_take_substates<Y>(db_access: &DbAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_take_substates<Y>(
+        store_access: &SubstateStoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, db_access)
+        SystemModuleMixer::on_take_substates(api, store_access)
     }
 
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>

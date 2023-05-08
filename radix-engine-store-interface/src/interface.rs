@@ -39,11 +39,6 @@ pub enum DatabaseUpdate {
     Delete,
 }
 
-#[derive(Default, Debug, Clone)]
-pub struct DbAccessInfo {
-    pub first_time_record_access: bool,
-}
-
 /// A read interface between Track and a database vendor.
 pub trait SubstateDatabase {
     /// Reads a substate value by its partition and sort key, or [`Option::None`] if missing.
