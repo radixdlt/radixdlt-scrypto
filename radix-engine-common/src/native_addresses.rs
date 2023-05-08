@@ -41,7 +41,7 @@ pub const EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddre
 /// the immediate caller - ie the actor which made the latest (global or internal) call.
 ///
 /// For example, if there is a global component A containing an internal component A2, and A2 makes a global call to B,
-/// then the access check for that global call will see a proof of this `PACKAGE_OF_CALLER_VIRTUAL_BADGE` for the package of A2.
+/// then the access check for that global call will see a proof of this `PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE` for the package of A2.
 pub const PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE: ResourceAddress =
     ResourceAddress::new_or_panic([
         154, 76, 99, 24, 198, 49, 140, 96, 219, 31, 248, 204, 99, 24, 198, 49, 140, 247, 199, 84,

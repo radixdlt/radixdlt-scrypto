@@ -321,44 +321,54 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     }
 }
 
-#[test]
-fn assert_self_package_on_parent_should_fail() {
-    test_assert(AssertAgainst::SelfPackage, false, false);
+/// Package actor badge will be different depending on whether the callee is global or internal
+mod package_actor_badge {
+    use crate::{test_assert, AssertAgainst};
+
+    #[test]
+    fn assert_self_package_in_global_callee_should_fail() {
+        test_assert(AssertAgainst::SelfPackage, false, false);
+    }
+
+    #[test]
+    fn assert_self_package_in_internal_callee_should_succeed() {
+        test_assert(AssertAgainst::SelfPackage, true, true);
+    }
+
+    #[test]
+    fn assert_tx_processor_package_in_global_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorPackage, false, true);
+    }
+
+    #[test]
+    fn assert_tx_processor_package_in_internal_callee_should_fail() {
+        test_assert(AssertAgainst::TransactionProcessorPackage, true, false);
+    }
 }
 
-#[test]
-fn assert_self_blueprint_on_parent_should_fail() {
-    test_assert(AssertAgainst::SelfBlueprint, false, false);
-}
+/// Global caller results should be the same whether the callee is global or internal
+mod global_caller_actor_badge {
+    use crate::{test_assert, AssertAgainst};
 
-#[test]
-fn assert_tx_processor_package_on_parent_should_succeed() {
-    test_assert(AssertAgainst::TransactionProcessorPackage, false, true);
-}
+    #[test]
+    fn assert_self_blueprint_global_caller_in_global_callee_should_fail() {
+        test_assert(AssertAgainst::SelfBlueprint, false, false);
+    }
 
-#[test]
-fn assert_tx_processor_blueprint_on_parent_should_succeed() {
-    test_assert(AssertAgainst::TransactionProcessorBlueprint, false, true);
-}
+    #[test]
+    fn assert_self_blueprint_global_caller_in_internal_callee_should_fail() {
+        test_assert(AssertAgainst::SelfBlueprint, true, false);
+    }
 
-#[test]
-fn assert_self_package_on_child_should_succeed() {
-    test_assert(AssertAgainst::SelfPackage, true, true);
-}
+    #[test]
+    fn assert_tx_processor_blueprint_global_caller_in_global_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorBlueprint, false, true);
+    }
 
-#[test]
-fn assert_tx_processor_package_on_child_should_fail() {
-    test_assert(AssertAgainst::TransactionProcessorPackage, true, false);
-}
-
-#[test]
-fn assert_self_blueprint_on_child_should_fail() {
-    test_assert(AssertAgainst::SelfBlueprint, true, false);
-}
-
-#[test]
-fn assert_tx_processor_blueprint_on_child_should_succeed() {
-    test_assert(AssertAgainst::TransactionProcessorBlueprint, true, true);
+    #[test]
+    fn assert_tx_processor_blueprint_global_caller_in_internal_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorBlueprint, true, true);
+    }
 }
 
 #[test]

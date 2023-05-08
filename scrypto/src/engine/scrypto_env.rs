@@ -50,7 +50,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _blueprint_ident: &str,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, ClientApiError> {
         todo!()
     }
@@ -105,7 +105,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, ObjectModuleId::Main, method_name, args)
     }
 
     fn call_module_method(
@@ -283,33 +283,13 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { actor_lock_field(u32::from(field), flags.bits()) };
+        let handle = unsafe { actor_lock_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
-    }
-
-    fn actor_lock_outer_object_field(
-        &mut self,
-        _field: u8,
-        _flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
-
-    fn actor_lock_key_value_handle_entry(
-        &mut self,
-        _kv_handle: u8,
-        _key: &[u8],
-        _flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
-
-    fn actor_remove_key_value_entry(&mut self, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {

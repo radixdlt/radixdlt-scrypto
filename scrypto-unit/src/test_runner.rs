@@ -379,7 +379,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
-                METADATA_BASE_MODULE,
+                METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
@@ -403,8 +403,8 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_BASE_MODULE,
-                &RoyaltyOffset::RoyaltyAccumulator.into(),
+                ROYALTY_FIELD_PARTITION,
+                &RoyaltyField::RoyaltyAccumulator.into(),
             )
         {
             output
@@ -413,8 +413,8 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_MODULE,
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            OBJECT_BASE_PARTITION,
+                            &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
                 .map(|r| r.amount())
@@ -428,8 +428,8 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltySubstate>(
                 package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Royalty.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Royalty.into(),
             )
         {
             output
@@ -438,8 +438,8 @@ impl TestRunner {
                     self.substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                             vault.as_node_id(),
-                            OBJECT_BASE_MODULE,
-                            &FungibleVaultOffset::LiquidFungible.into(),
+                            OBJECT_BASE_PARTITION,
+                            &FungibleVaultField::LiquidFungible.into(),
                         )
                 })
                 .map(|r| r.amount())
@@ -484,8 +484,8 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                 &vault_id,
-                OBJECT_BASE_MODULE,
-                &FungibleVaultOffset::LiquidFungible.into(),
+                OBJECT_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
             )
             .map(|output| output.amount())
     }
@@ -494,28 +494,26 @@ impl TestRunner {
         &mut self,
         vault_id: NodeId,
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
-        let vault = self
+        let amount = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
                 &vault_id,
-                OBJECT_BASE_MODULE,
-                &NonFungibleVaultOffset::LiquidNonFungible.into(),
+                OBJECT_BASE_PARTITION,
+                &NonFungibleVaultField::LiquidNonFungible.into(),
             )
-            .map(|vault| {
-                let amount = vault.amount;
-                (amount, vault.ids)
-            });
+            .map(|vault| vault.amount);
 
-        vault.map(|(amount, ids)| {
-            let mut substate_iter = self
-                .substate_db()
-                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
-                    ids.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                );
-            let id = substate_iter.next().map(|(_key, id)| id);
-            (amount, id)
-        })
+        let mut substate_iter = self
+            .substate_db()
+            .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+                &vault_id,
+                OBJECT_BASE_PARTITION
+                    .at_offset(PartitionOffset(1u8))
+                    .unwrap(),
+            );
+        let id = substate_iter.next().map(|(_key, id)| id);
+
+        amount.map(|amount| (amount, id))
     }
 
     pub fn get_component_resources(
@@ -589,8 +587,8 @@ impl TestRunner {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &ValidatorOffset::Validator.into(),
+                OBJECT_BASE_PARTITION,
+                &ValidatorField::Validator.into(),
             )
             .unwrap()
     }
@@ -600,8 +598,8 @@ impl TestRunner {
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
                 EPOCH_MANAGER.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &EpochManagerOffset::CurrentValidatorSet.into(),
+                OBJECT_BASE_PARTITION,
+                &EpochManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
 
@@ -1342,13 +1340,13 @@ impl TestRunner {
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    ObjectModuleId::SELF => {
+                    ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
                             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                                 node_id,
-                                TYPE_INFO_BASE_MODULE,
-                                &TypeInfoOffset::TypeInfo.into(),
+                                TYPE_INFO_FIELD_PARTITION,
+                                &TypeInfoField::TypeInfo.into(),
                             )
                             .unwrap();
 
@@ -1358,9 +1356,7 @@ impl TestRunner {
                                 blueprint.blueprint_name,
                                 *local_type_index,
                             ),
-                            TypeInfoSubstate::KeyValueStore(..)
-                            | TypeInfoSubstate::SortedIndex
-                            | TypeInfoSubstate::Index => {
+                            TypeInfoSubstate::KeyValueStore(..) => {
                                 panic!("No event schema.")
                             }
                         }
@@ -1382,8 +1378,8 @@ impl TestRunner {
             self.substate_db()
                 .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
                     package_address.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &PackageOffset::Info.into(),
+                    OBJECT_BASE_PARTITION,
+                    &PackageField::Info.into(),
                 )
                 .unwrap()
                 .schema
@@ -1526,8 +1522,8 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-            key_value_stores: vec![],
+            fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+            collections: vec![],
             functions: btreemap!(
                 function_name.to_string() => FunctionSchema {
                     receiver: Option::None,

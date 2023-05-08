@@ -141,7 +141,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -208,7 +208,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),

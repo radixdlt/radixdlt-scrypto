@@ -55,7 +55,7 @@ fn build_access_rules(
         );
         resman_access_rules.set_group_and_mutability(
             MethodKey::new(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             ),
             "mint",
@@ -63,7 +63,7 @@ fn build_access_rules(
         );
         resman_access_rules.set_group_and_mutability(
             MethodKey::new(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
             ),
             "mint",
@@ -71,14 +71,14 @@ fn build_access_rules(
         );
         resman_access_rules.set_group_and_mutability(
             MethodKey::new(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
             ),
             "mint",
             DenyAll,
         );
         resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
+            MethodKey::new(ObjectModuleId::Main, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
             "mint",
             DenyAll,
         );
@@ -91,7 +91,7 @@ fn build_access_rules(
             burn_mutability,
         );
         resman_access_rules.set_group_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+            MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
             "burn",
             DenyAll,
         );
@@ -99,7 +99,7 @@ fn build_access_rules(
 
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
         ),
         update_non_fungible_data_access_rule,
@@ -107,7 +107,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
         ),
         AllowAll,
@@ -115,7 +115,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
         ),
         AllowAll,
@@ -123,7 +123,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
         ),
         AllowAll,
@@ -131,7 +131,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
         ),
         AllowAll,
@@ -139,7 +139,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
         ),
         AllowAll,
@@ -147,7 +147,7 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
         ),
         AllowAll,
@@ -155,14 +155,14 @@ fn build_access_rules(
     );
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
         ),
         AllowAll,
         DenyAll,
     );
     resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_DROP_PROOF_IDENT),
+        MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_DROP_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );
@@ -184,20 +184,20 @@ fn build_access_rules(
         withdraw_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_TAKE_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_TAKE_IDENT),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
         ),
         "withdraw",
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
+        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
         DenyAll,
     );
@@ -208,12 +208,12 @@ fn build_access_rules(
         recall_mutability,
     );
     vault_access_rules.set_direct_access_group(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_RECALL_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_RECALL_IDENT),
         "recall",
     );
     vault_access_rules.set_direct_access_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
         ),
         "recall",
@@ -225,37 +225,37 @@ fn build_access_rules(
         deposit_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
         "deposit",
         DenyAll,
     );
 
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_GET_AMOUNT_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
         ),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_CREATE_PROOF_OF_ALL_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_ALL_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
         AllowAll,
@@ -263,7 +263,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -271,7 +271,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -279,7 +279,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -287,7 +287,7 @@ fn build_access_rules(
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -299,18 +299,18 @@ fn build_access_rules(
     // theoretically.
     let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
     bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
+        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         DenyAll,
     );
     bucket_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::SELF, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
+        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
         DenyAll,
     );
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -318,7 +318,7 @@ fn build_access_rules(
     );
     bucket_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
         AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
@@ -372,7 +372,7 @@ where
 
     api.globalize_with_address(
         btreemap!(
-            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
@@ -414,7 +414,7 @@ where
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
-            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
@@ -461,7 +461,7 @@ where
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
-            ObjectModuleId::SELF => object_id,
+            ObjectModuleId::Main => object_id,
             ObjectModuleId::AccessRules => resman_access_rules.0,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,

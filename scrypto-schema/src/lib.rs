@@ -6,6 +6,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
+use radix_engine_common::types::PartitionOffset;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -52,12 +53,11 @@ pub struct PackageSchema {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchema {
     pub outer_blueprint: Option<String>,
-
     pub schema: ScryptoSchema,
-    /// For each offset, there is a [`LocalTypeIndex`]
-    pub substates: Vec<LocalTypeIndex>,
 
-    pub key_value_stores: Vec<BlueprintKeyValueStoreSchema>,
+    /// State Schema
+    pub fields: Vec<LocalTypeIndex>,
+    pub collections: Vec<BlueprintCollectionSchema>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -78,6 +78,19 @@ pub struct BlueprintKeyValueStoreSchema {
     pub key: TypeSchema,
     pub value: TypeSchema,
     pub can_own: bool, // TODO: Can this be integrated with ScryptoSchema?
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintIndexSchema {}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct BlueprintSortedIndexSchema {}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintCollectionSchema {
+    KeyValueStore(BlueprintKeyValueStoreSchema),
+    Index(BlueprintIndexSchema),
+    SortedIndex(BlueprintSortedIndexSchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -108,8 +121,8 @@ impl Default for BlueprintSchema {
                 type_metadata: vec![],
                 type_validations: vec![],
             },
-            substates: Vec::default(),
-            key_value_stores: Vec::default(),
+            fields: Vec::default(),
+            collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: Default::default(),
@@ -122,9 +135,8 @@ pub struct IndexedBlueprintSchema {
     pub outer_blueprint: Option<String>,
 
     pub schema: ScryptoSchema,
-
-    pub tuple_module: Option<(u8, Vec<LocalTypeIndex>)>,
-    pub key_value_stores: Vec<(u8, BlueprintKeyValueStoreSchema)>,
+    pub fields: Option<(PartitionOffset, Vec<LocalTypeIndex>)>,
+    pub collections: Vec<(PartitionOffset, BlueprintCollectionSchema)>,
 
     /// For each function, there is a [`FunctionSchema`]
     pub functions: BTreeMap<String, FunctionSchema>,
@@ -136,28 +148,25 @@ pub struct IndexedBlueprintSchema {
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
     fn from(schema: BlueprintSchema) -> Self {
-        let mut module_offset = 0u8;
+        let mut partition_offset = 0u8;
 
-        let tuple_module = if schema.substates.is_empty() {
-            None
-        } else {
-            let tuple_module = Some((module_offset, schema.substates));
-            module_offset += 1;
-            tuple_module
+        let mut fields = None;
+        if !schema.fields.is_empty() {
+            fields = Some((PartitionOffset(partition_offset), schema.fields));
+            partition_offset += 1;
         };
 
-        let mut key_value_stores = Vec::new();
-
-        for kv_schema in schema.key_value_stores {
-            key_value_stores.push((module_offset, kv_schema));
-            module_offset += 1;
+        let mut collections = Vec::new();
+        for collection_schema in schema.collections {
+            collections.push((PartitionOffset(partition_offset), collection_schema));
+            partition_offset += 1;
         }
 
         Self {
             outer_blueprint: schema.outer_blueprint,
             schema: schema.schema,
-            tuple_module,
-            key_value_stores,
+            fields,
+            collections,
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
@@ -184,24 +193,64 @@ impl From<PackageSchema> for IndexedPackageSchema {
 
 impl IndexedBlueprintSchema {
     pub fn num_fields(&self) -> usize {
-        self.tuple_module
-            .as_ref()
-            .map(|(_, fields)| fields.len())
-            .unwrap_or(0)
+        match &self.fields {
+            Some((_, indices)) => indices.len(),
+            _ => 0usize,
+        }
     }
 
-    pub fn field(&self, field_index: u8) -> Option<(u8, LocalTypeIndex)> {
-        self.tuple_module.as_ref().and_then(|(offset, fields)| {
-            let field_index: usize = field_index.into();
-            fields.get(field_index).cloned().map(|f| (*offset, f))
-        })
+    pub fn field(&self, field_index: u8) -> Option<(PartitionOffset, LocalTypeIndex)> {
+        match &self.fields {
+            Some((offset, fields)) => {
+                let field_index: usize = field_index.into();
+                fields
+                    .get(field_index)
+                    .cloned()
+                    .map(|f| (offset.clone(), f))
+            }
+            _ => None,
+        }
     }
 
-    pub fn key_value_store_module_offset(
+    pub fn key_value_store_partition(
+        mut self,
+        collection_index: u8,
+    ) -> Option<(PartitionOffset, ScryptoSchema, BlueprintKeyValueStoreSchema)> {
+        let index = collection_index as usize;
+        if index >= self.collections.len() {
+            return None;
+        }
+
+        match self.collections.swap_remove(index) {
+            (offset, BlueprintCollectionSchema::KeyValueStore(schema)) => {
+                Some((offset, self.schema, schema))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn index_partition(
         &self,
-        kv_handle: u8,
-    ) -> Option<&(u8, BlueprintKeyValueStoreSchema)> {
-        self.key_value_stores.get(kv_handle as usize)
+        collection_index: u8,
+    ) -> Option<(PartitionOffset, &BlueprintIndexSchema)> {
+        match self.collections.get(collection_index as usize) {
+            Some((offset, BlueprintCollectionSchema::Index(schema))) => {
+                Some((offset.clone(), schema))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn sorted_index_partition(
+        &self,
+        collection_index: u8,
+    ) -> Option<(PartitionOffset, &BlueprintSortedIndexSchema)> {
+        match self.collections.get(collection_index as usize) {
+            Some((offset, BlueprintCollectionSchema::SortedIndex(schema))) => {
+                Some((offset.clone(), schema))
+            }
+            _ => None,
+        }
     }
 
     pub fn find_function(&self, ident: &str) -> Option<FunctionSchema> {
@@ -223,31 +272,36 @@ impl IndexedBlueprintSchema {
     }
 
     pub fn validate_instance_schema(&self, instance_schema: &Option<InstanceSchema>) -> bool {
-        for (_offset, kv_schema) in &self.key_value_stores {
-            match &kv_schema.key {
-                TypeSchema::Blueprint(..) => {}
-                TypeSchema::Instance(type_index) => {
-                    if let Some(instance_schema) = instance_schema {
-                        if instance_schema.type_index.len() < (*type_index as usize) {
-                            return false;
+        for (_, partition) in &self.collections {
+            match partition {
+                BlueprintCollectionSchema::KeyValueStore(kv_schema) => {
+                    match &kv_schema.key {
+                        TypeSchema::Blueprint(..) => {}
+                        TypeSchema::Instance(type_index) => {
+                            if let Some(instance_schema) = instance_schema {
+                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
                         }
-                    } else {
-                        return false;
                     }
-                }
-            }
 
-            match &kv_schema.value {
-                TypeSchema::Blueprint(..) => {}
-                TypeSchema::Instance(type_index) => {
-                    if let Some(instance_schema) = instance_schema {
-                        if instance_schema.type_index.len() < (*type_index as usize) {
-                            return false;
+                    match &kv_schema.value {
+                        TypeSchema::Blueprint(..) => {}
+                        TypeSchema::Instance(type_index) => {
+                            if let Some(instance_schema) = instance_schema {
+                                if instance_schema.type_index.len() < (*type_index as usize) {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
                         }
-                    } else {
-                        return false;
                     }
                 }
+                _ => {}
             }
         }
 

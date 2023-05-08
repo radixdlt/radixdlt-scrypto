@@ -15,7 +15,7 @@ use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     require, AccessRule, AccessRulesConfig, Bucket, FnKey,
@@ -56,7 +56,7 @@ fn validate_package_schema(schema: &PackageSchema) -> Result<(), PackageError> {
     for blueprint in schema.blueprints.values() {
         validate_schema(&blueprint.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
 
-        if blueprint.substates.len() > 0xff {
+        if blueprint.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
         }
     }
@@ -133,17 +133,17 @@ where
 
     // Prepare node init.
     let node_init = btreemap!(
-        PackageOffset::Info.into() => IndexedScryptoValue::from_typed(&info),
-        PackageOffset::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
-        PackageOffset::Code.into() => IndexedScryptoValue::from_typed(&code),
-        PackageOffset::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-        PackageOffset::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
+        PackageField::Info.into() => IndexedScryptoValue::from_typed(&info),
+        PackageField::CodeType.into() => IndexedScryptoValue::from_typed(&code_type),
+        PackageField::Code.into() => IndexedScryptoValue::from_typed(&code),
+        PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+        PackageField::FunctionAccessRules.into() =>IndexedScryptoValue::from_typed(&function_access_rules),
     );
 
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        TYPE_INFO_BASE_MODULE,
+        TYPE_INFO_FIELD_PARTITION,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
@@ -158,9 +158,12 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(METADATA_BASE_MODULE, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        ROYALTY_BASE_MODULE,
+        METADATA_KV_STORE_PARTITION,
+        ModuleInit::Metadata(metadata_init),
+    );
+    node_modules.insert(
+        ROYALTY_FIELD_PARTITION,
         ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
@@ -174,18 +177,18 @@ where
     if let Some(access_rules) = access_rules {
         let mut node_substates = api.kernel_drop_node(access_rules.0.as_node_id())?;
         let access_rules = node_substates
-            .remove(&OBJECT_BASE_MODULE)
+            .remove(&OBJECT_BASE_PARTITION)
             .unwrap()
-            .remove(&AccessRulesOffset::AccessRules.into())
+            .remove(&AccessRulesField::AccessRules.into())
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
         node_modules.insert(
-            ACCESS_RULES_BASE_MODULE,
+            ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(access_rules),
         );
     } else {
         node_modules.insert(
-            ACCESS_RULES_BASE_MODULE,
+            ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
                 child_blueprint_rules: BTreeMap::new(),
@@ -203,7 +206,7 @@ where
         .into_iter()
         .map(|(k, v)| (k, v.to_substates()))
         .collect();
-    modules.insert(OBJECT_BASE_MODULE, node_init);
+    modules.insert(OBJECT_BASE_PARTITION, node_init);
 
     api.kernel_create_node(node_id, modules)?;
 
@@ -217,12 +220,12 @@ impl PackageNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<PackageInfoSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeTypeSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageCodeSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<PackageRoyaltySubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<FunctionAccessRulesSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -280,8 +283,8 @@ impl PackageNativePackage {
                 PACKAGE_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores: vec![],
+                    fields,
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -530,7 +533,7 @@ impl PackageNativePackage {
         validate_package_event_schema(&schema)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         for BlueprintSchema {
-            key_value_stores,
+            collections,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
             ..
@@ -550,10 +553,10 @@ impl PackageNativePackage {
                 ));
             }
 
-            if !key_value_stores.is_empty() {
+            if !collections.is_empty() {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Static Key Value Stores not supported".to_string(),
+                        "Static collections not supported".to_string(),
                     )),
                 ));
             }
@@ -612,7 +615,11 @@ impl PackageNativePackage {
 
         // FIXME: double check if auth is set up for any package
 
-        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            PackageField::Royalty.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         substate.blueprint_royalty_configs = input.royalty_config;
@@ -632,7 +639,11 @@ impl PackageNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let handle = api.actor_lock_field(PackageOffset::Royalty.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            PackageField::Royalty.into(),
+            LockFlags::read_only(),
+        )?;
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
