@@ -243,13 +243,13 @@ impl<L: Clone> CallFrame<L> {
                     })?
             }
         } else {
-            let (handle, store_access_store) = store
+            let (handle, store_access_info) = store
                 .acquire_lock_virtualize(node_id, module_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
-            store_access = store_access_store;
+            store_access = store_access_info;
             store.read_substate(handle)
         };
 
