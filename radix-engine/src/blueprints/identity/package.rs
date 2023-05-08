@@ -275,7 +275,7 @@ impl IdentityBlueprint {
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 
         let modules = btreemap!(
-            ObjectModuleId::SELF => Own(object_id),
+            ObjectModuleId::Main => Own(object_id),
             ObjectModuleId::AccessRules => access_rules.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,

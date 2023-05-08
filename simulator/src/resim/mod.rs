@@ -352,7 +352,7 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
-            TYPE_INFO_BASE_PARTITION,
+            TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
@@ -385,11 +385,11 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                ObjectModuleId::SELF => {
+                ObjectModuleId::Main => {
                     let type_info = substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                             node_id,
-                            TYPE_INFO_BASE_PARTITION,
+                            TYPE_INFO_FIELD_PARTITION,
                             &TypeInfoField::TypeInfo.into(),
                         )
                         .unwrap();

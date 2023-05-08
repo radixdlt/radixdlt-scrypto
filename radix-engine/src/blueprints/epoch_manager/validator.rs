@@ -388,7 +388,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(ObjectModuleId::SELF, VALIDATOR_STAKE_IDENT),
+                method_key: MethodKey::new(ObjectModuleId::Main, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),
@@ -622,7 +622,7 @@ impl ValidatorCreator {
         let address = ComponentAddress::new_or_panic(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
-                ObjectModuleId::SELF => validator_id,
+                ObjectModuleId::Main => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,

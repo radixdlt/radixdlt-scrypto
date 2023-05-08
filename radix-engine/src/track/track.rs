@@ -271,7 +271,7 @@ impl TrackedPartition {
 
 #[derive(Debug)]
 pub struct TrackedNode {
-    pub tracked_parititions: IndexMap<PartitionNumber, TrackedPartition>,
+    pub tracked_partitions: IndexMap<PartitionNumber, TrackedPartition>,
     // If true, then all SubstateUpdates under this NodeUpdate must be inserts
     // The extra information, though awkward structurally, makes for a much
     // simpler iteration implementation as long as the invariant is maintained
@@ -281,13 +281,13 @@ pub struct TrackedNode {
 impl TrackedNode {
     pub fn new(is_new: bool) -> Self {
         Self {
-            tracked_parititions: index_map_new(),
+            tracked_partitions: index_map_new(),
             is_new,
         }
     }
 
     pub fn revert_writes(&mut self) {
-        for (_, tracked_partition) in &mut self.tracked_parititions {
+        for (_, tracked_partition) in &mut self.tracked_partitions {
             tracked_partition.revert_writes();
         }
     }
@@ -299,7 +299,7 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
     let mut database_updates: DatabaseUpdates = index_map_new();
     let mut system_updates: SystemUpdates = index_map_new();
     for (node_id, tracked_node) in index {
-        for (partition_num, tracked_partition) in tracked_node.tracked_parititions {
+        for (partition_num, tracked_partition) in tracked_node.tracked_partitions {
             let mut db_partition_updates = index_map_new();
             let mut partition_updates = index_map_new();
 
@@ -410,11 +410,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         let force_writes = mem::take(&mut self.force_write_tracked_nodes);
 
         for (node_id, force_track_node) in force_writes {
-            for (partition_num, force_track_partition) in force_track_node.tracked_parititions {
+            for (partition_num, force_track_partition) in force_track_node.tracked_partitions {
                 for (db_sort_key, force_track_key) in force_track_partition.substates {
                     let tracked_node = self.tracked_nodes.get_mut(&node_id).unwrap();
                     let tracked_partition = tracked_node
-                        .tracked_parititions
+                        .tracked_partitions
                         .get_mut(&partition_num)
                         .unwrap();
                     let tracked = &mut tracked_partition
@@ -443,14 +443,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         self.tracked_nodes
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
-            .tracked_parititions
+            .tracked_partitions
             .entry(partition_num)
             .or_insert(TrackedPartition::new());
 
         self.tracked_nodes
             .get_mut(node_id)
             .unwrap()
-            .tracked_parititions
+            .tracked_partitions
             .get_mut(&partition_num)
             .unwrap()
     }
@@ -470,7 +470,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .tracked_nodes
             .entry(*node_id)
             .or_insert(TrackedNode::new(false))
-            .tracked_parititions
+            .tracked_partitions
             .entry(partition_num)
             .or_insert(TrackedPartition::new())
             .substates;
@@ -550,7 +550,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         self.tracked_nodes.insert(
             node_id,
             TrackedNode {
-                tracked_parititions: tracked_partitions,
+                tracked_partitions: tracked_partitions,
                 is_new: true,
             },
         );
@@ -569,7 +569,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .tracked_nodes
             .entry(node_id)
             .or_insert(TrackedNode::new(false))
-            .tracked_parititions
+            .tracked_partitions
             .entry(partition_num)
             .or_insert(TrackedPartition::new());
 
@@ -639,7 +639,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
         let tracked_partition =
-            node_updates.and_then(|n| n.tracked_parititions.get(&partition_num));
+            node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
@@ -705,7 +705,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Check what we've currently got so far without going into database
         let mut tracked_partition =
-            node_updates.and_then(|n| n.tracked_parititions.get_mut(&partition_num));
+            node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
             for tracked in tracked_partition.substates.values_mut() {
                 if items.len() == count {
@@ -791,7 +791,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
         let tracked_partition =
-            node_updates.and_then(|n| n.tracked_parititions.get(&partition_num));
+            node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
         if is_new {
             let mut items = Vec::new();
@@ -912,10 +912,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             self.force_write_tracked_nodes
                 .entry(node_id)
                 .or_insert(TrackedNode {
-                    tracked_parititions: index_map_new(),
+                    tracked_partitions: index_map_new(),
                     is_new: false,
                 })
-                .tracked_parititions
+                .tracked_partitions
                 .entry(partition_num)
                 .or_insert(TrackedPartition::new())
                 .substates

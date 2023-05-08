@@ -80,7 +80,7 @@ impl AccountBlueprint {
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
 
         Ok(modules)
     }
@@ -99,7 +99,7 @@ impl AccountBlueprint {
         );
         let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
 
         Ok(modules)
     }
@@ -121,7 +121,7 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(config, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
         let address = api.globalize(modules)?;
@@ -136,7 +136,7 @@ impl AccountBlueprint {
         let account = Self::create_local(api)?;
         let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::SELF, account);
+        modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
         let address = api.globalize(modules)?;

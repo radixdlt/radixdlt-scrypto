@@ -143,7 +143,7 @@ where
     // Prepare node modules.
     let mut node_modules = BTreeMap::new();
     node_modules.insert(
-        TYPE_INFO_BASE_PARTITION,
+        TYPE_INFO_FIELD_PARTITION,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
             blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
@@ -158,9 +158,9 @@ where
             IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
         );
     }
-    node_modules.insert(METADATA_BASE_PARTITION, ModuleInit::Metadata(metadata_init));
+    node_modules.insert(METADATA_KV_STORE_PARTITION, ModuleInit::Metadata(metadata_init));
     node_modules.insert(
-        ROYALTY_BASE_PARTITION,
+        ROYALTY_FIELD_PARTITION,
         ModuleInit::Royalty(
             ComponentRoyaltyConfigSubstate {
                 royalty_config: RoyaltyConfig::default(),
@@ -180,12 +180,12 @@ where
             .unwrap();
         let access_rules: MethodAccessRulesSubstate = access_rules.as_typed().unwrap();
         node_modules.insert(
-            ACCESS_RULES_BASE_PARTITION,
+            ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(access_rules),
         );
     } else {
         node_modules.insert(
-            ACCESS_RULES_BASE_PARTITION,
+            ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
                 child_blueprint_rules: BTreeMap::new(),

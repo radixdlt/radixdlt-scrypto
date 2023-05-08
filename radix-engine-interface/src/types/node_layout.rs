@@ -6,10 +6,10 @@ use sbor::rust::prelude::*;
 // Please update REP-60 after updating types/configs defined in this file!
 //=========================================================================
 
-pub const TYPE_INFO_BASE_PARTITION: PartitionNumber = PartitionNumber(0u8);
-pub const METADATA_BASE_PARTITION: PartitionNumber = PartitionNumber(1u8);
-pub const ROYALTY_BASE_PARTITION: PartitionNumber = PartitionNumber(2u8);
-pub const ACCESS_RULES_BASE_PARTITION: PartitionNumber = PartitionNumber(3u8);
+pub const TYPE_INFO_FIELD_PARTITION: PartitionNumber = PartitionNumber(0u8);
+pub const METADATA_KV_STORE_PARTITION: PartitionNumber = PartitionNumber(1u8);
+pub const ROYALTY_FIELD_PARTITION: PartitionNumber = PartitionNumber(2u8);
+pub const ACCESS_RULES_FIELD_PARTITION: PartitionNumber = PartitionNumber(3u8);
 pub const OBJECT_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 
 #[repr(u8)]

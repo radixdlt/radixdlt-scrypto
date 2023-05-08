@@ -379,7 +379,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
                 address.as_node_id(),
-                METADATA_BASE_PARTITION,
+                METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
@@ -403,7 +403,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
                 component_address.as_node_id(),
-                ROYALTY_BASE_PARTITION,
+                ROYALTY_FIELD_PARTITION,
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
         {
@@ -1393,12 +1393,12 @@ impl TestRunner {
                         METADATA_BLUEPRINT.into(),
                         local_type_index.clone(),
                     ),
-                    ObjectModuleId::SELF => {
+                    ObjectModuleId::Main => {
                         let type_info = self
                             .substate_db()
                             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                                 node_id,
-                                TYPE_INFO_BASE_PARTITION,
+                                TYPE_INFO_FIELD_PARTITION,
                                 &TypeInfoField::TypeInfo.into(),
                             )
                             .unwrap();

@@ -120,24 +120,24 @@ impl EpochManagerBlueprint {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_START_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
             rule!(require(this_package_token.clone())),
             rule!(require(this_package_token.clone())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
@@ -157,7 +157,7 @@ impl EpochManagerBlueprint {
 
         api.globalize_with_address(
             btreemap!(
-                ObjectModuleId::SELF => epoch_manager_id,
+                ObjectModuleId::Main => epoch_manager_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -205,7 +205,7 @@ impl EpochManagerBlueprint {
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_START_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             api,

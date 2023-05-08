@@ -231,7 +231,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for tracked_module in tracked_node.tracked_parititions.values() {
+                for tracked_module in tracked_node.tracked_partitions.values() {
                     for tracked_key in tracked_module.substates.values() {
                         if let Some(value) = tracked_key.tracked.get() {
                             for own in value.owned_node_ids() {
@@ -256,7 +256,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
-                TYPE_INFO_BASE_PARTITION,
+                TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
             .expect("Missing vault info");
@@ -300,7 +300,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             // If there is an update to the liquid resource
 
             let vault_updates = self.tracked.get(node_id).and_then(|n| {
-                n.tracked_parititions.get(
+                n.tracked_partitions.get(
                     &OBJECT_BASE_PARTITION
                         .at_offset(PartitionOffset(1u8))
                         .unwrap(),
@@ -377,7 +377,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_parititions.get(&module_num))
+            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&module_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }

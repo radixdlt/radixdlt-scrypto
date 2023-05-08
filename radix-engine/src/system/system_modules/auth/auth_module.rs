@@ -175,7 +175,7 @@ impl AuthModule {
     ) -> Result<AccessRule, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            ACCESS_RULES_BASE_PARTITION,
+            ACCESS_RULES_FIELD_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
             M::LockData::default(),
@@ -336,7 +336,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
                 OBJECT_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,

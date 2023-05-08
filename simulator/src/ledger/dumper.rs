@@ -61,7 +61,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let type_info = substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 component_address.as_node_id(),
-                TYPE_INFO_BASE_PARTITION,
+                TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;

@@ -96,10 +96,13 @@ pub enum TypedObjectModuleSubstateKey {
     // Objects
     Package(PackageField),
     FungibleResource(FungibleResourceManagerField),
-    NonFungibleResource(NonFungibleResourceManagerField),
+    NonFungibleResourceField(NonFungibleResourceManagerField),
+    NonFungibleResourceData(MapKey),
     FungibleVault(FungibleVaultField),
     NonFungibleVault(NonFungibleVaultField),
-    EpochManager(EpochManagerField),
+    NonFungibleVaultIndex(MapKey),
+    EpochManagerField(EpochManagerField),
+    EpochManagerSortedIndex(SortedU16Key),
     Clock(ClockField),
     Validator(ValidatorField),
     Account(MapKey),
@@ -108,8 +111,6 @@ pub enum TypedObjectModuleSubstateKey {
     GenericScryptoComponent(ComponentField),
     // Substates for Generic KV Stores
     GenericKeyValueStore(MapKey), // Is an entity type with a single ConcurrentMap
-    GenericIndex(MapKey),         // Is an entity type with a single Index
-    GenericSortedU16Index(SortedU16Key), // Is an entity type with a single u16 index
 }
 
 fn error(descriptor: &'static str) -> String {
@@ -122,10 +123,10 @@ pub fn to_typed_substate_key(
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match partition_num {
-        TYPE_INFO_BASE_PARTITION => TypedSubstateKey::TypeInfoModule(
+        TYPE_INFO_FIELD_PARTITION => TypedSubstateKey::TypeInfoModule(
             TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
         ),
-        METADATA_BASE_PARTITION => TypedSubstateKey::MetadataModule(
+        METADATA_KV_STORE_PARTITION => TypedSubstateKey::MetadataModule(
             scrypto_decode(
                 substate_key
                     .for_map()
@@ -133,10 +134,10 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModule(
+        ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModule(
             RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
         ),
-        ACCESS_RULES_BASE_PARTITION => TypedSubstateKey::AccessRulesModule(
+        ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModule(
             AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
         partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
@@ -187,13 +188,13 @@ fn to_typed_object_substate_key_internal(
                 NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {
                 NonFungibleResourceManagerPartitionOffset::ResourceManager => {
-                    TypedObjectModuleSubstateKey::NonFungibleResource(
+                    TypedObjectModuleSubstateKey::NonFungibleResourceField(
                         NonFungibleResourceManagerField::try_from(substate_key)?,
                     )
                 }
                 NonFungibleResourceManagerPartitionOffset::NonFungibleData => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
+                    TypedObjectModuleSubstateKey::NonFungibleResourceData(key.clone())
                 }
             }
         }
@@ -201,13 +202,13 @@ fn to_typed_object_substate_key_internal(
             let partition_offset = EpochManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {
                 EpochManagerPartitionOffset::EpochManager => {
-                    TypedObjectModuleSubstateKey::EpochManager(EpochManagerField::try_from(
+                    TypedObjectModuleSubstateKey::EpochManagerField(EpochManagerField::try_from(
                         substate_key,
                     )?)
                 }
                 EpochManagerPartitionOffset::SecondaryIndex => {
                     let key = substate_key.for_sorted().ok_or(())?;
-                    TypedObjectModuleSubstateKey::GenericSortedU16Index(key.clone())
+                    TypedObjectModuleSubstateKey::EpochManagerSortedIndex(key.clone())
                 }
             }
         }
@@ -244,7 +245,7 @@ fn to_typed_object_substate_key_internal(
                 }
                 NonFungibleVaultPartitionOffset::NonFungibles => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedObjectModuleSubstateKey::GenericIndex(key.clone())
+                    TypedObjectModuleSubstateKey::NonFungibleVaultIndex(key.clone())
                 }
             }
         }
@@ -255,11 +256,11 @@ fn to_typed_object_substate_key_internal(
         }
         EntityType::InternalIndex => {
             let key = substate_key.for_map().ok_or(())?;
-            TypedObjectModuleSubstateKey::GenericIndex(key.clone())
+            TypedObjectModuleSubstateKey::NonFungibleVaultIndex(key.clone())
         }
         EntityType::InternalSortedIndex => {
             let key = substate_key.for_sorted().ok_or(())?;
-            TypedObjectModuleSubstateKey::GenericSortedU16Index(key.clone())
+            TypedObjectModuleSubstateKey::EpochManagerSortedIndex(key.clone())
         }
     };
     Ok(substate_type)
@@ -277,10 +278,10 @@ pub fn to_typed_virtualized_partition_substate_key(
             ))
         }
         (EntityType::InternalIndex, SubstateKey::Map(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericIndex(key.clone()))
+            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVaultIndex(key.clone()))
         }
         (EntityType::InternalSortedIndex, SubstateKey::Sorted(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericSortedU16Index(
+            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::EpochManagerSortedIndex(
                 key.clone(),
             ))
         }
@@ -501,7 +502,7 @@ fn to_typed_object_substate_value(
                 }
             })
         }
-        TypedObjectModuleSubstateKey::NonFungibleResource(offset) => {
+        TypedObjectModuleSubstateKey::NonFungibleResourceField(offset) => {
             TypedObjectModuleSubstateValue::NonFungibleResource(match offset {
                 NonFungibleResourceManagerField::IdType => {
                     TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
@@ -534,7 +535,7 @@ fn to_typed_object_substate_value(
                 NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
             })
         }
-        TypedObjectModuleSubstateKey::EpochManager(offset) => {
+        TypedObjectModuleSubstateKey::EpochManagerField(offset) => {
             TypedObjectModuleSubstateValue::EpochManager(match offset {
                 EpochManagerField::Config => {
                     TypedEpochManagerSubstateValue::Config(scrypto_decode(data)?)
@@ -585,12 +586,12 @@ fn to_typed_object_substate_value(
                 data: data.to_vec(),
             })
         }
-        TypedObjectModuleSubstateKey::GenericIndex(_) => {
+        TypedObjectModuleSubstateKey::NonFungibleVaultIndex(_) => {
             TypedObjectModuleSubstateValue::GenericIndex(GenericScryptoSborPayload {
                 data: data.to_vec(),
             })
         }
-        TypedObjectModuleSubstateKey::GenericSortedU16Index(_) => {
+        TypedObjectModuleSubstateKey::EpochManagerSortedIndex(_) => {
             TypedObjectModuleSubstateValue::GenericSortedU16Index(GenericScryptoSborPayload {
                 data: data.to_vec(),
             })

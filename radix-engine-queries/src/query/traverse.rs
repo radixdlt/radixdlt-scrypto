@@ -11,9 +11,9 @@ use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
     FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField, ObjectInfo, PartitionNumber,
-    PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_BASE_PARTITION,
-    METADATA_BASE_PARTITION, OBJECT_BASE_PARTITION, ROYALTY_BASE_PARTITION,
-    TYPE_INFO_BASE_PARTITION,
+    PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_FIELD_PARTITION,
+    METADATA_KV_STORE_PARTITION, OBJECT_BASE_PARTITION, ROYALTY_FIELD_PARTITION,
+    TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -94,7 +94,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 &node_id,
-                TYPE_INFO_BASE_PARTITION,
+                TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             )
             .expect("Missing TypeInfo substate");
@@ -177,13 +177,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
                 } else {
                     for module_num in [
-                        TYPE_INFO_BASE_PARTITION,
-                        ROYALTY_BASE_PARTITION,
-                        ACCESS_RULES_BASE_PARTITION,
+                        TYPE_INFO_FIELD_PARTITION,
+                        ROYALTY_FIELD_PARTITION,
+                        ACCESS_RULES_FIELD_PARTITION,
                     ] {
                         self.traverse_substates::<TupleKey>(node_id, module_num, depth)
                     }
-                    for module_num in [METADATA_BASE_PARTITION] {
+                    for module_num in [METADATA_KV_STORE_PARTITION] {
                         self.traverse_substates::<MapKey>(node_id, module_num, depth)
                     }
 

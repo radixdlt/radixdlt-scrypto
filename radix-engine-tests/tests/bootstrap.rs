@@ -219,7 +219,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let entry = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
-            METADATA_BASE_PARTITION,
+            METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap();

@@ -157,7 +157,7 @@ where
         self.api
             .kernel_lock_substate(
                 node_id,
-                TYPE_INFO_BASE_PARTITION,
+                TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
@@ -213,7 +213,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(
+            TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -588,9 +588,9 @@ where
         modules: &BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<Blueprint, RuntimeError> {
         let node_id = modules
-            .get(&ObjectModuleId::SELF)
+            .get(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
             )))?;
 
         Ok(self.get_object_info(node_id)?.blueprint)
@@ -610,7 +610,7 @@ where
             .cloned()
             .collect::<BTreeSet<ObjectModuleId>>();
         let standard_object = btreeset!(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ObjectModuleId::Metadata,
             ObjectModuleId::Royalty,
             ObjectModuleId::AccessRules
@@ -623,9 +623,9 @@ where
 
         // Drop the node
         let node_id = modules
-            .remove(&ObjectModuleId::SELF)
+            .remove(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
             )))?;
         self.api
             .kernel_get_system_state()
@@ -633,14 +633,14 @@ where
             .modules
             .events
             .add_replacement(
-                (node_id, ObjectModuleId::SELF),
-                (*address.as_node_id(), ObjectModuleId::SELF),
+                (node_id, ObjectModuleId::Main),
+                (*address.as_node_id(), ObjectModuleId::Main),
             );
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
 
         // Update the `global` flag of the type info substate.
         let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_BASE_PARTITION)
+            .get_mut(&TYPE_INFO_FIELD_PARTITION)
             .unwrap()
             .remove(&TypeInfoField::TypeInfo.into())
             .unwrap();
@@ -656,7 +656,7 @@ where
             }
         };
         node_substates
-            .get_mut(&TYPE_INFO_BASE_PARTITION)
+            .get_mut(&TYPE_INFO_FIELD_PARTITION)
             .unwrap()
             .insert(
                 TypeInfoField::TypeInfo.into(),
@@ -666,7 +666,7 @@ where
         //  Drop the module nodes and move the substates to the designated module ID.
         for (module_id, node_id) in modules {
             match module_id {
-                ObjectModuleId::SELF => panic!("Should have been removed already"),
+                ObjectModuleId::Main => panic!("Should have been removed already"),
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
@@ -687,7 +687,7 @@ where
                         .modules
                         .events
                         .add_replacement(
-                            (node_id, ObjectModuleId::SELF),
+                            (node_id, ObjectModuleId::Main),
                             (*address.as_node_id(), module_id),
                         );
 
@@ -869,7 +869,7 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
+        self.call_module_method(receiver, ObjectModuleId::Main, method_name, args)
     }
 
     #[trace_resources]
@@ -881,7 +881,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let (object_info, global_address) = match object_module_id {
-            ObjectModuleId::SELF => {
+            ObjectModuleId::Main => {
                 let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
                 match type_info {
                     TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
@@ -1130,7 +1130,7 @@ where
             node_id,
             btreemap!(
                 OBJECT_BASE_PARTITION => btreemap!(),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -1743,7 +1743,7 @@ where
             Actor::Function { ref blueprint, .. } => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
-                    ObjectModuleId::SELF,
+                    ObjectModuleId::Main,
                     blueprint.blueprint_name.to_string(),
                 ),
                 local_type_index,

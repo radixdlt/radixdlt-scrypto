@@ -105,7 +105,7 @@ impl AuthZoneBlueprint {
             node_id,
             btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
@@ -147,7 +147,7 @@ impl AuthZoneBlueprint {
                     node_id,
                     btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
@@ -161,7 +161,7 @@ impl AuthZoneBlueprint {
                     node_id,
                     btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),
@@ -202,7 +202,7 @@ impl AuthZoneBlueprint {
             node_id,
             btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_BASE_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(input.resource_address.into()),

@@ -260,6 +260,7 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
+        // TODO: only allow a certain amount to be returned
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_NON_FUNGIBLES,

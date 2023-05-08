@@ -218,7 +218,7 @@ impl<T: Into<OwnedComponent>> LocalComponent for T {
 
         let address = ScryptoEnv
             .globalize(btreemap!(
-                ObjectModuleId::SELF => self.into().0.as_node_id().clone(),
+                ObjectModuleId::Main => self.into().0.as_node_id().clone(),
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -236,7 +236,7 @@ impl<T: Into<OwnedComponent>> LocalComponent for T {
         royalty: Royalty,
     ) -> ComponentAddress {
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
-            ObjectModuleId::SELF => self.into().0.as_node_id().clone(),
+            ObjectModuleId::Main => self.into().0.as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.0.0,
             ObjectModuleId::Metadata => metadata.0.0,
             ObjectModuleId::Royalty => royalty.0.0,
