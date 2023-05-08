@@ -132,17 +132,6 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let parent = api
-            .get_object_info(proof.0.as_node_id())?
-            .outer_object
-            .unwrap();
-
-        api.call_method(
-            parent.as_node_id(),
-            RESOURCE_MANAGER_DROP_PROOF_IDENT,
-            scrypto_encode(&ResourceManagerDropProofInput { proof }).unwrap(),
-        )?;
-
-        Ok(())
+        todo!()
     }
 }
