@@ -117,7 +117,7 @@ fn can_take_on_recallable_vault() {
 }
 
 #[test]
-fn test_recall_from_scrypto() {
+fn test_recall_on_internal_vault() {
     // Basic setup
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -139,9 +139,45 @@ fn test_recall_from_scrypto() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_method(component_address, "recall_on_self_vault", manifest_args!())
+            .call_method(
+                component_address,
+                "recall_on_internal_vault",
+                manifest_args!(),
+            )
+            .call_method(
+                account,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_failure();
+}
+
+#[test]
+fn test_recall_on_received_direct_access_reference() {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let recallable_token_address = test_runner.create_recallable_token(account);
+
+    // Publish package
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
+
+    // Recall
+    let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 100.into())
+            .call_function(
+                package_address,
+                "RecallTest",
+                "recall_on_direct_access_ref",
+                manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
 }
