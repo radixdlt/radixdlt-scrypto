@@ -268,13 +268,14 @@ impl<L: Clone> CallFrame<L> {
             if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
                 return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
             }
+
+            // Global references in actor
             if let Some(outer_global_object) = method_actor.object_info.outer_object {
                 frame.stable_references.insert(
                     outer_global_object.into_node_id(),
                     StableReferenceType::Global,
                 );
             }
-            // TODO: is this the right abstraction?
             if let Some(global_address) = method_actor.global_address {
                 frame
                     .stable_references
@@ -694,8 +695,9 @@ impl<L: Clone> CallFrame<L> {
                 // Process references
                 for reference in substate_value.references() {
                     if reference.is_global() {
-                        // The previous behavior is to put global references back
-                        // to `stable_references`, but I don't think it's right.
+                        // Expand stable references
+                        self.stable_references
+                            .insert(reference.clone(), StableReferenceType::Global);
                     } else if heap.contains_node(reference) {
                         // This substate is dropped and no longer borrows the heap node.
                         // TODO: decrease borrow count
