@@ -75,8 +75,8 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::FunctionAccessRules.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
                 M::LockData::default(),
             )?;
@@ -161,8 +161,8 @@ impl AuthModule {
     ) -> Result<AccessRule, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            ACCESS_RULES_BASE_MODULE,
-            &AccessRulesOffset::AccessRules.into(),
+            ACCESS_RULES_FIELD_PARTITION,
+            &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
             M::LockData::default(),
         )?;
@@ -300,10 +300,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(
-                    AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
+                OBJECT_BASE_PARTITION => btreemap!(
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,

@@ -430,13 +430,14 @@ impl WasmerModule {
 
         pub fn actor_lock_field(
             env: &WasmerInstanceEnv,
+            object_handle: u32,
             field: u8,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .actor_lock_field(field, flags)
+                .actor_lock_field(object_handle, field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)

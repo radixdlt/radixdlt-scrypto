@@ -73,10 +73,10 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(
-                    WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
+                OBJECT_BASE_PARTITION => btreemap!(
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
@@ -467,7 +467,7 @@ impl TransactionProcessorBlueprint {
                 } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -510,7 +510,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_module_method(
                         package_address.as_node_id(),
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;

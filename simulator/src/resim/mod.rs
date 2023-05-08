@@ -321,8 +321,8 @@ pub fn export_package_schema(
     let package_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Info.into(),
+            OBJECT_BASE_PARTITION,
+            &PackageField::Info.into(),
         )
         .ok_or(Error::PackageNotFound(package_address))?;
 
@@ -352,8 +352,8 @@ pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, E
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
             component_address.as_node_id(),
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
         )
         .ok_or(Error::ComponentNotFound(component_address))?;
 
@@ -385,12 +385,12 @@ pub fn get_event_schema<S: SubstateDatabase>(
                     METADATA_BLUEPRINT.into(),
                     *local_type_index,
                 ),
-                ObjectModuleId::SELF => {
+                ObjectModuleId::Main => {
                     let type_info = substate_db
                         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                             node_id,
-                            TYPE_INFO_BASE_MODULE,
-                            &TypeInfoOffset::TypeInfo.into(),
+                            TYPE_INFO_FIELD_PARTITION,
+                            &TypeInfoField::TypeInfo.into(),
                         )
                         .unwrap();
                     match type_info {
@@ -399,9 +399,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                             blueprint.blueprint_name,
                             *local_type_index,
                         ),
-                        TypeInfoSubstate::KeyValueStore(..)
-                        | TypeInfoSubstate::Index
-                        | TypeInfoSubstate::SortedIndex => return None,
+                        TypeInfoSubstate::KeyValueStore(..) => return None,
                     }
                 }
             }
@@ -416,8 +414,8 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let package_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, PackageInfoSubstate>(
             package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Info.into(),
+            OBJECT_BASE_PARTITION,
+            &PackageField::Info.into(),
         )
         .unwrap();
 

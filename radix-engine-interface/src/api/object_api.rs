@@ -28,19 +28,19 @@ use scrypto_schema::InstanceSchema;
     EnumIter,
 )]
 pub enum ObjectModuleId {
-    SELF,
+    Main,
     Metadata,
     Royalty,
     AccessRules,
 }
 
 impl ObjectModuleId {
-    pub fn base_module(&self) -> ModuleNumber {
+    pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
+            ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
+            ObjectModuleId::Royalty => ROYALTY_FIELD_PARTITION,
+            ObjectModuleId::AccessRules => ACCESS_RULES_FIELD_PARTITION,
+            ObjectModuleId::Main => OBJECT_BASE_PARTITION,
         }
     }
 
@@ -57,7 +57,7 @@ impl ObjectModuleId {
                 &ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
             )),
-            ObjectModuleId::SELF => None,
+            ObjectModuleId::Main => None,
         }
     }
 }
@@ -70,7 +70,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, None, fields, vec![])
+        self.new_object(blueprint_ident, None, fields, btreemap![])
     }
 
     /// Creates a new object of a given blueprint type
@@ -79,7 +79,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

@@ -1,18 +1,20 @@
 pub mod actor_api;
+pub mod actor_index_api;
+pub mod actor_key_value_entry_api;
+pub mod actor_sorted_index_api;
 pub mod blueprint_api;
 pub mod component;
 pub mod field_lock_api;
-pub mod index_api;
 pub mod kernel_modules;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod node_modules;
 pub mod object_api;
-pub mod sorted_index_api;
 
 // Re-exports
-pub use crate::api::sorted_index_api::ClientSortedIndexApi;
+pub use crate::api::actor_sorted_index_api::ClientActorSortedIndexApi;
 pub use actor_api::ClientActorApi;
+pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
 pub use blueprint_api::ClientBlueprintApi;
 pub use field_lock_api::ClientFieldLockApi;
 pub use field_lock_api::LockFlags;
@@ -24,20 +26,29 @@ pub use kernel_modules::logger_api::ClientLoggerApi;
 pub use kernel_modules::transaction_limits_api::ClientTransactionLimitsApi;
 pub use kernel_modules::transaction_runtime_api::ClientTransactionRuntimeApi;
 pub use object_api::*;
-use radix_engine_interface::api::index_api::ClientIndexApi;
+use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::key_value_entry_api::ClientKeyValueEntryApi;
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
+
+pub type ObjectHandle = u32;
+
+pub const OBJECT_HANDLE_SELF: ObjectHandle = 0u32;
+pub const OBJECT_HANDLE_OUTER_OBJECT: ObjectHandle = 1u32;
+
+pub type FieldIndex = u8;
+pub type CollectionIndex = u8;
 
 /// Interface of the system, for blueprints and Node modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
+    + ClientActorKeyValueEntryApi<E>
     + ClientObjectApi<E>
     + ClientKeyValueStoreApi<E>
     + ClientKeyValueEntryApi<E>
-    + ClientSortedIndexApi<E>
-    + ClientIndexApi<E>
+    + ClientActorSortedIndexApi<E>
+    + ClientActorIndexApi<E>
     + ClientFieldLockApi<E>
     + ClientBlueprintApi<E>
     + ClientCostingApi<E>

@@ -2,9 +2,7 @@ use crate::track::db_key_mapper::{
     DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper,
 };
 use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleVault,
-};
+use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
@@ -233,7 +231,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 }
             } else {
                 // Scan loaded substates to find children
-                for tracked_module in tracked_node.tracked_modules.values() {
+                for tracked_module in tracked_node.tracked_partitions.values() {
                     for tracked_key in tracked_module.substates.values() {
                         if let Some(value) = tracked_key.tracked.get() {
                             for own in value.owned_node_ids() {
@@ -258,8 +256,8 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         let type_info: TypeInfoSubstate = self
             .fetch_substate::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
                 node_id,
-                TYPE_INFO_BASE_MODULE,
-                &TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
             )
             .expect("Missing vault info");
 
@@ -276,15 +274,15 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                     node_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleVaultOffset::LiquidFungible.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleVaultField::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
                     .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
                         node_id,
-                        OBJECT_BASE_MODULE,
-                        &FungibleVaultOffset::LiquidFungible.into(),
+                        OBJECT_BASE_PARTITION,
+                        &FungibleVaultField::LiquidFungible.into(),
                     );
 
                 let old_balance = if let Some(s) = old_substate {
@@ -300,53 +298,46 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             }
         } else {
             // If there is an update to the liquid resource
-            if let Some(vault) = self
-                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
-                    node_id,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
+
+            let vault_updates = self.tracked.get(node_id).and_then(|n| {
+                n.tracked_partitions.get(
+                    &OBJECT_BASE_PARTITION
+                        .at_offset(PartitionOffset(1u8))
+                        .unwrap(),
                 )
-            {
-                let vault_updates = self
-                    .tracked
-                    .get(vault.ids.as_node_id())
-                    .and_then(|n| n.tracked_modules.get(&OBJECT_BASE_MODULE));
+            });
 
-                if let Some(tracked_module) = vault_updates {
-                    let mut added = BTreeSet::new();
-                    let mut removed = BTreeSet::new();
+            if let Some(tracked_module) = vault_updates {
+                let mut added = BTreeSet::new();
+                let mut removed = BTreeSet::new();
 
-                    for tracked_key in tracked_module.substates.values() {
-                        match &tracked_key.tracked {
-                            TrackedKey::New(substate)
-                            | TrackedKey::ReadNonExistAndWrite(substate) => {
+                for tracked_key in tracked_module.substates.values() {
+                    match &tracked_key.tracked {
+                        TrackedKey::New(substate) | TrackedKey::ReadNonExistAndWrite(substate) => {
+                            let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                            added.insert(id);
+                        }
+                        TrackedKey::ReadExistAndWrite(old, write) => match write {
+                            Write::Update(..) => {}
+                            Write::Delete => {
+                                let id: NonFungibleLocalId = old.as_typed().unwrap();
+                                removed.insert(id);
+                            }
+                        },
+                        TrackedKey::WriteOnly(write) => match write {
+                            Write::Update(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                 added.insert(id);
                             }
-                            TrackedKey::ReadExistAndWrite(old, write) => match write {
-                                Write::Update(..) => {}
-                                Write::Delete => {
-                                    let id: NonFungibleLocalId = old.as_typed().unwrap();
-                                    removed.insert(id);
-                                }
-                            },
-                            TrackedKey::WriteOnly(write) => match write {
-                                Write::Update(substate) => {
-                                    let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
-                                    added.insert(id);
-                                }
-                                Write::Delete => {
-                                    panic!("Should never occur");
-                                }
-                            },
-                            TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
-                        }
+                            Write::Delete => {
+                                panic!("Should never occur");
+                            }
+                        },
+                        TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
                     }
-
-                    Some(BalanceChange::NonFungible { added, removed })
-                } else {
-                    None
                 }
+
+                Some(BalanceChange::NonFungible { added, removed })
             } else {
                 None
             }
@@ -357,7 +348,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
@@ -371,7 +362,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
@@ -381,12 +372,12 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_modules.get(&module_num))
+            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&module_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }

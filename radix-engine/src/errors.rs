@@ -188,6 +188,7 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    InvalidObjectHandle,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnObject,
@@ -196,6 +197,8 @@ pub enum SystemError {
     NotAFieldWriteLock,
     FieldDoesNotExist(Blueprint, u8),
     KeyValueStoreDoesNotExist(Blueprint, u8),
+    SortedIndexDoesNotExist(Blueprint, u8),
+    IndexDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,
@@ -248,6 +251,7 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
     BlueprintNotFound(String),
+    InvalidModule,
     WrongNumberOfKeyValueStores(Blueprint, usize, usize),
     WrongNumberOfSubstates(Blueprint, usize, usize),
     SchemaValidationError(Blueprint, String),

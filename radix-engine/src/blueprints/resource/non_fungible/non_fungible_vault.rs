@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -15,6 +15,8 @@ pub enum NonFungibleVaultError {
 }
 
 pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
+
+pub const NON_FUNGIBLE_VAULT_NON_FUNGIBLES: CollectionIndex = 0u8;
 
 pub struct NonFungibleVaultBlueprint;
 
@@ -227,7 +229,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
@@ -241,7 +244,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
@@ -256,15 +260,13 @@ impl NonFungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
-            LockFlags::read_only(),
+        // TODO: only allow a certain amount to be returned
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
+            OBJECT_HANDLE_SELF,
+            NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+            u32::MAX,
         )?;
-        let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
-
-        let items: Vec<NonFungibleLocalId> = api.scan_typed_index(&substate_ref.ids.0, u32::MAX)?;
         let ids = items.into_iter().collect();
-        api.field_lock_release(handle)?;
         Ok(ids)
     }
 
@@ -275,7 +277,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
@@ -289,7 +292,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
@@ -318,8 +322,11 @@ impl NonFungibleVault {
             .expect("Failed to convert amount to u32");
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> =
-                api.take_typed(substate_ref.ids.as_node_id(), amount_to_take)?;
+            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                amount_to_take,
+            )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().collect(),
             }
@@ -341,7 +348,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
@@ -350,8 +358,11 @@ impl NonFungibleVault {
 
         // TODO: Batch remove
         for id in ids {
-            let removed =
-                api.remove_from_index(substate_ref.ids.as_node_id(), scrypto_encode(id).unwrap())?;
+            let removed = api.actor_index_remove(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                scrypto_encode(id).unwrap(),
+            )?;
 
             if removed.is_none() {
                 return Err(RuntimeError::ApplicationError(
@@ -379,7 +390,8 @@ impl NonFungibleVault {
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LiquidNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut vault: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
@@ -390,7 +402,12 @@ impl NonFungibleVault {
         // TODO: Batch update
         // TODO: Rather than insert, use create_unique?
         for id in resource.ids {
-            api.insert_typed_into_index(vault.ids.as_node_id(), scrypto_encode(&id).unwrap(), id)?;
+            api.actor_index_insert_typed(
+                OBJECT_HANDLE_SELF,
+                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                scrypto_encode(&id).unwrap(),
+                id,
+            )?;
         }
 
         api.field_lock_write_typed(handle, &vault)?;
@@ -411,7 +428,8 @@ impl NonFungibleVault {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
@@ -462,7 +480,8 @@ impl NonFungibleVault {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
@@ -503,7 +522,8 @@ impl NonFungibleVault {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            NonFungibleVaultOffset::LockedNonFungible.into(),
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;

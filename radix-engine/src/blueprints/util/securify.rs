@@ -30,7 +30,7 @@ pub trait SecurifiedAccessRules {
             };
 
             access_rules_config.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::SELF, method),
+                MethodKey::new(ObjectModuleId::Main, method),
                 access_rule,
                 mutability,
             );
@@ -59,7 +59,7 @@ pub trait SecurifiedAccessRules {
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::SELF, securify_ident),
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
@@ -85,7 +85,7 @@ pub trait SecurifiedAccessRules {
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::SELF, securify_ident),
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 api,
@@ -117,7 +117,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let access_rule = rule!(require(owner_id));
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::SELF, securify_ident),
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
                 AccessRuleEntry::AccessRule(access_rule.clone()),
                 AccessRuleEntry::AccessRule(this_package_rule.clone()),
                 api,
