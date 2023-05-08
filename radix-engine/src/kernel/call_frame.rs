@@ -88,11 +88,15 @@ impl NodeVisibility {
     /// For instance, system currently only allows substates of actor,
     /// actor's outer object, and any visible key value store.
     pub fn can_be_read_or_write(&self) -> bool {
-        self.0.iter().any(|x| x.is_normal())
+        !self.0.is_empty()
     }
 
-    pub fn can_be_invoked(&self) -> bool {
-        !self.0.is_empty()
+    pub fn can_be_invoked(&self, direct_access: bool) -> bool {
+        if direct_access {
+            self.0.iter().any(|x| x.is_direct_access())
+        } else {
+            self.0.iter().any(|x| x.is_normal())
+        }
     }
 
     pub fn can_be_referenced_in_substate(&self) -> bool {

@@ -143,6 +143,7 @@ pub enum KernelError {
     DropNodeFailure(NodeId),
 
     // Actor Constraints
+    InvalidInvokeAccess,
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
 }
 

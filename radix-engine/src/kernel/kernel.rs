@@ -1,3 +1,4 @@
+use super::actor::{Actor, MethodActor};
 use super::call_frame::{CallFrame, LockSubstateError, NodeVisibility};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -71,7 +72,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             if kernel
                 .current_frame
                 .get_node_visibility(node_id)
-                .can_be_invoked()
+                .can_be_invoked(false)
             {
                 continue;
             }
@@ -166,12 +167,30 @@ where
         &mut self,
         invocation: Box<KernelInvocation<M::Invocation>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
+        // Sanity check actor visibility
+        let can_be_invoked = match &invocation.resolved_actor {
+            Actor::Method(MethodActor {
+                node_id,
+                is_direct_access,
+                ..
+            }) => self
+                .current_frame
+                .get_node_visibility(&node_id)
+                .can_be_invoked(*is_direct_access),
+            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => self
+                .current_frame
+                .get_node_visibility(blueprint.package_address.as_node_id())
+                .can_be_invoked(false),
+        };
+        if !can_be_invoked {
+            return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
+        }
+
+        // Prepare message
         let mut message = Message::from_indexed_scrypto_value(&invocation.args);
         let sys_invocation = invocation.sys_invocation;
         let actor = invocation.resolved_actor;
         let args = &invocation.args;
-
-        // Note that validity of `resolved_actor` should have been checked before getting here.
 
         // Before push call frame
         M::before_push_frame(&actor, &mut message, &args, self)?;

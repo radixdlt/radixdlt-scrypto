@@ -152,7 +152,12 @@ fn test_recall_on_internal_vault() {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    receipt.expect_commit_failure();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+        )
+    });
 }
 
 #[test]
@@ -175,6 +180,11 @@ fn test_recall_on_received_direct_access_reference() {
                 "RecallTest",
                 "recall_on_direct_access_ref",
                 manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
+            )
+            .call_method(
+                account,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
