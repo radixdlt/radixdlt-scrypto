@@ -11,8 +11,8 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    CreateNodeError, DropNodeError, ExchangeError, LockSubstateError, ReadSubstateError,
-    UnlockSubstateError, WriteSubstateError,
+    CreateNodeError, DropNodeError, ExchangeError, ListNodeModuleError, LockSubstateError,
+    MoveModuleError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
