@@ -218,7 +218,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         Ok(())
     }
 
-    #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
+    #[trace_resources(log=input_size)]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         identifier: &KernelInvocation<Actor>,
