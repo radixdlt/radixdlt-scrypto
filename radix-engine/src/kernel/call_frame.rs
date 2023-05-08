@@ -165,6 +165,7 @@ pub enum UnlockSubstateError {
     ContainsDuplicatedOwns,
     MoveNodeError(MoveNodeError),
     RefNotFound(NodeId),
+    NonGlobalRefNotAllowed(NodeId),
     CantDropNodeInStore(NodeId),
     StoreNodeError(StoreNodeError),
 }
@@ -173,6 +174,7 @@ pub enum UnlockSubstateError {
 pub enum CreateNodeError {
     MoveNodeError(MoveNodeError),
     RefNotFound(NodeId),
+    NonGlobalRefNotAllowed(NodeId),
     StoreNodeError(StoreNodeError),
 }
 
@@ -203,6 +205,7 @@ pub enum ListNodeModuleError {
 pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
     HeapRemoveModuleErr(HeapRemoveModuleErr),
+    NonGlobalRefNotAllowed(NodeId),
     TrackSetSubstateError(SetSubstateError),
     StoreNodeError(StoreNodeError),
 }
@@ -490,7 +493,9 @@ impl<L: Clone> CallFrame<L> {
             }
             .clone();
 
+            //===============
             // Process owns
+            //===============
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
@@ -505,10 +510,8 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the taken node to store, if parent is in store
                     if !heap.contains_node(&node_id) {
-                        for child in &new_owned_nodes {
-                            Self::move_node_to_store(heap, store, child)
-                                .map_err(UnlockSubstateError::StoreNodeError)?;
-                        }
+                        Self::move_node_to_store(heap, store, own)
+                            .map_err(UnlockSubstateError::StoreNodeError)?;
                     }
                 }
             }
@@ -526,7 +529,9 @@ impl<L: Clone> CallFrame<L> {
                 }
             }
 
+            //====================
             // Process references
+            //====================
             let mut new_references: IndexSet<NodeId> = index_set_new();
             for own in substate.references() {
                 // Deduplicate
@@ -541,8 +546,13 @@ impl<L: Clone> CallFrame<L> {
                         return Err(UnlockSubstateError::RefNotFound(reference.clone()));
                     }
 
+                    if !heap.contains_node(node_id) && !reference.is_global() {
+                        return Err(UnlockSubstateError::NonGlobalRefNotAllowed(*reference));
+                    }
+
                     if heap.contains_node(reference) {
                         // TODO: increase borrow count
+                    } else {
                     }
                 }
             }
@@ -666,6 +676,10 @@ impl<L: Clone> CallFrame<L> {
 
                 // Process reference
                 for reference in substate_value.references() {
+                    if push_to_store && !reference.is_global() {
+                        return Err(CreateNodeError::NonGlobalRefNotAllowed(*reference));
+                    }
+
                     if !self
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
@@ -760,6 +774,12 @@ impl<L: Clone> CallFrame<L> {
                 for own in substate_value.owned_nodes() {
                     Self::move_node_to_store(heap, store, own)
                         .map_err(MoveModuleError::StoreNodeError)?;
+                }
+
+                for reference in substate_value.references() {
+                    if !reference.is_global() {
+                        return Err(MoveModuleError::NonGlobalRefNotAllowed(reference.clone()));
+                    }
                 }
 
                 store
