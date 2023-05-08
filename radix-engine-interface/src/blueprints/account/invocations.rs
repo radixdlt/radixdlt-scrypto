@@ -10,8 +10,8 @@ use sbor::rust::prelude::*;
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
-pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID: u8 = 0u8;
-pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID: u8 = 1u8;
+pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID: u8 = 1u8;
 
 //================
 // Account Create Local

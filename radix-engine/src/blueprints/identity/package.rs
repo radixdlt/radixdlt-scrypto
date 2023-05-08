@@ -7,6 +7,7 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
@@ -59,10 +60,10 @@ impl IdentityNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
                 export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID => VirtualLazyLoadSchema {
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
                 export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
@@ -152,10 +153,7 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let public_key_hash =
-                    PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
-
-                let rtn = IdentityBlueprint::create_virtual(public_key_hash, api)?;
+                let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -171,10 +169,7 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let public_key_hash =
-                    PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
-
-                let rtn = IdentityBlueprint::create_virtual(public_key_hash, api)?;
+                let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -227,7 +222,29 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn create_virtual<Y>(
+    pub fn create_virtual_secp256k1<Y>(
+        input: VirtualLazyLoadInput,
+        api: &mut Y,
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
+    }
+
+    pub fn create_virtual_ed25519<Y>(
+        input: VirtualLazyLoadInput,
+        api: &mut Y,
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
+    }
+
+    fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -237,7 +254,36 @@ impl IdentityBlueprint {
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
         let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
-        Self::create_object(access_rules, api)
+        let modules = Self::create_object(access_rules, api)?;
+
+        {
+            // Set up metadata
+            // TODO: Improve this when the Metadata module API is nicer
+            let metadata = modules.get(&ObjectModuleId::Metadata).unwrap();
+            // NOTE:
+            // This is the owner key for ROLA.
+            // We choose to set this explicitly to simplify the security-critical logic off-ledger.
+            // In particular, we want an owner to be able to explicitly delete the owner keys.
+            // If we went with a "no metadata = assume default public key hash", then this could cause unexpeted
+            // security-critical behaviour if a user expected that deleting the metadata removed the owner keys.
+            api.call_method(
+                &metadata.0,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: "owner_keys".to_string(),
+                    value: scrypto_decode(
+                        &scrypto_encode(&MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
+                            public_key_hash,
+                        )]))
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                })
+                .unwrap(),
+            )?;
+        }
+
+        Ok(modules)
     }
 
     fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
