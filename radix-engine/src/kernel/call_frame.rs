@@ -713,11 +713,11 @@ impl<L: Clone> CallFrame<L> {
                         // TODO: not sure if this is the right abstraction; exists due to heritage.
                         self.stable_references
                             .insert(reference.clone(), StableReferenceType::Global);
-                    } else if heap.contains_node(reference) {
-                        // This substate is dropped and no longer borrows the heap node.
-                        // TODO: decrease borrow count
                     } else {
-                        panic!("Substate contains references non-global nodes in store")
+                        if heap.contains_node(reference) {
+                            // This substate is dropped and no longer borrows the heap node.
+                            // TODO: decrease borrow count
+                        }
                     }
                 }
             }

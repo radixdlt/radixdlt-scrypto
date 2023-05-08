@@ -18,18 +18,18 @@ pub enum ComposeProofError {
 }
 
 pub enum ComposedProof {
-    Fungible(ProofMoveableSubstate, FungibleProof),
-    NonFungible(ProofMoveableSubstate, NonFungibleProof),
+    Fungible(ProofMoveableSubstate, FungibleProof, Vec<LockHandle>),
+    NonFungible(ProofMoveableSubstate, NonFungibleProof, Vec<LockHandle>),
 }
 
 impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
-            ComposedProof::Fungible(info, proof) => btreemap!(
+            ComposedProof::Fungible(info, proof, ..) => btreemap!(
                 FungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
                 FungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
-            ComposedProof::NonFungible(info, proof) => btreemap!(
+            ComposedProof::NonFungible(info, proof, ..) => btreemap!(
                 NonFungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
                 NonFungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
@@ -58,12 +58,13 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
 
     match resource_type {
         ResourceType::Fungible { .. } => {
-            compose_fungible_proof(proofs, resource_address, amount, api).map(|proof| {
+            compose_fungible_proof(proofs, resource_address, amount, api).map(|(proof, handles)| {
                 ComposedProof::Fungible(
                     ProofMoveableSubstate {
                         restricted: false, // TODO: follow existing impl, but need to revisit this
                     },
                     proof,
+                    handles,
                 )
             })
         }
@@ -82,12 +83,13 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             },
             api,
         )
-        .map(|proof| {
+        .map(|(proof, handles)| {
             ComposedProof::NonFungible(
                 ProofMoveableSubstate {
                     restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
+                handles,
             )
         }),
     }
@@ -119,12 +121,13 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
             },
             api,
         )
-        .map(|proof| {
+        .map(|(proof, handles)| {
             ComposedProof::NonFungible(
                 ProofMoveableSubstate {
                     restricted: false, // TODO: follow existing impl, but need to revisit this
                 },
                 proof,
+                handles,
             )
         }),
     }
@@ -225,7 +228,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
     api: &mut Y,
-) -> Result<FungibleProof, RuntimeError> {
+) -> Result<(FungibleProof, Vec<LockHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_amount_locked(proofs, resource_address, api)?;
     let amount = amount.unwrap_or(max_locked);
 
@@ -241,6 +244,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     // TODO: review resource container selection algorithm here
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
+    let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
@@ -270,11 +274,14 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 evidence.insert(container.clone(), amount);
             }
         }
-        api.kernel_drop_lock(handle)?;
+        lock_handles.push(handle);
     }
 
-    FungibleProof::new(amount, evidence)
-        .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
+    Ok((
+        FungibleProof::new(amount, evidence)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))?,
+        lock_handles,
+    ))
 }
 
 enum NonFungiblesSpecification {
@@ -288,7 +295,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     resource_address: ResourceAddress,
     ids: NonFungiblesSpecification,
     api: &mut Y,
-) -> Result<NonFungibleProof, RuntimeError> {
+) -> Result<(NonFungibleProof, Vec<LockHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_ids_locked(proofs, resource_address, api)?;
     let ids = match ids {
         NonFungiblesSpecification::All => max_locked.clone(),
@@ -326,6 +333,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     // TODO: review resource container selection algorithm here
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
+    let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
@@ -357,9 +365,12 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                 evidence.insert(container.clone(), ids);
             }
         }
-        api.kernel_drop_lock(handle)?;
+        lock_handles.push(handle);
     }
 
-    NonFungibleProof::new(ids.clone(), evidence)
-        .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
+    Ok((
+        NonFungibleProof::new(ids.clone(), evidence)
+            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))?,
+        lock_handles,
+    ))
 }

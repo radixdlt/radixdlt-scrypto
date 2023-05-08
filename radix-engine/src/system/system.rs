@@ -884,13 +884,11 @@ where
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
         let actor = self.api.kernel_get_system_state().current.unwrap();
-
         let mut is_drop_allowed = false;
 
+        // TODO: what's the right model, trading off between flexibility and security?
+
         // If the actor is the object's outer object
-        // TODO: not sure if we need this in the long run; given the inner object
-        // has a link to the outer object, all business logic can be implemented in the
-        // inner blueprint?
         if let Some(outer_object) = info.outer_object {
             if let Some(instance_context) = actor.instance_context() {
                 if instance_context.instance.eq(&outer_object) {

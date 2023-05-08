@@ -84,6 +84,7 @@ impl AuthZoneBlueprint {
         let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
+        // Handles are dropped automatically; alternatively, we can manually drop them here!
 
         let blueprint_name = match &composed_proof {
             ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
