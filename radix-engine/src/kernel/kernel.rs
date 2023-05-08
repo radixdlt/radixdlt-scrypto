@@ -503,8 +503,8 @@ where
             data,
         );
 
-        let (lock_handle, first_lock_from_db) = match &maybe_lock_handle {
-            Ok((lock_handle, first_lock_from_db)) => (*lock_handle, *first_lock_from_db),
+        let (lock_handle, db_access) = match &maybe_lock_handle {
+            Ok((lock_handle, db_access)) => (*lock_handle, *db_access),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -546,7 +546,7 @@ where
                     LockSubstateError::NodeNotInCallFrame(node_id)
                         if node_id.is_global_package() =>
                     {
-                        let (handle, first_lock_from_db) = self
+                        let (handle, db_access) = self
                             .store
                             .acquire_lock(
                                 node_id,
@@ -574,7 +574,7 @@ where
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        (lock_handle, first_lock_from_db)
+                        (lock_handle, db_access)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -586,7 +586,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, first_lock_from_db, self)?;
+        M::after_lock_substate(lock_handle, 0, db_access, self)?;
 
         Ok(lock_handle)
     }
@@ -684,7 +684,7 @@ where
         module_num: ModuleNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        let (substate, first_db_access) = self
+        let (substate, db_access) = self
             .current_frame
             .remove_substate(
                 node_id,
@@ -697,7 +697,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(first_db_access, self)?;
+        M::on_take_substates(db_access, self)?;
 
         Ok(substate)
     }
@@ -708,14 +708,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, first_db_access) = self
+        let (substates, db_access) = self
             .current_frame
             .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(true, first_db_access, self)?;
+        M::on_scan_substates(true, db_access, self)?;
 
         Ok(substates)
     }
@@ -726,14 +726,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, first_db_access) = self
+        let (substeates, db_access) = self
             .current_frame
             .scan_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(false, first_db_access, self)?;
+        M::on_scan_substates(false, db_access, self)?;
 
         Ok(substeates)
     }
@@ -744,14 +744,14 @@ where
         module_num: ModuleNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, first_db_access) = self
+        let (substeates, db_access) = self
             .current_frame
             .take_substates(node_id, module_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(first_db_access, self)?;
+        M::on_take_substates(db_access, self)?;
 
         Ok(substeates)
     }

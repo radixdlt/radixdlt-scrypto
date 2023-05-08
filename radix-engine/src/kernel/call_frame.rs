@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_store_interface::interface::DbAccessInfo;
 
 use super::heap::Heap;
 use super::kernel_api::LockInfo;
@@ -216,14 +217,14 @@ impl<L: Clone> CallFrame<L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, bool), LockSubstateError> {
+    ) -> Result<(LockHandle, DbAccessInfo), LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
-        let mut first_time_lock = false;
+        let mut db_access = DbAccessInfo::default();
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -242,13 +243,13 @@ impl<L: Clone> CallFrame<L> {
                     })?
             }
         } else {
-            let (handle, first_time) = store
+            let (handle, db_access_store) = store
                 .acquire_lock_virtualize(node_id, module_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
-            first_time_lock = first_time;
+            db_access = db_access_store;
             store.read_substate(handle)
         };
 
@@ -303,7 +304,7 @@ impl<L: Clone> CallFrame<L> {
             *counter += 1;
         }
 
-        Ok((lock_handle, first_time_lock))
+        Ok((lock_handle, db_access))
     }
 
     pub fn drop_lock<S: SubstateStore>(
@@ -490,19 +491,19 @@ impl<L: Clone> CallFrame<L> {
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Option<IndexedScryptoValue>, bool), CallFrameRemoveSubstateError> {
+    ) -> Result<(Option<IndexedScryptoValue>, DbAccessInfo), CallFrameRemoveSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let (removed, first_db_access) = if heap.contains_node(node_id) {
-            (heap.delete_substate(node_id, module_num, key), false)
+        let (removed, db_access) = if heap.contains_node(node_id) {
+            (heap.delete_substate(node_id, module_num, key), DbAccessInfo::default())
         } else {
             store
                 .take_substate(node_id, module_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
-        Ok((removed, first_db_access))
+        Ok((removed, db_access))
     }
 
     pub fn scan_substates<'f, S: SubstateStore>(
@@ -512,12 +513,12 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, bool), CallFrameScanSubstateError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, DbAccessInfo), CallFrameScanSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        let (substates, first_db_access) = if heap.contains_node(node_id) {
-            (heap.scan_substates(node_id, module_num, count), false)
+        let (substates, db_access) = if heap.contains_node(node_id) {
+            (heap.scan_substates(node_id, module_num, count), DbAccessInfo::default())
         } else {
             store.scan_substates(node_id, module_num, count)
         };
@@ -535,7 +536,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_db_access))
+        Ok((substates, db_access))
     }
 
     pub fn take_substates<'f, S: SubstateStore>(
@@ -545,13 +546,13 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, bool), CallFrameTakeSortedSubstatesError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, DbAccessInfo), CallFrameTakeSortedSubstatesError> {
         self.get_node_visibility(node_id).ok_or_else(|| {
             CallFrameTakeSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;
 
-        let (substates, first_db_access) = if heap.contains_node(node_id) {
-            (heap.take_substates(node_id, module_num, count), false)
+        let (substates, db_access) = if heap.contains_node(node_id) {
+            (heap.take_substates(node_id, module_num, count), DbAccessInfo::default())
         } else {
             store.take_substates(node_id, module_num, count)
         };
@@ -569,7 +570,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_db_access))
+        Ok((substates, db_access))
     }
 
     // Substate Virtualization does not apply to this call
@@ -581,12 +582,12 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, bool), CallFrameScanSortedSubstatesError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, DbAccessInfo), CallFrameScanSortedSubstatesError> {
         self.get_node_visibility(node_id).ok_or_else(|| {
             CallFrameScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;
 
-        let (substates, first_db_access) = if heap.contains_node(node_id) {
+        let (substates, db_access) = if heap.contains_node(node_id) {
             todo!()
         } else {
             store.scan_sorted_substates(node_id, module_num, count)
@@ -605,7 +606,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, first_db_access))
+        Ok((substates, db_access))
     }
 
     pub fn new_root() -> Self {
