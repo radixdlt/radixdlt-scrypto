@@ -743,27 +743,17 @@ impl TxFuzzer {
                 // RecallResource
                 34 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/blueprints/transaction_processor/tx_processor.rs:92:85
-                    // - vault_id: Address(000000000000000000000000000000000000000000000000000000000000)
-                    #[cfg(not(feature = "skip_crash"))]
-                    // TODO: try to find some valid vault_ids and randomly choose it or generate
-                    // if not found
-                    let vault_id = Some(InternalAddress::arbitrary(&mut unstructured).unwrap());
-
-                    #[cfg(feature = "skip_crash")]
                     let vault_id = {
                         let vaults = self
                             .runner
                             .get_component_vaults(component_address, resource_address);
                         if vaults.len() > 0 {
-                            Some(*unstructured.choose(&vaults[..]).unwrap())
+                            *unstructured.choose(&vaults[..]).unwrap()
                         } else {
-                            None
+                            InternalAddress::arbitrary(&mut unstructured).unwrap().into()
                         }
                     };
-
-                    vault_id.map(|vault_id| Instruction::RecallResource {
+                    Some(Instruction::RecallResource {
                         vault_id: InternalAddress::new_or_panic(vault_id.into()),
                         amount,
                     })
