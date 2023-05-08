@@ -34,19 +34,20 @@ pub trait KernelNodeApi {
     /// no longer tracked by kernel.
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
 
-    /// Move module substates from one node to another node.
-    /// 
-    /// Both source and destination nodes must be lock-free; otherwise a runtime
-    /// error is triggered.
+    /// Moves module substates from one node to another node.
+    ///
+    /// Both source and destination nodes must be lock-free and in heap; otherwise a runtime error is returned.
     fn kernel_move_module(
         &mut self,
         src_node_id: &NodeId,
         src_module_id: ModuleNumber,
         dest_node_id: &NodeId,
         dest_module_id: ModuleNumber,
-    ) -> Result<NodeSubstates, RuntimeError>;
+    ) -> Result<(), RuntimeError>;
 
-    // List the modules under a node
+    /// Lists the modules under a node.
+    ///
+    /// Only allowed for heap nodes; otherwise a runtime error is returned.
     fn kernel_list_modules(
         &mut self,
         node_id: &NodeId,

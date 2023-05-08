@@ -11,8 +11,11 @@ pub struct Heap {
     nodes: NonIterMap<NodeId, NodeSubstates>,
 }
 
-pub enum MoveNodeToStoreError {
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum HeapMoveModuleError {
     NodeNotFound(NodeId),
+    SrcModuleNotFound(ModuleNumber),
+    DestModuleAlreadyExists(ModuleNumber),
 }
 
 impl Heap {
@@ -25,6 +28,39 @@ impl Heap {
     /// Checks if the given node is in this heap.
     pub fn contains_node(&self, node_id: &NodeId) -> bool {
         self.nodes.contains_key(node_id)
+    }
+
+    pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<ModuleNumber>> {
+        self.nodes
+            .get(node_id)
+            .map(|node_substates| node_substates.keys().cloned().collect())
+    }
+
+    pub fn move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_module_id: ModuleNumber,
+        dest_node_id: &NodeId,
+        dest_module_id: ModuleNumber,
+    ) -> Result<(), HeapMoveModuleError> {
+        if let Some(modules) = self.nodes.get_mut(src_node_id) {
+            let module = modules
+                .remove(&src_module_id)
+                .ok_or(HeapMoveModuleError::SrcModuleNotFound(src_module_id))?;
+            if let Some(modules) = self.nodes.get_mut(src_node_id) {
+                if modules.insert(dest_module_id, module).is_none() {
+                    Ok(())
+                } else {
+                    Err(HeapMoveModuleError::DestModuleAlreadyExists(
+                        dest_module_id.clone(),
+                    ))
+                }
+            } else {
+                Err(HeapMoveModuleError::NodeNotFound(dest_node_id.clone()))
+            }
+        } else {
+            Err(HeapMoveModuleError::NodeNotFound(src_node_id.clone()))
+        }
     }
 
     pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(

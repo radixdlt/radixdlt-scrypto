@@ -259,8 +259,8 @@ where
 
         let node = self
             .current_frame
-            .remove_node(&mut self.heap, node_id)
-            .map_err(CallFrameError::RemoveNodeError)
+            .drop_node(&mut self.heap, node_id)
+            .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
         M::after_drop_node(self)?;
@@ -311,15 +311,33 @@ where
         src_module_id: ModuleNumber,
         dest_node_id: &NodeId,
         dest_module_id: ModuleNumber,
-    ) -> Result<NodeSubstates, RuntimeError> {
-        todo!()
+    ) -> Result<(), RuntimeError> {
+        // FIXME: costing!
+
+        self.current_frame
+            .move_module(
+                src_node_id,
+                src_module_id,
+                dest_node_id,
+                dest_module_id,
+                &mut self.heap,
+            )
+            .map_err(CallFrameError::MoveModuleError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
     }
 
     fn kernel_list_modules(
         &mut self,
         node_id: &NodeId,
     ) -> Result<BTreeSet<ModuleNumber>, RuntimeError> {
-        todo!()
+        // FIXME: costing!
+
+        self.current_frame
+            .list_modules(node_id, &mut self.heap)
+            .map_err(CallFrameError::ListNodeModuleError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
     }
 }
 

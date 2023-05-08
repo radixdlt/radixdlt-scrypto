@@ -1870,7 +1870,7 @@ where
         src_module_id: ModuleNumber,
         dest_node_id: &NodeId,
         dest_module_id: ModuleNumber,
-    ) -> Result<NodeSubstates, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         self.api
             .kernel_move_module(src_node_id, src_module_id, dest_node_id, dest_module_id)
     }

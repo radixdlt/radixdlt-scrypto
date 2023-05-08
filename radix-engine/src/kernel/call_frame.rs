@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::MethodActor;
-use super::heap::Heap;
+use super::heap::{Heap, HeapMoveModuleError};
 use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
@@ -177,7 +177,7 @@ pub enum CreateNodeError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RemoveNodeError {
+pub enum DropNodeError {
     MoveNodeError(MoveNodeError),
 }
 
@@ -191,6 +191,18 @@ pub enum StoreNodeError {
 pub enum MoveNodeError {
     OwnNotFound(NodeId),
     OwnLocked(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ListNodeModuleError {
+    NodeNotVisible(NodeId),
+    NodeNotInHeap(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MoveModuleError {
+    NodeNotAvailable(NodeId),
+    HeapErr(HeapMoveModuleError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -675,13 +687,13 @@ impl<L: Clone> CallFrame<L> {
     }
 
     /// Removes node from call frame and re-owns any children
-    pub fn remove_node(
+    pub fn drop_node(
         &mut self,
         heap: &mut Heap,
         node_id: &NodeId,
-    ) -> Result<NodeSubstates, RemoveNodeError> {
+    ) -> Result<NodeSubstates, DropNodeError> {
         self.take_node_internal(node_id)
-            .map_err(RemoveNodeError::MoveNodeError)?;
+            .map_err(DropNodeError::MoveNodeError)?;
         let node_substates = heap.remove_node(node_id);
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
@@ -696,6 +708,7 @@ impl<L: Clone> CallFrame<L> {
                 for reference in substate_value.references() {
                     if reference.is_global() {
                         // Expand stable references
+                        // TODO: not sure if this is the right abstraction; exists due to heritage.
                         self.stable_references
                             .insert(reference.clone(), StableReferenceType::Global);
                     } else if heap.contains_node(reference) {
@@ -708,6 +721,43 @@ impl<L: Clone> CallFrame<L> {
             }
         }
         Ok(node_substates)
+    }
+
+    pub fn move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_module_id: ModuleNumber,
+        dest_node_id: &NodeId,
+        dest_module_id: ModuleNumber,
+        heap: &mut Heap,
+    ) -> Result<(), MoveModuleError> {
+        if self.owned_root_nodes.get(src_node_id) != Some(&0) {
+            return Err(MoveModuleError::NodeNotAvailable(src_node_id.clone()));
+        }
+
+        if self.owned_root_nodes.get(dest_node_id) != Some(&0) {
+            return Err(MoveModuleError::NodeNotAvailable(dest_node_id.clone()));
+        }
+
+        heap.move_module(src_node_id, src_module_id, dest_node_id, dest_module_id)
+            .map_err(MoveModuleError::HeapErr)
+    }
+
+    pub fn list_modules(
+        &mut self,
+        node_id: &NodeId,
+        heap: &mut Heap,
+    ) -> Result<BTreeSet<ModuleNumber>, ListNodeModuleError> {
+        // Check node visibility
+        if !self.get_node_visibility(node_id).can_be_read() {
+            return Err(ListNodeModuleError::NodeNotVisible(node_id.clone()));
+        }
+
+        if let Some(modules) = heap.list_modules(node_id) {
+            Ok(modules)
+        } else {
+            return Err(ListNodeModuleError::NodeNotInHeap(node_id.clone()));
+        }
     }
 
     pub fn add_global_reference(&mut self, address: GlobalAddress) {
