@@ -128,28 +128,25 @@ impl FromComponent for NonFungibleGlobalId {
 }
 
 pub trait FromPublicKey: Sized {
-    fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self;
+    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self;
+    fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self;
 }
 
 impl FromPublicKey for NonFungibleGlobalId {
-    fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
-        let public_key: PublicKey = public_key.clone().into();
+    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self {
+        Self::from_public_key_hash(public_key.get_hash())
+    }
 
-        match public_key {
-            PublicKey::EcdsaSecp256k1(public_key) => {
-                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                NonFungibleGlobalId::new(
-                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-                )
-            }
-            PublicKey::EddsaEd25519(public_key) => {
-                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                NonFungibleGlobalId::new(
-                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-                )
-            }
+    fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self {
+        match public_key_hash.into_enum() {
+            PublicKeyHash::EcdsaSecp256k1(public_key_hash) => NonFungibleGlobalId::new(
+                ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
+            ),
+            PublicKeyHash::EddsaEd25519(public_key_hash) => NonFungibleGlobalId::new(
+                EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
+            ),
         }
     }
 }

@@ -4,7 +4,10 @@ use crate::types::*;
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
+    /// A system transaction (eg genesis) may define static addresses available for use
     pre_allocated_ids: BTreeSet<NodeId>,
+    /// Each frame may allocate addresses, but they can only be used by that frame, and
+    /// have to be attached to a node before the frame completes
     frame_allocated_ids: Vec<BTreeSet<NodeId>>,
     transaction_hash: Hash,
     next_id: u32,
@@ -32,6 +35,17 @@ impl IdAllocator {
         if !ids.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
                 IdAllocationError::AllocatedIDsNotEmpty(ids),
+            )));
+        }
+        Ok(())
+    }
+
+    /// Called when the transaction is over.
+    /// Ensures all transaction-scoped allocated ids have been used.
+    pub fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        if !self.pre_allocated_ids.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                IdAllocationError::AllocatedIDsNotEmpty(self.pre_allocated_ids.clone()),
             )));
         }
         Ok(())

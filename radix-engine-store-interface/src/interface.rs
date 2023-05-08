@@ -7,7 +7,7 @@ use utils::rust::vec::Vec;
 /// Seen from the higher-level API: it represents a pair (RE Node ID, Module ID).
 /// Seen from the lower-level implementation: it is used as a key in the upper-layer tree of our
 /// two-layered JMT.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct DbPartitionKey(pub Vec<u8>);
 
 /// A database-level key of a substate within a known partition.

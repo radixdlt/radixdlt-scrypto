@@ -50,6 +50,15 @@ pub trait LocalComponent: Sized {
         royalty: Royalty,
     ) -> ComponentAddress;
 
+    // TODO - Change all this into a builder when we do the auth changes
+    fn globalize_at_address_with_modules(
+        self,
+        preallocated_address: ComponentAddress,
+        access_rules: AccessRules,
+        metadata: Metadata,
+        royalty: Royalty,
+    ) -> ComponentAddress;
+
     fn globalize(self) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_method_access_rule(
@@ -60,6 +69,23 @@ pub trait LocalComponent: Sized {
             access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
         self.globalize_with_modules(
+            AccessRules::new(access_rules_config),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
+        )
+    }
+
+    fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
+        let mut access_rules_config = AccessRulesConfig::new();
+        access_rules_config.set_method_access_rule(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        );
+        let access_rules_config =
+            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+
+        self.globalize_at_address_with_modules(
+            preallocated_address,
             AccessRules::new(access_rules_config),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
@@ -179,7 +205,7 @@ impl Component for OwnedComponent {
     }
 }
 
-impl LocalComponent for OwnedComponent {
+impl<T: Into<OwnedComponent>> LocalComponent for T {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
@@ -192,7 +218,7 @@ impl LocalComponent for OwnedComponent {
 
         let address = ScryptoEnv
             .globalize(btreemap!(
-                ObjectModuleId::SELF => self.0.as_node_id().clone(),
+                ObjectModuleId::Main => self.into().0.as_node_id().clone(),
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -200,6 +226,27 @@ impl LocalComponent for OwnedComponent {
             .unwrap();
 
         ComponentAddress::new_or_panic(address.into())
+    }
+
+    fn globalize_at_address_with_modules(
+        self,
+        preallocated_address: ComponentAddress,
+        access_rules: AccessRules,
+        metadata: Metadata,
+        royalty: Royalty,
+    ) -> ComponentAddress {
+        let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
+            ObjectModuleId::Main => self.into().0.as_node_id().clone(),
+            ObjectModuleId::AccessRules => access_rules.0.0,
+            ObjectModuleId::Metadata => metadata.0.0,
+            ObjectModuleId::Royalty => royalty.0.0,
+        );
+
+        ScryptoEnv
+            .globalize_with_address(modules, preallocated_address.into())
+            .unwrap();
+
+        ComponentAddress::new_or_panic(preallocated_address.into())
     }
 }
 

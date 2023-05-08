@@ -148,10 +148,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-                // Aggregate substates
-                let mut substates = Vec::new();
+                // Aggregate fields
+                let mut fields = Vec::new();
                 let type_index = aggregator.add_child_type_and_descendents::<#bp_ident>();
-                substates.push(type_index);
+                fields.push(type_index);
 
                 // Aggregate functions
                 let mut functions = BTreeMap::new();
@@ -169,8 +169,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
-                    substates,
-                    key_value_stores: Vec::new(),
+                    fields,
+                    collections: Vec::new(),
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema
@@ -454,15 +454,9 @@ fn generate_stubs(
             }
         }
 
-
-        impl ::scrypto::component::LocalComponent for #component_ident {
-            fn globalize_with_modules(
-                self,
-                access_rules: AccessRules,
-                metadata: Metadata,
-                royalty: Royalty,
-            ) -> ComponentAddress {
-                self.component.globalize_with_modules(access_rules, metadata, royalty)
+        impl From<#component_ident> for ::scrypto::component::OwnedComponent {
+            fn from(value: #component_ident) -> Self {
+                value.component
             }
         }
 
@@ -709,9 +703,9 @@ mod tests {
                         use ::sbor::schema::*;
                         use ::sbor::*;
                         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-                        let mut substates = Vec::new();
+                        let mut fields = Vec::new();
                         let type_index = aggregator.add_child_type_and_descendents::<Test>();
-                        substates.push(type_index);
+                        fields.push(type_index);
                         let mut functions = BTreeMap::new();
                         functions.insert(
                             "x".to_string(),
@@ -735,8 +729,8 @@ mod tests {
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
-                            substates,
-                            key_value_stores: Vec::new(),
+                            fields,
+                            collections: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema
@@ -762,14 +756,9 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::LocalComponent for TestComponent {
-                        fn globalize_with_modules(
-                            self,
-                            access_rules: AccessRules,
-                            metadata: Metadata,
-                            royalty: Royalty,
-                        ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty)
+                    impl From<TestComponent> for ::scrypto::component::OwnedComponent {
+                        fn from(value: TestComponent) -> Self {
+                            value.component
                         }
                     }
 

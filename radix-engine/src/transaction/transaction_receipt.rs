@@ -94,8 +94,8 @@ impl CommitResult {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
             if let EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::SELF, ..)
-                | Emitter::Method(node_id, ObjectModuleId::SELF),
+                Emitter::Function(node_id, ObjectModuleId::Main, ..)
+                | Emitter::Method(node_id, ObjectModuleId::Main),
                 ..,
             ) = event_type_id
             {
@@ -284,6 +284,18 @@ impl TransactionReceipt {
             TransactionResult::Commit(..) => panic!("Expected abortion but was commit"),
             TransactionResult::Reject(..) => panic!("Expected abortion but was reject"),
             TransactionResult::Abort(ref r) => &r.reason,
+        }
+    }
+
+    pub fn expect_not_success(&self) {
+        match &self.result {
+            TransactionResult::Commit(c) => {
+                if c.outcome.is_success() {
+                    panic!("Transaction succeeded unexpectedly")
+                }
+            }
+            TransactionResult::Reject(..) => {}
+            TransactionResult::Abort(..) => {}
         }
     }
 

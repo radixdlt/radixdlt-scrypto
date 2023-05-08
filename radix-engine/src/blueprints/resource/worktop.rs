@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, ScryptoSbor)]
@@ -46,9 +46,9 @@ impl WorktopBlueprint {
 
         let mut node_substates = api.kernel_drop_node(input.worktop.0.as_node_id())?;
         let substate = node_substates
-            .remove(&OBJECT_BASE_MODULE)
+            .remove(&OBJECT_BASE_PARTITION)
             .unwrap()
-            .remove(&WorktopOffset::Worktop.into())
+            .remove(&WorktopField::Worktop.into())
             .unwrap();
         let worktop: WorktopSubstate = substate.as_typed().unwrap();
         for (_, bucket) in worktop.resources {
@@ -77,8 +77,11 @@ impl WorktopBlueprint {
             input.bucket.sys_drop_empty(api)?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
-            let worktop_handle =
-                api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+            let worktop_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                WorktopField::Worktop.into(),
+                LockFlags::MUTABLE,
+            )?;
             let mut worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
             if let Some(own) = worktop.resources.get(&resource_address).cloned() {
                 Bucket(own).sys_put(input.bucket, api)?;
@@ -109,8 +112,11 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle =
-                api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+            let worktop_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                WorktopField::Worktop.into(),
+                LockFlags::MUTABLE,
+            )?;
             let mut worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -155,8 +161,11 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle =
-                api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+            let worktop_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                WorktopField::Worktop.into(),
+                LockFlags::MUTABLE,
+            )?;
             let mut worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
             let existing_bucket = Bucket(worktop.resources.get(&resource_address).cloned().ok_or(
                 RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -195,8 +204,11 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let worktop_handle =
-            api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+        let worktop_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
         if let Some(bucket) = worktop.resources.remove(&input.resource_address) {
             // Move
@@ -221,8 +233,11 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let worktop_handle =
-            api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::read_only())?;
+        let worktop_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::read_only(),
+        )?;
         let worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
         let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             Bucket(bucket).sys_amount(api)?
@@ -249,8 +264,11 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let worktop_handle =
-            api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::read_only())?;
+        let worktop_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::read_only(),
+        )?;
         let worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
         let amount = if let Some(bucket) = worktop.resources.get(&input.resource_address).cloned() {
             Bucket(bucket).sys_amount(api)?
@@ -277,8 +295,11 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let worktop_handle =
-            api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::read_only())?;
+        let worktop_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::read_only(),
+        )?;
         let worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
         let ids = if let Some(bucket) = worktop.resources.get(&input.resource_address) {
             let bucket = Bucket(bucket.clone());
@@ -306,8 +327,11 @@ impl WorktopBlueprint {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let worktop_handle =
-            api.actor_lock_field(WorktopOffset::Worktop.into(), LockFlags::MUTABLE)?;
+        let worktop_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            WorktopField::Worktop.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut worktop: WorktopSubstate = api.field_lock_read_typed(worktop_handle)?;
         let buckets: Vec<Own> = worktop.resources.values().cloned().collect();
         worktop.resources.clear();

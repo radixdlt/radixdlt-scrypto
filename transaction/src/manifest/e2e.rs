@@ -357,11 +357,19 @@ SET_METADATA
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(12u8, Tuple(10000i64)));
+    Enum(0u8, Enum(12u8, 10000i64));
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(13u8, "https://radixdlt.com"));
+    Enum(0u8, Enum(13u8, "https://radixdlt.com/index.html"));
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum(0u8, Enum(14u8, "https://radixdlt.com"));
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum(0u8, Enum(15u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000"))));
 SET_METADATA
     Address("${resource_address}")
     "field_name"

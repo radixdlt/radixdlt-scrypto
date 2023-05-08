@@ -144,6 +144,20 @@ where
         self.allocate_buffer(object_address_encoded)
     }
 
+    fn preallocate_global_address(
+        &mut self,
+        entity_type: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let entity_type = scrypto_decode::<EntityType>(&entity_type)
+            .map_err(WasmRuntimeError::InvalidEntityType)?;
+
+        let object_address = self.api.preallocate_global_address(entity_type)?;
+        let object_address_encoded =
+            scrypto_encode(&object_address).expect("Failed to encode object address");
+
+        self.allocate_buffer(object_address_encoded)
+    }
+
     fn globalize_object_with_address(
         &mut self,
         modules: Vec<u8>,
@@ -241,11 +255,12 @@ where
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.actor_lock_field(field, flags)?;
+        let handle = self.api.actor_lock_field(object_handle, field, flags)?;
 
         Ok(handle)
     }
@@ -429,6 +444,13 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
+    fn preallocate_global_address(
+        &mut self,
+        entity_type: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
     fn globalize_object(
         &mut self,
         modules: Vec<u8>,
@@ -496,6 +518,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<u32, InvokeError<WasmRuntimeError>> {

@@ -1,6 +1,5 @@
 use radix_engine::{types::*, vm::wasm::WASM_MEMORY_PAGE_SIZE};
 use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

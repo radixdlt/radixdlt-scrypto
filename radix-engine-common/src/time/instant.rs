@@ -5,6 +5,7 @@ use sbor::*;
 ///
 /// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
 #[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
+#[sbor(transparent)]
 pub struct Instant {
     pub seconds_since_unix_epoch: i64,
 }

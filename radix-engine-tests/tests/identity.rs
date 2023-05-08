@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_IDENT,
 };
-use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;

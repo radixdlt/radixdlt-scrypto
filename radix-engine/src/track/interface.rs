@@ -5,23 +5,23 @@ use radix_engine_interface::types::*;
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AcquireLockError {
-    NotFound(NodeId, ModuleNumber, SubstateKey),
-    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, ModuleNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, ModuleNumber, SubstateKey),
+    NotFound(NodeId, PartitionNumber, SubstateKey),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SetSubstateError {
-    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TakeSubstateError {
-    SubstateLocked(NodeId, ModuleNumber, SubstateKey),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
-pub type NodeSubstates = BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 #[derive(Default, Debug, Clone)]
 pub struct SubstateStoreAccessInfo {
@@ -39,32 +39,32 @@ pub trait SubstateStore {
     /// Clients must ensure the `node_id` is new and unique; otherwise, the behavior is undefined.
     ///
     /// # Panics
-    /// - If the module ID is invalid
+    /// - If the partition is invalid
     fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
 
     /// Inserts a substate into the substate store.
     ///
-    /// Clients must ensure the `node_id`/`module_id` is a node which has been created; otherwise, the behavior
+    /// Clients must ensure the `node_id`/`partition_num` is a node which has been created; otherwise, the behavior
     /// is undefined.
     fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<(), SetSubstateError>;
 
     /// Deletes a substate from the substate store.
     ///
-    /// Clients must ensure the `node_id`/`module_id` is a node which has been created;
-    /// Clients must ensure this isn't called on a virtualized module;
+    /// Clients must ensure the `node_id`/`partition_num` is a node which has been created;
+    /// Clients must ensure this isn't called on a virtualized partition;
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
     fn take_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreAccessInfo), TakeSubstateError>;
 
@@ -72,7 +72,7 @@ pub trait SubstateStore {
     fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
@@ -80,7 +80,7 @@ pub trait SubstateStore {
     fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
@@ -88,7 +88,7 @@ pub trait SubstateStore {
     fn scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo);
 
@@ -98,17 +98,17 @@ pub trait SubstateStore {
     fn acquire_lock(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Result<(u32, SubstateStoreAccessInfo), AcquireLockError> {
-        self.acquire_lock_virtualize(node_id, module_id, substate_key, flags, || None)
+        self.acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || None)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
@@ -120,7 +120,7 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid.
     fn release_lock(&mut self, handle: u32);
 
-    /// Reads a substate of the given node module.
+    /// Reads a substate of the given node partition.
     ///
     /// # Panics
     /// - If the lock handle is invalid

@@ -171,7 +171,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -182,7 +182,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -190,7 +190,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_lock_substate(api, node_id, module_id, substate_key, flags)
+        SystemModuleMixer::before_lock_substate(api, node_id, partition_num, substate_key, flags)
     }
 
     fn after_lock_substate<Y>(
@@ -398,8 +398,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let handle = api.kernel_lock_substate(
                 invocation.blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -409,8 +409,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let schema = {
                 let handle = api.kernel_lock_substate(
                     invocation.blueprint.package_address.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &PackageOffset::Info.into(),
+                    OBJECT_BASE_PARTITION,
+                    &PackageField::Info.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
@@ -543,14 +543,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
+        VirtualizationModule::on_substate_lock_fault(node_id, partition_num, offset, api)
     }
 
     fn on_allocate_node_id<Y>(

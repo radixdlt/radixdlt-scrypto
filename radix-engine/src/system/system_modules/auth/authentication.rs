@@ -2,7 +2,6 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::auth::*;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
@@ -13,12 +12,12 @@ pub struct Authentication;
 
 impl Authentication {
     fn proof_matches<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
-        resource_rule: &HardResourceOrNonFungible,
+        resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match resource_rule {
-            HardResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
+            ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
                 let proof_resource_address = proof.sys_resource_address(api)?;
                 Ok(
                     proof_resource_address == non_fungible_global_id.resource_address()
@@ -27,14 +26,10 @@ impl Authentication {
                             .contains(non_fungible_global_id.local_id()),
                 )
             }
-            HardResourceOrNonFungible::Resource(resource_address) => {
+            ResourceOrNonFungible::Resource(resource_address) => {
                 let proof_resource_address = proof.sys_resource_address(api)?;
                 Ok(proof_resource_address == *resource_address)
             }
-            // TODO: I believe team wants to propagate these error codes?
-            HardResourceOrNonFungible::InvalidPath
-            | HardResourceOrNonFungible::NotResourceAddress
-            | HardResourceOrNonFungible::NotResourceAddressOrNonFungibleGlobalId => Ok(false),
         }
     }
 
@@ -59,8 +54,8 @@ impl Authentication {
             // Load auth zone
             let handle = api.kernel_lock_substate(
                 &current_auth_zone_id,
-                OBJECT_BASE_MODULE,
-                &AuthZoneOffset::AuthZone.into(),
+                OBJECT_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -109,7 +104,7 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        resource_rule: &HardResourceOrNonFungible,
+        resource: &ResourceAddress,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -121,7 +116,9 @@ impl Authentication {
             |auth_zone, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
-                    if Self::proof_matches(resource_rule, p, api)? && p.sys_amount(api)? >= amount {
+                    if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
+                        && p.sys_amount(api)? >= amount
+                    {
                         return Ok(true);
                     }
                 }
@@ -137,7 +134,7 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        resource_rule: &HardResourceOrNonFungible,
+        resource_rule: &ResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
@@ -146,9 +143,7 @@ impl Authentication {
             auth_zone_id,
             api,
             |auth_zone, rev_index, api| {
-                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) =
-                    resource_rule
-                {
+                if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
                     if rev_index == 0 {
                         if auth_zone
                             .virtual_non_fungibles_non_extending()
@@ -187,11 +182,11 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        proof_rule: &HardProofRule,
+        proof_rule: &ProofRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
-            HardProofRule::Require(resource) => {
+            ProofRule::Require(resource) => {
                 if Self::auth_zone_stack_matches_rule(
                     barrier_crossings_required,
                     barrier_crossings_allowed,
@@ -204,7 +199,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
+            ProofRule::AmountOf(amount, resource) => {
                 if Self::auth_zone_stack_has_amount(
                     barrier_crossings_required,
                     barrier_crossings_allowed,
@@ -218,7 +213,7 @@ impl Authentication {
                     Ok(false)
                 }
             }
-            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
+            ProofRule::AllOf(resources) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -233,7 +228,7 @@ impl Authentication {
 
                 Ok(true)
             }
-            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
+            ProofRule::AnyOf(resources) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
                         barrier_crossings_required,
@@ -248,10 +243,7 @@ impl Authentication {
 
                 Ok(false)
             }
-            HardProofRule::CountOf(
-                HardCount::Count(count),
-                HardProofRuleResourceList::List(resources),
-            ) => {
+            ProofRule::CountOf(count, resources) => {
                 let mut left = count.clone();
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
@@ -269,7 +261,6 @@ impl Authentication {
                 }
                 Ok(false)
             }
-            _ => Ok(false),
         }
     }
 
@@ -277,18 +268,18 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        auth_rule: &HardAuthRule,
+        auth_rule: &AccessRuleNode,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
-            HardAuthRule::ProofRule(rule) => Self::verify_proof_rule(
+            AccessRuleNode::ProofRule(rule) => Self::verify_proof_rule(
                 barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 rule,
                 api,
             ),
-            HardAuthRule::AnyOf(rules) => {
+            AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
                     if Self::verify_auth_rule(
                         barrier_crossings_required,
@@ -302,7 +293,7 @@ impl Authentication {
                 }
                 Ok(false)
             }
-            HardAuthRule::AllOf(rules) => {
+            AccessRuleNode::AllOf(rules) => {
                 for r in rules {
                     if !Self::verify_auth_rule(
                         barrier_crossings_required,
@@ -324,19 +315,19 @@ impl Authentication {
         barrier_crossings_required: u32,
         barrier_crossings_allowed: u32,
         auth_zone_id: NodeId,
-        method_auth: &MethodAuthorization,
+        method_auth: &AccessRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
-            MethodAuthorization::Protected(rule) => Self::verify_auth_rule(
+            AccessRule::Protected(rule) => Self::verify_auth_rule(
                 barrier_crossings_required,
                 barrier_crossings_allowed,
                 auth_zone_id,
                 rule,
                 api,
             ),
-            MethodAuthorization::AllowAll => Ok(true),
-            MethodAuthorization::DenyAll => Ok(false),
+            AccessRule::AllowAll => Ok(true),
+            AccessRule::DenyAll => Ok(false),
         }
     }
 }

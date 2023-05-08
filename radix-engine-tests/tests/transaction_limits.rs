@@ -5,7 +5,7 @@ use radix_engine::{
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_interface::{blueprints::resource::*, schema::PackageSchema};
+use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TestTransaction};
 

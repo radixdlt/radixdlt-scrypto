@@ -11,16 +11,6 @@ mod schema_component {
             let component = Self {}.instantiate();
             component.globalize()
         }
-
-        pub fn create_component_with_access_rules_containing_undefined_method_name(
-        ) -> ComponentAddress {
-            let component = Self {}.instantiate();
-            component.globalize_with_access_rules(
-                AccessRulesConfig::new()
-                    .method("no_method", rule!(require("something")), rule!(deny_all))
-                    .default(rule!(allow_all), AccessRule::DenyAll),
-            )
-        }
     }
 }
 
@@ -37,8 +27,8 @@ pub extern "C" fn dummy_export(_input: u64) -> Slice {
 #[no_mangle]
 pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let mut substates = Vec::new();
-    substates.push(aggregator.add_child_type_and_descendents::<()>());
+    let mut fields = Vec::new();
+    fields.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
 
@@ -190,8 +180,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     let schema = BlueprintSchema {
         outer_blueprint: None,
         schema: generate_full_schema(aggregator),
-        substates,
-        key_value_stores: vec![],
+        fields,
+        collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),

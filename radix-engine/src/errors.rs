@@ -188,6 +188,7 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    InvalidObjectHandle,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnObject,
@@ -196,6 +197,8 @@ pub enum SystemError {
     NotAFieldWriteLock,
     FieldDoesNotExist(Blueprint, u8),
     KeyValueStoreDoesNotExist(Blueprint, u8),
+    SortedIndexDoesNotExist(Blueprint, u8),
+    IndexDoesNotExist(Blueprint, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,
@@ -206,10 +209,11 @@ pub enum SystemError {
     NotAKeyValueWriteLock,
     InvalidLockFlags,
     InvalidKeyValueStoreSchema(SchemaValidationError),
-    CannotGlobalize,
+    CannotGlobalize(Box<CannotGlobalizeError>),
     MissingModule(ObjectModuleId),
     InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidModule,
+    InvalidGlobalEntityType,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
     CreateObjectError(Box<CreateObjectError>),
@@ -246,6 +250,7 @@ pub enum VmError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateObjectError {
     BlueprintNotFound(String),
+    InvalidModule,
     WrongNumberOfKeyValueStores(Blueprint, usize, usize),
     WrongNumberOfSubstates(Blueprint, usize, usize),
     SchemaValidationError(Blueprint, String),
@@ -264,6 +269,16 @@ pub enum ModuleError {
 pub struct InvalidModuleType {
     pub expected_blueprint: Blueprint,
     pub actual_blueprint: Blueprint,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CannotGlobalizeError {
+    NotAnObject,
+    AlreadyGlobalized,
+    InvalidAddressEntityType {
+        expected: Vec<EntityType>,
+        actual: Option<EntityType>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

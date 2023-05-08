@@ -46,6 +46,11 @@ extern "C" {
         object_states_len: usize,
     ) -> Buffer;
 
+    pub fn preallocate_global_address(
+        _entity_type_ptr: *const u8,
+        _entity_type_len: usize,
+    ) -> Buffer;
+
     pub fn globalize_object(modules_ptr: *const u8, modules_len: usize) -> Buffer;
 
     pub fn globalize_with_address(
@@ -120,7 +125,7 @@ extern "C" {
     //===============
 
     // Locks a field
-    pub fn actor_lock_field(field: u32, flags: u32) -> u32;
+    pub fn actor_lock_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
     //===============
     // Field Lock API
@@ -177,6 +182,14 @@ pub unsafe fn new_object(
     _blueprint_ident: usize,
     _object_states_ptr: *const u8,
     _object_states: usize,
+) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn preallocate_global_address(
+    _entity_type_ptr: *const u8,
+    _entity_type_len: usize,
 ) -> Buffer {
     unreachable!()
 }
@@ -287,7 +300,7 @@ pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_lock_field(_field: u32, _flags: u32) -> u32 {
+pub unsafe fn actor_lock_field(_object_handle: u32, _field: u32, _flags: u32) -> u32 {
     unreachable!()
 }
 

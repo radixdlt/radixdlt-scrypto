@@ -370,7 +370,7 @@ impl WasmModule {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I32, ValueType::I32, ValueType::I32],
                                     vec![ValueType::I32],
                                 ) {
                                     continue;
@@ -528,6 +528,23 @@ impl WasmModule {
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
                                         NEW_OBJECT_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -1106,8 +1123,8 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-                key_value_stores: vec![],
+                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                collections: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,

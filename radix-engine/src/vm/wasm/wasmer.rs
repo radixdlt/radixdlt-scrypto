@@ -258,6 +258,24 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
+        pub fn preallocate_global_address(
+            env: &WasmerInstanceEnv,
+            entity_type_ptr: u32,
+            entity_type_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .preallocate_global_address(read_memory(
+                    &instance,
+                    entity_type_ptr,
+                    entity_type_len,
+                )?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         pub fn globalize_object(
             env: &WasmerInstanceEnv,
             modules_ptr: u32,
@@ -420,13 +438,14 @@ impl WasmerModule {
 
         pub fn actor_lock_field(
             env: &WasmerInstanceEnv,
+            object_handle: u32,
             field: u8,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .actor_lock_field(field, flags)
+                .actor_lock_field(object_handle, field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
@@ -585,6 +604,7 @@ impl WasmerModule {
                 CALL_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_method),
                 CALL_FUNCTION_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), call_function),
                 NEW_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), new_object),
+                PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), preallocate_global_address),
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GLOBALIZE_OBJECT_WITH_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object_with_address),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
