@@ -1,5 +1,7 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{LockSubstateError, MoveNodeError, UnlockSubstateError};
+use radix_engine::kernel::call_frame::{
+    CreateNodeError, LockSubstateError, MoveNodeError, UnlockSubstateError,
+};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -95,7 +97,7 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveNodeError(
+                CallFrameError::CreateNodeError(CreateNodeError::MoveNodeError(
                     MoveNodeError::OwnLocked(_)
                 ))
             ))
