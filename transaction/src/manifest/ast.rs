@@ -156,6 +156,13 @@ pub enum Instruction {
         rule: Value,
     },
 
+    SetGroupAccessRule {
+        entity_address: Value,
+        object_key: Value,
+        group: Value,
+        rule: Value,
+    },
+
     MintFungible {
         resource_address: Value,
         amount: Value,

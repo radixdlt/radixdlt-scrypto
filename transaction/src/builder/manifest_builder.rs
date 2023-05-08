@@ -525,20 +525,6 @@ impl ManifestBuilder {
             .0
     }
 
-    pub fn set_method_access_rule(
-        &mut self,
-        entity_address: GlobalAddress,
-        key: MethodKey,
-        rule: AccessRule,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        })
-        .0
-    }
-
     pub fn set_group_access_rule(
         &mut self,
         entity_address: GlobalAddress,
