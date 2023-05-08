@@ -74,8 +74,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 .store
                 .acquire_lock(
                     node_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
@@ -99,9 +99,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(..)
-                | TypeInfoSubstate::Index
-                | TypeInfoSubstate::SortedIndex => {
+                TypeInfoSubstate::KeyValueStore(..) => {
                     return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                 }
             }
@@ -337,8 +335,8 @@ where
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
             &bucket_id,
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
@@ -369,8 +367,8 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleBucketOffset::Liquid.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
             let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
@@ -384,8 +382,8 @@ where
                 .heap
                 .get_substate(
                     bucket_id,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleBucketOffset::Liquid.into(),
+                    OBJECT_BASE_PARTITION,
+                    &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
             let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
@@ -400,8 +398,8 @@ where
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         let is_fungible = if let Some(substate) = self.heap.get_substate(
             &proof_id,
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
@@ -425,19 +423,20 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+            let resource_address =
+                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_MODULE,
-                    &FungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: FungibleProof = substate.as_typed().unwrap();
@@ -451,19 +450,20 @@ where
                 .heap
                 .get_substate(
                     proof_id,
-                    TYPE_INFO_BASE_MODULE,
-                    &TypeInfoOffset::TypeInfo.into(),
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
             let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address = ResourceAddress::new_or_panic(info.parent().unwrap().into());
+            let resource_address =
+                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
                 .heap
                 .get_substate(
                     proof_id,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
             let proof: NonFungibleProof = substate.as_typed().unwrap();
@@ -481,23 +481,23 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=module_num)]
+    #[trace_resources(log=node_id.entity_type(), log=partition_num)]
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_lock_substate(&node_id, &module_num, substate_key, &flags, self)?;
+        M::before_lock_substate(&node_id, &partition_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
             self.store,
             node_id,
-            module_num,
+            partition_num,
             substate_key,
             flags,
             default,
@@ -509,7 +509,7 @@ where
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
-                        M::on_substate_lock_fault(*node_id, module_num, &substate_key, self)?;
+                        M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
                     if retry {
                         self.current_frame
@@ -517,7 +517,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                module_num,
+                                partition_num,
                                 &substate_key,
                                 flags,
                                 None,
@@ -551,7 +551,7 @@ where
                             .store
                             .acquire_lock(
                                 node_id,
-                                OBJECT_BASE_MODULE,
+                                OBJECT_BASE_PARTITION,
                                 substate_key,
                                 LockFlags::read_only(),
                             )
@@ -567,7 +567,7 @@ where
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
-                                OBJECT_BASE_MODULE,
+                                OBJECT_BASE_PARTITION,
                                 substate_key,
                                 flags,
                                 None,
@@ -661,14 +661,14 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.current_frame
             .set_substate(
                 node_id,
-                module_num,
+                partition_num,
                 substate_key,
                 value,
                 &mut self.heap,
@@ -682,13 +682,13 @@ where
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
             .remove_substate(
                 node_id,
-                module_num,
+                partition_num,
                 &substate_key,
                 &mut self.heap,
                 self.store,
@@ -701,11 +701,11 @@ where
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .scan_sorted(node_id, module_num, count, &mut self.heap, self.store)
+            .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
@@ -714,11 +714,11 @@ where
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .scan_substates(node_id, module_num, count, &mut self.heap, self.store)
+            .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)
@@ -727,11 +727,11 @@ where
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.current_frame
-            .take_substates(node_id, module_num, count, &mut self.heap, self.store)
+            .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)

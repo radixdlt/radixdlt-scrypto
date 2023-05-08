@@ -7,7 +7,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
@@ -31,8 +31,8 @@ impl ClockNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<ClockSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<ClockSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -79,8 +79,8 @@ impl ClockNativePackage {
                 CLOCK_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores: vec![],
+                    fields,
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into()
@@ -161,15 +161,15 @@ impl ClockNativePackage {
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, CLOCK_SET_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::Main, CLOCK_SET_CURRENT_TIME_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, CLOCK_GET_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::Main, CLOCK_GET_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, CLOCK_COMPARE_CURRENT_TIME_IDENT),
+            MethodKey::new(ObjectModuleId::Main, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
@@ -179,7 +179,7 @@ impl ClockNativePackage {
         let address = ComponentAddress::new_or_panic(input.component_address);
         api.globalize_with_address(
             btreemap!(
-                ObjectModuleId::SELF => clock_id,
+                ObjectModuleId::Main => clock_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -206,7 +206,8 @@ impl ClockNativePackage {
             (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
 
         let handle = api.actor_lock_field(
-            ClockOffset::CurrentTimeRoundedToMinutes.into(),
+            OBJECT_HANDLE_SELF,
+            ClockField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: ClockSubstate = api.field_lock_read_typed(handle)?;
@@ -230,7 +231,8 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.actor_lock_field(
-                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                    OBJECT_HANDLE_SELF,
+                    ClockField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.field_lock_read_typed(handle)?;
@@ -256,7 +258,8 @@ impl ClockNativePackage {
         match input.precision {
             TimePrecision::Minute => {
                 let handle = api.actor_lock_field(
-                    ClockOffset::CurrentTimeRoundedToMinutes.into(),
+                    OBJECT_HANDLE_SELF,
+                    ClockField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
                 let substate: ClockSubstate = api.field_lock_read_typed(handle)?;

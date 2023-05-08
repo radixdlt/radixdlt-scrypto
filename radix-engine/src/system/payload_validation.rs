@@ -68,8 +68,6 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
                 }
             }
             TypeInfoSubstate::KeyValueStore(_) => TypeInfoForValidation::KeyValueStore,
-            TypeInfoSubstate::Index => TypeInfoForValidation::Index,
-            TypeInfoSubstate::SortedIndex => TypeInfoForValidation::SortedIndex,
         };
         Some(mapped)
     }
@@ -82,8 +80,6 @@ pub enum TypeInfoForValidation {
         blueprint: String,
     },
     KeyValueStore,
-    Index,
-    SortedIndex,
 }
 
 impl TypeInfoForValidation {
