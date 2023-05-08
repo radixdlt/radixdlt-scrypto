@@ -124,6 +124,8 @@ pub enum WasmRuntimeError {
     InvalidModules(DecodeError),
     /// Invalid address
     InvalidAddress(DecodeError),
+    /// Invalid entity type
+    InvalidEntityType(DecodeError),
     /// Invalid royalty config
     InvalidRoyaltyConfig(DecodeError),
     /// Invalid metadata

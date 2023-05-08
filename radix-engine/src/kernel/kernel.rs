@@ -124,6 +124,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 
+        kernel.id_allocator.on_teardown()?;
         SystemConfig::on_teardown(&mut kernel)?;
 
         Ok(rtn)

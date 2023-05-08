@@ -1,7 +1,6 @@
 use native_sdk::account::*;
 use native_sdk::epoch_manager::*;
 use scrypto::api::node_modules::metadata::MetadataValue;
-use scrypto::api::{ClientObjectApi, ObjectModuleId};
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -68,37 +67,26 @@ mod genesis_helper {
             rounds_per_epoch: u64,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
-            let typed_component = Self {
-                epoch_manager,
-                rounds_per_epoch,
-                xrd_vault: Vault::with_bucket(whole_lotta_xrd),
-                resource_vaults: KeyValueStore::new(),
-                validators: KeyValueStore::new(),
-            }
-            .instantiate();
-
             let access_rules = AccessRules::new(AccessRulesConfig::new().default(
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
             ));
             let metadata = Metadata::new();
 
-            let modules = btreemap!(
-                ObjectModuleId::SELF => typed_component.component.0.as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.0.0,
-                ObjectModuleId::Metadata => metadata.0.0,
-                ObjectModuleId::Royalty => Royalty::new(RoyaltyConfig::default()).0.0,
-            );
-
-            // See scrypto/src/component/component.rs if this breaks
-            ScryptoEnv
-                .globalize_with_address(
-                    modules,
-                    GlobalAddress::new_or_panic(preallocated_address_bytes),
-                )
-                .unwrap();
-
-            ComponentAddress::new_or_panic(preallocated_address_bytes)
+            Self {
+                epoch_manager,
+                rounds_per_epoch,
+                xrd_vault: Vault::with_bucket(whole_lotta_xrd),
+                resource_vaults: KeyValueStore::new(),
+                validators: KeyValueStore::new(),
+            }
+            .instantiate()
+            .globalize_at_address_with_modules(
+                ComponentAddress::new_or_panic(preallocated_address_bytes),
+                access_rules,
+                metadata,
+                Royalty::new(RoyaltyConfig::default()),
+            )
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {

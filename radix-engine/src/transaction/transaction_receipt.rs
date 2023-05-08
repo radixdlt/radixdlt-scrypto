@@ -287,6 +287,18 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_not_success(&self) {
+        match &self.result {
+            TransactionResult::Commit(c) => {
+                if c.outcome.is_success() {
+                    panic!("Transaction succeeded unexpectedly")
+                }
+            }
+            TransactionResult::Reject(..) => {}
+            TransactionResult::Abort(..) => {}
+        }
+    }
+
     pub fn expect_specific_rejection<F>(&self, f: F)
     where
         F: Fn(&RejectionError) -> bool,

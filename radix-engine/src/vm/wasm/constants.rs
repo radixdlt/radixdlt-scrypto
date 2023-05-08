@@ -5,6 +5,9 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 0x11;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
+pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_ID: usize = 0x20;
+pub const PREALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "preallocate_global_address";
+
 pub const NEW_OBJECT_FUNCTION_ID: usize = 0x30;
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
 pub const GLOBALIZE_OBJECT_FUNCTION_ID: usize = 0x31;

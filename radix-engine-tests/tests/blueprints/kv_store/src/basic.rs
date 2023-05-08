@@ -36,8 +36,10 @@ mod basic {
             map.insert("hello".to_owned(), "hello".to_owned());
             let removed = map.remove(&"hello".to_owned());
             assert_eq!(removed, Option::Some("hello".to_owned()));
-            let maybe_entry = map.get(&"hello2".to_owned());
-            assert!(maybe_entry.is_none());
+            {
+                let maybe_entry = map.get(&"hello2".to_owned());
+                assert!(maybe_entry.is_none());
+            }
 
             Self { map }.instantiate().globalize()
         }

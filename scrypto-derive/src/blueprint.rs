@@ -454,15 +454,9 @@ fn generate_stubs(
             }
         }
 
-
-        impl ::scrypto::component::LocalComponent for #component_ident {
-            fn globalize_with_modules(
-                self,
-                access_rules: AccessRules,
-                metadata: Metadata,
-                royalty: Royalty,
-            ) -> ComponentAddress {
-                self.component.globalize_with_modules(access_rules, metadata, royalty)
+        impl From<#component_ident> for ::scrypto::component::OwnedComponent {
+            fn from(value: #component_ident) -> Self {
+                value.component
             }
         }
 
@@ -762,14 +756,9 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::LocalComponent for TestComponent {
-                        fn globalize_with_modules(
-                            self,
-                            access_rules: AccessRules,
-                            metadata: Metadata,
-                            royalty: Royalty,
-                        ) -> ComponentAddress {
-                            self.component.globalize_with_modules(access_rules, metadata, royalty)
+                    impl From<TestComponent> for ::scrypto::component::OwnedComponent {
+                        fn from(value: TestComponent) -> Self {
+                            value.component
                         }
                     }
 
