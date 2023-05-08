@@ -802,13 +802,7 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = MethodKey::arbitrary(&mut unstructured).unwrap();
-                    // TODO: crash if using arbitrary on AccessRule
-                    // - thread 'fuzz_tx::test_generate_fuzz_input_data' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine/src/transaction/reference_extractor.rs:90:89
-                    // - SetMethodAccessRule { entity_address: Address(020000000000000000000000000000000000000000000000000000000005), key: MethodKey { module_id: Royalty, ident: "" }, rule: Protected(ProofRule(AmountOf(Dynamic(SchemaPath([Index(11735663649062562571)])), Static(ResourceAddress(1f45ceaa693e21c0fc97c9b43ad41e9ab7ad99b77451aeeab8225cd71ccd))))) }
-                    #[cfg(not(feature = "skip_crash"))]
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let rule = AccessRule::AllowAll;
                     Some(Instruction::SetMethodAccessRule {
                         entity_address,
                         key,
