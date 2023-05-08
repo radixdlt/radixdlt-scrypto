@@ -496,7 +496,10 @@ impl<L: Clone> CallFrame<L> {
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let (removed, db_access) = if heap.contains_node(node_id) {
-            (heap.delete_substate(node_id, module_num, key), DbAccessInfo::default())
+            (
+                heap.delete_substate(node_id, module_num, key),
+                DbAccessInfo::default(),
+            )
         } else {
             store
                 .take_substate(node_id, module_num, key)
@@ -518,7 +521,10 @@ impl<L: Clone> CallFrame<L> {
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let (substates, db_access) = if heap.contains_node(node_id) {
-            (heap.scan_substates(node_id, module_num, count), DbAccessInfo::default())
+            (
+                heap.scan_substates(node_id, module_num, count),
+                DbAccessInfo::default(),
+            )
         } else {
             store.scan_substates(node_id, module_num, count)
         };
@@ -552,7 +558,10 @@ impl<L: Clone> CallFrame<L> {
         })?;
 
         let (substates, db_access) = if heap.contains_node(node_id) {
-            (heap.take_substates(node_id, module_num, count), DbAccessInfo::default())
+            (
+                heap.take_substates(node_id, module_num, count),
+                DbAccessInfo::default(),
+            )
         } else {
             store.take_substates(node_id, module_num, count)
         };

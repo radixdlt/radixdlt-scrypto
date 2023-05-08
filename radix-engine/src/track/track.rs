@@ -6,7 +6,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::interface::{
-    DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase, DbAccessInfo,
+    DatabaseUpdate, DatabaseUpdates, DbAccessInfo, DbSortKey, PartitionEntry, SubstateDatabase,
 };
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::mem;
@@ -622,7 +622,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        Ok((tracked.take(), DbAccessInfo { first_time_record_access }))
+        Ok((
+            tracked.take(),
+            DbAccessInfo {
+                first_time_record_access,
+            },
+        ))
     }
 
     fn scan_substates(
@@ -686,7 +691,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(num_iterations);
         tracked_module.range_read = Some(next_range_read);
 
-        (items, DbAccessInfo { first_time_record_access })
+        (
+            items,
+            DbAccessInfo {
+                first_time_record_access,
+            },
+        )
     }
 
     fn take_substates(
@@ -776,7 +786,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        (items, DbAccessInfo { first_time_record_access })
+        (
+            items,
+            DbAccessInfo {
+                first_time_record_access,
+            },
+        )
     }
 
     fn scan_sorted_substates(
@@ -833,7 +848,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             tracked_module.range_read = Some(next_range_read);
         }
 
-        (items, DbAccessInfo { first_time_record_access })
+        (
+            items,
+            DbAccessInfo {
+                first_time_record_access,
+            },
+        )
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -892,7 +912,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         Ok((
             self.new_lock_handle(node_id, module_num, substate_key, flags),
-            DbAccessInfo { first_time_record_access: !found },
+            DbAccessInfo {
+                first_time_record_access: !found,
+            },
         ))
     }
 

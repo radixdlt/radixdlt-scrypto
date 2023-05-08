@@ -20,6 +20,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
+use radix_engine_store_interface::interface::DbAccessInfo;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -335,10 +336,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
-        first_lock_from_db: bool,
+        db_access: &DbAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
-        if first_lock_from_db {
+        if db_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing
@@ -405,9 +406,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _sorted: bool,
-        first_scan_from_db: bool,
+        db_access: &DbAccessInfo,
     ) -> Result<(), RuntimeError> {
-        if first_scan_from_db {
+        if db_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing
@@ -422,9 +423,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        first_take_from_db: bool,
+        db_access: &DbAccessInfo,
     ) -> Result<(), RuntimeError> {
-        if first_take_from_db {
+        if db_access.first_time_record_access {
             api.kernel_get_system()
                 .modules
                 .costing

@@ -39,9 +39,9 @@ pub enum DatabaseUpdate {
     Delete,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct DbAccessInfo {
-    first_time_record_access: bool
+    pub first_time_record_access: bool,
 }
 
 /// A read interface between Track and a database vendor.

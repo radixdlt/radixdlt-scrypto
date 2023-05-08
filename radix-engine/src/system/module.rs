@@ -8,6 +8,7 @@ use crate::system::system_callback::SystemInvocation;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_store_interface::interface::DbAccessInfo;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================
@@ -141,7 +142,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
-        _first_lock_from_db: bool,
+        _db_access: &DbAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -177,7 +178,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_scan_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _sorted: bool,
-        _first_scan_from_db: bool,
+        _db_access: &DbAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -185,7 +186,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_take_substates<Y: KernelApi<M>>(
         _api: &mut Y,
-        _first_scan_from_db: bool,
+        _db_access: &DbAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

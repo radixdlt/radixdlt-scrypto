@@ -24,8 +24,6 @@ pub enum TakeSubstateError {
 
 pub type NodeSubstates = BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
-
-
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.

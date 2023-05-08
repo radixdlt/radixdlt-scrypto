@@ -20,6 +20,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_store_interface::interface::DbAccessInfo;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 
@@ -503,8 +504,8 @@ where
             data,
         );
 
-        let (lock_handle, db_access) = match &maybe_lock_handle {
-            Ok((lock_handle, db_access)) => (*lock_handle, *db_access),
+        let (lock_handle, db_access): (u32, DbAccessInfo) = match &maybe_lock_handle {
+            Ok((lock_handle, db_access)) => (*lock_handle, db_access.clone()),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -586,7 +587,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, db_access, self)?;
+        M::after_lock_substate(lock_handle, 0, &db_access, self)?;
 
         Ok(lock_handle)
     }
@@ -697,7 +698,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(db_access, self)?;
+        M::on_take_substates(&db_access, self)?;
 
         Ok(substate)
     }
@@ -715,7 +716,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(true, db_access, self)?;
+        M::on_scan_substates(true, &db_access, self)?;
 
         Ok(substates)
     }
@@ -733,7 +734,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(false, db_access, self)?;
+        M::on_scan_substates(false, &db_access, self)?;
 
         Ok(substeates)
     }
@@ -751,7 +752,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(db_access, self)?;
+        M::on_take_substates(&db_access, self)?;
 
         Ok(substeates)
     }
