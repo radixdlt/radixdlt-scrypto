@@ -14,9 +14,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 
 /// API for managing nodes
 pub trait KernelNodeApi {
-    /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
-
     /// TODO: Remove
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
 
@@ -29,6 +26,31 @@ pub trait KernelNodeApi {
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
+
+    /// Removes an RENode and all of it's children from the Heap.
+    ///
+    /// Disposed substates won't necessary be added back due to visibility loss.
+    /// Callers of this function should consider the return value as "raw data", since it's
+    /// no longer tracked by kernel.
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
+
+    /// Move module substates from one node to another node.
+    /// 
+    /// Both source and destination nodes must be lock-free; otherwise a runtime
+    /// error is triggered.
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_module_id: ModuleNumber,
+        dest_node_id: &NodeId,
+        dest_module_id: ModuleNumber,
+    ) -> Result<NodeSubstates, RuntimeError>;
+
+    // List the modules under a node
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<ModuleNumber>, RuntimeError>;
 }
 
 /// Info regarding the substate locked as well as what type of lock

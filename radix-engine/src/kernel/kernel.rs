@@ -304,6 +304,23 @@ where
 
         Ok(())
     }
+
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_module_id: ModuleNumber,
+        dest_node_id: &NodeId,
+        dest_module_id: ModuleNumber,
+    ) -> Result<NodeSubstates, RuntimeError> {
+        todo!()
+    }
+
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<ModuleNumber>, RuntimeError> {
+        todo!()
+    }
 }
 
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>

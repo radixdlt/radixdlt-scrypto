@@ -458,7 +458,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        global_address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
         let module_ids = modules
@@ -477,7 +477,7 @@ where
             )));
         }
 
-        // Drop the node
+        // Read the type info
         let node_id = modules
             .remove(&ObjectModuleId::SELF)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
@@ -490,17 +490,20 @@ where
             .events
             .add_replacement(
                 (node_id, ObjectModuleId::SELF),
-                (*address.as_node_id(), ObjectModuleId::SELF),
+                (*global_address.as_node_id(), ObjectModuleId::SELF),
             );
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-
-        // Update the `global` flag of the type info substate.
-        let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
-            .unwrap()
-            .remove(&TypeInfoOffset::TypeInfo.into())
+        let lock_handle = self.api.kernel_lock_substate(
+            &node_id,
+            TYPE_INFO_BASE_MODULE,
+            &TypeInfoOffset::TypeInfo.into(),
+            LockFlags::read_only(),
+            SystemLockData::Default,
+        )?;
+        let mut type_info: TypeInfoSubstate = self
+            .api
+            .kernel_read_substate(lock_handle)?
+            .as_typed()
             .unwrap();
-        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) => {
                 if *global {
@@ -516,15 +519,23 @@ where
                 )))
             }
         };
-        node_substates
-            .get_mut(&TYPE_INFO_BASE_MODULE)
-            .unwrap()
-            .insert(
-                TypeInfoOffset::TypeInfo.into(),
-                IndexedScryptoValue::from_typed(&type_info),
-            );
 
-        // Drop the module nodes and move the substates to the designated module ID.
+        // Create a global node
+        self.kernel_create_node(global_address.into(), btreemap!(
+            TYPE_INFO_BASE_MODULE => btreemap!(
+                SubstateKey::from(TypeInfoOffset::TypeInfo) => IndexedScryptoValue::from_typed(&type_info),
+            )
+        ))?;
+
+        // Move self modules to the newly created global node, and drop
+        let mut module_ids = self.kernel_list_modules(&node_id)?;
+        module_ids.remove(&TYPE_INFO_BASE_MODULE);
+        for module_id in module_ids {
+            self.kernel_move_module(&node_id, module_id, global_address.as_node_id(), module_id)?;
+        }
+        self.kernel_drop_node(&node_id)?;
+
+        // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
                 ObjectModuleId::SELF => panic!("Should have been removed already"),
@@ -549,18 +560,20 @@ where
                         .events
                         .add_replacement(
                             (node_id, ObjectModuleId::SELF),
-                            (*address.as_node_id(), module_id),
+                            (*global_address.as_node_id(), module_id),
                         );
 
-                    let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
-                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
-                    node_substates.insert(module_id.base_module(), self_substates);
+                    // Move and drop
+                    self.kernel_move_module(
+                        &node_id,
+                        OBJECT_BASE_MODULE,
+                        global_address.as_node_id(),
+                        module_id.base_module(),
+                    )?;
+                    self.kernel_drop_node(&node_id)?;
                 }
             }
         }
-
-        self.api
-            .kernel_create_node(address.into(), node_substates)?;
 
         Ok(())
     }
@@ -1849,6 +1862,24 @@ where
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_create_node(node_id, node_substates)
+    }
+
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_module_id: ModuleNumber,
+        dest_node_id: &NodeId,
+        dest_module_id: ModuleNumber,
+    ) -> Result<NodeSubstates, RuntimeError> {
+        self.api
+            .kernel_move_module(src_node_id, src_module_id, dest_node_id, dest_module_id)
+    }
+
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<ModuleNumber>, RuntimeError> {
+        self.api.kernel_list_modules(node_id)
     }
 }
 
