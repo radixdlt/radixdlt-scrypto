@@ -464,7 +464,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         virtualize: F,
-    ) -> (&mut TrackedKey, bool) {
+    ) -> (&mut TrackedKey, SubstateStoreAccessInfo) {
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let partition = &mut self
@@ -513,7 +513,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             Entry::Occupied(..) => true,
         };
 
-        (&mut partition.get_mut(&db_sort_key).unwrap().tracked, found)
+        (
+            &mut partition.get_mut(&db_sort_key).unwrap().tracked,
+            SubstateStoreAccessInfo {
+                first_time_record_access: found,
+            },
+        )
     }
 
     fn get_tracked_substate(
@@ -521,7 +526,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-    ) -> (&mut TrackedKey, bool) {
+    ) -> (&mut TrackedKey, SubstateStoreAccessInfo) {
         self.get_tracked_substate_virtualize(node_id, partition_num, substate_key, || None)
     }
 }
@@ -611,7 +616,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreAccessInfo), TakeSubstateError> {
-        let (tracked, first_time_record_access) =
+        let (tracked, store_access) =
             self.get_tracked_substate(node_id, partition_num, substate_key.clone());
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
@@ -623,12 +628,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        Ok((
-            tracked.take(),
-            SubstateStoreAccessInfo {
-                first_time_record_access,
-            },
-        ))
+        Ok((tracked.take(), store_access))
     }
 
     fn scan_substates(
@@ -867,7 +867,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         virtualize: F,
     ) -> Result<(u32, SubstateStoreAccessInfo), AcquireLockError> {
         // Load the substate from state track
-        let (tracked, found) = self.get_tracked_substate_virtualize(
+        let (tracked, store_access) = self.get_tracked_substate_virtualize(
             node_id,
             partition_num,
             substate_key.clone(),
@@ -914,9 +914,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         Ok((
             self.new_lock_handle(node_id, partition_num, substate_key, flags),
-            SubstateStoreAccessInfo {
-                first_time_record_access: !found,
-            },
+            store_access,
         ))
     }
 
