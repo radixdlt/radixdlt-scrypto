@@ -164,9 +164,12 @@ impl NonFungibleProofBlueprint {
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
-        let proof: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof.drop_proof(api)?;
+        let proof_substate: NonFungibleProof =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        proof_substate.drop_proof(api)?;
         api.kernel_drop_lock(handle)?;
+
+        api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
     }

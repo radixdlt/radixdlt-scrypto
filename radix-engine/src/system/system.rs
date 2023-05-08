@@ -883,21 +883,36 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        if let Some(blueprint_parent) = info.outer_object {
-            let actor = self.api.kernel_get_system_state().current.unwrap();
-            let instance_context = actor.instance_context();
-            match instance_context {
-                Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
-                _ => {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                            node_id: node_id.clone(),
-                            package_address: info.blueprint.package_address,
-                            blueprint_name: info.blueprint.blueprint_name,
-                        })),
-                    ));
+        let actor = self.api.kernel_get_system_state().current.unwrap();
+
+        let mut is_drop_allowed = false;
+
+        // If the actor is the object's outer object
+        // TODO: not sure if we need this in the long run; given the inner object
+        // has a link to the outer object, all business logic can be implemented in the
+        // inner blueprint?
+        if let Some(outer_object) = info.outer_object {
+            if let Some(instance_context) = actor.instance_context() {
+                if instance_context.instance.eq(&outer_object) {
+                    is_drop_allowed = true;
                 }
             }
+        }
+        // If the actor is a function within the same blueprint
+        if let Actor::Function { blueprint, .. } = actor {
+            if blueprint.eq(&info.blueprint) {
+                is_drop_allowed = true;
+            }
+        }
+
+        if !is_drop_allowed {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                    node_id: node_id.clone(),
+                    package_address: info.blueprint.package_address,
+                    blueprint_name: info.blueprint.blueprint_name,
+                })),
+            ));
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
