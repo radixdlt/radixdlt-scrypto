@@ -503,7 +503,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
-        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
@@ -511,7 +510,10 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-                    AccessRuleEntry::AccessRule(rule!(require(non_fungible_global_id))),
+                    // TODO: Change to global caller
+                    AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
+                        EPOCH_MANAGER_PACKAGE
+                    )))),
                 ),
             ),
         ]
@@ -521,26 +523,21 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_liquidity_token<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
-
         liquidity_token_auth.insert(
             Mint,
-            (
-                rule!(require(non_fungible_global_id.clone())),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -551,26 +548,22 @@ impl ValidatorCreator {
         Ok(liquidity_token_resource_manager.0)
     }
 
-    fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_unstake_nft<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
 
         unstake_token_auth.insert(
             Mint,
-            (
-                rule!(require(non_fungible_global_id.clone())),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -594,10 +587,14 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let address = GlobalAddress::new_or_panic(
+            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
+        );
+
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let unstake_nft = Self::create_unstake_nft(api)?;
-        let liquidity_token = Self::create_liquidity_token(api)?;
+        let unstake_nft = Self::create_unstake_nft(address, api)?;
+        let liquidity_token = Self::create_liquidity_token(address, api)?;
 
         let substate = ValidatorSubstate {
             sorted_key: None,
@@ -618,8 +615,6 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_or_panic(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
                 ObjectModuleId::Main => validator_id,
@@ -627,8 +622,12 @@ impl ValidatorCreator {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address.into(),
+            address,
         )?;
-        Ok((address.into(), owner_token_bucket))
+
+        Ok((
+            ComponentAddress::new_or_panic(address.into()),
+            owner_token_bucket,
+        ))
     }
 }

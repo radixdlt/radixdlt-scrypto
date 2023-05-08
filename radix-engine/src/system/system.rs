@@ -12,9 +12,10 @@ use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData,
+    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::ActingLocation;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -136,8 +137,8 @@ where
         } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
-            || node_id.eq(PACKAGE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(GLOBAL_ACTOR_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OWNER_BADGE.as_node_id())
             || node_id.eq(VALIDATOR_OWNER_BADGE.as_node_id())
             || node_id.eq(IDENTITY_OWNER_BADGE.as_node_id())
@@ -235,7 +236,7 @@ where
         Ok(node_id.into())
     }
 
-    fn get_blueprint_schema(
+    pub fn get_blueprint_schema(
         &mut self,
         blueprint: &Blueprint,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
@@ -263,11 +264,9 @@ where
                 .schema
                 .blueprints
                 .remove(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    )),
-                )))?;
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::BlueprintDoesNotExist(blueprint.clone()),
+                ))?;
             self.api
                 .kernel_get_system_state()
                 .system
@@ -453,7 +452,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
     ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintSchema), RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let method = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
@@ -703,6 +702,16 @@ where
 
         Ok(())
     }
+
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+        let actor = self.api.kernel_get_system_state().current;
+        actor.try_as_method().map(|a| a.node_id)
+    }
+
+    pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        Ok(actor.fn_identifier())
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -781,7 +790,7 @@ where
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
@@ -790,16 +799,10 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(
-        &mut self,
-        entity_type: EntityType,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        if !entity_type.is_global() {
-            return Err(RuntimeError::SystemError(
-                SystemError::InvalidGlobalEntityType,
-            ));
-        }
-        let allocated_node_id = self.api.kernel_allocate_node_id(entity_type)?;
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let allocated_node_id = self
+            .api
+            .kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 
@@ -882,43 +885,31 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let (object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
-                match type_info {
-                    TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
-                        let global_address = if global {
-                            Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                        } else {
-                            // See if we have a parent
+                let object_info = self.get_object_info(receiver)?;
+                let global_address = if object_info.global {
+                    Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                } else {
+                    // See if we have a parent
 
-                            // TODO: Cleanup, this is a rather crude way of trying to figure out
-                            // TODO: whether the node reference is a child of the current parent
-                            // TODO: this should be cleaned up once call_frame is refactored
-                            let (visibility, on_heap) =
-                                self.api.kernel_get_node_info(receiver).unwrap();
-                            match (visibility, on_heap) {
-                                (RefType::Normal, false) => self
-                                    .api
-                                    .kernel_get_system_state()
-                                    .current
-                                    .and_then(|a| match a {
-                                        Actor::Method(MethodActor { global_address, .. }) => {
-                                            global_address.clone()
-                                        }
-                                        _ => None,
-                                    }),
+                    // TODO: Cleanup, this is a rather crude way of trying to figure out
+                    // TODO: whether the node reference is a child of the current parent
+                    // TODO: this should be cleaned up once call_frame is refactored
+                    let (visibility, on_heap) = self.api.kernel_get_node_info(receiver).unwrap();
+                    match (visibility, on_heap) {
+                        (RefType::Normal, false) => {
+                            let actor = self.api.kernel_get_system_state().current;
+                            match actor {
+                                Actor::Method(MethodActor { global_address, .. }) => {
+                                    global_address.clone()
+                                }
                                 _ => None,
                             }
-                        };
-
-                        (info, global_address)
+                        }
+                        _ => None,
                     }
+                };
 
-                    TypeInfoSubstate::KeyValueStore(..) => {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::CallMethodOnKeyValueStore,
-                        ))
-                    }
-                }
+                (object_info, global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
@@ -935,7 +926,6 @@ where
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
         let payload_size = args.len() + identifier.2.len();
-        let blueprint = object_info.blueprint.clone();
 
         // TODO: Can we load this lazily when needed?
         let instance_context = if object_info.global {
@@ -961,20 +951,16 @@ where
         };
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(
+            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?,
+            additional_node_ref_to_copy: Some(receiver.clone()),
+            call_frame_data: Actor::method(
                 global_address,
                 identifier.clone(),
                 object_info,
                 instance_context,
             ),
-            sys_invocation: SystemInvocation {
-                blueprint,
-                ident: FnIdent::Application(identifier.2.clone()),
-                receiver: Some(identifier),
-            },
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
             payload_size,
         };
 
@@ -1000,7 +986,7 @@ where
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
         if let Some(blueprint_parent) = info.outer_object {
-            let actor = self.api.kernel_get_system_state().current.unwrap();
+            let actor = self.api.kernel_get_system_state().current;
             let instance_context = actor.instance_context();
             match instance_context {
                 Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
@@ -1402,15 +1388,11 @@ where
         let payload_size = args.len() + identifier.size();
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::function(identifier.clone()),
+            call_frame_data: Actor::function(identifier.0, identifier.1),
+            additional_node_ref_to_copy: None,
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            sys_invocation: SystemInvocation {
-                blueprint: identifier.0,
-                ident: FnIdent::Application(identifier.1),
-                receiver: None,
-            },
             payload_size,
         };
 
@@ -1514,7 +1496,7 @@ where
 
     #[trace_resources]
     fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
             .map(|m| m.object_info.clone())
@@ -1525,7 +1507,7 @@ where
 
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         match actor {
             Actor::Method(MethodActor {
                 global_address: Some(address),
@@ -1541,7 +1523,7 @@ where
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
     }
 }
@@ -1630,14 +1612,11 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let barrier_crossings_required = 1;
-        let barrier_crossings_allowed = 1;
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
         // Authenticate
         if !Authentication::verify_method_auth(
-            barrier_crossings_required,
-            barrier_crossings_allowed,
+            ActingLocation::InCallFrame,
             auth_zone_id,
             &rule,
             self,
@@ -1697,7 +1676,7 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
         let (blueprint_schema, local_type_index) = {
@@ -1732,7 +1711,7 @@ where
         };
 
         // Construct the event type identifier based on the current actor
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
                 node_id, module_id, ..
