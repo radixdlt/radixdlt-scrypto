@@ -1,7 +1,6 @@
 use radix_engine::errors::{KernelError, RuntimeError, SystemUpstreamError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

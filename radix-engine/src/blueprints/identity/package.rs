@@ -7,6 +7,7 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
@@ -16,8 +17,8 @@ use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use resources_tracker_macro::trace_resources;
 
-const IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
-const IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME: &str = "create_virtual_eddsa_25519";
+const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
+const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
 
 pub struct IdentityNativePackage;
 
@@ -59,11 +60,11 @@ impl IdentityNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
+                export_name: IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID => VirtualLazyLoadSchema {
-                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME.to_string(),
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
+                export_name: IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -140,7 +141,7 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -152,11 +153,11 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_ecdsa_virtual(input.id, api)?;
+                let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_EDDSA_25519_EXPORT_NAME => {
+            IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -168,7 +169,7 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_eddsa_virtual(input.id, api)?;
+                let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -221,36 +222,68 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn create_ecdsa_virtual<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual_secp256k1<Y>(
+        input: VirtualLazyLoadInput,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
-
-        Self::create_object(access_rules, api)
+        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
     }
 
-    pub fn create_eddsa_virtual<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual_ed25519<Y>(
+        input: VirtualLazyLoadInput,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedIdentity::create_presecurified(non_fungible_global_id, api)?;
+        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
+    }
 
-        Self::create_object(access_rules, api)
+    fn create_virtual<Y>(
+        public_key_hash: PublicKeyHash,
+        api: &mut Y,
+    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
+        let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
+
+        let modules = Self::create_object(access_rules, api)?;
+
+        {
+            // Set up metadata
+            // TODO: Improve this when the Metadata module API is nicer
+            let metadata = modules.get(&ObjectModuleId::Metadata).unwrap();
+            // NOTE:
+            // This is the owner key for ROLA.
+            // We choose to set this explicitly to simplify the security-critical logic off-ledger.
+            // In particular, we want an owner to be able to explicitly delete the owner keys.
+            // If we went with a "no metadata = assume default public key hash", then this could cause unexpeted
+            // security-critical behaviour if a user expected that deleting the metadata removed the owner keys.
+            api.call_method(
+                &metadata.0,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: "owner_keys".to_string(),
+                    value: scrypto_decode(
+                        &scrypto_encode(&MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
+                            public_key_hash,
+                        )]))
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                })
+                .unwrap(),
+            )?;
+        }
+
+        Ok(modules)
     }
 
     fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>

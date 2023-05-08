@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue, Url};
+use radix_engine_interface::api::node_modules::metadata::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -224,10 +224,31 @@ fn can_set_public_key_metadata_through_manifest() {
 }
 
 #[test]
+fn can_set_instant_metadata_through_manifest() {
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Instant(Instant {
+        seconds_since_unix_epoch: 51,
+    })));
+}
+
+#[test]
 fn can_set_url_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Url(Url(
-        "test".to_string()
+        "https://radixdlt.com/index.html".to_string(),
     ))));
+}
+
+#[test]
+fn can_set_origin_metadata_through_manifest() {
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Origin(Origin(
+        "https://radixdlt.com".to_string(),
+    ))));
+}
+
+#[test]
+fn can_set_public_key_hash_metadata_through_manifest() {
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::PublicKeyHash(
+        PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash([0; 29])),
+    )));
 }
 
 #[test]

@@ -1,8 +1,6 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

@@ -39,7 +39,6 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
