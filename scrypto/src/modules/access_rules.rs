@@ -47,8 +47,9 @@ impl AttachedAccessRules {
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
         // TODO: allow setting method auth on other modules besides self
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -64,8 +65,9 @@ impl AttachedAccessRules {
     pub fn lock_method_auth(&mut self, method_name: &str) {
         // TODO: allow locking method auth on other modules besides self
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {

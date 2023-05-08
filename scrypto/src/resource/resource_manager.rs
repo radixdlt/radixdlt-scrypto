@@ -31,8 +31,9 @@ impl ResourceManager {
 
     pub fn set_mintable(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -47,8 +48,9 @@ impl ResourceManager {
 
     pub fn set_burnable(&self, access_rule: AccessRule) -> () {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -71,8 +73,9 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -87,8 +90,9 @@ impl ResourceManager {
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -103,8 +107,9 @@ impl ResourceManager {
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -119,8 +124,9 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -135,8 +141,9 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
@@ -154,8 +161,9 @@ impl ResourceManager {
 
     pub fn lock_mintable(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -170,8 +178,9 @@ impl ResourceManager {
 
     pub fn lock_burnable(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -186,8 +195,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -202,8 +212,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -220,8 +231,9 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -234,8 +246,9 @@ impl ResourceManager {
     }
 
     pub fn lock_depositable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
@@ -248,8 +261,9 @@ impl ResourceManager {
     }
 
     pub fn lock_recallable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {

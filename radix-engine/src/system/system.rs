@@ -738,19 +738,10 @@ where
     }
 
     #[trace_resources]
-    fn call_method(
+    fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, ObjectModuleId::SELF, method_name, args)
-    }
-
-    #[trace_resources]
-    fn call_module_method(
-        &mut self,
-        receiver: &NodeId,
+        direct_access: bool,
         object_module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -848,7 +839,7 @@ where
                 identifier.clone(),
                 object_info,
                 instance_context,
-                false, // TODO: add direct access
+                direct_access,
             ),
             sys_invocation: SystemInvocation {
                 blueprint,

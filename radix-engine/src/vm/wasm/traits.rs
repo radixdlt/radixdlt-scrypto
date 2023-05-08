@@ -18,6 +18,7 @@ pub trait WasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        direct_access: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,

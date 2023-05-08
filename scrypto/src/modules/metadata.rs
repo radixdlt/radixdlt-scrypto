@@ -56,8 +56,9 @@ pub trait MetadataObject {
             scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
 
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 node_id,
+                false,
                 module_id,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -73,8 +74,9 @@ pub trait MetadataObject {
         let (node_id, module_id) = self.self_id();
 
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 node_id,
+                false,
                 module_id,
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
@@ -90,8 +92,9 @@ pub trait MetadataObject {
         let (node_id, module_id) = self.self_id();
 
         let rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 node_id,
+                false,
                 module_id,
                 METADATA_GET_IDENT,
                 scrypto_encode(&MetadataGetInput {
@@ -113,8 +116,9 @@ pub trait MetadataObject {
         let (node_id, module_id) = self.self_id();
 
         let rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 node_id,
+                false,
                 module_id,
                 METADATA_REMOVE_IDENT,
                 scrypto_encode(&MetadataRemoveInput {
