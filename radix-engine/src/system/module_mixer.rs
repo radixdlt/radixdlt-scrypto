@@ -362,34 +362,37 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        dropped_actor: &Option<Actor>,
+    ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::after_pop_frame(api)?;
+            KernelTraceModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::after_pop_frame(api)?;
+            CostingModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::after_pop_frame(api)?;
+            NodeMoveModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::after_pop_frame(api)?;
+            AuthModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::after_pop_frame(api)?;
+            LoggerModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::after_pop_frame(api)?;
+            TransactionRuntimeModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::after_pop_frame(api)?;
+            ExecutionTraceModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::after_pop_frame(api)?;
+            TransactionLimitsModule::after_pop_frame(api, dropped_actor)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::after_pop_frame(api)?;
+            EventsModule::after_pop_frame(api, dropped_actor)?;
         }
         Ok(())
     }

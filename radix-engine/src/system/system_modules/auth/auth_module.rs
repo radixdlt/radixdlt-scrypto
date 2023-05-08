@@ -41,6 +41,9 @@ pub struct Unauthorized {
 pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
+    /// Invariants:
+    /// - An auth zone is created for every non-frame.
+    /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
 
@@ -310,6 +313,7 @@ impl AuthModule {
         // Create node
         let auth_zone_node_id =
             api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
@@ -340,16 +344,6 @@ impl AuthModule {
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Create sentinel node
-        Self::on_execution_start(api)
-    }
-
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Destroy sentinel node
-        Self::on_execution_finish(api, &Message::default())
-    }
-
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
@@ -360,14 +354,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _update: &Message,
+        _dropped_actor: &Option<Actor>,
     ) -> Result<(), RuntimeError> {
-        if let Some(auth_zone) = api.kernel_get_system().modules.auth.auth_zone_stack.pop() {
-            api.kernel_drop_node(&auth_zone)?;
-            // Proofs in auth zone will be re-owned by the frame and auto dropped.
-        }
+        // update internal state
+        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }

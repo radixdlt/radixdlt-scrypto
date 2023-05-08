@@ -257,7 +257,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _dropped_actor: &Option<Actor>,
+    ) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_system()
             .modules

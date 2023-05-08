@@ -66,7 +66,10 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_pop_frame<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _dropped_actor: &Option<Actor>,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 

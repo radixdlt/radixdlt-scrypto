@@ -118,7 +118,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Option<Actor>) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

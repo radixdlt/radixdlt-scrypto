@@ -202,47 +202,49 @@ where
             let output = M::invoke_upstream(sys_invocation, args, self)?;
             let mut message = Message::from_indexed_scrypto_value(&output);
 
-            // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
-
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, self.store)
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
+            // Handle execution finish
+            M::on_execution_finish(&mut message, self)?;
+
             (output, message)
         };
 
-        // Pop call frame
+        // Move
         {
-            let mut parent = self.prev_frame_stack.pop().unwrap();
+            let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::exchange(&mut self.current_frame, &mut parent, message)
+            CallFrame::exchange(&mut self.current_frame, parent, message)
                 .map_err(CallFrameError::ExchangeError)
                 .map_err(KernelError::CallFrameError)?;
 
-            // auto drop
-            {
-                let owned_nodes = self.current_frame.owned_nodes();
-                M::auto_drop(owned_nodes, self)?;
-                // Last check
-                if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                        node_id,
-                    )));
-                }
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+                return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                    node_id,
+                )));
             }
-
-            // Restore previous frame
-            self.current_frame = parent;
-
-            self.id_allocator.pop()?;
         }
 
-        // After pop call frame
-        M::after_pop_frame(self)?;
+        // Pop call frame
+        {
+            let parent = self.prev_frame_stack.pop().unwrap();
+
+            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
+
+            self.id_allocator.pop()?;
+
+            M::after_pop_frame(self, dropped_frame.actor())?;
+        }
 
         Ok(output)
     }

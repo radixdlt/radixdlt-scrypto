@@ -1,6 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::errors::{ApplicationError, SystemUpstreamError};
-use crate::kernel::kernel_api::KernelNodeApi;
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -38,23 +39,30 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         let input: WorktopDropInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let mut node_substates = api.kernel_drop_node(input.worktop.0.as_node_id())?;
-        let substate = node_substates
-            .remove(&OBJECT_BASE_MODULE)
-            .unwrap()
-            .remove(&WorktopOffset::Worktop.into())
-            .unwrap();
-        let worktop: WorktopSubstate = substate.as_typed().unwrap();
-        for (_, bucket) in worktop.resources {
+        // Recursively drop buckets
+        let handle = api.kernel_lock_substate(
+            input.worktop.0.as_node_id(),
+            OBJECT_BASE_MODULE,
+            &WorktopOffset::Worktop.into(),
+            LockFlags::read_only(),
+            SystemLockData::Default,
+        )?;
+        let worktop_substate: WorktopSubstate =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        for (_, bucket) in worktop_substate.resources {
             let bucket = Bucket(bucket);
             bucket.sys_drop_empty(api)?;
         }
+        api.kernel_drop_lock(handle)?;
+
+        // Destroy self
+        api.drop_object(input.worktop.0.as_node_id())?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }

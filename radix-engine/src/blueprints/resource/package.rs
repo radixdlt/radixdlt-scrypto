@@ -1316,6 +1316,15 @@ impl ResourceManagerNativePackage {
                 export_name: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
             },
         );
+        functions.insert(
+            AUTH_ZONE_DROP_IDENT.to_string(),
+            FunctionSchema {
+                receiver: None,
+                input: aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
+                output: aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
+                export_name: AUTH_ZONE_DROP_EXPORT_NAME.to_string(),
+            },
+        );
 
         let schema = generate_full_schema(aggregator);
         let auth_zone_schema = BlueprintSchema {
@@ -2198,6 +2207,11 @@ impl ResourceManagerNativePackage {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
                 AuthZoneBlueprint::drain(input, api)
+            }
+            AUTH_ZONE_DROP_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                AuthZoneBlueprint::drop(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
