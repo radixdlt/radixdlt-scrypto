@@ -18,7 +18,7 @@ use transaction::manifest::ast;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
 
-const INSTRUCTION_MAX_CNT: u8 = 3;
+const INSTRUCTION_MAX_CNT: u8 = 10;
 
 #[derive(Debug, Clone)]
 struct Account {
@@ -300,7 +300,9 @@ impl TxFuzzer {
         builder.lock_fee(component_address, fee);
 
         let mut i = 0;
-        while i < INSTRUCTION_MAX_CNT && unstructured.len() > 0 {
+        let instruction_cnt = unstructured.int_in_range(1..=INSTRUCTION_MAX_CNT).unwrap();
+
+        while i < instruction_cnt && unstructured.len() > 0 {
             let next: u8 = unstructured
                 .int_in_range(0..=ast::Instruction::COUNT as u8 - 1)
                 .unwrap();
