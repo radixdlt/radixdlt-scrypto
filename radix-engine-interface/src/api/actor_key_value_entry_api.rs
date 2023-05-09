@@ -5,6 +5,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 pub trait ClientActorKeyValueEntryApi<E: Debug> {
+    /// If the key value entry doesn't exist, it uses the default "Option::None"
     fn actor_lock_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
