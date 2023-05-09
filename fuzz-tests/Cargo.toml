@@ -35,7 +35,7 @@ scrypto-unit = { path = "../scrypto-unit", default-features = false }
 lazy_static = { git = "https://github.com/rust-fuzz/resettable-lazy-static.rs", rev = "c5eb91f2bde4c2f70092d1574f7145cb33ff0922" }
 
 # Use forked repo for bnum with Arbitrary traits supported
-bnum = { git = "https://github.com/radixdlt/bnum.git", rev = "0cecbdc7bf59629978cab74786deefe7583c6c2e" }
+bnum = { git = "https://github.com/radixdlt/bnum.git", rev = "ecc77523b5a4b93554bd58c7611999fa65a9448c" }
 
 [workspace]
 members = ["."]
