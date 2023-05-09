@@ -178,7 +178,7 @@ function generate_input() {
             # Collect input data
             popd
 
-            cargo nextest run test_generate_fuzz_input_data  --release  --features skip_crash
+            cargo nextest run test_generate_fuzz_input_data  --release
 
             if [ $mode = "raw" ] ; then
                 #mv ../radix-engine-tests/manifest_*.raw ${curr_path}/${final_dir}

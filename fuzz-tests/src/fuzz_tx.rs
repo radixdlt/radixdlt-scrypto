@@ -315,6 +315,7 @@ impl TxFuzzer {
                 // AssertWorktopContainsByAmount
                 1 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
+
                     Some(Instruction::AssertWorktopContainsByAmount {
                         amount,
                         resource_address,
@@ -328,6 +329,7 @@ impl TxFuzzer {
                 // BurnResource
                 3 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
+
                     Some(Instruction::BurnResource { bucket_id })
                 }
                 // CallFunction
@@ -347,6 +349,7 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+
                     Some(Instruction::ClaimPackageRoyalty { package_address })
                 }
                 // ClearAuthZone
@@ -356,6 +359,7 @@ impl TxFuzzer {
                 // CloneProof
                 10 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
+
                     Some(Instruction::CloneProof { proof_id })
                 }
                 // CreateAccessController
@@ -364,18 +368,7 @@ impl TxFuzzer {
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
-                    // TODO: crash when using arbitrary RuleSet
-                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', src/fuzz_tx.rs:358:31
-                    // - crash if any role equals
-                    //   Protected(ProofRule(AmountOf(Static(9346522905005059338871465549192114877207573668753774438020.279842539602103386), Static(ResourceAddress(8fca9cf99eb51bbcbd774efea6def526efa9ac26eadfbc5c5f26b4fe4286))))), recovery_role: AllowAll, confirmation_role: DenyAll }
-                    #[cfg(not(feature = "skip_crash"))]
                     let rule_set = RuleSet::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let rule_set = RuleSet {
-                        primary_role: AccessRule::AllowAll,
-                        recovery_role: AccessRule::AllowAll,
-                        confirmation_role: AccessRule::AllowAll,
-                    };
                     let timed_recovery_delay_in_minutes =
                         <Option<u32>>::arbitrary(&mut unstructured).unwrap();
 
@@ -406,16 +399,7 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - AccountCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {}, method_auth: {MethodKey { module_id: SELF, ident: "-!" }: AccessRule(DenyAll)}, grouped_auth: {"!LX": Protected(AllOf([AnyOf([]), AllOf([])])), "1)UZ": DenyAll, "t7": DenyAll}, default_auth: AccessRule(AllowAll), method_auth_mutability: {MethodKey { module_id: SELF, ident: "" }: AccessRule(Protected(AnyOf([AnyOf([AllOf([AllOf([]), ProofRule(AllOf(Static([StaticResource(ResourceAddress(dcd0c83141b9ff8080553b6190b5a7dc0cbde7854d9cf22b600480dcbc36)), Dynamic(SchemaPath([Field("\u{4}G<]y\u{5}\u{1f}")]))])))])]), AnyOf([ProofRule(AmountOf(Static(53647144799766708596252244031328084853448836832030149660791.749040275160793477), Static(ResourceAddress(d53666602d72af4e26da05ce175857e93a99a2ee5636a74734e7122ff9f2))))])])))}, grouped_auth_mutability: {"": DenyAll}, default_auth_mutability: AccessRule(DenyAll) } }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = AccountCreateAdvancedInput {
-                        config: AccessRulesConfig::new()
-                            .default(AccessRule::AllowAll, AccessRule::AllowAll),
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -429,27 +413,8 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - FungibleResourceManagerCreateInput { divisibility: 195, metadata: {"u\u{3}": ""}, access_rules: {UpdateNonFungibleData: (Protected(AnyOf([AllOf([ProofRule(AmountOf(Static(26154969881750291342967843398213318666330202269873300598763.295047154523616676), Static(ResourceAddress(6071567d817883153c3e5ad7505152a0cf52805d639e653336dca49f6c8d)))), ProofRule(Require(StaticNonFungible(ResourceAddress(4ba06972980bd34c26b0a3b4f9026d1fc145206120c7481aefff9bf9191c):#18136094832208207429#)))])])), DenyAll)} }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input =
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = FungibleResourceManagerCreateInput {
-                        divisibility: 18,
-                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceMethodAuthKey::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                            (
-                                ResourceMethodAuthKey::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                        ]),
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -463,30 +428,10 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - FungibleResourceManagerCreateWithInitialSupplyInput { divisibility: 220, metadata: {}, access_rules: {Burn: (DenyAll, DenyAll), Withdraw: (Protected(AnyOf([])), Protected(ProofRule(AmountOf(Dynamic(SchemaPath([])), Static(ResourceAddress(6c7bbb0abab0bb8a458c42209dbb23d885d698ece363e52f77dd4832efa8)))))), Recall: (AllowAll, AllowAll)}, initial_supply: -2148955441104578335242117384818719057515562139924293906511.547848591891882845 }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input = FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = FungibleResourceManagerCreateWithInitialSupplyInput {
-                        divisibility: 18,
-                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceMethodAuthKey::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                            (
-                                ResourceMethodAuthKey::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                        ]),
-                        initial_supply: Decimal::arbitrary(&mut unstructured).unwrap(),
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -515,19 +460,7 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - IdentityCreateAdvancedInput { config: AccessRulesConfig { direct_method_auth: {MethodKey { module_id: SELF, ident: "" }: AccessRule(AllowAll)}, method_auth: {MethodKey { module_id: SELF, ident: "" }: Group(""), MethodKey { module_id: AccessRules, ident: "" }: AccessRule(AllowAll)}, grouped_auth: {"": Protected(AnyOf([]))}, default_auth: AccessRule(DenyAll), method_auth_mutability: {MethodKey { module_id: AccessRules, ident: "" }: Group("ǧv")}, grouped_auth_mutability: {"": Protected(AnyOf([ProofRule(CountOf(Dynamic(SchemaPath([Index(10162409116604676426)])), Dynamic(SchemaPath([Index(13698182042123810480)])))), ProofRule(Require(StaticNonFungible(ResourceAddress(20f6a7a71967b9349d46c1323bf8b4a369b5c376733a910f29d1fdef33ec):#14463890316188986874#)))])), "irRD4": DenyAll}, default_auth_mutability: AccessRule(AllowAll) } }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = {
-                        let owner_id =
-                            NonFungibleGlobalId::from_public_key(&self.data.accounts[0].public_key);
-                        let config = AccessRulesConfig::new()
-                            .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
-                        IdentityCreateAdvancedInput { config };
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -541,28 +474,8 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - NonFungibleResourceManagerCreateInput { id_type: Integer, non_fungible_schema: NonFungibleDataSchema { schema: Schema { type_kinds: [], type_metadata: [], type_validations: [] }, non_fungible: WellKnown(66), mutable_fields: {} }, metadata: {"": "", "%": "", "5": ""}, access_rules: {Burn: (Protected(AllOf([AllOf([AllOf([AllOf([]), AnyOf([ProofRule(AllOf(Static([StaticResource(ResourceAddress(6931f6c76e112721df1e958fb24ccf97497847a42429e23b27e22cae82b5))]))), AnyOf([]), ProofRule(AllOf(Dynamic(SchemaPath([])))), AllOf([ProofRule(CountOf(Dynamic(SchemaPath([])), Static([StaticNonFungible(ResourceAddress(5e3405cc2a8ff49842df0c42a192658f24f2380194fff3e1e8fe348952be):[])])))]), AllOf([])])])])])), AllowAll), UpdateMetadata: (AllowAll, DenyAll)} }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
                         .unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = NonFungibleResourceManagerCreateInput {
-                        id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceMethodAuthKey::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                            (
-                                ResourceMethodAuthKey::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll),
-                            ),
-                        ]),
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -577,47 +490,11 @@ impl TxFuzzer {
                     self.package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
-                    // TODO: crash when using arbitrary
-                    // thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: MaxDepthExceeded(24)', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:45
-                    // after increasing depth to 32
-                    // thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // NonFungibleResourceManagerCreateWithInitialSupplyManifestInput { id_type: Bytes, non_fungible_schema: NonFungibleDataSchema { schema: Schema { type_kinds: [], type_metadata: [], type_validations: [] }, non_fungible: WellKnown(66), mutable_fields: {} }, metadata: {"": "", "\u{1e}^ű": "", "<": "", ">%.": ""}, access_rules: {UpdateMetadata: (Protected(AnyOf([AllOf([AnyOf([]), AnyOf([AnyOf([AnyOf([AnyOf([]), AnyOf([ProofRule(AnyOf(Static([]))), AnyOf([])]), AllOf([AnyOf([AnyOf([]), AllOf([AllOf([AnyOf([AllOf([AnyOf([]), ProofRule(Require(StaticNonFungible(ResourceAddress(000000000000000000000000000000000000000000000000000000000000):<>)))])])])])])])])])])])])), AllowAll), Deposit: (Protected(ProofRule(CountOf(Static(234), Dynamic(SchemaPath([]))))), AllowAll)}, entries: {} }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input =
                         &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput::arbitrary(
                             &mut unstructured,
                         )
                         .unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = {
-                        let mut entries = BTreeMap::new();
-                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
-                            let integer: u64 = unstructured.int_in_range(0..=1000).unwrap();
-                            entries.insert(
-                                NonFungibleLocalId::integer(integer),
-                                (to_manifest_value(&(
-                                    String::arbitrary(&mut unstructured).unwrap(),
-                                    Decimal::arbitrary(&mut unstructured).unwrap(),
-                                )),),
-                            );
-                        }
-                        NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                            id_type: NonFungibleIdType::Integer,
-                            non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                            metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
-                            access_rules: BTreeMap::from([
-                                (
-                                    ResourceMethodAuthKey::Withdraw,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                                (
-                                    ResourceMethodAuthKey::Deposit,
-                                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                                ),
-                            ]),
-                            entries,
-                        }
-                    };
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -674,28 +551,9 @@ impl TxFuzzer {
                 }
                 // MintNonFungible
                 28 => {
-                    // TODO: crash when using arbitrary
-                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: InvalidCustomValue', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // -  NonFungibleResourceManagerMintManifestInput { entries: {#13544282675100782418#: (I128 { value: -69359017762742067524339587899531658956 },), {0e66c9db-6a09-4c5a-760e-00d9e362d92c}: (U16 { value: 47995 },)} }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input =
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = {
-                        let mut entries = BTreeMap::new();
-                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
-                            let integer: u64 = unstructured.int_in_range(0..=1000).unwrap();
-                            entries.insert(
-                                NonFungibleLocalId::integer(integer),
-                                (to_manifest_value(&(
-                                    String::arbitrary(&mut unstructured).unwrap(),
-                                    Decimal::arbitrary(&mut unstructured).unwrap(),
-                                )),),
-                            );
-                        }
-                        NonFungibleResourceManagerMintManifestInput { entries }
-                    };
 
                     Some(Instruction::MintNonFungible {
                         resource_address,
@@ -704,25 +562,10 @@ impl TxFuzzer {
                 }
                 // MintUuidNonFungible
                 29 => {
-                    // TODO: crash when using arbitrary
-                    // - thread 'fuzz_tx::test_fuzz_tx' panicked at 'called `Result::unwrap()` on an `Err` value: UnknownValueKind(123)', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:45:55
-                    // - NonFungibleResourceManagerMintUuidManifestInput { entries: [(I8 { value: 105 },), (I32 { value: 1989327177 },), (Array { element_value_kind: I32, elements: [I16 { value: 8591 }, Map { key_value_kind: Tuple, value_value_kind: I64, entries: [] }, Tuple { fields: [] }, Custom { value: NonFungibleLocalId(UUID(134904843443897012489077351069999533053)) }, I64 { value: 6355796430128099618 }, I32 { value: -1022678464 }] },), (I32 { value: -40799505 },)] }
-                    #[cfg(not(feature = "skip_crash"))]
                     let input = NonFungibleResourceManagerMintUuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
-                    #[cfg(feature = "skip_crash")]
-                    let input = {
-                        let mut entries = Vec::new();
-                        for _i in 0..u8::arbitrary(&mut unstructured).unwrap() {
-                            entries.push((to_manifest_value(&(
-                                String::arbitrary(&mut unstructured).unwrap(),
-                                Decimal::arbitrary(&mut unstructured).unwrap(),
-                            )),));
-                        }
-                        NonFungibleResourceManagerMintUuidManifestInput { entries }
-                    };
 
                     Some(Instruction::MintUuidNonFungible {
                         resource_address,
