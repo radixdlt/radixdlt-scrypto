@@ -518,7 +518,7 @@ fn to_typed_object_substate_value(
                     TypedEpochManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
                 }
                 EpochManagerField::CurrentProposalStatistic => {
-                    TypedEpochManagerSubstateValue::CurrentProposalStatistic(scrypto_decode(data)?)
+                    TypedEpochManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
                 }
             })
         }
