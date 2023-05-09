@@ -208,7 +208,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorizations = match &callee {
+        let access_rules = match &callee {
             Actor::Method(MethodActor {
                 node_id,
                 module_id,
@@ -230,7 +230,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         let mut system = SystemService::new(api);
 
         // Authenticate
-        for access_rule in authorizations {
+        for access_rule in access_rules {
             if !Authentication::verify_method_auth(
                 acting_location,
                 auth_zone_id,

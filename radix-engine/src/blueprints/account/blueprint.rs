@@ -7,12 +7,13 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRulesConfig, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRulesConfig, Bucket, Proof};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -32,13 +33,26 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
     fn securified_groups() -> Vec<&'static str> {
-        vec!["update_metadata"]
+        vec!["owner"]
     }
 
-    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+    fn other_groups() -> Vec<(&'static str, AccessRuleEntry, AccessRule)> {
+        vec![("update_metadata", AccessRuleEntry::Group("owner".to_string()), DenyAll)]
+    }
+
+    fn methods() -> Vec<(&'static str, MethodType)> {
         vec![
             (ACCOUNT_DEPOSIT_IDENT, MethodType::Public),
             (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
+            (ACCOUNT_LOCK_FEE_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_WITHDRAW_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_CREATE_PROOF_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, MethodType::Group("owner".to_string())),
+            (ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, MethodType::Group("owner".to_string())),
         ]
     }
 }

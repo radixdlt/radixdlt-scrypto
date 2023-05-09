@@ -142,7 +142,7 @@ impl AccessRulesConfig {
             &self.method_auth
         };
         match auth.get(key) {
-            None => vec![self.get_default()],
+            None => vec![],
             Some(entry) => vec![self.resolve_method_entry(entry)],
         }
     }

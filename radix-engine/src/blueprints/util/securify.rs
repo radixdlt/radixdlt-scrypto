@@ -20,7 +20,7 @@ pub trait SecurifiedAccessRules {
         vec![]
     }
 
-    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+    fn methods() -> Vec<(&'static str, MethodType)> {
         vec![]
     }
 
@@ -33,7 +33,7 @@ pub trait SecurifiedAccessRules {
             );
         }
 
-        for (method, method_type) in Self::non_owner_methods() {
+        for (method, method_type) in Self::methods() {
             match method_type {
                 MethodType::Public => {
                     access_rules_config.set_public(MethodKey::new(ObjectModuleId::Main, method));

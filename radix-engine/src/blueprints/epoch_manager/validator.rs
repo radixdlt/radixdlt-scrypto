@@ -17,6 +17,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::rule;
 
 use super::{
@@ -500,22 +501,27 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
     fn securified_groups() -> Vec<&'static str> {
-        vec!["owner", "update_metadata"]
+        vec!["owner"]
     }
 
     fn other_groups() -> Vec<(&'static str, AccessRuleEntry, AccessRule)> {
         vec![
             ("stake", AccessRuleEntry::group("owner"), rule!(require(package_of_direct_caller(
                         EPOCH_MANAGER_PACKAGE
-                    ))))
+                    )))),
+            ("update_metadata", AccessRuleEntry::group("owner"), DenyAll),
         ]
     }
 
-    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
+    fn methods() -> Vec<(&'static str, MethodType)> {
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
             (VALIDATOR_STAKE_IDENT, MethodType::Group("stake".to_string())),
+            (VALIDATOR_REGISTER_IDENT, MethodType::Group("owner".to_string())),
+            (VALIDATOR_UNREGISTER_IDENT, MethodType::Group("owner".to_string())),
+            (VALIDATOR_UPDATE_KEY_IDENT, MethodType::Group("owner".to_string())),
+            (VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, MethodType::Group("owner".to_string())),
         ]
     }
 }

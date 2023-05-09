@@ -38,9 +38,14 @@ mod multi_threaded_test {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let config = AccessRulesConfig::new().default(
+        let mut config = AccessRulesConfig::new().default(
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             AccessRule::DenyAll,
+        );
+        config.set_group_access_rule_and_mutability(
+            "owner",
+            rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
+            AccessRule::DenyAll
         );
 
         // Create two accounts
