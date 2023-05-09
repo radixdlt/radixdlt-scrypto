@@ -111,6 +111,8 @@ pub trait WasmRuntime {
         handle: LockHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
+    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

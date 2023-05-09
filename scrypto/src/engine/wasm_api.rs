@@ -142,6 +142,8 @@ extern "C" {
     // System API
     //===============
 
+    pub fn get_node_id() -> Buffer;
+
     pub fn get_global_address() -> Buffer;
 
     pub fn get_blueprint() -> Buffer;
@@ -315,6 +317,11 @@ pub unsafe fn field_lock_release(_handle: u32) {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_global_address() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_node_id() -> Buffer {
     unreachable!()
 }
 

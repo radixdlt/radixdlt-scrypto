@@ -1530,6 +1530,14 @@ where
     }
 
     #[trace_resources]
+    fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        match actor {
+            Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
+            _ => Err(RuntimeError::SystemError(SystemError::NodeIdNotExist)),
+        }
+    }
+    #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         match actor {

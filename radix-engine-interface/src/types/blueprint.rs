@@ -1,6 +1,5 @@
 use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddress;
-use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
 use sbor::rust::string::String;
@@ -9,7 +8,6 @@ use scrypto_schema::InstanceSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
-    pub node_id: NodeId,
     pub blueprint: Blueprint,
     pub global: bool,
     pub outer_object: Option<GlobalAddress>,

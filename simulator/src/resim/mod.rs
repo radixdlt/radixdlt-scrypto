@@ -234,7 +234,8 @@ pub fn handle_manifest<O: std::io::Write>(
         None => {
             let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
+                .bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks

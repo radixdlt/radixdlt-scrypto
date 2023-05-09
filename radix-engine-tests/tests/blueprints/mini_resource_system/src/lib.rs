@@ -46,9 +46,9 @@ mod mini_bucket {
         }
 
         pub fn create_proof(&self) -> MiniProofComponent {
-            let actor_info = ScryptoEnv.actor_get_info().unwrap();
+            let node_id = Runtime::node_id();
             crate::mini_proof::MiniProof {
-                bucket: InternalAddress::new_or_panic(actor_info.node_id.into()),
+                bucket: InternalAddress::new_or_panic(node_id.into()),
             }
             .instantiate()
         }

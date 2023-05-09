@@ -289,6 +289,12 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         todo!()
     }
 
+    fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
+        let node_id = copy_buffer(unsafe { get_node_id() });
+
+        scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
+    }
+
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 

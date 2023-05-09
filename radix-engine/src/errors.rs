@@ -195,6 +195,7 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidObjectHandle,
+    NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnObject,

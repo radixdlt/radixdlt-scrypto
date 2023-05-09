@@ -300,6 +300,13 @@ where
         Ok(())
     }
 
+    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = self.api.actor_get_node_id()?;
+
+        let buffer = scrypto_encode(&node_id).expect("Failed to encode address");
+        self.allocate_buffer(buffer)
+    }
+
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let address = self.api.actor_get_global_address()?;
 
@@ -543,6 +550,10 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn field_lock_release(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
