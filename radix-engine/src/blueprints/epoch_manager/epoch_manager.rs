@@ -98,7 +98,13 @@ pub enum EpochManagerError {
     },
 }
 
-pub const EPOCH_MANAGER_SECONDARY_INDEX: CollectionIndex = 0u8;
+pub const EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct EpochRegisteredValidatorByStakeEntry {
+    component_address: ComponentAddress,
+    validator: Validator,
+}
 
 pub struct EpochManagerBlueprint;
 
@@ -390,13 +396,16 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let validators: Vec<(ComponentAddress, Validator)> = api.actor_sorted_index_scan_typed(
-            OBJECT_HANDLE_SELF,
-            EPOCH_MANAGER_SECONDARY_INDEX,
-            max_validators,
-        )?;
-        let next_validator_set: BTreeMap<ComponentAddress, Validator> =
-            validators.into_iter().collect();
+        let validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
+            .actor_sorted_index_scan_typed(
+                OBJECT_HANDLE_SELF,
+                EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                max_validators,
+            )?;
+        let next_validator_set: BTreeMap<ComponentAddress, Validator> = validators
+            .into_iter()
+            .map(|entry| (entry.component_address, entry.validator))
+            .collect();
 
         let validator_set_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,

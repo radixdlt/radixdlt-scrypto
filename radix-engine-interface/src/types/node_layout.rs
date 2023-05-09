@@ -110,7 +110,7 @@ pub enum NonFungibleVaultField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum EpochManagerPartitionOffset {
     EpochManager,
-    SecondaryIndex,
+    RegisteredValidatorsByStakeIndex,
 }
 
 impl TryFrom<u8> for EpochManagerPartitionOffset {

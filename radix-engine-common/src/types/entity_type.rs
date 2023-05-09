@@ -95,18 +95,6 @@ pub enum EntityType {
     /// A key value store allows access to substates, but not on-ledger iteration.
     /// The substates are considered independent for contention/locking/versioning.
     InternalKeyValueStore = 0b10110000, //----------- 10110 => k, 000xx => qpzr
-
-    /// An internal index entity (177 in decimal). Gives Bech32 prefix: `k` followed by one of `q`, `p`, `z` or `r`.
-    ///
-    /// An index allows access to substates, and on-ledger iteration (ordered by key hash).
-    /// The whole index is considered a single unit for contention/locking/versioning.
-    InternalIndex = 0b10110001, //------------------- 10110 => k, 001xx => y9x8
-
-    /// An internal sorted index entity (178 in decimal). Gives Bech32 prefix: `k` followed by one of `q`, `p`, `z` or `r`.
-    ///
-    /// An index allows access to substates, and on-ledger iteration (ordered by `prefix_u16 || key_hash`).
-    /// The whole index is considered a single unit for contention/locking/versioning.
-    InternalSortedIndex = 0b10110010, //------------- 10110 => k, 010xx => gf2t
 }
 
 impl EntityType {
@@ -130,9 +118,7 @@ impl EntityType {
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
-            | EntityType::InternalKeyValueStore
-            | EntityType::InternalIndex
-            | EntityType::InternalSortedIndex => false,
+            | EntityType::InternalKeyValueStore => false,
         }
     }
 
@@ -160,9 +146,7 @@ impl EntityType {
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
             | EntityType::InternalGenericComponent
-            | EntityType::InternalKeyValueStore
-            | EntityType::InternalIndex
-            | EntityType::InternalSortedIndex => false,
+            | EntityType::InternalKeyValueStore => false,
         }
     }
 
