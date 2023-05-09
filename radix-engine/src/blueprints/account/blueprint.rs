@@ -7,6 +7,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 
@@ -44,6 +45,10 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
 }
+
+pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
+
+pub type AccountVaultIndexEntry = Option<Own>;
 
 pub struct AccountBlueprint;
 
@@ -196,20 +201,18 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            0u8,
+            ACCOUNT_VAULT_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> =
+            let entry: AccountVaultIndexEntry =
                 api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!")),
+                Option::Some(own) => Ok(Vault(own)),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
@@ -260,13 +263,10 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let entry: Option<ScryptoValue> =
-                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+            let entry: Option<Own> = api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!"),
+                Option::Some(own) => Vault(own),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
@@ -303,7 +303,7 @@ impl AccountBlueprint {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
                 OBJECT_HANDLE_SELF,
-                0u8,
+                ACCOUNT_VAULT_INDEX,
                 &encoded_key,
                 LockFlags::MUTABLE,
             )?;
@@ -311,13 +311,11 @@ impl AccountBlueprint {
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let entry: Option<ScryptoValue> =
+                let entry: AccountVaultIndexEntry =
                     api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                        .map(|own| Vault(own))
-                        .expect("Impossible Case!"),
+                    Option::Some(own) => Vault(own),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
@@ -355,7 +353,7 @@ impl AccountBlueprint {
         let kv_store_entry_lock_handle = {
             let handle = api.actor_lock_key_value_entry(
                 OBJECT_HANDLE_SELF,
-                0u8,
+                ACCOUNT_VAULT_INDEX,
                 &encoded_key,
                 LockFlags::read_only(),
             )?;
@@ -364,13 +362,11 @@ impl AccountBlueprint {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> =
+            let entry: AccountVaultIndexEntry =
                 api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!")),
+                Option::Some(own) => Ok(Vault(own)),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;

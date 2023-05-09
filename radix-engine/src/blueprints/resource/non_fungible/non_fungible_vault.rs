@@ -16,7 +16,9 @@ pub enum NonFungibleVaultError {
 
 pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as NonFungibleVaultBalanceSubstate;
 
-pub const NON_FUNGIBLE_VAULT_NON_FUNGIBLES: CollectionIndex = 0u8;
+pub const NON_FUNGIBLE_VAULT_CONTENTS_INDEX: CollectionIndex = 0u8;
+
+pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 
 pub struct NonFungibleVaultBlueprint;
 
@@ -263,7 +265,7 @@ impl NonFungibleVault {
         // TODO: only allow a certain amount to be returned
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
             OBJECT_HANDLE_SELF,
-            NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+            NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
             u32::MAX,
         )?;
         let ids = items.into_iter().collect();
@@ -324,7 +326,7 @@ impl NonFungibleVault {
         let taken = {
             let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
                 OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 amount_to_take,
             )?;
             LiquidNonFungibleResource {
@@ -360,7 +362,7 @@ impl NonFungibleVault {
         for id in ids {
             let removed = api.actor_index_remove(
                 OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 scrypto_encode(id).unwrap(),
             )?;
 
@@ -404,7 +406,7 @@ impl NonFungibleVault {
         for id in resource.ids {
             api.actor_index_insert_typed(
                 OBJECT_HANDLE_SELF,
-                NON_FUNGIBLE_VAULT_NON_FUNGIBLES,
+                NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 scrypto_encode(&id).unwrap(),
                 id,
             )?;
