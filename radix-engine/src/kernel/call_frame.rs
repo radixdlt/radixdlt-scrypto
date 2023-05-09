@@ -308,23 +308,21 @@ impl<L: Clone> CallFrame<L> {
                 ..
             }) => {
                 if let Some(global_address) = global_address {
-                    additional_global_refs.push(global_address.into_node_id());
+                    additional_global_refs.push(global_address.clone());
                 }
                 if let Some(outer_global_object) = object_info.outer_object {
-                    additional_global_refs.push(outer_global_object.into_node_id());
+                    additional_global_refs.push(outer_global_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
-                    additional_global_refs.push(instance_context.instance.into_node_id());
+                    additional_global_refs.push(instance_context.instance.clone());
                 }
             }
             Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
-                additional_global_refs.push(blueprint.package_address.into_node_id());
+                additional_global_refs.push(blueprint.package_address.clone().into());
             }
         }
         for reference in additional_global_refs {
-            frame
-                .stable_references
-                .insert(reference, StableReferenceType::Global);
+            frame.add_global_reference(reference);
         }
 
         Ok(frame)
