@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::*;
 
 pub enum MethodType {
     Public,
-    Custom(AccessRuleEntry, AccessRuleEntry),
+    Group(String),
 }
 
 pub trait SecurifiedAccessRules {
@@ -16,21 +16,32 @@ pub trait SecurifiedAccessRules {
 
     fn securified_groups() -> Vec<&'static str>;
 
+    fn other_groups() -> Vec<(&'static str, AccessRuleEntry, AccessRule)> {
+        vec![]
+    }
+
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![]
     }
 
     fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
+        for (group, access_rule, mutability) in Self::other_groups() {
+            access_rules_config.set_group_access_rule_and_mutability(
+                group,
+                access_rule,
+                mutability,
+            );
+        }
+
         for (method, method_type) in Self::non_owner_methods() {
             match method_type {
                 MethodType::Public => {
                     access_rules_config.set_public(MethodKey::new(ObjectModuleId::Main, method));
                 },
-                MethodType::Custom(access_rule, mutability) => {
-                    access_rules_config.set_method_access_rule_and_mutability(
+                MethodType::Group(group) => {
+                    access_rules_config.set_group(
                         MethodKey::new(ObjectModuleId::Main, method),
-                        access_rule,
-                        mutability,
+                        group.as_str()
                     );
                 },
             };

@@ -12,9 +12,7 @@ use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -385,10 +383,10 @@ impl ValidatorBlueprint {
         api.call_module_method(
             receiver,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                 object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(ObjectModuleId::Main, VALIDATOR_STAKE_IDENT),
+                name: "stake".to_string(),
                 rule,
             })
             .unwrap(),
@@ -505,20 +503,19 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         vec!["owner", "update_metadata"]
     }
 
+    fn other_groups() -> Vec<(&'static str, AccessRuleEntry, AccessRule)> {
+        vec![
+            ("stake", AccessRuleEntry::group("owner"), rule!(require(package_of_direct_caller(
+                        EPOCH_MANAGER_PACKAGE
+                    ))))
+        ]
+    }
+
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
-            (
-                VALIDATOR_STAKE_IDENT,
-                MethodType::Custom(
-                    AccessRuleEntry::group("owner"),
-                    // TODO: Change to global caller
-                    AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
-                        EPOCH_MANAGER_PACKAGE
-                    )))),
-                ),
-            ),
+            (VALIDATOR_STAKE_IDENT, MethodType::Group("stake".to_string())),
         ]
     }
 }
