@@ -737,7 +737,8 @@ impl AccessControllerNativePackage {
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(address, recovery_proposal.rule_set),
+            address,
+            recovery_proposal.rule_set,
         )?;
 
         Runtime::emit_event(
@@ -779,7 +780,8 @@ impl AccessControllerNativePackage {
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(address, recovery_proposal.rule_set),
+            address,
+            recovery_proposal.rule_set,
         )?;
 
         Runtime::emit_event(
@@ -813,7 +815,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let address = api.actor_get_global_address()?;
-        update_access_rules(api, receiver, locked_access_rules(address))?;
+        update_access_rules(api, receiver, address, locked_access_rules())?;
 
         Runtime::emit_event(
             api,
@@ -845,7 +847,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let address = api.actor_get_global_address()?;
-        update_access_rules(api, receiver, locked_access_rules(address))?;
+        update_access_rules(api, receiver, address, locked_access_rules())?;
 
         Runtime::emit_event(
             api,
@@ -885,7 +887,8 @@ impl AccessControllerNativePackage {
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(address, recovery_proposal.rule_set),
+            address,
+            recovery_proposal.rule_set,
         )?;
 
         Runtime::emit_event(
@@ -1089,13 +1092,12 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
 // Helpers
 //=========
 
-fn locked_access_rules(address: GlobalAddress) -> AccessRulesConfig {
-    let rule_set = RuleSet {
+fn locked_access_rules() -> RuleSet {
+    RuleSet {
         primary_role: AccessRule::DenyAll,
         recovery_role: AccessRule::DenyAll,
         confirmation_role: AccessRule::DenyAll,
-    };
-    access_rules_from_rule_set(address, rule_set)
+    }
 }
 
 fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
@@ -1317,12 +1319,16 @@ where
 fn update_access_rules<Y>(
     api: &mut Y,
     receiver: &NodeId,
-    access_rules: AccessRulesConfig,
+    address: GlobalAddress,
+    rule_set: RuleSet,
 ) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
+    let access_rules = access_rules_from_rule_set(address, rule_set);
+
     let attached = AttachedAccessRules(receiver.clone());
+    
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
         attached.set_group_access_rule(group_name, access_rule.clone(), api)?;
     }
