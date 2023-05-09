@@ -45,7 +45,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_push_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut Message,
+        _message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())

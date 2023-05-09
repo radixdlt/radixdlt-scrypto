@@ -26,7 +26,7 @@ pub trait KernelNodeApi {
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
 
-    /// Removes an RENode and all of it's children from the Heap.
+    /// Removes an RENode. Owned children to be possessed by the call frame.
     ///
     /// Dropped substates can't necessary be added back due to visibility loss.
     /// Clients should consider the return value as "raw data".

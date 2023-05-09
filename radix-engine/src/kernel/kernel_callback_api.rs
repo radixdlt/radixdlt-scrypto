@@ -78,7 +78,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_invoke<Y>(identifier: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

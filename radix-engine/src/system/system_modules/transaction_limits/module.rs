@@ -245,7 +245,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut Message,
+        _down_message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack

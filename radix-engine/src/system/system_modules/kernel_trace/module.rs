@@ -42,20 +42,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        nodes_and_refs: &mut Message,
+        message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", nodes_and_refs.move_nodes);
-        log!(api, "Sending refs: {:?}", nodes_and_refs.copy_references);
+        log!(api, "Sending nodes: {:?}", message.move_nodes);
+        log!(api, "Sending refs: {:?}", message.copy_references);
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        nodes_and_refs: &Message,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Returning nodes: {:?}", nodes_and_refs.move_nodes);
-        log!(api, "Returning refs: {:?}", nodes_and_refs.copy_references);
+        log!(api, "Returning nodes: {:?}", message.move_nodes);
+        log!(api, "Returning refs: {:?}", message.copy_references);
         Ok(())
     }
 

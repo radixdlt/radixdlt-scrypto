@@ -303,7 +303,7 @@ where
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let node_id = self.api.actor_get_node_id()?;
 
-        let buffer = scrypto_encode(&node_id).expect("Failed to encode address");
+        let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
         self.allocate_buffer(buffer)
     }
 

@@ -260,7 +260,7 @@ impl WasmerModule {
         }
 
         pub fn preallocate_global_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
-            let (instance, runtime) = grab_runtime!(env);
+            let (_, runtime) = grab_runtime!(env);
 
             let buffer = runtime
                 .preallocate_global_address()

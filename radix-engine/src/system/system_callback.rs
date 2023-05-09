@@ -234,11 +234,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_create_node(api, node_id)
     }
 
-    fn before_invoke<Y>(identifier: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_invoke(api, identifier)
+        SystemModuleMixer::before_invoke(api, invocation)
     }
 
     fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>

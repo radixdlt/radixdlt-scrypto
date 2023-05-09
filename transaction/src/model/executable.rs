@@ -155,7 +155,7 @@ pub fn extract_references(
         }
     }
 
-    // TODO: how about pre-allocated IDs
+    // TODO: how about pre-allocated IDs?
 
     for proof in &context.auth_zone_params.initial_proofs {
         references.insert(proof.resource_address().clone().into());
