@@ -1,5 +1,5 @@
 use core::fmt;
-use std::fmt::{Debug, Formatter};
+use core::fmt::{Formatter};
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddress;
@@ -55,7 +55,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Blueprint {
     }
 }
 
-impl Debug for Blueprint {
+impl core::fmt::Debug for Blueprint {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.display(NO_NETWORK))
     }

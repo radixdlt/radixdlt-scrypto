@@ -30,5 +30,11 @@ fn generate_deep_access_rules(
         access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
         curr_depth += 2;
     }
-    AccessRulesConfig::new().default(AccessRule::Protected(access_rule_node))
+    let mut config = AccessRulesConfig::new();
+    config.set_group_access_rule_and_mutability(
+        "test",
+        AccessRule::Protected(access_rule_node.clone()),
+        AccessRule::Protected(access_rule_node),
+    );
+    config
 }

@@ -5,6 +5,8 @@ use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::vec::Vec;
+use sbor::rust::vec;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
