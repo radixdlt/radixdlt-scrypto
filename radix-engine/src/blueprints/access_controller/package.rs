@@ -1239,19 +1239,26 @@ fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> Acce
     );
 
     // Other methods
-    access_rules.set_method_access_rule(
+
+    let any_role = access_rule_or(
+        [
+            rule_set.primary_role.clone(),
+            rule_set.recovery_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]
+            .into(),
+    );
+    access_rules.set_group_access_rule_and_mutability(
+        "any_role",
+        any_role,
+    rule!(require(global_caller(address))),
+    );
+    access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         ),
-        access_rule_or(
-            [
-                rule_set.primary_role.clone(),
-                rule_set.recovery_role.clone(),
-                rule_set.confirmation_role.clone(),
-            ]
-            .into(),
-        ),
+        "any_role",
     );
 
     access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))

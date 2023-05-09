@@ -100,21 +100,6 @@ impl AccessRulesConfig {
         }
     }
 
-    // TODO: Move into scrypto repo as a builder
-    pub fn method<R: Into<AccessRuleEntry>>(
-        mut self,
-        method_name: &str,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self {
-        let key = MethodKey::new(ObjectModuleId::Main, method_name);
-        let mutability = mutability.into();
-
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::AccessRule(method_auth));
-        self.method_auth_mutability.insert(key, mutability);
-        self
-    }
 
     // TODO: Move into scrypto repo as a builder
     pub fn default<A: Into<AccessRuleEntry>, R: Into<AccessRuleEntry>>(
@@ -188,14 +173,6 @@ impl AccessRulesConfig {
         self.resolve_entry(&self.default_auth)
     }
 
-    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
-        &mut self,
-        key: MethodKey,
-        access_rule_entry: E,
-    ) {
-        self.method_auth.insert(key, access_rule_entry.into());
-    }
-
     pub fn set_group_access_rule(&mut self, group_key: String, access_rule: AccessRule) {
         self.grouped_auth.insert(group_key, access_rule);
     }
@@ -213,6 +190,14 @@ impl AccessRulesConfig {
         self.grouped_auth.insert(group_key.to_string(), access_rule);
         self.grouped_auth_mutability
             .insert(group_key.to_string(), mutability);
+    }
+
+    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
+        &mut self,
+        key: MethodKey,
+        access_rule_entry: E,
+    ) {
+        self.method_auth.insert(key, access_rule_entry.into());
     }
 
     pub fn set_method_access_rule_and_mutability<
@@ -240,6 +225,17 @@ impl AccessRulesConfig {
         key: MethodKey,
         group: &str,
     ) {
+        self.method_auth
+            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
+    }
+
+    pub fn set_main_method_group(
+        &mut self,
+        method: &str,
+        group: &str,
+    ) {
+        let key = MethodKey::new(ObjectModuleId::Main, method);
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
         self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));

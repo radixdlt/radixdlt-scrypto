@@ -13,13 +13,14 @@ mod factory {
             }
             .instantiate();
 
-            let access_rules = AccessRulesConfig::new()
-                .method(
-                    "set_address",
-                    rule!(require(Runtime::package_token())),
-                    LOCKED,
-                )
+            let mut access_rules = AccessRulesConfig::new()
                 .default(rule!(deny_all), LOCKED);
+            access_rules.set_group_access_rule_and_mutability(
+                "set_address",
+                rule!(require(Runtime::package_token())),
+                AccessRule::DenyAll,
+            );
+            access_rules.set_main_method_group("set_address", "set_address");
 
             component.globalize_with_access_rules(access_rules)
         }
@@ -30,13 +31,15 @@ mod factory {
             }
             .instantiate();
 
-            let access_rules = AccessRulesConfig::new()
-                .method(
-                    "set_address",
-                    rule!(require(Runtime::package_token())),
-                    LOCKED,
-                )
+            let mut access_rules = AccessRulesConfig::new()
                 .default(rule!(deny_all), LOCKED);
+            access_rules.set_group_access_rule_and_mutability(
+                "set_address",
+                rule!(require(Runtime::package_token())),
+                AccessRule::DenyAll,
+            );
+
+            access_rules.set_main_method_group("set_address", "set_address");
 
             let component_address = component.globalize_with_access_rules(access_rules);
             let component_ref: FactoryGlobalComponentRef = component_address.into();

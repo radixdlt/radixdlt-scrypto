@@ -80,14 +80,18 @@ fn build_access_rules(
         );
     }
 
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-        ),
-        update_non_fungible_data_access_rule,
-        update_non_fungible_data_mutability,
-    );
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "update_non_fungible_data",
+            update_non_fungible_data_access_rule,
+            update_non_fungible_data_mutability,
+        );
+        resman_access_rules.set_group(
+            MethodKey::new(ObjectModuleId::Main, NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT),
+            "update_non_fungible_data",
+        );
+    }
+
     resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
@@ -214,68 +218,72 @@ fn build_access_rules(
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "this_package",
+        rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+        DenyAll,
+    );
+
+    vault_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
 
     // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
     let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
-    bucket_access_rules.set_method_access_rule_and_mutability(
+    bucket_access_rules.set_group_access_rule_and_mutability(
+        "this_package",
+        rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+        DenyAll,
+    );
+    bucket_access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    bucket_access_rules.set_method_access_rule_and_mutability(
+    bucket_access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    bucket_access_rules.set_method_access_rule_and_mutability(
+    bucket_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
-    bucket_access_rules.set_method_access_rule_and_mutability(
+    bucket_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
         ),
-        AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        DenyAll,
+        "this_package",
     );
 
     (resman_access_rules, vault_access_rules, bucket_access_rules)

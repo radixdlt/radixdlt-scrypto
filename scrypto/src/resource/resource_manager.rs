@@ -204,14 +204,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::Main,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-                    ),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    name: "update_non_fungible_data".to_string(),
+                    mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
             )

@@ -14,6 +14,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -110,30 +111,40 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let this_package_token =
-            NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
-
         let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
-            rule!(require(this_package_token.clone())),
-            rule!(require(this_package_token.clone())),
+        access_rules.set_group_access_rule_and_mutability(
+            "start",
+            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+        access_rules.set_group_access_rule_and_mutability(
+            "validator",
             rule!(require(AuthAddresses::validator_role())),
+            DenyAll
         );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
+        access_rules.set_group_access_rule_and_mutability(
+            "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
+            DenyAll
+        );
+
+        access_rules.set_group(
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
+            "start",
+        );
+        access_rules.set_group(
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+            "validator",
+        );
+        access_rules.set_group(
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
+            "system",
+        );
+        access_rules.set_public(
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
+        );
+        access_rules.set_public(
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
         );
 
         let validator_access_rules =
@@ -199,10 +210,10 @@ impl EpochManagerBlueprint {
         Self::epoch_change(mgr.epoch, config.max_validators, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        access_rules.set_group_access_rule_and_mutability(
+            "start",
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
             api,
         )?;
 

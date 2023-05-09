@@ -11,6 +11,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 
+/*
 #[test]
 #[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
@@ -171,6 +172,7 @@ fn method_that_falls_within_default_cant_have_its_auth_mutated() {
         matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
+ */
 
 fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange

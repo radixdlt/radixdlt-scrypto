@@ -1,4 +1,5 @@
 use radix_engine::types::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
@@ -10,12 +11,13 @@ fn create_secured_component(
     auth: NonFungibleGlobalId,
     package_address: PackageAddress,
 ) -> ComponentAddress {
-    let authorization = AccessRulesConfig::new()
-        .method(
-        "get_component_state",
-        rule!(require(auth)),
-        rule!(deny_all),
-    );
+    let mut authorization = AccessRulesConfig::new();
+    authorization
+        .set_group_access_rule_and_mutability("auth",
+                                              rule!(require(auth)),
+                                              rule!(deny_all),
+        );
+    authorization.set_group(MethodKey::new(ObjectModuleId::Main, "get_component_state"), "auth");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
