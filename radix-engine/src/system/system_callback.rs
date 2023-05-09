@@ -9,7 +9,7 @@ use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::track::interface::SubstateStoreAccessInfo;
+use crate::track::interface::SubstateStoreDbAccessInfo;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -190,7 +190,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -229,18 +229,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_scan_substates<Y>(
-        sorted: bool,
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_scan_substate(api, sorted, store_access)
+        SystemModuleMixer::on_scan_substate(api, store_access)
     }
 
     fn on_take_substates<Y>(
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

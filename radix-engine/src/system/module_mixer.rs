@@ -20,7 +20,7 @@ use crate::system::system_modules::transaction_limits::{
 };
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::track::interface::{NodeSubstates, SubstateStoreAccessInfo};
+use crate::track::interface::{NodeSubstates, SubstateStoreDbAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -671,7 +671,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -818,36 +818,35 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        sorted: bool,
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::on_scan_substate(api, sorted, store_access)?;
+            KernelTraceModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_scan_substate(api, sorted, store_access)?;
+            CostingModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_scan_substate(api, sorted, store_access)?;
+            NodeMoveModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_scan_substate(api, sorted, store_access)?;
+            AuthModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::on_scan_substate(api, sorted, store_access)?;
+            LoggerModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_scan_substate(api, sorted, store_access)?;
+            TransactionRuntimeModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_scan_substate(api, sorted, store_access)?;
+            ExecutionTraceModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_LIMITS) {
-            TransactionLimitsModule::on_scan_substate(api, sorted, store_access)?;
+            TransactionLimitsModule::on_scan_substate(api, store_access)?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::on_scan_substate(api, sorted, store_access)?;
+            EventsModule::on_scan_substate(api, store_access)?;
         }
         Ok(())
     }
@@ -855,7 +854,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        store_access: &SubstateStoreAccessInfo,
+        store_access: &SubstateStoreDbAccessInfo,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

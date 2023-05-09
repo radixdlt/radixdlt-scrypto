@@ -1,6 +1,6 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, SubstateStoreAccessInfo,
+    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, SubstateStoreDbAccessInfo,
     TakeSubstateError,
 };
 use crate::types::*;
@@ -215,14 +215,14 @@ impl<D, L: Clone> CallFrame<D, L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, SubstateStoreAccessInfo), LockSubstateError> {
+    ) -> Result<(LockHandle, SubstateStoreDbAccessInfo), LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
-        let mut store_access = SubstateStoreAccessInfo::default();
+        let mut store_access = SubstateStoreDbAccessInfo::default();
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -489,15 +489,17 @@ impl<D, L: Clone> CallFrame<D, L> {
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreAccessInfo), CallFrameRemoveSubstateError>
-    {
+    ) -> Result<
+        (Option<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
+        CallFrameRemoveSubstateError,
+    > {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let (removed, store_access) = if heap.contains_node(node_id) {
             (
                 heap.delete_substate(node_id, partition_num, key),
-                SubstateStoreAccessInfo::default(),
+                SubstateStoreDbAccessInfo::default(),
             )
         } else {
             store
@@ -515,7 +517,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, SubstateStoreAccessInfo), CallFrameScanSubstateError>
+    ) -> Result<(Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo), CallFrameScanSubstateError>
     {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
@@ -523,7 +525,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
                 heap.scan_substates(node_id, partition_num, count),
-                SubstateStoreAccessInfo::default(),
+                SubstateStoreDbAccessInfo::default(),
             )
         } else {
             store.scan_substates(node_id, partition_num, count)
@@ -553,7 +555,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<
-        (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo),
+        (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
         CallFrameTakeSortedSubstatesError,
     > {
         self.get_node_visibility(node_id).ok_or_else(|| {
@@ -563,7 +565,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
                 heap.take_substates(node_id, partition_num, count),
-                SubstateStoreAccessInfo::default(),
+                SubstateStoreDbAccessInfo::default(),
             )
         } else {
             store.take_substates(node_id, partition_num, count)
@@ -595,7 +597,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<
-        (Vec<IndexedScryptoValue>, SubstateStoreAccessInfo),
+        (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
         CallFrameScanSortedSubstatesError,
     > {
         self.get_node_visibility(node_id).ok_or_else(|| {

@@ -17,7 +17,7 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SubstateStore, SubstateStoreAccessInfo,
+    AcquireLockError, NodeSubstates, SubstateStore, SubstateStoreDbAccessInfo,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -512,7 +512,8 @@ where
             data,
         );
 
-        let (lock_handle, store_access): (u32, SubstateStoreAccessInfo) = match &maybe_lock_handle {
+        let (lock_handle, store_access): (u32, SubstateStoreDbAccessInfo) = match &maybe_lock_handle
+        {
             Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
@@ -724,7 +725,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(true, &store_access, self)?;
+        M::on_scan_substates(&store_access, self)?;
 
         Ok(substates)
     }
@@ -742,7 +743,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(false, &store_access, self)?;
+        M::on_scan_substates(&store_access, self)?;
 
         Ok(substeates)
     }
