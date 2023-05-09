@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::MethodActor;
-use super::heap::{Heap, HeapRemoveModuleErr};
+use super::heap::{Heap, HeapLockSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
@@ -138,87 +138,95 @@ pub struct CallFrame<L> {
     locks: IndexMap<LockHandle, SubstateLock<L>>,
 }
 
+/// Represents an error when creating a new frame.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
     ActorBeingMoved(NodeId),
     ExchangeError(ExchangeError),
 }
 
+/// Represents an error when passing message between frames.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ExchangeError {
-    MoveNodeError(MoveNodeError),
+    TakeNodeError(TakeNodeError),
     StableRefNotFound(NodeId),
 }
 
+/// Represents an error when attempting to lock a substate.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum LockSubstateError {
     NodeNotVisible(NodeId),
-    HeapError(LockHeapSubstateError),
+    HeapError(HeapLockSubstateError),
     TrackError(Box<AcquireLockError>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum LockHeapSubstateError {
-    LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
-}
-
+/// Represents an error when dropping a substate lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum UnlockSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
-    MoveNodeError(MoveNodeError),
+    TakeNodeError(TakeNodeError),
     RefNotFound(NodeId),
     NonGlobalRefNotAllowed(NodeId),
     CantDropNodeInStore(NodeId),
-    StoreNodeError(StoreNodeError),
+    PersistNodeError(PersistNodeError),
 }
 
+/// Represents an error when creating a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
-    MoveNodeError(MoveNodeError),
+    TakeNodeError(TakeNodeError),
     RefNotFound(NodeId),
     NonGlobalRefNotAllowed(NodeId),
-    StoreNodeError(StoreNodeError),
+    PersistNodeError(PersistNodeError),
 }
 
+/// Represents an error when dropping a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum DropNodeError {
-    MoveNodeError(MoveNodeError),
+    TakeNodeError(TakeNodeError),
+    NodeBorrowed(NodeId, usize),
 }
 
+/// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum StoreNodeError {
+pub enum PersistNodeError {
     CantBeStored(NodeId),
     NonGlobalRefNotAllowed(NodeId),
+    NodeBorrowed(NodeId, usize),
 }
 
+/// Represents an error when taking a node from current frame.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MoveNodeError {
+pub enum TakeNodeError {
     OwnNotFound(NodeId),
     OwnLocked(NodeId),
 }
 
+/// Represents an error when listing the node modules of a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ListNodeModuleError {
     NodeNotVisible(NodeId),
     NodeNotInHeap(NodeId),
 }
 
+/// Represents an error when moving modules from one node to another.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
-    HeapRemoveModuleErr(HeapRemoveModuleErr),
+    HeapRemoveModuleErr(HeapRemoveModuleError),
     NonGlobalRefNotAllowed(NodeId),
     TrackSetSubstateError(SetSubstateError),
-    StoreNodeError(StoreNodeError),
+    PersistNodeError(PersistNodeError),
 }
 
+/// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
     LockNotFound(LockHandle),
 }
 
+/// Represents an error when writing substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
     LockNotFound(LockHandle),
@@ -316,7 +324,7 @@ impl<L: Clone> CallFrame<L> {
             // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
-                .map_err(ExchangeError::MoveNodeError)?;
+                .map_err(ExchangeError::TakeNodeError)?;
             to.owned_root_nodes.insert(node_id, 0);
         }
 
@@ -395,7 +403,7 @@ impl<L: Clone> CallFrame<L> {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(LockSubstateError::HeapError(
-                    LockHeapSubstateError::LockUnmodifiedBaseOnHeapNode,
+                    HeapLockSubstateError::LockUnmodifiedBaseOnHeapNode,
                 ));
             }
             if let Some(compute_default) = default {
@@ -403,7 +411,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 heap.get_substate(node_id, module_num, substate_key)
                     .ok_or_else(|| {
-                        LockSubstateError::HeapError(LockHeapSubstateError::SubstateNotFound(
+                        LockSubstateError::HeapError(HeapLockSubstateError::SubstateNotFound(
                             node_id.clone(),
                             module_num,
                             substate_key.clone(),
@@ -510,12 +518,12 @@ impl<L: Clone> CallFrame<L> {
                 if !substate_lock.initial_owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
-                        .map_err(UnlockSubstateError::MoveNodeError)?;
+                        .map_err(UnlockSubstateError::TakeNodeError)?;
 
                     // Move the taken node to store, if parent is in store
                     if !heap.contains_node(&node_id) {
                         Self::move_node_to_store(heap, store, own)
-                            .map_err(UnlockSubstateError::StoreNodeError)?;
+                            .map_err(UnlockSubstateError::PersistNodeError)?;
                     }
                 }
             }
@@ -671,10 +679,10 @@ impl<L: Clone> CallFrame<L> {
                 // Process own
                 for own in substate_value.owned_nodes() {
                     self.take_node_internal(own)
-                        .map_err(CreateNodeError::MoveNodeError)?;
+                        .map_err(CreateNodeError::TakeNodeError)?;
                     if push_to_store {
                         Self::move_node_to_store(heap, store, own)
-                            .map_err(CreateNodeError::StoreNodeError)?;
+                            .map_err(CreateNodeError::PersistNodeError)?;
                     }
                 }
 
@@ -713,8 +721,16 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
     ) -> Result<NodeSubstates, DropNodeError> {
         self.take_node_internal(node_id)
-            .map_err(DropNodeError::MoveNodeError)?;
-        let node_substates = heap.remove_node(node_id);
+            .map_err(DropNodeError::TakeNodeError)?;
+        let node_substates = match heap.remove_node(node_id) {
+            Ok(substates) => substates,
+            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                panic!("Frame owned node {:?} not found in heap", node_id)
+            }
+            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
+                return Err(DropNodeError::NodeBorrowed(node_id, count));
+            }
+        };
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
                 // Process own
@@ -777,7 +793,7 @@ impl<L: Clone> CallFrame<L> {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
                     Self::move_node_to_store(heap, store, own)
-                        .map_err(MoveModuleError::StoreNodeError)?;
+                        .map_err(MoveModuleError::PersistNodeError)?;
                 }
 
                 for reference in substate_value.references() {
@@ -997,16 +1013,16 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), MoveNodeError> {
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
         match self.owned_root_nodes.remove(node_id) {
             None => {
-                return Err(MoveNodeError::OwnNotFound(node_id.clone()));
+                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
             }
             Some(lock_count) => {
                 if lock_count == 0 {
                     Ok(())
                 } else {
-                    Err(MoveNodeError::OwnLocked(node_id.clone()))
+                    Err(TakeNodeError::OwnLocked(node_id.clone()))
                 }
             }
         }
@@ -1020,7 +1036,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-    ) -> Result<(), StoreNodeError> {
+    ) -> Result<(), PersistNodeError> {
         // FIXME: Clean this up
         let can_be_stored = if node_id.is_global() {
             true
@@ -1043,15 +1059,23 @@ impl<L: Clone> CallFrame<L> {
             }
         };
         if !can_be_stored {
-            return Err(StoreNodeError::CantBeStored(node_id.clone()));
+            return Err(PersistNodeError::CantBeStored(node_id.clone()));
         }
 
-        let node_substates = heap.remove_node(node_id);
+        let node_substates = match heap.remove_node(node_id) {
+            Ok(substates) => substates,
+            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                panic!("Frame owned node {:?} not found in heap", node_id)
+            }
+            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
+                return Err(PersistNodeError::NodeBorrowed(node_id, count));
+            }
+        };
         for (_module_id, module_substates) in &node_substates {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(StoreNodeError::NonGlobalRefNotAllowed(*reference));
+                        return Err(PersistNodeError::NonGlobalRefNotAllowed(*reference));
                     }
                 }
 

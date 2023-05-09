@@ -7,14 +7,32 @@ use radix_engine_interface::blueprints::resource::{
 };
 use sbor::rust::collections::btree_map::Entry;
 
+#[derive(Debug, Default)]
+pub struct HeapNode {
+    substates: NodeSubstates,
+    borrow_count: usize,
+}
+
 pub struct Heap {
-    nodes: NonIterMap<NodeId, NodeSubstates>,
+    nodes: NonIterMap<NodeId, HeapNode>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum HeapRemoveModuleErr {
+pub enum HeapRemoveModuleError {
     NodeNotFound(NodeId),
     ModuleNotFound(ModuleNumber),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum HeapRemoveNodeError {
+    NodeNotFound(NodeId),
+    NodeBorrowed(NodeId, usize),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum HeapLockSubstateError {
+    LockUnmodifiedBaseOnHeapNode,
+    SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
 }
 
 impl Heap {
@@ -32,21 +50,21 @@ impl Heap {
     pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<ModuleNumber>> {
         self.nodes
             .get(node_id)
-            .map(|node_substates| node_substates.keys().cloned().collect())
+            .map(|node| node.substates.keys().cloned().collect())
     }
 
     pub fn remove_module(
         &mut self,
         node_id: &NodeId,
         module_number: ModuleNumber,
-    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleErr> {
-        if let Some(modules) = self.nodes.get_mut(node_id) {
+    ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleError> {
+        if let Some(modules) = self.nodes.get_mut(node_id).map(|node| &mut node.substates) {
             let module = modules
                 .remove(&module_number)
-                .ok_or(HeapRemoveModuleErr::ModuleNotFound(module_number))?;
+                .ok_or(HeapRemoveModuleError::ModuleNotFound(module_number))?;
             Ok(module)
         } else {
-            Err(HeapRemoveModuleErr::NodeNotFound(node_id.clone()))
+            Err(HeapRemoveModuleError::NodeNotFound(node_id.clone()))
         }
     }
 
@@ -60,7 +78,8 @@ impl Heap {
         let entry = self
             .nodes
             .entry(*node_id)
-            .or_insert(BTreeMap::new())
+            .or_insert(HeapNode::default())
+            .substates
             .entry(module_num)
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
@@ -71,7 +90,7 @@ impl Heap {
 
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_num))
+            .and_then(|node| node.substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
             .unwrap()
     }
@@ -85,7 +104,7 @@ impl Heap {
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node_substates| node_substates.get(&module_num))
+            .and_then(|node| node.substates.get(&module_num))
             .and_then(|module_substates| module_substates.get(substate_key))
     }
 
@@ -99,7 +118,8 @@ impl Heap {
     ) {
         self.nodes
             .entry(node_id)
-            .or_insert_with(|| NodeSubstates::default())
+            .or_insert_with(|| HeapNode::default())
+            .substates
             .entry(module_num)
             .or_default()
             .insert(substate_key, substate_value);
@@ -113,7 +133,7 @@ impl Heap {
     ) -> Option<IndexedScryptoValue> {
         self.nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_num))
+            .and_then(|n| n.substates.get_mut(&module_num))
             .and_then(|s| s.remove(substate_key))
     }
 
@@ -126,7 +146,7 @@ impl Heap {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_num));
+            .and_then(|n| n.substates.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let substates: Vec<IndexedScryptoValue> = substates
                 .iter()
@@ -149,7 +169,7 @@ impl Heap {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.get_mut(&module_num));
+            .and_then(|n| n.substates.get_mut(&module_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()
@@ -171,18 +191,33 @@ impl Heap {
     }
 
     /// Inserts a new node to heap.
-    pub fn create_node(&mut self, node_id: NodeId, node: NodeSubstates) {
-        self.nodes.insert(node_id, node);
+    pub fn create_node(&mut self, node_id: NodeId, substates: NodeSubstates) {
+        self.nodes.insert(
+            node_id,
+            HeapNode {
+                substates,
+                borrow_count: 0,
+            },
+        );
     }
 
     /// Removes node.
-    ///
-    /// # Panics
-    /// - If the node is not found.
-    pub fn remove_node(&mut self, node_id: &NodeId) -> NodeSubstates {
-        self.nodes
-            .remove(node_id)
-            .unwrap_or_else(|| panic!("Heap does not contain {:?}", node_id))
+    pub fn remove_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, HeapRemoveNodeError> {
+        match self
+            .nodes
+            .get(node_id)
+            .map(|node| node.borrow_count.clone())
+        {
+            Some(n) => {
+                if n != 0 {
+                    return Err(HeapRemoveNodeError::NodeBorrowed(node_id.clone(), n));
+                } else {
+                }
+            }
+            None => return Err(HeapRemoveNodeError::NodeNotFound(node_id.clone())),
+        }
+
+        Ok(self.nodes.remove(node_id).unwrap().substates)
     }
 }
 
