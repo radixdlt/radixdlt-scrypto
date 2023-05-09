@@ -55,7 +55,7 @@ impl<'a> Executable<'a> {
         for b in blobs {
             blobs_by_hash.insert(hash(b), b);
         }
-        let (encoded_instructions, references) = extract_references(instructions);
+        let (encoded_instructions, references) = extract_references(instructions, &context);
 
         Self {
             blobs: blobs_by_hash,
@@ -111,7 +111,10 @@ impl<'a> Executable<'a> {
 }
 
 // TODO: we can potentially save manifest_encode by passing a slice of the raw transaction payload.
-pub fn extract_references(instructions: &[Instruction]) -> (Vec<u8>, BTreeSet<Reference>) {
+pub fn extract_references(
+    instructions: &[Instruction],
+    context: &ExecutionContext,
+) -> (Vec<u8>, BTreeSet<Reference>) {
     let encoded = manifest_encode(instructions).unwrap();
 
     let mut references = BTreeSet::new();
@@ -150,6 +153,15 @@ pub fn extract_references(instructions: &[Instruction]) -> (Vec<u8>, BTreeSet<Re
                 panic!("Unexpected decoding error: {:?}", e);
             }
         }
+    }
+
+    // TODO: how about pre-allocated IDs
+
+    for proof in &context.auth_zone_params.initial_proofs {
+        references.insert(proof.resource_address().clone().into());
+    }
+    for resource in &context.auth_zone_params.virtual_resources {
+        references.insert(resource.clone().into());
     }
 
     (encoded, references)
