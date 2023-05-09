@@ -4,8 +4,8 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
-    pub instance: GlobalAddress,
-    pub instance_blueprint: String,
+    pub outer_object: GlobalAddress,
+    pub outer_blueprint: String,
 }
 
 /// No method acting here!

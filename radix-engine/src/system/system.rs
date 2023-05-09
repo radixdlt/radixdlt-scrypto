@@ -189,7 +189,7 @@ where
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
-                Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
+                Some(context) if context.outer_blueprint.eq(parent) => Some(context.outer_object),
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -876,8 +876,8 @@ where
         self.new_object_internal(
             &blueprint,
             Some(InstanceContext {
-                instance: address,
-                instance_blueprint: actor_blueprint.blueprint_name,
+                outer_object: address,
+                outer_blueprint: actor_blueprint.blueprint_name,
             }),
             None,
             inner_object_fields,
@@ -947,8 +947,8 @@ where
             match global_address {
                 None => None,
                 Some(address) => Some(InstanceContext {
-                    instance: address,
-                    instance_blueprint: object_info.blueprint.blueprint_name.clone(),
+                    outer_object: address,
+                    outer_blueprint: object_info.blueprint.blueprint_name.clone(),
                 }),
             }
         } else {
@@ -958,8 +958,8 @@ where
                     // TODO: do this recursively until global?
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
-                        instance: blueprint_parent.clone(),
-                        instance_blueprint: parent_info.blueprint.blueprint_name.clone(),
+                        outer_object: blueprint_parent.clone(),
+                        outer_blueprint: parent_info.blueprint.blueprint_name.clone(),
                     })
                 }
             }
@@ -1007,7 +1007,7 @@ where
         // If the actor is the object's outer object
         if let Some(outer_object) = info.outer_object {
             if let Some(instance_context) = actor.instance_context() {
-                if instance_context.instance.eq(&outer_object) {
+                if instance_context.outer_object.eq(&outer_object) {
                     is_drop_allowed = true;
                 }
             }

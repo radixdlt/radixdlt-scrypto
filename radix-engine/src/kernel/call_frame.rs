@@ -314,7 +314,7 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(outer_global_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
-                    additional_global_refs.push(instance_context.instance.clone());
+                    additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
             Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
