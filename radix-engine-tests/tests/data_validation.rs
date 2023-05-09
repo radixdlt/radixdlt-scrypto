@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::ExchangeError,
+    kernel::call_frame::PassMessageError,
     types::*,
 };
 use scrypto_unit::*;
@@ -298,9 +298,9 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::ExchangeError(
-                ExchangeError::StableRefNotFound(_)
-            )))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::PassMessageError(PassMessageError::StableRefNotFound(_))
+            ))
         )
     });
 }

@@ -140,12 +140,12 @@ pub struct CallFrame<L> {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
     ActorBeingMoved(NodeId),
-    ExchangeError(ExchangeError),
+    PassMessageError(PassMessageError),
 }
 
 /// Represents an error when passing message between frames.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ExchangeError {
+pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
     StableRefNotFound(NodeId),
 }
@@ -288,7 +288,8 @@ impl<L: Clone> CallFrame<L> {
         };
 
         // Copy references and move nodes
-        Self::exchange(parent, &mut frame, message).map_err(CreateFrameError::ExchangeError)?;
+        Self::pass_message(parent, &mut frame, message)
+            .map_err(CreateFrameError::PassMessageError)?;
 
         // Additional logic on actor
         if let Some(method_actor) = optional_method_actor {
@@ -313,16 +314,16 @@ impl<L: Clone> CallFrame<L> {
         Ok(frame)
     }
 
-    pub fn exchange(
+    pub fn pass_message(
         from: &mut CallFrame<L>,
         to: &mut CallFrame<L>,
         message: Message,
-    ) -> Result<(), ExchangeError> {
+    ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
-                .map_err(ExchangeError::TakeNodeError)?;
+                .map_err(PassMessageError::TakeNodeError)?;
             to.owned_root_nodes.insert(node_id, 0);
         }
 
@@ -336,7 +337,7 @@ impl<L: Clone> CallFrame<L> {
                 // so okay to overwrite
                 to.stable_references.insert(node_id, t);
             } else {
-                return Err(ExchangeError::StableRefNotFound(node_id));
+                return Err(PassMessageError::StableRefNotFound(node_id));
             }
         }
 
