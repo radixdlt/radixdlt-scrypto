@@ -229,14 +229,21 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, mutability.into());
     }
 
-    pub fn set_group<M: Into<AccessRuleEntry>>(
+    pub fn set_public(
+        &mut self,
+        key: MethodKey,
+    ) {
+        self.set_group(key, "public");
+    }
+
+    pub fn set_group(
         &mut self,
         key: MethodKey,
         group: &str,
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
-        self.method_auth_mutability.insert(key, DenyAll);
+        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {

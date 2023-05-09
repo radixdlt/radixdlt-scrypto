@@ -36,12 +36,6 @@ fn build_access_rules(
         );
     }
 
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
-        AllowAll,
-        DenyAll,
-    );
-
     {
         resman_access_rules.set_group_access_rule_and_mutability(
             "mint",
@@ -95,66 +89,50 @@ fn build_access_rules(
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
+    resman_access_rules.set_public(
         MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_DROP_PROOF_IDENT),
-        AllowAll,
-        DenyAll,
     );
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map

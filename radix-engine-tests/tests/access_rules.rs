@@ -5,7 +5,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
