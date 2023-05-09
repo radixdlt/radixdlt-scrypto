@@ -5,7 +5,6 @@ use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput,
     ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRulesConfig,

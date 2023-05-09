@@ -8,7 +8,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use crate::blueprints::resource::AccessRule::DenyAll;
 
 use super::AccessRule;
 
@@ -52,6 +51,12 @@ impl MethodKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct MethodEntry {
+    pub groups: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
@@ -83,7 +88,6 @@ pub struct AccessRulesConfig {
     method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRuleEntry>,
     default_auth: AccessRuleEntry,
-    method_auth_mutability: BTreeMap<MethodKey, AccessRuleEntry>,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
     default_auth_mutability: AccessRuleEntry,
 }
@@ -95,7 +99,6 @@ impl AccessRulesConfig {
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
             default_auth: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            method_auth_mutability: BTreeMap::new(),
             grouped_auth_mutability: BTreeMap::new(),
             default_auth_mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         }
@@ -162,14 +165,6 @@ impl AccessRulesConfig {
         }
     }
 
-    pub fn get_mutability(&self, key: &MethodKey) -> AccessRule {
-        self.method_auth_mutability
-            .get(key)
-            .cloned()
-            .map(|e| self.resolve_entry(&e))
-            .unwrap_or_else(|| self.get_default_mutability())
-    }
-
     pub fn get_group_mutability(&self, key: &str) -> AccessRule {
         self.grouped_auth_mutability
             .get(key)
@@ -179,10 +174,6 @@ impl AccessRulesConfig {
 
     pub fn get_default_mutability(&self) -> AccessRule {
         self.resolve_entry(&self.default_auth_mutability)
-    }
-
-    pub fn set_mutability<A: Into<AccessRuleEntry>>(&mut self, key: MethodKey, method_auth: A) {
-        self.method_auth_mutability.insert(key, method_auth.into());
     }
 
     pub fn get_default(&self) -> AccessRule {
@@ -222,7 +213,6 @@ impl AccessRulesConfig {
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
-        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
     }
 
     pub fn set_groups(
@@ -232,7 +222,6 @@ impl AccessRulesConfig {
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Groups(groups));
-        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
     }
 
     pub fn set_main_method_group(
@@ -243,7 +232,6 @@ impl AccessRulesConfig {
         let key = MethodKey::new(ObjectModuleId::Main, method);
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
-        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
