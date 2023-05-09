@@ -545,7 +545,7 @@ impl AccessControllerNativePackage {
         let address = GlobalAddress::new_or_panic(address.0);
 
         let access_rules = AccessRules::sys_new(
-            access_rules_from_rule_set(address, input.rule_set),
+            init_access_rules_from_rule_set(address, input.rule_set),
             btreemap!(),
             api,
         )?
@@ -1100,7 +1100,7 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
+fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
 
     // Primary Role Rules
@@ -1253,7 +1253,7 @@ fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> Acce
     access_rules.set_group_access_rule_and_mutability(
         "any_role",
         any_role,
-    rule!(require(global_caller(address))),
+        rule!(require(global_caller(address))),
     );
     access_rules.set_group(
         MethodKey::new(
@@ -1325,25 +1325,49 @@ fn update_access_rules<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let access_rules = access_rules_from_rule_set(address, rule_set);
-
     let attached = AttachedAccessRules(receiver.clone());
 
-    for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
-        attached.set_group_access_rule(group_name, access_rule.clone(), api)?;
-    }
-    for (method_key, entry) in access_rules.get_all_method_auth().iter() {
-        match entry {
-            AccessRuleEntry::AccessRule(access_rule) => {
-                attached.set_method_access_rule(
-                    method_key.clone(),
-                    AccessRuleEntry::AccessRule(access_rule.clone()),
-                    api,
-                )?;
-            }
-            AccessRuleEntry::Group(..) => {} // Already updated above
-            AccessRuleEntry::Groups(..) => {} // Already updated above
-        }
-    }
+    // Primary Role Rules
+    attached.set_group_access_rule("primary".into(), rule_set.primary_role.clone(), api)?;
+
+    // Recovery Role Rules
+    attached.set_group_access_rule("recovery".into(), rule_set.recovery_role.clone(), api)?;
+
+    // Recovery || Confirmation Role Rules
+    attached.set_group_access_rule(
+        "recovery_or_confirmation".into(),
+        access_rule_or(vec![
+            rule_set.recovery_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+        api,
+    )?;
+
+    // Primary || Confirmation Role Rules
+    attached.set_group_access_rule(
+        "primary_or_confirmation".into(),
+        access_rule_or(vec![
+            rule_set.primary_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]),
+        api,
+    )?;
+
+    // Other methods
+    let any_role = access_rule_or(
+        [
+            rule_set.primary_role.clone(),
+            rule_set.recovery_role.clone(),
+            rule_set.confirmation_role.clone(),
+        ]
+            .into(),
+    );
+    attached.set_group_access_rule_and_mutability(
+        "any_role",
+        any_role,
+        rule!(require(global_caller(address))),
+        api,
+    )?;
+
     Ok(())
 }
