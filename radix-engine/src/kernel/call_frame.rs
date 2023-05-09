@@ -276,7 +276,6 @@ impl<L: Clone> CallFrame<L> {
         actor: Actor,
         message: Message,
     ) -> Result<Self, CreateFrameError> {
-        let optional_method_actor = actor.try_as_method().cloned();
         let mut frame = Self {
             depth: parent.depth + 1,
             actor,
@@ -291,24 +290,41 @@ impl<L: Clone> CallFrame<L> {
         Self::pass_message(parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
 
-        // Additional logic on actor
-        if let Some(method_actor) = optional_method_actor {
+        // Make sure actor isn't part of the owned nodes
+        if let Actor::Method(method_actor) = &frame.actor {
             if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
                 return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
             }
+        }
 
-            // Global references in actor
-            if let Some(outer_global_object) = method_actor.object_info.outer_object {
-                frame.stable_references.insert(
-                    outer_global_object.into_node_id(),
-                    StableReferenceType::Global,
-                );
+        // Additional global references
+        let mut additional_global_refs = Vec::new();
+        match &frame.actor {
+            Actor::Root => {}
+            Actor::Method(MethodActor {
+                global_address,
+                object_info,
+                instance_context,
+                ..
+            }) => {
+                if let Some(global_address) = global_address {
+                    additional_global_refs.push(global_address.into_node_id());
+                }
+                if let Some(outer_global_object) = object_info.outer_object {
+                    additional_global_refs.push(outer_global_object.into_node_id());
+                }
+                if let Some(instance_context) = instance_context {
+                    additional_global_refs.push(instance_context.instance.into_node_id());
+                }
             }
-            if let Some(global_address) = method_actor.global_address {
-                frame
-                    .stable_references
-                    .insert(global_address.into_node_id(), StableReferenceType::Global);
+            Actor::Function { blueprint, .. } | Actor::VirtualLazyLoad { blueprint, .. } => {
+                additional_global_refs.push(blueprint.package_address.into_node_id());
             }
+        }
+        for reference in additional_global_refs {
+            frame
+                .stable_references
+                .insert(reference, StableReferenceType::Global);
         }
 
         Ok(frame)
