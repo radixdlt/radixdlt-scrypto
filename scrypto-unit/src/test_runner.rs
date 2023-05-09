@@ -136,19 +136,24 @@ pub struct CustomGenesis {
 }
 
 impl CustomGenesis {
-    pub fn empty(
+    pub fn default(
         initial_epoch: u64,
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> CustomGenesis {
-        CustomGenesis {
-            genesis_data_chunks: vec![],
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+            .unwrap()
+            .public_key();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
             max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
-        }
+        )
     }
 
     pub fn single_validator_and_staker(

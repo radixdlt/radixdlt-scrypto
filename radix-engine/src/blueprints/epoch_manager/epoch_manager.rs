@@ -40,9 +40,62 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct CurrentProposalStatisticSubstate {
+    /// A proposal statistic of each validator from the current validator set, in the iteration
+    /// order of [`CurrentValidatorSetSubstate.validator_set`].
+    pub validator_statistics: Vec<ProposalStatistic>,
+}
+
+impl CurrentProposalStatisticSubstate {
+    /// Gets a mutable reference to a proposal statistic tracker of an individual validator.
+    pub fn get_mut_proposal_statistic(
+        &mut self,
+        validator_index: ValidatorIndex,
+    ) -> Result<&mut ProposalStatistic, RuntimeError> {
+        let validator_count = self.validator_statistics.len();
+        self.validator_statistics
+            .get_mut(validator_index as usize)
+            .ok_or_else(|| {
+                RuntimeError::ApplicationError(ApplicationError::EpochManagerError(
+                    EpochManagerError::InvalidaValidatorIndex {
+                        index: validator_index as usize,
+                        count: validator_count,
+                    },
+                ))
+            })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ProposalStatistic {
+    /// A counter of successful proposals made by a specific validator.
+    pub made: u64,
+    /// A counter of missed proposals (caused both by gap rounds or fallback rounds).
+    pub missed: u64,
+}
+
+impl ProposalStatistic {
+    /// Creates a zeroed statistic.
+    pub fn zero() -> Self {
+        Self { made: 0, missed: 0 }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
-    InvalidRoundUpdate { from: u64, to: u64 },
+    InvalidRoundUpdate {
+        from: u64,
+        to: u64,
+    },
+    InconsistentGapRounds {
+        gap_rounds: u64,
+        progressed_rounds: u64,
+    },
+    InvalidaValidatorIndex {
+        index: usize,
+        count: usize,
+    },
 }
 
 pub const EPOCH_MANAGER_SECONDARY_INDEX: CollectionIndex = 0u8;
@@ -99,6 +152,9 @@ impl EpochManagerBlueprint {
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: BTreeMap::new(),
             };
+            let current_proposal_statistic = CurrentProposalStatisticSubstate {
+                validator_statistics: Vec::new(),
+            };
 
             api.new_simple_object(
                 EPOCH_MANAGER_BLUEPRINT,
@@ -106,6 +162,7 @@ impl EpochManagerBlueprint {
                     scrypto_encode(&config).unwrap(),
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
+                    scrypto_encode(&current_proposal_statistic).unwrap(),
                 ],
             )?
         };
@@ -209,7 +266,11 @@ impl EpochManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn next_round<Y>(round: u64, api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn next_round<Y>(
+        round: u64,
+        proposal_history: LeaderProposalHistory,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -226,7 +287,8 @@ impl EpochManagerBlueprint {
         )?;
         let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
 
-        if round <= epoch_manager.round {
+        let progressed_rounds = round as i128 - epoch_manager.round as i128;
+        if progressed_rounds <= 0 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
                     from: epoch_manager.round,
@@ -234,6 +296,8 @@ impl EpochManagerBlueprint {
                 }),
             ));
         }
+
+        Self::update_proposal_statistics(progressed_rounds as u64, proposal_history, api)?;
 
         if round >= config.rounds_per_epoch {
             let next_epoch = epoch_manager.epoch + 1;
@@ -281,6 +345,47 @@ impl EpochManagerBlueprint {
         Ok((validator_address, owner_token_bucket))
     }
 
+    fn update_proposal_statistics<Y>(
+        progressed_rounds: u64,
+        proposal_history: LeaderProposalHistory,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if proposal_history.gap_round_leaders.len() as u64 != progressed_rounds - 1 {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::EpochManagerError(EpochManagerError::InconsistentGapRounds {
+                    gap_rounds: proposal_history.gap_round_leaders.len() as u64,
+                    progressed_rounds,
+                }),
+            ));
+        }
+
+        let statistic_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::CurrentProposalStatistic.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut statistic: CurrentProposalStatisticSubstate =
+            api.field_lock_read_typed(statistic_handle)?;
+        for gap_round_leader in proposal_history.gap_round_leaders {
+            let mut gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
+            gap_round_statistic.missed += 1;
+        }
+        let mut current_round_statistic =
+            statistic.get_mut_proposal_statistic(proposal_history.current_leader)?;
+        if proposal_history.is_fallback {
+            current_round_statistic.missed += 1;
+        } else {
+            current_round_statistic.made += 1;
+        }
+        api.field_lock_write_typed(statistic_handle, statistic)?;
+        api.field_lock_release(statistic_handle)?;
+
+        Ok(())
+    }
+
     fn epoch_change<Y>(epoch: u64, max_validators: u32, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -293,15 +398,34 @@ impl EpochManagerBlueprint {
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 
-        let handle = api.actor_lock_field(
+        let validator_set_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             EpochManagerField::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_set: CurrentValidatorSetSubstate = api.field_lock_read_typed(handle)?;
-        validator_set.validator_set = next_validator_set.clone();
-        api.field_lock_write_typed(handle, &validator_set)?;
-        api.field_lock_release(handle)?;
+        api.field_lock_write_typed(
+            validator_set_handle,
+            CurrentValidatorSetSubstate {
+                validator_set: next_validator_set.clone(),
+            },
+        )?;
+        api.field_lock_release(validator_set_handle)?;
+
+        let statistic_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::CurrentProposalStatistic.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut statistic: CurrentProposalStatisticSubstate =
+            api.field_lock_read_typed(statistic_handle)?;
+        // TODO(emissions): In some next "emissions" PR, capture the concluded epoch's validator
+        // statistics (to be used for unreliability penalty calculation); at the moment we only
+        // reset it.
+        statistic.validator_statistics = (0..next_validator_set.len())
+            .map(|_index| ProposalStatistic::zero())
+            .collect();
+        api.field_lock_write_typed(statistic_handle, statistic)?;
+        api.field_lock_release(statistic_handle)?;
 
         Runtime::emit_event(
             api,

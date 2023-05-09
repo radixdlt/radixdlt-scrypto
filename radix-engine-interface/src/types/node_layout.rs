@@ -127,6 +127,7 @@ pub enum EpochManagerField {
     Config,
     EpochManager,
     CurrentValidatorSet,
+    CurrentProposalStatistic,
 }
 
 #[repr(u8)]

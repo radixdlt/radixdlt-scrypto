@@ -390,6 +390,7 @@ pub enum TypedEpochManagerSubstateValue {
     Config(EpochManagerConfigSubstate),
     EpochManager(EpochManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
+    CurrentProposalStatistic(CurrentProposalStatisticSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -556,6 +557,9 @@ fn to_typed_object_substate_value(
                 }
                 EpochManagerField::CurrentValidatorSet => {
                     TypedEpochManagerSubstateValue::CurrentValidatorSet(scrypto_decode(data)?)
+                }
+                EpochManagerField::CurrentProposalStatistic => {
+                    TypedEpochManagerSubstateValue::CurrentProposalStatistic(scrypto_decode(data)?)
                 }
             })
         }
