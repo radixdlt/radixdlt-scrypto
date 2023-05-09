@@ -5,7 +5,7 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{
@@ -133,7 +133,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<SystemInvocation>,
+        invocation: &KernelInvocation<Actor>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -152,7 +152,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
                             input_size: input_size as u32,
-                            identifier: &identifier.sys_invocation,
+                            actor: &invocation.call_frame_data,
                         })
                     },
                     1,
@@ -183,7 +183,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     }
                 }
                 Actor::Function { ident, .. } => (None, ident),
-                Actor::VirtualLazyLoad { .. } => {
+                Actor::VirtualLazyLoad { .. } | Actor::Root => {
                     return Ok(());
                 }
             };

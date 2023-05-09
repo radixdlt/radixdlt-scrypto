@@ -4,7 +4,6 @@ use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::system_callback::SystemInvocation;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -37,7 +36,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _identifier: &KernelInvocation<SystemInvocation>,
+        _identifier: &KernelInvocation<Actor>,
         _input_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
