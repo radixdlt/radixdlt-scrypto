@@ -41,6 +41,8 @@ impl WorktopBlueprint {
     where
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
+        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+
         let input: WorktopDropInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;

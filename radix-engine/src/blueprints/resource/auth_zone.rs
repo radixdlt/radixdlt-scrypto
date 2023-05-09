@@ -300,6 +300,8 @@ impl AuthZoneBlueprint {
     where
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
+        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+
         let input: AuthZoneDropInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
@@ -324,6 +326,7 @@ impl AuthZoneBlueprint {
             proof.sys_drop(api)?;
         }
 
+        // Drop self
         api.drop_object(input.auth_zone.0.as_node_id())?;
 
         Ok(IndexedScryptoValue::from_typed(&()))

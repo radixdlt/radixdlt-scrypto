@@ -46,8 +46,8 @@ pub struct SubstateLock<L> {
     pub node_id: NodeId,
     pub partition_num: PartitionNumber,
     pub substate_key: SubstateKey,
-    pub initial_references: IndexSet<NodeId>,
-    pub initial_owned_nodes: IndexSet<NodeId>,
+    pub non_global_references: IndexSet<NodeId>,
+    pub owned_nodes: IndexSet<NodeId>,
     pub flags: LockFlags,
     pub store_handle: Option<u32>,
     pub data: L,
@@ -429,28 +429,33 @@ impl<L: Clone> CallFrame<L> {
         };
 
         // Analyze owns and references in the substate
-        let mut initial_references = index_set_new(); // du-duplicated
-        let mut initial_owned_nodes = index_set_new();
+        let mut non_global_references = index_set_new(); // du-duplicated
+        let mut owned_nodes = index_set_new();
         for node_id in substate_value.references() {
             if node_id.is_global() {
                 // Again, safe to overwrite because Global and DirectAccess are exclusive.
                 self.stable_references
                     .insert(node_id.clone(), StableReferenceType::Global);
             } else {
-                initial_references.insert(node_id.clone());
+                non_global_references.insert(node_id.clone());
             }
         }
         for node_id in substate_value.owned_nodes() {
-            initial_references.insert(node_id.clone());
-            if !initial_owned_nodes.insert(node_id.clone()) {
+            if !owned_nodes.insert(node_id.clone()) {
                 panic!("Duplicated own found in substate");
             }
         }
 
-        // Expand transient references with new references released from the substate
-        for node_id in &initial_references {
+        // Expand transient reference set
+        for reference in &non_global_references {
             self.transient_references
-                .entry(node_id.clone())
+                .entry(reference.clone())
+                .or_default()
+                .add_assign(1);
+        }
+        for own in &owned_nodes {
+            self.transient_references
+                .entry(own.clone())
                 .or_default()
                 .add_assign(1);
         }
@@ -463,8 +468,8 @@ impl<L: Clone> CallFrame<L> {
                 node_id: node_id.clone(),
                 partition_num,
                 substate_key: substate_key.clone(),
-                initial_references,
-                initial_owned_nodes,
+                non_global_references,
+                owned_nodes,
                 flags,
                 store_handle,
                 data,
@@ -504,9 +509,9 @@ impl<L: Clone> CallFrame<L> {
             }
             .clone();
 
-            //===============
+            //==============
             // Process owns
-            //===============
+            //==============
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
@@ -514,19 +519,19 @@ impl<L: Clone> CallFrame<L> {
                 }
             }
             for own in &new_owned_nodes {
-                if !substate_lock.initial_owned_nodes.contains(own) {
+                if !substate_lock.owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
                         .map_err(UnlockSubstateError::TakeNodeError)?;
 
-                    // Move the taken node to store, if parent is in store
+                    // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
                         Self::move_node_to_store(heap, store, own)
                             .map_err(UnlockSubstateError::PersistNodeError)?;
                     }
                 }
             }
-            for own in &substate_lock.initial_owned_nodes {
+            for own in &substate_lock.owned_nodes {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
                     if !heap.contains_node(node_id) {
@@ -549,7 +554,9 @@ impl<L: Clone> CallFrame<L> {
                 new_references.insert(own.clone());
             }
             for reference in &new_references {
-                if !substate_lock.initial_references.contains(reference) {
+                if !substate_lock.non_global_references.contains(reference) {
+                    // handle added references
+
                     if !self
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
@@ -562,25 +569,34 @@ impl<L: Clone> CallFrame<L> {
                     }
 
                     if heap.contains_node(reference) {
-                        // TODO: increase borrow count
+                        heap.increase_borrow_count(reference);
                     } else {
+                        // No op
                     }
                 }
             }
-            for reference in &substate_lock.initial_references {
+            for reference in &substate_lock.non_global_references {
                 if !new_references.contains(reference) {
+                    // handle removed references
+
                     if heap.contains_node(reference) {
-                        // TODO: decrease borrow count
+                        heap.decrease_borrow_count(reference);
                     }
                 }
             }
         }
 
-        // Made substate expanded owns/reference invisible.
-        for refed_node in substate_lock.initial_references {
-            let cnt = self.transient_references.remove(&refed_node).unwrap_or(0);
+        // Shrink transient reference set
+        for reference in substate_lock.non_global_references {
+            let cnt = self.transient_references.remove(&reference).unwrap_or(0);
             if cnt > 1 {
-                self.transient_references.insert(refed_node, cnt - 1);
+                self.transient_references.insert(reference, cnt - 1);
+            }
+        }
+        for own in substate_lock.owned_nodes {
+            let cnt = self.transient_references.remove(&own).unwrap_or(0);
+            if cnt > 1 {
+                self.transient_references.insert(own, cnt - 1);
             }
         }
 
@@ -675,7 +691,9 @@ impl<L: Clone> CallFrame<L> {
 
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
-                // Process own
+                //==============
+                // Process owns
+                //==============
                 for own in substate_value.owned_nodes() {
                     self.take_node_internal(own)
                         .map_err(CreateNodeError::TakeNodeError)?;
@@ -685,17 +703,25 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
 
+                //===================
                 // Process reference
+                //===================
                 for reference in substate_value.references() {
-                    if push_to_store && !reference.is_global() {
-                        return Err(CreateNodeError::NonGlobalRefNotAllowed(*reference));
-                    }
-
                     if !self
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
                         return Err(CreateNodeError::RefNotFound(reference.clone()));
+                    }
+
+                    if push_to_store && !reference.is_global() {
+                        return Err(CreateNodeError::NonGlobalRefNotAllowed(*reference));
+                    }
+
+                    if heap.contains_node(reference) {
+                        heap.increase_borrow_count(reference);
+                    } else {
+                        // No op
                     }
                 }
             }
@@ -713,7 +739,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    /// Removes node from call frame and re-owns any children
+    /// Removes node from call frame and owned nodes will be possessed by this call frame.
     pub fn drop_node(
         &mut self,
         heap: &mut Heap,
@@ -732,14 +758,18 @@ impl<L: Clone> CallFrame<L> {
         };
         for (_, module) in &node_substates {
             for (_, substate_value) in module {
+                //=============
                 // Process own
+                //=============
                 for own in substate_value.owned_nodes() {
                     // FIXME This is problematic, as owned node must have been locked
                     // In general, we'd like to move node locking/borrowing to heap.
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
 
+                //====================
                 // Process references
+                //====================
                 for reference in substate_value.references() {
                     if reference.is_global() {
                         // Expand stable references
@@ -749,7 +779,7 @@ impl<L: Clone> CallFrame<L> {
                     } else {
                         if heap.contains_node(reference) {
                             // This substate is dropped and no longer borrows the heap node.
-                            // TODO: decrease borrow count
+                            heap.decrease_borrow_count(reference);
                         }
                     }
                 }
@@ -847,8 +877,10 @@ impl<L: Clone> CallFrame<L> {
             .insert(address.into_node_id(), StableReferenceType::DirectAccess);
     }
 
+    //====================================================================================
     // Note that reference model isn't fully implemented for set/remove/scan/take APIs.
-    // They're intended for internal use only and extra caution is required.
+    // They're intended for internal use only and extra caution must be taken.
+    //====================================================================================
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?

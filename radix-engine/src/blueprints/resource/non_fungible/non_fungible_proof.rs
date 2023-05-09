@@ -161,6 +161,8 @@ impl NonFungibleProofBlueprint {
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+
+        // Notify underlying buckets/vaults
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
             OBJECT_BASE_PARTITION,
@@ -173,6 +175,7 @@ impl NonFungibleProofBlueprint {
         proof_substate.drop_proof(api)?;
         api.kernel_drop_lock(handle)?;
 
+        // Drop self
         api.drop_object(proof.0.as_node_id())?;
 
         Ok(())

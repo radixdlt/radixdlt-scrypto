@@ -219,6 +219,22 @@ impl Heap {
 
         Ok(self.nodes.remove(node_id).unwrap().substates)
     }
+
+    pub fn increase_borrow_count(&mut self, node_id: &NodeId) {
+        self.nodes
+            .get_mut(node_id)
+            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
+            .borrow_count
+            .add_assign(1);
+    }
+
+    pub fn decrease_borrow_count(&mut self, node_id: &NodeId) {
+        self.nodes
+            .get_mut(node_id)
+            .unwrap_or_else(|| panic!("Node {:?} not found", node_id))
+            .borrow_count
+            .sub_assign(1);
+    }
 }
 
 #[derive(Debug)]
