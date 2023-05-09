@@ -1,7 +1,7 @@
 CREATE_ACCOUNT_ADVANCED
     Tuple(                                    # Access Rules Config Struct
-        Map<Tuple, Enum>(),                   # Direct Method auth Field
-        Map<Tuple, Enum>(),                   # Method auth Field
+        Map<Tuple, Array>(),                   # Direct Method auth Field
+        Map<Tuple, Array>(),                   # Method auth Field
         Map<String, Enum>(),                  # Grouped Auth Field
         Enum(                                 # Default Auth Field
             "AccessRuleEntry::AccessRule",

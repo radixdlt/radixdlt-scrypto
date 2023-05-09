@@ -56,6 +56,20 @@ pub struct MethodEntry {
     pub groups: Vec<String>,
 }
 
+impl MethodEntry {
+    fn group(group: &str) -> Self {
+        MethodEntry {
+            groups: vec![group.to_string()]
+        }
+    }
+
+    fn groups(groups: Vec<String>) -> Self {
+        MethodEntry {
+            groups
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
@@ -84,8 +98,9 @@ impl From<String> for AccessRuleEntry {
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
-    direct_method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
-    method_auth: BTreeMap<MethodKey, AccessRuleEntry>,
+    direct_method_auth: BTreeMap<MethodKey, MethodEntry>,
+    method_auth: BTreeMap<MethodKey, MethodEntry>,
+
     grouped_auth: BTreeMap<String, AccessRuleEntry>,
     default_auth: AccessRuleEntry,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
@@ -128,8 +143,29 @@ impl AccessRulesConfig {
         };
         match auth.get(key) {
             None => self.get_default(),
-            Some(entry) => self.resolve_entry(entry),
+            Some(entry) => self.resolve_method_entry(entry),
         }
+    }
+
+    fn resolve_method_entry(&self, method_entry: &MethodEntry) -> AccessRule {
+        let mut group_rules = Vec::new();
+
+        for group in &method_entry.groups {
+            let rule = self.resolve_entry(&AccessRuleEntry::Group(group.to_string()));
+            match rule {
+                AccessRule::DenyAll => {
+                    group_rules.push(AccessRuleNode::AnyOf(vec![]));
+                },
+                AccessRule::AllowAll => {
+                    group_rules.push(AccessRuleNode::AllOf(vec![]));
+                },
+                AccessRule::Protected(node) => {
+                    group_rules.push(node)
+                },
+            }
+        }
+
+        AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
     }
 
     fn resolve_entry(&self, entry: &AccessRuleEntry) -> AccessRule {
@@ -211,8 +247,7 @@ impl AccessRulesConfig {
         key: MethodKey,
         group: &str,
     ) {
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+        self.method_auth.insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_groups(
@@ -221,7 +256,7 @@ impl AccessRulesConfig {
         groups: Vec<String>,
     ) {
         self.method_auth
-            .insert(key.clone(), AccessRuleEntry::Groups(groups));
+            .insert(key.clone(), MethodEntry::groups(groups));
     }
 
     pub fn set_main_method_group(
@@ -230,13 +265,11 @@ impl AccessRulesConfig {
         group: &str,
     ) {
         let key = MethodKey::new(ObjectModuleId::Main, method);
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+        self.method_auth.insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
-        self.direct_method_auth
-            .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
+        self.direct_method_auth.insert(key.clone(), MethodEntry::group(group));
     }
 }
 
