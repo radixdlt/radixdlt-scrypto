@@ -5,7 +5,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientActorApi, ClientFieldLockApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientActorApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -306,6 +306,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
+    }
+
+    fn actor_call_module_method(&mut self, object_handle: ObjectHandle, module_id: ObjectModuleId, method_name: &str, args: Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
+        todo!()
     }
 }
 
