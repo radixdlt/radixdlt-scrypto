@@ -12,10 +12,7 @@ mod faucet {
 
     impl Faucet {
         pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
-            let access_rules = AccessRules::new({
-                let mut config = AccessRulesConfig::new();
-                config.default(AccessRule::DenyAll)
-            });
+            let access_rules = AccessRules::new(AccessRulesConfig::new());
             let metadata = Metadata::new();
 
             Self {

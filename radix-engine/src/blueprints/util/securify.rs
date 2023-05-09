@@ -53,13 +53,6 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let mut access_rules = AccessRulesConfig::new();
 
-        // TODO: Fix this up
-        for securified_group in Self::securified_groups() {
-            access_rules = access_rules.default(
-                AccessRuleEntry::group(securified_group),
-            );
-        }
-
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_group(MethodKey::new(ObjectModuleId::Main, securify_ident), "securify");
         }

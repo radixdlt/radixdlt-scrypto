@@ -1080,11 +1080,23 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
 
     // Primary Role Rules
     let primary_group = "primary";
-    access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
+    access_rules.set_group_access_rule_and_mutability(
+        primary_group.into(),
+        rule_set.primary_role.clone(),
+        rule!(require(global_caller(address))),
+    );
     let recovery_group = "recovery";
-    access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
+    access_rules.set_group_access_rule_and_mutability(
+        recovery_group.into(),
+        rule_set.recovery_role.clone(),
+        rule!(require(global_caller(address))),
+    );
     let confirmation_group = "confirmation";
-    access_rules.set_group_access_rule(confirmation_group.into(), rule_set.confirmation_role.clone());
+    access_rules.set_group_access_rule_and_mutability(
+        confirmation_group.into(),
+        rule_set.confirmation_role.clone(),
+        rule!(require(global_caller(address))),
+    );
 
     access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
@@ -1227,7 +1239,7 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         ],
     );
 
-    access_rules.default(rule!(require(global_caller(address))))
+    access_rules
 }
 
 fn transition<Y, I>(

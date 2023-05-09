@@ -147,8 +147,7 @@ impl EpochManagerBlueprint {
             MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
         );
 
-        let validator_access_rules =
-            AccessRulesConfig::new().default(AccessRule::DenyAll);
+        let validator_access_rules = AccessRulesConfig::new();
 
         let access_rules = AccessRules::sys_new(
             access_rules,

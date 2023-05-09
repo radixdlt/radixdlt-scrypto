@@ -103,7 +103,6 @@ pub struct AccessRulesConfig {
 
     grouped_auth: BTreeMap<String, AccessRuleEntry>,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
-    default_auth_mutability: AccessRuleEntry,
 }
 
 impl AccessRulesConfig {
@@ -113,17 +112,7 @@ impl AccessRulesConfig {
             method_auth: BTreeMap::new(),
             grouped_auth: BTreeMap::new(),
             grouped_auth_mutability: BTreeMap::new(),
-            default_auth_mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         }
-    }
-
-    // TODO: Move into scrypto repo as a builder
-    pub fn default<R: Into<AccessRuleEntry>>(
-        mut self,
-        default_auth_mutability: R,
-    ) -> Self {
-        self.default_auth_mutability = default_auth_mutability.into();
-        self
     }
 
     pub fn get_access_rules(&self, is_direct_access: bool, key: &MethodKey) -> Vec<AccessRule> {
@@ -196,11 +185,7 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability
             .get(key)
             .cloned()
-            .unwrap_or_else(|| self.get_default_mutability())
-    }
-
-    pub fn get_default_mutability(&self) -> AccessRule {
-        self.resolve_entry(&self.default_auth_mutability)
+            .unwrap_or_else(|| AccessRule::DenyAll)
     }
 
     pub fn set_group_access_rule<E: Into<AccessRuleEntry>>(&mut self, group_key: String, access_rule_entry: E) {
@@ -263,7 +248,7 @@ impl AccessRulesConfig {
 pub fn package_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> AccessRulesConfig {
-    let mut access_rules = AccessRulesConfig::new().default(AccessRule::DenyAll);
+    let mut access_rules = AccessRulesConfig::new();
     access_rules.set_group_access_rule_and_mutability(
         "update_metadata",
         rule!(require(owner_badge.clone())),

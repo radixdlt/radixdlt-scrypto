@@ -257,7 +257,7 @@ fn build_access_rules(
     // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
-    let mut bucket_access_rules = AccessRulesConfig::new().default(DenyAll);
+    let mut bucket_access_rules = AccessRulesConfig::new();
     bucket_access_rules.set_group_access_rule_and_mutability(
         "this_package",
         rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
@@ -301,7 +301,7 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(DenyAll);
+    let proof_access_rules = AccessRulesConfig::new();
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
             (
@@ -357,7 +357,7 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(DenyAll);
+    let proof_access_rules = AccessRulesConfig::new();
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,
@@ -404,7 +404,7 @@ where
 {
     let (resman_access_rules, vault_access_rules, bucket_access_rules) =
         build_access_rules(access_rules);
-    let proof_access_rules = AccessRulesConfig::new().default(DenyAll);
+    let proof_access_rules = AccessRulesConfig::new();
 
     let resman_access_rules = AccessRules::sys_new(
         resman_access_rules,

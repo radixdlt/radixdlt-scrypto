@@ -13,8 +13,7 @@ mod factory {
             }
             .instantiate();
 
-            let mut access_rules = AccessRulesConfig::new()
-                .default(LOCKED);
+            let mut access_rules = AccessRulesConfig::new();
             access_rules.set_group_access_rule_and_mutability(
                 "set_address",
                 rule!(require(Runtime::package_token())),
@@ -31,8 +30,7 @@ mod factory {
             }
             .instantiate();
 
-            let mut access_rules = AccessRulesConfig::new()
-                .default(LOCKED);
+            let mut access_rules = AccessRulesConfig::new();
             access_rules.set_group_access_rule_and_mutability(
                 "set_address",
                 rule!(require(Runtime::package_token())),
