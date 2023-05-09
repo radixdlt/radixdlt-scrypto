@@ -3,7 +3,6 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -194,36 +193,26 @@ fn build_access_rules(
         "deposit",
     );
 
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_public(
         MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_public(
         MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_ALL_IDENT),
-        AllowAll,
-        DenyAll,
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_public(
         MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
-        AllowAll,
-        DenyAll,
     );
-    vault_access_rules.set_method_access_rule_and_mutability(
+    vault_access_rules.set_public(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
         ),
-        AllowAll,
-        DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(

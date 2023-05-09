@@ -22,19 +22,18 @@ pub trait SecurifiedAccessRules {
 
     fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
         for (method, method_type) in Self::non_owner_methods() {
-            let (access_rule, mutability) = match method_type {
-                MethodType::Public => (
-                    AccessRuleEntry::AccessRule(AccessRule::AllowAll),
-                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                ),
-                MethodType::Custom(access_rule, mutability) => (access_rule, mutability),
+            match method_type {
+                MethodType::Public => {
+                    access_rules_config.set_public(MethodKey::new(ObjectModuleId::Main, method));
+                },
+                MethodType::Custom(access_rule, mutability) => {
+                    access_rules_config.set_method_access_rule_and_mutability(
+                        MethodKey::new(ObjectModuleId::Main, method),
+                        access_rule,
+                        mutability,
+                    );
+                },
             };
-
-            access_rules_config.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, method),
-                access_rule,
-                mutability,
-            );
         }
     }
 

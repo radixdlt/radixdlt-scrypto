@@ -4,14 +4,10 @@ use crate::modules::{
 };
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
+    require, AccessRule, AccessRulesConfig, NonFungibleGlobalId,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
 use radix_engine_interface::data::scrypto::{
@@ -65,6 +61,10 @@ pub trait LocalComponent: Sized {
             "update_metadata".to_string(),
             AccessRule::DenyAll,
         );
+        access_rules_config.set_group_access_rule(
+            "royalty".to_string(),
+            AccessRule::DenyAll,
+        );
         let access_rules_config =
             access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
@@ -79,6 +79,10 @@ pub trait LocalComponent: Sized {
         let mut access_rules_config = AccessRulesConfig::new();
         access_rules_config.set_group_access_rule(
             "update_metadata".to_string(),
+            AccessRule::DenyAll,
+        );
+        access_rules_config.set_group_access_rule(
+            "royalty".to_string(),
             AccessRule::DenyAll,
         );
         let access_rules_config =
@@ -98,6 +102,10 @@ pub trait LocalComponent: Sized {
             "update_metadata".to_string(),
             AccessRule::DenyAll,
         );
+        access_rules_config.set_group_access_rule(
+            "royalty".to_string(),
+            AccessRule::DenyAll,
+        );
         let access_rules_config =
             access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
 
@@ -113,6 +121,10 @@ pub trait LocalComponent: Sized {
         access_rules_config.set_group_access_rule(
             "update_metadata".to_string(),
             AccessRule::DenyAll,
+        );
+        access_rules_config.set_group_access_rule(
+            "royalty".to_string(),
+            AccessRule::AllowAll,
         );
         let access_rules_config =
             access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
@@ -142,29 +154,14 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress {
         let mut access_rules_config =
             AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
-            AccessRule::AllowAll,
-            rule!(require(owner_badge.clone())),
-        );
+
         access_rules_config.set_group_access_rule_and_mutability(
             "update_metadata".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Royalty,
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            ),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Royalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            ),
+        access_rules_config.set_group_access_rule_and_mutability(
+            "royalty".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );

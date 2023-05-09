@@ -1,4 +1,3 @@
-use crate::api::node_modules::metadata::*;
 use crate::api::ObjectModuleId;
 use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
 use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
@@ -280,25 +279,23 @@ pub fn package_access_rules_from_owner_badge(
         AccessRuleEntry::AccessRule(AccessRule::DenyAll),
         AccessRule::DenyAll,
     );
-    access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
-        AccessRule::AllowAll,
-        rule!(require(owner_badge.clone())),
-    );
     access_rules.set_group_access_rule_and_mutability(
         "update_metadata",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
+    access_rules.set_group_access_rule_and_mutability(
+        "royalty",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_method_access_rule_and_mutability(
+    access_rules.set_group(
+        MethodKey::new(ObjectModuleId::Main, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
+        "royalty",
+    );
+    access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, PACKAGE_CLAIM_ROYALTY_IDENT),
-        rule!(require(owner_badge.clone())),
-        rule!(require(owner_badge.clone())),
+        "royalty",
     );
     access_rules
 }
