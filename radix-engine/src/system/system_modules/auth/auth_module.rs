@@ -114,7 +114,7 @@ impl AuthModule {
                                 AuthError::VisibilityError(node_id.clone()),
                             )))?;
                     let method_key = MethodKey::new(*module_id, ident);
-                    let auth = Self::method_authorization_stateless(
+                    let access_rules = Self::method_access_rules(
                         ref_type,
                         parent.as_node_id(),
                         ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
@@ -122,18 +122,18 @@ impl AuthModule {
                         api,
                     )?;
 
-                    auths.push(auth);
+                    auths.extend(access_rules);
                 }
 
                 if info.global {
-                    let auth = Self::method_authorization_stateless(
+                    let access_rules = Self::method_access_rules(
                         RefType::Normal,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
                         api,
                     )?;
-                    auths.push(auth);
+                    auths.extend(access_rules);
                 }
 
                 auths
@@ -143,13 +143,13 @@ impl AuthModule {
         Ok(auths)
     }
 
-    fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
+    fn method_access_rules<Y: KernelApi<M>, M: KernelCallbackObject>(
         ref_type: RefType,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
         api: &mut Y,
-    ) -> Result<AccessRule, RuntimeError> {
+    ) -> Result<Vec<AccessRule>, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
             ACCESS_RULES_FIELD_PARTITION,
@@ -162,10 +162,10 @@ impl AuthModule {
 
         let is_direct_access = matches!(ref_type, RefType::DirectAccess);
 
-        let method_auth = match object_key {
+        let access_rules = match object_key {
             ObjectKey::SELF => access_rules
                 .access_rules
-                .get_access_rule(is_direct_access, &key),
+                .get_access_rules(is_direct_access, &key),
             ObjectKey::ChildBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .child_blueprint_rules
@@ -173,13 +173,13 @@ impl AuthModule {
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::InnerBlueprintDoesNotExist(blueprint_name),
                     )))?;
-                child_rules.get_access_rule(is_direct_access, &key)
+                child_rules.get_access_rules(is_direct_access, &key)
             }
         };
 
         api.kernel_drop_lock(handle)?;
 
-        Ok(method_auth)
+        Ok(access_rules)
     }
 
     pub fn last_auth_zone(&self) -> NodeId {

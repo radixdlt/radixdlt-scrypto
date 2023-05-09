@@ -135,15 +135,15 @@ impl AccessRulesConfig {
         self.default_auth = default_auth;
     }
 
-    pub fn get_access_rule(&self, is_direct_access: bool, key: &MethodKey) -> AccessRule {
+    pub fn get_access_rules(&self, is_direct_access: bool, key: &MethodKey) -> Vec<AccessRule> {
         let auth = if is_direct_access {
             &self.direct_method_auth
         } else {
             &self.method_auth
         };
         match auth.get(key) {
-            None => self.get_default(),
-            Some(entry) => self.resolve_method_entry(entry),
+            None => vec![self.get_default()],
+            Some(entry) => vec![self.resolve_method_entry(entry)],
         }
     }
 

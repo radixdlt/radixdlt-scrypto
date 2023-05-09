@@ -592,7 +592,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_ACCOUNT;
 "##,
             ),
@@ -609,7 +609,7 @@ CREATE_ACCOUNT;
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_IDENTITY;
 "##,
             ),
