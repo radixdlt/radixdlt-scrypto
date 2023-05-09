@@ -225,6 +225,16 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
     }
 
+    pub fn set_groups(
+        &mut self,
+        key: MethodKey,
+        groups: Vec<String>,
+    ) {
+        self.method_auth
+            .insert(key.clone(), AccessRuleEntry::Groups(groups));
+        self.method_auth_mutability.insert(key, AccessRuleEntry::AccessRule(DenyAll));
+    }
+
     pub fn set_main_method_group(
         &mut self,
         method: &str,

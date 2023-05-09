@@ -732,12 +732,9 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        let address = api.actor_get_global_address()?;
-
         update_access_rules(
             api,
             receiver,
-            address,
             recovery_proposal.rule_set,
         )?;
 
@@ -776,11 +773,9 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            address,
             recovery_proposal.rule_set,
         )?;
 
@@ -814,8 +809,7 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        let address = api.actor_get_global_address()?;
-        update_access_rules(api, receiver, address, locked_access_rules())?;
+        update_access_rules(api, receiver, locked_access_rules())?;
 
         Runtime::emit_event(
             api,
@@ -846,8 +840,7 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        let address = api.actor_get_global_address()?;
-        update_access_rules(api, receiver, address, locked_access_rules())?;
+        update_access_rules(api, receiver, locked_access_rules())?;
 
         Runtime::emit_event(
             api,
@@ -883,11 +876,9 @@ impl AccessControllerNativePackage {
         )?;
 
         // Update the access rules
-        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            address,
             recovery_proposal.rule_set,
         )?;
 
@@ -1072,22 +1063,6 @@ impl AccessControllerNativePackage {
     }
 }
 
-fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
-    let mut rule_nodes = Vec::new();
-    for access_rule in access_rules.into_iter() {
-        match access_rule {
-            AccessRule::AllowAll => return AccessRule::AllowAll,
-            AccessRule::DenyAll => {}
-            AccessRule::Protected(rule_node) => rule_nodes.push(rule_node),
-        }
-    }
-    if rule_nodes.len() != 0 {
-        AccessRule::Protected(AccessRuleNode::AnyOf(rule_nodes))
-    } else {
-        AccessRule::DenyAll
-    }
-}
-
 //=========
 // Helpers
 //=========
@@ -1106,6 +1081,11 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
     // Primary Role Rules
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
+    let recovery_group = "recovery";
+    access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
+    let confirmation_group = "confirmation";
+    access_rules.set_group_access_rule(confirmation_group.into(), rule_set.confirmation_role.clone());
+
     access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
         primary_group.into(),
@@ -1140,8 +1120,6 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
     );
 
     // Recovery Role Rules
-    let recovery_group = "recovery";
-    access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
@@ -1193,74 +1171,60 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
     );
 
     // Recovery || Confirmation Role Rules
-    let recovery_or_confirmation_group = "recovery_or_confirmation";
-    access_rules.set_group_access_rule(
-        recovery_or_confirmation_group.into(),
-        access_rule_or(vec![
-            rule_set.recovery_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]),
-    );
-    access_rules.set_group(
+    access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
-        recovery_or_confirmation_group.into(),
+        vec![
+            "recovery".to_string(),
+            "confirmation".to_string(),
+        ],
     );
-    access_rules.set_group(
+    access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
-        recovery_or_confirmation_group.into(),
+        vec![
+            "recovery".to_string(),
+            "confirmation".to_string(),
+        ],
     );
 
     // Primary || Confirmation Role Rules
-    let primary_or_confirmation_group = "primary_or_confirmation";
-    access_rules.set_group_access_rule(
-        primary_or_confirmation_group.into(),
-        access_rule_or(vec![
-            rule_set.primary_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]),
-    );
-    access_rules.set_group(
+    access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
-        primary_or_confirmation_group.into(),
+        vec![
+            "primary".to_string(),
+            "confirmation".to_string(),
+        ],
     );
-    access_rules.set_group(
+    access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
-        primary_or_confirmation_group.into(),
+        vec![
+            "primary".to_string(),
+            "confirmation".to_string(),
+        ],
     );
 
     // Other methods
-
-    let any_role = access_rule_or(
-        [
-            rule_set.primary_role.clone(),
-            rule_set.recovery_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]
-            .into(),
-    );
-    access_rules.set_group_access_rule_and_mutability(
-        "any_role",
-        any_role,
-        rule!(require(global_caller(address))),
-    );
-    access_rules.set_group(
+    access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         ),
-        "any_role",
+        vec![
+            "primary".to_string(),
+            "recovery".to_string(),
+            "confirmation".to_string(),
+        ],
     );
 
     access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))
@@ -1319,55 +1283,15 @@ where
 fn update_access_rules<Y>(
     api: &mut Y,
     receiver: &NodeId,
-    address: GlobalAddress,
     rule_set: RuleSet,
 ) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-
-    // Primary Role Rules
     attached.set_group_access_rule("primary".into(), rule_set.primary_role.clone(), api)?;
-
-    // Recovery Role Rules
     attached.set_group_access_rule("recovery".into(), rule_set.recovery_role.clone(), api)?;
-
-    // Recovery || Confirmation Role Rules
-    attached.set_group_access_rule(
-        "recovery_or_confirmation".into(),
-        access_rule_or(vec![
-            rule_set.recovery_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]),
-        api,
-    )?;
-
-    // Primary || Confirmation Role Rules
-    attached.set_group_access_rule(
-        "primary_or_confirmation".into(),
-        access_rule_or(vec![
-            rule_set.primary_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]),
-        api,
-    )?;
-
-    // Other methods
-    let any_role = access_rule_or(
-        [
-            rule_set.primary_role.clone(),
-            rule_set.recovery_role.clone(),
-            rule_set.confirmation_role.clone(),
-        ]
-            .into(),
-    );
-    attached.set_group_access_rule_and_mutability(
-        "any_role",
-        any_role,
-        rule!(require(global_caller(address))),
-        api,
-    )?;
+    attached.set_group_access_rule("confirmation".into(), rule_set.confirmation_role.clone(), api)?;
 
     Ok(())
 }
