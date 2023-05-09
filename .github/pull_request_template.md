@@ -23,7 +23,7 @@ You can delete this section if it's not useful.
 INSTRUCTIONS:
 This section is to provide recommendations to consumers of this repo about how they
 should handle breaking changes, or integrate new features. The two key stakeholder
-groups are DApp Developers and Internal Integrators, and there are separate sections
+groups are dApp Developers and Internal Integrators, and there are separate sections
 for each.
 
 In order to allow us to compile aggregated update instructions across PRs, please tag the PR
@@ -44,10 +44,10 @@ If your PR contains no breaking changes or new features or hasn't been tagged, t
 section can be deleted.
 ```
 
-### For Dapp Developers
+### For dApp Developers
 ```
 INSTRUCTIONS:
-Migration recommendations for a Dapp developer to update their Dapp/integrations
+Migration recommendations for a dApp developer to update their dApp/integrations
 due to to the change/s in this PR.
 
 These will be aggregated by the Developer Ecosystem team and included in the next Scrypto migration guide
