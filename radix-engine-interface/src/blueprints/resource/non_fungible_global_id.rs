@@ -2,6 +2,7 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
+use crate::types::Blueprint;
 use crate::*;
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_common::types::*;
@@ -21,10 +22,18 @@ impl NonFungibleGlobalId {
         Self(resource_address, local_id)
     }
 
-    pub fn package_actor(package_address: PackageAddress) -> Self {
-        let local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id)
+    pub fn package_of_direct_caller_badge(address: PackageAddress) -> Self {
+        // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
+        let hashed = hash(scrypto_encode(&address).unwrap()).to_vec();
+        let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
+        NonFungibleGlobalId::new(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, local_id)
+    }
+
+    pub fn global_caller_badge(global_caller: GlobalCaller) -> Self {
+        // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
+        let hashed = hash(scrypto_encode(&global_caller).unwrap()).to_vec();
+        let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
+        NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, local_id)
     }
 
     /// Returns the resource address.
@@ -57,6 +66,32 @@ impl NonFungibleGlobalId {
             .ok_or(ParseNonFungibleGlobalIdError::InvalidResourceAddress)?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
+    }
+}
+
+#[derive(Clone, Debug, ScryptoSbor)]
+pub enum GlobalCaller {
+    /// If the previous global frame started with an object's main module
+    GlobalObject(GlobalAddress),
+    /// If the previous global frame started with a function call
+    PackageBlueprint(Blueprint),
+}
+
+impl From<ComponentAddress> for GlobalCaller {
+    fn from(value: ComponentAddress) -> Self {
+        GlobalCaller::GlobalObject(value.into())
+    }
+}
+
+impl From<GlobalAddress> for GlobalCaller {
+    fn from(value: GlobalAddress) -> Self {
+        GlobalCaller::GlobalObject(value)
+    }
+}
+
+impl From<Blueprint> for GlobalCaller {
+    fn from(blueprint: Blueprint) -> Self {
+        GlobalCaller::PackageBlueprint(blueprint)
     }
 }
 
@@ -112,18 +147,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleGlobalId {
 impl fmt::Debug for NonFungibleGlobalId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.display(NO_NETWORK))
-    }
-}
-
-pub trait FromComponent: Sized {
-    fn from_component_address(component: &ComponentAddress) -> Self;
-}
-
-impl FromComponent for NonFungibleGlobalId {
-    fn from_component_address(component_address: &ComponentAddress) -> Self {
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(GLOBAL_ACTOR_VIRTUAL_BADGE, non_fungible_local_id)
     }
 }
 

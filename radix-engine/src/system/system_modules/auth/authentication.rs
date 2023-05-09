@@ -8,6 +8,14 @@ use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
+// TODO: Refactor structure to be able to remove this
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActingLocation {
+    AtBarrier,
+    AtLocalBarrier,
+    InCallFrame,
+}
+
 pub struct Authentication;
 
 impl Authentication {
@@ -34,18 +42,26 @@ impl Authentication {
     }
 
     fn auth_zone_stack_matches<P, Y>(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         api: &mut Y,
         check: P,
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
-        P: Fn(&AuthZone, usize, &mut Y) -> Result<bool, RuntimeError>,
+        P: Fn(&AuthZone, usize, bool, &mut Y) -> Result<bool, RuntimeError>,
     {
-        let mut remaining_barrier_crossings_required = barrier_crossings_required;
-        let mut remaining_barrier_crossings_allowed = barrier_crossings_allowed;
+        let (
+            mut is_first_barrier,
+            mut waiting_for_barrier,
+            mut remaining_barrier_crossings_allowed,
+            mut skip,
+        ) = match acting_location {
+            ActingLocation::AtBarrier => (true, 0, 0, 0),
+            ActingLocation::AtLocalBarrier => (false, 1, 1, 0),
+            ActingLocation::InCallFrame => (false, 1, 1, 1),
+        };
+
         let mut current_auth_zone_id = auth_zone_id;
         let mut rev_index = 0;
         let mut handles = Vec::new();
@@ -63,9 +79,11 @@ impl Authentication {
             let auth_zone = auth_zone.clone();
             handles.push(handle);
 
-            if remaining_barrier_crossings_required == 0 {
+            if skip > 0 {
+                skip -= 1;
+            } else {
                 // Check
-                if check(&auth_zone, rev_index, api)? {
+                if check(&auth_zone, rev_index, is_first_barrier, api)? {
                     pass = true;
                     break;
                 }
@@ -73,14 +91,18 @@ impl Authentication {
             }
 
             // Progress
+            is_first_barrier = false;
             if auth_zone.is_barrier {
                 if remaining_barrier_crossings_allowed == 0 {
                     break;
                 }
                 remaining_barrier_crossings_allowed -= 1;
 
-                if remaining_barrier_crossings_required > 0 {
-                    remaining_barrier_crossings_required -= 1;
+                if waiting_for_barrier > 0 {
+                    waiting_for_barrier -= 1;
+                    if waiting_for_barrier == 0u32 {
+                        is_first_barrier = true;
+                    }
                 }
             }
 
@@ -101,19 +123,17 @@ impl Authentication {
     fn auth_zone_stack_has_amount<
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
     >(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         resource: &ResourceAddress,
         amount: Decimal,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
-            barrier_crossings_required,
-            barrier_crossings_allowed,
+            acting_location,
             auth_zone_id,
             api,
-            |auth_zone, _, api| {
+            |auth_zone, _, _, api| {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
@@ -131,19 +151,26 @@ impl Authentication {
     fn auth_zone_stack_matches_rule<
         Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>,
     >(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         resource_rule: &ResourceOrNonFungible,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
-            barrier_crossings_required,
-            barrier_crossings_allowed,
+            acting_location,
             auth_zone_id,
             api,
-            |auth_zone, rev_index, api| {
+            |auth_zone, rev_index, is_first_barrier, api| {
                 if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
+                    if is_first_barrier {
+                        if auth_zone
+                            .virtual_non_fungibles_non_extending_barrier()
+                            .contains(&non_fungible_global_id)
+                        {
+                            return Ok(true);
+                        }
+                    }
+
                     if rev_index == 0 {
                         if auth_zone
                             .virtual_non_fungibles_non_extending()
@@ -179,21 +206,15 @@ impl Authentication {
     }
 
     pub fn verify_proof_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         proof_rule: &ProofRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
             ProofRule::Require(resource) => {
-                if Self::auth_zone_stack_matches_rule(
-                    barrier_crossings_required,
-                    barrier_crossings_allowed,
-                    auth_zone_id,
-                    resource,
-                    api,
-                )? {
+                if Self::auth_zone_stack_matches_rule(acting_location, auth_zone_id, resource, api)?
+                {
                     Ok(true)
                 } else {
                     Ok(false)
@@ -201,8 +222,7 @@ impl Authentication {
             }
             ProofRule::AmountOf(amount, resource) => {
                 if Self::auth_zone_stack_has_amount(
-                    barrier_crossings_required,
-                    barrier_crossings_allowed,
+                    acting_location,
                     auth_zone_id,
                     resource,
                     *amount,
@@ -216,8 +236,7 @@ impl Authentication {
             ProofRule::AllOf(resources) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(
-                        barrier_crossings_required,
-                        barrier_crossings_allowed,
+                        acting_location,
                         auth_zone_id,
                         resource,
                         api,
@@ -231,8 +250,7 @@ impl Authentication {
             ProofRule::AnyOf(resources) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
-                        barrier_crossings_required,
-                        barrier_crossings_allowed,
+                        acting_location,
                         auth_zone_id,
                         resource,
                         api,
@@ -247,8 +265,7 @@ impl Authentication {
                 let mut left = count.clone();
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(
-                        barrier_crossings_required,
-                        barrier_crossings_allowed,
+                        acting_location,
                         auth_zone_id,
                         resource,
                         api,
@@ -265,29 +282,18 @@ impl Authentication {
     }
 
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         auth_rule: &AccessRuleNode,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
-            AccessRuleNode::ProofRule(rule) => Self::verify_proof_rule(
-                barrier_crossings_required,
-                barrier_crossings_allowed,
-                auth_zone_id,
-                rule,
-                api,
-            ),
+            AccessRuleNode::ProofRule(rule) => {
+                Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)
+            }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(
-                        barrier_crossings_required,
-                        barrier_crossings_allowed,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )? {
+                    if Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
                         return Ok(true);
                     }
                 }
@@ -295,13 +301,7 @@ impl Authentication {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(
-                        barrier_crossings_required,
-                        barrier_crossings_allowed,
-                        auth_zone_id,
-                        r,
-                        api,
-                    )? {
+                    if !Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
                         return Ok(false);
                     }
                 }
@@ -312,20 +312,15 @@ impl Authentication {
     }
 
     pub fn verify_method_auth<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
-        barrier_crossings_required: u32,
-        barrier_crossings_allowed: u32,
+        acting_location: ActingLocation,
         auth_zone_id: NodeId,
         method_auth: &AccessRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
-            AccessRule::Protected(rule) => Self::verify_auth_rule(
-                barrier_crossings_required,
-                barrier_crossings_allowed,
-                auth_zone_id,
-                rule,
-                api,
-            ),
+            AccessRule::Protected(rule) => {
+                Self::verify_auth_rule(acting_location, auth_zone_id, rule, api)
+            }
             AccessRule::AllowAll => Ok(true),
             AccessRule::DenyAll => Ok(false),
         }

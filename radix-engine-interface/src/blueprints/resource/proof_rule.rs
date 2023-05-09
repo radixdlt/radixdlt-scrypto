@@ -84,6 +84,20 @@ impl AccessRuleNode {
     }
 }
 
+/// A requirement for the immediate caller's package to equal the given package.
+pub fn package_of_direct_caller(package: PackageAddress) -> ResourceOrNonFungible {
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::package_of_direct_caller_badge(package))
+}
+
+/// A requirement for the global ancestor of the actor who made the latest global call to either be:
+/// * The main module of the given global component (pass a `ComponentAddress` or `GlobalAddress`)
+/// * A package function on the given blueprint (pass `(PackageAddress, String)` or `Blueprint`)
+pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFungible {
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(
+        global_caller.into(),
+    ))
+}
+
 pub fn require<T>(resource: T) -> ProofRule
 where
     T: Into<ResourceOrNonFungible>,

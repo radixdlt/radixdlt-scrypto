@@ -7,6 +7,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -50,7 +51,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             heap: Heap::new(),
             store: self.store,
             id_allocator: self.id_allocator,
-            current_frame: CallFrame::new_root(),
+            current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
             callback: self.callback,
         };
@@ -130,11 +131,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<M::LockData>,
+    current_frame: CallFrame<M::CallFrameData, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
     /// Heap
     heap: Heap,
     /// Store
@@ -154,11 +155,10 @@ where
 {
     fn invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         let mut call_frame_update = invocation.get_update();
-        let sys_invocation = invocation.sys_invocation;
-        let actor = invocation.resolved_actor;
+        let actor = invocation.call_frame_data;
         let args = &invocation.args;
 
         // Before push call frame
@@ -191,7 +191,7 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
-            let output = M::invoke_upstream(sys_invocation, args, self)?;
+            let output = M::invoke_upstream(args, self)?;
 
             let mut update = CallFrameUpdate {
                 nodes_to_move: output.owned_node_ids().clone(),
@@ -326,11 +326,17 @@ where
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller = self.prev_frame_stack.last().and_then(|c| c.actor.as_ref());
+        let caller = match self.prev_frame_stack.last() {
+            Some(call_frame) => &call_frame.data,
+            None => {
+                // This will only occur on initialization
+                &self.current_frame.data
+            }
+        };
         SystemState {
             system: &mut self.callback,
             caller,
-            current: self.current_frame.actor.as_ref(),
+            current: &self.current_frame.data,
         }
     }
 
@@ -760,7 +766,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeApi<M::Invocation> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -768,7 +774,7 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::Invocation>>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
 

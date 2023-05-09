@@ -1,4 +1,3 @@
-use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -16,12 +15,20 @@ mod child_component {
             Runtime::global_address()
         }
 
-        pub fn call_other_component(&self) {
+        pub fn call_other_component(&self, child: bool) {
             let _: () = Runtime::call_method(
                 self.to_call,
                 "protected_method",
-                scrypto_args!(Runtime::global_address()),
+                scrypto_args!(Runtime::global_address(), child),
             );
+        }
+
+        pub fn assert_check_on_package(&self, package_address: PackageAddress) {
+            Runtime::assert_access_rule(rule!(require(package_of_direct_caller(package_address))));
+        }
+
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint) {
+            Runtime::assert_access_rule(rule!(require(global_caller(blueprint))));
         }
     }
 }
@@ -65,35 +72,83 @@ mod my_component {
 
         pub fn call_other_component_with_wrong_address(&self) {
             let address = self.to_call;
-            Runtime::call_method(self.to_call, "protected_method", scrypto_args!(address))
-        }
-
-        pub fn call_other_component_in_parent(&self) {
             Runtime::call_method(
                 self.to_call,
                 "protected_method",
-                scrypto_args!(Runtime::global_address()),
+                scrypto_args!(address, false),
             )
         }
 
-        pub fn call_other_component_in_child(&self) {
-            self.child.call_other_component();
+        pub fn call_other_component(&self, child: bool, called_child: bool) {
+            if child {
+                self.child.call_other_component(called_child);
+            } else {
+                Runtime::call_method(
+                    self.to_call,
+                    "protected_method",
+                    scrypto_args!(Runtime::global_address(), called_child),
+                )
+            }
+        }
+
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint, child: bool) {
+            if child {
+                self.child
+                    .assert_check_on_global_blueprint_caller(blueprint);
+            } else {
+                Runtime::assert_access_rule(rule!(require(global_caller(blueprint))));
+            }
+        }
+
+        pub fn assert_check_on_package(&self, package_address: PackageAddress, child: bool) {
+            if child {
+                self.child.assert_check_on_package(package_address);
+            } else {
+                Runtime::assert_access_rule(rule!(require(package_of_direct_caller(
+                    package_address
+                ))));
+            }
         }
     }
 }
 
 #[blueprint]
 mod called_component {
-    struct CalledComponent {}
+    use called_component_child::*;
+
+    struct CalledComponent {
+        child: CalledComponentChildComponent,
+    }
 
     impl CalledComponent {
         pub fn create() -> ComponentAddress {
-            Self {}.instantiate().globalize()
+            let child = CalledComponentChild::create();
+            Self { child }.instantiate().globalize()
+        }
+
+        pub fn protected_method(&self, component_address: ComponentAddress, child: bool) {
+            if child {
+                self.child.protected_method(component_address);
+            } else {
+                Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
+                assert_ne!(Runtime::global_address(), component_address.into());
+            }
+        }
+    }
+}
+
+#[blueprint]
+mod called_component_child {
+    struct CalledComponentChild {}
+
+    impl CalledComponentChild {
+        pub fn create() -> CalledComponentChildComponent {
+            Self {}.instantiate()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {
-            let global_id = NonFungibleGlobalId::from_component_address(&component_address);
-            Runtime::assert_access_rule(rule!(require(global_id)));
+            Runtime::assert_access_rule(rule!(require(global_caller(component_address))));
+            assert_ne!(Runtime::global_address(), component_address.into());
         }
     }
 }
@@ -132,21 +187,6 @@ mod preallocation_component {
                 .instantiate()
                 .globalize_at_address(component_address);
             (one, two)
-        }
-
-        pub fn create_with_allocated_address_for_entity_type(
-            entity_type: EntityType,
-        ) -> ComponentAddress {
-            let component_address = Self::preallocate_address(entity_type);
-            Self {}
-                .instantiate()
-                .globalize_at_address(component_address)
-        }
-
-        fn preallocate_address(entity_type: EntityType) -> ComponentAddress {
-            let mut env = scrypto_env::ScryptoEnv;
-            let global_address = env.preallocate_global_address(entity_type).unwrap();
-            unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
         }
     }
 }
