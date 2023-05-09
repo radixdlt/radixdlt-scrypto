@@ -13,8 +13,7 @@ hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-integer = { version = "0.1.45", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
-#bnum = { version = "0.6.0", default-features = false, features = ["numtraits"] }
-bnum = {git = "https://github.com/radixdlt/bnum.git", rev = "0cecbdc7bf59629978cab74786deefe7583c6c2e", default-features = false, features = ["numtraits"] }
+bnum = { version = "0.6.0", default-features = false, features = ["numtraits"] }
 bech32 = { version = "0.9.0", default-features = false }
 paste = { version = "1.0.7"}
 blake2 = { version = "0.10.6", default-features = false }
