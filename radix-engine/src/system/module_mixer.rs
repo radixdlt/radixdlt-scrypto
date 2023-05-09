@@ -68,7 +68,7 @@ macro_rules! internal_call_dispatch {
         {
             let modules: EnabledModules = $api.kernel_get_system().modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_DEBUG) {
-                KernelTraceModule:: [< $fn >]($($param, )*)?;
+                KernelTraceModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::COSTING) {
                 CostingModule::[< $fn >]($($param, )*)?;
@@ -321,7 +321,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_lock_substate(api, node_id, module_id, substate_key, flags))
+        internal_call_dispatch!(
+            api,
+            before_lock_substate(api, node_id, module_id, substate_key, flags)
+        )
     }
 
     #[trace_resources(log=size)]
@@ -331,7 +334,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         first_lock_from_db: bool,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_lock_substate(api, handle, first_lock_from_db, size))
+        internal_call_dispatch!(
+            api,
+            after_lock_substate(api, handle, first_lock_from_db, size)
+        )
     }
 
     #[trace_resources(log=size)]
