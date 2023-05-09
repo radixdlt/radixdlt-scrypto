@@ -3,8 +3,8 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
-    AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
@@ -55,23 +55,6 @@ impl AttachedAccessRules {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(ObjectModuleId::Main, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
-    pub fn lock_method_auth(&mut self, method_name: &str) {
-        // TODO: allow locking method auth on other modules besides self
-        ScryptoEnv
-            .call_module_method(
-                self.0.as_node_id(),
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
             )

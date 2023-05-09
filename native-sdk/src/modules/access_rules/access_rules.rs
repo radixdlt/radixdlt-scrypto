@@ -1,10 +1,9 @@
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleAndMutabilityInput,
+    AccessRulesSetGroupAccessRuleInput,
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
     ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -104,30 +103,6 @@ pub trait AccessRulesObject {
                 object_key: ObjectKey::SELF,
                 method_key,
                 rule,
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn set_method_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
-        &self,
-        method_key: MethodKey,
-        rule: AccessRuleEntry,
-        mutability: AccessRuleEntry,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
-            &node_id,
-            module_id,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
-                object_key: ObjectKey::SELF,
-                method_key,
-                rule,
-                mutability,
             })
             .unwrap(),
         )?;

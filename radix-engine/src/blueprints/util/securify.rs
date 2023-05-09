@@ -50,6 +50,10 @@ pub trait SecurifiedAccessRules {
             );
         }
 
+        if let Some(securify_ident) = Self::SECURIFY_IDENT {
+            access_rules.set_group(MethodKey::new(ObjectModuleId::Main, securify_ident), "securify");
+        }
+
         Self::set_non_owner_rules(&mut access_rules);
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?;
         Ok(access_rules)
@@ -60,16 +64,18 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         Self::set_non_owner_rules(&mut access_rules_config);
-        let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                api,
-            )?;
+            access_rules_config.set_group_access_rule_and_mutability(
+                "securify",
+                AccessRule::DenyAll,
+                AccessRule::DenyAll,
+            );
+            access_rules_config.set_group(MethodKey::new(ObjectModuleId::Main, securify_ident), "securify");
         }
+
+
+        let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
 
         Ok(access_rules)
     }
@@ -88,11 +94,11 @@ pub trait SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        if Self::SECURIFY_IDENT.is_some() {
+            access_rules.set_group_access_rule_and_mutability(
+                "securify",
+                AccessRule::DenyAll,
+                AccessRule::DenyAll,
                 api,
             )?;
         }
@@ -122,13 +128,13 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let access_rules = Self::init_securified_rules(api)?;
 
         let this_package_rule = rule!(require(package_of_direct_caller(Self::PACKAGE)));
-
         let access_rule = rule!(require(owner_id));
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_method_access_rule_and_mutability(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                AccessRuleEntry::AccessRule(access_rule.clone()),
-                AccessRuleEntry::AccessRule(this_package_rule.clone()),
+
+        if Self::SECURIFY_IDENT.is_some() {
+            access_rules.set_group_access_rule_and_mutability(
+                "securify",
+                access_rule.clone(),
+                this_package_rule.clone(),
                 api,
             )?;
         }
