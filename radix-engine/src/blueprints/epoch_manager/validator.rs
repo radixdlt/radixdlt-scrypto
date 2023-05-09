@@ -12,12 +12,14 @@ use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
 use super::{
@@ -506,9 +508,11 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn other_groups() -> Vec<(&'static str, GroupEntry, AccessRule)> {
         vec![
-            ("stake", GroupEntry::group("owner"), rule!(require(package_of_direct_caller(
-                        EPOCH_MANAGER_PACKAGE
-                    )))),
+            (
+                "stake",
+                GroupEntry::group("owner"),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            ),
             ("update_metadata", GroupEntry::group("owner"), DenyAll),
         ]
     }
@@ -517,11 +521,26 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
-            (VALIDATOR_STAKE_IDENT, MethodType::Group("stake".to_string())),
-            (VALIDATOR_REGISTER_IDENT, MethodType::Group("owner".to_string())),
-            (VALIDATOR_UNREGISTER_IDENT, MethodType::Group("owner".to_string())),
-            (VALIDATOR_UPDATE_KEY_IDENT, MethodType::Group("owner".to_string())),
-            (VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, MethodType::Group("owner".to_string())),
+            (
+                VALIDATOR_STAKE_IDENT,
+                MethodType::Group("stake".to_string()),
+            ),
+            (
+                VALIDATOR_REGISTER_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                VALIDATOR_UNREGISTER_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                VALIDATOR_UPDATE_KEY_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
         ]
     }
 }

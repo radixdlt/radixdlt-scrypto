@@ -13,8 +13,8 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -120,12 +120,12 @@ impl EpochManagerBlueprint {
         access_rules.set_group_access_rule_and_mutability(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
-            DenyAll
+            DenyAll,
         );
         access_rules.set_group_access_rule_and_mutability(
             "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-            DenyAll
+            DenyAll,
         );
 
         access_rules.set_group(
@@ -140,12 +140,14 @@ impl EpochManagerBlueprint {
             MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
             "system",
         );
-        access_rules.set_public(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
-        );
-        access_rules.set_public(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
-        );
+        access_rules.set_public(MethodKey::new(
+            ObjectModuleId::Main,
+            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+        ));
+        access_rules.set_public(MethodKey::new(
+            ObjectModuleId::Main,
+            EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+        ));
 
         let validator_access_rules = AccessRulesConfig::new();
 

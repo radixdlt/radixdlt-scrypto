@@ -7,7 +7,9 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, GroupEntry, AccessRulesConfig, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRulesConfig, Bucket, GroupEntry, Proof,
+};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
@@ -37,22 +39,53 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     }
 
     fn other_groups() -> Vec<(&'static str, GroupEntry, AccessRule)> {
-        vec![("update_metadata", GroupEntry::Group("owner".to_string()), DenyAll)]
+        vec![(
+            "update_metadata",
+            GroupEntry::Group("owner".to_string()),
+            DenyAll,
+        )]
     }
 
     fn methods() -> Vec<(&'static str, MethodType)> {
         vec![
             (ACCOUNT_DEPOSIT_IDENT, MethodType::Public),
             (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
-            (ACCOUNT_LOCK_FEE_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_WITHDRAW_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_CREATE_PROOF_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, MethodType::Group("owner".to_string())),
-            (ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, MethodType::Group("owner".to_string())),
+            (
+                ACCOUNT_LOCK_FEE_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_WITHDRAW_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_CREATE_PROOF_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
+            (
+                ACCOUNT_CREATE_PROOF_BY_IDS_IDENT,
+                MethodType::Group("owner".to_string()),
+            ),
         ]
     }
 }

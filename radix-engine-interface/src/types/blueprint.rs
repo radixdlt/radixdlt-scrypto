@@ -1,7 +1,7 @@
-use core::fmt;
-use core::fmt::{Formatter};
-use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use crate::ScryptoSbor;
+use core::fmt;
+use core::fmt::Formatter;
+use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
@@ -36,7 +36,6 @@ impl Blueprint {
         self.package_address.as_ref().len() + self.blueprint_name.len()
     }
 }
-
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for Blueprint {
     type Error = fmt::Error;

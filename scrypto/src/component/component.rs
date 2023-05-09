@@ -57,14 +57,9 @@ pub trait LocalComponent: Sized {
 
     fn globalize(self) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-        );
-        access_rules_config.set_group_access_rule(
-            "royalty".to_string(),
-            AccessRule::DenyAll,
-        );
+        access_rules_config
+            .set_group_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
+        access_rules_config.set_group_access_rule("royalty".to_string(), AccessRule::DenyAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),
@@ -75,14 +70,9 @@ pub trait LocalComponent: Sized {
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-        );
-        access_rules_config.set_group_access_rule(
-            "royalty".to_string(),
-            AccessRule::DenyAll,
-        );
+        access_rules_config
+            .set_group_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
+        access_rules_config.set_group_access_rule("royalty".to_string(), AccessRule::DenyAll);
 
         self.globalize_at_address_with_modules(
             preallocated_address,
@@ -94,14 +84,9 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-        );
-        access_rules_config.set_group_access_rule(
-            "royalty".to_string(),
-            AccessRule::DenyAll,
-        );
+        access_rules_config
+            .set_group_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
+        access_rules_config.set_group_access_rule("royalty".to_string(), AccessRule::DenyAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),
@@ -112,14 +97,9 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-        );
-        access_rules_config.set_group_access_rule(
-            "royalty".to_string(),
-            AccessRule::AllowAll,
-        );
+        access_rules_config
+            .set_group_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
+        access_rules_config.set_group_access_rule("royalty".to_string(), AccessRule::AllowAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),

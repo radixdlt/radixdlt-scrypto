@@ -42,7 +42,7 @@ mod multi_threaded_test {
         config.set_group_access_rule_and_mutability(
             "owner",
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
-            AccessRule::DenyAll
+            AccessRule::DenyAll,
         );
 
         // Create two accounts

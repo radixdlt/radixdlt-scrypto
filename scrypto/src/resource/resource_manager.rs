@@ -1,8 +1,6 @@
 use crate::*;
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetGroupAccessRuleInput;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;

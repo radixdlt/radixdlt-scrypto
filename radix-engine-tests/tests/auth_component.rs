@@ -12,12 +12,15 @@ fn create_secured_component(
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let mut authorization = AccessRulesConfig::new();
-    authorization
-        .set_group_access_rule_and_mutability("auth",
-                                              rule!(require(auth)),
-                                              rule!(deny_all),
-        );
-    authorization.set_group(MethodKey::new(ObjectModuleId::Main, "get_component_state"), "auth");
+    authorization.set_group_access_rule_and_mutability(
+        "auth",
+        rule!(require(auth)),
+        rule!(deny_all),
+    );
+    authorization.set_group(
+        MethodKey::new(ObjectModuleId::Main, "get_component_state"),
+        "auth",
+    );
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(

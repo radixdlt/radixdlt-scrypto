@@ -11,8 +11,8 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
 use radix_engine_interface::time::*;
@@ -170,12 +170,14 @@ impl ClockNativePackage {
             MethodKey::new(ObjectModuleId::Main, CLOCK_SET_CURRENT_TIME_IDENT),
             "validator",
         );
-        access_rules.set_public(
-            MethodKey::new(ObjectModuleId::Main, CLOCK_GET_CURRENT_TIME_IDENT),
-        );
-        access_rules.set_public(
-            MethodKey::new(ObjectModuleId::Main, CLOCK_COMPARE_CURRENT_TIME_IDENT),
-        );
+        access_rules.set_public(MethodKey::new(
+            ObjectModuleId::Main,
+            CLOCK_GET_CURRENT_TIME_IDENT,
+        ));
+        access_rules.set_public(MethodKey::new(
+            ObjectModuleId::Main,
+            CLOCK_COMPARE_CURRENT_TIME_IDENT,
+        ));
         let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;

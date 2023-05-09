@@ -37,13 +37,11 @@ pub trait SecurifiedAccessRules {
             match method_type {
                 MethodType::Public => {
                     access_rules_config.set_public(MethodKey::new(ObjectModuleId::Main, method));
-                },
+                }
                 MethodType::Group(group) => {
-                    access_rules_config.set_group(
-                        MethodKey::new(ObjectModuleId::Main, method),
-                        group.as_str()
-                    );
-                },
+                    access_rules_config
+                        .set_group(MethodKey::new(ObjectModuleId::Main, method), group.as_str());
+                }
             };
         }
     }
@@ -54,7 +52,10 @@ pub trait SecurifiedAccessRules {
         let mut access_rules = AccessRulesConfig::new();
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_group(MethodKey::new(ObjectModuleId::Main, securify_ident), "securify");
+            access_rules.set_group(
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
+                "securify",
+            );
         }
 
         Self::set_non_owner_rules(&mut access_rules);
@@ -74,9 +75,11 @@ pub trait SecurifiedAccessRules {
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
             );
-            access_rules_config.set_group(MethodKey::new(ObjectModuleId::Main, securify_ident), "securify");
+            access_rules_config.set_group(
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
+                "securify",
+            );
         }
-
 
         let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
 
@@ -116,7 +119,6 @@ pub trait SecurifiedAccessRules {
             )?;
         }
 
-
         Ok(bucket)
     }
 }
@@ -150,7 +152,6 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
                 api,
             )?;
         }
-
 
         Ok(access_rules)
     }

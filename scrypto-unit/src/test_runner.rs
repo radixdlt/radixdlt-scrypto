@@ -545,7 +545,11 @@ impl TestRunner {
         mutability: AccessRule,
     ) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule_and_mutability("owner", withdraw_auth, mutability);
+        access_rules_config.set_group_access_rule_and_mutability(
+            "owner",
+            withdraw_auth,
+            mutability,
+        );
 
         let manifest = ManifestBuilder::new()
             .new_account_advanced(access_rules_config)

@@ -732,11 +732,7 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        update_access_rules(
-            api,
-            receiver,
-            recovery_proposal.rule_set,
-        )?;
+        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -773,11 +769,7 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        update_access_rules(
-            api,
-            receiver,
-            recovery_proposal.rule_set,
-        )?;
+        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -876,11 +868,7 @@ impl AccessControllerNativePackage {
         )?;
 
         // Update the access rules
-        update_access_rules(
-            api,
-            receiver,
-            recovery_proposal.rule_set,
-        )?;
+        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -1188,20 +1176,14 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
-        vec![
-            "recovery".to_string(),
-            "confirmation".to_string(),
-        ],
+        vec!["recovery".to_string(), "confirmation".to_string()],
     );
     access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
-        vec![
-            "recovery".to_string(),
-            "confirmation".to_string(),
-        ],
+        vec!["recovery".to_string(), "confirmation".to_string()],
     );
 
     // Primary || Confirmation Role Rules
@@ -1210,20 +1192,14 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
-        vec![
-            "primary".to_string(),
-            "confirmation".to_string(),
-        ],
+        vec!["primary".to_string(), "confirmation".to_string()],
     );
     access_rules.set_groups(
         MethodKey::new(
             ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
-        vec![
-            "primary".to_string(),
-            "confirmation".to_string(),
-        ],
+        vec!["primary".to_string(), "confirmation".to_string()],
     );
 
     // Other methods
@@ -1303,7 +1279,11 @@ where
     let attached = AttachedAccessRules(receiver.clone());
     attached.set_group_access_rule("primary".into(), rule_set.primary_role.clone(), api)?;
     attached.set_group_access_rule("recovery".into(), rule_set.recovery_role.clone(), api)?;
-    attached.set_group_access_rule("confirmation".into(), rule_set.confirmation_role.clone(), api)?;
+    attached.set_group_access_rule(
+        "confirmation".into(),
+        rule_set.confirmation_role.clone(),
+        api,
+    )?;
 
     Ok(())
 }

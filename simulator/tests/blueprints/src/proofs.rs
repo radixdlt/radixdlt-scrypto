@@ -23,8 +23,8 @@ mod proofs {
                 .mint_initial_supply(100);
 
             // Creating the access rules for the component and instantiating an new component
-            let mut access_rules: AccessRulesConfig = AccessRulesConfig::new()
-                .default(rule!(deny_all), rule!(deny_all));
+            let mut access_rules: AccessRulesConfig =
+                AccessRulesConfig::new().default(rule!(deny_all), rule!(deny_all));
             access_rules.set_group_access_rule_and_mutability(
                 "organizational_authenticated_method",
                 organizational_access_rule,

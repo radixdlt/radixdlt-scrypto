@@ -1,12 +1,12 @@
-use std::fmt::Formatter;
-use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use crate::api::ObjectModuleId;
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
 use crate::*;
+use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
+use std::fmt::Formatter;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -66,7 +66,6 @@ impl Debug for FnIdent {
     }
 }
 
-
 #[derive(Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
     pub blueprint: Blueprint,
@@ -81,12 +80,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for FnIdentifier {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        write!(
-            f,
-            "{}:{:?}",
-            self.blueprint.display(*context),
-            self.ident,
-        )
+        write!(f, "{}:{:?}", self.blueprint.display(*context), self.ident,)
     }
 }
 

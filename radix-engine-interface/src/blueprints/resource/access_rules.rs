@@ -5,11 +5,11 @@ use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
-use sbor::rust::vec;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 
 use super::AccessRule;
 
@@ -61,14 +61,12 @@ pub struct MethodEntry {
 impl MethodEntry {
     fn group(group: &str) -> Self {
         MethodEntry {
-            groups: vec![group.to_string()]
+            groups: vec![group.to_string()],
         }
     }
 
     fn groups(groups: Vec<String>) -> Self {
-        MethodEntry {
-            groups
-        }
+        MethodEntry { groups }
     }
 }
 
@@ -137,13 +135,11 @@ impl AccessRulesConfig {
             match rule {
                 AccessRule::DenyAll => {
                     group_rules.push(AccessRuleNode::AnyOf(vec![]));
-                },
+                }
                 AccessRule::AllowAll => {
                     group_rules.push(AccessRuleNode::AllOf(vec![]));
-                },
-                AccessRule::Protected(node) => {
-                    group_rules.push(node)
-                },
+                }
+                AccessRule::Protected(node) => group_rules.push(node),
             }
         }
 
@@ -157,7 +153,7 @@ impl AccessRulesConfig {
                 Some(entry) => {
                     // TODO: Make sure we don't have circular entries!
                     self.resolve_entry(entry)
-                },
+                }
                 None => AccessRule::DenyAll,
             },
             GroupEntry::Groups(groups) => {
@@ -168,18 +164,16 @@ impl AccessRulesConfig {
                     match rule {
                         AccessRule::DenyAll => {
                             group_rules.push(AccessRuleNode::AnyOf(vec![]));
-                        },
+                        }
                         AccessRule::AllowAll => {
                             group_rules.push(AccessRuleNode::AllOf(vec![]));
-                        },
-                        AccessRule::Protected(node) => {
-                            group_rules.push(node)
-                        },
+                        }
+                        AccessRule::Protected(node) => group_rules.push(node),
                     }
                 }
 
                 AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
-            },
+            }
         }
     }
 
@@ -190,8 +184,13 @@ impl AccessRulesConfig {
             .unwrap_or_else(|| AccessRule::DenyAll)
     }
 
-    pub fn set_group_access_rule<E: Into<GroupEntry>>(&mut self, group_key: String, access_rule_entry: E) {
-        self.grouped_auth.insert(group_key, access_rule_entry.into());
+    pub fn set_group_access_rule<E: Into<GroupEntry>>(
+        &mut self,
+        group_key: String,
+        access_rule_entry: E,
+    ) {
+        self.grouped_auth
+            .insert(group_key, access_rule_entry.into());
     }
 
     pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
@@ -204,46 +203,35 @@ impl AccessRulesConfig {
         access_rule: E,
         mutability: AccessRule,
     ) {
-        self.grouped_auth.insert(group_key.to_string(), access_rule.into());
+        self.grouped_auth
+            .insert(group_key.to_string(), access_rule.into());
         self.grouped_auth_mutability
             .insert(group_key.to_string(), mutability);
     }
 
-    pub fn set_public(
-        &mut self,
-        key: MethodKey,
-    ) {
+    pub fn set_public(&mut self, key: MethodKey) {
         self.set_group(key, "public");
     }
 
-    pub fn set_group(
-        &mut self,
-        key: MethodKey,
-        group: &str,
-    ) {
-        self.method_auth.insert(key.clone(), MethodEntry::group(group));
+    pub fn set_group(&mut self, key: MethodKey, group: &str) {
+        self.method_auth
+            .insert(key.clone(), MethodEntry::group(group));
     }
 
-    pub fn set_groups(
-        &mut self,
-        key: MethodKey,
-        groups: Vec<String>,
-    ) {
+    pub fn set_groups(&mut self, key: MethodKey, groups: Vec<String>) {
         self.method_auth
             .insert(key.clone(), MethodEntry::groups(groups));
     }
 
-    pub fn set_main_method_group(
-        &mut self,
-        method: &str,
-        group: &str,
-    ) {
+    pub fn set_main_method_group(&mut self, method: &str, group: &str) {
         let key = MethodKey::new(ObjectModuleId::Main, method);
-        self.method_auth.insert(key.clone(), MethodEntry::group(group));
+        self.method_auth
+            .insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
-        self.direct_method_auth.insert(key.clone(), MethodEntry::group(group));
+        self.direct_method_auth
+            .insert(key.clone(), MethodEntry::group(group));
     }
 }
 

@@ -87,56 +87,46 @@ fn build_access_rules(
             update_non_fungible_data_mutability,
         );
         resman_access_rules.set_group(
-            MethodKey::new(ObjectModuleId::Main, NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT),
+            MethodKey::new(
+                ObjectModuleId::Main,
+                NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            ),
             "update_non_fungible_data",
         );
     }
 
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
-        ),
-    );
-    resman_access_rules.set_public(
-        MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_DROP_PROOF_IDENT),
-    );
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
+    ));
+    resman_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        RESOURCE_MANAGER_DROP_PROOF_IDENT,
+    ));
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)
@@ -197,27 +187,23 @@ fn build_access_rules(
         "deposit",
     );
 
-    vault_access_rules.set_public(
-        MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT),
-    );
-    vault_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-        ),
-    );
-    vault_access_rules.set_public(
-        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_ALL_IDENT),
-    );
-    vault_access_rules.set_public(
-        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_AMOUNT_IDENT),
-    );
-    vault_access_rules.set_public(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-        ),
-    );
+    vault_access_rules.set_public(MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT));
+    vault_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+    ));
+    vault_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        VAULT_CREATE_PROOF_OF_ALL_IDENT,
+    ));
+    vault_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+    ));
+    vault_access_rules.set_public(MethodKey::new(
+        ObjectModuleId::Main,
+        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+    ));
 
     vault_access_rules.set_group_access_rule_and_mutability(
         "this_package",

@@ -181,16 +181,14 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new();
-    access_rules
-        .set_group(
-            MethodKey::new(ObjectModuleId::Main, "deposit_funds"),
-            "owner",
-        );
-    access_rules
-        .set_group(
-            MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
-            "owner",
-        );
+    access_rules.set_group(
+        MethodKey::new(ObjectModuleId::Main, "deposit_funds"),
+        "owner",
+    );
+    access_rules.set_group(
+        MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
+        "owner",
+    );
     access_rules.set_group_access_rule_and_mutability(
         "owner",
         rule!(require(RADIX_TOKEN)),
@@ -206,7 +204,9 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
             .set_group_access_rule(
                 test_runner.component_address.into(),
                 ObjectKey::SELF,
-                "owner".to_string(), to_rule)
+                "owner".to_string(),
+                to_rule,
+            )
             .build(),
     );
 
