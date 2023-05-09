@@ -29,7 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(Tuple(Enum(1u8), "claim_royalty"), Array<String>("owner"), Tuple(Enum(1u8), "set_royalty_config"), Array<String>("owner"), Tuple(Enum(2u8), "get"), Array<String>("public"), Tuple(Enum(2u8), "set"), Array<String>("owner")), Map<String, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 "##,
             ),
         );
@@ -592,7 +592,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_ACCOUNT;
 "##,
             ),
@@ -609,7 +609,7 @@ CREATE_ACCOUNT;
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 CREATE_IDENTITY;
 "##,
             ),

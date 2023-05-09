@@ -27,7 +27,7 @@ mod outer {
         pub fn instantiate() -> ComponentAddress {
             let inner = Inner::instantiate();
             Self { inner }.instantiate().globalize_with_access_rules(
-                AccessRulesConfig::new().default(rule!(allow_all), rule!(allow_all)),
+                AccessRulesConfig::new().default(rule!(allow_all)),
             )
         }
 

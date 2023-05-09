@@ -57,7 +57,6 @@ pub trait SecurifiedAccessRules {
         for securified_group in Self::securified_groups() {
             access_rules = access_rules.default(
                 AccessRuleEntry::group(securified_group),
-                AccessRuleEntry::group(securified_group),
             );
         }
 

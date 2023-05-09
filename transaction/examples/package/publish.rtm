@@ -45,10 +45,6 @@ PUBLISH_PACKAGE_ADVANCED
             Array<String>("public")
         ),
         Map<String, Enum>(),     # Grouped Auth Field
-        Enum(
-            "AccessRuleEntry::AccessRule",
-            Enum("AccessRule::DenyAll")         # Default Auth Field
-        ),
         Map<String, Enum>(),     # Group Auth Mutability Field
         Enum(
             "AccessRuleEntry::AccessRule",

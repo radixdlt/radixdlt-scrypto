@@ -181,7 +181,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new()
-        .default(rule!(allow_all), rule!(deny_all));
+        .default(rule!(deny_all));
     access_rules
         .set_group(
             MethodKey::new(ObjectModuleId::Main, "deposit_funds"),

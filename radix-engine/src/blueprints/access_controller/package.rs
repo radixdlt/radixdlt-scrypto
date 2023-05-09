@@ -1227,7 +1227,7 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         ],
     );
 
-    access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))
+    access_rules.default(rule!(require(global_caller(address))))
 }
 
 fn transition<Y, I>(

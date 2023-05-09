@@ -544,7 +544,7 @@ impl TestRunner {
         withdraw_auth: AccessRule,
         mutability: AccessRule,
     ) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new().default(withdraw_auth.clone(), mutability.clone());
+        let mut access_rules_config = AccessRulesConfig::new().default(mutability.clone());
         access_rules_config.set_group_access_rule_and_mutability("owner", withdraw_auth, mutability);
 
         let manifest = ManifestBuilder::new()
@@ -651,7 +651,7 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut config = AccessRulesConfig::new()
-                .default(rule!(require(owner_id.clone())), rule!(require(owner_id.clone())));
+                .default(rule!(require(owner_id.clone())));
             config.set_group_access_rule_and_mutability(
                 "update_metadata",
                 rule!(require(owner_id.clone())),

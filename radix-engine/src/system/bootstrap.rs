@@ -739,7 +739,7 @@ pub fn create_system_bootstrap_transaction(
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                    .default(AccessRule::DenyAll),
             }),
         });
     }
@@ -763,7 +763,7 @@ pub fn create_system_bootstrap_transaction(
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRulesConfig::new()
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                    .default(AccessRule::DenyAll),
             }),
         });
     }

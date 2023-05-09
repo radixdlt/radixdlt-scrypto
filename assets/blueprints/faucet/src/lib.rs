@@ -14,7 +14,7 @@ mod faucet {
         pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
             let access_rules = AccessRules::new({
                 let mut config = AccessRulesConfig::new();
-                config.default(AccessRule::AllowAll, AccessRule::DenyAll)
+                config.default(AccessRule::DenyAll)
             });
             let metadata = Metadata::new();
 

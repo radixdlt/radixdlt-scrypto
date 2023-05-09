@@ -67,10 +67,17 @@ mod genesis_helper {
             rounds_per_epoch: u64,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
-            let access_rules = AccessRules::new(AccessRulesConfig::new().default(
+            let mut config = AccessRulesConfig::new().default(rule!(require(system_role.clone())));
+            config.set_group_access_rule_and_mutability(
+                "system",
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
-            ));
+            );
+            config.set_main_method_group("ingest_data_chunk", "system");
+            config.set_main_method_group("wrap_up", "system");
+
+            let access_rules = AccessRules::new(config);
+
             let metadata = Metadata::new();
 
             Self {

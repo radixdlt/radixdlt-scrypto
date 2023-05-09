@@ -66,7 +66,7 @@ pub trait LocalComponent: Sized {
             AccessRule::DenyAll,
         );
         let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+            access_rules_config.default(AccessRule::DenyAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),
@@ -86,7 +86,7 @@ pub trait LocalComponent: Sized {
             AccessRule::DenyAll,
         );
         let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+            access_rules_config.default(AccessRule::DenyAll);
 
         self.globalize_at_address_with_modules(
             preallocated_address,
@@ -107,7 +107,7 @@ pub trait LocalComponent: Sized {
             AccessRule::DenyAll,
         );
         let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+            access_rules_config.default(AccessRule::DenyAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),
@@ -127,7 +127,7 @@ pub trait LocalComponent: Sized {
             AccessRule::AllowAll,
         );
         let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
+            access_rules_config.default(AccessRule::DenyAll);
 
         self.globalize_with_modules(
             AccessRules::new(access_rules_config),
@@ -153,7 +153,7 @@ pub trait LocalComponent: Sized {
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
         let mut access_rules_config =
-            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
+            AccessRulesConfig::new().default(AccessRule::AllowAll);
 
         access_rules_config.set_group_access_rule_and_mutability(
             "update_metadata".clone(),

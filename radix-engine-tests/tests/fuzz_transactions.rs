@@ -71,18 +71,22 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    let config = AccessRulesConfig::new()
-                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    let mut config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll);
+                    config.set_group_access_rule_and_mutability("owner", AccessRule::AllowAll, AccessRule::AllowAll);
+
                     builder.new_account_advanced(config);
                 }
                 1 => {
-                    let config = AccessRulesConfig::new()
-                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    let mut config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll);
+                    config.set_group_access_rule_and_mutability("owner", AccessRule::AllowAll, AccessRule::AllowAll);
                     builder.new_account_advanced(config);
                 }
                 2 => {
-                    let config = AccessRulesConfig::new()
-                        .default(AccessRule::AllowAll, AccessRule::AllowAll);
+                    let mut config = AccessRulesConfig::new()
+                        .default(AccessRule::AllowAll);
+                    config.set_group_access_rule_and_mutability("owner", AccessRule::AllowAll, AccessRule::AllowAll);
                     builder.new_account_advanced(config);
                 }
                 3 => {

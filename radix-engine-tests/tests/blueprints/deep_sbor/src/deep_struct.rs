@@ -29,5 +29,5 @@ fn generate_deep_access_rules(
         access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
         curr_depth += 2;
     }
-    AccessRulesConfig::new().default(AccessRule::Protected(access_rule_node), AccessRule::DenyAll)
+    AccessRulesConfig::new().default(AccessRule::Protected(access_rule_node))
 }

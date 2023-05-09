@@ -148,7 +148,7 @@ impl EpochManagerBlueprint {
         );
 
         let validator_access_rules =
-            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
+            AccessRulesConfig::new().default(AccessRule::DenyAll);
 
         let access_rules = AccessRules::sys_new(
             access_rules,
