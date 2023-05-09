@@ -1328,7 +1328,7 @@ where
     let access_rules = access_rules_from_rule_set(address, rule_set);
 
     let attached = AttachedAccessRules(receiver.clone());
-    
+
     for (group_name, access_rule) in access_rules.get_all_grouped_auth().iter() {
         attached.set_group_access_rule(group_name, access_rule.clone(), api)?;
     }
@@ -1342,6 +1342,7 @@ where
                 )?;
             }
             AccessRuleEntry::Group(..) => {} // Already updated above
+            AccessRuleEntry::Groups(..) => {} // Already updated above
         }
     }
     Ok(())

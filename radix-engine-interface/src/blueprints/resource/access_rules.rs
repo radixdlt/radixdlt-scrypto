@@ -55,6 +55,7 @@ impl MethodKey {
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
+    Groups(Vec<String>),
 }
 
 impl AccessRuleEntry {
@@ -137,6 +138,26 @@ impl AccessRulesConfig {
                     self.resolve_entry(entry)
                 },
                 None => AccessRule::DenyAll,
+            },
+            AccessRuleEntry::Groups(groups) => {
+                let mut group_rules = Vec::new();
+
+                for group in groups {
+                    let rule = self.resolve_entry(&AccessRuleEntry::Group(group.to_string()));
+                    match rule {
+                        AccessRule::DenyAll => {
+                            group_rules.push(AccessRuleNode::AnyOf(vec![]));
+                        },
+                        AccessRule::AllowAll => {
+                            group_rules.push(AccessRuleNode::AllOf(vec![]));
+                        },
+                        AccessRule::Protected(node) => {
+                            group_rules.push(node)
+                        },
+                    }
+                }
+
+                AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
             },
         }
     }
