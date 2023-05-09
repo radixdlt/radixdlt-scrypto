@@ -11,6 +11,8 @@ use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlo
 #[cfg(feature = "decode_tx_manifest")]
 use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
+#[cfg(test)]
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -521,7 +523,7 @@ impl TxFuzzer {
                     #[cfg(feature = "skip_crash")]
                     let input = {
                         let owner_id =
-                            NonFungibleGlobalId::from_public_key(&self.accounts[0].public_key);
+                            NonFungibleGlobalId::from_public_key(&self.data.accounts[0].public_key);
                         let config = AccessRulesConfig::new()
                             .default(rule!(require(owner_id.clone())), rule!(require(owner_id)));
                         IdentityCreateAdvancedInput { config };
@@ -861,6 +863,7 @@ impl TxFuzzer {
         }
 
         let manifest = builder.build();
+        println!("manifest = {:?}", manifest);
         Ok(manifest)
     }
 
@@ -923,16 +926,18 @@ fn test_generate_fuzz_input_data() {
         let mut bytes: Vec<u8> = (0..len).map(|_| rng.gen_range(0..u8::MAX)).collect();
         rng.fill_bytes(&mut bytes[..]);
 
-        fuzzer.reset_runner();
-        match fuzzer.fuzz_tx_manifest(&bytes[..]) {
-            TxStatus::CommitSuccess => {
-                let m_hash = hash(&bytes);
-                let path = format!("manifest_{:?}.raw", m_hash);
-                std::fs::write(&path, bytes).unwrap();
-                println!("manifest dumped to file {}", &path);
+        let _result = catch_unwind(AssertUnwindSafe(|| {
+            fuzzer.reset_runner();
+            match fuzzer.fuzz_tx_manifest(&bytes[..]) {
+                TxStatus::CommitSuccess => {
+                    let m_hash = hash(&bytes);
+                    let path = format!("manifest_{:?}.raw", m_hash);
+                    std::fs::write(&path, bytes).unwrap();
+                    println!("manifest dumped to file {}", &path);
+                }
+                _ => {}
             }
-            _ => {}
-        }
+        }));
     }
 }
 
