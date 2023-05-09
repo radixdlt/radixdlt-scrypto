@@ -557,7 +557,7 @@ impl TransactionProcessorBlueprint {
                         scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                             object_key,
                             name: group,
-                            rule,
+                            rule: rule.into(),
                         })
                         .unwrap(),
                     )?;

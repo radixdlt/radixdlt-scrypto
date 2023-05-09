@@ -69,7 +69,7 @@ pub trait AccessRulesObject {
     fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
         &self,
         name: &str,
-        rule: AccessRule,
+        entry: AccessRuleEntry,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -80,7 +80,7 @@ pub trait AccessRulesObject {
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                 object_key: ObjectKey::SELF,
                 name: name.into(),
-                rule,
+                rule: entry,
             })
             .unwrap(),
         )?;
@@ -110,10 +110,10 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_group_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+    fn set_group_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<AccessRuleEntry>>(
         &self,
         name: &str,
-        rule: AccessRule,
+        rule: R,
         mutability: AccessRule,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -125,7 +125,7 @@ pub trait AccessRulesObject {
             scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
                 object_key: ObjectKey::SELF,
                 name: name.to_string(),
-                rule,
+                rule: rule.into(),
                 mutability,
             })
             .unwrap(),
