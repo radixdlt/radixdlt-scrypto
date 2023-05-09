@@ -2,13 +2,13 @@ use crate::engine::scrypto_env::ScryptoEnv;
 
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
+    AccessRulesCreateInput,
     ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AccessRuleEntry, AccessRulesConfig,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;

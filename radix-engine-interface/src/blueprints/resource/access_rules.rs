@@ -208,14 +208,6 @@ impl AccessRulesConfig {
             .insert(group_key.to_string(), mutability);
     }
 
-    pub fn set_method_access_rule<E: Into<AccessRuleEntry>>(
-        &mut self,
-        key: MethodKey,
-        access_rule_entry: E,
-    ) {
-        self.method_auth.insert(key, access_rule_entry.into());
-    }
-
     pub fn set_public(
         &mut self,
         key: MethodKey,
@@ -247,27 +239,6 @@ impl AccessRulesConfig {
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
         self.direct_method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
-    }
-
-    pub fn set_method_access_rule_to_group(&mut self, key: MethodKey, group: String) {
-        self.method_auth
-            .insert(key.clone(), AccessRuleEntry::Group(group));
-    }
-
-    pub fn get_all_method_auth(&self) -> &BTreeMap<MethodKey, AccessRuleEntry> {
-        &self.method_auth
-    }
-
-    pub fn get_all_grouped_auth(&self) -> &BTreeMap<String, AccessRuleEntry> {
-        &self.grouped_auth
-    }
-
-    pub fn get_all_method_mutability(&self) -> &BTreeMap<MethodKey, AccessRuleEntry> {
-        &self.method_auth_mutability
-    }
-
-    pub fn get_all_grouped_auth_mutability(&self) -> &BTreeMap<String, AccessRule> {
-        &self.grouped_auth_mutability
     }
 }
 
