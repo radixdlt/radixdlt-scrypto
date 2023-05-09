@@ -137,13 +137,10 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::Main,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-                    ),
+                    name: "update_non_fungible_data".to_string(),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),

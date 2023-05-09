@@ -195,19 +195,6 @@ impl AccessRulesConfig {
         self.method_auth.insert(key, access_rule_entry.into());
     }
 
-    pub fn set_method_access_rule_and_mutability<
-        A: Into<AccessRuleEntry>,
-        M: Into<AccessRuleEntry>,
-    >(
-        &mut self,
-        key: MethodKey,
-        access_rule: A,
-        mutability: M,
-    ) {
-        self.method_auth.insert(key.clone(), access_rule.into());
-        self.method_auth_mutability.insert(key, mutability.into());
-    }
-
     pub fn set_public(
         &mut self,
         key: MethodKey,

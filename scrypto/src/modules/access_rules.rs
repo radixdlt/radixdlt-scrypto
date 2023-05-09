@@ -43,25 +43,6 @@ impl AccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AttachedAccessRules(pub GlobalAddress);
 
-impl AttachedAccessRules {
-    pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
-        // TODO: allow setting method auth on other modules besides self
-        ScryptoEnv
-            .call_module_method(
-                self.0.as_node_id(),
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Mutability {
     LOCKED,
