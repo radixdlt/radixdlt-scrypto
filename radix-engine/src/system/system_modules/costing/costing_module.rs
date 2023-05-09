@@ -5,7 +5,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemInvocation, SystemLockData};
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{
@@ -133,7 +133,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation<SystemInvocation>,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
@@ -151,7 +151,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::Invoke {
                             input_size: invocation.len() as u32,
-                            identifier: &invocation.sys_invocation,
+                            actor: &invocation.actor,
                         })
                     },
                     1,
@@ -182,7 +182,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     }
                 }
                 Actor::Function { ident, .. } => (None, ident),
-                Actor::VirtualLazyLoad { .. } => {
+                Actor::VirtualLazyLoad { .. } | Actor::Root => {
                     return Ok(());
                 }
             };
@@ -195,8 +195,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         let handle = api.kernel_lock_substate(
             blueprint.package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Royalty.into(),
+            OBJECT_BASE_PARTITION,
+            &PackageField::Royalty.into(),
             LockFlags::MUTABLE,
             SystemLockData::default(),
         )?;
@@ -232,8 +232,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         if let Some(component_address) = optional_component {
             let handle = api.kernel_lock_substate(
                 component_address.as_node_id(),
-                ROYALTY_BASE_MODULE,
-                &RoyaltyOffset::RoyaltyConfig.into(),
+                ROYALTY_FIELD_PARTITION,
+                &RoyaltyField::RoyaltyConfig.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -245,8 +245,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             if royalty_charge > 0 {
                 let handle = api.kernel_lock_substate(
                     component_address.as_node_id(),
-                    ROYALTY_BASE_MODULE,
-                    &RoyaltyOffset::RoyaltyAccumulator.into(),
+                    ROYALTY_FIELD_PARTITION,
+                    &RoyaltyField::RoyaltyAccumulator.into(),
                     LockFlags::MUTABLE,
                     SystemLockData::default(),
                 )?;
@@ -277,7 +277,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        _node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        _node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
         // TODO: calculate size
         api.kernel_get_system()
@@ -310,7 +310,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_num: &ModuleNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
@@ -322,7 +322,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 |fee_table| {
                     fee_table.kernel_api_cost(CostingEntry::LockSubstate {
                         node_id,
-                        module_num,
+                        partition_num,
                         substate_key,
                     })
                 },

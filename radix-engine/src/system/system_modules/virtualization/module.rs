@@ -2,19 +2,19 @@ use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
-    ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
+    ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID,
 };
 use radix_engine_interface::blueprints::identity::{
-    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
-    IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
+    IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID,
 };
 
 #[derive(Debug, Clone)]
@@ -24,7 +24,7 @@ pub struct VirtualizationModule;
 impl VirtualizationModule {
     pub fn on_substate_lock_fault<'g, Y: KernelApi<SystemConfig<C>>, C: SystemCallbackObject>(
         node_id: NodeId,
-        _module_num: ModuleNumber,
+        _partition_num: PartitionNumber,
         _offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -35,19 +35,19 @@ impl VirtualizationModule {
                 let (blueprint, virtual_func_id) = match entity_type {
                     EntityType::GlobalVirtualSecp256k1Account => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID,
+                        ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Account => (
                         Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID,
+                        ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID,
                     ),
                     EntityType::GlobalVirtualSecp256k1Identity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_ECDSA_256K1_ID,
+                        IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Identity => (
                         Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_EDDSA_25519_ID,
+                        IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID,
                     ),
                     _ => return Ok(false),
                 };
@@ -56,13 +56,11 @@ impl VirtualizationModule {
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {
-                    resolved_actor: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
-                    args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
-                    sys_invocation: SystemInvocation {
-                        blueprint: blueprint,
-                        ident: FnIdent::System(virtual_func_id),
-                        receiver: None,
+                    actor: Actor::VirtualLazyLoad {
+                        blueprint,
+                        ident: virtual_func_id,
                     },
+                    args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
                 };
 
                 let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();

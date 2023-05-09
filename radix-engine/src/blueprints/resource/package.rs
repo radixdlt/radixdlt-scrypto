@@ -8,9 +8,9 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::FunctionSchema;
-use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::Receiver;
+use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use resources_tracker_macro::trace_resources;
 
@@ -115,13 +115,13 @@ impl ResourceManagerNativePackage {
         let fungible_resource_manager_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates.push(
+            let mut fields = Vec::new();
+            fields.push(
                 aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerDivisibilitySubstate>(
                     ),
             );
-            substates.push(
+            fields.push(
                 aggregator
                     .add_child_type_and_descendents::<FungibleResourceManagerTotalSupplySubstate>(),
             );
@@ -257,8 +257,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: None,
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -270,26 +270,28 @@ impl ResourceManagerNativePackage {
         let non_fungible_resource_manager_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates.push(
+            let mut fields = Vec::new();
+            fields.push(
                 aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerIdTypeSubstate>(),
             );
-            substates.push(
+            fields.push(
                 aggregator
                     .add_child_type_and_descendents::<NonFungibleResourceManagerMutableFieldsSubstate>(
                     ),
             );
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
+            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleResourceManagerTotalSupplySubstate>());
 
-            let mut key_value_stores = Vec::new();
-            key_value_stores.push(BlueprintKeyValueStoreSchema {
-                key: TypeSchema::Blueprint(
-                    aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
-                ),
-                value: TypeSchema::Instance(0u8),
-                can_own: false,
-            });
+            let mut collections = Vec::new();
+            collections.push(BlueprintCollectionSchema::KeyValueStore(
+                BlueprintKeyValueStoreSchema {
+                    key: TypeSchema::Blueprint(
+                        aggregator.add_child_type_and_descendents::<NonFungibleLocalId>(),
+                    ),
+                    value: TypeSchema::Instance(0u8),
+                    can_own: false,
+                },
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -494,8 +496,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: None,
                 schema,
-                substates,
-                key_value_stores,
+                fields,
+                collections,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -506,10 +508,10 @@ impl ResourceManagerNativePackage {
 
         let fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-            let mut substates = Vec::new();
-            substates
+            let mut fields = Vec::new();
+            fields
                 .push(aggregator.add_child_type_and_descendents::<FungibleVaultBalanceSubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -619,8 +621,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -631,12 +633,14 @@ impl ResourceManagerNativePackage {
 
         let non_fungible_vault_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-            let mut substates = Vec::new();
-            substates.push(
+            let mut fields = Vec::new();
+            fields.push(
                 aggregator.add_child_type_and_descendents::<NonFungibleVaultBalanceSubstate>(),
             );
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+
+            let mut collections = Vec::new();
+            collections.push(BlueprintCollectionSchema::Index(BlueprintIndexSchema {}));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -783,8 +787,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections,
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
@@ -796,9 +800,9 @@ impl ResourceManagerNativePackage {
         let fungible_bucket_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
-            substates.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
+            let mut fields = Vec::new();
+            fields.push(aggregator.add_child_type_and_descendents::<LiquidFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -874,8 +878,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -887,11 +891,9 @@ impl ResourceManagerNativePackage {
         let non_fungible_bucket_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
-            substates
-                .push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
+            let mut fields = Vec::new();
+            fields.push(aggregator.add_child_type_and_descendents::<LiquidNonFungibleResource>());
+            fields.push(aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -992,8 +994,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1003,9 +1005,9 @@ impl ResourceManagerNativePackage {
         let fungible_proof_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
+            let mut fields = Vec::new();
+            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
+            fields.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1051,8 +1053,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1062,9 +1064,9 @@ impl ResourceManagerNativePackage {
         let non_fungible_proof_schema = {
             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-            let mut substates = Vec::new();
-            substates.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            substates.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
+            let mut fields = Vec::new();
+            fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
+            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1122,8 +1124,8 @@ impl ResourceManagerNativePackage {
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
-                substates,
-                key_value_stores: vec![],
+                fields,
+                collections: vec![],
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
@@ -1132,8 +1134,8 @@ impl ResourceManagerNativePackage {
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<WorktopSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<WorktopSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1226,8 +1228,8 @@ impl ResourceManagerNativePackage {
         let worktop_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            collections: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
@@ -1235,8 +1237,8 @@ impl ResourceManagerNativePackage {
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AuthZone>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<AuthZone>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -1330,8 +1332,8 @@ impl ResourceManagerNativePackage {
         let auth_zone_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            collections: vec![],
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),

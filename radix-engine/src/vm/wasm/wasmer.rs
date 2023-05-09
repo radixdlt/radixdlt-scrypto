@@ -259,19 +259,11 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn preallocate_global_address(
-            env: &WasmerInstanceEnv,
-            entity_type_ptr: u32,
-            entity_type_len: u32,
-        ) -> Result<u64, RuntimeError> {
+        pub fn preallocate_global_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .preallocate_global_address(read_memory(
-                    &instance,
-                    entity_type_ptr,
-                    entity_type_len,
-                )?)
+                .preallocate_global_address()
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -439,13 +431,14 @@ impl WasmerModule {
 
         pub fn actor_lock_field(
             env: &WasmerInstanceEnv,
+            object_handle: u32,
             field: u8,
             flags: u32,
         ) -> Result<u32, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .actor_lock_field(field, flags)
+                .actor_lock_field(object_handle, field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)

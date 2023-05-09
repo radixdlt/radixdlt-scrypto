@@ -12,22 +12,23 @@ use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemInvocation, SystemLockData,
+    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::ActingLocation;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
+use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
+use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
-use radix_engine_interface::api::index_api::ClientIndexApi;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_index_api::SortedKey;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -37,7 +38,8 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
-    IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, TypeSchema,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
+    InstanceSchema, KeyValueStoreInfo, TypeSchema,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -47,6 +49,22 @@ use sbor::rust::vec::Vec;
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
+}
+
+enum ActorObjectType {
+    SELF,
+    OuterObject,
+}
+
+impl TryFrom<ObjectHandle> for ActorObjectType {
+    type Error = RuntimeError;
+    fn try_from(value: ObjectHandle) -> Result<Self, Self::Error> {
+        match value {
+            OBJECT_HANDLE_SELF => Ok(ActorObjectType::SELF),
+            OBJECT_HANDLE_OUTER_OBJECT => Ok(ActorObjectType::OuterObject),
+            _ => Err(RuntimeError::SystemError(SystemError::InvalidObjectHandle)),
+        }
+    }
 }
 
 impl<'a, Y, V> SystemService<'a, Y, V>
@@ -119,8 +137,8 @@ where
         } else if node_id.eq(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
-            || node_id.eq(PACKAGE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(GLOBAL_ACTOR_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
+            || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(PACKAGE_OWNER_BADGE.as_node_id())
             || node_id.eq(VALIDATOR_OWNER_BADGE.as_node_id())
             || node_id.eq(IDENTITY_OWNER_BADGE.as_node_id())
@@ -140,8 +158,8 @@ where
         self.api
             .kernel_lock_substate(
                 node_id,
-                TYPE_INFO_BASE_MODULE,
-                &TypeInfoOffset::TypeInfo.into(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )
@@ -164,7 +182,7 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
         let (expected_blueprint_parent, user_substates) =
             self.verify_instance_schema_and_state(blueprint, &instance_schema, fields, kv_entries)?;
@@ -196,7 +214,7 @@ where
         };
 
         let mut node_substates = btreemap!(
-            TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+            TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: blueprint.clone(),
                     global:false,
@@ -206,11 +224,11 @@ where
             ).to_substates(),
         );
 
-        for (i, module_substates) in user_substates.into_iter().enumerate() {
-            let module_number = OBJECT_BASE_MODULE
-                .at_offset(i as u8)
+        for (offset, partition) in user_substates.into_iter() {
+            let partition_num = OBJECT_BASE_PARTITION
+                .at_offset(offset)
                 .expect("Module number overflow");
-            node_substates.insert(module_number, module_substates);
+            node_substates.insert(partition_num, partition);
         }
 
         self.api.kernel_create_node(node_id, node_substates)?;
@@ -218,7 +236,7 @@ where
         Ok(node_id.into())
     }
 
-    fn get_blueprint_schema(
+    pub fn get_blueprint_schema(
         &mut self,
         blueprint: &Blueprint,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
@@ -233,8 +251,8 @@ where
         } else {
             let handle = self.api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -246,11 +264,9 @@ where
                 .schema
                 .blueprints
                 .remove(blueprint.blueprint_name.as_str())
-                .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::BlueprintNotFound(
-                        blueprint.blueprint_name.to_string(),
-                    )),
-                )))?;
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::BlueprintDoesNotExist(blueprint.clone()),
+                ))?;
             self.api
                 .kernel_get_system_state()
                 .system
@@ -273,32 +289,15 @@ where
         blueprint: &Blueprint,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<
         (
             Option<String>,
-            Vec<BTreeMap<SubstateKey, IndexedScryptoValue>>,
+            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         ),
         RuntimeError,
     > {
-        let handle = self.api.kernel_lock_substate(
-            blueprint.package_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &PackageOffset::Info.into(),
-            LockFlags::read_only(),
-            SystemLockData::default(),
-        )?;
-        let package: PackageInfoSubstate =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let blueprint_schema = package
-            .schema
-            .blueprints
-            .get(&blueprint.blueprint_name)
-            .ok_or(RuntimeError::SystemError(SystemError::CreateObjectError(
-                Box::new(CreateObjectError::BlueprintNotFound(
-                    blueprint.blueprint_name.to_string(),
-                )),
-            )))?;
+        let blueprint_schema = self.get_blueprint_schema(blueprint)?;
 
         // Validate instance schema
         {
@@ -313,21 +312,24 @@ where
             }
         }
 
-        let mut user_substates = Vec::new();
+        let mut partitions = BTreeMap::new();
 
         // Fields
         {
-            if blueprint_schema.num_fields() != fields.len() {
+            let expected_num_fields = blueprint_schema.num_fields();
+            if expected_num_fields != fields.len() {
                 return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
                     Box::new(CreateObjectError::WrongNumberOfSubstates(
                         blueprint.clone(),
                         fields.len(),
-                        blueprint_schema.num_fields(),
+                        expected_num_fields,
                     )),
                 )));
             }
-            if let Some((_, field_type_index)) = &blueprint_schema.tuple_module {
-                let mut substate_fields = BTreeMap::new();
+
+            if let Some((offset, field_type_index)) = blueprint_schema.fields {
+                let mut partition = BTreeMap::new();
+
                 for (i, field) in fields.into_iter().enumerate() {
                     self.validate_payload(&field, &blueprint_schema.schema, field_type_index[i])
                         .map_err(|err| {
@@ -338,88 +340,95 @@ where
                             )))
                         })?;
 
-                    substate_fields.insert(
+                    partition.insert(
                         SubstateKey::Tuple(i as u8),
                         IndexedScryptoValue::from_vec(field)
                             .expect("Checked by payload-schema validation"),
                     );
                 }
 
-                user_substates.push(substate_fields);
-            }
-        };
-
-        // KV Entries
-        {
-            if blueprint_schema.key_value_stores.len() != kv_entries.len() {
-                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
-                    Box::new(CreateObjectError::WrongNumberOfKeyValueStores(
-                        blueprint.clone(),
-                        kv_entries.len(),
-                        blueprint_schema.key_value_stores.len(),
-                    )),
-                )));
-            }
-
-            if kv_entries.len() > 0 {
-                for (i, entries) in kv_entries.into_iter().enumerate() {
-                    let (_, blueprint_kv_schema) =
-                        blueprint_schema.key_value_stores.get(i).unwrap();
-
-                    let mut kv_substates = BTreeMap::new();
-                    for (key, value) in entries {
-                        self.validate_payload_against_blueprint_or_instance_schema(
-                            &key,
-                            &blueprint_kv_schema.key,
-                            &blueprint_schema.schema,
-                            instance_schema,
-                        )
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
-
-                        self.validate_payload_against_blueprint_or_instance_schema(
-                            &value,
-                            &blueprint_kv_schema.value,
-                            &blueprint_schema.schema,
-                            instance_schema,
-                        )
-                        .map_err(|err| {
-                            RuntimeError::SystemError(SystemError::CreateObjectError(Box::new(
-                                CreateObjectError::InvalidSubstateWrite(
-                                    err.error_message(&blueprint_schema.schema),
-                                ),
-                            )))
-                        })?;
-
-                        let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                        let value = IndexedScryptoValue::from_typed(&Some(value));
-
-                        if !blueprint_kv_schema.can_own {
-                            if !value.owned_nodes().is_empty() {
-                                return Err(RuntimeError::SystemError(
-                                    SystemError::InvalidKeyValueStoreOwnership,
-                                ));
-                            }
-                        }
-
-                        kv_substates.insert(SubstateKey::Map(key), value);
-                    }
-
-                    user_substates.push(kv_substates);
-                }
+                partitions.insert(offset, partition);
             }
         }
 
-        self.api.kernel_drop_lock(handle)?;
+        // Collections
+        {
+            for (index, (offset, blueprint_partition_schema)) in
+                blueprint_schema.collections.iter().enumerate()
+            {
+                let index = index as u8;
+                let mut partition = BTreeMap::new();
+                match blueprint_partition_schema {
+                    BlueprintCollectionSchema::KeyValueStore(blueprint_kv_schema) => {
+                        let entries = kv_entries.remove(&index);
+                        if let Some(entries) = entries {
+                            for (key, value) in entries {
+                                self.validate_payload_against_blueprint_or_instance_schema(
+                                    &key,
+                                    &blueprint_kv_schema.key,
+                                    &blueprint_schema.schema,
+                                    instance_schema,
+                                )
+                                .map_err(|err| {
+                                    RuntimeError::SystemError(SystemError::CreateObjectError(
+                                        Box::new(CreateObjectError::InvalidSubstateWrite(
+                                            err.error_message(&blueprint_schema.schema),
+                                        )),
+                                    ))
+                                })?;
+
+                                self.validate_payload_against_blueprint_or_instance_schema(
+                                    &value,
+                                    &blueprint_kv_schema.value,
+                                    &blueprint_schema.schema,
+                                    instance_schema,
+                                )
+                                .map_err(|err| {
+                                    RuntimeError::SystemError(SystemError::CreateObjectError(
+                                        Box::new(CreateObjectError::InvalidSubstateWrite(
+                                            err.error_message(&blueprint_schema.schema),
+                                        )),
+                                    ))
+                                })?;
+
+                                let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                                let value = IndexedScryptoValue::from_typed(&Some(value));
+
+                                if !blueprint_kv_schema.can_own {
+                                    if !value.owned_nodes().is_empty() {
+                                        return Err(RuntimeError::SystemError(
+                                            SystemError::InvalidKeyValueStoreOwnership,
+                                        ));
+                                    }
+                                }
+
+                                partition.insert(SubstateKey::Map(key), value);
+                            }
+                        }
+                    }
+                    _ => {
+                        let entries = kv_entries.remove(&index);
+                        if entries.is_some() {
+                            return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                                Box::new(CreateObjectError::InvalidModule),
+                            )));
+                        }
+                    }
+                }
+
+                partitions.insert(offset.clone(), partition);
+            }
+
+            if !kv_entries.is_empty() {
+                return Err(RuntimeError::SystemError(SystemError::CreateObjectError(
+                    Box::new(CreateObjectError::InvalidModule),
+                )));
+            }
+        }
 
         let parent_blueprint = blueprint_schema.outer_blueprint.clone();
 
-        Ok((parent_blueprint, user_substates))
+        Ok((parent_blueprint, partitions))
     }
 
     fn key_value_entry_remove_and_release_lock(
@@ -439,14 +448,148 @@ where
         Ok(current_value)
     }
 
+    fn get_actor_schema(
+        &mut self,
+        actor_object_type: ActorObjectType,
+    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, IndexedBlueprintSchema), RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        let method = actor
+            .try_as_method()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        match actor_object_type {
+            ActorObjectType::OuterObject => {
+                let address = method.object_info.outer_object.unwrap();
+                let info = self.get_object_info(address.as_node_id())?;
+                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                Ok((address.into_node_id(), OBJECT_BASE_PARTITION, info, schema))
+            }
+            ActorObjectType::SELF => {
+                let node_id = method.node_id;
+                let info = method.object_info.clone();
+                let object_module_id = method.module_id;
+                let schema = self.get_blueprint_schema(&info.blueprint)?;
+                Ok((node_id, object_module_id.base_partition_num(), info, schema))
+            }
+        }
+    }
+
+    fn get_actor_field(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        field_index: u8,
+    ) -> Result<
+        (
+            NodeId,
+            PartitionNumber,
+            ScryptoSchema,
+            LocalTypeIndex,
+            ObjectInfo,
+        ),
+        RuntimeError,
+    > {
+        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, type_index) = schema.field(field_index).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                info.blueprint.clone(),
+                field_index,
+            ))
+        })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num, schema.schema, type_index, info))
+    }
+
+    fn get_actor_kv_partition(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        collection_index: CollectionIndex,
+    ) -> Result<
+        (
+            NodeId,
+            PartitionNumber,
+            ScryptoSchema,
+            BlueprintKeyValueStoreSchema,
+            ObjectInfo,
+        ),
+        RuntimeError,
+    > {
+        let (node_id, base_partition, info, schema) = self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, schema, kv_schema) = schema
+            .key_value_store_partition(collection_index)
+            .ok_or_else(|| {
+                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
+                    info.blueprint.clone(),
+                    collection_index,
+                ))
+            })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num, schema, kv_schema, info))
+    }
+
+    fn get_actor_index(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        collection_index: CollectionIndex,
+    ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
+        let (node_id, base_partition, object_info, schema) =
+            self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, _) = schema.index_partition(collection_index).ok_or_else(|| {
+            RuntimeError::SystemError(SystemError::IndexDoesNotExist(
+                object_info.blueprint,
+                collection_index,
+            ))
+        })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num))
+    }
+
+    fn get_actor_sorted_index(
+        &mut self,
+        actor_object_type: ActorObjectType,
+        collection_index: CollectionIndex,
+    ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
+        let (node_id, base_partition, object_info, schema) =
+            self.get_actor_schema(actor_object_type)?;
+
+        let (partition_offset, _) =
+            schema
+                .sorted_index_partition(collection_index)
+                .ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
+                        object_info.blueprint,
+                        collection_index,
+                    ))
+                })?;
+
+        let partition_num = base_partition
+            .at_offset(partition_offset)
+            .expect("Module number overflow");
+
+        Ok((node_id, partition_num))
+    }
+
     fn resolve_blueprint_from_modules(
         &mut self,
         modules: &BTreeMap<ObjectModuleId, NodeId>,
     ) -> Result<Blueprint, RuntimeError> {
         let node_id = modules
-            .get(&ObjectModuleId::SELF)
+            .get(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
             )))?;
 
         Ok(self.get_object_info(node_id)?.blueprint)
@@ -466,7 +609,7 @@ where
             .cloned()
             .collect::<BTreeSet<ObjectModuleId>>();
         let standard_object = btreeset!(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ObjectModuleId::Metadata,
             ObjectModuleId::Royalty,
             ObjectModuleId::AccessRules
@@ -479,9 +622,9 @@ where
 
         // Read the type info
         let node_id = modules
-            .remove(&ObjectModuleId::SELF)
+            .remove(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::SELF,
+                ObjectModuleId::Main,
             )))?;
         self.api
             .kernel_get_system_state()
@@ -489,13 +632,13 @@ where
             .modules
             .events
             .add_replacement(
-                (node_id, ObjectModuleId::SELF),
-                (*global_address.as_node_id(), ObjectModuleId::SELF),
+                (node_id, ObjectModuleId::Main),
+                (*global_address.as_node_id(), ObjectModuleId::Main),
             );
         let lock_handle = self.api.kernel_lock_substate(
             &node_id,
-            TYPE_INFO_BASE_MODULE,
-            &TypeInfoOffset::TypeInfo.into(),
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
@@ -506,12 +649,7 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) => {
-                if *global {
-                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                        Box::new(CannotGlobalizeError::AlreadyGlobalized),
-                    )));
-                }
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
                 *global = true
             }
             _ => {
@@ -522,24 +660,30 @@ where
         };
 
         // Create a global node
-        self.kernel_create_node(global_address.into(), btreemap!(
-            TYPE_INFO_BASE_MODULE => btreemap!(
-                SubstateKey::from(TypeInfoOffset::TypeInfo) => IndexedScryptoValue::from_typed(&type_info),
-            )
-        ))?;
+        self.kernel_create_node(
+            global_address.into(),
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(type_info).to_substates()
+            ),
+        )?;
 
         // Move self modules to the newly created global node, and drop
-        let mut module_ids = self.kernel_list_modules(&node_id)?;
-        module_ids.remove(&TYPE_INFO_BASE_MODULE);
-        for module_id in module_ids {
-            self.kernel_move_module(&node_id, module_id, global_address.as_node_id(), module_id)?;
+        let mut partition_numbers = self.kernel_list_modules(&node_id)?;
+        partition_numbers.remove(&TYPE_INFO_FIELD_PARTITION);
+        for partition_number in partition_numbers {
+            self.kernel_move_module(
+                &node_id,
+                partition_number,
+                global_address.as_node_id(),
+                partition_number,
+            )?;
         }
         self.kernel_drop_node(&node_id)?;
 
         // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
-                ObjectModuleId::SELF => panic!("Should have been removed already"),
+                ObjectModuleId::Main => panic!("Should have been removed already"),
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
@@ -560,16 +704,16 @@ where
                         .modules
                         .events
                         .add_replacement(
-                            (node_id, ObjectModuleId::SELF),
+                            (node_id, ObjectModuleId::Main),
                             (*global_address.as_node_id(), module_id),
                         );
 
                     // Move and drop
                     self.kernel_move_module(
                         &node_id,
-                        OBJECT_BASE_MODULE,
+                        OBJECT_BASE_PARTITION,
                         global_address.as_node_id(),
-                        module_id.base_module(),
+                        module_id.base_partition_num(),
                     )?;
                     self.kernel_drop_node(&node_id)?;
                 }
@@ -577,6 +721,16 @@ where
         }
 
         Ok(())
+    }
+
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+        let actor = self.api.kernel_get_system_state().current;
+        actor.try_as_method().map(|a| a.node_id)
+    }
+
+    pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        Ok(actor.fn_identifier())
     }
 }
 
@@ -654,9 +808,9 @@ where
         blueprint_ident: &str,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
         let blueprint = Blueprint::new(&package_address, blueprint_ident);
@@ -665,16 +819,10 @@ where
     }
 
     #[trace_resources]
-    fn preallocate_global_address(
-        &mut self,
-        entity_type: EntityType,
-    ) -> Result<GlobalAddress, RuntimeError> {
-        if !entity_type.is_global() {
-            return Err(RuntimeError::SystemError(
-                SystemError::InvalidGlobalEntityType,
-            ));
-        }
-        let allocated_node_id = self.api.kernel_allocate_node_id(entity_type)?;
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let allocated_node_id = self
+            .api
+            .kernel_allocate_node_id(EntityType::GlobalGenericComponent)?;
         Ok(GlobalAddress::new_or_panic(allocated_node_id.0))
     }
 
@@ -733,7 +881,7 @@ where
             }),
             None,
             inner_object_fields,
-            vec![],
+            btreemap!(),
         )
     }
 
@@ -747,52 +895,37 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let (object_info, global_address) = match object_module_id {
-            ObjectModuleId::SELF => {
-                let type_info = TypeInfoBlueprint::get_type(receiver, self.api)?;
-                match type_info {
-                    TypeInfoSubstate::Object(info @ ObjectInfo { global, .. }) => {
-                        let global_address = if global {
-                            Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                        } else {
-                            // See if we have a parent
+            ObjectModuleId::Main => {
+                let object_info = self.get_object_info(receiver)?;
+                let global_address = if object_info.global {
+                    Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                } else {
+                    // See if we have a parent
 
-                            // TODO: Cleanup, this is a rather crude way of trying to figure out
-                            // TODO: whether the node reference is a child of the current parent
-                            // TODO: this should be cleaned up once call_frame is refactored
-                            let node_visibility = self.api.kernel_get_node_visibility(receiver);
-                            // FIXME I believe this logic is incorrect/inconsistent with design, it's
-                            // to duplicate previous logic.
-                            if node_visibility.0.iter().any(|v| v.is_normal())
-                                && !node_visibility
-                                    .0
-                                    .iter()
-                                    .any(|v| matches!(v, Visibility::FrameOwned))
-                            {
-                                self.api
-                                    .kernel_get_system_state()
-                                    .current
-                                    .and_then(|a| match a {
-                                        Actor::Method(MethodActor { global_address, .. }) => {
-                                            global_address.clone()
-                                        }
-                                        _ => None,
-                                    })
-                            } else {
-                                None
+                    // TODO: Cleanup, this is a rather crude way of trying to figure out
+                    // TODO: whether the node reference is a child of the current parent
+                    // TODO: this should be cleaned up once call_frame is refactored
+                    let node_visibility = self.api.kernel_get_node_visibility(receiver);
+                    // FIXME I believe this logic is incorrect/inconsistent with design, it's
+                    // to duplicate previous logic.
+                    if node_visibility.0.iter().any(|v| v.is_normal())
+                        && !node_visibility
+                            .0
+                            .iter()
+                            .any(|v| matches!(v, Visibility::FrameOwned))
+                    {
+                        match self.api.kernel_get_system_state().current {
+                            Actor::Method(MethodActor { global_address, .. }) => {
+                                global_address.clone()
                             }
-                        };
-
-                        (info, global_address)
+                            _ => None,
+                        }
+                    } else {
+                        None
                     }
+                };
 
-                    TypeInfoSubstate::KeyValueStore(..)
-                    | TypeInfoSubstate::SortedIndex
-                    | TypeInfoSubstate::Index => {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::CallMethodOnKeyValueStore,
-                        ))
-                    }
-                }
+                (object_info, global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
@@ -808,7 +941,6 @@ where
 
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
-        let blueprint = object_info.blueprint.clone();
 
         // TODO: Can we load this lazily when needed?
         let instance_context = if object_info.global {
@@ -834,18 +966,13 @@ where
         };
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::method(
+            actor: Actor::method(
                 global_address,
-                identifier.clone(),
+                identifier,
                 object_info,
                 instance_context,
                 direct_access,
             ),
-            sys_invocation: SystemInvocation {
-                blueprint,
-                ident: FnIdent::Application(identifier.2.clone()),
-                receiver: Some(identifier),
-            },
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
@@ -861,9 +988,7 @@ where
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
-            TypeInfoSubstate::KeyValueStore(..)
-            | TypeInfoSubstate::SortedIndex
-            | TypeInfoSubstate::Index => {
+            TypeInfoSubstate::KeyValueStore(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAnObject))
             }
         };
@@ -874,7 +999,7 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let mut is_drop_allowed = false;
 
         // TODO: what's the right model, trading off between flexibility and security?
@@ -905,7 +1030,7 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&OBJECT_BASE_MODULE).unwrap();
+        let user_substates = node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| v.into())
@@ -1017,8 +1142,8 @@ where
         self.api.kernel_create_node(
             node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+                OBJECT_BASE_PARTITION => btreemap!(),
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::KeyValueStore(schema)
                 ).to_substates(),
             ),
@@ -1034,9 +1159,7 @@ where
     ) -> Result<KeyValueStoreInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(node_id, self.api)?;
         let schema = match type_info {
-            TypeInfoSubstate::Object { .. }
-            | TypeInfoSubstate::SortedIndex
-            | TypeInfoSubstate::Index => {
+            TypeInfoSubstate::Object { .. } => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
             TypeInfoSubstate::KeyValueStore(schema) => schema,
@@ -1059,9 +1182,7 @@ where
 
         let info = match type_info {
             TypeInfoSubstate::KeyValueStore(info) => info,
-            TypeInfoSubstate::SortedIndex
-            | TypeInfoSubstate::Index
-            | TypeInfoSubstate::Object(..) => {
+            TypeInfoSubstate::Object(..) => {
                 return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore))
             }
         };
@@ -1085,7 +1206,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            OBJECT_BASE_MODULE,
+            OBJECT_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1103,41 +1224,21 @@ where
     }
 }
 
-impl<'a, Y, V> ClientIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn new_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalIndex;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::Index
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id)
-    }
-
-    fn insert_into_index(
+    fn actor_index_insert(
         &mut self,
-        node_id: &NodeId,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1150,42 +1251,40 @@ where
         }
 
         self.api
-            .kernel_set_substate(node_id, OBJECT_BASE_MODULE, SubstateKey::Map(key), value)
+            .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
     }
 
-    fn remove_from_index(
+    fn actor_index_remove(
         &mut self,
-        node_id: &NodeId,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
         key: Vec<u8>,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let rtn = self
             .api
-            .kernel_remove_substate(node_id, OBJECT_BASE_MODULE, &SubstateKey::Map(key))?
+            .kernel_remove_substate(&node_id, partition_num, &SubstateKey::Map(key))?
             .map(|v| v.into());
 
         Ok(rtn)
     }
 
-    fn scan_index(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+    fn actor_index_scan(
+        &mut self,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
-            .kernel_scan_substates(node_id, OBJECT_BASE_MODULE, count)?
+            .kernel_scan_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1193,18 +1292,19 @@ where
         Ok(substates)
     }
 
-    fn take(&mut self, node_id: &NodeId, count: u32) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::Index => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAnIterableStore));
-            }
-        }
+    fn actor_index_take(
+        &mut self,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
-            .kernel_take_substates(node_id, OBJECT_BASE_MODULE, count)?
+            .kernel_take_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -1213,43 +1313,23 @@ where
     }
 }
 
-impl<'a, Y, V> ClientSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
-    fn new_sorted_index(&mut self) -> Result<NodeId, RuntimeError> {
-        let entity_type = EntityType::InternalSortedIndex;
-        let node_id = self.api.kernel_allocate_node_id(entity_type)?;
-
-        self.api.kernel_create_node(
-            node_id,
-            btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
-                    TypeInfoSubstate::SortedIndex
-                ).to_substates(),
-            ),
-        )?;
-
-        Ok(node_id)
-    }
-
-    #[trace_resources]
-    fn insert_into_sorted_index(
+    fn actor_sorted_index_insert(
         &mut self,
-        node_id: &NodeId,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
         sorted_key: SortedKey,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         let value = IndexedScryptoValue::from_vec(buffer).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1262,61 +1342,57 @@ where
         }
 
         self.api.kernel_set_substate(
-            node_id,
-            OBJECT_BASE_MODULE,
+            &node_id,
+            partition_num,
             SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
             value,
         )
     }
 
     #[trace_resources]
-    fn scan_sorted_index(
+    fn actor_sorted_index_remove(
         &mut self,
-        node_id: &NodeId,
-        count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
-
-        let substates = self
-            .api
-            .kernel_scan_sorted_substates(node_id, OBJECT_BASE_MODULE, count)?
-            .into_iter()
-            .map(|value| value.into())
-            .collect();
-
-        Ok(substates)
-    }
-
-    #[trace_resources]
-    fn remove_from_sorted_index(
-        &mut self,
-        node_id: &NodeId,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
         sorted_key: &SortedKey,
     ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        match type_info {
-            TypeInfoSubstate::SortedIndex => {}
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotASortedStore));
-            }
-        }
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
 
         let rtn = self
             .api
             .kernel_remove_substate(
-                node_id,
-                OBJECT_BASE_MODULE,
+                &node_id,
+                partition_num,
                 &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
             )?
             .map(|v| v.into());
 
         Ok(rtn)
+    }
+
+    #[trace_resources]
+    fn actor_sorted_index_scan(
+        &mut self,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
+        count: u32,
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num) =
+            self.get_actor_sorted_index(actor_object_type, collection_index)?;
+
+        let substates = self
+            .api
+            .kernel_scan_sorted_substates(&node_id, partition_num, count)?
+            .into_iter()
+            .map(|value| value.into())
+            .collect();
+
+        Ok(substates)
     }
 }
 
@@ -1338,15 +1414,10 @@ where
         );
 
         let invocation = KernelInvocation {
-            resolved_actor: Actor::function(identifier.clone()),
+            actor: Actor::function(identifier.0, identifier.1),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            sys_invocation: SystemInvocation {
-                blueprint: identifier.0,
-                ident: FnIdent::Application(identifier.1),
-                receiver: None,
-            },
         };
 
         self.api
@@ -1408,24 +1479,19 @@ where
     #[trace_resources]
     fn actor_lock_field(
         &mut self,
-        field: u8,
+        object_handle: ObjectHandle,
+        field_index: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        let system_state = self.api.kernel_get_system_state();
-        let actor = system_state.current.unwrap();
-        let method_actor = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+
+        let (node_id, partition_num, schema, type_index, object_info) =
+            self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(method_actor
-                .object_info
-                .blueprint
-                .package_address
-                .eq(&RESOURCE_PACKAGE)
-                && method_actor
-                    .object_info
+            if !(object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
+                && object_info
                     .blueprint
                     .blueprint_name
                     .eq(FUNGIBLE_VAULT_BLUEPRINT))
@@ -1434,27 +1500,10 @@ where
             }
         }
 
-        let node_id = method_actor.node_id;
-        let base_module = method_actor.module_id.base_module();
-        let blueprint = method_actor.object_info.blueprint.clone();
-        let schema = self.get_blueprint_schema(&blueprint)?;
-
-        let (module_number, field_type_index) =
-            if let Some((offset, field_type_index)) = schema.field(field) {
-                let module_number = base_module
-                    .at_offset(offset)
-                    .expect("Module number overflow");
-                (module_number, field_type_index)
-            } else {
-                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    blueprint, field,
-                )));
-            };
-
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                schema: schema.schema.clone(),
-                index: field_type_index,
+                schema,
+                index: type_index,
             }
         } else {
             FieldLockData::Read
@@ -1462,89 +1511,64 @@ where
 
         self.api.kernel_lock_substate(
             &node_id,
-            module_number,
-            &SubstateKey::Tuple(field),
+            partition_num,
+            &SubstateKey::Tuple(field_index),
             flags,
             SystemLockData::Field(lock_data),
         )
     }
 
     #[trace_resources]
-    fn actor_lock_outer_object_field(
-        &mut self,
-        field: u8,
-        flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
-        let parent = self
-            .actor_get_info()?
-            .outer_object
-            .ok_or(RuntimeError::SystemError(SystemError::NoParent))?;
+    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        let object_info = actor
+            .try_as_method()
+            .map(|m| m.object_info.clone())
+            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
-        let parent_info = self.get_object_info(parent.as_node_id())?;
-        let schema = self.get_blueprint_schema(&parent_info.blueprint)?;
-        let (module_offset, field_type_index) = if let Some(field_info) = schema.field(field) {
-            field_info
-        } else {
-            return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                parent_info.blueprint.clone(),
-                field,
-            )));
-        };
-
-        let module_number = OBJECT_BASE_MODULE
-            .at_offset(module_offset)
-            .expect("Module number overflow");
-
-        // TODO: Check if valid substate_key for node_id
-        let lock_data = if flags.contains(LockFlags::MUTABLE) {
-            FieldLockData::Write {
-                schema: schema.schema,
-                index: field_type_index,
-            }
-        } else {
-            FieldLockData::Read
-        };
-
-        self.api.kernel_lock_substate(
-            parent.as_node_id(),
-            module_number,
-            &SubstateKey::Tuple(field),
-            flags,
-            SystemLockData::Field(lock_data),
-        )
+        Ok(object_info)
     }
 
     #[trace_resources]
-    fn actor_lock_key_value_handle_entry(
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        match actor {
+            Actor::Method(MethodActor {
+                global_address: Some(address),
+                ..
+            }) => Ok(address.clone()),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::GlobalAddressDoesNotExist,
+            )),
+        }
+    }
+
+    #[trace_resources]
+    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
+        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+
+        let actor = self.api.kernel_get_system_state().current;
+        Ok(actor.blueprint().clone())
+    }
+}
+
+impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+where
+    Y: KernelApi<SystemConfig<V>>,
+    V: SystemCallbackObject,
+{
+    #[trace_resources]
+    fn actor_lock_key_value_entry(
         &mut self,
-        kv_handle: u8,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
         key: &[u8],
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let method = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let node_id = method.node_id;
-        let base_module = method.module_id.base_module();
-        let object_info = method.object_info.clone();
-        let schema = self.get_blueprint_schema(&object_info.blueprint)?;
-
-        let (module_number, kv_schema) = schema
-            .key_value_store_module_offset(kv_handle)
-            .map(|(module_offset, kv_schema)| {
-                let module_number = base_module
-                    .at_offset(*module_offset)
-                    .expect("Module number overflow");
-                (module_number, kv_schema)
-            })
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    object_info.blueprint,
-                    kv_handle,
-                ))
-            })?;
+        let (node_id, partition_num, schema, kv_schema, object_info) =
+            self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             let can_own = kv_schema.can_own;
@@ -1558,7 +1582,7 @@ where
                     }
                 }
                 TypeSchema::Blueprint(index) => KeyValueEntryLockData::Write {
-                    schema: schema.schema,
+                    schema,
                     index,
                     can_own,
                 },
@@ -1569,7 +1593,7 @@ where
 
         self.api.kernel_lock_substate_with_default(
             &node_id,
-            module_number,
+            partition_num,
             &SubstateKey::Map(key.to_vec()),
             flags,
             Some(|| IndexedScryptoValue::from_typed(&Option::<ScryptoValue>::None)),
@@ -1577,41 +1601,19 @@ where
         )
     }
 
-    fn actor_remove_key_value_entry(&mut self, key: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_handle_entry(0u8, key, LockFlags::MUTABLE)?;
+    fn actor_remove_key_value_entry(
+        &mut self,
+        object_handle: ObjectHandle,
+        collection_index: CollectionIndex,
+        key: &Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let handle = self.actor_lock_key_value_entry(
+            object_handle,
+            collection_index,
+            key,
+            LockFlags::MUTABLE,
+        )?;
         self.key_value_entry_remove_and_release_lock(handle)
-    }
-
-    #[trace_resources]
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        let object_info = actor
-            .try_as_method()
-            .map(|m| m.object_info.clone())
-            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
-
-        Ok(object_info)
-    }
-
-    #[trace_resources]
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        match actor {
-            Actor::Method(MethodActor {
-                global_address: Some(address),
-                ..
-            }) => Ok(address.clone()),
-            _ => Err(RuntimeError::SystemError(
-                SystemError::GlobalAddressDoesNotExist,
-            )),
-        }
-    }
-
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
-
-        let actor = self.api.kernel_get_system_state().current.unwrap();
-        Ok(actor.blueprint().clone())
     }
 }
 
@@ -1639,21 +1641,18 @@ where
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let barrier_crossings_required = 1;
-        let barrier_crossings_allowed = 1;
+        // Fetch the tip auth zone
         let auth_zone_id = self
             .api
             .kernel_get_system()
             .modules
             .auth
             .last_auth_zone()
-            .expect("Auth zone missing");
+            .expect("Missing auth zone");
 
         // Authenticate
         if !Authentication::verify_method_auth(
-            barrier_crossings_required,
-            barrier_crossings_allowed,
+            ActingLocation::InCallFrame,
             auth_zone_id,
             &rule,
             self,
@@ -1713,7 +1712,7 @@ where
         // Costing event emission.
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
 
         // Locking the package info substate associated with the emitter's package
         let (blueprint_schema, local_type_index) = {
@@ -1748,7 +1747,7 @@ where
         };
 
         // Construct the event type identifier based on the current actor
-        let actor = self.api.kernel_get_system_state().current.unwrap();
+        let actor = self.api.kernel_get_system_state().current;
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
                 node_id, module_id, ..
@@ -1759,7 +1758,7 @@ where
             Actor::Function { ref blueprint, .. } => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
-                    ObjectModuleId::SELF,
+                    ObjectModuleId::Main,
                     blueprint.blueprint_name.to_string(),
                 ),
                 local_type_index,
@@ -1872,18 +1871,22 @@ where
     fn kernel_move_module(
         &mut self,
         src_node_id: &NodeId,
-        src_module_id: ModuleNumber,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
-        dest_module_id: ModuleNumber,
+        dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_move_module(src_node_id, src_module_id, dest_node_id, dest_module_id)
+        self.api.kernel_move_module(
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+        )
     }
 
     fn kernel_list_modules(
         &mut self,
         node_id: &NodeId,
-    ) -> Result<BTreeSet<ModuleNumber>, RuntimeError> {
+    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
         self.api.kernel_list_modules(node_id)
     }
 }
@@ -1896,7 +1899,7 @@ where
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -1904,7 +1907,7 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         self.api.kernel_lock_substate_with_default(
             node_id,
-            module_id,
+            partition_num,
             substate_key,
             flags,
             default,
@@ -1941,50 +1944,52 @@ where
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api
-            .kernel_set_substate(node_id, module_id, substate_key, value)
+            .kernel_set_substate(node_id, partition_num, substate_key, value)
     }
 
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_remove_substate(node_id, module_id, substate_key)
+            .kernel_remove_substate(node_id, partition_num, substate_key)
     }
 
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_scan_sorted_substates(node_id, module_id, count)
+            .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.api.kernel_scan_substates(node_id, module_id, count)
+        self.api
+            .kernel_scan_substates(node_id, partition_num, count)
     }
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.api.kernel_take_substates(node_id, module_id, count)
+        self.api
+            .kernel_take_substates(node_id, partition_num, count)
     }
 }
 

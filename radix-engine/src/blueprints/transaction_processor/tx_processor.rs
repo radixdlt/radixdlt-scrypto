@@ -73,10 +73,10 @@ impl TransactionProcessorBlueprint {
         api.kernel_create_node(
             worktop_node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(
-                    WorktopOffset::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
+                OBJECT_BASE_PARTITION => btreemap!(
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
                 ),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
                         blueprint: Blueprint::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
@@ -405,7 +405,7 @@ impl TransactionProcessorBlueprint {
                     let rtn = api.call_method_advanced(
                         vault_id.as_node_id(),
                         true,
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -472,7 +472,7 @@ impl TransactionProcessorBlueprint {
                     let result = api.call_method_advanced(
                         package_address.as_node_id(),
                         false,
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
@@ -517,7 +517,7 @@ impl TransactionProcessorBlueprint {
                     let result = api.call_method_advanced(
                         package_address.as_node_id(),
                         false,
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
                     )?;

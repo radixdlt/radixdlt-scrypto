@@ -20,7 +20,7 @@ pub struct Heap {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapRemoveModuleError {
     NodeNotFound(NodeId),
-    ModuleNotFound(ModuleNumber),
+    ModuleNotFound(PartitionNumber),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -32,7 +32,7 @@ pub enum HeapRemoveNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapLockSubstateError {
     LockUnmodifiedBaseOnHeapNode,
-    SubstateNotFound(NodeId, ModuleNumber, SubstateKey),
+    SubstateNotFound(NodeId, PartitionNumber, SubstateKey),
 }
 
 impl Heap {
@@ -47,7 +47,7 @@ impl Heap {
         self.nodes.contains_key(node_id)
     }
 
-    pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<ModuleNumber>> {
+    pub fn list_modules(&self, node_id: &NodeId) -> Option<BTreeSet<PartitionNumber>> {
         self.nodes
             .get(node_id)
             .map(|node| node.substates.keys().cloned().collect())
@@ -56,12 +56,12 @@ impl Heap {
     pub fn remove_module(
         &mut self,
         node_id: &NodeId,
-        module_number: ModuleNumber,
+        partition_number: PartitionNumber,
     ) -> Result<BTreeMap<SubstateKey, IndexedScryptoValue>, HeapRemoveModuleError> {
         if let Some(modules) = self.nodes.get_mut(node_id).map(|node| &mut node.substates) {
             let module = modules
-                .remove(&module_number)
-                .ok_or(HeapRemoveModuleError::ModuleNotFound(module_number))?;
+                .remove(&partition_number)
+                .ok_or(HeapRemoveModuleError::ModuleNotFound(partition_number))?;
             Ok(module)
         } else {
             Err(HeapRemoveModuleError::NodeNotFound(node_id.clone()))
@@ -71,7 +71,7 @@ impl Heap {
     pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         virtualize: F,
     ) -> &IndexedScryptoValue {
@@ -80,7 +80,7 @@ impl Heap {
             .entry(*node_id)
             .or_insert(HeapNode::default())
             .substates
-            .entry(module_num)
+            .entry(partition_num)
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
@@ -90,7 +90,7 @@ impl Heap {
 
         self.nodes
             .get(node_id)
-            .and_then(|node| node.substates.get(&module_num))
+            .and_then(|node| node.substates.get(&partition_num))
             .and_then(|module_substates| module_substates.get(substate_key))
             .unwrap()
     }
@@ -99,12 +99,12 @@ impl Heap {
     pub fn get_substate(
         &self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<&IndexedScryptoValue> {
         self.nodes
             .get(node_id)
-            .and_then(|node| node.substates.get(&module_num))
+            .and_then(|node| node.substates.get(&partition_num))
             .and_then(|module_substates| module_substates.get(substate_key))
     }
 
@@ -112,7 +112,7 @@ impl Heap {
     pub fn set_substate(
         &mut self,
         node_id: NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) {
@@ -120,7 +120,7 @@ impl Heap {
             .entry(node_id)
             .or_insert_with(|| HeapNode::default())
             .substates
-            .entry(module_num)
+            .entry(partition_num)
             .or_default()
             .insert(substate_key, substate_value);
     }
@@ -128,25 +128,25 @@ impl Heap {
     pub fn delete_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
         self.nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&module_num))
+            .and_then(|n| n.substates.get_mut(&partition_num))
             .and_then(|s| s.remove(substate_key))
     }
 
     pub fn scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&module_num));
+            .and_then(|n| n.substates.get_mut(&partition_num));
         if let Some(substates) = node_substates {
             let substates: Vec<IndexedScryptoValue> = substates
                 .iter()
@@ -163,13 +163,13 @@ impl Heap {
     pub fn take_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Vec<IndexedScryptoValue> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
-            .and_then(|n| n.substates.get_mut(&module_num));
+            .and_then(|n| n.substates.get_mut(&partition_num));
         if let Some(substates) = node_substates {
             let keys: Vec<SubstateKey> = substates
                 .iter()
@@ -236,9 +236,9 @@ pub struct DroppedNonFungibleBucket {
 impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
     fn into(self) -> DroppedFungibleBucket {
         let liquid: LiquidFungibleResource =
-            scrypto_decode(&self[FungibleBucketOffset::Liquid as usize]).unwrap();
+            scrypto_decode(&self[FungibleBucketField::Liquid as usize]).unwrap();
         let locked: LockedFungibleResource =
-            scrypto_decode(&self[FungibleBucketOffset::Locked as usize]).unwrap();
+            scrypto_decode(&self[FungibleBucketField::Locked as usize]).unwrap();
 
         DroppedFungibleBucket { liquid, locked }
     }
@@ -247,9 +247,9 @@ impl Into<DroppedFungibleBucket> for Vec<Vec<u8>> {
 impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
     fn into(self) -> DroppedNonFungibleBucket {
         let liquid: LiquidNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketOffset::Liquid as usize]).unwrap();
+            scrypto_decode(&self[NonFungibleBucketField::Liquid as usize]).unwrap();
         let locked: LockedNonFungibleResource =
-            scrypto_decode(&self[NonFungibleBucketOffset::Locked as usize]).unwrap();
+            scrypto_decode(&self[NonFungibleBucketField::Locked as usize]).unwrap();
 
         DroppedNonFungibleBucket { liquid, locked }
     }
@@ -268,9 +268,9 @@ pub struct DroppedNonFungibleProof {
 impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
     fn into(self) -> DroppedFungibleProof {
         let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
         let fungible_proof: FungibleProof =
-            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
 
         DroppedFungibleProof {
             moveable,
@@ -282,9 +282,9 @@ impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
 impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
     fn into(self) -> DroppedNonFungibleProof {
         let moveable: ProofMoveableSubstate =
-            scrypto_decode(&self[FungibleProofOffset::Moveable as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
         let non_fungible_proof: NonFungibleProof =
-            scrypto_decode(&self[FungibleProofOffset::ProofRefs as usize]).unwrap();
+            scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
 
         DroppedNonFungibleProof {
             moveable,

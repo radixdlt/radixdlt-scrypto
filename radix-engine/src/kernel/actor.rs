@@ -1,5 +1,6 @@
 use crate::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
+use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
@@ -21,15 +22,78 @@ pub struct MethodActor {
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
+    Root,
     Method(MethodActor),
     Function { blueprint: Blueprint, ident: String },
     VirtualLazyLoad { blueprint: Blueprint, ident: u8 },
 }
 
 impl Actor {
+    pub fn len(&self) -> usize {
+        match self {
+            Actor::Root => 1,
+            Actor::Method(MethodActor { node_id, ident, .. }) => {
+                node_id.as_ref().len() + ident.len()
+            }
+            Actor::Function { blueprint, ident } => {
+                blueprint.package_address.as_ref().len()
+                    + blueprint.blueprint_name.len()
+                    + ident.len()
+            }
+            Actor::VirtualLazyLoad { blueprint, .. } => {
+                blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1
+            }
+        }
+    }
+
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        match self {
+            Actor::Root => panic!("Should never be called"),
+            Actor::Method(MethodActor {
+                object_info: ObjectInfo { blueprint, .. },
+                ident,
+                ..
+            }) => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::Application(ident.to_string()),
+            },
+            Actor::Function { blueprint, ident } => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::Application(ident.to_string()),
+            },
+            Actor::VirtualLazyLoad { blueprint, ident } => FnIdentifier {
+                blueprint: blueprint.clone(),
+                ident: FnIdent::System(*ident),
+            },
+        }
+    }
+
+    pub fn is_transaction_processor(&self) -> bool {
+        match self {
+            Actor::Root => false,
+            Actor::Method(MethodActor {
+                object_info: ObjectInfo { blueprint, .. },
+                ..
+            })
+            | Actor::Function { blueprint, .. }
+            | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.eq(&Blueprint::new(
+                &TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+            )),
+        }
+    }
+
     pub fn try_as_method(&self) -> Option<&MethodActor> {
         match self {
             Actor::Method(actor) => Some(actor),
+            _ => None,
+        }
+    }
+
+    pub fn as_global_caller(&self) -> Option<GlobalCaller> {
+        match self {
+            Actor::Method(actor) => actor.global_address.map(|address| address.into()),
+            Actor::Function { blueprint, .. } => Some(blueprint.clone().into()),
             _ => None,
         }
     }
@@ -51,6 +115,23 @@ impl Actor {
             })
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
+            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
+        }
+    }
+
+    /// Proofs which exist only on the local call frame
+    /// TODO: Update abstractions such that it is based on local call frame
+    pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+        btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
+            *self.package_address()
+        ))
+    }
+
+    pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+        if let Some(global_caller) = self.as_global_caller() {
+            btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
+        } else {
+            btreeset!()
         }
     }
 
@@ -62,6 +143,7 @@ impl Actor {
             }) => blueprint,
             Actor::Function { blueprint, .. } => blueprint,
             Actor::VirtualLazyLoad { blueprint, .. } => blueprint,
+            Actor::Root => return &PACKAGE_PACKAGE, // TODO: Should we mock this with something better?
         };
 
         &blueprint.package_address
@@ -75,6 +157,7 @@ impl Actor {
             })
             | Actor::Function { blueprint, .. }
             | Actor::VirtualLazyLoad { blueprint, .. } => blueprint.blueprint_name.as_str(),
+            Actor::Root => panic!("Unexpected call"), // TODO: Should we just mock this?
         }
     }
 
@@ -96,11 +179,8 @@ impl Actor {
         })
     }
 
-    pub fn function(ident: FunctionIdentifier) -> Self {
-        Self::Function {
-            blueprint: ident.0,
-            ident: ident.1,
-        }
+    pub fn function(blueprint: Blueprint, ident: String) -> Self {
+        Self::Function { blueprint, ident }
     }
 
     pub fn virtual_lazy_load(blueprint: Blueprint, ident: u8) -> Self {

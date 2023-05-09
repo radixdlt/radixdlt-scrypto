@@ -33,7 +33,7 @@ impl Metadata {
 
 impl MetadataObject for Metadata {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (self.0.as_node_id(), ObjectModuleId::SELF)
+        (self.0.as_node_id(), ObjectModuleId::Main)
     }
 }
 

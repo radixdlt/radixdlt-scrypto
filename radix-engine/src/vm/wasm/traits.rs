@@ -38,10 +38,7 @@ pub trait WasmRuntime {
         object_states: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn preallocate_global_address(
-        &mut self,
-        entity_type: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    fn preallocate_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn globalize_object(
         &mut self,
@@ -93,6 +90,7 @@ pub trait WasmRuntime {
 
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;

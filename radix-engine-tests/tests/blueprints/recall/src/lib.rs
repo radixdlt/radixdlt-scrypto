@@ -30,7 +30,7 @@ mod recall {
                     .call_method_advanced(
                         self.vault.0.as_node_id(),
                         true,
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
                     )
@@ -45,7 +45,7 @@ mod recall {
                     .call_method_advanced(
                         reference.as_node_id(),
                         true,
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
                     )

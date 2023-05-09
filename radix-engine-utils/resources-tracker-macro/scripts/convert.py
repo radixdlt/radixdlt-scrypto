@@ -94,11 +94,11 @@ for path in os.listdir(input_folder):
             key += "::" + param[0]
 
         # handle kernel_lock_substate
-        param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")
+        param = child.xpath("./self::kernel_lock_substate[@partition_number | @arg0 | @arg2]")
         if param:
-            module_id = param[0].attrib["module_id"]
+            partition_number = param[0].attrib["partition_number"]
             node_id = param[0].attrib["arg0"]
-            key += "::" + module_id + "::" + node_id
+            key += "::" + partition_number + "::" + node_id
 
         # correcting parenthesis
         c1 = key.count('(')

@@ -11,7 +11,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -40,12 +40,12 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
 }
 
-pub type SecondaryIndexSubstate = Own;
-
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
+
+pub const EPOCH_MANAGER_SECONDARY_INDEX: CollectionIndex = 0u8;
 
 pub struct EpochManagerBlueprint;
 
@@ -60,7 +60,7 @@ impl EpochManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let address = ComponentAddress::new_or_panic(component_address);
 
@@ -70,11 +70,8 @@ impl EpochManagerBlueprint {
 
             // TODO: remove mint and premint all tokens
             {
-                let non_fungible_local_id =
-                    NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap())
-                        .unwrap();
                 let global_id =
-                    NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+                    NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
                 access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
             }
 
@@ -87,11 +84,6 @@ impl EpochManagerBlueprint {
                 validator_token_address,
                 api,
             )?;
-        };
-
-        let registered_validators = {
-            let sorted_validators = api.new_sorted_index()?;
-            Own(sorted_validators)
         };
 
         let epoch_manager_id = {
@@ -114,36 +106,33 @@ impl EpochManagerBlueprint {
                     scrypto_encode(&config).unwrap(),
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
-                    scrypto_encode(&registered_validators).unwrap(),
                 ],
             )?
         };
 
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
         let this_package_token =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
+            NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
 
         let mut access_rules = AccessRulesConfig::new();
         access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_START_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
             rule!(require(this_package_token.clone())),
             rule!(require(this_package_token.clone())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_SET_EPOCH_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
@@ -163,7 +152,7 @@ impl EpochManagerBlueprint {
 
         api.globalize_with_address(
             btreemap!(
-                ObjectModuleId::SELF => epoch_manager_id,
+                ObjectModuleId::Main => epoch_manager_id,
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -179,7 +168,8 @@ impl EpochManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_lock_field(
-            EpochManagerOffset::EpochManager.into(),
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::EpochManager.into(),
             LockFlags::read_only(),
         )?;
 
@@ -192,12 +182,16 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let config_handle =
-            api.actor_lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
         let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
 
         let mgr_handle = api.actor_lock_field(
-            EpochManagerOffset::EpochManager.into(),
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::EpochManager.into(),
             LockFlags::read_only(),
         )?;
         let mgr: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
@@ -206,7 +200,7 @@ impl EpochManagerBlueprint {
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::SELF, EPOCH_MANAGER_START_IDENT),
+            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             api,
@@ -219,11 +213,17 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let config_handle =
-            api.actor_lock_field(EpochManagerOffset::Config.into(), LockFlags::read_only())?;
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
         let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
-        let mgr_handle =
-            api.actor_lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
+        let mgr_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::EpochManager.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
 
         if round <= epoch_manager.round {
@@ -256,8 +256,11 @@ impl EpochManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(EpochManagerOffset::EpochManager.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::EpochManager.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(handle)?;
         epoch_manager.epoch = epoch;
@@ -278,85 +281,21 @@ impl EpochManagerBlueprint {
         Ok((validator_address, owner_token_bucket))
     }
 
-    pub(crate) fn update_validator<Y>(
-        secondary_index: &NodeId,
-        update: UpdateSecondaryIndex,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        match update {
-            UpdateSecondaryIndex::Create {
-                index_key,
-                primary: address,
-                key,
-                stake,
-            } => {
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    index_key,
-                    (address, Validator { key, stake }),
-                )?;
-            }
-            UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
-                let (address, mut validator) = api
-                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index,
-                        &index_key,
-                    )?
-                    .unwrap();
-                validator.key = key;
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    index_key,
-                    (address, validator),
-                )?;
-            }
-            UpdateSecondaryIndex::UpdateStake {
-                index_key,
-                new_index_key,
-                new_stake_amount,
-            } => {
-                let (address, mut validator) = api
-                    .remove_typed_from_sorted_index::<(ComponentAddress, Validator)>(
-                        secondary_index,
-                        &index_key,
-                    )?
-                    .unwrap();
-                validator.stake = new_stake_amount;
-                api.insert_typed_into_sorted_index(
-                    secondary_index,
-                    new_index_key,
-                    (address, validator),
-                )?;
-            }
-            UpdateSecondaryIndex::Remove { index_key } => {
-                api.remove_from_sorted_index(secondary_index, &index_key)?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn epoch_change<Y>(epoch: u64, max_validators: u32, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
-            EpochManagerOffset::RegisteredValidators.into(),
-            LockFlags::MUTABLE,
+        let validators: Vec<(ComponentAddress, Validator)> = api.actor_sorted_index_scan_typed(
+            OBJECT_HANDLE_SELF,
+            EPOCH_MANAGER_SECONDARY_INDEX,
+            max_validators,
         )?;
-
-        let secondary_index: SecondaryIndexSubstate = api.field_lock_read_typed(handle)?;
-
-        let validators: Vec<(ComponentAddress, Validator)> =
-            api.scap_typed_sorted_index(secondary_index.as_node_id(), max_validators)?;
         let next_validator_set: BTreeMap<ComponentAddress, Validator> =
             validators.into_iter().collect();
 
         let handle = api.actor_lock_field(
-            EpochManagerOffset::CurrentValidatorSet.into(),
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::CurrentValidatorSet.into(),
             LockFlags::MUTABLE,
         )?;
         let mut validator_set: CurrentValidatorSetSubstate = api.field_lock_read_typed(handle)?;

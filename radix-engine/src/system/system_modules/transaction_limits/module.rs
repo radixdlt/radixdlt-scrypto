@@ -1,7 +1,7 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{ExecutionMetrics, TransactionResult};
 use crate::types::*;
@@ -223,7 +223,7 @@ impl TransactionLimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation<SystemInvocation>,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
         let input_size = invocation.len();
@@ -259,7 +259,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
 
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _dropped_actor: &Option<Actor>,
+        _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_system()

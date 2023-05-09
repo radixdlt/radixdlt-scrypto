@@ -106,10 +106,10 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 
 fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
     let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, module_num), partition_updates) in system_updates.into_iter() {
+    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
         for (substate_key, database_update) in partition_updates.into_iter() {
             let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *module_num, substate_key)
+                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
                     .expect("Substate key should be typeable");
             if !typed_substate_key.value_is_mappable() {
                 continue;
@@ -209,8 +209,8 @@ fn test_genesis_resource_with_initial_allocation() {
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
             &resource_address.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &FungibleResourceManagerOffset::TotalSupply.into(),
+            OBJECT_BASE_PARTITION,
+            &FungibleResourceManagerField::TotalSupply.into(),
         )
         .unwrap();
     assert_eq!(total_supply, allocation_amount);
@@ -219,7 +219,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let entry = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
             &resource_address.as_node_id(),
-            METADATA_BASE_MODULE,
+            METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap();

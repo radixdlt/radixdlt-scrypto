@@ -185,13 +185,16 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NodeId {
 /// The unique identifier of a node module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
-pub struct ModuleNumber(pub u8);
+pub struct PartitionNumber(pub u8);
 
-impl ModuleNumber {
-    pub fn at_offset(self, offset: u8) -> Option<Self> {
-        self.0.checked_add(offset).map(|n| Self(n))
+impl PartitionNumber {
+    pub fn at_offset(self, offset: PartitionOffset) -> Option<Self> {
+        self.0.checked_add(offset.0).map(|n| Self(n))
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+pub struct PartitionOffset(pub u8);
 
 /// The unique identifier of a substate within a node module.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]

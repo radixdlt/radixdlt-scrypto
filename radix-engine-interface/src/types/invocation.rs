@@ -52,51 +52,6 @@ impl FnIdent {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
+    pub blueprint: Blueprint,
     pub ident: FnIdent,
-}
-
-impl FnIdentifier {
-    pub fn application_ident(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    ) -> Self {
-        Self {
-            package_address,
-            blueprint_name,
-            ident: FnIdent::Application(ident),
-        }
-    }
-
-    pub fn system_ident(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: u8,
-    ) -> Self {
-        Self {
-            package_address,
-            blueprint_name,
-            ident: FnIdent::System(ident),
-        }
-    }
-
-    pub fn package_address(&self) -> PackageAddress {
-        self.package_address
-    }
-
-    pub fn blueprint_name(&self) -> &String {
-        &self.blueprint_name
-    }
-
-    pub fn size(&self) -> usize {
-        self.blueprint_name.len() + self.ident.len() + self.package_address.as_ref().len()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FunctionInvocation {
-    pub identifier: FunctionIdentifier,
-    pub args: Vec<u8>,
 }

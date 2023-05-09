@@ -4,7 +4,6 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::system_callback::SystemInvocation;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -37,7 +36,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _invocation: &KernelInvocation<SystemInvocation>,
+        _invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -68,7 +67,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn after_pop_frame<Y: KernelApi<M>>(
         _api: &mut Y,
-        _dropped_actor: &Option<Actor>,
+        _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -132,7 +131,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _module_num: &ModuleNumber,
+        _partition_num: &PartitionNumber,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

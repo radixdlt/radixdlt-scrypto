@@ -28,19 +28,19 @@ use scrypto_schema::InstanceSchema;
     EnumIter,
 )]
 pub enum ObjectModuleId {
-    SELF,
+    Main,
     Metadata,
     Royalty,
     AccessRules,
 }
 
 impl ObjectModuleId {
-    pub fn base_module(&self) -> ModuleNumber {
+    pub fn base_partition_num(&self) -> PartitionNumber {
         match self {
-            ObjectModuleId::Metadata => METADATA_BASE_MODULE,
-            ObjectModuleId::Royalty => ROYALTY_BASE_MODULE,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_MODULE,
-            ObjectModuleId::SELF => OBJECT_BASE_MODULE,
+            ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
+            ObjectModuleId::Royalty => ROYALTY_FIELD_PARTITION,
+            ObjectModuleId::AccessRules => ACCESS_RULES_FIELD_PARTITION,
+            ObjectModuleId::Main => OBJECT_BASE_PARTITION,
         }
     }
 
@@ -57,7 +57,7 @@ impl ObjectModuleId {
                 &ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
             )),
-            ObjectModuleId::SELF => None,
+            ObjectModuleId::Main => None,
         }
     }
 }
@@ -70,7 +70,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         fields: Vec<Vec<u8>>,
     ) -> Result<NodeId, E> {
-        self.new_object(blueprint_ident, None, fields, vec![])
+        self.new_object(blueprint_ident, None, fields, btreemap![])
     }
 
     /// Creates a new object of a given blueprint type
@@ -79,7 +79,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object
@@ -89,7 +89,7 @@ pub trait ClientObjectApi<E> {
     fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
 
     /// Pre-allocates a global address, for a future globalization.
-    fn preallocate_global_address(&mut self, entity_type: EntityType) -> Result<GlobalAddress, E>;
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all. A global address is automatically created and returned.
@@ -118,7 +118,7 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, false, ObjectModuleId::SELF, method_name, args)
+        self.call_method_advanced(receiver, false, ObjectModuleId::Main, method_name, args)
     }
 
     fn call_direct_access_method(
@@ -127,7 +127,7 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, true, ObjectModuleId::SELF, method_name, args)
+        self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
     }
 
     // TODO: Add Object Module logic

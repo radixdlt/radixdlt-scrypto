@@ -4,7 +4,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
@@ -218,10 +218,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         Ok(())
     }
 
-    #[trace_resources(log=input_size, log={&*identifier.sys_invocation.blueprint.blueprint_name}, log=identifier.sys_invocation.ident.to_debug_string(), log={format!("{:?}", identifier.sys_invocation.receiver)})]
+    #[trace_resources(log=input_size)]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<SystemInvocation>,
+        identifier: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -364,7 +364,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        dropped_actor: &Option<Actor>,
+        dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -616,31 +616,55 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
-            KernelTraceModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            KernelTraceModule::before_lock_substate(
+                api,
+                node_id,
+                partition_number,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            CostingModule::before_lock_substate(
+                api,
+                node_id,
+                partition_number,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            NodeMoveModule::before_lock_substate(
+                api,
+                node_id,
+                partition_number,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            AuthModule::before_lock_substate(api, node_id, partition_number, substate_key, flags)?;
         }
         if modules.contains(EnabledModules::LOGGER) {
-            LoggerModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            LoggerModule::before_lock_substate(
+                api,
+                node_id,
+                partition_number,
+                substate_key,
+                flags,
+            )?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
             TransactionRuntimeModule::before_lock_substate(
                 api,
                 node_id,
-                module_id,
+                partition_number,
                 substate_key,
                 flags,
             )?;
@@ -649,7 +673,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
             ExecutionTraceModule::before_lock_substate(
                 api,
                 node_id,
-                module_id,
+                partition_number,
                 substate_key,
                 flags,
             )?;
@@ -658,13 +682,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
             TransactionLimitsModule::before_lock_substate(
                 api,
                 node_id,
-                module_id,
+                partition_number,
                 substate_key,
                 flags,
             )?;
         }
         if modules.contains(EnabledModules::EVENTS) {
-            EventsModule::before_lock_substate(api, node_id, module_id, substate_key, flags)?;
+            EventsModule::before_lock_substate(
+                api,
+                node_id,
+                partition_number,
+                substate_key,
+                flags,
+            )?;
         }
         Ok(())
     }

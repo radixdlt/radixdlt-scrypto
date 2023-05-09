@@ -7,7 +7,6 @@ mod multi_threaded_test {
     use radix_engine::vm::wasm::WasmInstrumenter;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
     use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-    use radix_engine_interface::blueprints::resource::*;
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;

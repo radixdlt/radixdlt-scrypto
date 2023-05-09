@@ -52,7 +52,7 @@ impl AccessRules {
 
 impl AccessRulesObject for AccessRules {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (&self.0 .0, ObjectModuleId::SELF)
+        (&self.0 .0, ObjectModuleId::Main)
     }
 }
 

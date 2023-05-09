@@ -55,7 +55,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    method_key: MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -97,7 +97,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    method_key: MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
+                    method_key: MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -149,7 +149,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     rule: AccessRuleEntry::AccessRule(access_rule),
@@ -185,7 +185,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::SELF, RESOURCE_MANAGER_BURN_IDENT),
+                    method_key: MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
@@ -220,7 +220,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
                     method_key: MethodKey::new(
-                        ObjectModuleId::SELF,
+                        ObjectModuleId::Main,
                         NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
                     ),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -253,7 +253,7 @@ impl ResourceManager {
             ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                method_key: MethodKey::new(ObjectModuleId::SELF, VAULT_PUT_IDENT),
+                method_key: MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
                 mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
             })
             .unwrap(),

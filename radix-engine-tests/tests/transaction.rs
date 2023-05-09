@@ -4,8 +4,6 @@ use radix_engine::errors::KernelError;
 use radix_engine::errors::RejectionError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

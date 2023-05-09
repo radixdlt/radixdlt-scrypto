@@ -26,12 +26,12 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof, ..) => btreemap!(
-                FungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
-                FungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
+                FungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                FungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
             ComposedProof::NonFungible(info, proof, ..) => btreemap!(
-                NonFungibleProofOffset::Moveable.into() => IndexedScryptoValue::from_typed(&info),
-                NonFungibleProofOffset::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
+                NonFungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&info),
+                NonFungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
             ),
         }
     }
@@ -152,8 +152,8 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &FungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &FungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
@@ -203,8 +203,8 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleProofOffset::ProofRefs.into(),
+                    OBJECT_BASE_PARTITION,
+                    &NonFungibleProofField::ProofRefs.into(),
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
@@ -248,8 +248,8 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &FungibleProofOffset::ProofRefs.into(),
+            OBJECT_BASE_PARTITION,
+            &FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
@@ -337,8 +337,8 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     'outer: for proof in proofs {
         let handle = api.kernel_lock_substate(
             proof.0.as_node_id(),
-            OBJECT_BASE_MODULE,
-            &NonFungibleProofOffset::ProofRefs.into(),
+            OBJECT_BASE_PARTITION,
+            &NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;

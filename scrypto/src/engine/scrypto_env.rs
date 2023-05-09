@@ -11,7 +11,7 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{Blueprint, EntityType, GlobalAddress};
+use radix_engine_interface::types::{Blueprint, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
@@ -50,20 +50,13 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _blueprint_ident: &str,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
     ) -> Result<NodeId, ClientApiError> {
         todo!()
     }
 
-    fn preallocate_global_address(
-        &mut self,
-        entity_type: EntityType,
-    ) -> Result<GlobalAddress, ClientApiError> {
-        let entity_type = scrypto_encode(&entity_type).unwrap();
-
-        let bytes = copy_buffer(unsafe {
-            preallocate_global_address(entity_type.as_ptr(), entity_type.len())
-        });
+    fn preallocate_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        let bytes = copy_buffer(unsafe { preallocate_global_address() });
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
@@ -283,33 +276,13 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
     fn actor_lock_field(
         &mut self,
+        object_handle: u32,
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { actor_lock_field(u32::from(field), flags.bits()) };
+        let handle = unsafe { actor_lock_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
-    }
-
-    fn actor_lock_outer_object_field(
-        &mut self,
-        _field: u8,
-        _flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
-
-    fn actor_lock_key_value_handle_entry(
-        &mut self,
-        _kv_handle: u8,
-        _key: &[u8],
-        _flags: LockFlags,
-    ) -> Result<LockHandle, ClientApiError> {
-        todo!()
-    }
-
-    fn actor_remove_key_value_entry(&mut self, _key: &Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
     }
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {

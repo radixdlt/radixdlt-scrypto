@@ -3,6 +3,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::{RuntimeError, SystemUpstreamError};
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -84,13 +85,6 @@ fn validate_output<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     Ok(())
 }
 
-#[derive(Debug)]
-pub struct SystemInvocation {
-    pub blueprint: Blueprint,
-    pub ident: FnIdent,
-    pub receiver: Option<MethodIdentifier>,
-}
-
 #[derive(Clone)]
 pub enum SystemLockData {
     KeyValueEntry(KeyValueEntryLockData),
@@ -138,7 +132,6 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
-    type Invocation = SystemInvocation;
     type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -171,7 +164,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_create_node<Y>(
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -182,7 +175,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -190,7 +183,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_lock_substate(api, node_id, module_id, substate_key, flags)
+        SystemModuleMixer::before_lock_substate(api, node_id, partition_num, substate_key, flags)
     }
 
     fn after_lock_substate<Y>(
@@ -241,10 +234,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_create_node(api, node_id)
     }
 
-    fn before_invoke<Y>(
-        identifier: &KernelInvocation<SystemInvocation>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(identifier: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -278,18 +268,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn invoke_upstream<Y>(
-        invocation: SystemInvocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: KernelApi<SystemConfig<C>>,
     {
-        let output = if invocation.blueprint.package_address.eq(&PACKAGE_PACKAGE) {
+        let mut system = SystemService::new(api);
+        let receiver = system.actor_get_receiver_node_id();
+        let FnIdentifier { blueprint, ident } = system.actor_get_fn_identifier()?;
+
+        let output = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: Clean this up
             // Do we need to check against the abi? Probably not since we should be able to verify this
             // in the native package itself.
-            let export_name = match invocation.ident {
+            let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
@@ -300,31 +293,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // TODO: Load dependent resources/components
 
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &invocation.blueprint.package_address,
-                    &[PACKAGE_CODE_ID],
-                )?
-            };
-            let output = {
-                let mut system = SystemService::new(api);
-                vm_instance.invoke(
-                    invocation.receiver.as_ref().map(|x| &x.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let mut vm_instance =
+                { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
+            let output =
+                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
 
             output
-        } else if invocation
-            .blueprint
-            .package_address
-            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-        {
+        } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
             // TODO: the above special rule can be removed if we move schema validation
             // into a kernel model, and turn it off for genesis.
-            let export_name = match invocation.ident {
+
+            let export_name = match ident {
                 FnIdent::Application(ident) => ident,
                 FnIdent::System(..) => {
                     return Err(RuntimeError::SystemUpstreamError(
@@ -337,68 +316,33 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance = {
                 NativeVm::create_instance(
-                    &invocation.blueprint.package_address,
+                    &blueprint.package_address,
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output = {
-                let mut system = SystemService::new(api);
-                vm_instance.invoke(
-                    invocation.receiver.as_ref().map(|x| &x.0),
-                    &export_name,
-                    args,
-                    &mut system,
-                )?
-            };
+            let output =
+                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
 
             output
         } else {
+            let schema = system.get_blueprint_schema(&blueprint)?;
+
             // Make dependent resources/components visible
 
-            let handle = api.kernel_lock_substate(
-                invocation.blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Info.into(),
+            let handle = system.kernel_lock_substate(
+                blueprint.package_address.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Info.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
-            api.kernel_drop_lock(handle)?;
-
-            // Load schema
-            let schema = {
-                let handle = api.kernel_lock_substate(
-                    invocation.blueprint.package_address.as_node_id(),
-                    OBJECT_BASE_MODULE,
-                    &PackageOffset::Info.into(),
-                    LockFlags::read_only(),
-                    SystemLockData::default(),
-                )?;
-                let package_info = api.kernel_read_substate(handle)?;
-                let package_info: PackageInfoSubstate = package_info.as_typed().unwrap();
-                let schema = package_info
-                    .schema
-                    .blueprints
-                    .get(&invocation.blueprint.blueprint_name)
-                    .ok_or(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::BlueprintNotFound(invocation.blueprint.clone()),
-                    ))?
-                    .clone();
-                api.kernel_drop_lock(handle)?;
-                Box::new(schema)
-            };
-
-            let mut system = SystemService::new(api);
+            system.kernel_drop_lock(handle)?;
 
             //  Validate input
-            let export_name = match &invocation.ident {
+            let export_name = match &ident {
                 FnIdent::Application(ident) => {
-                    let export_name = validate_input(
-                        &mut system,
-                        &schema,
-                        &ident,
-                        invocation.receiver.is_some(),
-                        &args,
-                    )?;
+                    let export_name =
+                        validate_input(&mut system, &schema, &ident, receiver.is_some(), &args)?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
@@ -416,8 +360,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Execute
             let output = {
                 C::invoke(
-                    &invocation.blueprint.package_address,
-                    invocation.receiver.as_ref().map(|x| &x.0),
+                    &blueprint.package_address,
+                    receiver.as_ref(),
                     &export_name,
                     args,
                     &mut system,
@@ -425,7 +369,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             };
 
             // Validate output
-            match invocation.ident {
+            match ident {
                 FnIdent::Application(ident) => {
                     validate_output(&mut system, &schema, &ident, &output)?
                 }
@@ -487,9 +431,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         }
                     }
                 }
-                TypeInfoSubstate::KeyValueStore(_)
-                | TypeInfoSubstate::Index
-                | TypeInfoSubstate::SortedIndex => {}
+                TypeInfoSubstate::KeyValueStore(_) => {}
             }
         }
 
@@ -507,8 +449,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         {
             let handle = api.kernel_lock_substate(
                 &auth_zone_id,
-                OBJECT_BASE_MODULE,
-                &AuthZoneOffset::AuthZone.into(),
+                OBJECT_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
                 LockFlags::MUTABLE,
                 SystemLockData::Default,
             )?;
@@ -540,7 +482,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Option<Actor>) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -549,14 +491,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_id: ModuleNumber,
+        partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        VirtualizationModule::on_substate_lock_fault(node_id, module_id, offset, api)
+        VirtualizationModule::on_substate_lock_fault(node_id, partition_num, offset, api)
     }
 
     fn on_allocate_node_id<Y>(

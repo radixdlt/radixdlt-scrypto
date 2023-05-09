@@ -8,7 +8,6 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::TimePrecision;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto_unit::TestRunner;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
@@ -59,9 +58,9 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     let receipt = test_runner.quick_confirm_recovery(
         Role::Primary,
         Role::Recovery,
-        rule!(require(PACKAGE_VIRTUAL_BADGE)),
-        rule!(require(PACKAGE_VIRTUAL_BADGE)),
-        rule!(require(PACKAGE_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
         Some(10),
     );
 
