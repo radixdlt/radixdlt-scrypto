@@ -49,8 +49,8 @@ pub const EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochRegisteredValidatorByStakeEntry {
-    component_address: ComponentAddress,
-    validator: Validator,
+    pub component_address: ComponentAddress,
+    pub validator: Validator,
 }
 
 pub struct EpochManagerBlueprint;
