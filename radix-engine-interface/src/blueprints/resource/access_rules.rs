@@ -9,6 +9,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use crate::blueprints::resource::AccessRule::DenyAll;
 
 use super::AccessRule;
 
@@ -228,15 +229,14 @@ impl AccessRulesConfig {
         self.method_auth_mutability.insert(key, mutability.into());
     }
 
-    pub fn set_group_and_mutability<M: Into<AccessRuleEntry>>(
+    pub fn set_group<M: Into<AccessRuleEntry>>(
         &mut self,
         key: MethodKey,
         group: &str,
-        mutability: M,
     ) {
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::Group(group.to_string()));
-        self.method_auth_mutability.insert(key, mutability.into());
+        self.method_auth_mutability.insert(key, DenyAll);
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {

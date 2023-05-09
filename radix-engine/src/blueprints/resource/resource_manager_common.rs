@@ -48,34 +48,30 @@ fn build_access_rules(
             mint_access_rule,
             mint_mutability,
         );
-        resman_access_rules.set_group_and_mutability(
+        resman_access_rules.set_group(
             MethodKey::new(
                 ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             ),
             "mint",
-            DenyAll,
         );
-        resman_access_rules.set_group_and_mutability(
+        resman_access_rules.set_group(
             MethodKey::new(
                 ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
             ),
             "mint",
-            DenyAll,
         );
-        resman_access_rules.set_group_and_mutability(
+        resman_access_rules.set_group(
             MethodKey::new(
                 ObjectModuleId::Main,
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
             ),
             "mint",
-            DenyAll,
         );
-        resman_access_rules.set_group_and_mutability(
+        resman_access_rules.set_group(
             MethodKey::new(ObjectModuleId::Main, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
             "mint",
-            DenyAll,
         );
     }
 
@@ -85,10 +81,9 @@ fn build_access_rules(
             burn_access_rule,
             burn_mutability,
         );
-        resman_access_rules.set_group_and_mutability(
+        resman_access_rules.set_group(
             MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
             "burn",
-            DenyAll,
         );
     }
 
@@ -178,23 +173,20 @@ fn build_access_rules(
         withdraw_access_rule,
         withdraw_mutability,
     );
-    vault_access_rules.set_group_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, VAULT_TAKE_IDENT),
         "withdraw",
-        DenyAll,
     );
-    vault_access_rules.set_group_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(
             ObjectModuleId::Main,
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
         ),
         "withdraw",
-        DenyAll,
     );
-    vault_access_rules.set_group_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, FUNGIBLE_VAULT_LOCK_FEE_IDENT),
         "withdraw",
-        DenyAll,
     );
 
     vault_access_rules.set_group_access_rule_and_mutability(
@@ -219,10 +211,9 @@ fn build_access_rules(
         deposit_access_rule,
         deposit_mutability,
     );
-    vault_access_rules.set_group_and_mutability(
+    vault_access_rules.set_group(
         MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
         "deposit",
-        DenyAll,
     );
 
     vault_access_rules.set_method_access_rule_and_mutability(

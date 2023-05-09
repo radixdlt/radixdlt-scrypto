@@ -10,7 +10,8 @@ fn create_secured_component(
     auth: NonFungibleGlobalId,
     package_address: PackageAddress,
 ) -> ComponentAddress {
-    let authorization = AccessRulesConfig::new().method(
+    let authorization = AccessRulesConfig::new()
+        .method(
         "get_component_state",
         rule!(require(auth)),
         rule!(deny_all),

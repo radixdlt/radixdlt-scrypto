@@ -182,16 +182,14 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let mut access_rules = AccessRulesConfig::new()
         .default(rule!(allow_all), rule!(deny_all));
     access_rules
-        .set_group_and_mutability(
+        .set_group(
             MethodKey::new(ObjectModuleId::Main, "deposit_funds"),
             "owner",
-            DenyAll,
         );
     access_rules
-        .set_group_and_mutability(
+        .set_group(
             MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
             "owner",
-            DenyAll,
         );
     access_rules.set_group_access_rule_and_mutability(
         "owner",
