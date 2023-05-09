@@ -16,7 +16,7 @@ pub trait SecurifiedAccessRules {
 
     fn securified_groups() -> Vec<&'static str>;
 
-    fn other_groups() -> Vec<(&'static str, AccessRuleEntry, AccessRule)> {
+    fn other_groups() -> Vec<(&'static str, GroupEntry, AccessRule)> {
         vec![]
     }
 

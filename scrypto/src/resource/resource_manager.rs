@@ -37,7 +37,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     name: "mint".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -53,7 +53,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     name: "burn".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -77,7 +77,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
                     name: "withdraw".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -93,7 +93,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
                     name: "deposit".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -109,7 +109,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
                     name: "recall".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -125,7 +125,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     name: "update_metadata".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )
@@ -141,7 +141,7 @@ impl ResourceManager {
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
                     name: "update_non_fungible_data".to_string(),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    rule: GroupEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
             )

@@ -73,27 +73,27 @@ impl MethodEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AccessRuleEntry {
+pub enum GroupEntry {
     AccessRule(AccessRule),
     Group(String),
     Groups(Vec<String>),
 }
 
-impl AccessRuleEntry {
+impl GroupEntry {
     pub fn group(name: &str) -> Self {
         Self::Group(name.to_string())
     }
 }
 
-impl From<AccessRule> for AccessRuleEntry {
+impl From<AccessRule> for GroupEntry {
     fn from(value: AccessRule) -> Self {
-        AccessRuleEntry::AccessRule(value)
+        GroupEntry::AccessRule(value)
     }
 }
 
-impl From<String> for AccessRuleEntry {
+impl From<String> for GroupEntry {
     fn from(value: String) -> Self {
-        AccessRuleEntry::Group(value)
+        GroupEntry::Group(value)
     }
 }
 
@@ -103,7 +103,7 @@ pub struct AccessRulesConfig {
     direct_method_auth: BTreeMap<MethodKey, MethodEntry>,
     method_auth: BTreeMap<MethodKey, MethodEntry>,
 
-    grouped_auth: BTreeMap<String, AccessRuleEntry>,
+    grouped_auth: BTreeMap<String, GroupEntry>,
     grouped_auth_mutability: BTreeMap<String, AccessRule>,
 }
 
@@ -133,7 +133,7 @@ impl AccessRulesConfig {
         let mut group_rules = Vec::new();
 
         for group in &method_entry.groups {
-            let rule = self.resolve_entry(&AccessRuleEntry::Group(group.to_string()));
+            let rule = self.resolve_entry(&GroupEntry::Group(group.to_string()));
             match rule {
                 AccessRule::DenyAll => {
                     group_rules.push(AccessRuleNode::AnyOf(vec![]));
@@ -150,21 +150,21 @@ impl AccessRulesConfig {
         AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
     }
 
-    fn resolve_entry(&self, entry: &AccessRuleEntry) -> AccessRule {
+    fn resolve_entry(&self, entry: &GroupEntry) -> AccessRule {
         match entry {
-            AccessRuleEntry::AccessRule(access_rule) => access_rule.clone(),
-            AccessRuleEntry::Group(name) => match self.grouped_auth.get(name) {
+            GroupEntry::AccessRule(access_rule) => access_rule.clone(),
+            GroupEntry::Group(name) => match self.grouped_auth.get(name) {
                 Some(entry) => {
                     // TODO: Make sure we don't have circular entries!
                     self.resolve_entry(entry)
                 },
                 None => AccessRule::DenyAll,
             },
-            AccessRuleEntry::Groups(groups) => {
+            GroupEntry::Groups(groups) => {
                 let mut group_rules = Vec::new();
 
                 for group in groups {
-                    let rule = self.resolve_entry(&AccessRuleEntry::Group(group.to_string()));
+                    let rule = self.resolve_entry(&GroupEntry::Group(group.to_string()));
                     match rule {
                         AccessRule::DenyAll => {
                             group_rules.push(AccessRuleNode::AnyOf(vec![]));
@@ -190,7 +190,7 @@ impl AccessRulesConfig {
             .unwrap_or_else(|| AccessRule::DenyAll)
     }
 
-    pub fn set_group_access_rule<E: Into<AccessRuleEntry>>(&mut self, group_key: String, access_rule_entry: E) {
+    pub fn set_group_access_rule<E: Into<GroupEntry>>(&mut self, group_key: String, access_rule_entry: E) {
         self.grouped_auth.insert(group_key, access_rule_entry.into());
     }
 
@@ -198,7 +198,7 @@ impl AccessRulesConfig {
         self.grouped_auth_mutability.insert(key, method_auth);
     }
 
-    pub fn set_group_access_rule_and_mutability<E: Into<AccessRuleEntry>>(
+    pub fn set_group_access_rule_and_mutability<E: Into<GroupEntry>>(
         &mut self,
         group_key: &str,
         access_rule: E,
