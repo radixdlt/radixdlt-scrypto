@@ -94,10 +94,10 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_of_amount_from_account(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_of_amount_from_account(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_of_amount_from_account(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_of_amount_from_account(account, RADIX_TOKEN, dec!("1"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -154,7 +154,7 @@ fn test_entire_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_of_amount_from_account(account, RADIX_TOKEN, dec!("1"))
         .call_function(
             package_address,
             "Receiver",

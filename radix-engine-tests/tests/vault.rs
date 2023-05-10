@@ -600,7 +600,7 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account_by_amount(account, resource_address, dec!("5.55555"))
+        .create_proof_of_amount_from_account(account, resource_address, dec!("5.55555"))
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
