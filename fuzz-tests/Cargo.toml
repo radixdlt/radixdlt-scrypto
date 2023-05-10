@@ -65,7 +65,6 @@ flamegraph = []
 
 simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
 dump_manifest_to_file = []
-smart_mutate = []
 # If disabled then try to fuzz smartly:
 # - build transaction manifest by randomly picking instructions
 # - map fuzz data into Radix Engine data structures

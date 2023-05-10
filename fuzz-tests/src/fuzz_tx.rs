@@ -136,98 +136,6 @@ impl TxFuzzer {
         self.runner.restore_snapshot(self.snapshot.clone());
     }
 
-    // pick account from the preallocated pool basing on the input data
-    #[cfg(feature = "smart_mutate")]
-    fn get_account(&mut self, data: &[u8]) -> Option<ComponentAddress> {
-        let len = data.len();
-        if len >= 2 && data[len - 2] % 2 == 0 {
-            let idx = *data.last().unwrap() as usize % self.accounts.len();
-            return Some(self.accounts[idx].address);
-        }
-        None
-    }
-
-    // pick resource from the preallocated pool basing on the input data
-    #[cfg(feature = "smart_mutate")]
-    fn get_resource(&mut self, data: &[u8]) -> Option<ResourceAddress> {
-        let len = data.len();
-        if len >= 3 && data[len - 3] % 2 == 0 {
-            let account_idx = *data.last().unwrap() as usize % self.accounts.len();
-            let resource_idx = data[len - 2] as usize % self.accounts[account_idx].resources.len();
-            Some(self.accounts[account_idx].resources[resource_idx])
-        } else {
-            None
-        }
-    }
-
-    // Smartly replace some data in the manifest using some preallocated resources.
-    // This is to let fuzzing go "deeper" into the manifest instructions and not to reject the
-    // transaction on the very early stage
-    #[cfg(feature = "smart_mutate")]
-    fn smart_mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
-        for i in &mut manifest.instructions {
-            match i {
-                Instruction::CallMethod {
-                    component_address, ..
-                }
-                | Instruction::SetComponentRoyaltyConfig {
-                    component_address, ..
-                }
-                | Instruction::ClaimComponentRoyalty { component_address } => {
-                    if let Some(address) = self.get_account(component_address.as_ref()) {
-                        *component_address = address;
-                    }
-                }
-                Instruction::TakeFromWorktop { resource_address }
-                | Instruction::TakeFromWorktopByAmount {
-                    resource_address, ..
-                }
-                | Instruction::TakeFromWorktopByIds {
-                    resource_address, ..
-                }
-                | Instruction::AssertWorktopContains { resource_address }
-                | Instruction::AssertWorktopContainsByAmount {
-                    resource_address, ..
-                }
-                | Instruction::AssertWorktopContainsByIds {
-                    resource_address, ..
-                }
-                | Instruction::CreateProofFromAuthZone { resource_address }
-                | Instruction::CreateProofFromAuthZoneByAmount {
-                    resource_address, ..
-                }
-                | Instruction::CreateProofFromAuthZoneByIds {
-                    resource_address, ..
-                }
-                | Instruction::MintFungible {
-                    resource_address, ..
-                }
-                | Instruction::MintNonFungible {
-                    resource_address, ..
-                }
-                | Instruction::MintUuidNonFungible {
-                    resource_address, ..
-                } => {
-                    if let Some(address) = self.get_resource(resource_address.as_ref()) {
-                        *resource_address = address;
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
-    #[allow(unused)]
-    fn get_random_account(
-        &mut self,
-        unstructured: &mut Unstructured,
-    ) -> Result<(Account, ResourceAddress), arbitrary::Error> {
-        let account = unstructured.choose(&self.accounts[..])?;
-        let resource_address = unstructured.choose(&account.resources[..])?;
-
-        Ok((account.clone(), resource_address.clone()))
-    }
-
     #[allow(unused)]
     fn get_non_fungible_local_id(
         &mut self,
@@ -736,9 +644,6 @@ impl TxFuzzer {
         match result {
             #[allow(unused_mut)]
             Ok(mut manifest) => {
-                #[cfg(feature = "smart_mutate")]
-                self.smart_mutate_manifest(&mut manifest);
-
                 let receipt = self.runner.execute_manifest(
                     manifest,
                     vec![NonFungibleGlobalId::from_public_key(
