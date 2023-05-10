@@ -156,7 +156,7 @@ pub fn create_proof_from_account<'a>(
             builder.create_proof_from_account_by_amount(account, resource_address, amount)
         }
         ResourceSpecifier::Ids(non_fungible_local_ids, resource_address) => builder
-            .create_proof_from_account_by_ids(account, resource_address, &non_fungible_local_ids),
+            .create_proof_of_non_fungibles_from_account(account, resource_address, &non_fungible_local_ids),
     };
     Ok(builder)
 }
@@ -389,7 +389,7 @@ fn build_call_argument<'a>(
                 }
                 ResourceSpecifier::Ids(ids, resource_address) => {
                     if let Some(account) = account {
-                        builder.create_proof_from_account_by_ids(account, resource_address, &ids);
+                        builder.create_proof_of_non_fungibles_from_account(account, resource_address, &ids);
                         builder
                             .add_instruction(Instruction::PopFromAuthZone)
                             .2

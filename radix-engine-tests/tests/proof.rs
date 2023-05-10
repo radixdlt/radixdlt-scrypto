@@ -563,7 +563,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .create_proof_from_account_by_ids(
+        .create_proof_of_non_fungibles_from_account(
             account,
             resource_address,
             &BTreeSet::from([
@@ -571,7 +571,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 NonFungibleLocalId::integer(2),
             ]),
         )
-        .create_proof_from_account_by_ids(
+        .create_proof_of_non_fungibles_from_account(
             account,
             resource_address,
             &BTreeSet::from([NonFungibleLocalId::integer(3)]),

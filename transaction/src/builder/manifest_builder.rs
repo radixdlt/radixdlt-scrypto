@@ -941,7 +941,7 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_from_account_by_ids(
+    pub fn create_proof_of_non_fungibles_from_account(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,

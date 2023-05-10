@@ -33,7 +33,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
@@ -57,7 +57,7 @@ fn set_up_package_and_component() -> (
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
@@ -102,7 +102,7 @@ fn test_only_package_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
@@ -150,7 +150,7 @@ fn test_only_package_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
@@ -196,7 +196,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
@@ -232,7 +232,7 @@ fn test_only_component_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .create_proof_from_account_by_ids(
+            .create_proof_of_non_fungibles_from_account(
                 account,
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
