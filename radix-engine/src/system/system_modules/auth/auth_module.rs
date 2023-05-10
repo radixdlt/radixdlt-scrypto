@@ -248,7 +248,7 @@ impl AuthModule {
                 auth_zone_id,
                 acting_location,
                 access_rules,
-                &AuthorityEntry::Authority(authority.to_string()),
+                &AuthorityEntry::authority(authority),
                 api,
             )?;
             match result {
@@ -291,19 +291,6 @@ impl AuthModule {
                 } else {
                     Ok(AuthorizationCheckResult::Failed(access_rule.clone()))
                 }
-            },
-            AuthorityEntry::Authority(authority) => match access_rules.authorities.get(authority) {
-                Some(entry) => {
-                    // TODO: Make sure we don't have circular entries!
-                    Self::check_authorization_against_authority(
-                        auth_zone_id,
-                        acting_location,
-                        access_rules,
-                        entry,
-                        api
-                    )
-                }
-                None => Ok(AuthorizationCheckResult::Failed(DenyAll)) // TODO: Maybe a better error result here
             },
         }
     }

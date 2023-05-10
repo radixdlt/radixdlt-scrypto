@@ -189,7 +189,7 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
         vec![(
             "update_metadata",
-            AuthorityEntry::Authority("owner".to_string()),
+            AuthorityEntry::authority("owner"),
             AuthorityEntry::AccessRule(DenyAll),
         )]
     }

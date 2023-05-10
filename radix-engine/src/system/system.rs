@@ -1639,11 +1639,14 @@ where
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
 
+        // TODO: Use real access rules of this method/function
+        let config = AccessRulesConfig::new();
+
         // Authenticate
         if !Authentication::verify_method_auth(
             ActingLocation::InCallFrame,
             auth_zone_id,
-            &AccessRulesConfig::new(),
+            &config,
             &rule,
             self,
         )? {

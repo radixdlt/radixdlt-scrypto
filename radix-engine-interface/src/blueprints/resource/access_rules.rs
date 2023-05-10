@@ -73,12 +73,11 @@ impl MethodEntry {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityEntry {
     AccessRule(AccessRule),
-    Authority(String),
 }
 
 impl AuthorityEntry {
     pub fn authority(name: &str) -> Self {
-        Self::Authority(name.to_string())
+        Self::AccessRule(AccessRule::Protected(AccessRuleNode::Authority(name.to_string())))
     }
 }
 
@@ -90,7 +89,7 @@ impl From<AccessRule> for AuthorityEntry {
 
 impl From<String> for AuthorityEntry {
     fn from(value: String) -> Self {
-        AuthorityEntry::Authority(value)
+        AuthorityEntry::authority(value.as_str())
     }
 }
 
@@ -117,13 +116,6 @@ impl AccessRulesConfig {
     fn resolve_entry(&self, entry: &AuthorityEntry) -> AccessRule {
         match entry {
             AuthorityEntry::AccessRule(access_rule) => access_rule.clone(),
-            AuthorityEntry::Authority(name) => match self.authorities.get(name) {
-                Some(entry) => {
-                    // TODO: Make sure we don't have circular entries!
-                    self.resolve_entry(entry)
-                }
-                None => AccessRule::DenyAll,
-            },
         }
     }
 
