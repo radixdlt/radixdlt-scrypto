@@ -174,7 +174,7 @@ impl AuthZoneBlueprint {
         Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
     }
 
-    pub(crate) fn create_proof_by_ids<Y>(
+    pub(crate) fn create_proof_of_non_fungibles<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>

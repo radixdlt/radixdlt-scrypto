@@ -52,7 +52,7 @@ mod vault_proof {
         ) {
             let proof = self
                 .vault
-                .create_proof_by_ids(&proof_non_fungible_local_ids);
+                .create_proof_of_non_fungibles(&proof_non_fungible_local_ids);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
@@ -119,7 +119,7 @@ mod vault_proof {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = LocalAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
+                    let proof = LocalAuthZone::create_proof_of_non_fungibles(&ids, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.non_fungible_local_ids(), ids);
                     proof.drop();

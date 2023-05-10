@@ -58,9 +58,9 @@ pub struct AuthZoneCreateProofByAmountInput {
 
 pub type AuthZoneCreateProofByAmountOutput = Proof;
 
-pub const AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
-pub const AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME: &str = "AuthZone_create_proof_by_ids";
+pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str = "AuthZone_create_proof_of_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofByIdsInput {

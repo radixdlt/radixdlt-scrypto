@@ -174,7 +174,7 @@ impl NonFungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn create_proof_by_ids<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

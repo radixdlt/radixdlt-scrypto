@@ -189,13 +189,13 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator.add_child_type_and_descendents::<AccountCreateProofByIdsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofByIdsOutput>(),
-                export_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
 
@@ -445,14 +445,14 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_PROOF_BY_IDS_IDENT => {
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn =
-                    AccountBlueprint::create_proof_by_ids(input.resource_address, input.ids, api)?;
+                    AccountBlueprint::create_proof_of_non_fungibles(input.resource_address, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(

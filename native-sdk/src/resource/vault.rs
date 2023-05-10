@@ -139,7 +139,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

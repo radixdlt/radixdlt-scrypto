@@ -486,7 +486,7 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn create_proof_by_ids<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -496,7 +496,7 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_by_ids(ids, api),
+            |vault, api| vault.sys_create_proof_of_non_fungibles(ids, api),
             api,
         )?;
 

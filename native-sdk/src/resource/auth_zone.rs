@@ -109,7 +109,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -120,7 +120,7 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
             scrypto_encode(&AuthZoneCreateProofByIdsInput {
                 resource_address,
                 ids: ids.clone(),

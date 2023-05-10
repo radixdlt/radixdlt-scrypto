@@ -1305,13 +1305,13 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME.to_string(),
+                export_name: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
@@ -1928,7 +1928,7 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(receiver, input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
@@ -2224,10 +2224,10 @@ impl ResourceManagerNativePackage {
 
                 AuthZoneBlueprint::create_proof_of_amount(input, api)
             }
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof_by_ids(input, api)
+                AuthZoneBlueprint::create_proof_of_non_fungibles(input, api)
             }
             AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;

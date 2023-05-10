@@ -201,7 +201,7 @@ pub type AccountCreateProofByAmountOutput = Proof;
 // Account Create Proof By Ids
 //=============================
 
-pub const ACCOUNT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+pub const ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateProofByIdsInput {
