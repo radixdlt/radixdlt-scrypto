@@ -74,7 +74,7 @@ pub enum Instruction {
     },
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
-    CreateProofFromAuthZoneByIds {
+    CreateProofOfNonFungiblesFromAuthZone {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },

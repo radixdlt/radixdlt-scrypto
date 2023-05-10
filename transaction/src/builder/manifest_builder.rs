@@ -74,7 +74,7 @@ impl ManifestBuilder {
             Instruction::PopFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZone { .. }
             | Instruction::CreateProofOfAmountFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. }
+            | Instruction::CreateProofOfNonFungiblesFromAuthZone { .. }
             | Instruction::CreateProofFromBucket { .. }
             | Instruction::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
@@ -232,7 +232,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByIds {
+            self.add_instruction(Instruction::CreateProofOfNonFungiblesFromAuthZone {
                 ids: ids.clone(),
                 resource_address,
             });

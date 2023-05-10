@@ -267,7 +267,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneByIds {
+        Instruction::CreateProofOfNonFungiblesFromAuthZone {
             ids,
             resource_address,
         } => {

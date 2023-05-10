@@ -120,7 +120,7 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
-            TokenKind::CreateProofFromAuthZoneByIds => Instruction::CreateProofFromAuthZoneByIds {
+            TokenKind::CreateProofOfNonFungiblesFromAuthZone => Instruction::CreateProofOfNonFungiblesFromAuthZone {
                 ids: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,

@@ -313,7 +313,7 @@ pub fn generate_instruction(
                 resource_address,
             }
         }
-        ast::Instruction::CreateProofFromAuthZoneByIds {
+        ast::Instruction::CreateProofOfNonFungiblesFromAuthZone {
             ids,
             resource_address,
             new_proof,
@@ -325,7 +325,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByIds {
+            Instruction::CreateProofOfNonFungiblesFromAuthZone {
                 ids,
                 resource_address,
             }

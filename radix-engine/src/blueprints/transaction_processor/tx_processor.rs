@@ -173,7 +173,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByIds {
+                Instruction::CreateProofOfNonFungiblesFromAuthZone {
                     ids,
                     resource_address,
                 } => {

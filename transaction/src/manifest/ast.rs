@@ -58,7 +58,7 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByIds {
+    CreateProofOfNonFungiblesFromAuthZone {
         ids: Value,
         resource_address: Value,
         new_proof: Value,
