@@ -23,9 +23,9 @@ pub trait SecurifiedAccessRules {
     }
 
     fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
-        for (group, access_rule, mutability) in Self::authorities() {
+        for (authority, access_rule, mutability) in Self::authorities() {
             access_rules_config.set_authority_access_rule_and_mutability(
-                group,
+                authority,
                 access_rule,
                 mutability,
             );

@@ -77,7 +77,7 @@ pub enum AuthorityEntry {
 }
 
 impl AuthorityEntry {
-    pub fn group(name: &str) -> Self {
+    pub fn authority(name: &str) -> Self {
         Self::Authority(name.to_string())
     }
 }

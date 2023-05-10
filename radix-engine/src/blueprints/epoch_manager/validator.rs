@@ -506,14 +506,14 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         vec![
             (
                 "stake",
-                AuthorityEntry::group("owner"),
+                AuthorityEntry::authority("owner"),
                 AuthorityEntry::AccessRule(rule!(require(package_of_direct_caller(
                     EPOCH_MANAGER_PACKAGE
                 )))),
             ),
             (
                 "update_metadata",
-                AuthorityEntry::group("owner"),
+                AuthorityEntry::authority("owner"),
                 AuthorityEntry::AccessRule(DenyAll),
             ),
         ]

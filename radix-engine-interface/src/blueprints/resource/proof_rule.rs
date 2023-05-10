@@ -57,6 +57,7 @@ impl From<ResourceAddress> for ProofRule {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
+    Authority(String),
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),

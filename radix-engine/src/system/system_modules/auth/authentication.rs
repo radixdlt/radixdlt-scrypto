@@ -288,6 +288,9 @@ impl Authentication {
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
+            AccessRuleNode::Authority(authority) => {
+                todo!()
+            }
             AccessRuleNode::ProofRule(rule) => {
                 Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)
             }
