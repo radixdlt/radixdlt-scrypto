@@ -67,19 +67,12 @@ impl CurrentProposalStatisticSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor)]
 pub struct ProposalStatistic {
     /// A counter of successful proposals made by a specific validator.
     pub made: u64,
     /// A counter of missed proposals (caused both by gap rounds or fallback rounds).
     pub missed: u64,
-}
-
-impl ProposalStatistic {
-    /// Creates a zeroed statistic.
-    pub fn zero() -> Self {
-        Self { made: 0, missed: 0 }
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -431,7 +424,7 @@ impl EpochManagerBlueprint {
         // statistics (to be used for unreliability penalty calculation); at the moment we only
         // reset it.
         statistic.validator_statistics = (0..next_validator_set.len())
-            .map(|_index| ProposalStatistic::zero())
+            .map(|_index| ProposalStatistic::default())
             .collect();
         api.field_lock_write_typed(statistic_handle, statistic)?;
         api.field_lock_release(statistic_handle)?;
