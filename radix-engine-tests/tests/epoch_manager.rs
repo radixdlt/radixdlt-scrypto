@@ -670,6 +670,54 @@ fn low_stakes_should_cause_no_problems() {
     registered_validator_test(1, 10, 1.into(), 1.into(), true, 2);
 }
 
+/*
+#[test]
+fn test_many_validators() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let (genesis, accounts) = create_custom_genesis(
+        initial_epoch,
+        rounds_per_epoch,
+        1,
+        10,
+        1.into(),
+        1.into(),
+        10,
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    for (pub_key, account_address) in accounts {
+        register_and_stake_new_validator(
+            pub_key,
+            account_address,
+            1.into(),
+            &mut test_runner,
+        );
+    }
+
+    // Act
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.0.len(), 10);
+    assert_eq!(next_epoch.1, initial_epoch + 1);
+}
+ */
+
 #[test]
 fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
