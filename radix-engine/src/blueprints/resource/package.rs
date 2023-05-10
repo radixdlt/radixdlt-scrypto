@@ -1928,7 +1928,9 @@ impl ResourceManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(receiver, input.ids, api)?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(
+                    receiver, input.ids, api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {

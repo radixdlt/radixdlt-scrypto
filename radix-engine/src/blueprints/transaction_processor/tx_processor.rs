@@ -177,8 +177,11 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    let proof =
-                        LocalAuthZone::sys_create_proof_of_non_fungibles(&ids, resource_address, api)?;
+                    let proof = LocalAuthZone::sys_create_proof_of_non_fungibles(
+                        &ids,
+                        resource_address,
+                        api,
+                    )?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
