@@ -2209,42 +2209,98 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::pop(input, api)
+                let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::pop(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_PUSH_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::push(input, api)
+                let input: AuthZonePushInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::push(input.proof, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof(input, api)
+                let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof(input.resource_address, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof_of_amount(input, api)
+                let input: AuthZoneCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_amount(
+                    input.resource_address,
+                    input.amount,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof_of_non_fungibles(input, api)
+                let input: AuthZoneCreateProofByIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_non_fungibles(
+                    input.resource_address,
+                    input.ids,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::clear(input, api)
+                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::clear(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::clear_signature_proofs(input, api)
+                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::clear_signature_proofs(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_DRAIN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::drain(input, api)
+                let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proofs = AuthZoneBlueprint::drain(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proofs))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),

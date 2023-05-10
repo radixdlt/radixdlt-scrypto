@@ -83,7 +83,7 @@ mod vault_proof {
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
-            let expected_amount = self.vault.amount() + bucket.amount();
+            let expected_amount = Decimal::ONE;
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = LocalAuthZone::create_proof(bucket.resource_address());
