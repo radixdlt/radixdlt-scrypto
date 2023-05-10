@@ -1,9 +1,15 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 
 use radix_engine_derive::*;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, AccessRulesSetGroupMutabilityInput};
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesCreateInput, AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
+    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+};
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, AuthorityEntry, ObjectKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRulesConfig, AuthorityEntry, ObjectKey,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -64,39 +70,35 @@ impl From<Mutability> for AuthorityEntry {
 pub struct ActorAccessRules;
 
 impl ActorAccessRules {
-    pub fn set_group_access_rule<A: Into<AuthorityEntry>>(
-        &self,
-        name: &str,
-        entry: A,
-    ) {
-        let _rtn = ScryptoEnv.actor_call_module_method(
-            OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                object_key: ObjectKey::SELF,
-                name: name.into(),
-                rule: entry.into(),
-            })
+    pub fn set_group_access_rule<A: Into<AuthorityEntry>>(&self, name: &str, entry: A) {
+        let _rtn = ScryptoEnv
+            .actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                    object_key: ObjectKey::SELF,
+                    name: name.into(),
+                    rule: entry.into(),
+                })
                 .unwrap(),
-        ).unwrap();
+            )
+            .unwrap();
     }
 
-    pub fn set_group_mutability(
-        &self,
-        name: &str,
-        mutability: AccessRule,
-    ) {
-        let _rtn = ScryptoEnv.actor_call_module_method(
-            OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::SELF,
-                name: name.to_string(),
-                mutability,
-            })
+    pub fn set_group_mutability(&self, name: &str, mutability: AccessRule) {
+        let _rtn = ScryptoEnv
+            .actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                    object_key: ObjectKey::SELF,
+                    name: name.to_string(),
+                    mutability,
+                })
                 .unwrap(),
-        ).unwrap();
+            )
+            .unwrap();
     }
 }

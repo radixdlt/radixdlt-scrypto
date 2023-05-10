@@ -10,8 +10,8 @@ use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
+use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};

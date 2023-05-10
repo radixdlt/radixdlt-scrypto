@@ -34,7 +34,9 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let config = AccessRulesConfig::new().default(
+            let mut config = AccessRulesConfig::new();
+            config.set_authority_access_rule_and_mutability(
+                "owner",
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             );

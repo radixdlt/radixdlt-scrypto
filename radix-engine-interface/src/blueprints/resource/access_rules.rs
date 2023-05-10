@@ -189,15 +189,21 @@ impl AccessRulesConfig {
         group_key: String,
         access_rule_entry: E,
     ) {
-        self.authorities
-            .insert(group_key, access_rule_entry.into());
+        self.authorities.insert(group_key, access_rule_entry.into());
     }
 
-    pub fn set_authority_mutability<M: Into<AuthorityEntry>>(&mut self, key: String, method_auth: M) {
+    pub fn set_authority_mutability<M: Into<AuthorityEntry>>(
+        &mut self,
+        key: String,
+        method_auth: M,
+    ) {
         self.mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_authority_access_rule_and_mutability<E: Into<AuthorityEntry>, M: Into<AuthorityEntry>>(
+    pub fn set_authority_access_rule_and_mutability<
+        E: Into<AuthorityEntry>,
+        M: Into<AuthorityEntry>,
+    >(
         &mut self,
         authority: &str,
         access_rule: E,
@@ -214,8 +220,7 @@ impl AccessRulesConfig {
     }
 
     pub fn set_group(&mut self, key: MethodKey, group: &str) {
-        self.methods
-            .insert(key.clone(), MethodEntry::group(group));
+        self.methods.insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_groups(&mut self, key: MethodKey, groups: Vec<String>) {
@@ -225,8 +230,7 @@ impl AccessRulesConfig {
 
     pub fn set_main_method_group(&mut self, method: &str, group: &str) {
         let key = MethodKey::new(ObjectModuleId::Main, method);
-        self.methods
-            .insert(key.clone(), MethodEntry::group(group));
+        self.methods.insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {

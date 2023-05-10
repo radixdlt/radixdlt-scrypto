@@ -65,7 +65,13 @@ where
             )))
     }
 
-    fn actor_call_module_method(&mut self, object_handle: u32, module_id: u32, ident: Vec<u8>, args: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_call_module_method(
+        &mut self,
+        object_handle: u32,
+        module_id: u32,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let ident = String::from_utf8(ident).map_err(|_| WasmRuntimeError::InvalidString)?;
 
         let module_id = u8::try_from(module_id)
@@ -425,7 +431,13 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_call_module_method(&mut self, object_handle: u32, module_id: u32, ident: Vec<u8>, args: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+    fn actor_call_module_method(
+        &mut self,
+        object_handle: u32,
+        module_id: u32,
+        ident: Vec<u8>,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

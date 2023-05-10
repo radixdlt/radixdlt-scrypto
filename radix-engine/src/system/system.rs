@@ -1537,15 +1537,16 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF =>  {
-                self.actor_get_receiver_node_id()
-                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
-            }
-            ActorObjectType::OuterObject => {
-                self.actor_get_info()?.outer_object
-                    .ok_or(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist))?
-                    .into_node_id()
-            }
+            ActorObjectType::SELF => self
+                .actor_get_receiver_node_id()
+                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
+            ActorObjectType::OuterObject => self
+                .actor_get_info()?
+                .outer_object
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::OuterObjectDoesNotExist,
+                ))?
+                .into_node_id(),
         };
 
         self.call_module_method(&node_id, module_id, method_name, args)

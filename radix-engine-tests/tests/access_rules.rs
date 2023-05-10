@@ -319,11 +319,7 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.insert(initial_proof);
     }
 
-    pub fn set_group_auth(
-        &mut self,
-        group: &str,
-        access_rule: AccessRule,
-    ) -> TransactionReceipt {
+    pub fn set_group_auth(&mut self, group: &str, access_rule: AccessRule) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .set_group_access_rule(
                 self.component_address.into(),

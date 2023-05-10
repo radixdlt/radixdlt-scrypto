@@ -507,9 +507,15 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             (
                 "stake",
                 AuthorityEntry::group("owner"),
-                AuthorityEntry::AccessRule(rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE)))),
+                AuthorityEntry::AccessRule(rule!(require(package_of_direct_caller(
+                    EPOCH_MANAGER_PACKAGE
+                )))),
             ),
-            ("update_metadata", AuthorityEntry::group("owner"), AuthorityEntry::AccessRule(DenyAll)),
+            (
+                "update_metadata",
+                AuthorityEntry::group("owner"),
+                AuthorityEntry::AccessRule(DenyAll),
+            ),
         ]
     }
 

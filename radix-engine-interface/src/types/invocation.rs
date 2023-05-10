@@ -2,11 +2,11 @@ use crate::api::ObjectModuleId;
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
 use crate::*;
+use core::fmt::Formatter;
 use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
-use std::fmt::Formatter;
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

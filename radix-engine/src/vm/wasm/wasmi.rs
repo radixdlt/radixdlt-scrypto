@@ -574,7 +574,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                    .map_err(|e| e.into())
+                .map_err(|e| e.into())
             },
         );
 
@@ -915,7 +915,11 @@ impl WasmiModule {
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
-        linker_define!(linker, ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME, host_actor_call_module_method);
+        linker_define!(
+            linker,
+            ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
+            host_actor_call_module_method
+        );
 
         linker_define!(
             linker,

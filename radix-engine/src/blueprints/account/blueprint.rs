@@ -8,7 +8,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRulesConfig, Bucket, AuthorityEntry, Proof,
+    AccessRulesConfig, AuthorityEntry, Bucket, Proof,
 };
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
