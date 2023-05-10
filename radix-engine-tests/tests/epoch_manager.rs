@@ -486,16 +486,18 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
-fn registered_validator_test(
+fn create_custom_genesis(
+    initial_epoch: u64,
+    rounds_per_epoch: u64,
     num_initial_validators: usize,
     max_validators: usize,
     initial_stakes: Decimal,
-    validator_stake: Decimal,
-    expect_in_next_epoch: bool,
+    accounts_xrd_balance: Decimal,
+    num_accounts: usize,
+) -> (
+    CustomGenesis,
+    Vec<(EcdsaSecp256k1PublicKey, ComponentAddress)>,
 ) {
-    // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
 
     let mut stake_allocations = Vec::new();
@@ -526,11 +528,20 @@ fn registered_validator_test(
     }
 
     let validator_account_index = num_initial_validators;
-    let pub_key =
-        EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
-            .unwrap()
-            .public_key();
-    let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+    let mut xrd_balances = Vec::new();
+    let mut pub_key_accounts = Vec::new();
+
+    for i in 0..num_accounts {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(
+            (validator_account_index + 1 + i).try_into().unwrap(),
+        )
+        .unwrap()
+        .public_key();
+        let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        pub_key_accounts.push((pub_key, account_address));
+        xrd_balances.push((account_address, accounts_xrd_balance));
+    }
 
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(validators),
@@ -538,7 +549,7 @@ fn registered_validator_test(
             accounts,
             allocations: stake_allocations,
         },
-        GenesisDataChunk::XrdBalances(vec![(account_address, validator_stake)]),
+        GenesisDataChunk::XrdBalances(xrd_balances),
     ];
 
     let genesis = CustomGenesis {
@@ -549,12 +560,20 @@ fn registered_validator_test(
         num_unstake_epochs,
     };
 
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    (genesis, pub_key_accounts)
+}
+
+fn register_and_stake_new_validator(
+    pub_key: EcdsaSecp256k1PublicKey,
+    account_address: ComponentAddress,
+    stake_amount: Decimal,
+    test_runner: &mut TestRunner,
+) -> ComponentAddress {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
-        .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
+        .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
         .register_validator(validator_address)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
@@ -570,6 +589,37 @@ fn registered_validator_test(
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
+    validator_address
+}
+
+fn registered_validator_test(
+    num_initial_validators: usize,
+    max_validators: usize,
+    initial_stakes: Decimal,
+    validator_to_stake_amount: Decimal,
+    expect_in_next_epoch: bool,
+    expected_num_validators_in_next_epoch: usize,
+) {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let (genesis, accounts) = create_custom_genesis(
+        initial_epoch,
+        rounds_per_epoch,
+        num_initial_validators,
+        max_validators,
+        initial_stakes,
+        validator_to_stake_amount,
+        1,
+    );
+    let (pub_key, account_address) = accounts[0];
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = register_and_stake_new_validator(
+        pub_key,
+        account_address,
+        validator_to_stake_amount,
+        &mut test_runner,
+    );
 
     // Act
     let instructions = vec![Instruction::CallMethod {
@@ -590,7 +640,7 @@ fn registered_validator_test(
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.0.len(), max_validators);
+    assert_eq!(next_epoch.0.len(), expected_num_validators_in_next_epoch);
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
         next_epoch.0.contains_key(&validator_address),
@@ -601,18 +651,23 @@ fn registered_validator_test(
 #[test]
 fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
 ) {
-    registered_validator_test(10, 10, 1000000.into(), 900000.into(), false);
+    registered_validator_test(10, 10, 1000000.into(), 900000.into(), false, 10);
 }
 
 #[test]
 fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
 ) {
-    registered_validator_test(9, 10, 1000000.into(), 900000.into(), true);
+    registered_validator_test(9, 10, 1000000.into(), 900000.into(), true, 10);
 }
 
 #[test]
 fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch_change() {
-    registered_validator_test(10, 10, 1000000.into(), 1100000.into(), true);
+    registered_validator_test(10, 10, 1000000.into(), 1100000.into(), true, 10);
+}
+
+#[test]
+fn low_stakes_should_cause_no_problems() {
+    registered_validator_test(1, 10, 1.into(), 1.into(), true, 2);
 }
 
 #[test]
