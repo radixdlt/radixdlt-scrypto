@@ -18,13 +18,6 @@ pub trait NativeProof {
     where
         Y: ClientObjectApi<E>;
 
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
-    where
-        Y: ClientObjectApi<E>;
-
     fn resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -44,6 +37,17 @@ pub trait NativeProof {
         Y: ClientApi<E>;
 }
 
+pub trait NativeFungibleProof {}
+
+pub trait NativeNonFungibleProof {
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientObjectApi<E>;
+}
+
 impl NativeProof for Proof {
     fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -56,21 +60,6 @@ impl NativeProof for Proof {
             self.0.as_node_id(),
             PROOF_GET_AMOUNT_IDENT,
             scrypto_encode(&ProofGetAmountInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
-    where
-        Y: ClientObjectApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -121,5 +110,24 @@ impl NativeProof for Proof {
             .unwrap(),
         )?;
         Ok(())
+    }
+}
+
+impl NativeFungibleProof for Proof {}
+
+impl NativeNonFungibleProof for Proof {
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientObjectApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }
