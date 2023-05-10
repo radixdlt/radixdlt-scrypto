@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, Metadat
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerNextRoundInput, ValidatorUpdateAcceptDelegatedStakeInput,
+    EpochManagerNextRoundInput, LeaderProposalHistory, ValidatorUpdateAcceptDelegatedStakeInput,
     EPOCH_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
@@ -90,7 +90,7 @@ fn scrypto_can_emit_registered_events() {
     assert_eq!(events.len(), 2); // Two events: lock fee and registered event
     assert!(match events.get(0) {
         Some((
-            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
             && is_decoded_equal(&LockFeeEvent { amount: 100.into() }, event_data) =>
@@ -100,7 +100,7 @@ fn scrypto_can_emit_registered_events() {
     assert!(match events.get(1) {
         Some((
             event_identifier @ EventTypeIdentifier(
-                Emitter::Function(node_id, ObjectModuleId::SELF, blueprint_name),
+                Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name),
                 ..,
             ),
             ref event_data,
@@ -208,7 +208,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -246,7 +246,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -258,7 +258,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
@@ -268,7 +268,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
                 && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
@@ -278,7 +278,7 @@ fn vault_fungible_recall_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
@@ -342,7 +342,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -354,7 +354,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
@@ -364,7 +364,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
                 && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
@@ -374,7 +374,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(
@@ -422,7 +422,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -432,7 +432,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::SELF),
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -442,7 +442,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(1.into()), event_data) =>
@@ -493,7 +493,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -503,7 +503,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
@@ -517,7 +517,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
@@ -578,7 +578,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -588,7 +588,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
@@ -604,7 +604,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
@@ -628,17 +628,14 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn epoch_manager_round_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(
-            rounds_per_epoch - 1,
-            0,
-        )),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -657,10 +654,10 @@ fn epoch_manager_round_update_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
-                && is_decoded_equal(&RoundChangeEvent { round: 4 }, event_data) =>
+                && is_decoded_equal(&RoundChangeEvent { round: 1 }, event_data) =>
                 true,
             _ => false,
         });
@@ -671,10 +668,32 @@ fn epoch_manager_round_update_emits_correct_event() {
 fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
-    // Act
+    // Prepare: advance to round `rounds_per_epoch - 1` by a gap followed by a fallback round; disregard the receipt
+    test_runner.execute_transaction(
+        SystemTransaction {
+            instructions: vec![Instruction::CallMethod {
+                component_address: EPOCH_MANAGER,
+                method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&EpochManagerNextRoundInput {
+                    round: rounds_per_epoch - 1,
+                    leader_proposal_history: LeaderProposalHistory {
+                        gap_round_leaders: (2..rounds_per_epoch).map(|_| 0).collect(),
+                        current_leader: 0,
+                        is_fallback: true,
+                    },
+                }),
+            }],
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Act: perform the most usual successful next round
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
@@ -697,7 +716,7 @@ fn epoch_manager_epoch_update_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<EpochChangeEvent>(event_identifier) => true,
             _ => false,
@@ -718,7 +737,8 @@ fn validator_registration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -741,7 +761,7 @@ fn validator_registration_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -751,7 +771,7 @@ fn validator_registration_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) =>
                 true,
@@ -769,7 +789,8 @@ fn validator_unregistration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -803,7 +824,7 @@ fn validator_unregistration_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -813,7 +834,7 @@ fn validator_unregistration_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) =>
                 true,
@@ -831,7 +852,8 @@ fn validator_staking_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -873,7 +895,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -883,7 +905,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(100.into()), event_data) =>
@@ -893,7 +915,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
@@ -903,7 +925,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(4) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
                 && is_decoded_equal(&DepositResourceEvent::Amount(100.into()), event_data) =>
@@ -913,7 +935,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(5) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<StakeEvent>(event_identifier)
                 && is_decoded_equal(
@@ -928,7 +950,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::SELF),
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -938,7 +960,7 @@ fn validator_staking_emits_correct_event() {
         assert!(match events.get(7) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
@@ -1015,7 +1037,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -1025,7 +1047,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
@@ -1035,7 +1057,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner
                 .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
@@ -1049,7 +1071,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
@@ -1058,7 +1080,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(4) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
@@ -1066,7 +1088,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(node_id, ObjectModuleId::SELF),
+                    Emitter::Method(node_id, ObjectModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1079,7 +1101,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(6) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
             _ => false,
@@ -1087,7 +1109,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::SELF),
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1097,7 +1119,7 @@ fn validator_unstake_emits_correct_events() {
         assert!(match events.get(8) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
@@ -1188,7 +1210,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -1198,7 +1220,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(1) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
                 && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
@@ -1208,7 +1230,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(2) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner
                 .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
@@ -1218,7 +1240,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
@@ -1227,7 +1249,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(4) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
             _ => false,
@@ -1235,7 +1257,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_node_id, ObjectModuleId::SELF),
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
                     ..,
                 ),
                 ..,
@@ -1245,7 +1267,7 @@ fn validator_claim_xrd_emits_correct_events() {
         assert!(match events.get(6) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ..,
             )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier) => true,
             _ => false,
@@ -1259,7 +1281,8 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account) = test_runner.new_account(false);
 
@@ -1307,7 +1330,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
@@ -1327,7 +1350,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         assert!(match events.get(3) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent>(
                 event_identifier
@@ -1377,7 +1400,7 @@ fn setting_metadata_emits_correct_events() {
         assert!(match events.get(0) {
             Some((
                 event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::SELF), ..),
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
                 && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>

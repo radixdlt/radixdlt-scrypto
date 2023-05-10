@@ -68,13 +68,13 @@ impl Publish {
 
             let node_id: NodeId = package_address.0.into();
             let db_partition_key =
-                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_MODULE);
+                SpreadPrefixKeyMapper::to_db_partition_key(&node_id, OBJECT_BASE_PARTITION);
             let code_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Code.into());
+                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Code.into());
             let package_code = PackageCodeSubstate { code };
 
             let info_db_sort_key =
-                SpreadPrefixKeyMapper::to_db_sort_key(&PackageOffset::Info.into());
+                SpreadPrefixKeyMapper::to_db_sort_key(&PackageField::Info.into());
             let package_info = PackageInfoSubstate {
                 schema: schema.into(),
                 dependent_resources: BTreeSet::new(),

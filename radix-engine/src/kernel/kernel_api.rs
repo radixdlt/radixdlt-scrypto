@@ -1,6 +1,5 @@
 use super::call_frame::RefType;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
@@ -34,7 +33,7 @@ pub trait KernelNodeApi {
 /// Info regarding the substate locked as well as what type of lock
 pub struct LockInfo<L> {
     pub node_id: NodeId,
-    pub module_num: ModuleNumber,
+    pub partition_num: PartitionNumber,
     pub substate_key: SubstateKey,
     pub flags: LockFlags,
     pub data: L,
@@ -46,7 +45,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_lock_substate_with_default(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
@@ -56,14 +55,14 @@ pub trait KernelSubstateApi<L> {
     fn kernel_lock_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         lock_data: L,
     ) -> Result<LockHandle, RuntimeError> {
         self.kernel_lock_substate_with_default(
             node_id,
-            module_num,
+            partition_num,
             substate_key,
             flags,
             None,
@@ -101,7 +100,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
@@ -113,7 +112,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
 
@@ -124,43 +123,43 @@ pub trait KernelSubstateApi<L> {
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
-        module_num: ModuleNumber,
+        partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation<I: Debug> {
-    pub sys_invocation: I,
+pub struct KernelInvocation<D> {
+    pub args: IndexedScryptoValue,
+    /// Used for receiver reference copying
+    /// TODO: Is there a better abstraction for this?
+    pub additional_node_ref_to_copy: Option<NodeId>,
+    pub call_frame_data: D,
 
     // TODO: Remove
     pub payload_size: usize,
-
-    // TODO: Make these two RENodes / Substates
-    pub resolved_actor: Actor,
-    pub args: IndexedScryptoValue,
 }
 
-impl<I: Debug> KernelInvocation<I> {
+impl<D> KernelInvocation<D> {
     pub fn get_update(&self) -> CallFrameUpdate {
         let nodes_to_move = self.args.owned_node_ids().clone();
         let mut node_refs_to_copy = self.args.references().clone();
-        if let Some(method) = self.resolved_actor.try_as_method() {
-            node_refs_to_copy.insert(method.node_id);
+        if let Some(node_id) = self.additional_node_ref_to_copy {
+            node_refs_to_copy.insert(node_id);
         }
 
         CallFrameUpdate {
@@ -172,17 +171,17 @@ impl<I: Debug> KernelInvocation<I> {
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi<I: Debug> {
+pub trait KernelInvokeApi<D> {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<I>>,
+        invocation: Box<KernelInvocation<D>>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: Option<&'a Actor>,
-    pub caller: Option<&'a Actor>,
+    pub current: &'a M::CallFrameData,
+    pub caller: &'a M::CallFrameData,
 }
 
 /// Internal API for kernel modules.
@@ -209,7 +208,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 pub trait KernelApi<M: KernelCallbackObject>:
     KernelNodeApi
     + KernelSubstateApi<M::LockData>
-    + KernelInvokeApi<M::Invocation>
+    + KernelInvokeApi<M::CallFrameData>
     + KernelInternalApi<M>
 {
 }

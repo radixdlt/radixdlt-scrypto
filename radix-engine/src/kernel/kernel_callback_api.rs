@@ -1,5 +1,4 @@
 use crate::errors::*;
-use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -8,8 +7,8 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 
 pub trait KernelCallbackObject: Sized {
-    type Invocation: Debug;
     type LockData: Default + Clone;
+    type CallFrameData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -41,7 +40,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_num: &ModuleNumber,
+        module_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -79,7 +78,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_invoke<Y>(
-        identifier: &KernelInvocation<Self::Invocation>,
+        invocation: &KernelInvocation<Self::CallFrameData>,
         input_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -91,7 +90,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Actor,
+        callee: &Self::CallFrameData,
         update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -104,7 +103,6 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn invoke_upstream<Y>(
-        invocation: Self::Invocation,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -125,7 +123,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_num: ModuleNumber,
+        module_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

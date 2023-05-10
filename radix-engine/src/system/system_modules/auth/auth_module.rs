@@ -15,6 +15,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
@@ -23,7 +24,6 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -49,24 +49,10 @@ impl AuthModule {
     fn is_barrier(actor: &Actor) -> bool {
         // FIXME update the rule to be consistent with internal design
         match actor {
-            Actor::Method(MethodActor { node_id, .. }) => {
-                node_id.is_global_component() || node_id.is_global_resource()
-            }
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
             Actor::Function { .. } => false,
             Actor::VirtualLazyLoad { .. } => false,
-        }
-    }
-
-    fn is_transaction_processor(actor: Option<&Actor>) -> bool {
-        match actor {
-            Some(actor) => {
-                let blueprint = actor.blueprint();
-                blueprint.eq(&Blueprint::new(
-                    &TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                ))
-            }
-            None => false,
+            Actor::Root { .. } => false,
         }
     }
 
@@ -89,8 +75,8 @@ impl AuthModule {
         } else {
             let handle = api.kernel_lock_substate(
                 blueprint.package_address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::FunctionAccessRules.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
                 M::LockData::default(),
             )?;
@@ -175,8 +161,8 @@ impl AuthModule {
     ) -> Result<AccessRule, RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
-            ACCESS_RULES_BASE_MODULE,
-            &AccessRulesOffset::AccessRules.into(),
+            ACCESS_RULES_FIELD_PARTITION,
+            &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
             M::LockData::default(),
         )?;
@@ -241,10 +227,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             Actor::Function { blueprint, ident } => {
                 vec![Self::function_auth(blueprint, ident.as_str(), api)?]
             }
-            Actor::VirtualLazyLoad { .. } => return Ok(()),
+            Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
         };
-        let barrier_crossings_required = 0;
-        let barrier_crossings_allowed = if Self::is_barrier(callee) { 0 } else { 1 };
+        let acting_location = if Self::is_barrier(callee) {
+            ActingLocation::AtBarrier
+        } else {
+            ActingLocation::AtLocalBarrier
+        };
         let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
@@ -252,8 +241,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Authenticate
         for authorization in authorizations {
             if !Authentication::verify_method_auth(
-                barrier_crossings_required,
-                barrier_crossings_allowed,
+                acting_location,
                 auth_zone_id,
                 &authorization,
                 &mut system,
@@ -273,35 +261,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         let actor = api.kernel_get_system_state().current;
 
         // Add Global Object and Package Actor Auth
-        let mut virtual_non_fungibles_non_extending = BTreeSet::new();
-        if let Some(actor) = actor {
-            let package_address = actor.package_address();
-            let id = scrypto_encode(&package_address).unwrap();
-            let non_fungible_global_id = NonFungibleGlobalId::new(
-                PACKAGE_VIRTUAL_BADGE,
-                NonFungibleLocalId::bytes(id).unwrap(),
-            );
-            virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
-
-            if let Some(method) = actor.try_as_method() {
-                if let Some(address) = method.global_address {
-                    let id = scrypto_encode(&address).unwrap();
-                    let non_fungible_global_id = NonFungibleGlobalId::new(
-                        GLOBAL_ACTOR_VIRTUAL_BADGE,
-                        NonFungibleLocalId::bytes(id).unwrap(),
-                    );
-                    virtual_non_fungibles_non_extending.insert(non_fungible_global_id);
-                }
-            }
-        }
+        let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
+        let virtual_non_fungibles_non_extending_barrier =
+            actor.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
-        let is_barrier = if let Some(actor) = actor {
-            Self::is_barrier(actor)
-        } else {
-            false
-        };
-        let is_transaction_processor = Self::is_transaction_processor(actor);
+        let is_barrier = Self::is_barrier(actor);
+        let is_transaction_processor = actor.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_system().modules.auth;
             (
@@ -323,6 +289,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             virtual_resources,
             virtual_non_fungibles,
             virtual_non_fungibles_non_extending,
+            virtual_non_fungibles_non_extending_barrier,
             is_barrier,
             parent,
         );
@@ -333,10 +300,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
-                OBJECT_BASE_MODULE => btreemap!(
-                    AuthZoneOffset::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
+                OBJECT_BASE_PARTITION => btreemap!(
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
-                TYPE_INFO_BASE_MODULE => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,

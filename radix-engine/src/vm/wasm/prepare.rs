@@ -370,7 +370,7 @@ impl WasmModule {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I32, ValueType::I32, ValueType::I32],
                                     vec![ValueType::I32],
                                 ) {
                                     continue;
@@ -537,7 +537,7 @@ impl WasmModule {
                                 if Self::function_type_matches(
                                     &self.module,
                                     *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![],
                                     vec![ValueType::I64],
                                 ) {
                                     continue;
@@ -1123,8 +1123,8 @@ mod tests {
                     type_metadata: vec![],
                     type_validations: vec![],
                 },
-                substates: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
-                key_value_stores: vec![],
+                fields: vec![LocalTypeIndex::WellKnown(UNIT_ID)],
+                collections: vec![],
                 functions: btreemap!(
                     "f".to_string() => FunctionSchema {
                         receiver: Option::None,

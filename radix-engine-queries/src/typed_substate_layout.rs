@@ -20,25 +20,21 @@ pub use radix_engine::system::node_modules::type_info::*;
 // Core API of the node.
 //
 // Specifically:
-// * Every (EntityType, SysModuleId, SubstateKey) should be mappable into a `TypedSubstateKey`
-// * Every (&TypedSubstateKey, Data) should be mappable into a `WellKnownSubstateData`
+// * Every (EntityType, PartitionNumber, SubstateKey) should be mappable into a `TypedSubstateKey`
+// * Every (&TypedSubstateKey, Data) should be mappable into a `TypedSubstateValue`
 //
 // Please keep them these in-line with the well-known objects, and please don't
 // remove these without talking to the Network team.
 //=========================================================================
 
 //=========================================================================
-// TODO - move this to a relevant REP when it's been created
+// A partition can be in one of four types:
 //
-// BACKGROUND:
-// A generic Object SysModule consists of 0 or more DbModules, each with a u8 "ModuleId".
-//
-// These modules are one of four types:
-// - Tuple
+// - Field
 //   => Has key: TupleKey(u8) also known as an offset
 //   => No iteration exposed to engine
 //   => Is versioned / locked substate-by-substate
-// - ConcurrentMap
+// - KeyValue ("ConcurrentMap")
 //   => Has key: MapKey(Vec<u8>)
 //   => No iteration exposed to engine
 //   => Is versioned / locked substate-by-substate
@@ -46,31 +42,31 @@ pub use radix_engine::system::node_modules::type_info::*;
 //   => Has key: MapKey(Vec<u8>)
 //   => Iteration exposed to engine via the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
-// - SortedU16Index(SortedU16Key(U16, Vec<u8>))
-//   => Has key: MapKey(Vec<u8>)
+// - SortedU16Index
+//   => Has key: SortedU16Key(U16, Vec<u8>)
 //   => Iteration exposed to engine via the user-controlled U16 prefix and then the MapKey's database key (ie hash of the key)
 //   => Is versioned / locked in its entirety
 //
 // But in this file, we just handle explicitly supported/possible combinations of things.
 //
-// An entirely generic capturing of a substate type would look something like this:
+// An entirely generic capturing of a substate key for a given node partition would look something like this:
 //
-// pub enum GenericObjectModuleSubstateType {
-//    Tuple(ModuleId, TupleKey),
-//    ConcurrentMap(ModuleId, MapKey),
-//    Index(ModuleId, MapKey),
-//    SortedU16Index(ModuleId, SortedU16Key),
+// pub enum GenericModuleSubstateKey {
+//    Field(TupleKey),
+//    KeyValue(MapKey),
+//    Index(MapKey),
+//    SortedU16Index(SortedU16Key),
 // }
 //=========================================================================
 
 /// By node module (roughly SysModule)
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
-    TypeInfoModule(TypeInfoOffset),
-    AccessRulesModule(AccessRulesOffset),
-    RoyaltyModule(RoyaltyOffset),
-    MetadataModule(String),
-    ObjectModule(TypedObjectModuleSubstateKey),
+    TypeInfoModuleField(TypeInfoField),
+    AccessRulesModuleField(AccessRulesField),
+    RoyaltyModuleField(RoyaltyField),
+    MetadataModuleEntryKey(String),
+    MainModule(TypedMainModuleSubstateKey),
 }
 
 impl TypedSubstateKey {
@@ -79,11 +75,11 @@ impl TypedSubstateKey {
     /// Just a work around for now to filter out "transient" substates we shouldn't really be storing.
     pub fn value_is_mappable(&self) -> bool {
         match self {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::NonFungibleVault(
-                NonFungibleVaultOffset::LockedNonFungible,
+            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleVaultField(
+                NonFungibleVaultField::LockedNonFungible,
             )) => false,
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::FungibleVault(
-                FungibleVaultOffset::LockedFungible,
+            TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::FungibleVaultField(
+                FungibleVaultField::LockedFungible,
             )) => false,
             _ => true,
         }
@@ -92,24 +88,43 @@ impl TypedSubstateKey {
 
 /// Doesn't include non-object modules, nor transient nodes.
 #[derive(Debug, Clone)]
-pub enum TypedObjectModuleSubstateKey {
+pub enum TypedMainModuleSubstateKey {
     // Objects
-    Package(PackageOffset),
-    FungibleResource(FungibleResourceManagerOffset),
-    NonFungibleResource(NonFungibleResourceManagerOffset),
-    FungibleVault(FungibleVaultOffset),
-    NonFungibleVault(NonFungibleVaultOffset),
-    EpochManager(EpochManagerOffset),
-    Clock(ClockOffset),
-    Validator(ValidatorOffset),
-    Account(MapKey),
-    AccessController(AccessControllerOffset),
+    PackageField(PackageField),
+    FungibleResourceField(FungibleResourceManagerField),
+    NonFungibleResourceField(NonFungibleResourceManagerField),
+    NonFungibleResourceData(NonFungibleLocalId),
+    FungibleVaultField(FungibleVaultField),
+    NonFungibleVaultField(NonFungibleVaultField),
+    NonFungibleVaultContentsIndexKey(NonFungibleLocalId),
+    EpochManagerField(EpochManagerField),
+    EpochManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
+    ClockField(ClockField),
+    ValidatorField(ValidatorField),
+    AccountVaultIndexKey(ResourceAddress),
+    AccessControllerField(AccessControllerField),
     // Generic Scrypto Components
-    GenericScryptoComponent(ComponentOffset),
+    GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
-    GenericKeyValueStore(MapKey), // Is an entity type with a single ConcurrentMap
-    GenericIndex(MapKey),         // Is an entity type with a single Index
-    GenericSortedU16Index(SortedU16Key), // Is an entity type with a single u16 index
+    GenericKeyValueStoreKey(MapKey),
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct ValidatorByStakeKey {
+    pub divided_stake: u16,
+    pub validator_address: ComponentAddress,
+}
+
+impl TryFrom<SortedU16Key> for ValidatorByStakeKey {
+    type Error = DecodeError;
+
+    fn try_from(value: SortedU16Key) -> Result<Self, Self::Error> {
+        // See to_sorted_key in validator.rs
+        Ok(Self {
+            divided_stake: u16::MAX - value.0,
+            validator_address: scrypto_decode(&value.1)?,
+        })
+    }
 }
 
 fn error(descriptor: &'static str) -> String {
@@ -118,14 +133,14 @@ fn error(descriptor: &'static str) -> String {
 
 pub fn to_typed_substate_key(
     entity_type: EntityType,
-    module_number: ModuleNumber,
+    partition_num: PartitionNumber,
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
-    let substate_type = match module_number {
-        TYPE_INFO_BASE_MODULE => TypedSubstateKey::TypeInfoModule(
-            TypeInfoOffset::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
+    let substate_type = match partition_num {
+        TYPE_INFO_FIELD_PARTITION => TypedSubstateKey::TypeInfoModuleField(
+            TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
         ),
-        METADATA_BASE_MODULE => TypedSubstateKey::MetadataModule(
+        METADATA_KV_STORE_PARTITION => TypedSubstateKey::MetadataModuleEntryKey(
             scrypto_decode(
                 substate_key
                     .for_map()
@@ -133,30 +148,30 @@ pub fn to_typed_substate_key(
             )
             .map_err(|_| error("string Metadata key"))?,
         ),
-        ROYALTY_BASE_MODULE => TypedSubstateKey::RoyaltyModule(
-            RoyaltyOffset::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
+        ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModuleField(
+            RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
         ),
-        ACCESS_RULES_BASE_MODULE => TypedSubstateKey::AccessRulesModule(
-            AccessRulesOffset::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
+        ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
+            AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
         ),
-        module_number @ _ if module_number >= OBJECT_BASE_MODULE => {
-            TypedSubstateKey::ObjectModule(to_typed_object_module_substate_key(
+        partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
+            TypedSubstateKey::MainModule(to_typed_object_module_substate_key(
                 entity_type,
-                module_number.0 - OBJECT_BASE_MODULE.0,
+                partition_num.0 - OBJECT_BASE_PARTITION.0,
                 substate_key,
             )?)
         }
-        _ => return Err(format!("Unknown module {:?}", module_number)),
+        _ => return Err(format!("Unknown partition {:?}", partition_num)),
     };
     Ok(substate_type)
 }
 
 pub fn to_typed_object_module_substate_key(
     entity_type: EntityType,
-    module_offset: u8,
+    partition_offset: u8,
     substate_key: &SubstateKey,
-) -> Result<TypedObjectModuleSubstateKey, String> {
-    return to_typed_object_substate_key_internal(entity_type, module_offset, substate_key)
+) -> Result<TypedMainModuleSubstateKey, String> {
+    return to_typed_object_substate_key_internal(entity_type, partition_offset, substate_key)
         .map_err(|_| {
             format!(
                 "Could not convert {:?} {:?} key to TypedObjectSubstateKey",
@@ -167,168 +182,151 @@ pub fn to_typed_object_module_substate_key(
 
 fn to_typed_object_substate_key_internal(
     entity_type: EntityType,
-    module_offset: u8,
+    partition_offset: u8,
     substate_key: &SubstateKey,
-) -> Result<TypedObjectModuleSubstateKey, ()> {
+) -> Result<TypedMainModuleSubstateKey, ()> {
     let substate_type = match entity_type {
         EntityType::InternalGenericComponent | EntityType::GlobalGenericComponent => {
-            TypedObjectModuleSubstateKey::GenericScryptoComponent(ComponentOffset::try_from(
+            TypedMainModuleSubstateKey::GenericScryptoComponentField(ComponentField::try_from(
                 substate_key,
             )?)
         }
         EntityType::GlobalPackage => {
-            TypedObjectModuleSubstateKey::Package(PackageOffset::try_from(substate_key)?)
+            TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
         }
-        EntityType::GlobalFungibleResource => TypedObjectModuleSubstateKey::FungibleResource(
-            FungibleResourceManagerOffset::try_from(substate_key)?,
+        EntityType::GlobalFungibleResource => TypedMainModuleSubstateKey::FungibleResourceField(
+            FungibleResourceManagerField::try_from(substate_key)?,
         ),
         EntityType::GlobalNonFungibleResource => {
-            let module_offset = NonFungibleResourceManagerModuleOffset::try_from(module_offset)?;
-            match module_offset {
-                NonFungibleResourceManagerModuleOffset::ResourceManager => {
-                    TypedObjectModuleSubstateKey::NonFungibleResource(
-                        NonFungibleResourceManagerOffset::try_from(substate_key)?,
+            let partition_offset =
+                NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
+            match partition_offset {
+                NonFungibleResourceManagerPartitionOffset::ResourceManager => {
+                    TypedMainModuleSubstateKey::NonFungibleResourceField(
+                        NonFungibleResourceManagerField::try_from(substate_key)?,
                     )
                 }
-                NonFungibleResourceManagerModuleOffset::NonFungibleData => {
+                NonFungibleResourceManagerPartitionOffset::NonFungibleData => {
                     let key = substate_key.for_map().ok_or(())?;
-                    TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
+                    TypedMainModuleSubstateKey::NonFungibleResourceData(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
                 }
             }
         }
         EntityType::GlobalEpochManager => {
-            TypedObjectModuleSubstateKey::EpochManager(EpochManagerOffset::try_from(substate_key)?)
+            let partition_offset = EpochManagerPartitionOffset::try_from(partition_offset)?;
+            match partition_offset {
+                EpochManagerPartitionOffset::EpochManager => {
+                    TypedMainModuleSubstateKey::EpochManagerField(EpochManagerField::try_from(
+                        substate_key,
+                    )?)
+                }
+                EpochManagerPartitionOffset::RegisteredValidatorsByStakeIndex => {
+                    let key = substate_key.for_sorted().ok_or(())?;
+                    TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(
+                        key.clone().try_into().map_err(|_| ())?,
+                    )
+                }
+            }
         }
         EntityType::GlobalValidator => {
-            TypedObjectModuleSubstateKey::Validator(ValidatorOffset::try_from(substate_key)?)
+            TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
         }
         EntityType::GlobalClock => {
-            TypedObjectModuleSubstateKey::Clock(ClockOffset::try_from(substate_key)?)
+            TypedMainModuleSubstateKey::ClockField(ClockField::try_from(substate_key)?)
         }
-        EntityType::GlobalAccessController => TypedObjectModuleSubstateKey::AccessController(
-            AccessControllerOffset::try_from(substate_key)?,
+        EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
+            AccessControllerField::try_from(substate_key)?,
         ),
         EntityType::GlobalVirtualSecp256k1Account
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
             let key = substate_key.for_map().ok_or(())?;
-            TypedObjectModuleSubstateKey::Account(key.clone())
+            TypedMainModuleSubstateKey::AccountVaultIndexKey(scrypto_decode(&key).map_err(|_| ())?)
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
-        EntityType::InternalFungibleVault => TypedObjectModuleSubstateKey::FungibleVault(
-            FungibleVaultOffset::try_from(substate_key)?,
+        EntityType::InternalFungibleVault => TypedMainModuleSubstateKey::FungibleVaultField(
+            FungibleVaultField::try_from(substate_key)?,
         ),
-        EntityType::InternalNonFungibleVault => TypedObjectModuleSubstateKey::NonFungibleVault(
-            NonFungibleVaultOffset::try_from(substate_key)?,
-        ),
+        EntityType::InternalNonFungibleVault => {
+            let partition_offset = NonFungibleVaultPartitionOffset::try_from(partition_offset)?;
+
+            match partition_offset {
+                NonFungibleVaultPartitionOffset::Balance => {
+                    TypedMainModuleSubstateKey::NonFungibleVaultField(
+                        NonFungibleVaultField::try_from(substate_key)?,
+                    )
+                }
+                NonFungibleVaultPartitionOffset::NonFungibles => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+            }
+        }
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;
-            TypedObjectModuleSubstateKey::GenericKeyValueStore(key.clone())
+            TypedMainModuleSubstateKey::GenericKeyValueStoreKey(key.clone())
         }
-        EntityType::InternalIndex => {
-            let key = substate_key.for_map().ok_or(())?;
-            TypedObjectModuleSubstateKey::GenericIndex(key.clone())
-        }
-        EntityType::InternalSortedIndex => {
-            let key = substate_key.for_sorted().ok_or(())?;
-            TypedObjectModuleSubstateKey::GenericSortedU16Index(key.clone())
-        }
-    };
-    Ok(substate_type)
-}
-
-// SysModuleId::Virtualized is currently a messy workaround / hodge-podge of different ideas and will be removed soon.
-pub fn to_typed_virtualized_module_substate_key(
-    entity_type: EntityType,
-    substate_key: &SubstateKey,
-) -> Result<TypedSubstateKey, String> {
-    let substate_type = match (entity_type, substate_key) {
-        (EntityType::InternalKeyValueStore, SubstateKey::Map(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericKeyValueStore(
-                key.clone(),
-            ))
-        }
-        (EntityType::InternalIndex, SubstateKey::Map(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericIndex(key.clone()))
-        }
-        (EntityType::InternalSortedIndex, SubstateKey::Sorted(key)) => {
-            TypedSubstateKey::ObjectModule(TypedObjectModuleSubstateKey::GenericSortedU16Index(
-                key.clone(),
-            ))
-        }
-        (_, SubstateKey::Map(key)) => {
-            // For some reason, Metadata gets mapped under Virtualized SysModuleId on any entity type
-            // But the good thing is that it's the only thing which is mapped under Virtualized SysModuleId for global components
-            TypedSubstateKey::MetadataModule(
-                scrypto_decode(key).map_err(|_| error("string Metadata key"))?,
-            )
-        }
-        // Everything else is should be on the object substate
-        _ => Err(format!(
-            "Could not convert {:?} {:?} key on Virtualized module to TypedObjectSubstateKey",
-            entity_type, substate_key
-        ))?,
     };
     Ok(substate_type)
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
-    TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    AccessRulesModule(TypedAccessRulesModuleSubstateValue),
-    RoyaltyModule(TypedRoyaltyModuleSubstateValue),
-    MetadataModule(TypedMetadataModuleSubstateValue),
-    ObjectModule(TypedObjectModuleSubstateValue),
+    TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue),
+    AccessRulesModuleFieldValue(TypedAccessRulesModuleFieldValue),
+    RoyaltyModuleFieldValue(TypedRoyaltyModuleFieldValue),
+    MetadataModuleEntryValue(MetadataValueSubstate),
+    MainModule(TypedMainModuleSubstateValue),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedTypeInfoModuleSubstateValue {
+pub enum TypedTypeInfoModuleFieldValue {
     TypeInfo(TypeInfoSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModuleSubstateValue {
+pub enum TypedAccessRulesModuleFieldValue {
     MethodAccessRules(MethodAccessRulesSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedRoyaltyModuleSubstateValue {
+pub enum TypedRoyaltyModuleFieldValue {
     ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
     ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
 }
 
+/// Contains all the main module substate values, by each known partition layout
 #[derive(Debug, Clone)]
-pub enum TypedMetadataModuleSubstateValue {
-    Metadata(MetadataValueSubstate),
-}
-
-#[derive(Debug, Clone)]
-pub enum TypedObjectModuleSubstateValue {
+pub enum TypedMainModuleSubstateValue {
     // Objects
-    Package(TypedPackageSubstateValue),
-    FungibleResource(TypedFungibleResourceManagerSubstateValue),
-    NonFungibleResource(TypedNonFungibleResourceManagerSubstateValue),
-    FungibleVault(TypedFungibleVaultSubstateValue),
-    NonFungibleVault(TypedNonFungibleVaultSubstateValue),
-    EpochManager(TypedEpochManagerSubstateValue),
-    Clock(TypedClockSubstateValue),
-    Validator(TypedValidatorSubstateValue),
-    Account(TypedAccountSubstateValue),
-    AccessController(TypedAccessControllerSubstateValue),
-    // Generic Scrypto Components
-    GenericScryptoComponent(GenericScryptoComponentSubstateValue),
-    // Substates for Generic KV Stores
+    Package(TypedPackageFieldValue),
+    FungibleResource(TypedFungibleResourceManagerFieldValue),
+    NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
+    NonFungibleResourceData(GenericScryptoSborPayload),
+    FungibleVault(TypedFungibleVaultFieldValue),
+    NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
+    NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
+    EpochManagerField(TypedEpochManagerFieldValue),
+    EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
+    Clock(TypedClockFieldValue),
+    Validator(TypedValidatorFieldValue),
+    AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
+    AccessController(TypedAccessControllerFieldValue),
+    // Generic Scrypto Components and KV Stores
+    GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(GenericScryptoSborPayload),
-    GenericIndex(GenericScryptoSborPayload),
-    GenericSortedU16Index(GenericScryptoSborPayload),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedPackageSubstateValue {
+pub enum TypedPackageFieldValue {
     Info(PackageInfoSubstate),
     CodeType(PackageCodeTypeSubstate),
     Code(PackageCodeSubstate),
@@ -337,58 +335,53 @@ pub enum TypedPackageSubstateValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedFungibleResourceManagerSubstateValue {
+pub enum TypedFungibleResourceManagerFieldValue {
     Divisibility(FungibleResourceManagerDivisibilitySubstate),
     TotalSupply(FungibleResourceManagerTotalSupplySubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedNonFungibleResourceManagerSubstateValue {
+pub enum TypedNonFungibleResourceManagerFieldValue {
     IdType(NonFungibleResourceManagerIdTypeSubstate),
     MutableFields(NonFungibleResourceManagerMutableFieldsSubstate),
     TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedFungibleVaultSubstateValue {
+pub enum TypedFungibleVaultFieldValue {
     Balance(FungibleVaultBalanceSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedNonFungibleVaultSubstateValue {
+pub enum TypedNonFungibleVaultFieldValue {
     Balance(NonFungibleVaultBalanceSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedEpochManagerSubstateValue {
+pub enum TypedEpochManagerFieldValue {
     Config(EpochManagerConfigSubstate),
     EpochManager(EpochManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
-    RegisteredValidatorSet(SecondaryIndexSubstate),
+    CurrentProposalStatistic(CurrentProposalStatisticSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedClockSubstateValue {
+pub enum TypedClockFieldValue {
     CurrentTimeRoundedToMinutes(ClockSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedValidatorSubstateValue {
+pub enum TypedValidatorFieldValue {
     Validator(ValidatorSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccountSubstateValue {
-    Account(Option<Own>),
-}
-
-#[derive(Debug, Clone)]
-pub enum TypedAccessControllerSubstateValue {
+pub enum TypedAccessControllerFieldValue {
     AccessController(AccessControllerSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum GenericScryptoComponentSubstateValue {
+pub enum GenericScryptoComponentFieldValue {
     State(GenericScryptoSborPayload),
 }
 
@@ -414,36 +407,34 @@ fn to_typed_substate_value_internal(
     data: &[u8],
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
-        TypedSubstateKey::TypeInfoModule(type_info_offset) => {
-            TypedSubstateValue::TypeInfoModule(match type_info_offset {
-                TypeInfoOffset::TypeInfo => {
-                    TypedTypeInfoModuleSubstateValue::TypeInfo(scrypto_decode(data)?)
+        TypedSubstateKey::TypeInfoModuleField(type_info_offset) => {
+            TypedSubstateValue::TypeInfoModuleFieldValue(match type_info_offset {
+                TypeInfoField::TypeInfo => {
+                    TypedTypeInfoModuleFieldValue::TypeInfo(scrypto_decode(data)?)
                 }
             })
         }
-        TypedSubstateKey::AccessRulesModule(access_rules_offset) => {
-            TypedSubstateValue::AccessRulesModule(match access_rules_offset {
-                AccessRulesOffset::AccessRules => {
-                    TypedAccessRulesModuleSubstateValue::MethodAccessRules(scrypto_decode(data)?)
+        TypedSubstateKey::AccessRulesModuleField(access_rules_offset) => {
+            TypedSubstateValue::AccessRulesModuleFieldValue(match access_rules_offset {
+                AccessRulesField::AccessRules => {
+                    TypedAccessRulesModuleFieldValue::MethodAccessRules(scrypto_decode(data)?)
                 }
             })
         }
-        TypedSubstateKey::RoyaltyModule(royalty_offset) => {
-            TypedSubstateValue::RoyaltyModule(match royalty_offset {
-                RoyaltyOffset::RoyaltyConfig => {
-                    TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
+        TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
+            TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
+                RoyaltyField::RoyaltyConfig => {
+                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
                 }
-                RoyaltyOffset::RoyaltyAccumulator => {
-                    TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(scrypto_decode(
-                        data,
-                    )?)
+                RoyaltyField::RoyaltyAccumulator => {
+                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(scrypto_decode(data)?)
                 }
             })
         }
-        TypedSubstateKey::MetadataModule(_) => TypedSubstateValue::MetadataModule(
-            TypedMetadataModuleSubstateValue::Metadata(scrypto_decode(data)?),
-        ),
-        TypedSubstateKey::ObjectModule(object_substate_key) => TypedSubstateValue::ObjectModule(
+        TypedSubstateKey::MetadataModuleEntryKey(_) => {
+            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
+        }
+        TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,
         ),
     };
@@ -451,127 +442,126 @@ fn to_typed_substate_value_internal(
 }
 
 fn to_typed_object_substate_value(
-    substate_key: &TypedObjectModuleSubstateKey,
+    substate_key: &TypedMainModuleSubstateKey,
     data: &[u8],
-) -> Result<TypedObjectModuleSubstateValue, DecodeError> {
+) -> Result<TypedMainModuleSubstateValue, DecodeError> {
     let substate_value = match substate_key {
-        TypedObjectModuleSubstateKey::Package(offset) => {
-            TypedObjectModuleSubstateValue::Package(match offset {
-                PackageOffset::Info => TypedPackageSubstateValue::Info(scrypto_decode(data)?),
-                PackageOffset::CodeType => {
-                    TypedPackageSubstateValue::CodeType(scrypto_decode(data)?)
-                }
-                PackageOffset::Code => TypedPackageSubstateValue::Code(scrypto_decode(data)?),
-                PackageOffset::Royalty => TypedPackageSubstateValue::Royalty(scrypto_decode(data)?),
-                PackageOffset::FunctionAccessRules => {
-                    TypedPackageSubstateValue::FunctionAccessRules(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::PackageField(offset) => {
+            TypedMainModuleSubstateValue::Package(match offset {
+                PackageField::Info => TypedPackageFieldValue::Info(scrypto_decode(data)?),
+                PackageField::CodeType => TypedPackageFieldValue::CodeType(scrypto_decode(data)?),
+                PackageField::Code => TypedPackageFieldValue::Code(scrypto_decode(data)?),
+                PackageField::Royalty => TypedPackageFieldValue::Royalty(scrypto_decode(data)?),
+                PackageField::FunctionAccessRules => {
+                    TypedPackageFieldValue::FunctionAccessRules(scrypto_decode(data)?)
                 }
             })
         }
-        TypedObjectModuleSubstateKey::FungibleResource(offset) => {
-            TypedObjectModuleSubstateValue::FungibleResource(match offset {
-                FungibleResourceManagerOffset::Divisibility => {
-                    TypedFungibleResourceManagerSubstateValue::Divisibility(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::FungibleResourceField(offset) => {
+            TypedMainModuleSubstateValue::FungibleResource(match offset {
+                FungibleResourceManagerField::Divisibility => {
+                    TypedFungibleResourceManagerFieldValue::Divisibility(scrypto_decode(data)?)
                 }
-                FungibleResourceManagerOffset::TotalSupply => {
-                    TypedFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
-                }
-            })
-        }
-        TypedObjectModuleSubstateKey::NonFungibleResource(offset) => {
-            TypedObjectModuleSubstateValue::NonFungibleResource(match offset {
-                NonFungibleResourceManagerOffset::IdType => {
-                    TypedNonFungibleResourceManagerSubstateValue::IdType(scrypto_decode(data)?)
-                }
-                NonFungibleResourceManagerOffset::MutableFields => {
-                    TypedNonFungibleResourceManagerSubstateValue::MutableFields(scrypto_decode(
-                        data,
-                    )?)
-                }
-                NonFungibleResourceManagerOffset::TotalSupply => {
-                    TypedNonFungibleResourceManagerSubstateValue::TotalSupply(scrypto_decode(data)?)
+                FungibleResourceManagerField::TotalSupply => {
+                    TypedFungibleResourceManagerFieldValue::TotalSupply(scrypto_decode(data)?)
                 }
             })
         }
-        TypedObjectModuleSubstateKey::FungibleVault(offset) => {
-            TypedObjectModuleSubstateValue::FungibleVault(match offset {
-                FungibleVaultOffset::LiquidFungible => {
-                    TypedFungibleVaultSubstateValue::Balance(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::NonFungibleResourceField(offset) => {
+            TypedMainModuleSubstateValue::NonFungibleResource(match offset {
+                NonFungibleResourceManagerField::IdType => {
+                    TypedNonFungibleResourceManagerFieldValue::IdType(scrypto_decode(data)?)
+                }
+                NonFungibleResourceManagerField::MutableFields => {
+                    TypedNonFungibleResourceManagerFieldValue::MutableFields(scrypto_decode(data)?)
+                }
+                NonFungibleResourceManagerField::TotalSupply => {
+                    TypedNonFungibleResourceManagerFieldValue::TotalSupply(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
+            TypedMainModuleSubstateValue::NonFungibleResourceData(GenericScryptoSborPayload {
+                data: data.to_vec(),
+            })
+        }
+        TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
+            TypedMainModuleSubstateValue::FungibleVault(match offset {
+                FungibleVaultField::LiquidFungible => {
+                    TypedFungibleVaultFieldValue::Balance(scrypto_decode(data)?)
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
-                FungibleVaultOffset::LockedFungible => Err(DecodeError::InvalidCustomValue)?,
+                FungibleVaultField::LockedFungible => Err(DecodeError::InvalidCustomValue)?,
             })
         }
-        TypedObjectModuleSubstateKey::NonFungibleVault(offset) => {
-            TypedObjectModuleSubstateValue::NonFungibleVault(match offset {
-                NonFungibleVaultOffset::LiquidNonFungible => {
-                    TypedNonFungibleVaultSubstateValue::Balance(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::NonFungibleVaultField(offset) => {
+            TypedMainModuleSubstateValue::NonFungibleVaultField(match offset {
+                NonFungibleVaultField::LiquidNonFungible => {
+                    TypedNonFungibleVaultFieldValue::Balance(scrypto_decode(data)?)
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
-                NonFungibleVaultOffset::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
+                NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
             })
         }
-        TypedObjectModuleSubstateKey::EpochManager(offset) => {
-            TypedObjectModuleSubstateValue::EpochManager(match offset {
-                EpochManagerOffset::Config => {
-                    TypedEpochManagerSubstateValue::Config(scrypto_decode(data)?)
-                }
-                EpochManagerOffset::EpochManager => {
-                    TypedEpochManagerSubstateValue::EpochManager(scrypto_decode(data)?)
-                }
-                EpochManagerOffset::CurrentValidatorSet => {
-                    TypedEpochManagerSubstateValue::CurrentValidatorSet(scrypto_decode(data)?)
-                }
-                EpochManagerOffset::RegisteredValidators => {
-                    TypedEpochManagerSubstateValue::RegisteredValidatorSet(scrypto_decode(data)?)
-                }
-            })
+        TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {
+            TypedMainModuleSubstateValue::NonFungibleVaultContentsIndexEntry(scrypto_decode(data)?)
         }
-        TypedObjectModuleSubstateKey::Clock(offset) => {
-            TypedObjectModuleSubstateValue::Clock(match offset {
-                ClockOffset::CurrentTimeRoundedToMinutes => {
-                    TypedClockSubstateValue::CurrentTimeRoundedToMinutes(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::EpochManagerField(offset) => {
+            TypedMainModuleSubstateValue::EpochManagerField(match offset {
+                EpochManagerField::Config => {
+                    TypedEpochManagerFieldValue::Config(scrypto_decode(data)?)
+                }
+                EpochManagerField::EpochManager => {
+                    TypedEpochManagerFieldValue::EpochManager(scrypto_decode(data)?)
+                }
+                EpochManagerField::CurrentValidatorSet => {
+                    TypedEpochManagerFieldValue::CurrentValidatorSet(scrypto_decode(data)?)
+                }
+                EpochManagerField::CurrentProposalStatistic => {
+                    TypedEpochManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
                 }
             })
         }
-        TypedObjectModuleSubstateKey::Validator(offset) => {
-            TypedObjectModuleSubstateValue::Validator(match offset {
-                ValidatorOffset::Validator => {
-                    TypedValidatorSubstateValue::Validator(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(_) => {
+            TypedMainModuleSubstateValue::EpochManagerRegisteredValidatorsByStakeIndexEntry(
+                scrypto_decode(data)?,
+            )
+        }
+        TypedMainModuleSubstateKey::ClockField(offset) => {
+            TypedMainModuleSubstateValue::Clock(match offset {
+                ClockField::CurrentTimeRoundedToMinutes => {
+                    TypedClockFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(data)?)
                 }
             })
         }
-        TypedObjectModuleSubstateKey::Account(_) => TypedObjectModuleSubstateValue::Account(
-            TypedAccountSubstateValue::Account(scrypto_decode(data)?),
-        ),
-        TypedObjectModuleSubstateKey::AccessController(offset) => {
-            TypedObjectModuleSubstateValue::AccessController(match offset {
-                AccessControllerOffset::AccessController => {
-                    TypedAccessControllerSubstateValue::AccessController(scrypto_decode(data)?)
+        TypedMainModuleSubstateKey::ValidatorField(offset) => {
+            TypedMainModuleSubstateValue::Validator(match offset {
+                ValidatorField::Validator => {
+                    TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
                 }
             })
         }
-        TypedObjectModuleSubstateKey::GenericScryptoComponent(offset) => {
-            TypedObjectModuleSubstateValue::GenericScryptoComponent(match offset {
-                ComponentOffset::State0 => {
-                    GenericScryptoComponentSubstateValue::State(GenericScryptoSborPayload {
+        TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
+            TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccessControllerField(offset) => {
+            TypedMainModuleSubstateValue::AccessController(match offset {
+                AccessControllerField::AccessController => {
+                    TypedAccessControllerFieldValue::AccessController(scrypto_decode(data)?)
+                }
+            })
+        }
+        TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
+            TypedMainModuleSubstateValue::GenericScryptoComponent(match offset {
+                ComponentField::State0 => {
+                    GenericScryptoComponentFieldValue::State(GenericScryptoSborPayload {
                         data: data.to_vec(),
                     })
                 }
             })
         }
-        TypedObjectModuleSubstateKey::GenericKeyValueStore(_) => {
-            TypedObjectModuleSubstateValue::GenericKeyValueStore(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
-        }
-        TypedObjectModuleSubstateKey::GenericIndex(_) => {
-            TypedObjectModuleSubstateValue::GenericIndex(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
-        }
-        TypedObjectModuleSubstateKey::GenericSortedU16Index(_) => {
-            TypedObjectModuleSubstateValue::GenericSortedU16Index(GenericScryptoSborPayload {
+        TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
+            TypedMainModuleSubstateValue::GenericKeyValueStore(GenericScryptoSborPayload {
                 data: data.to_vec(),
             })
         }

@@ -26,8 +26,8 @@ pub extern "C" fn ZeroReturnSize_f(_args: u64) -> Slice {
 pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-    let mut substates = Vec::new();
-    substates.push(aggregator.add_child_type_and_descendents::<()>());
+    let mut fields = Vec::new();
+    fields.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
     functions.insert(
@@ -43,8 +43,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
     let schema = BlueprintSchema {
         outer_blueprint: None,
         schema: generate_full_schema(aggregator),
-        substates,
-        key_value_stores: vec![],
+        fields,
+        collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
@@ -58,8 +58,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
 #[no_mangle]
 pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let mut substates = Vec::new();
-    substates.push(aggregator.add_child_type_and_descendents::<()>());
+    let mut fields = Vec::new();
+    fields.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
     functions.insert(
@@ -75,8 +75,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
     let schema = BlueprintSchema {
         outer_blueprint: None,
         schema: generate_full_schema(aggregator),
-        substates,
-        key_value_stores: vec![],
+        fields,
+        collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
@@ -91,8 +91,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
 pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-    let mut substates = Vec::new();
-    substates.push(aggregator.add_child_type_and_descendents::<()>());
+    let mut fields = Vec::new();
+    fields.push(aggregator.add_child_type_and_descendents::<()>());
 
     let mut functions = BTreeMap::new();
     functions.insert(
@@ -108,8 +108,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
     let schema = BlueprintSchema {
         outer_blueprint: None,
         schema: generate_full_schema(aggregator),
-        substates,
-        key_value_stores: vec![],
+        fields,
+        collections: vec![],
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),

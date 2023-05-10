@@ -2,6 +2,7 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
+use crate::types::Blueprint;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -24,10 +25,18 @@ impl NonFungibleGlobalId {
         Self(resource_address, local_id)
     }
 
-    pub fn package_actor(package_address: PackageAddress) -> Self {
-        let local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&package_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, local_id)
+    pub fn package_of_direct_caller_badge(address: PackageAddress) -> Self {
+        // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
+        let hashed = hash(scrypto_encode(&address).unwrap()).to_vec();
+        let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
+        NonFungibleGlobalId::new(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, local_id)
+    }
+
+    pub fn global_caller_badge(global_caller: GlobalCaller) -> Self {
+        // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
+        let hashed = hash(scrypto_encode(&global_caller).unwrap()).to_vec();
+        let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
+        NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, local_id)
     }
 
     /// Returns the resource address.
@@ -60,6 +69,32 @@ impl NonFungibleGlobalId {
             .ok_or(ParseNonFungibleGlobalIdError::InvalidResourceAddress)?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
+    }
+}
+
+#[derive(Clone, Debug, ScryptoSbor)]
+pub enum GlobalCaller {
+    /// If the previous global frame started with an object's main module
+    GlobalObject(GlobalAddress),
+    /// If the previous global frame started with a function call
+    PackageBlueprint(Blueprint),
+}
+
+impl From<ComponentAddress> for GlobalCaller {
+    fn from(value: ComponentAddress) -> Self {
+        GlobalCaller::GlobalObject(value.into())
+    }
+}
+
+impl From<GlobalAddress> for GlobalCaller {
+    fn from(value: GlobalAddress) -> Self {
+        GlobalCaller::GlobalObject(value)
+    }
+}
+
+impl From<Blueprint> for GlobalCaller {
+    fn from(blueprint: Blueprint) -> Self {
+        GlobalCaller::PackageBlueprint(blueprint)
     }
 }
 
@@ -118,41 +153,26 @@ impl fmt::Debug for NonFungibleGlobalId {
     }
 }
 
-pub trait FromComponent: Sized {
-    fn from_component_address(component: &ComponentAddress) -> Self;
-}
-
-impl FromComponent for NonFungibleGlobalId {
-    fn from_component_address(component_address: &ComponentAddress) -> Self {
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(component_address).unwrap()).unwrap();
-        NonFungibleGlobalId::new(GLOBAL_ACTOR_VIRTUAL_BADGE, non_fungible_local_id)
-    }
-}
-
 pub trait FromPublicKey: Sized {
-    fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self;
+    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self;
+    fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self;
 }
 
 impl FromPublicKey for NonFungibleGlobalId {
-    fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
-        let public_key: PublicKey = public_key.clone().into();
+    fn from_public_key<P: HasPublicKeyHash>(public_key: &P) -> Self {
+        Self::from_public_key_hash(public_key.get_hash())
+    }
 
-        match public_key {
-            PublicKey::EcdsaSecp256k1(public_key) => {
-                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                NonFungibleGlobalId::new(
-                    ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-                )
-            }
-            PublicKey::EddsaEd25519(public_key) => {
-                let id: [u8; NodeId::UUID_LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                NonFungibleGlobalId::new(
-                    EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-                    NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-                )
-            }
+    fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self {
+        match public_key_hash.into_enum() {
+            PublicKeyHash::EcdsaSecp256k1(public_key_hash) => NonFungibleGlobalId::new(
+                ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
+            ),
+            PublicKeyHash::EddsaEd25519(public_key_hash) => NonFungibleGlobalId::new(
+                EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
+                NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
+            ),
         }
     }
 }

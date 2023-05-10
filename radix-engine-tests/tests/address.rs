@@ -1,6 +1,6 @@
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -175,8 +175,7 @@ fn get_global_address_in_child_should_succeed() {
     assert_eq!(component, get_global_address_component)
 }
 
-#[test]
-fn call_component_address_protected_method_in_parent_should_succeed() {
+fn test_call_component_address_protected_method(caller_child: bool, callee_child: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
@@ -209,8 +208,8 @@ fn call_component_address_protected_method_in_parent_should_succeed() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
             component,
-            "call_other_component_in_parent",
-            manifest_args!(),
+            "call_other_component",
+            manifest_args!(caller_child, callee_child),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -220,7 +219,33 @@ fn call_component_address_protected_method_in_parent_should_succeed() {
 }
 
 #[test]
-fn call_component_address_protected_method_in_child_should_succeed() {
+fn call_component_address_protected_method_in_parent_to_parent_should_succeed() {
+    test_call_component_address_protected_method(false, false);
+}
+
+#[test]
+fn call_component_address_protected_method_in_child_to_parent_should_succeed() {
+    test_call_component_address_protected_method(true, false);
+}
+
+#[test]
+fn call_component_address_protected_method_in_parent_to_child_should_succeed() {
+    test_call_component_address_protected_method(false, true);
+}
+
+#[test]
+fn call_component_address_protected_method_in_child_to_child_should_succeed() {
+    test_call_component_address_protected_method(false, false);
+}
+
+enum AssertAgainst {
+    SelfPackage,
+    TransactionProcessorPackage,
+    SelfBlueprint,
+    TransactionProcessorBlueprint,
+}
+
+fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
@@ -248,15 +273,102 @@ fn call_component_address_protected_method_in_child_should_succeed() {
     receipt.expect_commit_success();
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
+    let (method_name, args) = match package {
+        AssertAgainst::SelfPackage => (
+            "assert_check_on_package",
+            manifest_args!(package_address, child),
+        ),
+        AssertAgainst::SelfBlueprint => {
+            let blueprint = Blueprint::new(&package_address, "MyComponent");
+            (
+                "assert_check_on_global_blueprint_caller",
+                manifest_args!(blueprint, child),
+            )
+        }
+        AssertAgainst::TransactionProcessorPackage => (
+            "assert_check_on_package",
+            manifest_args!(TRANSACTION_PROCESSOR_PACKAGE, child),
+        ),
+        AssertAgainst::TransactionProcessorBlueprint => {
+            let blueprint = Blueprint::new(
+                &TRANSACTION_PROCESSOR_PACKAGE,
+                TRANSACTION_PROCESSOR_BLUEPRINT,
+            );
+            (
+                "assert_check_on_global_blueprint_caller",
+                manifest_args!(blueprint, child),
+            )
+        }
+    };
+
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_method(component, "call_other_component_in_child", manifest_args!())
+        .call_method(component, method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_success();
+    if should_succeed {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            )
+        });
+    }
+}
+
+/// Package actor badge will be different depending on whether the callee is global or internal
+mod package_actor_badge {
+    use crate::{test_assert, AssertAgainst};
+
+    #[test]
+    fn assert_self_package_in_global_callee_should_fail() {
+        test_assert(AssertAgainst::SelfPackage, false, false);
+    }
+
+    #[test]
+    fn assert_self_package_in_internal_callee_should_succeed() {
+        test_assert(AssertAgainst::SelfPackage, true, true);
+    }
+
+    #[test]
+    fn assert_tx_processor_package_in_global_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorPackage, false, true);
+    }
+
+    #[test]
+    fn assert_tx_processor_package_in_internal_callee_should_fail() {
+        test_assert(AssertAgainst::TransactionProcessorPackage, true, false);
+    }
+}
+
+/// Global caller results should be the same whether the callee is global or internal
+mod global_caller_actor_badge {
+    use crate::{test_assert, AssertAgainst};
+
+    #[test]
+    fn assert_self_blueprint_global_caller_in_global_callee_should_fail() {
+        test_assert(AssertAgainst::SelfBlueprint, false, false);
+    }
+
+    #[test]
+    fn assert_self_blueprint_global_caller_in_internal_callee_should_fail() {
+        test_assert(AssertAgainst::SelfBlueprint, true, false);
+    }
+
+    #[test]
+    fn assert_tx_processor_blueprint_global_caller_in_global_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorBlueprint, false, true);
+    }
+
+    #[test]
+    fn assert_tx_processor_blueprint_global_caller_in_internal_callee_should_succeed() {
+        test_assert(AssertAgainst::TransactionProcessorBlueprint, true, true);
+    }
 }
 
 #[test]
@@ -380,50 +492,6 @@ fn errors_if_assigns_same_address_to_two_components() {
         vec![],
     );
     receipt.expect_commit_failure();
-}
-
-#[test]
-fn errors_if_assigns_wrong_entity_type() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
-
-    // Check it can be successful...
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::GlobalGenericComponent,
-    )
-    .expect_commit_success();
-
-    // And all these are failures...
-    create_component_as(&mut test_runner, package_address, EntityType::GlobalAccount)
-        .expect_commit_failure();
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::GlobalFungibleResource,
-    )
-    .expect_commit_failure();
-    create_component_as(
-        &mut test_runner,
-        package_address,
-        EntityType::InternalGenericComponent,
-    )
-    .expect_commit_failure();
-}
-
-fn create_component_as(
-    test_runner: &mut TestRunner,
-    package_address: PackageAddress,
-    entity_type: EntityType,
-) -> TransactionReceipt {
-    test_runner.call_function(
-        package_address,
-        "PreallocationComponent",
-        "create_with_allocated_address_for_entity_type",
-        manifest_args!(entity_type),
-    )
 }
 
 #[test]

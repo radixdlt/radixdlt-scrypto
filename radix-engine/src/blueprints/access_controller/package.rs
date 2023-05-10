@@ -2,6 +2,7 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::event_schema;
+use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
@@ -13,7 +14,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::{ACCESS_CONTROLLER_PACKAGE, PACKAGE_VIRTUAL_BADGE};
 use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
@@ -151,8 +151,8 @@ impl AccessControllerNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<AccessControllerSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -375,8 +375,8 @@ impl AccessControllerNativePackage {
                 ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores: vec![],
+                    fields,
+                    collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema
@@ -393,7 +393,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
             ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
@@ -517,7 +517,7 @@ impl AccessControllerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let input: AccessControllerCreateGlobalInput = input.as_typed().map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -541,19 +541,29 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let access_rules =
-            AccessRules::sys_new(access_rules_from_rule_set(input.rule_set), btreemap!(), api)?.0;
+        let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
+        let address = GlobalAddress::new_or_panic(address.0);
+
+        let access_rules = AccessRules::sys_new(
+            access_rules_from_rule_set(address, input.rule_set),
+            btreemap!(),
+            api,
+        )?
+        .0;
 
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
-        let address = api.globalize(btreemap!(
-            ObjectModuleId::SELF => object_id,
-            ObjectModuleId::AccessRules => access_rules.0,
-            ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
-        ))?;
+        api.globalize_with_address(
+            btreemap!(
+                ObjectModuleId::Main => object_id,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
+            ),
+            address,
+        )?;
 
         Ok(IndexedScryptoValue::from_typed(&address))
     }
@@ -722,10 +732,12 @@ impl AccessControllerNativePackage {
             },
         )?;
 
+        let address = api.actor_get_global_address()?;
+
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -763,10 +775,11 @@ impl AccessControllerNativePackage {
             },
         )?;
 
+        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -799,7 +812,8 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        let address = api.actor_get_global_address()?;
+        update_access_rules(api, receiver, locked_access_rules(address))?;
 
         Runtime::emit_event(
             api,
@@ -830,7 +844,8 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        let address = api.actor_get_global_address()?;
+        update_access_rules(api, receiver, locked_access_rules(address))?;
 
         Runtime::emit_event(
             api,
@@ -866,10 +881,11 @@ impl AccessControllerNativePackage {
         )?;
 
         // Update the access rules
+        let address = api.actor_get_global_address()?;
         update_access_rules(
             api,
             receiver,
-            access_rules_from_rule_set(recovery_proposal.rule_set),
+            access_rules_from_rule_set(address, recovery_proposal.rule_set),
         )?;
 
         Runtime::emit_event(
@@ -1073,49 +1089,49 @@ fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
 // Helpers
 //=========
 
-fn locked_access_rules() -> AccessRulesConfig {
+fn locked_access_rules(address: GlobalAddress) -> AccessRulesConfig {
     let rule_set = RuleSet {
         primary_role: AccessRule::DenyAll,
         recovery_role: AccessRule::DenyAll,
         confirmation_role: AccessRule::DenyAll,
     };
-    access_rules_from_rule_set(rule_set)
+    access_rules_from_rule_set(address, rule_set)
 }
 
-fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
+fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
 
     // Primary Role Rules
     let primary_group = "primary";
     access_rules.set_group_access_rule(primary_group.into(), rule_set.primary_role.clone());
     access_rules.set_method_access_rule_to_group(
-        MethodKey::new(ObjectModuleId::SELF, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
+        MethodKey::new(ObjectModuleId::Main, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
         ),
         primary_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         primary_group.into(),
@@ -1126,49 +1142,49 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     access_rules.set_group_access_rule(recovery_group.into(), rule_set.recovery_role.clone());
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
         ),
         recovery_group.into(),
@@ -1185,14 +1201,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         recovery_or_confirmation_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         recovery_or_confirmation_group.into(),
@@ -1209,14 +1225,14 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         ),
         primary_or_confirmation_group.into(),
     );
     access_rules.set_method_access_rule_to_group(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         primary_or_confirmation_group.into(),
@@ -1225,7 +1241,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
     // Other methods
     access_rules.set_method_access_rule(
         MethodKey::new(
-            ObjectModuleId::SELF,
+            ObjectModuleId::Main,
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         ),
         access_rule_or(
@@ -1238,12 +1254,7 @@ fn access_rules_from_rule_set(rule_set: RuleSet) -> AccessRulesConfig {
         ),
     );
 
-    let non_fungible_local_id =
-        NonFungibleLocalId::bytes(scrypto_encode(&ACCESS_CONTROLLER_PACKAGE).unwrap()).unwrap();
-    let non_fungible_global_id =
-        NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
-
-    access_rules.default(rule!(deny_all), rule!(require(non_fungible_global_id)))
+    access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))
 }
 
 fn transition<Y, I>(
@@ -1254,8 +1265,8 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: Transition<I>,
 {
-    let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.actor_lock_field(substate_key, LockFlags::read_only())?;
+    let substate_key = AccessControllerField::AccessController.into();
+    let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
         let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
@@ -1277,8 +1288,8 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerSubstate: TransitionMut<I>,
 {
-    let substate_key = AccessControllerOffset::AccessController.into();
-    let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
+    let substate_key = AccessControllerField::AccessController.into();
+    let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
         let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;

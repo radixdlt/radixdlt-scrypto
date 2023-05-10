@@ -1,6 +1,4 @@
-use crate::blueprints::epoch_manager::{
-    EpochManagerBlueprint, EpochManagerConfigSubstate, EpochManagerSubstate,
-};
+use crate::blueprints::epoch_manager::*;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -10,13 +8,13 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::sorted_index_api::SortedKey;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -81,7 +79,11 @@ impl ValidatorBlueprint {
             StakeEvent { xrd_staked: amount }
         };
 
-        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
@@ -129,7 +131,11 @@ impl ValidatorBlueprint {
             }
         };
 
-        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Unstake
@@ -150,15 +156,17 @@ impl ValidatorBlueprint {
 
             lp_token_resman.burn(lp_tokens, api)?;
 
-            let manager_handle = api.actor_lock_outer_object_field(
-                EpochManagerOffset::EpochManager.into(),
+            let manager_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
+                EpochManagerField::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
             let current_epoch = epoch_manager.epoch;
 
-            let config_handle = api.actor_lock_outer_object_field(
-                EpochManagerOffset::Config.into(),
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
+                EpochManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
             let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
@@ -195,8 +203,8 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let substate_key = ValidatorOffset::Validator.into();
-        let handle = api.actor_lock_field(substate_key, LockFlags::MUTABLE)?;
+        let substate_key = ValidatorField::Validator.into();
+        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         // No update
@@ -264,13 +272,7 @@ impl ValidatorBlueprint {
         };
 
         if let Some(update) = update {
-            let registered_handle = api.actor_lock_outer_object_field(
-                EpochManagerOffset::RegisteredValidators.into(),
-                LockFlags::read_only(),
-            )?;
-            let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
-
-            EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
+            Self::update_validator(update, api)?;
         }
 
         Ok(new_sorted_key)
@@ -280,8 +282,11 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle =
-            api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::read_only())?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
         let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
@@ -295,8 +300,9 @@ impl ValidatorBlueprint {
         }
 
         let current_epoch = {
-            let mgr_handle = api.actor_lock_outer_object_field(
-                EpochManagerOffset::EpochManager.into(),
+            let mgr_handle = api.actor_lock_field(
+                OBJECT_HANDLE_OUTER_OBJECT,
+                EpochManagerField::EpochManager.into(),
                 LockFlags::read_only(),
             )?;
             let mgr_substate: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
@@ -335,7 +341,11 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(ValidatorOffset::Validator.into(), LockFlags::MUTABLE)?;
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Update Epoch Manager
@@ -346,13 +356,7 @@ impl ValidatorBlueprint {
                     key,
                 };
 
-                let registered_handle = api.actor_lock_outer_object_field(
-                    EpochManagerOffset::RegisteredValidators.into(),
-                    LockFlags::read_only(),
-                )?;
-                let secondary_index: Own = api.field_lock_read_typed(registered_handle)?;
-
-                EpochManagerBlueprint::update_validator(secondary_index.as_node_id(), update, api)?;
+                Self::update_validator(update, api)?;
             }
         }
 
@@ -382,7 +386,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                 object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(ObjectModuleId::SELF, VALIDATOR_STAKE_IDENT),
+                method_key: MethodKey::new(ObjectModuleId::Main, VALIDATOR_STAKE_IDENT),
                 rule,
             })
             .unwrap(),
@@ -406,18 +410,97 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            let stake_100k =
-                stake / Decimal::from(10).powi(Decimal::SCALE.into()) / Decimal::from(100000);
-            let stake_100k_le = stake_100k.to_vec();
-            let bytes = [stake_100k_le[1], stake_100k_le[0]];
-            let reverse_stake_u16 = u16::from_be_bytes(bytes);
-            let sorted_key = u16::MAX - reverse_stake_u16;
             Some(SortedKey::new(
-                sorted_key,
+                create_sort_prefix_from_stake(stake),
                 scrypto_encode(&address).unwrap(),
             ))
         }
     }
+
+    pub(crate) fn update_validator<Y>(
+        update: UpdateSecondaryIndex,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match update {
+            UpdateSecondaryIndex::Create {
+                index_key,
+                primary: address,
+                key,
+                stake,
+            } => {
+                api.actor_sorted_index_insert_typed(
+                    OBJECT_HANDLE_OUTER_OBJECT,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    index_key,
+                    (address, Validator { key, stake }),
+                )?;
+            }
+            UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
+                let (address, mut validator) = api
+                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                        OBJECT_HANDLE_OUTER_OBJECT,
+                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        &index_key,
+                    )?
+                    .unwrap();
+                validator.key = key;
+                api.actor_sorted_index_insert_typed(
+                    OBJECT_HANDLE_OUTER_OBJECT,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    index_key,
+                    (address, validator),
+                )?;
+            }
+            UpdateSecondaryIndex::UpdateStake {
+                index_key,
+                new_index_key,
+                new_stake_amount,
+            } => {
+                let (address, mut validator) = api
+                    .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
+                        OBJECT_HANDLE_OUTER_OBJECT,
+                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        &index_key,
+                    )?
+                    .unwrap();
+                validator.stake = new_stake_amount;
+                api.actor_sorted_index_insert_typed(
+                    OBJECT_HANDLE_OUTER_OBJECT,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    new_index_key,
+                    (address, validator),
+                )?;
+            }
+            UpdateSecondaryIndex::Remove { index_key } => {
+                api.actor_sorted_index_remove(
+                    OBJECT_HANDLE_OUTER_OBJECT,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    &index_key,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
+    // Note: XRD max supply is 24bn
+    // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
+    // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
+    // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
+    let stake_100k = stake / Decimal::from(100000);
+    let stake_100k_whole_units = (stake_100k / Decimal::from(10).powi(Decimal::SCALE.into())).0;
+    let stake_u16 = if stake_100k_whole_units > BnumI256::from(u16::MAX) {
+        u16::MAX
+    } else {
+        stake_100k_whole_units.try_into().unwrap()
+    };
+    // We invert the key because we need high stake to appear first and it's ordered ASC
+    u16::MAX - stake_u16
 }
 
 struct SecurifiedValidator;
@@ -428,7 +511,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
     fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
-        let non_fungible_global_id = NonFungibleGlobalId::package_actor(EPOCH_MANAGER_PACKAGE);
         vec![
             (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
             (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
@@ -436,7 +518,10 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 VALIDATOR_STAKE_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
-                    AccessRuleEntry::AccessRule(rule!(require(non_fungible_global_id))),
+                    // TODO: Change to global caller
+                    AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
+                        EPOCH_MANAGER_PACKAGE
+                    )))),
                 ),
             ),
         ]
@@ -446,26 +531,21 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_liquidity_token<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
-
         liquidity_token_auth.insert(
             Mint,
-            (
-                rule!(require(non_fungible_global_id.clone())),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -476,26 +556,22 @@ impl ValidatorCreator {
         Ok(liquidity_token_resource_manager.0)
     }
 
-    fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
+    fn create_unstake_nft<Y>(
+        address: GlobalAddress,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_local_id =
-            NonFungibleLocalId::bytes(scrypto_encode(&EPOCH_MANAGER_PACKAGE).unwrap()).unwrap();
-        let non_fungible_global_id =
-            NonFungibleGlobalId::new(PACKAGE_VIRTUAL_BADGE, non_fungible_local_id);
 
         unstake_token_auth.insert(
             Mint,
-            (
-                rule!(require(non_fungible_global_id.clone())),
-                rule!(deny_all),
-            ),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(
             Burn,
-            (rule!(require(non_fungible_global_id)), rule!(deny_all)),
+            (rule!(require(global_caller(address))), rule!(deny_all)),
         );
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -519,10 +595,14 @@ impl ValidatorCreator {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let address = GlobalAddress::new_or_panic(
+            api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
+        );
+
         let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let unstake_nft = Self::create_unstake_nft(api)?;
-        let liquidity_token = Self::create_liquidity_token(api)?;
+        let unstake_nft = Self::create_unstake_nft(address, api)?;
+        let liquidity_token = Self::create_liquidity_token(address, api)?;
 
         let substate = ValidatorSubstate {
             sorted_key: None,
@@ -543,17 +623,36 @@ impl ValidatorCreator {
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalValidator)?;
-        let address = ComponentAddress::new_or_panic(global_node_id.into());
         api.globalize_with_address(
             btreemap!(
-                ObjectModuleId::SELF => validator_id,
+                ObjectModuleId::Main => validator_id,
                 ObjectModuleId::AccessRules => access_rules.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            address.into(),
+            address,
         )?;
-        Ok((address.into(), owner_token_bucket))
+
+        Ok((
+            ComponentAddress::new_or_panic(address.into()),
+            owner_token_bucket,
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_key_is_calculated_correctly() {
+        assert_eq!(create_sort_prefix_from_stake(Decimal::ZERO), u16::MAX);
+        assert_eq!(create_sort_prefix_from_stake(dec!(99_999)), u16::MAX);
+        assert_eq!(create_sort_prefix_from_stake(dec!(100_000)), u16::MAX - 1);
+        assert_eq!(create_sort_prefix_from_stake(dec!(199_999)), u16::MAX - 1);
+        assert_eq!(create_sort_prefix_from_stake(dec!(200_000)), u16::MAX - 2);
+        // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
+        let max_xrd_supply = dec!(24) * dec!(10).powi(12);
+        assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
     }
 }

@@ -2,7 +2,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
-use crate::system::system_callback::{SystemConfig, SystemInvocation};
+use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
@@ -26,12 +26,12 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation<SystemInvocation>,
+        invocation: &KernelInvocation<Actor>,
         input_size: usize,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            invocation.resolved_actor, input_size
+            invocation.call_frame_data, input_size
         )
         .green();
 
@@ -88,9 +88,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        node_module_init: &BTreeMap<ModuleNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
     ) -> Result<(), RuntimeError> {
-        let mut module_substate_keys = BTreeMap::<&ModuleNumber, Vec<&SubstateKey>>::new();
+        let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
         for (module_id, m) in node_module_init {
             for (substate_key, _) in m {
                 module_substate_keys
@@ -121,7 +121,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &ModuleNumber,
+        module_id: &PartitionNumber,
         offset: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

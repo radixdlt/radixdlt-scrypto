@@ -8,7 +8,10 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
+    PackageSchema, Receiver,
+};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
@@ -19,11 +22,17 @@ impl EpochManagerNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
-        substates.push(aggregator.add_child_type_and_descendents::<SecondaryIndexSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
+        fields
+            .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
+
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::SortedIndex(
+            BlueprintSortedIndexSchema {},
+        ));
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -97,8 +106,8 @@ impl EpochManagerNativePackage {
         let epoch_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            collections,
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
@@ -106,8 +115,8 @@ impl EpochManagerNativePackage {
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let mut substates = Vec::new();
-        substates.push(aggregator.add_child_type_and_descendents::<ValidatorSubstate>());
+        let mut fields = Vec::new();
+        fields.push(aggregator.add_child_type_and_descendents::<ValidatorSubstate>());
 
         let mut functions = BTreeMap::new();
         functions.insert(
@@ -192,8 +201,8 @@ impl EpochManagerNativePackage {
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
-            substates,
-            key_value_stores: vec![],
+            fields,
+            collections: vec![],
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
@@ -290,7 +299,11 @@ impl EpochManagerNativePackage {
                 let input: EpochManagerNextRoundInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::next_round(input.round, api)?;
+                let rtn = EpochManagerBlueprint::next_round(
+                    input.round,
+                    input.leader_proposal_history,
+                    api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

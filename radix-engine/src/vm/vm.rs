@@ -32,8 +32,8 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         let code_type = {
             let handle = api.kernel_lock_substate(
                 address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::CodeType.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::CodeType.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
@@ -46,8 +46,8 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         let package_code = {
             let handle = api.kernel_lock_substate(
                 address.as_node_id(),
-                OBJECT_BASE_MODULE,
-                &PackageOffset::Code.into(),
+                OBJECT_BASE_PARTITION,
+                &PackageField::Code.into(),
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;

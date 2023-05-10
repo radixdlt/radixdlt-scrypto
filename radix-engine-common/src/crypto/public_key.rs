@@ -28,3 +28,11 @@ impl From<EddsaEd25519PublicKey> for PublicKey {
         Self::EddsaEd25519(public_key)
     }
 }
+
+impl HasPublicKeyHash for PublicKey {
+    type TypedPublicKeyHash = PublicKeyHash;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        PublicKeyHash::new_from_public_key(self)
+    }
+}

@@ -5,8 +5,8 @@ use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
-    BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, Receiver,
-    TypeSchema, VirtualLazyLoadSchema,
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
+    PackageSchema, Receiver, TypeSchema, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::AccountBlueprint;
@@ -14,8 +14,8 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
-const ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_256k1";
-const ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME: &str = "create_virtual_ecdsa_25519";
+const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
+const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
 
 pub struct AccountNativePackage;
 
@@ -23,16 +23,18 @@ impl AccountNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let substates = Vec::new();
+        let fields = Vec::new();
 
-        let mut key_value_stores = Vec::new();
-        key_value_stores.push(BlueprintKeyValueStoreSchema {
-            key: TypeSchema::Blueprint(
-                aggregator.add_child_type_and_descendents::<ResourceAddress>(),
-            ),
-            value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
-            can_own: true,
-        });
+        let mut collections = Vec::new();
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceAddress>(),
+                ),
+                value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
+                can_own: true,
+            },
+        ));
 
         let mut functions = BTreeMap::new();
 
@@ -198,11 +200,11 @@ impl AccountNativePackage {
         );
 
         let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME.to_string(),
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
             },
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_ID => VirtualLazyLoadSchema {
-                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME.to_string(),
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID => VirtualLazyLoadSchema {
+                export_name: ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME.to_string(),
             }
         );
 
@@ -212,8 +214,8 @@ impl AccountNativePackage {
                 ACCOUNT_BLUEPRINT.to_string() => BlueprintSchema {
                     outer_blueprint: None,
                     schema,
-                    substates,
-                    key_value_stores,
+                    fields,
+                    collections,
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into()
@@ -233,7 +235,7 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_ECDSA_256K1_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -245,11 +247,12 @@ impl AccountNativePackage {
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_virtual_ecdsa_256k1(input.id, api)?;
+
+                let rtn = AccountBlueprint::create_virtual_secp256k1(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_VIRTUAL_EDDSA_255519_EXPORT_NAME => {
+            ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -261,7 +264,7 @@ impl AccountNativePackage {
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_virtual_eddsa_25519(input.id, api)?;
+                let rtn = AccountBlueprint::create_virtual_ed25519(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -277,6 +280,7 @@ impl AccountNativePackage {
                 let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
+
                 let rtn = AccountBlueprint::create_advanced(input.config, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -293,6 +297,7 @@ impl AccountNativePackage {
                 let _input: AccountCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
+
                 let rtn = AccountBlueprint::create(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))

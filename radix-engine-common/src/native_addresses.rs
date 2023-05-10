@@ -37,46 +37,40 @@ pub const EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddre
     169, 229, 71, 198, 49, 140, 99, 24, 198,
 ]);
 
-/// The non-fungible badge resource which is used for virtual proofs representing the package of the current actor.
+/// The non-fungible badge resource which is used for virtual proofs which represent the package of
+/// the immediate caller - ie the actor which made the latest (global or internal) call.
 ///
-/// For example, an internal Pool component under a global Swap component would have a package badge of the Pool's package address.
-pub const PACKAGE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
-    154, 76, 99, 24, 198, 49, 140, 96, 219, 184, 88, 204, 99, 24, 198, 49, 140, 247, 191, 90, 57,
-    222, 245, 23, 198, 49, 140, 99, 24, 198,
-]);
+/// For example, if there is a global component A containing an internal component A2, and A2 makes a global call to B,
+/// then the access check for that global call will see a proof of this `PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE` for the package of A2.
+pub const PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE: ResourceAddress =
+    ResourceAddress::new_or_panic([
+        154, 76, 99, 24, 198, 49, 140, 96, 219, 31, 248, 204, 99, 24, 198, 49, 140, 247, 199, 84,
+        86, 171, 162, 251, 198, 49, 140, 99, 24, 198,
+    ]);
 
-/// The non-fungible badge resource which is used for virtual proofs representing the global ancestor of the current actor.
+/// The non-fungible badge resource which is used for virtual proofs which represent the global ancestor
+/// of the actor which made the latest global call.
 ///
-/// For example, an internal Pool component under a global Swap component would have a global actor badge of the Swap's component address.
-pub const GLOBAL_ACTOR_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
-    154, 76, 99, 24, 198, 49, 140, 100, 127, 184, 88, 204, 99, 24, 198, 49, 140, 245, 82, 53, 210,
-    181, 165, 29, 230, 49, 140, 99, 24, 198,
-]);
-
-/// The non-fungible badge resource which is used for virtual proofs representing the current local actor module that is automatically on an auth zone.
-///
-/// For example, an internal Pool component under a global Swap component would have a local actor badge of the Pool's internal component address, for the object module.
-///
-/// TODO: Needs implementing!
-pub const LOCAL_ACTOR_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
-    154, 76, 99, 24, 198, 49, 140, 111, 227, 184, 88, 204, 99, 24, 198, 49, 140, 247, 197, 85, 209,
-    106, 114, 170, 134, 49, 140, 99, 24, 198,
+/// For example, if there is a global component A containing an internal component A2, and A2 makes a global call to B,
+/// then the access check for that global call will see a proof of this `GLOBAL_CALLER_VIRTUAL_BADGE` for the global component A.
+pub const GLOBAL_CALLER_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+    154, 76, 99, 24, 198, 49, 140, 100, 127, 31, 248, 204, 99, 24, 198, 49, 140, 247, 170, 52, 123,
+    223, 170, 81, 230, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
 // TRANSACTION BADGES
 //=========================================================================
 
-/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is a system transaction.
+/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is
+/// a system transaction.
+///
+/// The following ids have meanings:
+/// * `0` is used to represent a full-authority system transaction such as genesis, or a protocol update
+/// * `1` is used to represent a consensus-authrority transaction, such as a round change
 pub const SYSTEM_TRANSACTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 104, 18, 11, 52, 204, 99, 24, 198, 49, 140, 247, 171, 71, 140,
     85, 71, 199, 198, 49, 140, 99, 24, 198,
-]);
-
-/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is a consensus/validator transaction.
-pub const CONSENSUS_TRANSACTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
-    154, 76, 99, 24, 198, 49, 140, 108, 78, 11, 52, 204, 99, 24, 198, 49, 140, 247, 189, 90, 122,
-    171, 74, 81, 70, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
@@ -256,19 +250,14 @@ mod tests {
             "resource_rdx1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxxed25sg",
         );
         check_address(
-            PACKAGE_VIRTUAL_BADGE.as_ref(),
+            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResource,
-            "resource_rdx1nfxxxxxxxxxxpkactrxxxxxxxxx000668800297xxxxxxxxxpkactr",
+            "resource_rdx1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxpkcllr",
         );
         check_address(
-            GLOBAL_ACTOR_VIRTUAL_BADGE.as_ref(),
+            GLOBAL_CALLER_VIRTUAL_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResource,
-            "resource_rdx1nfxxxxxxxxxxglactrxxxxxxxxx025346266280xxxxxxxxxglactr",
-        );
-        check_address(
-            LOCAL_ACTOR_VIRTUAL_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
-            "resource_rdx1nfxxxxxxxxxxlcactrxxxxxxxxx003246948925xxxxxxxxxlcactr",
+            "resource_rdx1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxglcllr",
         );
 
         // Transaction badges
@@ -276,11 +265,6 @@ mod tests {
             SYSTEM_TRANSACTION_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResource,
             "resource_rdx1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxsystxn",
-        );
-        check_address(
-            CONSENSUS_TRANSACTION_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
-            "resource_rdx1nfxxxxxxxxxxcnstxnxxxxxxxxx000260245552xxxxxxxxxcnstxn",
         );
 
         // Entity owner badges

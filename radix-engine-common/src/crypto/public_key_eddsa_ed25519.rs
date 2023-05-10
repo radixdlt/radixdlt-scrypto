@@ -1,11 +1,9 @@
+use super::*;
+use crate::types::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
@@ -24,6 +22,10 @@ impl EddsaEd25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
+
+    pub fn to_hash(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
 }
 
 impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
@@ -35,6 +37,38 @@ impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
         }
 
         Ok(EddsaEd25519PublicKey(copy_u8_array(slice)))
+    }
+}
+
+//======
+// hash
+//======
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
+#[sbor(transparent)]
+pub struct EddsaEd25519PublicKeyHash(pub [u8; NodeId::UUID_LENGTH]);
+
+impl EddsaEd25519PublicKeyHash {
+    pub fn new_from_public_key(public_key: &EddsaEd25519PublicKey) -> Self {
+        Self(hash_public_key_bytes(public_key.0))
+    }
+}
+
+impl HasPublicKeyHash for EddsaEd25519PublicKey {
+    type TypedPublicKeyHash = EddsaEd25519PublicKeyHash;
+
+    fn get_hash(&self) -> Self::TypedPublicKeyHash {
+        Self::TypedPublicKeyHash::new_from_public_key(self)
+    }
+}
+
+impl IsPublicKeyHash for EddsaEd25519PublicKeyHash {
+    fn get_hash_bytes(&self) -> &[u8; NodeId::UUID_LENGTH] {
+        &self.0
+    }
+
+    fn into_enum(self) -> PublicKeyHash {
+        PublicKeyHash::EddsaEd25519(self)
     }
 }
 

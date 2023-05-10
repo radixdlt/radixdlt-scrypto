@@ -53,7 +53,7 @@ impl AttachedAccessRules {
                 ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::SELF, method_name),
+                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
                     rule: AccessRuleEntry::AccessRule(access_rule),
                 })
                 .unwrap(),
@@ -70,7 +70,7 @@ impl AttachedAccessRules {
                 ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetMethodMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::SELF, method_name),
+                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
                     mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 })
                 .unwrap(),
