@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, Metadat
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerNextRoundInput, ValidatorUpdateAcceptDelegatedStakeInput,
+    EpochManagerNextRoundInput, LeaderProposalHistory, ValidatorUpdateAcceptDelegatedStakeInput,
     EPOCH_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
@@ -628,17 +628,14 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn epoch_manager_round_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(
-            rounds_per_epoch - 1,
-            0,
-        )),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -660,7 +657,7 @@ fn epoch_manager_round_update_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
-                && is_decoded_equal(&RoundChangeEvent { round: 4 }, event_data) =>
+                && is_decoded_equal(&RoundChangeEvent { round: 1 }, event_data) =>
                 true,
             _ => false,
         });
@@ -671,10 +668,32 @@ fn epoch_manager_round_update_emits_correct_event() {
 fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
-    // Act
+    // Prepare: advance to round `rounds_per_epoch - 1` by a gap followed by a fallback round; disregard the receipt
+    test_runner.execute_transaction(
+        SystemTransaction {
+            instructions: vec![Instruction::CallMethod {
+                component_address: EPOCH_MANAGER,
+                method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&EpochManagerNextRoundInput {
+                    round: rounds_per_epoch - 1,
+                    leader_proposal_history: LeaderProposalHistory {
+                        gap_round_leaders: (2..rounds_per_epoch).map(|_| 0).collect(),
+                        current_leader: 0,
+                        is_fallback: true,
+                    },
+                }),
+            }],
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Act: perform the most usual successful next round
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
@@ -718,7 +737,8 @@ fn validator_registration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -769,7 +789,8 @@ fn validator_unregistration_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -831,7 +852,8 @@ fn validator_staking_emits_correct_event() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -1259,7 +1281,8 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis =
+        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account) = test_runner.new_account(false);
 
