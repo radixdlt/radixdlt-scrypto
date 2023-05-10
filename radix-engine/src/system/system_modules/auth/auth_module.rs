@@ -2,9 +2,9 @@ use super::Authentication;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::{CallFrameUpdate, RENodeLocation};
 use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvokeApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
@@ -13,7 +13,7 @@ use crate::system::node_modules::access_rules::{
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
@@ -47,10 +47,10 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn function_auth<Y: KernelApi<M>, M: KernelCallbackObject>(
+    fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         blueprint: &Blueprint,
         ident: &str,
-        api: &mut Y,
+        api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
         let auth = if blueprint.package_address.eq(&PACKAGE_PACKAGE) {
             // TODO: remove
@@ -69,7 +69,7 @@ impl AuthModule {
                 OBJECT_BASE_PARTITION,
                 &PackageField::FunctionAccessRules.into(),
                 LockFlags::read_only(),
-                M::LockData::default(),
+                SystemLockData::default(),
             )?;
             let package_access_rules: FunctionAccessRulesSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -84,88 +84,109 @@ impl AuthModule {
         Ok(auth)
     }
 
-    fn method_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        node_id: &NodeId,
-        module_id: &ObjectModuleId,
-        ident: &str,
+    fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        auth_zone_id: &NodeId,
+        actor: &MethodActor,
         args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<Vec<AccessRule>, RuntimeError> {
-        let auths = match (node_id, module_id, ident) {
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
+        let node_id = actor.node_id;
+        let module_id = actor.module_id;
+        let ident = actor.ident.as_str();
+        let acting_location = if actor.object_info.global {
+            ActingLocation::AtBarrier
+        } else {
+            ActingLocation::AtLocalBarrier
+        };
+
+        match (node_id, module_id, ident) {
             (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                vec![AccessRulesNativePackage::authorization(
-                    node_id, ident, args, api,
-                )?]
+                let access_rule = AccessRulesNativePackage::authorization(
+                    &node_id, ident, args, api,
+                )?;
+
+                if !Authentication::verify_method_auth(
+                    acting_location,
+                    *auth_zone_id,
+                    &access_rule,
+                    api,
+                )? {
+                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                        AuthError::Unauthorized(Box::new(Unauthorized {
+                            access_rule,
+                            fn_identifier: actor.fn_identifier(),
+                        })),
+                    )));
+                }
             }
             (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(*module_id, ident);
+                let method_key = MethodKey::new(module_id, ident);
 
-                let info = {
-                    let mut system = SystemService::new(api);
-                    system.get_object_info(node_id)?
-                };
-
-                let mut auths = Vec::new();
+                let info = api.get_object_info(&node_id)?;
 
                 if let Some(parent) = info.outer_object {
                     let (ref_type, _) =
-                        api.kernel_get_node_info(node_id)
+                        api.kernel_get_node_info(&node_id)
                             .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::VisibilityError(node_id.clone()),
+                                AuthError::VisibilityError(node_id),
                             )))?;
-                    let method_key = MethodKey::new(*module_id, ident);
-                    let access_rules = Self::method_access_rules(
+                    let method_key = MethodKey::new(module_id, ident);
+                    Self::check_authorization_against_access_rules(
+                        actor.fn_identifier(),
+                        auth_zone_id,
+                        acting_location,
                         ref_type,
                         parent.as_node_id(),
                         ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
-
-                    auths.extend(access_rules);
                 }
 
                 if info.global {
-                    let access_rules = Self::method_access_rules(
+                    Self::check_authorization_against_access_rules(
+                        actor.fn_identifier(),
+                        auth_zone_id,
+                        acting_location,
                         RefType::Normal,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
                         api,
                     )?;
-                    auths.extend(access_rules);
                 }
-
-                auths
             }
-        };
+        }
 
-        Ok(auths)
+        Ok(())
     }
 
-    fn method_access_rules<Y: KernelApi<M>, M: KernelCallbackObject>(
+    fn check_authorization_against_access_rules<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        fn_identifier: FnIdentifier, // TODO: Cleanup
+        auth_zone_id: &NodeId,
+        acting_location: ActingLocation,
         ref_type: RefType,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
-        api: &mut Y,
-    ) -> Result<Vec<AccessRule>, RuntimeError> {
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
             receiver,
             ACCESS_RULES_FIELD_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
-            M::LockData::default(),
+            SystemLockData::default(),
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
 
         let is_direct_access = matches!(ref_type, RefType::DirectAccess);
 
-        let access_rules = match object_key {
-            ObjectKey::SELF => access_rules
-                .access_rules
-                .get_access_rules(is_direct_access, &key),
+        let access_rules_config = match object_key {
+            ObjectKey::SELF => {
+                &access_rules.access_rules
+            },
             ObjectKey::ChildBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .child_blueprint_rules
@@ -173,13 +194,103 @@ impl AuthModule {
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::InnerBlueprintDoesNotExist(blueprint_name),
                     )))?;
-                child_rules.get_access_rules(is_direct_access, &key)
+                child_rules
             }
         };
 
+        Self::check_authorization_against_config(
+            fn_identifier,
+            auth_zone_id,
+            acting_location,
+            &access_rules_config,
+            is_direct_access,
+            &key,
+            api,
+        )?;
+
         api.kernel_drop_lock(handle)?;
 
-        Ok(access_rules)
+        Ok(())
+    }
+
+    pub fn check_authorization_against_config<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        fn_identifier: FnIdentifier, // TODO: Cleanup
+        auth_zone_id: &NodeId,
+        acting_location: ActingLocation,
+        access_rules: &AccessRulesConfig,
+        is_direct_access: bool,
+        key: &MethodKey,
+        api: &mut SystemService<Y, V>,
+    ) -> Result<(), RuntimeError> {
+        let auth = if is_direct_access {
+            &access_rules.direct_methods
+        } else {
+            &access_rules.methods
+        };
+        let method_entry = match auth.get(key) {
+            None => {
+                return Ok(());
+            },
+            Some(entry) => entry,
+        };
+
+        let mut failed_access_rule = None;
+
+        for authority in &method_entry.authorities {
+            let access_rule = Self::resolve_entry(access_rules, &AuthorityEntry::Authority(authority.to_string()));
+            if Authentication::verify_method_auth(
+                acting_location,
+                *auth_zone_id,
+                &access_rule,
+                api,
+            )? {
+                return Ok(());
+            } else {
+                failed_access_rule.insert(access_rule);
+            }
+        }
+
+        if let Some(failed_access_rule) = failed_access_rule {
+            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                AuthError::Unauthorized(Box::new(Unauthorized {
+                    access_rule: failed_access_rule,
+                    fn_identifier,
+                })),
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn resolve_entry(access_rules_config: &AccessRulesConfig, entry: &AuthorityEntry) -> AccessRule {
+        match entry {
+            AuthorityEntry::AccessRule(access_rule) => access_rule.clone(),
+            AuthorityEntry::Authority(name) => match access_rules_config.authorities.get(name) {
+                Some(entry) => {
+                    // TODO: Make sure we don't have circular entries!
+                    Self::resolve_entry(access_rules_config, entry)
+                }
+                None => AccessRule::DenyAll,
+            },
+            AuthorityEntry::Authorities(groups) => {
+                let mut group_rules = Vec::new();
+
+                for group in groups {
+                    let rule = Self::resolve_entry(access_rules_config, &AuthorityEntry::Authority(group.to_string()));
+                    match rule {
+                        AccessRule::DenyAll => {
+                            group_rules.push(AccessRuleNode::AnyOf(vec![]));
+                        }
+                        AccessRule::AllowAll => {
+                            group_rules.push(AccessRuleNode::AllOf(vec![]));
+                        }
+                        AccessRule::Protected(node) => group_rules.push(node),
+                    }
+                }
+
+                AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
+            }
+        }
     }
 
     pub fn last_auth_zone(&self) -> NodeId {
@@ -198,44 +309,41 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let access_rules = match &callee {
-            Actor::Method(MethodActor {
-                node_id,
-                module_id,
-                ident,
-                ..
-            }) => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
-            Actor::Function { blueprint, ident } => {
-                vec![Self::function_auth(blueprint, ident.as_str(), api)?]
-            }
-            Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
-        };
-        let acting_location = if callee.is_barrier() {
-            ActingLocation::AtBarrier
-        } else {
-            ActingLocation::AtLocalBarrier
-        };
         let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
 
         let mut system = SystemService::new(api);
 
-        // Authenticate
-        for access_rule in access_rules {
-            if !Authentication::verify_method_auth(
-                acting_location,
-                auth_zone_id,
-                &access_rule,
-                &mut system,
-            )? {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        access_rule,
-                        fn_identifier: callee.fn_identifier(),
-                    })),
-                )));
+        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+        match &callee {
+            Actor::Method(actor) => {
+                Self::check_method_authorization(
+                    &auth_zone_id,
+                    actor,
+                    &args,
+                    &mut system,
+                )?;
+            },
+            Actor::Function { blueprint, ident } => {
+                let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
+                let acting_location = ActingLocation::AtBarrier;
+
+                // Verify authorization
+                if !Authentication::verify_method_auth(
+                    acting_location,
+                    auth_zone_id,
+                    &access_rule,
+                    &mut system,
+                )? {
+                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                        AuthError::Unauthorized(Box::new(Unauthorized {
+                            access_rule,
+                            fn_identifier: callee.fn_identifier(),
+                        })),
+                    )));
+                }
             }
-        }
+            Actor::VirtualLazyLoad { .. } | Actor::Root => {}
+        };
 
         Ok(())
     }

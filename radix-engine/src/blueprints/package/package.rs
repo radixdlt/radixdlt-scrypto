@@ -115,8 +115,8 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
         vec![(
             "update_metadata",
-            AuthorityEntry::Group("owner".to_string()),
-            AuthorityEntry::Group("owner".to_string()),
+            AuthorityEntry::Authority("owner".to_string()),
+            AuthorityEntry::Authority("owner".to_string()),
         )]
     }
 }

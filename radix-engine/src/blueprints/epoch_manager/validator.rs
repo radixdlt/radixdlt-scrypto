@@ -380,7 +380,7 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AuthorityEntry::AccessRule(AccessRule::AllowAll)
         } else {
-            AuthorityEntry::Group("owner".to_string())
+            AuthorityEntry::Authority("owner".to_string())
         };
 
         api.call_module_method(
