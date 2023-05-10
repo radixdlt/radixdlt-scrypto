@@ -6,6 +6,11 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use rand::prelude::SliceRandom;
+use rand::Rng;
+use rand_chacha;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
@@ -806,21 +811,12 @@ fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch
 #[test]
 fn low_stakes_should_cause_no_problems() {
     for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
-        registered_validator_test(
-            register_and_stake_type,
-            1,
-            10,
-            1.into(),
-            1.into(),
-            true,
-            2,
-        );
+        registered_validator_test(register_and_stake_type, 1, 10, 1.into(), 1.into(), true, 2);
     }
 }
 
-/*
 #[test]
-fn test_many_validators() {
+fn test_registering_many_validators() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
@@ -833,14 +829,35 @@ fn test_many_validators() {
         1.into(),
         10,
     );
+    let mut rng = ChaCha8Rng::seed_from_u64(1234);
+
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut all_manifests = Vec::new();
     for (pub_key, account_address) in accounts {
-        register_and_stake_new_validator(
-            pub_key,
-            account_address,
+        let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
+
+        let rand = rng.gen_range(0..RegisterAndStakeTransactionType::ALL_TYPES.len());
+        let register_and_stake_type = RegisterAndStakeTransactionType::ALL_TYPES[rand];
+
+        let manifests = register_and_stake_type.manifests(
             1.into(),
-            &mut test_runner,
+            account_address,
+            validator_address,
+            test_runner.faucet_component(),
         );
+        all_manifests.push((pub_key, manifests));
+    }
+
+    all_manifests.shuffle(&mut rng);
+
+    for (pub_key, manifests) in all_manifests {
+        for manifest in manifests {
+            let receipt = test_runner.execute_manifest(
+                manifest,
+                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            );
+            receipt.expect_commit_success();
+        }
     }
 
     // Act
@@ -856,7 +873,7 @@ fn test_many_validators() {
             nonce: 0,
             pre_allocated_ids: BTreeSet::new(),
         }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
     );
 
     let result = receipt.expect_commit(true);
@@ -864,7 +881,6 @@ fn test_many_validators() {
     assert_eq!(next_epoch.0.len(), 10);
     assert_eq!(next_epoch.1, initial_epoch + 1);
 }
- */
 
 #[test]
 fn unregistered_validator_gets_removed_on_epoch_change() {
