@@ -656,7 +656,7 @@ impl TestRunner {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut config = AccessRulesConfig::new();
             config.set_authority_access_rule_and_mutability(
-                "update_metadata",
+                "owner",
                 rule!(require(owner_id.clone())),
                 rule!(require(owner_id)),
             );

@@ -502,14 +502,14 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
         vec![
             (
                 "stake",
                 AuthorityEntry::group("owner"),
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+                AuthorityEntry::AccessRule(rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE)))),
             ),
-            ("update_metadata", AuthorityEntry::group("owner"), DenyAll),
+            ("update_metadata", AuthorityEntry::group("owner"), AuthorityEntry::AccessRule(DenyAll)),
         ]
     }
 

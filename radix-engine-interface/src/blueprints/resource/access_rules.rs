@@ -102,7 +102,7 @@ pub struct AccessRulesConfig {
     methods: BTreeMap<MethodKey, MethodEntry>,
 
     authorities: BTreeMap<String, AuthorityEntry>,
-    mutability: BTreeMap<String, AccessRule>,
+    mutability: BTreeMap<String, AuthorityEntry>,
 }
 
 impl AccessRulesConfig {
@@ -178,10 +178,10 @@ impl AccessRulesConfig {
     }
 
     pub fn get_authority_mutability(&self, key: &str) -> AccessRule {
-        self.mutability
-            .get(key)
-            .cloned()
-            .unwrap_or_else(|| AccessRule::DenyAll)
+        match self.mutability.get(key) {
+            None => AccessRule::DenyAll,
+            Some(entry) => self.resolve_entry(entry),
+        }
     }
 
     pub fn set_authority_access_rule<E: Into<AuthorityEntry>>(
@@ -193,20 +193,20 @@ impl AccessRulesConfig {
             .insert(group_key, access_rule_entry.into());
     }
 
-    pub fn set_authority_mutability(&mut self, key: String, method_auth: AccessRule) {
-        self.mutability.insert(key, method_auth);
+    pub fn set_authority_mutability<M: Into<AuthorityEntry>>(&mut self, key: String, method_auth: M) {
+        self.mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_authority_access_rule_and_mutability<E: Into<AuthorityEntry>>(
+    pub fn set_authority_access_rule_and_mutability<E: Into<AuthorityEntry>, M: Into<AuthorityEntry>>(
         &mut self,
         authority: &str,
         access_rule: E,
-        mutability: AccessRule,
+        mutability: M,
     ) {
         self.authorities
             .insert(authority.to_string(), access_rule.into());
         self.mutability
-            .insert(authority.to_string(), mutability);
+            .insert(authority.to_string(), mutability.into());
     }
 
     pub fn set_public(&mut self, key: MethodKey) {

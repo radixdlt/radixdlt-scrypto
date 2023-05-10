@@ -20,7 +20,7 @@ mod metadata_component {
             let component = MetadataComponent {}.instantiate();
 
             let mut config = AccessRulesConfig::new();
-            config.set_group_access_rule_and_mutability(
+            config.set_authority_access_rule_and_mutability(
                 "update_metadata",
                 AccessRule::AllowAll,
                 AccessRule::DenyAll,

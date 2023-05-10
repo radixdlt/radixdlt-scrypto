@@ -186,11 +186,11 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
         vec![(
             "update_metadata",
             AuthorityEntry::Group("owner".to_string()),
-            DenyAll,
+            AuthorityEntry::AccessRule(DenyAll),
         )]
     }
 }

@@ -27,7 +27,6 @@ pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate a
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -111,11 +110,11 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
         vec![(
             "update_metadata",
             AuthorityEntry::Group("owner".to_string()),
-            DenyAll,
+            AuthorityEntry::Group("owner".to_string()),
         )]
     }
 }
