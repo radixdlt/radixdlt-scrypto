@@ -188,25 +188,16 @@ impl AuthModule {
             .cloned()
             .expect("Missing auth zone")
     }
-}
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Create sentinel node
-        Self::on_execution_start(api)
-    }
-
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Destroy sentinel node
-        Self::on_execution_finish(api, &CallFrameUpdate::empty())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
+    fn check_authorization<V, Y>(
         callee: &Actor,
-        _call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        V: SystemCallbackObject,
+        Y: KernelApi<SystemConfig<V>>,
+    {
         // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
         let access_rules = match &callee {
             Actor::Method(MethodActor {
@@ -247,6 +238,27 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         }
 
         Ok(())
+    }
+}
+
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Create sentinel node
+        Self::on_execution_start(api)
+    }
+
+    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        // Destroy sentinel node
+        Self::on_execution_finish(api, &CallFrameUpdate::empty())
+    }
+
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        callee: &Actor,
+        _call_frame_update: &mut CallFrameUpdate,
+        args: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        Self::check_authorization(callee, args, api)
     }
 
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
