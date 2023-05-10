@@ -128,7 +128,7 @@ CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE
     Decimal("1")
     Address("${resource_address}")
     Proof("proof5");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
+CREATE_PROOF_OF_NON_FUNGIBLES_FROM_AUTH_ZONE
     Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
     Address("${non_fungible_resource_address}")
     Proof("proof6");

@@ -222,7 +222,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by non-fungible ids.
-    pub fn create_proof_from_auth_zone_by_ids<F>(
+    pub fn create_proof_of_non_fungibles_from_auth_zone<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,

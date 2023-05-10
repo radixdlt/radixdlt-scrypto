@@ -279,7 +279,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                "CREATE_PROOF_OF_NON_FUNGIBLES_FROM_AUTH_ZONE\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
                 .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),

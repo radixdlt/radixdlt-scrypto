@@ -427,7 +427,7 @@ impl Lexer {
             "CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE" => {
                 Ok(TokenKind::CreateProofFromAuthZoneByAmount)
             }
-            "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS" => Ok(TokenKind::CreateProofFromAuthZoneByIds),
+            "CREATE_PROOF_OF_NON_FUNGIBLES_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZoneByIds),
             "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),

@@ -576,7 +576,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             resource_address,
             &BTreeSet::from([NonFungibleLocalId::integer(3)]),
         )
-        .create_proof_from_auth_zone_by_ids(
+        .create_proof_of_non_fungibles_from_auth_zone(
             &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
