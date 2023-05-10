@@ -66,8 +66,12 @@ flamegraph = []
 simple-fuzzer = [ "clap", "rand", "rand_chacha", "log" ]
 dump_manifest_to_file = []
 smart_mutate = []
-# If enabled then try to decode manifest from the fuzz data
-decode_tx_manifest = []
+# If disabled then try to fuzz smartly:
+# - build transaction manifest by randomly picking instructions
+# - map fuzz data into Radix Engine data structures
+# - mix random objects with preallocated and native objects
+# If enabled then try to decode transaction manifest from fuzz data
+dummy_fuzzing = []
 
 verbose = []
 

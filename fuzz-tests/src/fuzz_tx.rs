@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
-#[cfg(feature = "decode_tx_manifest")]
+#[cfg(feature = "dummy_fuzzing")]
 use radix_engine_interface::data::manifest::manifest_decode;
 use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 #[cfg(test)]
@@ -19,6 +19,7 @@ use transaction::manifest::ast;
 use transaction::model::Instruction;
 use transaction::model::TransactionManifest;
 
+#[allow(unused)]
 const INSTRUCTION_MAX_CNT: u8 = 10;
 
 // Verbose version
@@ -47,11 +48,14 @@ pub struct TxFuzzer {
     runner: TestRunner,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
-    component_addresses: Vec<ComponentAddress>,
-    all_resource_addresses: Vec<ResourceAddress>,
-    fungible_resource_addresses: Vec<ResourceAddress>,
-    non_fungible_resource_addresses: Vec<ResourceAddress>,
     #[allow(unused)]
+    component_addresses: Vec<ComponentAddress>,
+    #[allow(unused)]
+    all_resource_addresses: Vec<ResourceAddress>,
+    #[allow(unused)]
+    fungible_resource_addresses: Vec<ResourceAddress>,
+    #[allow(unused)]
+    non_fungible_resource_addresses: Vec<ResourceAddress>,
     package_addresses: Vec<PackageAddress>,
     public_keys: Vec<EcdsaSecp256k1PublicKey>,
 }
@@ -224,6 +228,7 @@ impl TxFuzzer {
         Ok((account.clone(), resource_address.clone()))
     }
 
+    #[allow(unused)]
     fn get_non_fungible_local_id(
         &mut self,
         component_address: ComponentAddress,
@@ -251,6 +256,7 @@ impl TxFuzzer {
         btree_ids
     }
 
+    #[allow(unused)]
     fn build_manifest(&mut self, data: &[u8]) -> Result<TransactionManifest, TxStatus> {
         // Arbitrary does not return error if not enough data to construct a full instance of
         // Self. It uses dummy values (zeros) instead.
@@ -722,9 +728,9 @@ impl TxFuzzer {
     }
 
     pub fn fuzz_tx_manifest(&mut self, data: &[u8]) -> TxStatus {
-        #[cfg(feature = "decode_tx_manifest")]
+        #[cfg(feature = "dummy_fuzzing")]
         let result = manifest_decode::<TransactionManifest>(data);
-        #[cfg(not(feature = "decode_tx_manifest"))]
+        #[cfg(not(feature = "dummy_fuzzing"))]
         let result = self.build_manifest(data);
 
         match result {
@@ -767,7 +773,7 @@ pub enum TxStatus {
 // This test tries is supposed to generate fuzz input data.
 // It generates and executes manifest. If transaction successful then save the manifest data.
 #[test]
-#[cfg(not(feature = "decode_tx_manifest"))]
+#[cfg(not(feature = "dummy_fuzzing"))]
 fn test_generate_fuzz_input_data() {
     use rand::{Rng, RngCore};
     use rand_chacha::rand_core::SeedableRng;
@@ -799,7 +805,7 @@ fn test_generate_fuzz_input_data() {
 // It runs radix-engine-tests tests with "dump_manifest_to_file" flag,
 // which writes each used transaction manifest to file.
 #[test]
-#[cfg(feature = "decode_tx_manifest")]
+#[cfg(feature = "dummy_fuzzing")]
 fn test_generate_fuzz_input_data() {
     /*
     cargo nextest run -p radix-engine-tests --release --features dump_manifest_to_file
