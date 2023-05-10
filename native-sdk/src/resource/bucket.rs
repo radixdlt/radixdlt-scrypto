@@ -26,13 +26,6 @@ pub trait NativeBucket {
     where
         Y: ClientApi<E>;
 
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
-    where
-        Y: ClientApi<E>;
-
     fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         other: Self,
@@ -44,14 +37,6 @@ pub trait NativeBucket {
     fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>;
-
-    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -84,6 +69,25 @@ pub trait NativeBucket {
         self,
         api: &mut Y,
     ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+}
+
+pub trait NativeFungibleBucket {}
+
+pub trait NativeNonFungibleBucket {
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientApi<E>;
+
+    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
     where
         Y: ClientApi<E>;
 }
@@ -139,22 +143,6 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
     fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         other: Self,
@@ -184,23 +172,6 @@ impl NativeBucket for Bucket {
             self.0.as_node_id(),
             BUCKET_TAKE_IDENT,
             scrypto_encode(&BucketTakeInput { amount }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        ids: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -250,5 +221,42 @@ impl NativeBucket for Bucket {
         Y: ClientApi<E>,
     {
         Ok(self.amount(api)?.is_zero())
+    }
+}
+
+impl NativeFungibleBucket for Bucket {}
+
+impl NativeNonFungibleBucket for Bucket {
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+            scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 }
