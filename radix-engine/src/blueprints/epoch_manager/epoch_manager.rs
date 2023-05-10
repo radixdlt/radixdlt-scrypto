@@ -106,9 +106,7 @@ impl EpochManagerBlueprint {
         validator_token_address: [u8; NodeId::LENGTH], // TODO: Clean this up
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
         initial_epoch: u64,
-        max_validators: u32,
-        rounds_per_epoch: u64,
-        num_unstake_epochs: u64,
+        initial_configuration: EpochManagerInitialConfiguration,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -140,9 +138,9 @@ impl EpochManagerBlueprint {
 
         let epoch_manager_id = {
             let config = EpochManagerConfigSubstate {
-                max_validators,
-                rounds_per_epoch,
-                num_unstake_epochs,
+                max_validators: initial_configuration.max_validators,
+                rounds_per_epoch: initial_configuration.rounds_per_epoch,
+                num_unstake_epochs: initial_configuration.num_unstake_epochs,
             };
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
