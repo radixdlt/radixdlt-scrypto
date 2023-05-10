@@ -34,16 +34,26 @@ pub enum CostingEntry<'a> {
         module_num: &'a PartitionNumber,
         substate_key: &'a SubstateKey,
     },
-    LockSubstateFirstTime,
     ReadSubstate {
         size: u32,
     },
     WriteSubstate {
         size: u32,
     },
-    ScanSubstateFirstTime,
-    TakeSubstatesFirstTime,
     DropLock,
+    SubstateReadFromDb {
+        size: u32
+    },
+    SubstateReadFromTrack {
+        size: u32
+    },
+    SubstateWriteToTrack {
+        size: u32
+    },
+    SubstateRewriteToTrack {
+        size_old: u32,
+        size_new: u32
+    },
     // TODO: more costing after API becomes stable.
 }
 
@@ -302,11 +312,12 @@ impl FeeTable {
                 module_num: _,
                 substate_key: _,
             } => 632, // todo: determine correct value
-            CostingEntry::LockSubstateFirstTime => 100, // todo: determine correct value
             CostingEntry::ReadSubstate { size: _ } => 174,
             CostingEntry::WriteSubstate { size: _ } => 126,
-            CostingEntry::ScanSubstateFirstTime => 100, // todo: determine correct value
-            CostingEntry::TakeSubstatesFirstTime => 100, // todo: determine correct value
+            CostingEntry::SubstateReadFromDb { size: _ } => 100, // todo: determine correct value
+            CostingEntry::SubstateReadFromTrack { size: _ } => 100, // todo: determine correct value
+            CostingEntry::SubstateWriteToTrack { size: _ } => 100, // todo: determine correct value
+            CostingEntry::SubstateRewriteToTrack { size_old: _, size_new: _ } => 100, // todo: determine correct value
         }) as u64
             * COSTING_COEFFICENT
             >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32
@@ -322,6 +333,10 @@ impl FeeTable {
             } => 10 * input_size,
             CostingEntry::ReadSubstate { size } => 10 * size,
             CostingEntry::WriteSubstate { size } => 1000 * size,
+            CostingEntry::SubstateReadFromDb { size } => 1000 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromTrack { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateWriteToTrack { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateRewriteToTrack { size_old: _, size_new } => 100 * size_new, // todo: determine correct value
             _ => 0,
         }
     }

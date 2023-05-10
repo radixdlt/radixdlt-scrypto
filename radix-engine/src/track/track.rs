@@ -521,7 +521,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 
         (
             &mut partition.get_mut(&db_sort_key).unwrap().tracked,
-            StoreAccessInfo(store_access),
+            StoreAccessInfo::with_vector(store_access),
         )
     }
 

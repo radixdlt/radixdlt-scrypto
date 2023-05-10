@@ -24,18 +24,27 @@ pub enum TakeSubstateError {
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
 #[derive(Clone)]
-pub struct StoreAccessInfo(pub Vec<StoreAccess>);
+pub struct StoreAccessInfo(Vec<StoreAccess>);
 impl StoreAccessInfo {
     pub fn new() -> Self {
         Self(Vec::new())
     }
+    pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
+        Self(vector)
+    }
+    pub fn data(&self) -> &Vec<StoreAccess> {
+        &self.0
+    }
     pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
         match item {
             StoreAccess::ReadFromDb(size) | StoreAccess::ReadFromTrack(size) | StoreAccess::Write(size) => 
-                if size >= 0 {
+                if size > 0 {
                     self.0.push(item)
                 },
-            StoreAccess::Rewrite(size, size2) => ()
+            StoreAccess::Rewrite(size_old, size_new) => 
+                if size_old > 0 && size_new > 0 {
+                    self.0.push(item)
+                }
         }
         self
     }

@@ -7,7 +7,7 @@ use crate::system::module::SystemModule;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, ModuleError, RuntimeError},
@@ -85,6 +85,54 @@ impl CostingModule {
                     e,
                 )))
             })
+    }
+
+    fn apply_access_store_costs(
+        &mut self,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        for item in store_access.data().iter() {
+            match item {
+                StoreAccess::ReadFromDb(size) => self.apply_execution_cost(
+                    CostingReason::SubstateReadFromDb,
+                    |fee_table| {
+                        fee_table.kernel_api_cost(CostingEntry::SubstateReadFromDb {
+                            size: *size as u32,
+                        })
+                    },
+                    1,
+                )?,
+                StoreAccess::ReadFromTrack(size) => self.apply_execution_cost(
+                    CostingReason::SubstateReadFromTrack,
+                    |fee_table| {
+                        fee_table.kernel_api_cost(CostingEntry::SubstateReadFromTrack {
+                            size: *size as u32,
+                        })
+                    },
+                    1,
+                )?,
+                StoreAccess::Write(size) => self.apply_execution_cost(
+                    CostingReason::SubstateWriteToTrack,
+                    |fee_table| {
+                        fee_table.kernel_api_cost(CostingEntry::SubstateWriteToTrack {
+                            size: *size as u32,
+                        })
+                    },
+                    1,
+                )?,
+                StoreAccess::Rewrite(size_old, size_new) => self.apply_execution_cost(
+                    CostingReason::SubstateRewriteToTrack,
+                    |fee_table| {
+                        fee_table.kernel_api_cost(CostingEntry::SubstateRewriteToTrack {
+                            size_old: *size_old as u32,
+                            size_new: *size_new as u32,
+                        })
+                    },
+                    1,
+                )?,
+            }
+        }
+        Ok(())
     }
 }
 
@@ -340,22 +388,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         store_access: &StoreAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
-        // match store_access {
-        //     SubstateStoreDbAccessInfo::AcquireLock => api
-        //         .kernel_get_system()
-        //         .modules
-        //         .costing
-        //         .apply_execution_cost(
-        //             CostingReason::LockSubstateFirstTime,
-        //             |fee_table| fee_table.kernel_api_cost(CostingEntry::LockSubstateFirstTime),
-        //             1,
-        //         ),
-        //     SubstateStoreDbAccessInfo::NoAccess => Ok(()),
-        //     _ => Err(RuntimeError::ModuleError(ModuleError::CostingError(
-        //         CostingError::WrongSubstateStoreDbAccessInfo,
-        //     ))),
-        // }
-        Ok(())
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_access_store_costs(store_access)
     }
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
@@ -413,76 +449,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        // match store_access {
-        //     SubstateStoreDbAccessInfo::Scan {
-        //         first_time_read_records_count,
-        //         read_from_track_count: _,
-        //     }
-        //     | SubstateStoreDbAccessInfo::ScanSorted {
-        //         first_time_read_records_count,
-        //         read_from_track_count: _,
-        //     } => {
-        //         if *first_time_read_records_count > 0 {
-        //             api.kernel_get_system()
-        //                 .modules
-        //                 .costing
-        //                 .apply_execution_cost(
-        //                     CostingReason::ScanSubstateFirstTime,
-        //                     |fee_table| {
-        //                         fee_table.kernel_api_cost(CostingEntry::ScanSubstateFirstTime)
-        //                     },
-        //                     1,
-        //                 )?;
-        //         }
-        //         Ok(())
-        //     }
-        //     SubstateStoreDbAccessInfo::NoAccess => Ok(()),
-        //     _ => Err(RuntimeError::ModuleError(ModuleError::CostingError(
-        //         CostingError::WrongSubstateStoreDbAccessInfo,
-        //     ))),
-        // }
-        Ok(())
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_access_store_costs(store_access)
     }
 
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        // match store_access {
-        //     SubstateStoreDbAccessInfo::TakeMany {
-        //         first_time_read_records_count,
-        //         read_from_track_count: _,
-        //         update_count: _,
-        //     } => {
-        //         if *first_time_read_records_count > 0 {
-        //             api.kernel_get_system()
-        //                 .modules
-        //                 .costing
-        //                 .apply_execution_cost(
-        //                     CostingReason::TakeSubstatesFirstTime,
-        //                     |fee_table| {
-        //                         fee_table.kernel_api_cost(CostingEntry::TakeSubstatesFirstTime)
-        //                     },
-        //                     1,
-        //                 )?;
-        //         }
-        //         Ok(())
-        //     }
-        //     SubstateStoreDbAccessInfo::Take => api
-        //         .kernel_get_system()
-        //         .modules
-        //         .costing
-        //         .apply_execution_cost(
-        //             CostingReason::TakeSubstatesFirstTime,
-        //             |fee_table| fee_table.kernel_api_cost(CostingEntry::TakeSubstatesFirstTime),
-        //             1,
-        //         ),
-        //     SubstateStoreDbAccessInfo::NoAccess => Ok(()),
-        //     _ => Err(RuntimeError::ModuleError(ModuleError::CostingError(
-        //         CostingError::WrongSubstateStoreDbAccessInfo,
-        //     ))),
-        // }
-        Ok(())
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_access_store_costs(store_access)
     }
 
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
