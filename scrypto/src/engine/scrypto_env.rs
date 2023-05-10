@@ -309,7 +309,18 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
     }
 
     fn actor_call_module_method(&mut self, object_handle: ObjectHandle, module_id: ObjectModuleId, method_name: &str, args: Vec<u8>) -> Result<Vec<u8>, ClientApiError> {
-        todo!()
+        let return_data = copy_buffer(unsafe {
+            actor_call_module_method(
+                object_handle,
+                module_id as u8 as u32,
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        Ok(return_data)
     }
 }
 

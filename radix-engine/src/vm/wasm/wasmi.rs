@@ -110,6 +110,33 @@ fn consume_buffer(
     }
 }
 
+fn actor_call_module_method(
+    mut caller: Caller<'_, HostState>,
+    object_handle: u32,
+    module_id: u32,
+    ident_ptr: u32,
+    ident_len: u32,
+    args_ptr: u32,
+    args_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
+    let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
+
+    // Get current memory consumption and update it in transaction limit kernel module
+    // for current call frame through runtime call.
+    let mem = memory
+        .current_pages(caller.as_context())
+        .to_bytes()
+        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
+    runtime.update_wasm_memory_usage(mem)?;
+
+    runtime
+        .actor_call_module_method(object_handle, module_id, ident, args)
+        .map(|buffer| buffer.0)
+}
+
 fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
@@ -528,6 +555,29 @@ impl WasmiModule {
             },
         );
 
+        let host_actor_call_module_method = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             object_handle: u32,
+             module_id: u32,
+             ident_ptr: u32,
+             ident_len: u32,
+             args_ptr: u32,
+             args_len: u32|
+             -> Result<u64, Trap> {
+                actor_call_module_method(
+                    caller,
+                    object_handle,
+                    module_id,
+                    ident_ptr,
+                    ident_len,
+                    args_ptr,
+                    args_len,
+                )
+                    .map_err(|e| e.into())
+            },
+        );
+
         let host_call_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -865,6 +915,7 @@ impl WasmiModule {
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME, host_actor_call_module_method);
 
         linker_define!(
             linker,

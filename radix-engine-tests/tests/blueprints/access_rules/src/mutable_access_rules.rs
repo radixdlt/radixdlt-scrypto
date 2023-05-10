@@ -19,6 +19,11 @@ mod mutable_access_rules_component {
             todo!("Support for self");
         }
 
+        pub fn set_group_auth(&self, group_name: String, rule: AccessRule) {
+            let access_rules = Runtime::get_access_rules();
+            access_rules.set_group_access_rule(group_name.as_str(), rule);
+        }
+
         pub fn set_method_auth(&self, _index: usize, _method_name: String, _rule: AccessRule) {
             todo!("Support for self mutable auth");
         }

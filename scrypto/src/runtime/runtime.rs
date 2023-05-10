@@ -14,6 +14,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+use crate::modules::ActorAccessRules;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -31,6 +32,10 @@ impl Runtime {
             .unwrap();
 
         scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn get_access_rules() -> ActorAccessRules {
+        ActorAccessRules
     }
 
     /// Returns the running entity.

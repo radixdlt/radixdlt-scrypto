@@ -41,12 +41,14 @@ pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
 
 pub const ACTOR_LOCK_FIELD_FUNCTION_ID: usize = 0x43;
 pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
+pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_ID: usize = 0x44;
+pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
 
-pub const FIELD_LOCK_READ_FUNCTION_ID: usize = 0x44;
+pub const FIELD_LOCK_READ_FUNCTION_ID: usize = 0x45;
 pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
-pub const FIELD_LOCK_WRITE_FUNCTION_ID: usize = 0x45;
+pub const FIELD_LOCK_WRITE_FUNCTION_ID: usize = 0x46;
 pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
-pub const FIELD_LOCK_RELEASE_FUNCTION_ID: usize = 0x46;
+pub const FIELD_LOCK_RELEASE_FUNCTION_ID: usize = 0x47;
 pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_ID: usize = 0x50;
