@@ -79,14 +79,14 @@ mod vault_proof {
         }
 
         pub fn receive_proof_and_push_to_auth_zone(proof: Proof) {
-            ComponentAuthZone::push(proof); // should fail here
+            LocalAuthZone::push(proof); // should fail here
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
             let expected_amount = self.vault.amount() + bucket.amount();
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = ComponentAuthZone::create_proof(bucket.resource_address());
+                    let proof = LocalAuthZone::create_proof(bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.amount(), expected_amount);
                     proof.drop();
@@ -102,7 +102,7 @@ mod vault_proof {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = ComponentAuthZone::create_proof_by_amount(
+                    let proof = LocalAuthZone::create_proof_by_amount(
                         amount,
                         bucket.resource_address(),
                     );
@@ -122,7 +122,7 @@ mod vault_proof {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof =
-                        ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
+                        LocalAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.non_fungible_local_ids(), ids);
                     proof.drop();
