@@ -4,6 +4,8 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use native_sdk::resource::NativeFungibleVault;
+use native_sdk::resource::NativeNonFungibleVault;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::node_modules::metadata::*;

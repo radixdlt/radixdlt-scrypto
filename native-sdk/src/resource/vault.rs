@@ -31,14 +31,6 @@ pub trait NativeVault {
     where
         Y: ClientApi<E>;
 
-    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>;
-
     fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
         Y: ClientApi<E>;
@@ -54,15 +46,9 @@ pub trait NativeVault {
     ) -> Result<Proof, E>
     where
         Y: ClientApi<E>;
+}
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
-        &self,
-        ids: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>;
-
+pub trait NativeFungibleVault {
     fn lock_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
@@ -76,6 +62,24 @@ pub trait NativeVault {
         api: &mut Y,
         amount: Decimal,
     ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+}
+
+pub trait NativeNonFungibleVault {
+    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
     where
         Y: ClientApi<E>;
 }
@@ -143,26 +147,6 @@ impl NativeVault for Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
-                non_fungible_local_ids,
-            })
-            .unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
     fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
         Y: ClientApi<E>,
@@ -205,24 +189,9 @@ impl NativeVault for Vault {
 
         Ok(scrypto_decode(&rtn).unwrap())
     }
+}
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
-        &self,
-        ids: BTreeSet<NonFungibleLocalId>,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
+impl NativeFungibleVault for Vault {
     fn lock_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
@@ -260,6 +229,45 @@ impl NativeVault for Vault {
             })
             .unwrap(),
         )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+}
+
+impl NativeNonFungibleVault for Vault {
+    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
+                non_fungible_local_ids,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
+        )?;
+
         Ok(scrypto_decode(&rtn).unwrap())
     }
 }
