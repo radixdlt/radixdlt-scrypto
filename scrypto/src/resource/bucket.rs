@@ -1,5 +1,6 @@
 use crate::borrow_resource_manager;
-use crate::resource::{LocalAuthZone, NonFungible, ScryptoProof};
+use crate::resource::{NonFungible, ScryptoProof};
+use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;

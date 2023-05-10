@@ -6,8 +6,8 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
-use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
-use native_sdk::runtime::Runtime;
+use native_sdk::resource::{SysBucket, SysProof, Worktop};
+use native_sdk::runtime::{LocalAuthZone, Runtime};
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };

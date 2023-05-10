@@ -8,6 +8,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use runtime::LocalAuthZone;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
