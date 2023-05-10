@@ -256,16 +256,18 @@ impl TxFuzzer {
         // TODO: to consider if this is ok to allow it.
         let mut unstructured = Unstructured::new(&data);
 
-        // Push some random key to the key vector. We will then randomly pick a key from this
-        // vector
-        self.public_keys
-            .push(EcdsaSecp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
-
         let mut builder = ManifestBuilder::new();
         let mut buckets: Vec<ManifestBucket> =
             vec![ManifestBucket::arbitrary(&mut unstructured).unwrap()];
         let mut proof_ids: Vec<ManifestProof> =
             vec![ManifestProof::arbitrary(&mut unstructured).unwrap()];
+
+        let mut public_keys = self.public_keys.clone();
+        public_keys.push(EcdsaSecp256k1PublicKey::arbitrary(&mut unstructured).unwrap());
+
+        let public_key = unstructured.choose(&public_keys[..]).unwrap().clone();
+
+        let mut package_addresses = self.package_addresses.clone();
 
         let resource_address = unstructured
             .choose(&self.all_resource_addresses[..])
@@ -281,10 +283,7 @@ impl TxFuzzer {
             .clone();
 
         let mut global_addresses = {
-            let package_address = unstructured
-                .choose(&self.package_addresses[..])
-                .unwrap()
-                .clone();
+            let package_address = unstructured.choose(&package_addresses[..]).unwrap().clone();
             vec![
                 GlobalAddress::from(component_address),
                 GlobalAddress::from(resource_address),
@@ -295,8 +294,6 @@ impl TxFuzzer {
         // thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: UnexpectedSize { expected: 2, actual: 1 }', /Users/lukaszrubaszewski/work/radixdlt/radixdlt-scrypto/radix-engine-stores/src/interface.rs:200:41
         let non_fungible_ids =
             self.get_non_fungible_local_id(component_address, non_fungible_resource_address);
-
-        let public_key = unstructured.choose(&self.public_keys[..]).unwrap().clone();
 
         let fee = Decimal::arbitrary(&mut unstructured).unwrap();
         builder.lock_fee(component_address, fee);
@@ -346,9 +343,9 @@ impl TxFuzzer {
                 6 => Some(Instruction::ClaimComponentRoyalty { component_address }),
                 // ClaimPackageRoyalty
                 7 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
                     Some(Instruction::ClaimPackageRoyalty { package_address })
                 }
@@ -364,9 +361,9 @@ impl TxFuzzer {
                 }
                 // CreateAccessController
                 11 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
                     let rule_set = RuleSet::arbitrary(&mut unstructured).unwrap();
                     let timed_recovery_delay_in_minutes =
@@ -381,9 +378,9 @@ impl TxFuzzer {
                 }
                 // CreateAccount
                 12 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
                     Some(Instruction::CallFunction {
                         package_address,
@@ -396,9 +393,9 @@ impl TxFuzzer {
                 }
                 // CreateAccountAdvanced
                 13 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = AccountCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::CallFunction {
@@ -410,9 +407,9 @@ impl TxFuzzer {
                 }
                 // CreateFungibleResource
                 14 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input =
                         FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
 
@@ -425,9 +422,9 @@ impl TxFuzzer {
                 }
                 // CreateFungibleResourceWithInitialSupply
                 15 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
                         &mut unstructured,
                     )
@@ -443,9 +440,9 @@ impl TxFuzzer {
                 }
                 // CreateIdentity
                 16 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::CallFunction {
@@ -457,9 +454,9 @@ impl TxFuzzer {
                 }
                 // CreateIdentityAdvanced
                 17 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = IdentityCreateAdvancedInput::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::CallFunction {
@@ -471,9 +468,9 @@ impl TxFuzzer {
                 }
                 // CreateNonFungibleResource
                 18 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
                         .unwrap();
 
@@ -487,9 +484,9 @@ impl TxFuzzer {
 
                 // CreateNonFungibleResourceWithInitialSupply
                 19 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input =
                         &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput::arbitrary(
                             &mut unstructured,
@@ -658,9 +655,9 @@ impl TxFuzzer {
                 }
                 // SetPackageRoyaltyConfig
                 40 => {
-                    self.package_addresses
+                    package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
-                    let package_address = *unstructured.choose(&self.package_addresses[..]).unwrap();
+                    let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let royalty_config = BTreeMap::<String, RoyaltyConfig>::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::SetPackageRoyaltyConfig {
@@ -706,7 +703,6 @@ impl TxFuzzer {
         }
 
         let manifest = builder.build();
-        println!("manifest = {:?}", manifest);
         Ok(manifest)
     }
 
