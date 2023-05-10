@@ -22,6 +22,18 @@ use transaction::model::TransactionManifest;
 
 const INSTRUCTION_MAX_CNT: u8 = 10;
 
+// Verbose version
+#[cfg(feature = "verbose")]
+macro_rules! dbg {
+    ($( $args:expr ),*) => { println!( $( $args ),* ); }
+}
+
+// Non-verbose version
+#[cfg(not(feature = "verbose"))]
+macro_rules! dbg {
+    ($( $args:expr ),*) => {};
+}
+
 #[derive(Debug, Clone)]
 struct Account {
     public_key: EcdsaSecp256k1PublicKey,
@@ -703,6 +715,7 @@ impl TxFuzzer {
         }
 
         let manifest = builder.build();
+        dbg!("manifest = {:?}", manifest);
         Ok(manifest)
     }
 

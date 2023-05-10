@@ -69,6 +69,8 @@ smart_mutate = []
 # If enabled then try to decode manifest from the fuzz data
 decode_tx_manifest = []
 
+verbose = []
+
 #fuzzer = [ "libfuzzer-sys" ]
 #fuzzer = [ "afl" ]
 fuzzer = [ "simple-fuzzer" ]
