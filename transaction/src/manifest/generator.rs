@@ -296,7 +296,7 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZone { resource_address }
         }
-        ast::Instruction::CreateProofFromAuthZoneByAmount {
+        ast::Instruction::CreateProofOfAmountFromAuthZone {
             amount,
             resource_address,
             new_proof,
@@ -308,7 +308,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByAmount {
+            Instruction::CreateProofOfAmountFromAuthZone {
                 amount,
                 resource_address,
             }

@@ -164,7 +164,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByAmount {
+                Instruction::CreateProofOfAmountFromAuthZone {
                     amount,
                     resource_address,
                 } => {

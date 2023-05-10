@@ -52,7 +52,7 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByAmount {
+    CreateProofOfAmountFromAuthZone {
         amount: Value,
         resource_address: Value,
         new_proof: Value,

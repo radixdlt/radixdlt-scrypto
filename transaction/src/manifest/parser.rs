@@ -113,8 +113,8 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
-            TokenKind::CreateProofFromAuthZoneByAmount => {
-                Instruction::CreateProofFromAuthZoneByAmount {
+            TokenKind::CreateProofOfAmountFromAuthZone => {
+                Instruction::CreateProofOfAmountFromAuthZone {
                     amount: self.parse_value()?,
                     resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,

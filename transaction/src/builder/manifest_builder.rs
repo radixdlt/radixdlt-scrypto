@@ -73,7 +73,7 @@ impl ManifestBuilder {
             }
             Instruction::PopFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZoneByAmount { .. }
+            | Instruction::CreateProofOfAmountFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZoneByIds { .. }
             | Instruction::CreateProofFromBucket { .. }
             | Instruction::CloneProof { .. } => {
@@ -214,7 +214,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByAmount {
+            self.add_instruction(Instruction::CreateProofOfAmountFromAuthZone {
                 amount,
                 resource_address,
             });

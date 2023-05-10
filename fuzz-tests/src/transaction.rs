@@ -121,7 +121,7 @@ impl Fuzzer {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZone { resource_address }
-                | Instruction::CreateProofFromAuthZoneByAmount {
+                | Instruction::CreateProofOfAmountFromAuthZone {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZoneByIds {

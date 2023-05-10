@@ -241,7 +241,7 @@ impl NotarizedTransactionValidator {
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
+                Instruction::CreateProofOfAmountFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;

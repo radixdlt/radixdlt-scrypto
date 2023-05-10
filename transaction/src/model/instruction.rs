@@ -68,7 +68,7 @@ pub enum Instruction {
     },
 
     /// Creates a proof from the auth zone, by the given amount
-    CreateProofFromAuthZoneByAmount {
+    CreateProofOfAmountFromAuthZone {
         amount: Decimal,
         resource_address: ResourceAddress,
     },

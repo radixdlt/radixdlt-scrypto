@@ -249,7 +249,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneByAmount {
+        Instruction::CreateProofOfAmountFromAuthZone {
             amount,
             resource_address,
         } => {
