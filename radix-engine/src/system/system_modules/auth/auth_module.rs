@@ -248,7 +248,7 @@ impl AuthModule {
                 auth_zone_id,
                 acting_location,
                 access_rules,
-                &AuthorityEntry::authority(authority),
+                &AuthorityUtil::authority(authority),
                 api,
             )?;
             match result {
@@ -275,23 +275,19 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &AccessRulesConfig,
-        entry: &AuthorityEntry,
+        access_rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        match entry {
-            AuthorityEntry::AccessRule(access_rule) => {
-                if Authentication::verify_method_auth(
-                    acting_location,
-                    *auth_zone_id,
-                    access_rules,
-                    access_rule,
-                    api,
-                )? {
-                    Ok(AuthorizationCheckResult::Authorized)
-                } else {
-                    Ok(AuthorizationCheckResult::Failed(access_rule.clone()))
-                }
-            },
+        if Authentication::verify_method_auth(
+            acting_location,
+            *auth_zone_id,
+            access_rules,
+            access_rule,
+            api,
+        )? {
+            Ok(AuthorizationCheckResult::Authorized)
+        } else {
+            Ok(AuthorizationCheckResult::Failed(access_rule.clone()))
         }
     }
 

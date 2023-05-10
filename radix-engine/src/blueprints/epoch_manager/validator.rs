@@ -378,9 +378,9 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let rule = if accept_delegated_stake {
-            AuthorityEntry::AccessRule(AccessRule::AllowAll)
+            AccessRule::AllowAll
         } else {
-            AuthorityEntry::authority("owner")
+            AuthorityUtil::authority("owner")
         };
 
         api.call_module_method(
@@ -502,19 +502,19 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
+    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
         vec![
             (
                 "stake",
-                AuthorityEntry::authority("owner"),
-                AuthorityEntry::AccessRule(rule!(require(package_of_direct_caller(
+                AuthorityUtil::authority("owner"),
+                rule!(require(package_of_direct_caller(
                     EPOCH_MANAGER_PACKAGE
-                )))),
+                ))),
             ),
             (
                 "update_metadata",
-                AuthorityEntry::authority("owner"),
-                AuthorityEntry::AccessRule(DenyAll),
+                AuthorityUtil::authority("owner"),
+                DenyAll,
             ),
         ]
     }

@@ -5,6 +5,7 @@ use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::String;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ResourceOrNonFungible {

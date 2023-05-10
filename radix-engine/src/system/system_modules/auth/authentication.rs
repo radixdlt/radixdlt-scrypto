@@ -291,13 +291,9 @@ impl Authentication {
         match auth_rule {
             AccessRuleNode::Authority(authority) => {
                 match access_rules.authorities.get(authority.as_str()) {
-                    Some(authority_entry) => {
-                        match authority_entry {
-                            AuthorityEntry::AccessRule(access_rule) => {
-                                // TODO: Make sure we don't have circular entries!
-                                Self::verify_method_auth(acting_location, auth_zone_id, access_rules, access_rule, api)
-                            }
-                        }
+                    Some(access_rule) => {
+                        // TODO: Make sure we don't have circular entries!
+                        Self::verify_method_auth(acting_location, auth_zone_id, access_rules, access_rule, api)
                     }
                     None => return Ok(false),
                 }

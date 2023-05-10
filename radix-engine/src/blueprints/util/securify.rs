@@ -14,7 +14,7 @@ pub trait SecurifiedAccessRules {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
+    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
         vec![]
     }
 

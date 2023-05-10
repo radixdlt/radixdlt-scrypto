@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, AuthorityEntry, ObjectKey,
+    AccessRule, AccessRulesConfig, AuthorityUtil, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -57,20 +57,11 @@ impl From<Mutability> for AccessRule {
     }
 }
 
-impl From<Mutability> for AuthorityEntry {
-    fn from(val: Mutability) -> Self {
-        match val {
-            Mutability::LOCKED => AuthorityEntry::AccessRule(AccessRule::DenyAll),
-            Mutability::MUTABLE(rule) => AuthorityEntry::AccessRule(rule),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ActorAccessRules;
 
 impl ActorAccessRules {
-    pub fn set_group_access_rule<A: Into<AuthorityEntry>>(&self, name: &str, entry: A) {
+    pub fn set_group_access_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         let _rtn = ScryptoEnv
             .actor_call_module_method(
                 OBJECT_HANDLE_SELF,

@@ -18,7 +18,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, AuthorityEntry, Bucket, FnKey,
+    require, AccessRule, AccessRulesConfig, AuthorityUtil, Bucket, FnKey,
 };
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use resources_tracker_macro::trace_resources;
@@ -112,11 +112,11 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AuthorityEntry, AuthorityEntry)> {
+    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
         vec![(
             "update_metadata",
-            AuthorityEntry::authority("owner"),
-            AuthorityEntry::authority("owner"),
+            AuthorityUtil::authority("owner"),
+            AccessRule::DenyAll,
         )]
     }
 }

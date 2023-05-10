@@ -70,26 +70,17 @@ impl MethodEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AuthorityEntry {
-    AccessRule(AccessRule),
-}
+pub struct AuthorityUtil;
 
-impl AuthorityEntry {
-    pub fn authority(name: &str) -> Self {
-        Self::AccessRule(AccessRule::Protected(AccessRuleNode::Authority(name.to_string())))
+impl AuthorityUtil {
+    pub fn authority(name: &str) -> AccessRule {
+        AccessRule::Protected(AccessRuleNode::Authority(name.to_string()))
     }
 }
 
-impl From<AccessRule> for AuthorityEntry {
-    fn from(value: AccessRule) -> Self {
-        AuthorityEntry::AccessRule(value)
-    }
-}
-
-impl From<String> for AuthorityEntry {
+impl From<String> for AccessRule {
     fn from(value: String) -> Self {
-        AuthorityEntry::authority(value.as_str())
+        AuthorityUtil::authority(value.as_str())
     }
 }
 
@@ -99,8 +90,8 @@ pub struct AccessRulesConfig {
     pub direct_methods: BTreeMap<MethodKey, MethodEntry>,
     pub methods: BTreeMap<MethodKey, MethodEntry>,
 
-    pub authorities: BTreeMap<String, AuthorityEntry>,
-    pub mutability: BTreeMap<String, AuthorityEntry>,
+    pub authorities: BTreeMap<String, AccessRule>,
+    pub mutability: BTreeMap<String, AccessRule>,
 }
 
 impl AccessRulesConfig {
@@ -113,20 +104,14 @@ impl AccessRulesConfig {
         }
     }
 
-    fn resolve_entry(&self, entry: &AuthorityEntry) -> AccessRule {
-        match entry {
-            AuthorityEntry::AccessRule(access_rule) => access_rule.clone(),
-        }
-    }
-
     pub fn get_authority_mutability(&self, key: &str) -> AccessRule {
         match self.mutability.get(key) {
             None => AccessRule::DenyAll,
-            Some(entry) => self.resolve_entry(entry),
+            Some(entry) => entry.clone(),
         }
     }
 
-    pub fn set_authority_access_rule<E: Into<AuthorityEntry>>(
+    pub fn set_authority_access_rule<E: Into<AccessRule>>(
         &mut self,
         group_key: String,
         access_rule_entry: E,
@@ -134,7 +119,7 @@ impl AccessRulesConfig {
         self.authorities.insert(group_key, access_rule_entry.into());
     }
 
-    pub fn set_authority_mutability<M: Into<AuthorityEntry>>(
+    pub fn set_authority_mutability<M: Into<AccessRule>>(
         &mut self,
         key: String,
         method_auth: M,
@@ -143,8 +128,8 @@ impl AccessRulesConfig {
     }
 
     pub fn set_authority_access_rule_and_mutability<
-        E: Into<AuthorityEntry>,
-        M: Into<AuthorityEntry>,
+        E: Into<AccessRule>,
+        M: Into<AccessRule>,
     >(
         &mut self,
         authority: &str,

@@ -7,7 +7,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, AuthorityEntry, ObjectKey,
+    AccessRule, AccessRulesConfig, AuthorityUtil, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
@@ -64,7 +64,7 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AuthorityEntry>>(
+    fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
         name: &str,
         entry: A,
@@ -89,7 +89,7 @@ pub trait AccessRulesObject {
     fn set_group_access_rule_and_mutability<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
-        R: Into<AuthorityEntry>,
+        R: Into<AccessRule>,
     >(
         &self,
         name: &str,
