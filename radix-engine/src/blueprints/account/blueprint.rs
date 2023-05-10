@@ -8,7 +8,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, Bucket, GroupEntry, Proof,
+    AccessRule, AccessRulesConfig, Bucket, AuthorityEntry, Proof,
 };
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
@@ -34,14 +34,10 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
-    fn securified_groups() -> Vec<&'static str> {
-        vec!["owner"]
-    }
-
-    fn other_groups() -> Vec<(&'static str, GroupEntry, AccessRule)> {
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
         vec![(
             "update_metadata",
-            GroupEntry::Group("owner".to_string()),
+            AuthorityEntry::Group("owner".to_string()),
             DenyAll,
         )]
     }

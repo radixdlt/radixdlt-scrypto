@@ -72,7 +72,7 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     let mut config = AccessRulesConfig::new();
-                    config.set_group_access_rule_and_mutability(
+                    config.set_authority_access_rule_and_mutability(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
@@ -82,7 +82,7 @@ impl TransactionFuzzer {
                 }
                 1 => {
                     let mut config = AccessRulesConfig::new();
-                    config.set_group_access_rule_and_mutability(
+                    config.set_authority_access_rule_and_mutability(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
@@ -91,7 +91,7 @@ impl TransactionFuzzer {
                 }
                 2 => {
                     let mut config = AccessRulesConfig::new();
-                    config.set_group_access_rule_and_mutability(
+                    config.set_authority_access_rule_and_mutability(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,

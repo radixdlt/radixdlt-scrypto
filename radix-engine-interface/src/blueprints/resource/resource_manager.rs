@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
 
+// TODO: Remove?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {
     Mint,

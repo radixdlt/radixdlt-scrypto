@@ -71,55 +71,55 @@ impl MethodEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum GroupEntry {
+pub enum AuthorityEntry {
     AccessRule(AccessRule),
     Group(String),
     Groups(Vec<String>),
 }
 
-impl GroupEntry {
+impl AuthorityEntry {
     pub fn group(name: &str) -> Self {
         Self::Group(name.to_string())
     }
 }
 
-impl From<AccessRule> for GroupEntry {
+impl From<AccessRule> for AuthorityEntry {
     fn from(value: AccessRule) -> Self {
-        GroupEntry::AccessRule(value)
+        AuthorityEntry::AccessRule(value)
     }
 }
 
-impl From<String> for GroupEntry {
+impl From<String> for AuthorityEntry {
     fn from(value: String) -> Self {
-        GroupEntry::Group(value)
+        AuthorityEntry::Group(value)
     }
 }
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
-    direct_method_auth: BTreeMap<MethodKey, MethodEntry>,
-    method_auth: BTreeMap<MethodKey, MethodEntry>,
+    direct_methods: BTreeMap<MethodKey, MethodEntry>,
+    methods: BTreeMap<MethodKey, MethodEntry>,
 
-    grouped_auth: BTreeMap<String, GroupEntry>,
-    grouped_auth_mutability: BTreeMap<String, AccessRule>,
+    authorities: BTreeMap<String, AuthorityEntry>,
+    mutability: BTreeMap<String, AccessRule>,
 }
 
 impl AccessRulesConfig {
     pub fn new() -> Self {
         Self {
-            direct_method_auth: BTreeMap::new(),
-            method_auth: BTreeMap::new(),
-            grouped_auth: BTreeMap::new(),
-            grouped_auth_mutability: BTreeMap::new(),
+            direct_methods: BTreeMap::new(),
+            methods: BTreeMap::new(),
+            authorities: BTreeMap::new(),
+            mutability: BTreeMap::new(),
         }
     }
 
     pub fn get_access_rules(&self, is_direct_access: bool, key: &MethodKey) -> Vec<AccessRule> {
         let auth = if is_direct_access {
-            &self.direct_method_auth
+            &self.direct_methods
         } else {
-            &self.method_auth
+            &self.methods
         };
         match auth.get(key) {
             None => vec![], // FIXME: This should really be DenyAll but leave it as AllowAll for now until scrypto side fixed
@@ -131,7 +131,7 @@ impl AccessRulesConfig {
         let mut group_rules = Vec::new();
 
         for group in &method_entry.groups {
-            let rule = self.resolve_entry(&GroupEntry::Group(group.to_string()));
+            let rule = self.resolve_entry(&AuthorityEntry::Group(group.to_string()));
             match rule {
                 AccessRule::DenyAll => {
                     group_rules.push(AccessRuleNode::AnyOf(vec![]));
@@ -146,21 +146,21 @@ impl AccessRulesConfig {
         AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
     }
 
-    fn resolve_entry(&self, entry: &GroupEntry) -> AccessRule {
+    fn resolve_entry(&self, entry: &AuthorityEntry) -> AccessRule {
         match entry {
-            GroupEntry::AccessRule(access_rule) => access_rule.clone(),
-            GroupEntry::Group(name) => match self.grouped_auth.get(name) {
+            AuthorityEntry::AccessRule(access_rule) => access_rule.clone(),
+            AuthorityEntry::Group(name) => match self.authorities.get(name) {
                 Some(entry) => {
                     // TODO: Make sure we don't have circular entries!
                     self.resolve_entry(entry)
                 }
                 None => AccessRule::DenyAll,
             },
-            GroupEntry::Groups(groups) => {
+            AuthorityEntry::Groups(groups) => {
                 let mut group_rules = Vec::new();
 
                 for group in groups {
-                    let rule = self.resolve_entry(&GroupEntry::Group(group.to_string()));
+                    let rule = self.resolve_entry(&AuthorityEntry::Group(group.to_string()));
                     match rule {
                         AccessRule::DenyAll => {
                             group_rules.push(AccessRuleNode::AnyOf(vec![]));
@@ -177,36 +177,36 @@ impl AccessRulesConfig {
         }
     }
 
-    pub fn get_group_mutability(&self, key: &str) -> AccessRule {
-        self.grouped_auth_mutability
+    pub fn get_authority_mutability(&self, key: &str) -> AccessRule {
+        self.mutability
             .get(key)
             .cloned()
             .unwrap_or_else(|| AccessRule::DenyAll)
     }
 
-    pub fn set_group_access_rule<E: Into<GroupEntry>>(
+    pub fn set_authority_access_rule<E: Into<AuthorityEntry>>(
         &mut self,
         group_key: String,
         access_rule_entry: E,
     ) {
-        self.grouped_auth
+        self.authorities
             .insert(group_key, access_rule_entry.into());
     }
 
-    pub fn set_group_mutability(&mut self, key: String, method_auth: AccessRule) {
-        self.grouped_auth_mutability.insert(key, method_auth);
+    pub fn set_authority_mutability(&mut self, key: String, method_auth: AccessRule) {
+        self.mutability.insert(key, method_auth);
     }
 
-    pub fn set_group_access_rule_and_mutability<E: Into<GroupEntry>>(
+    pub fn set_authority_access_rule_and_mutability<E: Into<AuthorityEntry>>(
         &mut self,
-        group_key: &str,
+        authority: &str,
         access_rule: E,
         mutability: AccessRule,
     ) {
-        self.grouped_auth
-            .insert(group_key.to_string(), access_rule.into());
-        self.grouped_auth_mutability
-            .insert(group_key.to_string(), mutability);
+        self.authorities
+            .insert(authority.to_string(), access_rule.into());
+        self.mutability
+            .insert(authority.to_string(), mutability);
     }
 
     pub fn set_public(&mut self, key: MethodKey) {
@@ -214,23 +214,23 @@ impl AccessRulesConfig {
     }
 
     pub fn set_group(&mut self, key: MethodKey, group: &str) {
-        self.method_auth
+        self.methods
             .insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_groups(&mut self, key: MethodKey, groups: Vec<String>) {
-        self.method_auth
+        self.methods
             .insert(key.clone(), MethodEntry::groups(groups));
     }
 
     pub fn set_main_method_group(&mut self, method: &str, group: &str) {
         let key = MethodKey::new(ObjectModuleId::Main, method);
-        self.method_auth
+        self.methods
             .insert(key.clone(), MethodEntry::group(group));
     }
 
     pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
-        self.direct_method_auth
+        self.direct_methods
             .insert(key.clone(), MethodEntry::group(group));
     }
 }
@@ -239,12 +239,12 @@ pub fn package_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> AccessRulesConfig {
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "update_metadata",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "royalty",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),

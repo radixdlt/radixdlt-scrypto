@@ -39,7 +39,7 @@ mod multi_threaded_test {
         let public_key = private_key.public_key();
 
         let mut config = AccessRulesConfig::new();
-        config.set_group_access_rule_and_mutability(
+        config.set_authority_access_rule_and_mutability(
             "owner",
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             AccessRule::DenyAll,

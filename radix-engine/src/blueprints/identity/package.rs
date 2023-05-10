@@ -11,6 +11,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
@@ -185,8 +186,12 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 
-    fn securified_groups() -> Vec<&'static str> {
-        vec!["update_metadata"]
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
+        vec![(
+            "update_metadata",
+            AuthorityEntry::Group("owner".to_string()),
+            DenyAll,
+        )]
     }
 }
 

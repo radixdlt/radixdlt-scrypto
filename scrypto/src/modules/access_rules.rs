@@ -3,7 +3,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, AccessRulesSetGroupMutabilityInput};
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, GroupEntry, ObjectKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, AuthorityEntry, ObjectKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -51,11 +51,11 @@ impl From<Mutability> for AccessRule {
     }
 }
 
-impl From<Mutability> for GroupEntry {
+impl From<Mutability> for AuthorityEntry {
     fn from(val: Mutability) -> Self {
         match val {
-            Mutability::LOCKED => GroupEntry::AccessRule(AccessRule::DenyAll),
-            Mutability::MUTABLE(rule) => GroupEntry::AccessRule(rule),
+            Mutability::LOCKED => AuthorityEntry::AccessRule(AccessRule::DenyAll),
+            Mutability::MUTABLE(rule) => AuthorityEntry::AccessRule(rule),
         }
     }
 }
@@ -64,7 +64,7 @@ impl From<Mutability> for GroupEntry {
 pub struct ActorAccessRules;
 
 impl ActorAccessRules {
-    pub fn set_group_access_rule<A: Into<GroupEntry>>(
+    pub fn set_group_access_rule<A: Into<AuthorityEntry>>(
         &self,
         name: &str,
         entry: A,

@@ -15,7 +15,7 @@ use transaction::model::TransactionManifest;
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(deny_all),
@@ -40,7 +40,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
@@ -65,7 +65,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
@@ -90,7 +90,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
@@ -114,7 +114,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
@@ -153,7 +153,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
         "owner",
     );
-    access_rules.set_group_access_rule_and_mutability(
+    access_rules.set_authority_access_rule_and_mutability(
         "owner",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),

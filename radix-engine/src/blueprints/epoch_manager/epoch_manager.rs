@@ -112,17 +112,17 @@ impl EpochManagerBlueprint {
         };
 
         let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_group_access_rule_and_mutability(
+        access_rules.set_authority_access_rule_and_mutability(
             "start",
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        access_rules.set_group_access_rule_and_mutability(
+        access_rules.set_authority_access_rule_and_mutability(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );
-        access_rules.set_group_access_rule_and_mutability(
+        access_rules.set_authority_access_rule_and_mutability(
             "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
             DenyAll,

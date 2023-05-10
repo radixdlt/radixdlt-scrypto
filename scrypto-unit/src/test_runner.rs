@@ -545,7 +545,7 @@ impl TestRunner {
         mutability: AccessRule,
     ) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_group_access_rule_and_mutability(
+        access_rules_config.set_authority_access_rule_and_mutability(
             "owner",
             withdraw_auth,
             mutability,
@@ -655,7 +655,7 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut config = AccessRulesConfig::new();
-            config.set_group_access_rule_and_mutability(
+            config.set_authority_access_rule_and_mutability(
                 "update_metadata",
                 rule!(require(owner_id.clone())),
                 rule!(require(owner_id)),

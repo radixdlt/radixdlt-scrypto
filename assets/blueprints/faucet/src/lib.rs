@@ -1,5 +1,3 @@
-use scrypto::api::node_modules::metadata::METADATA_SET_IDENT;
-use scrypto::api::ObjectModuleId;
 use scrypto::prelude::*;
 
 // Faucet - TestNet only

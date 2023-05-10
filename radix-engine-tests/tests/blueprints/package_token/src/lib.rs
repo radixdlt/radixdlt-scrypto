@@ -14,7 +14,7 @@ mod factory {
             .instantiate();
 
             let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_group_access_rule_and_mutability(
+            access_rules.set_authority_access_rule_and_mutability(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,
@@ -31,7 +31,7 @@ mod factory {
             .instantiate();
 
             let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_group_access_rule_and_mutability(
+            access_rules.set_authority_access_rule_and_mutability(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,

@@ -17,9 +17,7 @@ use radix_engine_interface::api::component::{
 };
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, Bucket, FnKey,
-};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, AccessRulesConfig, Bucket, FnKey, AuthorityEntry};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use resources_tracker_macro::trace_resources;
 
@@ -29,6 +27,7 @@ pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate a
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -112,8 +111,12 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn securified_groups() -> Vec<&'static str> {
-        vec!["update_metadata"]
+    fn authorities() -> Vec<(&'static str, AuthorityEntry, AccessRule)> {
+        vec![(
+            "update_metadata",
+            AuthorityEntry::Group("owner".to_string()),
+            DenyAll,
+        )]
     }
 }
 

@@ -161,7 +161,7 @@ impl ClockNativePackage {
         )?;
 
         let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_group_access_rule_and_mutability(
+        access_rules.set_authority_access_rule_and_mutability(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
