@@ -1,7 +1,7 @@
 use crate::track::db_key_mapper::DatabaseKeyMapper;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, SubstateStoreDbAccessInfo,
-    TakeSubstateError, StoreAccessInfo, StoreAccess
+    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
+    TakeSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -487,6 +487,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                     .get_substate(&db_partition_key, &db_sort_key)
                     .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
                 if let Some(value) = value {
+                    let value_len = value.as_slice().len();
+                    store_access.push(StoreAccess::ReadFromDb(value_len));
+                    store_access.push(StoreAccess::Write(value_len));
+
                     let tracked = TrackedSubstateKey {
                         substate_key,
                         tracked: TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
@@ -494,20 +498,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                         ))),
                     };
                     e.insert(tracked);
-
-                    let value_len = value.as_slice().len();
-                    store_access.push(StoreAccess::ReadFromDb(value_len));
-                    store_access.push(StoreAccess::Write(value_len));
                 } else {
                     let value = virtualize();
                     if let Some(value) = value {
+                        store_access.push(StoreAccess::Write(value.as_slice().len()));
                         let tracked = TrackedSubstateKey {
                             substate_key,
                             tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
                         };
                         e.insert(tracked);
-
-                        store_access.push(StoreAccess::Write(value.as_slice().len()));
                     } else {
                         let tracked = TrackedSubstateKey {
                             substate_key,
@@ -520,7 +519,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             Entry::Occupied(..) => (),
         }
 
-        (&mut partition.get_mut(&db_sort_key).unwrap().tracked, StoreAccessInfo(store_access))
+        (
+            &mut partition.get_mut(&db_sort_key).unwrap().tracked,
+            StoreAccessInfo(store_access),
+        )
     }
 
     fn get_tracked_substate(
@@ -654,7 +656,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 if items.len() == count {
                     return (
                         items,
-                        StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
+                        StoreAccessInfo::new()
+                            .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
                     );
                 }
 
@@ -666,13 +669,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        let items_intermediate_len = items.len();
-
         // Optimization, no need to go into database if the node is just created
         if is_new {
             return (
                 items,
-                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
+                StoreAccessInfo::new()
+                    .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
@@ -704,8 +706,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(num_iterations);
         tracked_partition.range_read = Some(next_range_read);
 
-        let first_time_read_records_count = items.len() - items_intermediate_len;
-
         (
             items,
             StoreAccessInfo::new()
@@ -730,7 +730,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(false);
 
         let mut track_read_size = 0;
-            // Check what we've currently got so far without going into database
+        // Check what we've currently got so far without going into database
         let mut tracked_partition =
             node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
@@ -738,7 +738,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 if items.len() == count {
                     return (
                         items,
-                        StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
+                        StoreAccessInfo::new()
+                            .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
                     );
                 }
 
@@ -754,7 +755,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if is_new {
             return (
                 items,
-                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
+                StoreAccessInfo::new()
+                    .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
@@ -857,7 +859,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
             return (
                 items,
-                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
+                StoreAccessInfo::new()
+                    .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
@@ -869,7 +872,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())
             .collect();
 
-        let db_read_size = items.iter().map(|&item| item.as_slice().len()).sum();
+        let db_read_size = items.iter().map(|item| item.as_slice().len()).sum();
 
         // Update track
         {

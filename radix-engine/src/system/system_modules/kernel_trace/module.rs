@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::SubstateStoreDbAccessInfo;
+use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
@@ -140,14 +140,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        store_access: &SubstateStoreDbAccessInfo,
+        _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Substate locked: handle = {:?}, store_access = {:?}",
-            handle,
-            store_access
+            "Substate locked: handle = {:?}",
+            handle
         );
         Ok(())
     }

@@ -1,6 +1,6 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, SubstateStoreDbAccessInfo,
+    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
 };
 use crate::types::*;
@@ -215,14 +215,14 @@ impl<D, L: Clone> CallFrame<D, L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, SubstateStoreDbAccessInfo), LockSubstateError> {
+    ) -> Result<(LockHandle, StoreAccessInfo), LockSubstateError> {
         // Check node visibility
         self.get_node_visibility(node_id)
             .ok_or_else(|| LockSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         // Lock and read the substate
         let mut store_handle = None;
-        let mut store_access = SubstateStoreDbAccessInfo::default();
+        let mut store_access = StoreAccessInfo::new();
         let substate_value = if heap.contains_node(node_id) {
             // TODO: make Heap more like Store?
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -489,17 +489,14 @@ impl<D, L: Clone> CallFrame<D, L> {
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<
-        (Option<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
-        CallFrameRemoveSubstateError,
-    > {
+    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), CallFrameRemoveSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameRemoveSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let (removed, store_access) = if heap.contains_node(node_id) {
             (
                 heap.delete_substate(node_id, partition_num, key),
-                SubstateStoreDbAccessInfo::default(),
+                StoreAccessInfo::new(),
             )
         } else {
             store
@@ -517,15 +514,14 @@ impl<D, L: Clone> CallFrame<D, L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo), CallFrameScanSubstateError>
-    {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameScanSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
                 heap.scan_substates(node_id, partition_num, count),
-                SubstateStoreDbAccessInfo::default(),
+                StoreAccessInfo::new(),
             )
         } else {
             store.scan_substates(node_id, partition_num, count)
@@ -554,10 +550,8 @@ impl<D, L: Clone> CallFrame<D, L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<
-        (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
-        CallFrameTakeSortedSubstatesError,
-    > {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
+    {
         self.get_node_visibility(node_id).ok_or_else(|| {
             CallFrameTakeSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;
@@ -565,7 +559,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
                 heap.take_substates(node_id, partition_num, count),
-                SubstateStoreDbAccessInfo::default(),
+                StoreAccessInfo::new(),
             )
         } else {
             store.take_substates(node_id, partition_num, count)
@@ -596,10 +590,8 @@ impl<D, L: Clone> CallFrame<D, L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<
-        (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo),
-        CallFrameScanSortedSubstatesError,
-    > {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSortedSubstatesError>
+    {
         self.get_node_visibility(node_id).ok_or_else(|| {
             CallFrameScanSortedSubstatesError::NodeNotInCallFrame(node_id.clone())
         })?;

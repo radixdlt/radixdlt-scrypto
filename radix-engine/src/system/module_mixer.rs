@@ -20,7 +20,7 @@ use crate::system::system_modules::transaction_limits::{
 };
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::track::interface::{NodeSubstates, SubstateStoreDbAccessInfo};
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -671,7 +671,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        store_access: &SubstateStoreDbAccessInfo,
+        store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
@@ -818,7 +818,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        store_access: &SubstateStoreDbAccessInfo,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {
@@ -854,7 +854,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        store_access: &SubstateStoreDbAccessInfo,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_DEBUG) {

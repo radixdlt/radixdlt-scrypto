@@ -23,6 +23,7 @@ pub enum TakeSubstateError {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+#[derive(Clone)]
 pub struct StoreAccessInfo(pub Vec<StoreAccess>);
 impl StoreAccessInfo {
     pub fn new() -> Self {
@@ -40,6 +41,7 @@ impl StoreAccessInfo {
     }
 }
 
+#[derive(Clone)]
 pub enum StoreAccess {
     // When store invokes `SubstateDatabase::get_substate()`.
     // size might be zero when the entry does not exist.
@@ -58,28 +60,6 @@ pub enum StoreAccess {
     // help reduce the state size.
 }
 
-/// Info about accessing Substate Store Database. Enum contains information which operation
-/// was accessing database including additional associated data.
-#[derive(Default, Debug, Clone)]
-pub enum SubstateStoreDbAccessInfo {
-    AcquireLock,
-    Take,
-    Scan {
-        first_time_read_records_count: usize,
-        read_from_track_count: usize,
-    },
-    TakeMany {
-        first_time_read_records_count: usize,
-        read_from_track_count: usize,
-        update_count: usize,
-    },
-    ScanSorted {
-        first_time_read_records_count: usize,
-        read_from_track_count: usize,
-    },
-    #[default]
-    NoAccess,
-}
 
 /// Represents the interface between Radix Engine and Track.
 ///
