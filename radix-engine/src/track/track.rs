@@ -801,7 +801,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         };
 
         // Update track
-        let mut track_write_size = 0;
+        let mut track_write_size_new = 0;
+        let mut track_write_size_old = 0;
         {
             let num_iterations = tracked_iter.num_iterations;
             let tracked_partition = self.get_tracked_partition(node_id, partition_num);
@@ -810,9 +811,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 .map(|cur| u32::max(cur, num_iterations))
                 .unwrap_or(num_iterations);
             tracked_partition.range_read = Some(next_range_read);
+
             for (db_sort_key, tracked) in new_updates {
-                track_write_size += tracked.tracked.get().unwrap().as_slice().len();
-                tracked_partition.substates.insert(db_sort_key, tracked);
+                if let Some(value) = tracked.tracked.get() {
+                    track_write_size_new += value.as_slice().len();
+                }
+
+                if let Some(old_value) = tracked_partition.substates.insert(db_sort_key, tracked) {
+                    if let Some(value) = old_value.tracked.get() {
+                        track_write_size_old += value.as_slice().len();
+                    }
+                }
             }
         }
 
@@ -821,7 +830,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             StoreAccessInfo::new()
                 .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size))
                 .push_if_not_empty(StoreAccess::ReadFromDb(db_read_size))
-                .push_if_not_empty(StoreAccess::Write(track_write_size)),
+                .push_if_not_empty(StoreAccess::Rewrite(track_write_size_old, track_write_size_new)),
         )
     }
 

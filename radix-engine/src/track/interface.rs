@@ -23,53 +23,6 @@ pub enum TakeSubstateError {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
-#[derive(Clone)]
-pub struct StoreAccessInfo(Vec<StoreAccess>);
-impl StoreAccessInfo {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-    pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
-        Self(vector)
-    }
-    pub fn data(&self) -> &Vec<StoreAccess> {
-        &self.0
-    }
-    pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
-        match item {
-            StoreAccess::ReadFromDb(size) | StoreAccess::ReadFromTrack(size) | StoreAccess::Write(size) => 
-                if size > 0 {
-                    self.0.push(item)
-                },
-            StoreAccess::Rewrite(size_old, size_new) => 
-                if size_old > 0 && size_new > 0 {
-                    self.0.push(item)
-                }
-        }
-        self
-    }
-}
-
-#[derive(Clone)]
-pub enum StoreAccess {
-    // When store invokes `SubstateDatabase::get_substate()`.
-    // size might be zero when the entry does not exist.
-    ReadFromDb(usize),
-    // When store reads from the `tracked_nodes`.
-    ReadFromTrack(usize),
-    // When store writes into the `tracked_nodes`.
-    // This will eventually be flushed into database.
-    Write(usize),
-    // When store updates an entry for the second time
-    // Need to report both the previous size and new size as partial refund may be required
-    // (Reason: only one write will be applied when the transaction finishes, despite substate being updated twice)
-    Rewrite(usize, usize),
-
-    // In future, we may want to introduce something like `Clear` to rebate behaviours that 
-    // help reduce the state size.
-}
-
-
 /// Represents the interface between Radix Engine and Track.
 ///
 /// In practice, we will likely end up with only one implementation.
@@ -174,4 +127,53 @@ pub trait SubstateStore {
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
+}
+
+#[derive(Clone)]
+pub struct StoreAccessInfo(Vec<StoreAccess>);
+impl StoreAccessInfo {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+    pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
+        Self(vector)
+    }
+    pub fn data(&self) -> &Vec<StoreAccess> {
+        &self.0
+    }
+    pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
+        match item {
+            StoreAccess::ReadFromDb(size)
+            | StoreAccess::ReadFromTrack(size)
+            | StoreAccess::Write(size) => {
+                if size > 0 {
+                    self.0.push(item)
+                }
+            }
+            StoreAccess::Rewrite(size_old, size_new) => {
+                if size_old > 0 || size_new > 0 {
+                    self.0.push(item)
+                }
+            }
+        }
+        self
+    }
+}
+
+#[derive(Clone)]
+pub enum StoreAccess {
+    // When store invokes `SubstateDatabase::get_substate()`.
+    // size might be zero when the entry does not exist.
+    ReadFromDb(usize),
+    // When store reads from the `tracked_nodes`.
+    ReadFromTrack(usize),
+    // When store writes into the `tracked_nodes`.
+    // This will eventually be flushed into database.
+    Write(usize),
+    // When store updates an entry for the second time
+    // Need to report both the previous size and new size as partial refund may be required
+    // (Reason: only one write will be applied when the transaction finishes, despite substate being updated twice)
+    Rewrite(usize, usize),
+    // In future, we may want to introduce something like `Clear` to rebate behaviours that
+    // help reduce the state size.
 }
