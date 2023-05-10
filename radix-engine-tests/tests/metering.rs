@@ -408,7 +408,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Act
     let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
-        builder.create_proof_of_amount_from_account(account, resource_address, 1.into());
+        builder.create_proof_from_account_of_amount(account, resource_address, 1.into());
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();

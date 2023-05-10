@@ -296,7 +296,7 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZone { resource_address }
         }
-        ast::Instruction::CreateProofOfAmountFromAuthZone {
+        ast::Instruction::CreateProofFromAuthZoneOfAmount {
             amount,
             resource_address,
             new_proof,
@@ -308,12 +308,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofOfAmountFromAuthZone {
+            Instruction::CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             }
         }
-        ast::Instruction::CreateProofOfNonFungiblesFromAuthZone {
+        ast::Instruction::CreateProofFromAuthZoneOfNonFungibles {
             ids,
             resource_address,
             new_proof,
@@ -325,7 +325,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofOfNonFungiblesFromAuthZone {
+            Instruction::CreateProofFromAuthZoneOfNonFungibles {
                 ids,
                 resource_address,
             }

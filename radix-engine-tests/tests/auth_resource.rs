@@ -65,7 +65,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(test_runner.faucet_component(), 10u32.into());
-    builder.create_proof_of_amount_from_account(account, auth_to_use, Decimal::one());
+    builder.create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
 
     match action {
         Action::Mint => builder

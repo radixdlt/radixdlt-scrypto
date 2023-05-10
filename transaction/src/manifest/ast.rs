@@ -52,13 +52,13 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofOfAmountFromAuthZone {
+    CreateProofFromAuthZoneOfAmount {
         amount: Value,
         resource_address: Value,
         new_proof: Value,
     },
 
-    CreateProofOfNonFungiblesFromAuthZone {
+    CreateProofFromAuthZoneOfNonFungibles {
         ids: Value,
         resource_address: Value,
         new_proof: Value,

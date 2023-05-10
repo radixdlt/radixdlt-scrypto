@@ -113,15 +113,15 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
-            TokenKind::CreateProofOfAmountFromAuthZone => {
-                Instruction::CreateProofOfAmountFromAuthZone {
+            TokenKind::CreateProofFromAuthZoneOfAmount => {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     amount: self.parse_value()?,
                     resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }
-            TokenKind::CreateProofOfNonFungiblesFromAuthZone => {
-                Instruction::CreateProofOfNonFungiblesFromAuthZone {
+            TokenKind::CreateProofFromAuthZoneOfNonFungibles => {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
                     ids: self.parse_value()?,
                     resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,

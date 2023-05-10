@@ -68,13 +68,13 @@ pub enum Instruction {
     },
 
     /// Creates a proof from the auth zone, by the given amount
-    CreateProofOfAmountFromAuthZone {
+    CreateProofFromAuthZoneOfAmount {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
-    CreateProofOfNonFungiblesFromAuthZone {
+    CreateProofFromAuthZoneOfNonFungibles {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },

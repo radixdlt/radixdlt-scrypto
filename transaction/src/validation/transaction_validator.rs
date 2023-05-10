@@ -241,12 +241,12 @@ impl NotarizedTransactionValidator {
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofOfAmountFromAuthZone { .. } => {
+                Instruction::CreateProofFromAuthZoneOfAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofOfNonFungiblesFromAuthZone { .. } => {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;

@@ -263,7 +263,7 @@ fn can_create_proof_from_account_and_pass_on() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_of_amount_from_account(account, resource_address, 1.into())
+        .create_proof_from_account_of_amount(account, resource_address, 1.into())
         .pop_from_auth_zone(|builder, proof_id| {
             builder.call_function(
                 package_address,
@@ -294,7 +294,7 @@ fn cant_move_restricted_proof() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .create_proof_of_amount_from_account(account, resource_address, 1.into())
+        .create_proof_from_account_of_amount(account, resource_address, 1.into())
         .pop_from_auth_zone(|builder, proof_id| {
             builder.call_function(
                 package_address,
@@ -563,7 +563,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
-        .create_proof_of_non_fungibles_from_account(
+        .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
             &BTreeSet::from([
@@ -571,12 +571,12 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 NonFungibleLocalId::integer(2),
             ]),
         )
-        .create_proof_of_non_fungibles_from_account(
+        .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
             &BTreeSet::from([NonFungibleLocalId::integer(3)]),
         )
-        .create_proof_of_non_fungibles_from_auth_zone(
+        .create_proof_from_auth_zone_of_non_fungibles(
             &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),

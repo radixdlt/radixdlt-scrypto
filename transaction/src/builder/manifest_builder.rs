@@ -73,8 +73,8 @@ impl ManifestBuilder {
             }
             Instruction::PopFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZone { .. }
-            | Instruction::CreateProofOfAmountFromAuthZone { .. }
-            | Instruction::CreateProofOfNonFungiblesFromAuthZone { .. }
+            | Instruction::CreateProofFromAuthZoneOfAmount { .. }
+            | Instruction::CreateProofFromAuthZoneOfNonFungibles { .. }
             | Instruction::CreateProofFromBucket { .. }
             | Instruction::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
@@ -204,7 +204,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by amount.
-    pub fn create_proof_of_amount_from_auth_zone<F>(
+    pub fn create_proof_from_auth_zone_of_amount<F>(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
@@ -214,7 +214,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofOfAmountFromAuthZone {
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             });
@@ -222,7 +222,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by non-fungible ids.
-    pub fn create_proof_of_non_fungibles_from_auth_zone<F>(
+    pub fn create_proof_from_auth_zone_of_non_fungibles<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
@@ -232,7 +232,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofOfNonFungiblesFromAuthZone {
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfNonFungibles {
                 ids: ids.clone(),
                 resource_address,
             });
@@ -921,7 +921,7 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_of_amount_from_account(
+    pub fn create_proof_from_account_of_amount(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,
@@ -941,7 +941,7 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_of_non_fungibles_from_account(
+    pub fn create_proof_from_account_of_non_fungibles(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,
