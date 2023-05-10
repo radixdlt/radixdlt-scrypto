@@ -74,7 +74,6 @@ impl MethodEntry {
 pub enum AuthorityEntry {
     AccessRule(AccessRule),
     Authority(String),
-    Authorities(Vec<String>),
 }
 
 impl AuthorityEntry {
@@ -125,24 +124,6 @@ impl AccessRulesConfig {
                 }
                 None => AccessRule::DenyAll,
             },
-            AuthorityEntry::Authorities(groups) => {
-                let mut group_rules = Vec::new();
-
-                for group in groups {
-                    let rule = self.resolve_entry(&AuthorityEntry::Authority(group.to_string()));
-                    match rule {
-                        AccessRule::DenyAll => {
-                            group_rules.push(AccessRuleNode::AnyOf(vec![]));
-                        }
-                        AccessRule::AllowAll => {
-                            group_rules.push(AccessRuleNode::AllOf(vec![]));
-                        }
-                        AccessRule::Protected(node) => group_rules.push(node),
-                    }
-                }
-
-                AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
-            }
         }
     }
 

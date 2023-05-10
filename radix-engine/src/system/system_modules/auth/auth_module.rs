@@ -272,24 +272,6 @@ impl AuthModule {
                 }
                 None => AccessRule::DenyAll,
             },
-            AuthorityEntry::Authorities(groups) => {
-                let mut group_rules = Vec::new();
-
-                for group in groups {
-                    let rule = Self::resolve_entry(access_rules_config, &AuthorityEntry::Authority(group.to_string()));
-                    match rule {
-                        AccessRule::DenyAll => {
-                            group_rules.push(AccessRuleNode::AnyOf(vec![]));
-                        }
-                        AccessRule::AllowAll => {
-                            group_rules.push(AccessRuleNode::AllOf(vec![]));
-                        }
-                        AccessRule::Protected(node) => group_rules.push(node),
-                    }
-                }
-
-                AccessRule::Protected(AccessRuleNode::AnyOf(group_rules))
-            }
         }
     }
 
