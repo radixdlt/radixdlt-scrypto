@@ -23,6 +23,26 @@ pub enum TakeSubstateError {
 
 pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
 
+pub struct StoreAccessInfo(pub Vec<StoreAccess>);
+
+pub enum StoreAccess {
+    // When store invokes `SubstateDatabase::get_substate()`.
+    // size might be zero when the entry does not exist.
+    ReadFromDb(usize),
+    // When store reads from the `tracked_nodes`.
+    ReadFromTrack(usize),
+    // When store writes into the `tracked_nodes`.
+    // This will eventually be flushed into database.
+    Write(usize),
+    // When store updates an entry for the second time
+    // Need to report both the previous size and new size as partial refund may be required
+    // (Reason: only one write will be applied when the transaction finishes, despite substate being updated twice)
+    Rewrite(usize, usize),
+
+    // In future, we may want to introduce something like `Clear` to rebate behaviours that 
+    // help reduce the state size.
+}
+
 /// Info about accessing Substate Store Database. Enum contains information which operation
 /// was accessing database including additional associated data.
 #[derive(Default, Debug, Clone)]
@@ -84,7 +104,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, SubstateStoreDbAccessInfo), TakeSubstateError>;
+    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_substates(
@@ -92,7 +112,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn take_substates(
@@ -100,7 +120,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_sorted_substates(
@@ -108,7 +128,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, SubstateStoreDbAccessInfo);
+    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
 
     /// Acquires a lock over a substate.
     /// Returns tuple of lock handle id and information if particular substate
@@ -119,7 +139,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-    ) -> Result<(u32, SubstateStoreDbAccessInfo), AcquireLockError> {
+    ) -> Result<(u32, StoreAccessInfo), AcquireLockError> {
         self.acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || None)
     }
 
@@ -130,7 +150,7 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<(u32, SubstateStoreDbAccessInfo), AcquireLockError>;
+    ) -> Result<(u32, StoreAccessInfo), AcquireLockError>;
 
     /// Releases a lock.
     ///
