@@ -455,6 +455,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .apply_access_store_costs(store_access)
     }
 
+    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_access_store_costs(store_access)
+    }
+
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,

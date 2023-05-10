@@ -571,7 +571,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<(), SetSubstateError> {
+    ) -> Result<StoreAccessInfo, SetSubstateError> {
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let tracked_partition = self
@@ -586,6 +586,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         match entry {
             Entry::Vacant(e) => {
+                let value_len = substate_value.as_slice().len();
+
                 let tracked = TrackedSubstateKey {
                     substate_key,
                     tracked: TrackedKey::WriteOnly(Write::Update(RuntimeSubstate::new(
@@ -593,6 +595,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     ))),
                 };
                 e.insert(tracked);
+
+                Ok(StoreAccessInfo::new().push_if_not_empty(StoreAccess::Write(value_len)))
             }
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
@@ -605,12 +609,18 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                         ));
                     }
                 }
+                let new_value_len = substate_value.as_slice().len();
+                let old_value_len = if let Some(old_value) = tracked.tracked.get() {
+                    old_value.as_slice().len()
+                } else {
+                    0
+                };
 
                 tracked.tracked.set(substate_value);
+
+                Ok(StoreAccessInfo::new().push_if_not_empty(StoreAccess::Rewrite(old_value_len, new_value_len)))
             }
         }
-
-        Ok(())
     }
 
     // Should not use on virtualized substates

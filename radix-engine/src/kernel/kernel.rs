@@ -674,7 +674,7 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.current_frame
+        let store_access = self.current_frame
             .set_substate(
                 node_id,
                 partition_num,
@@ -685,7 +685,11 @@ where
             )
             .map_err(CallFrameError::SetSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_set_substate(&store_access, self)?;
+
+        Ok(())
     }
 
     fn kernel_remove_substate(

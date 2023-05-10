@@ -238,6 +238,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_substate(api, store_access)
     }
 
+    fn on_set_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_set_substate(api, store_access)
+    }
+
     fn on_take_substates<Y>(
         store_access: &StoreAccessInfo,
         api: &mut Y,

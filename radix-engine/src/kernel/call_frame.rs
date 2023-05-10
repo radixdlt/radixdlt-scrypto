@@ -467,19 +467,20 @@ impl<D, L: Clone> CallFrame<D, L> {
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(), CallFrameSetSubstateError> {
+    ) -> Result<StoreAccessInfo, CallFrameSetSubstateError> {
         self.get_node_visibility(node_id)
             .ok_or_else(|| CallFrameSetSubstateError::NodeNotInCallFrame(node_id.clone()))?;
 
-        if heap.contains_node(node_id) {
+        let store_access = if heap.contains_node(node_id) {
             heap.set_substate(*node_id, partition_num, key, value);
+            StoreAccessInfo::new()
         } else {
             store
                 .set_substate(*node_id, partition_num, key, value)
-                .map_err(|e| CallFrameSetSubstateError::StoreError(e))?;
+                .map_err(|e| CallFrameSetSubstateError::StoreError(e))?
         };
 
-        Ok(())
+        Ok(store_access)
     }
 
     pub fn remove_substate<'f, S: SubstateStore>(

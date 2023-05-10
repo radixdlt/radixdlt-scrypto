@@ -47,7 +47,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
-    ) -> Result<(), SetSubstateError>;
+    ) -> Result<StoreAccessInfo, SetSubstateError>;
 
     /// Deletes a substate from the substate store.
     ///

@@ -181,6 +181,14 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
+    fn on_set_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn on_take_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _store_access: &StoreAccessInfo,
