@@ -174,7 +174,7 @@ impl FungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn create_proof_by_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,

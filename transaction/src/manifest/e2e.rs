@@ -109,7 +109,7 @@ DROP_PROOF
     Proof("proof2");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${resource_address}")
     Decimal("5");
 POP_FROM_AUTH_ZONE
@@ -118,7 +118,7 @@ DROP_PROOF
     Proof("proof3");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${resource_address}")
     Decimal("5");
 CREATE_PROOF_FROM_AUTH_ZONE
@@ -542,7 +542,7 @@ CALL_METHOD
     Decimal("10");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_FUNGIBLE
@@ -574,7 +574,7 @@ CALL_METHOD
     Decimal("10");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_NON_FUNGIBLE

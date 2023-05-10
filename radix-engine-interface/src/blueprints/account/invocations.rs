@@ -187,7 +187,7 @@ pub type AccountCreateProofOutput = Proof;
 // Account Create Proof By Amount
 //================================
 
-pub const ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+pub const ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateProofByAmountInput {

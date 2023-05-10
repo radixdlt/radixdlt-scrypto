@@ -87,7 +87,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn sys_create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         amount: Decimal,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -98,7 +98,7 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
             scrypto_encode(&AuthZoneCreateProofByAmountInput {
                 resource_address,
                 amount,

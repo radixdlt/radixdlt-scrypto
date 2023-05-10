@@ -27,7 +27,7 @@ pub trait ScryptoVault {
     fn resource_address(&self) -> ResourceAddress;
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn create_proof(&self) -> Proof;
-    fn create_proof_by_amount(&self, amount: Decimal) -> Proof;
+    fn create_proof_of_amount(&self, amount: Decimal) -> Proof;
     fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
@@ -175,7 +175,7 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+    fn create_proof_of_amount(&self, amount: Decimal) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(

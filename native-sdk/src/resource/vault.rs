@@ -122,7 +122,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,

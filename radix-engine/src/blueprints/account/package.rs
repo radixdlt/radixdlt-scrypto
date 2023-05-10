@@ -177,14 +177,14 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofByAmountOutput>(),
-                export_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+                export_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             },
         );
 
@@ -432,13 +432,13 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::create_proof(input.resource_address, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT => {
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::create_proof_by_amount(
+                let rtn = AccountBlueprint::create_proof_of_amount(
                     input.resource_address,
                     input.amount,
                     api,

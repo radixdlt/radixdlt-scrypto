@@ -934,7 +934,7 @@ impl ManifestBuilder {
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            method_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
         })
         .0

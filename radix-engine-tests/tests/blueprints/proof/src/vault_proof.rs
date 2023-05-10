@@ -33,7 +33,7 @@ mod vault_proof {
             amount: Decimal,
             proof_amount: Decimal,
         ) {
-            let proof = self.vault.create_proof_by_amount(proof_amount);
+            let proof = self.vault.create_proof_of_amount(proof_amount);
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
@@ -103,7 +103,7 @@ mod vault_proof {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof =
-                        LocalAuthZone::create_proof_by_amount(amount, bucket.resource_address());
+                        LocalAuthZone::create_proof_of_amount(amount, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.amount(), amount);
                     proof.drop();

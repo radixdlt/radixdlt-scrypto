@@ -56,13 +56,13 @@ impl LocalAuthZone {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
+    pub fn create_proof_of_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let mut env = ScryptoEnv;
         let node_id = env.get_auth_zone().unwrap();
         let rtn = env
             .call_method(
                 &node_id,
-                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
+                AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
                 scrypto_encode(&AuthZoneCreateProofByAmountInput {
                     resource_address,
                     amount,

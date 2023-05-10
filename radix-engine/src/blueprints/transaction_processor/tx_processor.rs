@@ -169,7 +169,7 @@ impl TransactionProcessorBlueprint {
                     resource_address,
                 } => {
                     let proof =
-                        LocalAuthZone::sys_create_proof_by_amount(amount, resource_address, api)?;
+                        LocalAuthZone::sys_create_proof_of_amount(amount, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
