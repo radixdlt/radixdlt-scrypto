@@ -117,6 +117,10 @@ jobs:
         ${{ toJSON(github.event.inputs) }}\n \
         ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
+        ## Summary:\n \
+        \n\`\`\`\n\
+        $(cargo afl whatsup -s afl/transaction | awk '/Fuzzers alive/ {seen=1} seen {print}') \
+        \n\`\`\`\n \
         ## Status:\n \
         \n\`\`\`\n\
         $(cat afl/sessions_info) \
