@@ -7,7 +7,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, AuthorityUtil, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, Bucket, Proof};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
@@ -35,7 +35,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
         vec![(
             "update_metadata",
-            AuthorityUtil::authority("owner"),
+            AccessRule::authority("owner"),
             DenyAll,
         )]
     }

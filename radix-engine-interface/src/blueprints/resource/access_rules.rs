@@ -70,17 +70,9 @@ impl MethodEntry {
     }
 }
 
-pub struct AuthorityUtil;
-
-impl AuthorityUtil {
-    pub fn authority(name: &str) -> AccessRule {
-        AccessRule::Protected(AccessRuleNode::Authority(name.to_string()))
-    }
-}
-
 impl From<String> for AccessRule {
     fn from(value: String) -> Self {
-        AuthorityUtil::authority(value.as_str())
+        AccessRule::authority(value.as_str())
     }
 }
 

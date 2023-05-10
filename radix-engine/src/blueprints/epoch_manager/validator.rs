@@ -380,7 +380,7 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AccessRule::AllowAll
         } else {
-            AuthorityUtil::authority("owner")
+            AccessRule::authority("owner")
         };
 
         api.call_module_method(
@@ -506,14 +506,14 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         vec![
             (
                 "stake",
-                AuthorityUtil::authority("owner"),
+                AccessRule::authority("owner"),
                 rule!(require(package_of_direct_caller(
                     EPOCH_MANAGER_PACKAGE
                 ))),
             ),
             (
                 "update_metadata",
-                AuthorityUtil::authority("owner"),
+                AccessRule::authority("owner"),
                 DenyAll,
             ),
         ]

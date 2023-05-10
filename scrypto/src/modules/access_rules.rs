@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, AuthorityUtil, ObjectKey,
+    AccessRule, AccessRulesConfig, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;

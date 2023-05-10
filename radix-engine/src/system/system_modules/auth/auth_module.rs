@@ -248,7 +248,7 @@ impl AuthModule {
                 auth_zone_id,
                 acting_location,
                 access_rules,
-                &AuthorityUtil::authority(authority),
+                &AccessRule::authority(authority),
                 api,
             )?;
             match result {
