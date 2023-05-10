@@ -44,6 +44,7 @@ impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
 // hash
 //======
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
 pub struct EddsaEd25519PublicKeyHash(pub [u8; NodeId::UUID_LENGTH]);

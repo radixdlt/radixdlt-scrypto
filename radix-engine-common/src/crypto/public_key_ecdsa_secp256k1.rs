@@ -46,6 +46,7 @@ impl TryFrom<&[u8]> for EcdsaSecp256k1PublicKey {
 // hash
 //======
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
 pub struct EcdsaSecp256k1PublicKeyHash(pub [u8; NodeId::UUID_LENGTH]);

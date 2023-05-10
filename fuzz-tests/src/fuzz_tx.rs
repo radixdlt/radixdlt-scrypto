@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "decode_tx_manifest")]
 use radix_engine_interface::data::manifest::manifest_decode;
@@ -66,9 +65,8 @@ impl TxFuzzer {
             ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
             EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
             SYSTEM_TRANSACTION_BADGE,
-            CONSENSUS_TRANSACTION_BADGE,
-            PACKAGE_VIRTUAL_BADGE,
-            GLOBAL_ACTOR_VIRTUAL_BADGE,
+            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
+            GLOBAL_CALLER_VIRTUAL_BADGE,
             PACKAGE_OWNER_BADGE,
             VALIDATOR_OWNER_BADGE,
             IDENTITY_OWNER_BADGE,
@@ -236,27 +234,18 @@ impl TxFuzzer {
             .get_component_vaults(component_address, resource_address);
         let mut btree_ids = btreeset![];
         for vault in vaults {
-            let vault = self
+            let mut substate_iter = self
                 .runner
                 .substate_db()
-                .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+                .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
                     &vault,
-                    OBJECT_BASE_MODULE,
-                    &NonFungibleVaultOffset::LiquidNonFungible.into(),
-                )
-                .map(|vault| vault.ids);
+                    OBJECT_BASE_PARTITION
+                        .at_offset(PartitionOffset(1u8))
+                        .unwrap(),
+                );
 
-            vault.map(|ids| {
-                let mut substate_iter = self
-                    .runner
-                    .substate_db()
-                    .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
-                        ids.as_node_id(),
-                        OBJECT_BASE_MODULE,
-                    );
-                substate_iter.next().map(|(_key, id)| {
-                    btree_ids.insert(id);
-                });
+            substate_iter.next().map(|(_key, id)| {
+                btree_ids.insert(id);
             });
         }
         btree_ids
