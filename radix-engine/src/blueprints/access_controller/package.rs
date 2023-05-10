@@ -527,9 +527,9 @@ impl AccessControllerNativePackage {
         let vault = {
             let mut vault = input
                 .controlled_asset
-                .sys_resource_address(api)
+                .resource_address(api)
                 .and_then(|resource_address| Vault::create(resource_address, api))?;
-            vault.sys_put(input.controlled_asset, api)?;
+            vault.put(input.controlled_asset, api)?;
 
             vault
         };

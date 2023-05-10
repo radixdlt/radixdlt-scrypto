@@ -15,10 +15,7 @@ use sbor::rust::vec::Vec;
 pub struct Worktop(pub Own);
 
 impl Worktop {
-    pub fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
+    pub fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -35,7 +32,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         bucket: Bucket,
         api: &mut Y,
@@ -52,7 +49,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -74,7 +71,7 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -96,7 +93,7 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_take_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -112,7 +109,7 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_assert_contains<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -128,7 +125,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn sys_assert_contains_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -149,7 +146,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn sys_assert_contains_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,

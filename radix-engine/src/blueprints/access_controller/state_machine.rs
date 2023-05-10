@@ -355,7 +355,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).sys_take_all(api)
+                Vault(self.controlled_asset).take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(
@@ -387,7 +387,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
             (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition back to the initial state of the state machine
                 self.state = Default::default();
-                Vault(self.controlled_asset).sys_take_all(api)
+                Vault(self.controlled_asset).take_all(api)
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::AccessControllerError(

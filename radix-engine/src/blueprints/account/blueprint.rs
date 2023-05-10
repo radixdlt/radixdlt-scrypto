@@ -219,9 +219,9 @@ impl AccountBlueprint {
 
         // Lock fee against the vault
         if !contingent {
-            vault.sys_lock_fee(api, amount)?;
+            vault.lock_fee(api, amount)?;
         } else {
-            vault.sys_lock_contingent_fee(api, amount)?;
+            vault.lock_contingent_fee(api, amount)?;
         }
 
         api.key_value_entry_release(kv_store_entry_lock_handle)?;
@@ -249,7 +249,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = bucket.sys_resource_address(api)?;
+        let resource_address = bucket.resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         // Getting an RW lock handle on the KVStore ENTRY
@@ -281,7 +281,7 @@ impl AccountBlueprint {
         };
 
         // Put the bucket in the vault
-        vault.sys_put(bucket, api)?;
+        vault.put(bucket, api)?;
 
         api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
@@ -297,7 +297,7 @@ impl AccountBlueprint {
         // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
         // resolved.
         for bucket in buckets {
-            let resource_address = bucket.sys_resource_address(api)?;
+            let resource_address = bucket.resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
@@ -330,7 +330,7 @@ impl AccountBlueprint {
             };
 
             // Put the bucket in the vault
-            vault.sys_put(bucket, api)?;
+            vault.put(bucket, api)?;
 
             api.key_value_entry_release(kv_store_entry_lock_handle)?;
         }
@@ -387,11 +387,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_take(amount, api),
-            api,
-        )?;
+        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
 
         Ok(bucket)
     }
@@ -406,7 +402,7 @@ impl AccountBlueprint {
     {
         let bucket = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_take_non_fungibles(ids, api),
+            |vault, api| vault.take_non_fungibles(ids, api),
             api,
         )?;
 
@@ -424,11 +420,7 @@ impl AccountBlueprint {
     {
         Self::lock_fee_internal(amount_to_lock, false, api)?;
 
-        let bucket = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_take(amount, api),
-            api,
-        )?;
+        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
 
         Ok(bucket)
     }
@@ -446,7 +438,7 @@ impl AccountBlueprint {
 
         let bucket = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_take_non_fungibles(ids, api),
+            |vault, api| vault.take_non_fungibles(ids, api),
             api,
         )?;
 

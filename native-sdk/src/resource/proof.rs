@@ -11,44 +11,41 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
 pub trait SysProof {
-    fn sys_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
         Y: ClientObjectApi<E>;
 
-    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
         Y: ClientObjectApi<E>;
 
-    fn sys_resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
         Y: ClientObjectApi<E>;
 
-    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: ClientObjectApi<E>;
 
-    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
+    fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>;
 }
 
 impl SysProof for Proof {
-    fn sys_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
@@ -63,7 +60,7 @@ impl SysProof for Proof {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
@@ -78,7 +75,7 @@ impl SysProof for Proof {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
@@ -93,7 +90,7 @@ impl SysProof for Proof {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>
@@ -108,7 +105,7 @@ impl SysProof for Proof {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
+    fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {

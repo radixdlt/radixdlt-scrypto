@@ -19,21 +19,21 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
         Y: ClientApi<E>;
 
-    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
         Y: ClientApi<E>;
 
-    fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         other: Self,
         api: &mut Y,
@@ -41,7 +41,7 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,
@@ -49,7 +49,7 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -57,14 +57,11 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
+    fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>;
 
-    fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
+    fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode;
@@ -76,14 +73,14 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
-    fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<bool, E>
     where
         Y: ClientApi<E>;
 
-    fn sys_drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         api: &mut Y,
     ) -> Result<(), E>
@@ -92,14 +89,14 @@ pub trait SysBucket {
 }
 
 impl SysBucket for Bucket {
-    fn sys_drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         api: &mut Y,
     ) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
-        let resource_address = self.sys_resource_address(api)?;
+        let resource_address = self.resource_address(api)?;
         let rtn = api.call_method(
             resource_address.as_node_id(),
             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
@@ -126,7 +123,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
@@ -142,7 +139,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
@@ -158,7 +155,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         other: Self,
         api: &mut Y,
@@ -175,7 +172,7 @@ impl SysBucket for Bucket {
         Ok(())
     }
 
-    fn sys_take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,
@@ -192,7 +189,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -209,15 +206,15 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
+    fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
-        let resource_address = self.sys_resource_address(api)?;
+        let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).burn(Bucket(self.0), api)
     }
 
-    fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
+    fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -245,13 +242,13 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<bool, E>
     where
         Y: ClientApi<E>,
     {
-        Ok(self.sys_amount(api)?.is_zero())
+        Ok(self.amount(api)?.is_zero())
     }
 }

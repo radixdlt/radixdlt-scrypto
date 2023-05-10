@@ -647,7 +647,7 @@ impl PackageNativePackage {
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault).sys_take_all(api)?,
+            Some(vault) => Vault(vault).take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
 

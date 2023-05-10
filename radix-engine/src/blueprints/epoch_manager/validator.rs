@@ -75,7 +75,7 @@ impl ValidatorBlueprint {
     {
         // Prepare the event and emit it once the operations succeed
         let event = {
-            let amount = stake.sys_amount(api)?;
+            let amount = stake.amount(api)?;
             StakeEvent { xrd_staked: amount }
         };
 
@@ -93,9 +93,9 @@ impl ValidatorBlueprint {
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
             let total_lp_supply = lp_token_resman.total_supply(api)?;
-            let active_stake_amount = xrd_vault.sys_amount(api)?;
+            let active_stake_amount = xrd_vault.amount(api)?;
             let xrd_bucket = stake;
-            let stake_amount = xrd_bucket.sys_amount(api)?;
+            let stake_amount = xrd_bucket.amount(api)?;
             let lp_mint_amount = if active_stake_amount.is_zero() {
                 stake_amount
             } else {
@@ -103,8 +103,8 @@ impl ValidatorBlueprint {
             };
 
             let lp_token_bucket = lp_token_resman.mint_fungible(lp_mint_amount, api)?;
-            xrd_vault.sys_put(xrd_bucket, api)?;
-            let new_stake_amount = xrd_vault.sys_amount(api)?;
+            xrd_vault.put(xrd_bucket, api)?;
+            let new_stake_amount = xrd_vault.amount(api)?;
             (lp_token_bucket, new_stake_amount)
         };
 
@@ -125,7 +125,7 @@ impl ValidatorBlueprint {
     {
         // Prepare event and emit it once operations finish
         let event = {
-            let amount = lp_tokens.sys_amount(api)?;
+            let amount = lp_tokens.amount(api)?;
             UnstakeEvent {
                 stake_units: amount,
             }
@@ -145,9 +145,9 @@ impl ValidatorBlueprint {
             let nft_resman = ResourceManager(validator.unstake_nft);
             let mut lp_token_resman = ResourceManager(validator.liquidity_token);
 
-            let active_stake_amount = stake_vault.sys_amount(api)?;
+            let active_stake_amount = stake_vault.amount(api)?;
             let total_lp_supply = lp_token_resman.total_supply(api)?;
-            let lp_token_amount = lp_tokens.sys_amount(api)?;
+            let lp_token_amount = lp_tokens.amount(api)?;
             let xrd_amount = if total_lp_supply.is_zero() {
                 Decimal::zero()
             } else {
@@ -179,11 +179,11 @@ impl ValidatorBlueprint {
                 amount: xrd_amount,
             };
 
-            let bucket = stake_vault.sys_take(xrd_amount, api)?;
-            unstake_vault.sys_put(bucket, api)?;
+            let bucket = stake_vault.take(xrd_amount, api)?;
+            unstake_vault.put(bucket, api)?;
             let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_uuid(data, api)?;
 
-            let new_stake_amount = stake_vault.sys_amount(api)?;
+            let new_stake_amount = stake_vault.amount(api)?;
 
             (unstake_bucket, new_stake_amount)
         };
@@ -214,7 +214,7 @@ impl ValidatorBlueprint {
 
         let stake_amount = {
             let stake_vault = Vault(validator.stake_xrd_vault_id);
-            stake_vault.sys_amount(api)?
+            stake_vault.amount(api)?
         };
 
         let index_key = Self::index_update(&validator, new_registered, stake_amount, api)?;
@@ -293,7 +293,7 @@ impl ValidatorBlueprint {
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
-        if !resource_address.eq(&bucket.sys_resource_address(api)?) {
+        if !resource_address.eq(&bucket.resource_address(api)?) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),
             ));
@@ -313,7 +313,7 @@ impl ValidatorBlueprint {
 
         let mut unstake_amount = Decimal::zero();
 
-        for id in bucket.sys_non_fungible_local_ids(api)? {
+        for id in bucket.non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
@@ -324,9 +324,9 @@ impl ValidatorBlueprint {
         }
         nft_resman.burn(bucket, api)?;
 
-        let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+        let claimed_bucket = unstake_vault.take(unstake_amount, api)?;
 
-        let amount = claimed_bucket.sys_amount(api)?;
+        let amount = claimed_bucket.amount(api)?;
         Runtime::emit_event(
             api,
             ClaimXrdEvent {

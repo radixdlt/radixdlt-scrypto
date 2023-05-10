@@ -176,7 +176,7 @@ impl AuthZoneBlueprint {
         api.field_lock_release(handle)?;
 
         for proof in proofs {
-            proof.sys_drop(api)?;
+            proof.drop(api)?;
         }
 
         Ok(())

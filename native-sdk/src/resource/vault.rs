@@ -27,11 +27,7 @@ impl Vault {
         Ok(Self(own))
     }
 
-    pub fn sys_put<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), E>
+    pub fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -44,7 +40,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_take<Y, E: Debug + ScryptoDecode>(
+    pub fn take<Y, E: Debug + ScryptoDecode>(
         &mut self,
         amount: Decimal,
         api: &mut Y,
@@ -61,12 +57,12 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
+    pub fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
         Y: ClientApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
-        let amount = self.sys_amount(api)?;
+        let amount = self.amount(api)?;
         let rtn = api.call_method(
             self.0.as_node_id(),
             VAULT_TAKE_IDENT,
@@ -76,7 +72,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_take_non_fungibles<Y, E: Debug + ScryptoDecode>(
+    pub fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -96,7 +92,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
+    pub fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
         Y: ClientApi<E>,
     {
@@ -156,7 +152,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_lock_fee<Y, E: Debug + ScryptoDecode>(
+    pub fn lock_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
         amount: Decimal,
@@ -176,7 +172,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
+    pub fn lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
         amount: Decimal,

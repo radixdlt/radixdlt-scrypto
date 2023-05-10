@@ -98,7 +98,7 @@ impl TransactionProcessorBlueprint {
 
             let result = match inst {
                 Instruction::TakeFromWorktop { resource_address } => {
-                    let bucket = worktop.sys_take_all(resource_address, api)?;
+                    let bucket = worktop.take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -106,7 +106,7 @@ impl TransactionProcessorBlueprint {
                     amount,
                     resource_address,
                 } => {
-                    let bucket = worktop.sys_take(resource_address, amount, api)?;
+                    let bucket = worktop.take(resource_address, amount, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -114,31 +114,31 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    let bucket = worktop.sys_take_non_fungibles(resource_address, ids, api)?;
+                    let bucket = worktop.take_non_fungibles(resource_address, ids, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    worktop.sys_put(bucket, api)?;
+                    worktop.put(bucket, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    worktop.sys_assert_contains(resource_address, api)?;
+                    worktop.assert_contains(resource_address, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    worktop.sys_assert_contains_amount(resource_address, amount, api)?;
+                    worktop.assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    worktop.sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    worktop.assert_contains_non_fungibles(resource_address, ids, api)?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
@@ -190,13 +190,13 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
-                    let proof = proof.sys_clone(api)?;
+                    let proof = proof.clone(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    proof.sys_drop(api)?;
+                    proof.drop(api)?;
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
@@ -205,7 +205,7 @@ impl TransactionProcessorBlueprint {
 
                     for (_, real_id) in processor.proof_id_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
-                        proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
@@ -328,7 +328,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = bucket.sys_burn(api)?;
+                    let rtn = bucket.burn(api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -569,7 +569,7 @@ impl TransactionProcessorBlueprint {
             outputs.push(result);
         }
 
-        worktop.sys_drop(api)?;
+        worktop.drop(api)?;
 
         Ok(IndexedScryptoValue::from_typed(&outputs))
     }
@@ -689,7 +689,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
-                    worktop.sys_put(bucket, api)?;
+                    worktop.put(bucket, api)?;
                 }
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
