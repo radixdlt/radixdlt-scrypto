@@ -599,8 +599,8 @@ impl ValidatorCreator {
             api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
         );
 
-        let stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
+        let stake_vault = Vault::create(RADIX_TOKEN, api)?;
+        let unstake_vault = Vault::create(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(address, api)?;
         let liquidity_token = Self::create_liquidity_token(address, api)?;
 
@@ -620,8 +620,8 @@ impl ValidatorCreator {
         )?;
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             btreemap!(

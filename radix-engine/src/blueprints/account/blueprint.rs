@@ -60,8 +60,8 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ObjectModuleId::AccessRules => access_rules.0,
@@ -268,7 +268,7 @@ impl AccountBlueprint {
             match entry {
                 Option::Some(own) => Vault(own),
                 Option::None => {
-                    let vault = Vault::sys_new(resource_address, api)?;
+                    let vault = Vault::create(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                     api.key_value_entry_set_typed(
@@ -317,7 +317,7 @@ impl AccountBlueprint {
                 match entry {
                     Option::Some(own) => Vault(own),
                     Option::None => {
-                        let vault = Vault::sys_new(resource_address, api)?;
+                        let vault = Vault::create(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                         api.key_value_entry_set_typed(
@@ -460,11 +460,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proof = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_create_proof(api),
-            api,
-        )?;
+        let proof = Self::get_vault(resource_address, |vault, api| vault.create_proof(api), api)?;
 
         Ok(proof)
     }
@@ -479,7 +475,7 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_of_amount(amount, api),
+            |vault, api| vault.create_proof_of_amount(amount, api),
             api,
         )?;
 
@@ -496,7 +492,7 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_of_non_fungibles(ids, api),
+            |vault, api| vault.create_proof_of_non_fungibles(ids, api),
             api,
         )?;
 

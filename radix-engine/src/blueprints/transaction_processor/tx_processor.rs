@@ -142,25 +142,25 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
-                    let proof = LocalAuthZone::sys_pop(api)?;
+                    let proof = LocalAuthZone::pop(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    LocalAuthZone::sys_clear(api)?;
+                    LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearSignatureProofs => {
-                    LocalAuthZone::sys_clear_signature_proofs(api)?;
+                    LocalAuthZone::clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    LocalAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::push(proof, api)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
-                    let proof = LocalAuthZone::sys_create_proof(resource_address, api)?;
+                    let proof = LocalAuthZone::create_proof(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -169,7 +169,7 @@ impl TransactionProcessorBlueprint {
                     resource_address,
                 } => {
                     let proof =
-                        LocalAuthZone::sys_create_proof_of_amount(amount, resource_address, api)?;
+                        LocalAuthZone::create_proof_of_amount(amount, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -177,17 +177,14 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    let proof = LocalAuthZone::sys_create_proof_of_non_fungibles(
-                        &ids,
-                        resource_address,
-                        api,
-                    )?;
+                    let proof =
+                        LocalAuthZone::create_proof_of_non_fungibles(&ids, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
-                    let proof = bucket.sys_create_proof(api)?;
+                    let proof = bucket.create_proof(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -210,7 +207,7 @@ impl TransactionProcessorBlueprint {
                         let proof = Proof(Own(real_id));
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::sys_clear(api)?;
+                    LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::CallFunction {
@@ -697,7 +694,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
-                    LocalAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::push(proof, api)?;
                 }
                 _ => {}
             }
@@ -721,7 +718,7 @@ impl<'blob> TransactionProcessor<'blob> {
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
-                let current_epoch = Runtime::sys_current_epoch(env)?;
+                let current_epoch = Runtime::current_epoch(env)?;
 
                 if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
                     return Err(RuntimeError::ApplicationError(
@@ -775,11 +772,11 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
-                let buckets = self.worktop.sys_drain(self.api)?;
+                let buckets = self.worktop.drain(self.api)?;
                 Ok(buckets.into_iter().map(|b| b.0).collect())
             }
             ManifestExpression::EntireAuthZone => {
-                let proofs = LocalAuthZone::sys_drain(self.api)?;
+                let proofs = LocalAuthZone::drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
         }

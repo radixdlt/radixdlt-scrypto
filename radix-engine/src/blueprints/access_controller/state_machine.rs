@@ -65,7 +65,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // recovery or withdraw attempts.
         match self.state {
             (PrimaryRoleLockingState::Unlocked, _, _, _, _) => {
-                Vault(self.controlled_asset).sys_create_proof(api)
+                Vault(self.controlled_asset).create_proof(api)
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
         }
@@ -140,7 +140,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
                 _,
             ) => match self.timed_recovery_delay_in_minutes {
                 Some(delay_in_minutes) => {
-                    let current_time = Runtime::sys_current_time(api, TimePrecision::Minute)?;
+                    let current_time = Runtime::current_time(api, TimePrecision::Minute)?;
                     let timed_recovery_allowed_after = current_time
                         .add_minutes(delay_in_minutes as i64)
                         .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
@@ -438,7 +438,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
                 // Ensure that the caller has passed in the expected proposal
                 validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
 
-                let recovery_time_has_elapsed = Runtime::sys_compare_against_current_time(
+                let recovery_time_has_elapsed = Runtime::compare_against_current_time(
                     api,
                     timed_recovery_allowed_after.clone(),
                     TimePrecision::Minute,

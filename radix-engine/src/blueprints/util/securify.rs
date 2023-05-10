@@ -46,7 +46,7 @@ pub trait SecurifiedAccessRules {
             AccessRuleEntry::group(Self::OWNER_GROUP_NAME),
         );
         Self::set_non_owner_rules(&mut access_rules);
-        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?;
+        let access_rules = AccessRules::create(access_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
@@ -55,7 +55,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         Self::set_non_owner_rules(&mut access_rules_config);
-        let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
+        let access_rules = AccessRules::create(access_rules_config, btreemap!(), api)?;
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             access_rules.set_method_access_rule_and_mutability(

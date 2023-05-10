@@ -195,7 +195,7 @@ impl EpochManagerBlueprint {
         let validator_access_rules =
             AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
 
-        let access_rules = AccessRules::sys_new(
+        let access_rules = AccessRules::create(
             access_rules,
             btreemap!(
                 VALIDATOR_BLUEPRINT.to_string() => validator_access_rules
@@ -203,8 +203,8 @@ impl EpochManagerBlueprint {
             api,
         )?
         .0;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             btreemap!(

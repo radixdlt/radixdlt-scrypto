@@ -12,7 +12,7 @@ use sbor::rust::fmt::Debug;
 use super::ResourceManager;
 
 pub trait SysBucket {
-    fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -69,7 +69,7 @@ pub trait SysBucket {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode;
 
-    fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>
@@ -111,7 +111,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         api: &mut Y,
     ) -> Result<Bucket, E>
@@ -230,7 +230,7 @@ impl SysBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>

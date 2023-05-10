@@ -528,7 +528,7 @@ impl AccessControllerNativePackage {
             let mut vault = input
                 .controlled_asset
                 .sys_resource_address(api)
-                .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
+                .and_then(|resource_address| Vault::create(resource_address, api))?;
             vault.sys_put(input.controlled_asset, api)?;
 
             vault
@@ -544,15 +544,15 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-        let access_rules = AccessRules::sys_new(
+        let access_rules = AccessRules::create(
             access_rules_from_rule_set(address, input.rule_set),
             btreemap!(),
             api,
         )?
         .0;
 
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         api.globalize_with_address(

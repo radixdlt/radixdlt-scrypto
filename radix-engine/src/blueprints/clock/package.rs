@@ -172,9 +172,9 @@ impl ClockNativePackage {
             MethodKey::new(ObjectModuleId::Main, CLOCK_COMPARE_CURRENT_TIME_IDENT),
             rule!(allow_all),
         );
-        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?.0;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let access_rules = AccessRules::create(access_rules, btreemap!(), api)?.0;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let address = ComponentAddress::new_or_panic(input.component_address);
         api.globalize_with_address(

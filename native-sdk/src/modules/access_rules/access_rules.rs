@@ -25,7 +25,7 @@ use sbor::rust::string::ToString;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
+    pub fn create<Y, E: Debug + ScryptoDecode>(
         access_rules: AccessRulesConfig,
         child_blueprint_rules: BTreeMap<String, AccessRulesConfig>,
         api: &mut Y,

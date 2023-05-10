@@ -170,7 +170,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn sys_drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Vec<Bucket>, E>

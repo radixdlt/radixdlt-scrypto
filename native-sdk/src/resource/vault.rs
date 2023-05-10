@@ -10,7 +10,7 @@ use sbor::rust::fmt::Debug;
 pub struct Vault(pub Own);
 
 impl Vault {
-    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
+    pub fn create<Y, E: Debug + ScryptoDecode>(
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -109,7 +109,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
+    pub fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         Y: ClientApi<E>,
     {
@@ -122,7 +122,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
+    pub fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,
@@ -139,7 +139,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
+    pub fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

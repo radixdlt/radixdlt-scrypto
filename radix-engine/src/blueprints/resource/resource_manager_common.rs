@@ -330,7 +330,7 @@ where
             )
         };
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_access_rules,
         btreemap!(
             vault_blueprint_name.to_string() => vault_access_rules,
@@ -341,8 +341,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
         btreemap!(
@@ -372,7 +372,7 @@ where
         build_access_rules(access_rules);
     let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_access_rules,
         btreemap!(
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
@@ -383,8 +383,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
@@ -419,7 +419,7 @@ where
         build_access_rules(access_rules);
     let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_access_rules,
         btreemap!(
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_access_rules,
@@ -430,8 +430,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(

@@ -14,7 +14,7 @@ use sbor::rust::string::String;
 pub struct BorrowedPackage(pub PackageAddress);
 
 impl BorrowedPackage {
-    pub fn sys_set_royalty_config<Y, E: Debug + ScryptoDecode>(
+    pub fn set_royalty_config<Y, E: Debug + ScryptoDecode>(
         &self,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         api: &mut Y,
