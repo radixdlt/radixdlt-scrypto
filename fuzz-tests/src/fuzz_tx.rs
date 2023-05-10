@@ -307,8 +307,21 @@ impl TxFuzzer {
         let non_fungible_ids =
             self.get_non_fungible_local_id(component_address, non_fungible_resource_address);
 
-        let fee = Decimal::arbitrary(&mut unstructured).unwrap();
-        builder.lock_fee(component_address, fee);
+        // To increase the chance of the successful transaction:
+        // - fuzz fee amount for 5% of attempts
+        // - use random component_address for 5% of attempts
+        let fee = if unstructured.int_in_range(0..=100).unwrap() < 5 {
+            Decimal::arbitrary(&mut unstructured).unwrap()
+        } else {
+            Decimal::from(100)
+        };
+        let fee_address = if unstructured.int_in_range(0..=100).unwrap() < 5 {
+            component_address
+        } else {
+            FAUCET
+        };
+
+        builder.lock_fee(fee_address, fee);
 
         let mut i = 0;
         let instruction_cnt = unstructured.int_in_range(1..=INSTRUCTION_MAX_CNT).unwrap();
