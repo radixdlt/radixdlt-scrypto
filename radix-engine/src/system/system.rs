@@ -1643,6 +1643,7 @@ where
         if !Authentication::verify_method_auth(
             ActingLocation::InCallFrame,
             auth_zone_id,
+            &AccessRulesConfig::new(),
             &rule,
             self,
         )? {

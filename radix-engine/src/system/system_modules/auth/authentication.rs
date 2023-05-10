@@ -284,6 +284,7 @@ impl Authentication {
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
+        access_rules: &AccessRulesConfig,
         auth_rule: &AccessRuleNode,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
@@ -296,7 +297,7 @@ impl Authentication {
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
+                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)? {
                         return Ok(true);
                     }
                 }
@@ -304,7 +305,7 @@ impl Authentication {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
+                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)? {
                         return Ok(false);
                     }
                 }
@@ -317,12 +318,13 @@ impl Authentication {
     pub fn verify_method_auth<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
+        access_rules: &AccessRulesConfig,
         method_auth: &AccessRule,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match method_auth {
             AccessRule::Protected(rule) => {
-                Self::verify_auth_rule(acting_location, auth_zone_id, rule, api)
+                Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule, api)
             }
             AccessRule::AllowAll => Ok(true),
             AccessRule::DenyAll => Ok(false),

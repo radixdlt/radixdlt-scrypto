@@ -114,6 +114,7 @@ impl AuthModule {
                 if !Authentication::verify_method_auth(
                     acting_location,
                     *auth_zone_id,
+                    &AccessRulesConfig::new(),
                     &access_rule,
                     api,
                 )? {
@@ -273,7 +274,7 @@ impl AuthModule {
     fn check_authorization_against_authority<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules_config: &AccessRulesConfig,
+        access_rules: &AccessRulesConfig,
         entry: &AuthorityEntry,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -282,6 +283,7 @@ impl AuthModule {
                 if Authentication::verify_method_auth(
                     acting_location,
                     *auth_zone_id,
+                    access_rules,
                     access_rule,
                     api,
                 )? {
@@ -290,13 +292,13 @@ impl AuthModule {
                     Ok(AuthorizationCheckResult::Failed(access_rule.clone()))
                 }
             },
-            AuthorityEntry::Authority(authority) => match access_rules_config.authorities.get(authority) {
+            AuthorityEntry::Authority(authority) => match access_rules.authorities.get(authority) {
                 Some(entry) => {
                     // TODO: Make sure we don't have circular entries!
                     Self::check_authorization_against_authority(
                         auth_zone_id,
                         acting_location,
-                        access_rules_config,
+                        access_rules,
                         entry,
                         api
                     )
@@ -344,6 +346,7 @@ impl AuthModule {
                 if !Authentication::verify_method_auth(
                     acting_location,
                     auth_zone_id,
+                    &AccessRulesConfig::new(),
                     &access_rule,
                     &mut system,
                 )? {
