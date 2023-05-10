@@ -652,14 +652,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
                 if items.len() == count {
-                    let store_access_vector = if track_read_size > 0 {
-                        vec![StoreAccess::ReadFromTrack(track_read_size)]
-                    } else {
-                        Vec::new()
-                    };
                     return (
                         items,
-                        StoreAccessInfo(store_access_vector),
+                        StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
                     );
                 }
 
@@ -675,17 +670,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            let store_access_vector = if track_read_size > 0 {
-                vec![StoreAccess::ReadFromTrack(track_read_size)]
-            } else {
-                Vec::new()
-            };
             return (
                 items,
-                StoreAccessInfo(store_access_vector),
+                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
+        let mut db_read_size = 0;
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
         for (db_sort_key, substate) in &mut tracked_iter {
@@ -700,6 +691,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 continue;
             }
 
+            db_read_size += substate.len();
             items.push(IndexedScryptoValue::from_vec(substate).unwrap());
         }
 
@@ -716,10 +708,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         (
             items,
-            SubstateStoreDbAccessInfo::Scan {
-                first_time_read_records_count,
-                read_from_track_count: items_intermediate_len,
-            },
+            StoreAccessInfo::new()
+                .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size))
+                .push_if_not_empty(StoreAccess::ReadFromDb(db_read_size)),
         )
     }
 
@@ -738,7 +729,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
 
-        // Check what we've currently got so far without going into database
+        let mut track_read_size = 0;
+            // Check what we've currently got so far without going into database
         let mut tracked_partition =
             node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
@@ -746,36 +738,28 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 if items.len() == count {
                     return (
                         items,
-                        SubstateStoreDbAccessInfo::TakeMany {
-                            first_time_read_records_count: 0,
-                            read_from_track_count: count,
-                            update_count: 0,
-                        },
+                        StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
                     );
                 }
 
                 // TODO: Check that substate is not locked
                 if let Some(value) = tracked.tracked.take() {
+                    track_read_size += value.as_slice().len();
                     items.push(value);
                 }
             }
         }
 
-        let items_intermediate_len = items.len();
-
         // Optimization, no need to go into database if the node is just created
         if is_new {
             return (
                 items,
-                SubstateStoreDbAccessInfo::TakeMany {
-                    first_time_read_records_count: 0,
-                    read_from_track_count: items_intermediate_len,
-                    update_count: 0,
-                },
+                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
         // Read from database
+        let mut db_read_size = 0;
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
         let new_updates = {
@@ -806,13 +790,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     tracked: TrackedKey::ReadExistAndWrite(value.clone(), Write::Delete),
                 };
                 new_updates.push((db_sort_key, tracked));
+                let value_len = value.as_slice().len();
+                db_read_size += value_len;
+
                 items.push(value);
             }
             new_updates
         };
 
         // Update track
-        let update_count = {
+        let mut track_write_size = 0;
+        {
             let num_iterations = tracked_iter.num_iterations;
             let tracked_partition = self.get_tracked_partition(node_id, partition_num);
             let next_range_read = tracked_partition
@@ -820,22 +808,18 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 .map(|cur| u32::max(cur, num_iterations))
                 .unwrap_or(num_iterations);
             tracked_partition.range_read = Some(next_range_read);
-            let update_count = new_updates.len();
             for (db_sort_key, tracked) in new_updates {
+                track_write_size += tracked.tracked.get().unwrap().as_slice().len();
                 tracked_partition.substates.insert(db_sort_key, tracked);
             }
-            update_count
-        };
-
-        let first_time_read_records_count = items.len() - items_intermediate_len;
+        }
 
         (
             items,
-            SubstateStoreDbAccessInfo::TakeMany {
-                first_time_read_records_count,
-                read_from_track_count: items_intermediate_len,
-                update_count,
-            },
+            StoreAccessInfo::new()
+                .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size))
+                .push_if_not_empty(StoreAccess::ReadFromDb(db_read_size))
+                .push_if_not_empty(StoreAccess::Write(track_write_size)),
         )
     }
 
@@ -855,6 +839,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
         if is_new {
+            let mut track_read_size = 0;
             let mut items = Vec::new();
             if let Some(tracked_partition) = tracked_partition {
                 for (_key, tracked) in tracked_partition.substates.iter() {
@@ -864,19 +849,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
                     // TODO: Check that substate is not write locked
                     if let Some(substate) = tracked.tracked.get() {
+                        track_read_size += substate.as_slice().len();
                         items.push(substate.clone());
                     }
                 }
             }
 
-            let read_from_track_count = items.len();
-
             return (
                 items,
-                SubstateStoreDbAccessInfo::ScanSorted {
-                    first_time_read_records_count: 0,
-                    read_from_track_count,
-                },
+                StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
             );
         }
 
@@ -887,6 +868,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .take(count)
             .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())
             .collect();
+
+        let db_read_size = items.iter().map(|&item| item.as_slice().len()).sum();
 
         // Update track
         {
@@ -899,14 +882,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             tracked_partition.range_read = Some(next_range_read);
         }
 
-        let first_time_read_records_count = items.len();
-
         (
             items,
-            SubstateStoreDbAccessInfo::ScanSorted {
-                first_time_read_records_count,
-                read_from_track_count: 0,
-            },
+            StoreAccessInfo::new().push_if_not_empty(StoreAccess::ReadFromDb(db_read_size)),
         )
     }
 
@@ -919,7 +897,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         virtualize: F,
     ) -> Result<(u32, StoreAccessInfo), AcquireLockError> {
         // Load the substate from state track
-        let (tracked, found_in_tracked_list) = self.get_tracked_substate_virtualize(
+        let (tracked, store_access) = self.get_tracked_substate_virtualize(
             node_id,
             partition_num,
             substate_key.clone(),
@@ -963,12 +941,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate.lock_state.try_lock(flags).map_err(|_| {
             AcquireLockError::SubstateLocked(*node_id, partition_num, substate_key.clone())
         })?;
-
-        let store_access = if found_in_tracked_list {
-            SubstateStoreDbAccessInfo::NoAccess
-        } else {
-            SubstateStoreDbAccessInfo::AcquireLock
-        };
 
         Ok((
             self.new_lock_handle(node_id, partition_num, substate_key, flags),
