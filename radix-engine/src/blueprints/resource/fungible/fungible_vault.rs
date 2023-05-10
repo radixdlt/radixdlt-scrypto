@@ -158,20 +158,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
-
-        let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = FungibleVault::lock_amount(receiver, amount, api)?;
-
-        let proof_id = api.new_simple_object(
-            FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
-            ],
-        )?;
-
-        Ok(Proof(Own(proof_id)))
+        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
     }
 
     pub fn create_proof_of_amount<Y>(
