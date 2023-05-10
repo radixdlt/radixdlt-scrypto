@@ -204,7 +204,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by amount.
-    pub fn create_proof_from_auth_zone_by_amount<F>(
+    pub fn create_proof_of_amount_from_auth_zone<F>(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,

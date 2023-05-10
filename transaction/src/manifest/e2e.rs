@@ -124,7 +124,7 @@ CALL_METHOD
 CREATE_PROOF_FROM_AUTH_ZONE
     Address("${resource_address}")
     Proof("proof4");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT
+CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE
     Decimal("1")
     Address("${resource_address}")
     Proof("proof5");

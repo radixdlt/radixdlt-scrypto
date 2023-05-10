@@ -19,7 +19,7 @@ DROP_PROOF Proof("proof3");
 # Compose proofs
 CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");
 CREATE_PROOF_FROM_AUTH_ZONE Address("${resource_address}") Proof("Proof Name");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") Address("${resource_address}") Proof("proof4");
+CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE Decimal("1") Address("${resource_address}") Proof("proof4");
 CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Address("${non_fungible_resource_address}") Proof("proof5");
 CLEAR_AUTH_ZONE;
 

@@ -424,7 +424,7 @@ impl Lexer {
             "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
             "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
             "CREATE_PROOF_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZone),
-            "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT" => {
+            "CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE" => {
                 Ok(TokenKind::CreateProofFromAuthZoneByAmount)
             }
             "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS" => Ok(TokenKind::CreateProofFromAuthZoneByIds),

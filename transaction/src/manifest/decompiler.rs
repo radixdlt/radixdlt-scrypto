@@ -261,7 +261,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
+                "CREATE_PROOF_OF_AMOUNT_FROM_AUTH_ZONE\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
