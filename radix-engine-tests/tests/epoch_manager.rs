@@ -139,7 +139,7 @@ fn next_round_with_validator_auth_succeeds() {
     let max_validators = 10u32;
     let rounds_per_epoch = 5u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(
+    let genesis = CustomGenesis::default(
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -151,10 +151,7 @@ fn next_round_with_validator_auth_succeeds() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(
-            rounds_per_epoch - 1,
-            0,
-        )),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch - 1)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -178,7 +175,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(
+    let genesis = CustomGenesis::default(
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -190,7 +187,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -446,7 +443,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let max_validators = 10u32;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::empty(
+    let genesis = CustomGenesis::default(
         initial_epoch,
         max_validators,
         rounds_per_epoch,
@@ -470,7 +467,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -578,7 +575,7 @@ fn registered_validator_test(
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -656,7 +653,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -720,7 +717,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -928,7 +925,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let instructions = vec![Instruction::CallMethod {
         component_address: EPOCH_MANAGER,
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -1028,4 +1025,15 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+fn next_round_after_gap(current_round: u64) -> EpochManagerNextRoundInput {
+    EpochManagerNextRoundInput {
+        round: current_round,
+        leader_proposal_history: LeaderProposalHistory {
+            gap_round_leaders: (1..current_round).map(|_| 0).collect(),
+            current_leader: 0,
+            is_fallback: false,
+        },
+    }
 }
