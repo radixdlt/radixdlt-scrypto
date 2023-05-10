@@ -11,7 +11,7 @@ use sbor::rust::fmt::Debug;
 
 use super::ResourceManager;
 
-pub trait SysBucket {
+pub trait NativeBucket {
     fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         api: &mut Y,
@@ -88,7 +88,7 @@ pub trait SysBucket {
         Y: ClientApi<E>;
 }
 
-impl SysBucket for Bucket {
+impl NativeBucket for Bucket {
     fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         api: &mut Y,

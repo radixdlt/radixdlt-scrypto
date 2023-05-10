@@ -1,6 +1,6 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use native_sdk::resource::Vault;
+use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;

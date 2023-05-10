@@ -10,7 +10,7 @@ use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-pub trait SysProof {
+pub trait NativeProof {
     fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -44,7 +44,7 @@ pub trait SysProof {
         Y: ClientApi<E>;
 }
 
-impl SysProof for Proof {
+impl NativeProof for Proof {
     fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,

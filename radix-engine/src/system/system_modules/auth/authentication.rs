@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use native_sdk::resource::SysProof;
+use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;

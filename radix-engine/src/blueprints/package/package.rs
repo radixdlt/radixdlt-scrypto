@@ -11,7 +11,8 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
-use native_sdk::resource::{ResourceManager, Vault};
+use native_sdk::resource::NativeVault;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };

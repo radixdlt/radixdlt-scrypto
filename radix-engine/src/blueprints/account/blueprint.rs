@@ -12,7 +12,8 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
-use native_sdk::resource::{SysBucket, Vault};
+use native_sdk::resource::NativeBucket;
+use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 

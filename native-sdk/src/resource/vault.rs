@@ -7,13 +7,84 @@ use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-pub struct Vault(pub Own);
-
-impl Vault {
-    pub fn create<Y, E: Debug + ScryptoDecode>(
+pub trait NativeVault {
+    fn create<Y, E: Debug + ScryptoDecode>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Self, E>
+    ) -> Result<Vault, E>
+    where
+        Y: ClientApi<E>;
+
+    fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+
+    fn take<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
+    fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
+    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
+    fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn lock_fee<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        api: &mut Y,
+        amount: Decimal,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+
+    fn lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        api: &mut Y,
+        amount: Decimal,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>;
+}
+
+impl NativeVault for Vault {
+    fn create<Y, E: Debug + ScryptoDecode>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Vault, E>
     where
         Y: ClientApi<E>,
     {
@@ -27,7 +98,7 @@ impl Vault {
         Ok(Self(own))
     }
 
-    pub fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
+    fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -40,7 +111,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn take<Y, E: Debug + ScryptoDecode>(
+    fn take<Y, E: Debug + ScryptoDecode>(
         &mut self,
         amount: Decimal,
         api: &mut Y,
@@ -57,7 +128,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
+    fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
         Y: ClientApi<E>,
     {
@@ -72,7 +143,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
+    fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -92,7 +163,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
+    fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
         Y: ClientApi<E>,
     {
@@ -105,7 +176,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
+    fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
     where
         Y: ClientApi<E>,
     {
@@ -118,7 +189,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
+    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,
@@ -135,7 +206,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -152,7 +223,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn lock_fee<Y, E: Debug + ScryptoDecode>(
+    fn lock_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
         amount: Decimal,
@@ -172,7 +243,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
+    fn lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
         api: &mut Y,
         amount: Decimal,

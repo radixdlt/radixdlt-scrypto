@@ -5,7 +5,7 @@ use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use native_sdk::resource::SysProof;
+use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
