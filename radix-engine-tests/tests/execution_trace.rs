@@ -280,7 +280,7 @@ fn test_instruction_traces() {
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, output_proof.resource_address());
-        assert_eq!(dec!("10000"), output_proof.amount());
+        assert_eq!(dec!("1"), output_proof.amount());
     }
 
     {
@@ -303,7 +303,7 @@ fn test_instruction_traces() {
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
         assert_eq!(RADIX_TOKEN, input_proof.resource_address());
-        assert_eq!(dec!("10000"), input_proof.amount());
+        assert_eq!(dec!("1"), input_proof.amount());
     }
 
     {
