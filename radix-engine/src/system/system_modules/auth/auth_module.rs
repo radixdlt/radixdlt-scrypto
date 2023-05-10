@@ -24,6 +24,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -44,6 +45,11 @@ pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
     pub auth_zone_stack: Vec<NodeId>,
+}
+
+enum AuthorizationCheckResult {
+    Authorized,
+    Failed(AccessRule),
 }
 
 impl AuthModule {
@@ -237,16 +243,18 @@ impl AuthModule {
         let mut failed_access_rule = None;
 
         for authority in &method_entry.authorities {
-            let access_rule = Self::resolve_entry(access_rules, &AuthorityEntry::Authority(authority.to_string()));
-            if Authentication::verify_method_auth(
+            let result = Self::check_authorization_against_authority(
+                auth_zone_id,
                 acting_location,
-                *auth_zone_id,
-                &access_rule,
+                access_rules,
+                &AuthorityEntry::Authority(authority.to_string()),
                 api,
-            )? {
-                return Ok(());
-            } else {
-                failed_access_rule.insert(access_rule);
+            )?;
+            match result {
+                AuthorizationCheckResult::Authorized => return Ok(()),
+                AuthorizationCheckResult::Failed(rule) => {
+                    failed_access_rule.insert(rule);
+                }
             }
         }
 
@@ -262,15 +270,38 @@ impl AuthModule {
         Ok(())
     }
 
-    fn resolve_entry(access_rules_config: &AccessRulesConfig, entry: &AuthorityEntry) -> AccessRule {
+    fn check_authorization_against_authority<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        auth_zone_id: &NodeId,
+        acting_location: ActingLocation,
+        access_rules_config: &AccessRulesConfig,
+        entry: &AuthorityEntry,
+        api: &mut SystemService<Y, V>,
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match entry {
-            AuthorityEntry::AccessRule(access_rule) => access_rule.clone(),
-            AuthorityEntry::Authority(name) => match access_rules_config.authorities.get(name) {
+            AuthorityEntry::AccessRule(access_rule) => {
+                if Authentication::verify_method_auth(
+                    acting_location,
+                    *auth_zone_id,
+                    access_rule,
+                    api,
+                )? {
+                    Ok(AuthorizationCheckResult::Authorized)
+                } else {
+                    Ok(AuthorizationCheckResult::Failed(access_rule.clone()))
+                }
+            },
+            AuthorityEntry::Authority(authority) => match access_rules_config.authorities.get(authority) {
                 Some(entry) => {
                     // TODO: Make sure we don't have circular entries!
-                    Self::resolve_entry(access_rules_config, entry)
+                    Self::check_authorization_against_authority(
+                        auth_zone_id,
+                        acting_location,
+                        access_rules_config,
+                        entry,
+                        api
+                    )
                 }
-                None => AccessRule::DenyAll,
+                None => Ok(AuthorizationCheckResult::Failed(DenyAll)) // TODO: Maybe a better error result here
             },
         }
     }
