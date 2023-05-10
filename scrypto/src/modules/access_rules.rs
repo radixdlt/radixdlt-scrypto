@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 
 use radix_engine_derive::*;
-use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput};
+use radix_engine_interface::api::node_modules::auth::{AccessRulesCreateInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, AccessRulesSetGroupMutabilityInput};
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, GroupEntry, ObjectKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
@@ -77,6 +77,24 @@ impl ActorAccessRules {
                 object_key: ObjectKey::SELF,
                 name: name.into(),
                 rule: entry.into(),
+            })
+                .unwrap(),
+        ).unwrap();
+    }
+
+    pub fn set_group_mutability(
+        &self,
+        name: &str,
+        mutability: AccessRule,
+    ) {
+        let _rtn = ScryptoEnv.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                object_key: ObjectKey::SELF,
+                name: name.to_string(),
+                mutability,
             })
                 .unwrap(),
         ).unwrap();

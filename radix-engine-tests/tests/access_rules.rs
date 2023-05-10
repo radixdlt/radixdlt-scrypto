@@ -11,22 +11,20 @@ use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 
-/*
 #[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(deny_all),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
+    let mut access_rules = AccessRulesConfig::new();
+    access_rules.set_group_access_rule_and_mutability(
+        "deposit_funds",
+        rule!(require(RADIX_TOKEN)),
+        rule!(deny_all),
+    );
+    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -35,24 +33,23 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 }
 
 #[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
+    let mut access_rules = AccessRulesConfig::new();
+    access_rules.set_group_access_rule_and_mutability(
+        "deposit_funds",
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(virtual_badge_non_fungible_global_id.clone())),
+    );
+    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -61,24 +58,23 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 }
 
 #[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
+    let mut access_rules = AccessRulesConfig::new();
+    access_rules.set_group_access_rule_and_mutability(
+        "deposit_funds",
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(virtual_badge_non_fungible_global_id.clone())),
+    );
+    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
 
     // Act
-    let receipt = test_runner.lock_method_auth(1, "deposit_funds");
+    let receipt = test_runner.lock_group_auth("deposit_funds");
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -87,92 +83,60 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
 }
 
 #[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
+    let mut access_rules = AccessRulesConfig::new();
+    access_rules.set_group_access_rule_and_mutability(
+        "deposit_funds",
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(virtual_badge_non_fungible_global_id.clone())),
+    );
+    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
+    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
 }
 
 #[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
 fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     // Arrange
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
+    let mut access_rules = AccessRulesConfig::new();
+    access_rules.set_group_access_rule_and_mutability(
+        "deposit_funds",
+        rule!(require(RADIX_TOKEN)),
+        rule!(require(virtual_badge_non_fungible_global_id.clone())),
+    );
+    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
     let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_method_auth(1, "deposit_funds");
+    let receipt = test_runner.lock_group_auth("deposit_funds");
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.set_method_auth(1, "deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
         matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
-
-#[test]
-#[ignore] // Unignore once self auth supported in scrypto layer
-fn method_that_falls_within_default_cant_have_its_auth_mutated() {
-    // Arrange
-    let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
-    let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let access_rules = AccessRulesConfig::new()
-        .method(
-            "deposit_funds",
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        )
-        .default(rule!(allow_all), rule!(deny_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
-
-    test_runner.lock_default_auth(1);
-
-    // Act
-    let receipt = test_runner.set_method_auth(1, "borrow_funds", rule!(deny_all));
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
-    });
-}
- */
 
 fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange
@@ -355,15 +319,18 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.insert(initial_proof);
     }
 
-    pub fn set_method_auth(
+    pub fn set_group_auth(
         &mut self,
-        index: usize,
-        method_name: &str,
+        group: &str,
         access_rule: AccessRule,
     ) -> TransactionReceipt {
-        let args = manifest_args!(index, method_name.to_string(), access_rule);
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "set_method_auth", args)
+            .set_group_access_rule(
+                self.component_address.into(),
+                ObjectKey::SELF,
+                group.to_string(),
+                access_rule,
+            )
             .build();
         self.execute_manifest(manifest)
     }
@@ -380,18 +347,14 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn lock_method_auth(&mut self, index: usize, method_name: &str) -> TransactionReceipt {
-        let args = manifest_args!(index, method_name.to_string());
+    pub fn lock_group_auth(&mut self, group: &str) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "lock_method_auth", args)
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn lock_default_auth(&mut self, index: usize) -> TransactionReceipt {
-        let args = manifest_args!(index);
-        let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "lock_default_auth", args)
+            .set_group_mutability(
+                self.component_address.into(),
+                ObjectKey::SELF,
+                group.to_string(),
+                AccessRule::DenyAll,
+            )
             .build();
         self.execute_manifest(manifest)
     }

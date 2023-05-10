@@ -15,21 +15,14 @@ mod mutable_access_rules_component {
             component.access_rules()
         }
 
-        pub fn access_rules_method(&self) -> Vec<AttachedAccessRules> {
-            todo!("Support for self");
-        }
-
         pub fn set_group_auth(&self, group_name: String, rule: AccessRule) {
             let access_rules = Runtime::get_access_rules();
             access_rules.set_group_access_rule(group_name.as_str(), rule);
         }
 
-        pub fn set_method_auth(&self, _index: usize, _method_name: String, _rule: AccessRule) {
-            todo!("Support for self mutable auth");
-        }
-
-        pub fn lock_method_auth(&self, _index: usize, _method_name: String) {
-            todo!("Support for self mutable auth");
+        pub fn lock_group_auth(&self, group_name: String) {
+            let access_rules = Runtime::get_access_rules();
+            access_rules.set_group_mutability(group_name.as_str(), AccessRule::DenyAll);
         }
 
         // The methods that the access rules will be added to
