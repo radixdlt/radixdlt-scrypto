@@ -102,10 +102,8 @@ mod vault_proof {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = LocalAuthZone::create_proof_by_amount(
-                        amount,
-                        bucket.resource_address(),
-                    );
+                    let proof =
+                        LocalAuthZone::create_proof_by_amount(amount, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
@@ -121,8 +119,7 @@ mod vault_proof {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof =
-                        LocalAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
+                    let proof = LocalAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.non_fungible_local_ids(), ids);
                     proof.drop();
