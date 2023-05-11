@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::math::*;
 use crate::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]

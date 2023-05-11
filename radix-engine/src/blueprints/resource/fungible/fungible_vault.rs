@@ -14,12 +14,6 @@ pub use radix_engine_interface::blueprints::resource::LiquidFungibleResource as 
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
-    fn check_amount(amount: &Decimal, divisibility: u8) -> bool {
-        !amount.is_negative()
-            && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                == BnumI256::from(0)
-    }
-
     fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -41,7 +35,7 @@ impl FungibleVaultBlueprint {
         let divisibility = Self::get_divisibility(api)?;
 
         // Check amount
-        if !Self::check_amount(amount, divisibility) {
+        if !check_fungible_amount(amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -95,7 +89,7 @@ impl FungibleVaultBlueprint {
         }
 
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -139,7 +133,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -170,7 +164,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));

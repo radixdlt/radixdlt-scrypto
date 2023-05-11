@@ -186,7 +186,7 @@ impl FungibleBucketBlueprint {
         // Check amount
         {
             let divisibility = Self::get_divisibility(api)?;
-            if !(check_amount(Some(divisibility), input.amount)) {
+            if !(check_fungible_amount(&input.amount, divisibility)) {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::BucketError(BucketError::InvalidAmount),
                 ));
@@ -222,20 +222,11 @@ impl FungibleBucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&rtn))
     }
 
-    pub fn get_amount<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        let amount = FungibleBucket::liquid_amount(api)? + FungibleBucket::locked_amount(api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&amount))
+        Ok(FungibleBucket::liquid_amount(api)? + FungibleBucket::locked_amount(api)?)
     }
 
     pub fn get_resource_address<Y>(
@@ -255,35 +246,46 @@ impl FungibleBucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
 
-    pub fn create_proof<Y>(
-        receiver: &NodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
+    }
 
-        let node_id = {
-            let amount = Decimal::ONE;
+    pub fn create_proof_of_amount<Y>(
+        receiver: &NodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let divisibility = Self::get_divisibility(api)?;
+        if !check_fungible_amount(&amount, divisibility) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::InvalidAmount),
+            ));
+        }
 
-            let proof_info = ProofMoveableSubstate { restricted: false };
-            let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
+        let proof_info = ProofMoveableSubstate { restricted: false };
+        let proof = FungibleBucket::lock_amount(receiver, amount, api)?;
+        let proof_id = api.new_simple_object(
+            FUNGIBLE_PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&proof).unwrap(),
+            ],
+        )?;
 
-            let proof_id = api.new_simple_object(
-                FUNGIBLE_PROOF_BLUEPRINT,
-                vec![
-                    scrypto_encode(&proof_info).unwrap(),
-                    scrypto_encode(&proof).unwrap(),
-                ],
-            )?;
-            proof_id
-        };
+        Ok(Proof(Own(proof_id)))
+    }
 
-        Ok(IndexedScryptoValue::from_typed(&Proof(Own(node_id))))
+    pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::create_proof_of_amount(receiver, Self::get_amount(api)?, api)
     }
 
     //===================
