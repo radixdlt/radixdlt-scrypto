@@ -48,39 +48,44 @@ impl NodeMoveModule {
                 }
 
                 // Change to restricted unless it's moved to auth zone.
-                // TODO: align with barrier design?
-                let mut changed_to_restricted = true;
-                if let Some(method) = callee.try_as_method() {
-                    let type_info = TypeInfoBlueprint::get_type(&method.node_id, api)?;
-                    if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
-                        if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
-                            changed_to_restricted = false;
-                        }
+                if callee.is_barrier() {
+                    let handle = api.kernel_lock_substate(
+                        &node_id,
+                        OBJECT_BASE_PARTITION,
+                        &FungibleProofField::Moveable.into(),
+                        LockFlags::MUTABLE,
+                        SystemLockData::default(),
+                    )?;
+                    let mut proof: ProofMoveableSubstate =
+                        api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+                    if proof.restricted {
+                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                            NodeMoveError::CantMoveDownstream(node_id),
+                        )));
                     }
-                }
 
-                let handle = api.kernel_lock_substate(
-                    &node_id,
-                    OBJECT_BASE_PARTITION,
-                    &FungibleProofField::Moveable.into(),
-                    LockFlags::MUTABLE,
-                    SystemLockData::default(),
-                )?;
-                let mut proof: ProofMoveableSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-                if proof.restricted {
-                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveDownstream(node_id),
-                    )));
-                }
-
-                if changed_to_restricted {
                     proof.change_to_restricted();
-                }
+                    api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
+                    api.kernel_drop_lock(handle)?;
+                } else if callee.is_auth_zone() {
+                    let handle = api.kernel_lock_substate(
+                        &node_id,
+                        OBJECT_BASE_PARTITION,
+                        &FungibleProofField::Moveable.into(),
+                        LockFlags::read_only(),
+                        SystemLockData::default(),
+                    )?;
+                    let proof: ProofMoveableSubstate =
+                        api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                api.kernel_drop_lock(handle)?;
+                    if proof.restricted {
+                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                            NodeMoveError::CantMoveDownstream(node_id),
+                        )));
+                    }
+                    api.kernel_drop_lock(handle)?;
+                }
             }
             TypeInfoSubstate::Object(ObjectInfo {
                 blueprint,
@@ -99,39 +104,44 @@ impl NodeMoveModule {
                 }
 
                 // Change to restricted unless it's moved to auth zone.
-                // TODO: align with barrier design?
-                let mut changed_to_restricted = true;
-                if let Some(method) = callee.try_as_method() {
-                    let type_info = TypeInfoBlueprint::get_type(&method.node_id, api)?;
-                    if let TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) = type_info {
-                        if blueprint.eq(&Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT)) {
-                            changed_to_restricted = false;
-                        }
+                if callee.is_barrier() {
+                    let handle = api.kernel_lock_substate(
+                        &node_id,
+                        OBJECT_BASE_PARTITION,
+                        &NonFungibleProofField::Moveable.into(),
+                        LockFlags::MUTABLE,
+                        SystemLockData::default(),
+                    )?;
+                    let mut proof: ProofMoveableSubstate =
+                        api.kernel_read_substate(handle)?.as_typed().unwrap();
+
+                    if proof.restricted {
+                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                            NodeMoveError::CantMoveDownstream(node_id),
+                        )));
                     }
-                }
 
-                let handle = api.kernel_lock_substate(
-                    &node_id,
-                    OBJECT_BASE_PARTITION,
-                    &NonFungibleProofField::Moveable.into(),
-                    LockFlags::MUTABLE,
-                    SystemLockData::default(),
-                )?;
-                let mut proof: ProofMoveableSubstate =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-                if proof.restricted {
-                    return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
-                        NodeMoveError::CantMoveDownstream(node_id),
-                    )));
-                }
-
-                if changed_to_restricted {
                     proof.change_to_restricted();
-                }
+                    api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
+                    api.kernel_drop_lock(handle)?;
+                } else if callee.is_auth_zone() {
+                    let handle = api.kernel_lock_substate(
+                        &node_id,
+                        OBJECT_BASE_PARTITION,
+                        &NonFungibleProofField::Moveable.into(),
+                        LockFlags::read_only(),
+                        SystemLockData::default(),
+                    )?;
+                    let proof: ProofMoveableSubstate =
+                        api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                api.kernel_drop_lock(handle)?;
+                    if proof.restricted {
+                        return Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
+                            NodeMoveError::CantMoveDownstream(node_id),
+                        )));
+                    }
+                    api.kernel_drop_lock(handle)?;
+                }
             }
             _ => {}
         }

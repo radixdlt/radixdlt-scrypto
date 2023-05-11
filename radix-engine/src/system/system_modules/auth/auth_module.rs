@@ -35,6 +35,7 @@ pub enum AuthError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub access_rule: AccessRule,
+    pub fn_identifier: FnIdentifier,
 }
 
 #[derive(Debug, Clone)]
@@ -48,16 +49,6 @@ pub struct AuthModule {
 }
 
 impl AuthModule {
-    fn is_barrier(actor: &Actor) -> bool {
-        // FIXME update the rule to be consistent with internal design
-        match actor {
-            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
-            Actor::Function { .. } => false,
-            Actor::VirtualLazyLoad { .. } => false,
-            Actor::Root { .. } => false,
-        }
-    }
-
     fn function_auth<Y: KernelApi<M>, M: KernelCallbackObject>(
         blueprint: &Blueprint,
         ident: &str,
@@ -217,7 +208,7 @@ impl AuthModule {
                 }
                 Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
             };
-            let acting_location = if Self::is_barrier(callee) {
+            let acting_location = if callee.is_barrier() {
                 ActingLocation::AtBarrier
             } else {
                 ActingLocation::AtLocalBarrier
@@ -225,16 +216,17 @@ impl AuthModule {
 
             // Authenticate
             let mut system = SystemService::new(api);
-            for authorization in authorizations {
+            for access_rule in authorizations {
                 if !Authentication::verify_method_auth(
                     acting_location,
                     auth_zone_id,
-                    &authorization,
+                    &access_rule,
                     &mut system,
                 )? {
                     return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::Unauthorized(Box::new(Unauthorized {
-                            access_rule: authorization,
+                            access_rule,
+                            fn_identifier: callee.fn_identifier(),
                         })),
                     )));
                 }
@@ -261,7 +253,7 @@ impl AuthModule {
             callee.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
-        let is_barrier = Self::is_barrier(callee);
+        let is_barrier = callee.is_barrier();
         let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_system().modules.auth;

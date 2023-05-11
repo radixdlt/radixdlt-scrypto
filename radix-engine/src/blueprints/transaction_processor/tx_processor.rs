@@ -6,10 +6,12 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
-use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
+use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -142,25 +144,25 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
-                    let proof = ComponentAuthZone::sys_pop(api)?;
+                    let proof = LocalAuthZone::sys_pop(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    ComponentAuthZone::sys_clear(api)?;
+                    LocalAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearSignatureProofs => {
-                    ComponentAuthZone::sys_clear_signature_proofs(api)?;
+                    LocalAuthZone::sys_clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    ComponentAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::sys_push(proof, api)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
-                    let proof = ComponentAuthZone::sys_create_proof(resource_address, api)?;
+                    let proof = LocalAuthZone::sys_create_proof(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -168,11 +170,8 @@ impl TransactionProcessorBlueprint {
                     amount,
                     resource_address,
                 } => {
-                    let proof = ComponentAuthZone::sys_create_proof_by_amount(
-                        amount,
-                        resource_address,
-                        api,
-                    )?;
+                    let proof =
+                        LocalAuthZone::sys_create_proof_by_amount(amount, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -181,7 +180,7 @@ impl TransactionProcessorBlueprint {
                     resource_address,
                 } => {
                     let proof =
-                        ComponentAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
+                        LocalAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -210,7 +209,7 @@ impl TransactionProcessorBlueprint {
                         let proof = Proof(Own(real_id));
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    ComponentAuthZone::sys_clear(api)?;
+                    LocalAuthZone::sys_clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::CallFunction {
@@ -577,6 +576,64 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
+                Instruction::SetGroupAccessRule {
+                    entity_address,
+                    object_key,
+                    group,
+                    rule,
+                } => {
+                    let receiver = entity_address.into();
+                    let result = api.call_method_advanced(
+                        &receiver,
+                        false,
+                        ObjectModuleId::AccessRules,
+                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                            object_key,
+                            name: group,
+                            rule,
+                        })
+                        .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::SetGroupMutability {
+                    entity_address,
+                    object_key,
+                    group,
+                    mutability,
+                } => {
+                    let receiver = entity_address.into();
+                    let result = api.call_method_advanced(
+                        &receiver,
+                        false,
+                        ObjectModuleId::AccessRules,
+                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                            object_key,
+                            name: group,
+                            mutability,
+                        })
+                        .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
             };
             outputs.push(result);
         }
@@ -706,7 +763,7 @@ impl<'blob> TransactionProcessor<'blob> {
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
-                    ComponentAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::sys_push(proof, api)?;
                 }
                 _ => {}
             }
@@ -788,7 +845,7 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
                 Ok(buckets.into_iter().map(|b| b.0).collect())
             }
             ManifestExpression::EntireAuthZone => {
-                let proofs = ComponentAuthZone::sys_drain(self.api)?;
+                let proofs = LocalAuthZone::sys_drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
         }

@@ -28,56 +28,75 @@ fn build_access_rules(
         .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut resman_access_rules = AccessRulesConfig::new();
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-        update_metadata_access_rule,
-        update_metadata_mutability,
-    );
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "update_metadata",
+            update_metadata_access_rule,
+            update_metadata_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            "update_metadata",
+            DenyAll,
+        );
+    }
+
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_group_access_rule_and_mutability(
-        "mint",
-        mint_access_rule,
-        mint_mutability,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(
-            ObjectModuleId::Main,
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-        ),
-        "mint",
-        DenyAll,
-    );
-    resman_access_rules.set_group_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
-        "mint",
-        DenyAll,
-    );
 
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
-        burn_access_rule,
-        burn_mutability,
-    );
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "mint",
+            mint_access_rule,
+            mint_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::Main,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::Main,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(
+                ObjectModuleId::Main,
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+            ),
+            "mint",
+            DenyAll,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Main, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT),
+            "mint",
+            DenyAll,
+        );
+    }
+
+    {
+        resman_access_rules.set_group_access_rule_and_mutability(
+            "burn",
+            burn_access_rule,
+            burn_mutability,
+        );
+        resman_access_rules.set_group_and_mutability(
+            MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
+            "burn",
+            DenyAll,
+        );
+    }
+
     resman_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(
             ObjectModuleId::Main,
@@ -177,6 +196,7 @@ fn build_access_rules(
         "withdraw",
         DenyAll,
     );
+
     vault_access_rules.set_group_access_rule_and_mutability(
         "recall",
         recall_access_rule,
@@ -194,11 +214,17 @@ fn build_access_rules(
         "recall",
     );
 
-    vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
+    vault_access_rules.set_group_access_rule_and_mutability(
+        "deposit",
         deposit_access_rule,
         deposit_mutability,
     );
+    vault_access_rules.set_group_and_mutability(
+        MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
+        "deposit",
+        DenyAll,
+    );
+
     vault_access_rules.set_method_access_rule_and_mutability(
         MethodKey::new(ObjectModuleId::Main, VAULT_GET_AMOUNT_IDENT),
         AllowAll,

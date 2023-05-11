@@ -9,6 +9,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -41,7 +42,11 @@ fn test_bootstrap_receipt_should_match_constants() {
         wrap_up_receipt,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     assert!(system_bootstrap_receipt
@@ -92,7 +97,11 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         data_ingestion_receipts,
         wrap_up_receipt,
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     validate_receipt_substate_changes_which_can_be_typed(
@@ -146,7 +155,11 @@ fn test_genesis_xrd_allocation_to_accounts() {
         data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     assert!(data_ingestion_receipts[0]
@@ -203,7 +216,11 @@ fn test_genesis_resource_with_initial_allocation() {
         mut data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     let total_supply = substate_db
@@ -303,7 +320,11 @@ fn test_genesis_stake_allocation() {
         mut data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
@@ -339,5 +360,13 @@ fn test_genesis_stake_allocation() {
         assert!(balances
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
+    }
+}
+
+fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
+    EpochManagerInitialConfiguration {
+        max_validators: 100,
+        rounds_per_epoch: 1,
+        num_unstake_epochs: 1,
     }
 }
