@@ -2,7 +2,9 @@ extern crate core;
 
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::resource::{
+    require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -31,22 +33,40 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let function = match action {
-            Action::Mint => "set_mintable",
-            Action::Burn => "set_burnable",
-            Action::Withdraw => "set_withdrawable",
-            Action::Deposit => "set_depositable",
-            Action::Recall => "set_recallable",
-            Action::UpdateMetadata => "set_updateable_metadata",
+        let (object_key, group) = match action {
+            Action::Mint => (ObjectKey::SELF, "mint"),
+            Action::Burn => (ObjectKey::SELF, "burn"),
+            Action::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+            Action::Withdraw => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "withdraw",
+            ),
+            Action::Deposit => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "deposit",
+            ),
+            Action::Recall => (
+                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                "recall",
+            ),
         };
-        test_runner.update_resource_auth(
-            function,
-            admin_auth,
-            token_address,
-            updated_auth,
-            account,
-            public_key,
-        );
+
+        let manifest = ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .create_proof_from_account(account, admin_auth)
+            .set_group_access_rule(
+                token_address.into(),
+                object_key,
+                group.to_string(),
+                rule!(require(updated_auth)),
+            )
+            .build();
+        test_runner
+            .execute_manifest(
+                manifest,
+                btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
+            )
+            .expect_commit_success();
     }
 
     let auth_to_use = if use_other_auth {

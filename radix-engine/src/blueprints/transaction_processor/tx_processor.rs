@@ -9,7 +9,9 @@ use crate::types::*;
 use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -552,6 +554,62 @@ impl TransactionProcessorBlueprint {
                             object_key: ObjectKey::SELF,
                             method_key: key.clone(),
                             rule: AccessRuleEntry::AccessRule(rule.clone()),
+                        })
+                        .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::SetGroupAccessRule {
+                    entity_address,
+                    object_key,
+                    group,
+                    rule,
+                } => {
+                    let receiver = entity_address.into();
+                    let result = api.call_module_method(
+                        &receiver,
+                        ObjectModuleId::AccessRules,
+                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                            object_key,
+                            name: group,
+                            rule,
+                        })
+                        .unwrap(),
+                    )?;
+
+                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result_indexed,
+                        &worktop,
+                        api,
+                    )?;
+
+                    InstructionOutput::CallReturn(result_indexed.into())
+                }
+                Instruction::SetGroupMutability {
+                    entity_address,
+                    object_key,
+                    group,
+                    mutability,
+                } => {
+                    let receiver = entity_address.into();
+                    let result = api.call_module_method(
+                        &receiver,
+                        ObjectModuleId::AccessRules,
+                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                            object_key,
+                            name: group,
+                            mutability,
                         })
                         .unwrap(),
                     )?;

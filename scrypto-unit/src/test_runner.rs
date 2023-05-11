@@ -908,59 +908,6 @@ impl TestRunner {
         )
     }
 
-    pub fn lock_resource_auth(
-        &mut self,
-        function: &str,
-        auth: ResourceAddress,
-        token: ResourceAddress,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) {
-        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
-            .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, manifest_args!(token))
-            .build();
-        self.execute_manifest(
-            manifest,
-            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
-        )
-        .expect_commit_success();
-    }
-
-    pub fn update_resource_auth(
-        &mut self,
-        function: &str,
-        auth: ResourceAddress,
-        token: ResourceAddress,
-        set_auth: ResourceAddress,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) {
-        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
-            .create_proof_from_account(account, auth)
-            .call_function(
-                package,
-                "ResourceCreator",
-                function,
-                manifest_args!(token, set_auth),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
-            .build();
-        self.execute_manifest(
-            manifest,
-            btreeset![NonFungibleGlobalId::from_public_key(&signer_public_key)],
-        )
-        .expect_commit_success();
-    }
-
     fn create_fungible_resource_and_deposit(
         &mut self,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
