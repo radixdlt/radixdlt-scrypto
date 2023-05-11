@@ -150,12 +150,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {:?}",
+            "Reading substate: handle = {}, size = {}, storage_acces = {}",
             lock_handle,
+            value_size,
             store_access.get_whole_size()
         );
         Ok(())
@@ -164,12 +166,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Writing substate: handle = {}, size = {:?}",
+            "Writing substate: handle = {}, size = {}, storage_acces = {}",
             lock_handle,
+            value_size,
             store_access.get_whole_size()
         );
         Ok(())

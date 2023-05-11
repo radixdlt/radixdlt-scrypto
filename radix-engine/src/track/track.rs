@@ -566,7 +566,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             },
         );
 
-        StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::WriteToTrack(track_write_size))
+        StoreAccessInfo::new()
+            .builder_push_if_not_empty(StoreAccess::WriteToTrack(track_write_size))
     }
 
     fn set_substate(
@@ -600,7 +601,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 };
                 e.insert(tracked);
 
-                Ok(StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::WriteToTrack(value_len)))
+                Ok(StoreAccessInfo::new()
+                    .builder_push_if_not_empty(StoreAccess::WriteToTrack(value_len)))
             }
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
@@ -622,8 +624,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
                 tracked.tracked.set(substate_value);
 
-                Ok(StoreAccessInfo::new()
-                    .builder_push_if_not_empty(StoreAccess::RewriteToTrack(old_value_len, new_value_len)))
+                Ok(
+                    StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::RewriteToTrack(
+                        old_value_len,
+                        new_value_len,
+                    )),
+                )
             }
         }
     }

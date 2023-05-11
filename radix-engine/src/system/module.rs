@@ -151,6 +151,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_read_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -160,6 +161,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_write_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _value_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())

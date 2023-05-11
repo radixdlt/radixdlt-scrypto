@@ -272,36 +272,36 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
+        value_size: usize,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
-        let store_acccess_size = store_access.get_whole_size();
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_read_size_total += store_acccess_size;
+        tlimit.substate_db_read_size_total += value_size;
 
         // Validate
-        tlimit.validate_substates(Some(store_acccess_size), None)
+        tlimit.validate_substates(Some(value_size), None)
     }
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
+        value_size: usize,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
-        let store_acccess_size = store_access.get_whole_size();
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_write_size_total += store_acccess_size;
+        tlimit.substate_db_write_size_total += value_size;
 
         // Validate
-        tlimit.validate_substates(None, Some(store_acccess_size))
+        tlimit.validate_substates(None, Some(value_size))
     }
 }

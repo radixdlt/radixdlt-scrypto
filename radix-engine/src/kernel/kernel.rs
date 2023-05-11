@@ -629,11 +629,12 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (_, mut store_access) = self
+        let (value, mut store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
+        let value_size = value.as_slice().len();
 
         // TODO: replace this overwrite with proper packing costing rule
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
@@ -641,7 +642,7 @@ where
             store_access.clear();
         }
 
-        M::on_read_substate(lock_handle, &store_access, self)?;
+        M::on_read_substate(lock_handle, value_size, &store_access, self)?;
 
         // Double read due to borrow chacker of self.
         Ok(self
@@ -657,6 +658,8 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        let value_size = value.as_slice().len();
+
         let store_access = self
             .current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
@@ -664,7 +667,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_write_substate(lock_handle, &store_access, self)
+        M::on_write_substate(lock_handle, value_size, &store_access, self)
     }
 
     fn kernel_set_substate(

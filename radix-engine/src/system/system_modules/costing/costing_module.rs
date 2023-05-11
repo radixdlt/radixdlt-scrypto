@@ -397,15 +397,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        // CPU execution part
+        // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::ReadSubstate,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::ReadSubstate),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::ReadSubstate {
+                        size: value_size as u32,
+                    })
+                },
                 1,
             )?;
         // Storage usage part
@@ -418,15 +423,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        // CPU execution part
+        // CPU execution part + value size costing
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::WriteSubstate,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::WriteSubstate),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::WriteSubstate {
+                        size: value_size as u32,
+                    })
+                },
                 1,
             )?;
         // Storage usage part

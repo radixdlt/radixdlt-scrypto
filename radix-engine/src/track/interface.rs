@@ -137,7 +137,6 @@ pub trait SubstateStore {
 pub struct StoreAccessInfo(Vec<StoreAccess>);
 
 impl StoreAccessInfo {
-
     pub fn new() -> Self {
         Self(Vec::new())
     }

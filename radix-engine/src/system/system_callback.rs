@@ -212,24 +212,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_read_substate(api, lock_handle, store_access)
+        SystemModuleMixer::on_read_substate(api, lock_handle, value_size, store_access)
     }
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_write_substate(api, lock_handle, store_access)
+        SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
     }
 
     fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>

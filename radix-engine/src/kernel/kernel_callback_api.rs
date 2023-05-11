@@ -71,6 +71,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -79,6 +80,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
+        value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

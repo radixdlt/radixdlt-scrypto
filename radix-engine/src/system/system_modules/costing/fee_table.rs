@@ -31,8 +31,12 @@ pub enum CostingEntry<'a> {
         module_num: &'a PartitionNumber,
         substate_key: &'a SubstateKey,
     },
-    ReadSubstate,
-    WriteSubstate,
+    ReadSubstate {
+        size: u32,
+    },
+    WriteSubstate {
+        size: u32,
+    },
     ScanSubstate,
     SetSubstate,
     TakeSubstate,
@@ -309,10 +313,10 @@ impl FeeTable {
                 substate_key: _,
             } => 632, // todo: determine correct value
             CostingEntry::ScanSubstate => 100, // todo: determine correct value
-            &CostingEntry::SetSubstate => 100, // todo: determine correct value
+            CostingEntry::SetSubstate => 100,  // todo: determine correct value
             CostingEntry::TakeSubstate => 100, // todo: determine correct value
-            CostingEntry::ReadSubstate => 174,
-            CostingEntry::WriteSubstate => 126,
+            CostingEntry::ReadSubstate { size: _ } => 174,
+            CostingEntry::WriteSubstate { size: _ } => 126,
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
@@ -333,6 +337,8 @@ impl FeeTable {
                 input_size,
                 actor: _,
             } => 10 * input_size,
+            CostingEntry::ReadSubstate { size } => 10 * size,
+            CostingEntry::WriteSubstate { size } => 1000 * size,
             CostingEntry::SubstateReadFromDb { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateReadFromTrack { size } => 1 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 1 * size, // todo: determine correct value
