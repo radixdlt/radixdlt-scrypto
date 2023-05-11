@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;

@@ -5,6 +5,9 @@ use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{
@@ -85,6 +88,10 @@ impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
 }
 
+pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
+
+pub type AccountVaultIndexEntry = Option<Own>;
+
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
@@ -107,39 +114,67 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_ecdsa_256k1<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual_secp256k1<Y>(
+        input: VirtualLazyLoadInput,
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let account = Self::create_local(api)?;
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
-        let mut modules = Self::create_modules(access_rules, api)?;
-        modules.insert(ObjectModuleId::Main, account);
-
-        Ok(modules)
+        let public_key_hash = PublicKeyHash::EcdsaSecp256k1(EcdsaSecp256k1PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
     }
 
-    pub fn create_virtual_eddsa_25519<Y>(
-        id: [u8; NodeId::UUID_LENGTH],
+    pub fn create_virtual_ed25519<Y>(
+        input: VirtualLazyLoadInput,
+        api: &mut Y,
+    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let public_key_hash = PublicKeyHash::EddsaEd25519(EddsaEd25519PublicKeyHash(input.id));
+        Self::create_virtual(public_key_hash, api)
+    }
+
+    fn create_virtual<Y>(
+        public_key_hash: PublicKeyHash,
         api: &mut Y,
     ) -> Result<VirtualLazyLoadOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let non_fungible_global_id = NonFungibleGlobalId::new(
-            EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE,
-            NonFungibleLocalId::bytes(id.to_vec()).unwrap(),
-        );
-        let access_rules = SecurifiedAccount::create_presecurified(non_fungible_global_id, api)?;
+        let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
+        let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
+
+        {
+            // Set up metadata
+            // TODO: Improve this when the Metadata module API is nicer
+            let metadata = modules.get(&ObjectModuleId::Metadata).unwrap();
+            // NOTE:
+            // This is the owner key for ROLA.
+            // We choose to set this explicitly to simplify the security-critical logic off-ledger.
+            // In particular, we want an owner to be able to explicitly delete the owner keys.
+            // If we went with a "no metadata = assume default public key hash", then this could cause unexpeted
+            // security-critical behaviour if a user expected that deleting the metadata removed the owner keys.
+            api.call_method(
+                &metadata.0,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: "owner_keys".to_string(),
+                    value: scrypto_decode(
+                        &scrypto_encode(&MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
+                            public_key_hash,
+                        )]))
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                })
+                .unwrap(),
+            )?;
+        }
+
         modules.insert(ObjectModuleId::Main, account);
 
         Ok(modules)
@@ -208,20 +243,18 @@ impl AccountBlueprint {
         // Getting a read-only lock handle on the KVStore ENTRY
         let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
-            0u8,
+            ACCOUNT_VAULT_INDEX,
             &encoded_key,
             LockFlags::read_only(),
         )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> =
+            let entry: AccountVaultIndexEntry =
                 api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!")),
+                Option::Some(own) => Ok(Vault(own)),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;
@@ -272,13 +305,10 @@ impl AccountBlueprint {
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
         // insert it's entry into the KVStore
         let mut vault = {
-            let entry: Option<ScryptoValue> =
-                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+            let entry: Option<Own> = api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!"),
+                Option::Some(own) => Vault(own),
                 Option::None => {
                     let vault = Vault::sys_new(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
@@ -315,7 +345,7 @@ impl AccountBlueprint {
             // Getting an RW lock handle on the KVStore ENTRY
             let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
                 OBJECT_HANDLE_SELF,
-                0u8,
+                ACCOUNT_VAULT_INDEX,
                 &encoded_key,
                 LockFlags::MUTABLE,
             )?;
@@ -323,13 +353,11 @@ impl AccountBlueprint {
             // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
             // and insert it's entry into the KVStore
             let mut vault = {
-                let entry: Option<ScryptoValue> =
+                let entry: AccountVaultIndexEntry =
                     api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
                 match entry {
-                    Option::Some(value) => scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                        .map(|own| Vault(own))
-                        .expect("Impossible Case!"),
+                    Option::Some(own) => Vault(own),
                     Option::None => {
                         let vault = Vault::sys_new(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
@@ -367,7 +395,7 @@ impl AccountBlueprint {
         let kv_store_entry_lock_handle = {
             let handle = api.actor_lock_key_value_entry(
                 OBJECT_HANDLE_SELF,
-                0u8,
+                ACCOUNT_VAULT_INDEX,
                 &encoded_key,
                 LockFlags::read_only(),
             )?;
@@ -376,13 +404,11 @@ impl AccountBlueprint {
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
         let mut vault = {
-            let entry: Option<ScryptoValue> =
+            let entry: AccountVaultIndexEntry =
                 api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
-                Option::Some(value) => Ok(scrypto_decode::<Own>(&scrypto_encode(&value).unwrap())
-                    .map(|own| Vault(own))
-                    .expect("Impossible Case!")),
+                Option::Some(own) => Ok(Vault(own)),
                 Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
             }
         }?;

@@ -1,7 +1,6 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{transaction::TransactionReceipt, types::*};
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use scrypto_unit::TestRunner;
 use transaction::{

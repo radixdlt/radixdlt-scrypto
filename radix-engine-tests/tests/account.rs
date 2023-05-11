@@ -2,6 +2,7 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::{
     AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
 };
@@ -183,6 +184,26 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
+}
+
+#[test]
+fn virtual_account_is_created_with_public_key_hash_metadata() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let (public_key, _, account) = test_runner.new_account(true);
+
+    // Assert
+    let entry = test_runner.get_metadata(account.into(), "owner_keys");
+
+    let public_key_hash = public_key.get_hash().into_enum();
+    assert_eq!(
+        entry,
+        Some(MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
+            public_key_hash
+        )]))
+    );
 }
 
 #[test]

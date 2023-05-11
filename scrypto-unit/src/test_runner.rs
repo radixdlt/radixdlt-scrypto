@@ -39,7 +39,6 @@ use radix_engine_interface::blueprints::epoch_manager::{
     EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
@@ -137,19 +136,24 @@ pub struct CustomGenesis {
 }
 
 impl CustomGenesis {
-    pub fn empty(
+    pub fn default(
         initial_epoch: u64,
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> CustomGenesis {
-        CustomGenesis {
-            genesis_data_chunks: vec![],
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+            .unwrap()
+            .public_key();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
             max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
-        }
+        )
     }
 
     pub fn single_validator_and_staker(

@@ -13,9 +13,9 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 ///
 /// 1. Call methods on another component;
 /// 2. Access resource system.
-pub struct ComponentAuthZone {}
+pub struct LocalAuthZone {}
 
-impl ComponentAuthZone {
+impl LocalAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let mut env = ScryptoEnv;
 

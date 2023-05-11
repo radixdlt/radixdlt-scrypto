@@ -26,6 +26,8 @@ impl EpochManagerNativePackage {
         fields.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
+        fields
+            .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::SortedIndex(
@@ -297,7 +299,11 @@ impl EpochManagerNativePackage {
                 let input: EpochManagerNextRoundInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::next_round(input.round, api)?;
+                let rtn = EpochManagerBlueprint::next_round(
+                    input.round,
+                    input.leader_proposal_history,
+                    api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

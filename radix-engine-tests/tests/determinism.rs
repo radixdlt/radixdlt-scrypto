@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
