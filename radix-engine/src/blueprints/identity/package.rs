@@ -10,7 +10,6 @@ use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, Receiver};
@@ -187,11 +186,7 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![(
-            "update_metadata",
-            AccessRule::authority("owner"),
-            DenyAll,
-        )]
+        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
     }
 }
 

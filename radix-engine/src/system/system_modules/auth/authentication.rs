@@ -2,6 +2,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
+use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
 use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
@@ -16,9 +17,9 @@ pub enum ActingLocation {
     InCallFrame,
 }
 
-pub struct Authentication;
+pub struct Authorization;
 
-impl Authentication {
+impl Authorization {
     fn proof_matches<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
         resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
@@ -293,7 +294,17 @@ impl Authentication {
                 match access_rules.authorities.get(authority.as_str()) {
                     Some(access_rule) => {
                         // TODO: Make sure we don't have circular entries!
-                        Self::verify_method_auth(acting_location, auth_zone_id, access_rules, access_rule, api)
+                        Self::check_authorization_against_access_rule(
+                            acting_location,
+                            auth_zone_id,
+                            access_rules,
+                            access_rule,
+                            api,
+                        )
+                        .map(|rtn| match rtn {
+                            AuthorizationCheckResult::Authorized => true,
+                            AuthorizationCheckResult::Failed(..) => false,
+                        })
                     }
                     None => return Ok(false),
                 }
@@ -303,7 +314,8 @@ impl Authentication {
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)? {
+                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)?
+                    {
                         return Ok(true);
                     }
                 }
@@ -311,7 +323,8 @@ impl Authentication {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)? {
+                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)?
+                    {
                         return Ok(false);
                     }
                 }
@@ -321,19 +334,25 @@ impl Authentication {
         }
     }
 
-    pub fn verify_method_auth<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+    pub fn check_authorization_against_access_rule<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
         method_auth: &AccessRule,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match method_auth {
             AccessRule::Protected(rule) => {
-                Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule, api)
+                if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule, api)? {
+                    Ok(AuthorizationCheckResult::Authorized)
+                } else {
+                    Ok(AuthorizationCheckResult::Failed(method_auth.clone()))
+                }
             }
-            AccessRule::AllowAll => Ok(true),
-            AccessRule::DenyAll => Ok(false),
+            AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(method_auth.clone())),
         }
     }
 }

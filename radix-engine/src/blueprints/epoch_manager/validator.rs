@@ -18,7 +18,6 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
@@ -380,7 +379,7 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AccessRule::AllowAll
         } else {
-            AccessRule::authority("owner")
+            rule!(require("owner"))
         };
 
         api.call_module_method(
@@ -506,16 +505,10 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         vec![
             (
                 "stake",
-                AccessRule::authority("owner"),
-                rule!(require(package_of_direct_caller(
-                    EPOCH_MANAGER_PACKAGE
-                ))),
+                rule!(require("owner")),
+                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             ),
-            (
-                "update_metadata",
-                AccessRule::authority("owner"),
-                DenyAll,
-            ),
+            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
         ]
     }
 

@@ -7,13 +7,14 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AccessRulesConfig, Bucket, Proof,
+};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -33,11 +34,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![(
-            "update_metadata",
-            AccessRule::authority("owner"),
-            DenyAll,
-        )]
+        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
     }
 
     fn methods() -> Vec<(&'static str, MethodType)> {

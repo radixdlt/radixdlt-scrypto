@@ -3,9 +3,9 @@ use crate::blueprints::resource::*;
 use crate::math::Decimal;
 use crate::*;
 use radix_engine_common::types::*;
+use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::rust::string::String;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ResourceOrNonFungible {
@@ -65,6 +65,18 @@ impl From<NonFungibleGlobalId> for AccessRuleNode {
 impl From<ResourceOrNonFungible> for AccessRuleNode {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
         AccessRuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
+    }
+}
+
+impl From<String> for AccessRuleNode {
+    fn from(authority: String) -> Self {
+        AccessRuleNode::Authority(authority)
+    }
+}
+
+impl From<&str> for AccessRuleNode {
+    fn from(authority: &str) -> Self {
+        AccessRuleNode::Authority(authority.to_string())
     }
 }
 
@@ -157,10 +169,4 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
-}
-
-impl AccessRule {
-    pub fn authority(name: &str) -> AccessRule {
-        AccessRule::Protected(AccessRuleNode::Authority(name.to_string()))
-    }
 }

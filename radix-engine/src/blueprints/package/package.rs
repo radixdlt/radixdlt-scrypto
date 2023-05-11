@@ -113,11 +113,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![(
-            "update_metadata",
-            AccessRule::authority("owner"),
-            AccessRule::DenyAll,
-        )]
+        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
     }
 }
 

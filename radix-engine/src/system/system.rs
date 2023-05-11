@@ -1,5 +1,5 @@
 use super::payload_validation::*;
-use super::system_modules::auth::Authentication;
+use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
@@ -15,7 +15,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::ActingLocation;
+use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -1642,20 +1642,20 @@ where
         // TODO: Use real access rules of this method/function
         let config = AccessRulesConfig::new();
 
-        // Authenticate
-        if !Authentication::verify_method_auth(
+        // Authorize
+        let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
             auth_zone_id,
             &config,
             &rule,
             self,
-        )? {
-            return Err(RuntimeError::SystemError(
+        )?;
+        match auth_result {
+            AuthorizationCheckResult::Authorized => Ok(()),
+            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
                 SystemError::AssertAccessRuleFailed,
-            ));
+            )),
         }
-
-        Ok(())
     }
 }
 
