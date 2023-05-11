@@ -1,6 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::node_modules::access_rules::AccessRulesConfig;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
@@ -8,7 +9,6 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
-use crate::system::node_modules::access_rules::AccessRulesConfig;
 
 // TODO: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -294,7 +294,7 @@ impl Authorization {
             AccessRuleNode::Authority(authority) => {
                 match access_rules.rules.get(authority.as_str()) {
                     Some(access_rule) => {
-                        // TODO: Make sure we don't have circular entries!
+                        // TODO: Add costing for every access rule hop
                         Self::check_authorization_against_access_rule(
                             acting_location,
                             auth_zone_id,

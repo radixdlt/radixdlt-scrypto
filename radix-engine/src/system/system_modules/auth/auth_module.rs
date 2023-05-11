@@ -7,7 +7,10 @@ use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{AccessRulesConfig, AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    AccessRulesConfig, AccessRulesNativePackage, FunctionAccessRulesSubstate,
+    MethodAccessRulesSubstate,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -26,6 +29,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
+    CyclicAuthorityDetected(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),

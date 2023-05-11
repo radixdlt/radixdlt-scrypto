@@ -7,6 +7,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use utils::rust::prelude::IndexSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ResourceOrNonFungible {
@@ -90,6 +91,20 @@ pub enum AccessRuleNode {
 }
 
 impl AccessRuleNode {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<String>) {
+        match self {
+            AccessRuleNode::Authority(authority) => {
+                authorities.insert(authority.to_string());
+            }
+            AccessRuleNode::ProofRule(..) => {}
+            AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
+                for node in nodes {
+                    node.get_referenced_authorities(authorities);
+                }
+            }
+        }
+    }
+
     pub fn or(self, other: AccessRuleNode) -> Self {
         match self {
             AccessRuleNode::AnyOf(mut rules) => {
@@ -170,4 +185,13 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl AccessRule {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<String>) {
+        match self {
+            AccessRule::AllowAll | AccessRule::DenyAll => {}
+            AccessRule::Protected(node) => node.get_referenced_authorities(authorities),
+        }
+    }
 }

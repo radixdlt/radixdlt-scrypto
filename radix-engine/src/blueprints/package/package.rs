@@ -2,7 +2,9 @@ use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{AccessRulesConfig, FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    AccessRulesConfig, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::track::interface::NodeSubstates;
@@ -15,9 +17,7 @@ use radix_engine_interface::api::component::{
 };
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, Bucket, FnKey,
-};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
 use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
 use resources_tracker_macro::trace_resources;
 

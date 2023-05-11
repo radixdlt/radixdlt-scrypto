@@ -10,6 +10,7 @@ use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::RefType;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
+use crate::system::node_modules::access_rules::AccessRulesConfig;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -44,7 +45,6 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::node_modules::access_rules::AccessRulesConfig;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {

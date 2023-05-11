@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRulesConfig, FromPublicKey, NonFungibleDataSchema,
+    require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceMethodAuthKey,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,

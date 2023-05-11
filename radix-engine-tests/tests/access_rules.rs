@@ -1,4 +1,5 @@
 use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -10,39 +11,52 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 
 #[test]
-fn initial_circular_authority_rule_should_not_be_allowed() {
+fn initial_cyclic_authority_should_not_be_allowed() {
+    let test_vectors = vec![
+        {
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority(
+                "deposit_funds",
+                rule!(require("deposit_funds")),
+                rule!(deny_all),
+            );
+            authority_rules
+        },
+        {
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority(
+                "deposit_funds",
+                rule!(deny_all),
+                rule!(require("deposit_funds")),
+            );
+            authority_rules
+        },
+        {
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority("deposit_funds", rule!(require("test")), rule!(deny_all));
+            authority_rules.set_authority("test", rule!(require("deposit_funds")), rule!(deny_all));
+            authority_rules
+        },
+    ];
+
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_authority(
-        "deposit_funds",
-        rule!(require("deposit_funds")),
-        rule!(deny_all),
-    );
+    for authority_rules in test_vectors {
+        let mut test_runner = TestRunner::builder().build();
 
-    // Act
-    let receipt = MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
+        // Act
+        let receipt =
+            MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
 
-    // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
-}
-
-#[test]
-fn initial_circular_authority_mutability_should_not_be_allowed() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_authority(
-        "deposit_funds",
-        rule!(deny_all),
-        rule!(require("deposit_funds")),
-    );
-
-    // Act
-    let receipt = MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
-
-    // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+        // Assert
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                &RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::CyclicAuthorityDetected(..)
+                ))
+            )
+        });
+    }
 }
 
 #[test]
@@ -56,7 +70,36 @@ fn setting_circular_authority_rule_should_fail() {
     let receipt = test_runner.set_authority_rule("deposit_funds", rule!(require("deposit_funds")));
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+                ..
+            )))
+        )
+    });
+}
+
+#[test]
+fn setting_circular_authority_rule_should_fail_2() {
+    // Arrange
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority("deposit_funds", rule!(allow_all), rule!(require("test")));
+    authority_rules.set_authority("test", rule!(allow_all), rule!(allow_all));
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
+
+    // Act
+    let receipt = test_runner.set_authority_rule("test", rule!(require("deposit_funds")));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+                ..
+            )))
+        )
+    });
 }
 
 #[test]
@@ -71,7 +114,36 @@ fn setting_circular_authority_mutability_should_fail() {
         test_runner.set_authority_mutability("deposit_funds", rule!(require("deposit_funds")));
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+                ..
+            )))
+        )
+    });
+}
+
+#[test]
+fn setting_circular_authority_mutability_should_fail2() {
+    // Arrange
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority("deposit_funds", rule!(allow_all), rule!(require("test")));
+    authority_rules.set_authority("test", rule!(allow_all), rule!(allow_all));
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
+
+    // Act
+    let receipt = test_runner.set_authority_mutability("test", rule!(require("deposit_funds")));
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+                ..
+            )))
+        )
+    });
 }
 
 #[test]
