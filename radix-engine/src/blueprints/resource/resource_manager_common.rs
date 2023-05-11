@@ -40,7 +40,6 @@ fn build_access_rules(
         resman_method_authorities.set_public(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT);
         resman_method_authorities.set_public(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT);
         resman_method_authorities.set_public(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT);
-        resman_method_authorities.set_public(RESOURCE_MANAGER_DROP_PROOF_IDENT);
         resman_method_authorities
     };
 
@@ -136,7 +135,7 @@ fn build_access_rules(
         vault_authority_rules
     };
 
-    // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
+    // Note that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
 

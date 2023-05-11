@@ -10,8 +10,9 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, LockSubstateError, MoveError,
-    ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
+    CreateNodeError, DropNodeError, ListNodeModuleError, LockSubstateError, MoveModuleError,
+    PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesChainError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -36,7 +37,7 @@ pub trait CanBeAbortion {
     fn abortion(&self) -> Option<&AbortReason>;
 }
 
-/// Represents an error which causes a tranasction to be rejected.
+/// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
@@ -130,15 +131,10 @@ pub enum KernelError {
     CallFrameError(CallFrameError),
 
     /// Interpreter
-    InterpreterError(SystemUpstreamError),
     WasmRuntimeError(WasmRuntimeError),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
-
-    // SBOR decoding
-    SborDecodeError(DecodeError),
-    SborEncodeError(EncodeError),
 
     // RENode
     InvalidDirectAccess,
@@ -147,6 +143,7 @@ pub enum KernelError {
     DropNodeFailure(NodeId),
 
     // Actor Constraints
+    InvalidInvokeAccess,
     InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
 }
 
@@ -174,21 +171,31 @@ impl From<CallFrameError> for KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameError {
+    CreateFrameError(CreateFrameError),
+    PassMessageError(PassMessageError),
+
+    CreateNodeError(CreateNodeError),
+    DropNodeError(DropNodeError),
+
+    ListNodeModuleError(ListNodeModuleError),
+    MoveModuleError(MoveModuleError),
+
     LockSubstateError(LockSubstateError),
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
+
     ScanSubstatesError(CallFrameScanSubstateError),
     TakeSubstatesError(CallFrameTakeSortedSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
-    MoveError(MoveError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     InvalidObjectHandle,
+    NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnObject,
@@ -480,8 +487,8 @@ impl From<UnlockSubstateError> for CallFrameError {
     }
 }
 
-impl From<MoveError> for CallFrameError {
-    fn from(value: MoveError) -> Self {
-        Self::MoveError(value)
+impl From<PassMessageError> for CallFrameError {
+    fn from(value: PassMessageError) -> Self {
+        Self::PassMessageError(value)
     }
 }

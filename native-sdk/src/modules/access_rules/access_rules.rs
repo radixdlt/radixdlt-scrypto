@@ -73,8 +73,9 @@ pub trait AccessRulesObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
+        let _rtn = api.call_method_advanced(
             node_id,
+            false,
             module_id,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -100,8 +101,9 @@ pub trait AccessRulesObject {
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_module_method(
+        let _rtn = api.call_method_advanced(
             &node_id,
+            false,
             module_id,
             ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {

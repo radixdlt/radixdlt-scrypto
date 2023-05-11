@@ -17,6 +17,7 @@
         "eddsa",
         "flamegraph",
         "Formattable",
+        "generification",
         "instantiatable",
         "Instrumenter",
         "Invokable",

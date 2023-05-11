@@ -1,4 +1,5 @@
-use super::call_frame::{CallFrame, LockSubstateError, RefType};
+use super::actor::{Actor, MethodActor};
+use super::call_frame::{CallFrame, LockSubstateError, NodeVisibility};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
@@ -7,8 +8,7 @@ use super::kernel_api::{
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -63,11 +63,17 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         for node_id in args.references() {
             if node_id.is_global_virtual() {
                 // For virtual accounts and native packages, create a reference directly
-                kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                kernel
+                    .current_frame
+                    .add_global_reference(GlobalAddress::new_or_panic(node_id.clone().into()));
                 continue;
             }
 
-            if kernel.current_frame.get_node_visibility(node_id).is_some() {
+            if kernel
+                .current_frame
+                .get_node_visibility(node_id)
+                .can_be_invoked(false)
+            {
                 continue;
             }
 
@@ -88,14 +94,18 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     blueprint, global, ..
                 }) => {
                     if global {
-                        kernel.current_frame.add_ref(*node_id, RefType::Normal);
+                        kernel
+                            .current_frame
+                            .add_global_reference(GlobalAddress::new_or_panic(
+                                node_id.clone().into(),
+                            ));
                     } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
-                        kernel
-                            .current_frame
-                            .add_ref(*node_id, RefType::DirectAccess);
+                        kernel.current_frame.add_direct_access_reference(
+                            InternalAddress::new_or_panic(node_id.clone().into()),
+                        );
                     } else {
                         return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
                     }
@@ -129,11 +139,12 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<M::CallFrameData, M::LockData>,
+    current_frame: CallFrame<M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<M::LockData>>,
+
     /// Heap
     heap: Heap,
     /// Store
@@ -153,32 +164,51 @@ where
 {
     fn invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::CallFrameData>>,
+        invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        let mut call_frame_update = invocation.get_update();
-        let actor = invocation.call_frame_data;
-        let args = &invocation.args;
+        // Check actor visibility
+        let can_be_invoked = match &invocation.actor {
+            Actor::Method(MethodActor {
+                node_id,
+                is_direct_access,
+                ..
+            }) => self
+                .current_frame
+                .get_node_visibility(&node_id)
+                .can_be_invoked(*is_direct_access),
+            Actor::Function { blueprint: _, .. } | Actor::VirtualLazyLoad { blueprint: _, .. } => {
+                true
+                // TODO: enable when package dependencies are explicitly declared.
+                // self
+                // .current_frame
+                // .get_node_visibility(blueprint.package_address.as_node_id())
+                // .can_be_invoked(false),
+            }
+            Actor::Root => true,
+        };
+        if !can_be_invoked {
+            return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
+        }
 
         // Before push call frame
-        M::before_push_frame(&actor, &mut call_frame_update, &args, self)?;
+        let mut message = Message::from_indexed_scrypto_value(&invocation.args);
+        let actor = invocation.actor;
+        let args = &invocation.args;
+        M::before_push_frame(&actor, &mut message, &args, self)?;
 
         // Push call frame
         {
             self.id_allocator.push();
 
-            let frame = CallFrame::new_child_from_parent(
-                &mut self.current_frame,
-                actor,
-                call_frame_update.clone(),
-            )
-            .map_err(CallFrameError::MoveError)
-            .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
+                .map_err(CallFrameError::CreateFrameError)
+                .map_err(KernelError::CallFrameError)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
 
         // Execute
-        let (output, update) = {
+        let (output, message) = {
             // Handle execution start
             M::on_execution_start(self)?;
 
@@ -190,14 +220,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-
-            let mut update = CallFrameUpdate {
-                nodes_to_move: output.owned_node_ids().clone(),
-                node_refs_to_copy: output.references().clone(),
-            };
-
-            // Handle execution finish
-            M::on_execution_finish(&mut update, self)?;
+            let mut message = Message::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -205,38 +228,43 @@ where
                 .map_err(CallFrameError::UnlockSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
-            (output, update)
+            // Handle execution finish
+            M::on_execution_finish(&mut message, self)?;
+
+            (output, message)
         };
+
+        // Move
+        {
+            let parent = self.prev_frame_stack.last_mut().unwrap();
+
+            // Move resource
+            CallFrame::pass_message(&mut self.current_frame, parent, message)
+                .map_err(CallFrameError::PassMessageError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+                return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                    node_id,
+                )));
+            }
+        }
 
         // Pop call frame
         {
-            let mut parent = self.prev_frame_stack.pop().unwrap();
+            let parent = self.prev_frame_stack.pop().unwrap();
 
-            // Move resource
-            CallFrame::update_upstream(&mut self.current_frame, &mut parent, update)
-                .map_err(CallFrameError::MoveError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // auto drop
-            {
-                let owned_nodes = self.current_frame.owned_nodes();
-                M::auto_drop(owned_nodes, self)?;
-                // Last check
-                if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                    return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                        node_id,
-                    )));
-                }
-            }
-
-            // Restore previous frame
-            self.current_frame = parent;
+            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
             self.id_allocator.pop()?;
-        }
 
-        // After pop call frame
-        M::after_pop_frame(self)?;
+            M::after_pop_frame(self, dropped_frame.actor())?;
+        }
 
         Ok(output)
     }
@@ -253,10 +281,9 @@ where
 
         let node = self
             .current_frame
-            .remove_node(&mut self.heap, node_id)
-            .map_err(|e| {
-                RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::MoveError(e)))
-            })?;
+            .drop_node(&mut self.heap, node_id)
+            .map_err(CallFrameError::DropNodeError)
+            .map_err(KernelError::CallFrameError)?;
 
         M::after_drop_node(self)?;
 
@@ -289,23 +316,51 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
-        let push_to_store = node_id.is_global();
-
         self.id_allocator.take_node_id(node_id)?;
         self.current_frame
-            .create_node(
-                node_id,
-                node_substates,
-                &mut self.heap,
-                self.store,
-                push_to_store,
-            )
-            .map_err(CallFrameError::UnlockSubstateError)
+            .create_node(node_id, node_substates, &mut self.heap, self.store)
+            .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 
         M::after_create_node(&node_id, self)?;
 
         Ok(())
+    }
+
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+    ) -> Result<(), RuntimeError> {
+        // FIXME: costing!
+
+        self.current_frame
+            .move_module(
+                src_node_id,
+                src_partition_number,
+                dest_node_id,
+                dest_partition_number,
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(CallFrameError::MoveModuleError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
+    }
+
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
+        // FIXME: costing!
+
+        self.current_frame
+            .list_modules(node_id, &mut self.heap)
+            .map_err(CallFrameError::ListNodeModuleError)
+            .map_err(KernelError::CallFrameError)
+            .map_err(RuntimeError::KernelError)
     }
 }
 
@@ -314,27 +369,26 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
-        let info = self.current_frame.get_node_visibility(node_id)?;
-        Some(info)
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+        self.current_frame.get_node_visibility(node_id)
     }
 
     fn kernel_get_current_depth(&self) -> usize {
-        self.current_frame.depth
+        self.current_frame.depth()
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let caller = match self.prev_frame_stack.last() {
-            Some(call_frame) => &call_frame.data,
+            Some(call_frame) => call_frame.actor(),
             None => {
                 // This will only occur on initialization
-                &self.current_frame.data
+                self.current_frame.actor()
             }
         };
         SystemState {
             system: &mut self.callback,
             caller,
-            current: &self.current_frame.data,
+            current: self.current_frame.actor(),
         }
     }
 
@@ -550,9 +604,7 @@ where
                 match &err {
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
-                    LockSubstateError::NodeNotInCallFrame(node_id)
-                        if node_id.is_global_package() =>
-                    {
+                    LockSubstateError::NodeNotVisible(node_id) if node_id.is_global_package() => {
                         let (handle, first_lock_from_db) = self
                             .store
                             .acquire_lock(
@@ -566,7 +618,10 @@ where
                             .map_err(KernelError::CallFrameError)?;
                         self.store.release_lock(handle);
 
-                        self.current_frame.add_ref(*node_id, RefType::Normal);
+                        self.current_frame
+                            .add_global_reference(GlobalAddress::new_or_panic(
+                                node_id.clone().into(),
+                            ));
                         let (lock_handle, _) = self
                             .current_frame
                             .acquire_lock(
@@ -655,7 +710,7 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_write_substate(lock_handle, value.as_slice().len(), self)?;
+        M::on_write_substate(lock_handle, value.len(), self)?;
 
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
@@ -744,7 +799,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -752,9 +807,9 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<M::CallFrameData>>,
+        invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        M::before_invoke(invocation.as_ref(), invocation.payload_size, self)?;
+        M::before_invoke(invocation.as_ref(), self)?;
 
         let rtn = self.invoke(invocation)?;
 

@@ -209,7 +209,7 @@ impl TestRunnerBuilder {
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
         } = match self.custom_genesis {

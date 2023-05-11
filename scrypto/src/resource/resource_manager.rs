@@ -28,8 +28,9 @@ impl ResourceManager {
 
     pub fn set_mintable(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -44,8 +45,9 @@ impl ResourceManager {
 
     pub fn set_burnable(&self, access_rule: AccessRule) -> () {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -68,12 +70,13 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                     name: "withdraw".to_string(),
                     rule: access_rule,
                 })
@@ -84,12 +87,13 @@ impl ResourceManager {
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                     name: "deposit".to_string(),
                     rule: access_rule,
                 })
@@ -100,12 +104,13 @@ impl ResourceManager {
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
         let _rtn = ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                     name: "recall".to_string(),
                     rule: access_rule,
                 })
@@ -116,8 +121,9 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -132,8 +138,9 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -148,8 +155,9 @@ impl ResourceManager {
 
     pub fn lock_mintable(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -164,8 +172,9 @@ impl ResourceManager {
 
     pub fn lock_burnable(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -180,8 +189,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -196,8 +206,9 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&self) {
         ScryptoEnv
-            .call_module_method(
+            .call_method_advanced(
                 self.0.as_node_id(),
+                false,
                 ObjectModuleId::AccessRules,
                 ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -211,12 +222,13 @@ impl ResourceManager {
     }
 
     pub fn lock_withdrawable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                 name: "withdraw".to_string(),
                 mutability: AccessRule::DenyAll,
             })
@@ -225,12 +237,13 @@ impl ResourceManager {
     }
 
     pub fn lock_depositable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                 name: "deposit".to_string(),
                 mutability: AccessRule::DenyAll,
             })
@@ -239,12 +252,13 @@ impl ResourceManager {
     }
 
     pub fn lock_recallable(&self) {
-        let _rtn = ScryptoEnv.call_module_method(
+        let _rtn = ScryptoEnv.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
                 name: "recall".to_string(),
                 mutability: AccessRule::DenyAll,
             })

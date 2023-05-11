@@ -141,6 +141,7 @@ fn call_method(
     mut caller: Caller<'_, HostState>,
     receiver_ptr: u32,
     receiver_len: u32,
+    direct_access: u32,
     module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
@@ -162,7 +163,7 @@ fn call_method(
     runtime.update_wasm_memory_usage(mem)?;
 
     runtime
-        .call_method(receiver, module_id, ident, args)
+        .call_method(receiver, direct_access, module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -420,6 +421,12 @@ fn drop_lock(
     runtime.field_lock_release(handle)
 }
 
+fn get_node_id(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (_memory, runtime) = grab_runtime!(caller);
+
+    runtime.get_node_id().map(|buffer| buffer.0)
+}
+
 fn get_global_address(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
 
@@ -583,6 +590,7 @@ impl WasmiModule {
             |caller: Caller<'_, HostState>,
              receiver_ptr: u32,
              receiver_len: u32,
+             direct_access: u32,
              module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
@@ -593,6 +601,7 @@ impl WasmiModule {
                     caller,
                     receiver_ptr,
                     receiver_len,
+                    direct_access,
                     module_id,
                     ident_ptr,
                     ident_len,
@@ -810,6 +819,13 @@ impl WasmiModule {
             },
         );
 
+        let host_get_node_id = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
+                get_node_id(caller).map_err(|e| e.into())
+            },
+        );
+
         let host_get_global_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Trap> {
@@ -955,6 +971,7 @@ impl WasmiModule {
         linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
         linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
+        linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
             GET_GLOBAL_ADDRESS_FUNCTION_NAME,

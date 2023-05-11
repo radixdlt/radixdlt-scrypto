@@ -2,9 +2,8 @@ use super::Authorization;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::call_frame::RefType;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
+use crate::kernel::call_frame::Message;
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -44,6 +43,9 @@ pub struct Unauthorized {
 pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
+    /// Invariants:
+    /// - An auth zone is created for every non-frame.
+    /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
 
@@ -135,19 +137,14 @@ impl AuthModule {
                 let info = api.get_object_info(&node_id)?;
 
                 if let Some(parent) = info.outer_object {
-                    let (ref_type, _) =
-                        api.kernel_get_node_info(&node_id)
-                            .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::VisibilityError(node_id),
-                            )))?;
                     let method_key = MethodKey::new(module_id, ident);
                     Self::check_authorization_against_access_rules(
                         actor.fn_identifier(),
                         auth_zone_id,
                         acting_location,
-                        ref_type,
+                        actor.is_direct_access,
                         parent.as_node_id(),
-                        ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
+                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
@@ -158,7 +155,7 @@ impl AuthModule {
                         actor.fn_identifier(),
                         auth_zone_id,
                         acting_location,
-                        RefType::Normal,
+                        actor.is_direct_access,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
@@ -178,7 +175,7 @@ impl AuthModule {
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        ref_type: RefType,
+        is_direct_access: bool,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -194,11 +191,9 @@ impl AuthModule {
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-        let is_direct_access = matches!(ref_type, RefType::DirectAccess);
-
         let access_rules_config = match object_key {
             ObjectKey::SELF => &access_rules.access_rules,
-            ObjectKey::ChildBlueprint(blueprint_name) => {
+            ObjectKey::InnerBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .inner_blueprint_access_rules
                     .get(&blueprint_name)
@@ -276,11 +271,8 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn last_auth_zone(&self) -> NodeId {
-        self.auth_zone_stack
-            .last()
-            .cloned()
-            .expect("Missing auth zone")
+    pub fn last_auth_zone(&self) -> Option<NodeId> {
+        self.auth_zone_stack.last().cloned()
     }
 
     fn check_authorization<V, Y>(
@@ -292,77 +284,65 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+            let mut system = SystemService::new(api);
 
-        let mut system = SystemService::new(api);
+            // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+            match &callee {
+                Actor::Method(actor) => {
+                    Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
+                }
+                Actor::Function { blueprint, ident } => {
+                    let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
+                    let acting_location = ActingLocation::AtBarrier;
 
-        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        match &callee {
-            Actor::Method(actor) => {
-                Self::check_method_authorization(&auth_zone_id, actor, &args, &mut system)?;
-            }
-            Actor::Function { blueprint, ident } => {
-                let access_rule = Self::function_auth(blueprint, ident.as_str(), &mut system)?;
-                let acting_location = ActingLocation::AtBarrier;
-
-                // Verify authorization
-                let auth_result = Authorization::check_authorization_against_access_rule(
-                    acting_location,
-                    auth_zone_id,
-                    &AccessRulesConfig::new(),
-                    &access_rule,
-                    &mut system,
-                )?;
-                match auth_result {
-                    AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(access_rule) => {
-                        return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                            AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_authorizations: vec![access_rule],
-                                fn_identifier: callee.fn_identifier(),
-                            })),
-                        )));
+                    // Verify authorization
+                    let auth_result = Authorization::check_authorization_against_access_rule(
+                        acting_location,
+                        auth_zone_id,
+                        &AccessRulesConfig::new(),
+                        &access_rule,
+                        &mut system,
+                    )?;
+                    match auth_result {
+                        AuthorizationCheckResult::Authorized => {}
+                        AuthorizationCheckResult::Failed(access_rule) => {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::Unauthorized(Box::new(Unauthorized {
+                                    failed_authorizations: vec![access_rule],
+                                    fn_identifier: callee.fn_identifier(),
+                                })),
+                            )));
+                        }
                     }
                 }
-            }
-            Actor::VirtualLazyLoad { .. } | Actor::Root => {}
-        };
+                Actor::VirtualLazyLoad { .. } | Actor::Root => {}
+            };
+        } else {
+            // Bypass auth check for ROOT frame
+        }
 
         Ok(())
     }
-}
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Create sentinel node
-        Self::on_execution_start(api)
-    }
-
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Destroy sentinel node
-        Self::on_execution_finish(api, &CallFrameUpdate::empty())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+    /// Create a new auth zone and move it to next frame.
+    ///
+    /// Must be done before a new frame is created, as
+    /// borrowed references must be wrapped and passed.
+    ///
+    fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut Y,
         callee: &Actor,
-        _call_frame_update: &mut CallFrameUpdate,
-        args: &IndexedScryptoValue,
+        message: &mut Message,
     ) -> Result<(), RuntimeError> {
-        Self::check_authorization(callee, args, api)
-    }
-
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let actor = api.kernel_get_system_state().current;
-
         // Add Global Object and Package Actor Auth
-        let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
+        let virtual_non_fungibles_non_extending = callee.get_virtual_non_extending_proofs();
         let virtual_non_fungibles_non_extending_barrier =
-            actor.get_virtual_non_extending_barrier_proofs();
+            callee.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
-        let is_barrier = actor.is_barrier();
-        let is_transaction_processor = actor.is_transaction_processor();
+        let is_barrier = callee.is_barrier();
+        let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_system().modules.auth;
             (
@@ -392,6 +372,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Create node
         let auth_zone_node_id =
             api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
@@ -407,6 +388,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             ),
         )?;
 
+        // Move auth zone (containing borrowed reference)!
+        message.add_move_node(auth_zone_node_id);
+
+        // Update auth zone stack
         api.kernel_get_system()
             .modules
             .auth
@@ -415,23 +400,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
         Ok(())
     }
+}
 
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _update: &CallFrameUpdate,
+        callee: &Actor,
+        message: &mut Message,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let auth_zone = api
-            .kernel_get_system()
-            .modules
-            .auth
-            .auth_zone_stack
-            .pop()
-            .expect("Auth zone stack is broken");
+        AuthModule::check_authorization(callee, args, api)
+            .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
+    }
 
-        api.kernel_drop_node(&auth_zone)?;
-
-        // Proofs in auth zone will be re-owned by the frame and auto dropped.
-
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
+        // update internal state
+        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }

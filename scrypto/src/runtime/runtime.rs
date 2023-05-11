@@ -43,6 +43,10 @@ impl Runtime {
         ScryptoEnv.actor_get_blueprint().unwrap()
     }
 
+    pub fn node_id() -> NodeId {
+        ScryptoEnv.actor_get_node_id().unwrap()
+    }
+
     pub fn global_address() -> ComponentAddress {
         let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
         ComponentAddress::new_or_panic(address.into())

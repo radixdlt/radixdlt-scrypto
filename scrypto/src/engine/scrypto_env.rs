@@ -101,18 +101,10 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         todo!("Unsupported")
     }
 
-    fn call_method(
+    fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, ClientApiError> {
-        self.call_module_method(receiver, ObjectModuleId::Main, method_name, args)
-    }
-
-    fn call_module_method(
-        &mut self,
-        receiver: &NodeId,
+        direct_access: bool,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -121,6 +113,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
             call_method(
                 receiver.as_ref().as_ptr(),
                 receiver.as_ref().len(),
+                if direct_access { 1 } else { 0 },
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
@@ -140,10 +133,11 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn drop_object(&mut self, _node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
-        // TODO: Remove or implement drop_object interface from scrypto
-        //unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
-        todo!("Unsupported")
+    fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, ClientApiError> {
+        unsafe { drop_object(node_id.as_ref().as_ptr(), node_id.as_ref().len()) };
+
+        // TODO: remove return
+        Ok(Vec::new())
     }
 }
 
@@ -296,6 +290,12 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
 
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         todo!()
+    }
+
+    fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
+        let node_id = copy_buffer(unsafe { get_node_id() });
+
+        scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
     }
 
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {

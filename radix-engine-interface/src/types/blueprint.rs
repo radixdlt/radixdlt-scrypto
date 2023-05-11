@@ -32,7 +32,7 @@ impl Blueprint {
         }
     }
 
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.package_address.as_ref().len() + self.blueprint_name.len()
     }
 }

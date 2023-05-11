@@ -31,15 +31,15 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
         ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
         ResourceAuth::Withdraw => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "withdraw",
         ),
         ResourceAuth::Deposit => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "deposit",
         ),
         ResourceAuth::Recall => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "recall",
         ),
     };
@@ -68,15 +68,15 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
         ResourceAuth::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
         ResourceAuth::Withdraw => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "withdraw",
         ),
         ResourceAuth::Deposit => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "deposit",
         ),
         ResourceAuth::Recall => (
-            ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             "recall",
         ),
     };

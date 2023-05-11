@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::{
     errors::ModuleError,
     errors::RuntimeError,
-    kernel::{call_frame::CallFrameUpdate, kernel_api::KernelApi},
+    kernel::{call_frame::Message, kernel_api::KernelApi},
     types::Vec,
 };
 
@@ -223,11 +223,10 @@ impl TransactionLimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _identifier: &KernelInvocation<Actor>,
-        input_size: usize,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
-
+        let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
             tlimit.invoke_payload_max_size = input_size;
         }
@@ -246,7 +245,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut CallFrameUpdate,
+        _down_message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // push new empty wasm memory value refencing current call frame to internal stack
@@ -258,7 +257,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         Ok(())
     }
 
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
         // pop from internal stack
         api.kernel_get_system()
             .modules

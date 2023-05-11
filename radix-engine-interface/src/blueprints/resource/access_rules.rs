@@ -27,12 +27,12 @@ impl FnKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ObjectKey {
     SELF,
-    ChildBlueprint(String),
+    InnerBlueprint(String),
 }
 
 impl ObjectKey {
-    pub fn child_blueprint(name: &str) -> Self {
-        ObjectKey::ChildBlueprint(name.to_string())
+    pub fn inner_blueprint(name: &str) -> Self {
+        ObjectKey::InnerBlueprint(name.to_string())
     }
 }
 

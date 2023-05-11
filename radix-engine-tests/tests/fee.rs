@@ -2,6 +2,7 @@ use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::call_frame::LockSubstateError;
+use radix_engine::kernel::heap::HeapLockSubstateError;
 use radix_engine::track::interface::AcquireLockError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -151,7 +152,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::LockSubstateError(
-                LockSubstateError::LockUnmodifiedBaseOnHeapNode,
+                LockSubstateError::HeapError(HeapLockSubstateError::LockUnmodifiedBaseOnHeapNode),
             )),
         )) => true,
         _ => false,

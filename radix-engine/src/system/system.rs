@@ -7,7 +7,7 @@ use crate::errors::{
 };
 use crate::errors::{SystemError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
-use crate::kernel::call_frame::RefType;
+use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::AccessRulesConfig;
@@ -190,7 +190,7 @@ where
 
         let outer_object = if let Some(parent) = &expected_blueprint_parent {
             match instance_context {
-                Some(context) if context.instance_blueprint.eq(parent) => Some(context.instance),
+                Some(context) if context.outer_blueprint.eq(parent) => Some(context.outer_object),
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -396,7 +396,7 @@ where
                                 let value = IndexedScryptoValue::from_typed(&Some(value));
 
                                 if !blueprint_kv_schema.can_own {
-                                    if !value.owned_node_ids().is_empty() {
+                                    if !value.owned_nodes().is_empty() {
                                         return Err(RuntimeError::SystemError(
                                             SystemError::InvalidKeyValueStoreOwnership,
                                         ));
@@ -602,7 +602,7 @@ where
     fn globalize_with_address_internal(
         &mut self,
         mut modules: BTreeMap<ObjectModuleId, NodeId>,
-        address: GlobalAddress,
+        global_address: GlobalAddress,
     ) -> Result<(), RuntimeError> {
         // Check module configuration
         let module_ids = modules
@@ -621,7 +621,7 @@ where
             )));
         }
 
-        // Drop the node
+        // Read the type info
         let node_id = modules
             .remove(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
@@ -634,17 +634,21 @@ where
             .events
             .add_replacement(
                 (node_id, ObjectModuleId::Main),
-                (*address.as_node_id(), ObjectModuleId::Main),
+                (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-
-        // Update the `global` flag of the type info substate.
-        let type_info_module = node_substates
-            .get_mut(&TYPE_INFO_FIELD_PARTITION)
-            .unwrap()
-            .remove(&TypeInfoField::TypeInfo.into())
+        let lock_handle = self.api.kernel_lock_substate(
+            &node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+            LockFlags::read_only(),
+            SystemLockData::Default,
+        )?;
+        let mut type_info: TypeInfoSubstate = self
+            .api
+            .kernel_read_substate(lock_handle)?
+            .as_typed()
             .unwrap();
-        let mut type_info: TypeInfoSubstate = type_info_module.as_typed().unwrap();
+        self.api.kernel_drop_lock(lock_handle)?;
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
                 *global = true
@@ -655,15 +659,29 @@ where
                 )))
             }
         };
-        node_substates
-            .get_mut(&TYPE_INFO_FIELD_PARTITION)
-            .unwrap()
-            .insert(
-                TypeInfoField::TypeInfo.into(),
-                IndexedScryptoValue::from_typed(&type_info),
-            );
 
-        //  Drop the module nodes and move the substates to the designated module ID.
+        // Create a global node
+        self.kernel_create_node(
+            global_address.into(),
+            btreemap!(
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(type_info).to_substates()
+            ),
+        )?;
+
+        // Move self modules to the newly created global node, and drop
+        let mut partition_numbers = self.kernel_list_modules(&node_id)?;
+        partition_numbers.remove(&TYPE_INFO_FIELD_PARTITION);
+        for partition_number in partition_numbers {
+            self.kernel_move_module(
+                &node_id,
+                partition_number,
+                global_address.as_node_id(),
+                partition_number,
+            )?;
+        }
+        self.kernel_drop_node(&node_id)?;
+
+        // Move other modules, and drop
         for (module_id, node_id) in modules {
             match module_id {
                 ObjectModuleId::Main => panic!("Should have been removed already"),
@@ -688,18 +706,20 @@ where
                         .events
                         .add_replacement(
                             (node_id, ObjectModuleId::Main),
-                            (*address.as_node_id(), module_id),
+                            (*global_address.as_node_id(), module_id),
                         );
 
-                    let mut cur_node_substates = self.api.kernel_drop_node(&node_id)?;
-                    let self_substates = cur_node_substates.remove(&OBJECT_BASE_PARTITION).unwrap();
-                    node_substates.insert(module_id.base_partition_num(), self_substates);
+                    // Move and drop
+                    self.kernel_move_module(
+                        &node_id,
+                        OBJECT_BASE_PARTITION,
+                        global_address.as_node_id(),
+                        module_id.base_partition_num(),
+                    )?;
+                    self.kernel_drop_node(&node_id)?;
                 }
             }
         }
-
-        self.api
-            .kernel_create_node(address.into(), node_substates)?;
 
         Ok(())
     }
@@ -857,8 +877,8 @@ where
         self.new_object_internal(
             &blueprint,
             Some(InstanceContext {
-                instance: address,
-                instance_blueprint: actor_blueprint.blueprint_name,
+                outer_object: address,
+                outer_blueprint: actor_blueprint.blueprint_name,
             }),
             None,
             inner_object_fields,
@@ -867,19 +887,10 @@ where
     }
 
     #[trace_resources]
-    fn call_method(
+    fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        self.call_module_method(receiver, ObjectModuleId::Main, method_name, args)
-    }
-
-    #[trace_resources]
-    fn call_module_method(
-        &mut self,
-        receiver: &NodeId,
+        direct_access: bool,
         object_module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
@@ -896,18 +907,23 @@ where
                     // TODO: Cleanup, this is a rather crude way of trying to figure out
                     // TODO: whether the node reference is a child of the current parent
                     // TODO: this should be cleaned up once call_frame is refactored
-                    let (visibility, on_heap) = self.api.kernel_get_node_info(receiver).unwrap();
-                    match (visibility, on_heap) {
-                        (RefType::Normal, false) => {
-                            let actor = self.api.kernel_get_system_state().current;
-                            match actor {
-                                Actor::Method(MethodActor { global_address, .. }) => {
-                                    global_address.clone()
-                                }
-                                _ => None,
+                    let node_visibility = self.api.kernel_get_node_visibility(receiver);
+                    // FIXME I believe this logic is incorrect/inconsistent with design, it's
+                    // to duplicate previous logic.
+                    if node_visibility.0.iter().any(|v| v.is_normal())
+                        && !node_visibility
+                            .0
+                            .iter()
+                            .any(|v| matches!(v, Visibility::FrameOwned))
+                    {
+                        match self.api.kernel_get_system_state().current {
+                            Actor::Method(MethodActor { global_address, .. }) => {
+                                global_address.clone()
                             }
+                            _ => None,
                         }
-                        _ => None,
+                    } else {
+                        None
                     }
                 };
 
@@ -927,15 +943,14 @@ where
 
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
-        let payload_size = args.len() + identifier.2.len();
 
         // TODO: Can we load this lazily when needed?
         let instance_context = if object_info.global {
             match global_address {
                 None => None,
                 Some(address) => Some(InstanceContext {
-                    instance: address,
-                    instance_blueprint: object_info.blueprint.blueprint_name.clone(),
+                    outer_object: address,
+                    outer_blueprint: object_info.blueprint.blueprint_name.clone(),
                 }),
             }
         } else {
@@ -945,25 +960,24 @@ where
                     // TODO: do this recursively until global?
                     let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
                     Some(InstanceContext {
-                        instance: blueprint_parent.clone(),
-                        instance_blueprint: parent_info.blueprint.blueprint_name.clone(),
+                        outer_object: blueprint_parent.clone(),
+                        outer_blueprint: parent_info.blueprint.blueprint_name.clone(),
                     })
                 }
             }
         };
 
         let invocation = KernelInvocation {
+            actor: Actor::method(
+                global_address,
+                identifier,
+                object_info,
+                instance_context,
+                direct_access,
+            ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            additional_node_ref_to_copy: Some(receiver.clone()),
-            call_frame_data: Actor::method(
-                global_address,
-                identifier.clone(),
-                object_info,
-                instance_context,
-            ),
-            payload_size,
         };
 
         self.api
@@ -987,21 +1001,34 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        if let Some(blueprint_parent) = info.outer_object {
-            let actor = self.api.kernel_get_system_state().current;
-            let instance_context = actor.instance_context();
-            match instance_context {
-                Some(instance_context) if instance_context.instance.eq(&blueprint_parent) => {}
-                _ => {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
-                            node_id: node_id.clone(),
-                            package_address: info.blueprint.package_address,
-                            blueprint_name: info.blueprint.blueprint_name,
-                        })),
-                    ));
+        let actor = self.api.kernel_get_system_state().current;
+        let mut is_drop_allowed = false;
+
+        // TODO: what's the right model, trading off between flexibility and security?
+
+        // If the actor is the object's outer object
+        if let Some(outer_object) = info.outer_object {
+            if let Some(instance_context) = actor.instance_context() {
+                if instance_context.outer_object.eq(&outer_object) {
+                    is_drop_allowed = true;
                 }
             }
+        }
+        // If the actor is a function within the same blueprint
+        if let Actor::Function { blueprint, .. } = actor {
+            if blueprint.eq(&info.blueprint) {
+                is_drop_allowed = true;
+            }
+        }
+
+        if !is_drop_allowed {
+            return Err(RuntimeError::KernelError(
+                KernelError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+                    node_id: node_id.clone(),
+                    package_address: info.blueprint.package_address,
+                    blueprint_name: info.blueprint.blueprint_name,
+                })),
+            ));
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
@@ -1063,7 +1090,7 @@ where
                     .expect("Should be valid due to payload check");
 
                 if !can_own {
-                    let own = substate.owned_node_ids();
+                    let own = substate.owned_nodes();
                     if !own.is_empty() {
                         return Err(RuntimeError::SystemError(
                             SystemError::InvalidKeyValueStoreOwnership,
@@ -1219,7 +1246,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        if !value.owned_node_ids().is_empty() {
+        if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
                 SystemError::CannotStoreOwnedInIterable,
             ));
@@ -1310,7 +1337,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        if !value.owned_node_ids().is_empty() {
+        if !value.owned_nodes().is_empty() {
             return Err(RuntimeError::SystemError(
                 SystemError::CannotStoreOwnedInIterable,
             ));
@@ -1387,15 +1414,12 @@ where
             Blueprint::new(&package_address, blueprint_name),
             function_name.to_string(),
         );
-        let payload_size = args.len() + identifier.size();
 
         let invocation = KernelInvocation {
-            call_frame_data: Actor::function(identifier.0, identifier.1),
-            additional_node_ref_to_copy: None,
+            actor: Actor::function(identifier.0, identifier.1),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
-            payload_size,
         };
 
         self.api
@@ -1508,6 +1532,14 @@ where
     }
 
     #[trace_resources]
+    fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
+        let actor = self.api.kernel_get_system_state().current;
+        match actor {
+            Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
+            _ => Err(RuntimeError::SystemError(SystemError::NodeIdNotExist)),
+        }
+    }
+    #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         match actor {
@@ -1551,7 +1583,7 @@ where
                 .into_node_id(),
         };
 
-        self.call_module_method(&node_id, module_id, method_name, args)
+        self.call_method_advanced(&node_id, false, module_id, method_name, args)
     }
 }
 
@@ -1629,7 +1661,13 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        let auth_zone_id = self
+            .api
+            .kernel_get_system()
+            .modules
+            .auth
+            .last_auth_zone()
+            .expect("Auth zone missing");
 
         Ok(auth_zone_id.into())
     }
@@ -1638,8 +1676,14 @@ where
     fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
-        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let auth_zone_id = self.api.kernel_get_system().modules.auth.last_auth_zone();
+        // Fetch the tip auth zone
+        let auth_zone_id = self
+            .api
+            .kernel_get_system()
+            .modules
+            .auth
+            .last_auth_zone()
+            .expect("Missing auth zone");
 
         // TODO: Use real access rules of this method/function
         let config = AccessRulesConfig::new();
@@ -1862,6 +1906,28 @@ where
     ) -> Result<(), RuntimeError> {
         self.api.kernel_create_node(node_id, node_substates)
     }
+
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_move_module(
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+        )
+    }
+
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError> {
+        self.api.kernel_list_modules(node_id)
+    }
 }
 
 impl<'a, Y, V> KernelSubstateApi<SystemLockData> for SystemService<'a, Y, V>
@@ -1979,8 +2045,8 @@ where
         self.api.kernel_get_current_depth()
     }
 
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)> {
-        self.api.kernel_get_node_info(node_id)
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+        self.api.kernel_get_node_visibility(node_id)
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {

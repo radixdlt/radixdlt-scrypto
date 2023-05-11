@@ -27,7 +27,7 @@ impl FunctionIdentifier {
     }
 
     pub fn size(&self) -> usize {
-        self.0.size() + self.1.len()
+        self.0.len() + self.1.len()
     }
 }
 

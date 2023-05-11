@@ -400,8 +400,10 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::RecallResource { vault_id, amount } => {
-                    let rtn = api.call_method(
+                    let rtn = api.call_method_advanced(
                         vault_id.as_node_id(),
+                        true,
+                        ObjectModuleId::Main,
                         VAULT_RECALL_IDENT,
                         scrypto_encode(&VaultRecallInput { amount }).unwrap(),
                     )?;
@@ -418,8 +420,9 @@ impl TransactionProcessorBlueprint {
                     value,
                 } => {
                     let receiver = entity_address.into();
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         &receiver,
+                        false,
                         ObjectModuleId::Metadata,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput {
@@ -443,8 +446,9 @@ impl TransactionProcessorBlueprint {
                     key,
                 } => {
                     let receiver = entity_address.into();
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         &receiver,
+                        false,
                         ObjectModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
@@ -463,8 +467,9 @@ impl TransactionProcessorBlueprint {
                     package_address,
                     royalty_config,
                 } => {
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         package_address.as_node_id(),
+                        false,
                         ObjectModuleId::Main,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
@@ -486,8 +491,9 @@ impl TransactionProcessorBlueprint {
                     component_address,
                     royalty_config,
                 } => {
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         component_address.as_node_id(),
+                        false,
                         ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&ComponentSetRoyaltyConfigInput {
@@ -506,8 +512,9 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimPackageRoyalty { package_address } => {
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         package_address.as_node_id(),
+                        false,
                         ObjectModuleId::Main,
                         PACKAGE_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
@@ -523,8 +530,9 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
                 Instruction::ClaimComponentRoyalty { component_address } => {
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         component_address.as_node_id(),
+                        false,
                         ObjectModuleId::Royalty,
                         COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
                         scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
@@ -546,8 +554,9 @@ impl TransactionProcessorBlueprint {
                     rule,
                 } => {
                     let receiver = entity_address.into();
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         &receiver,
+                        false,
                         ObjectModuleId::AccessRules,
                         ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
@@ -574,8 +583,9 @@ impl TransactionProcessorBlueprint {
                     mutability,
                 } => {
                     let receiver = entity_address.into();
-                    let result = api.call_module_method(
+                    let result = api.call_method_advanced(
                         &receiver,
+                        false,
                         ObjectModuleId::AccessRules,
                         ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
                         scrypto_encode(&AccessRulesSetGroupMutabilityInput {
@@ -710,7 +720,7 @@ impl<'blob> TransactionProcessor<'blob> {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for owned_node in value.owned_node_ids() {
+        for owned_node in value.owned_nodes() {
             let info = api.get_object_info(owned_node)?;
             match (
                 info.blueprint.package_address,

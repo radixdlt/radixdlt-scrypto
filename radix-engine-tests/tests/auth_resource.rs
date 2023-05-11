@@ -38,15 +38,15 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Burn => (ObjectKey::SELF, "burn"),
             Action::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
             Action::Withdraw => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                 "withdraw",
             ),
             Action::Deposit => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                 "deposit",
             ),
             Action::Recall => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                 "recall",
             ),
         };

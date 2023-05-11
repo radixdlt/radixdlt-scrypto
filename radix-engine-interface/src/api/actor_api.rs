@@ -17,6 +17,8 @@ pub trait ClientActorApi<E: Debug> {
     // TODO: Remove
     fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
 
+    fn actor_get_node_id(&mut self) -> Result<NodeId, E>;
+
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
     fn actor_get_blueprint(&mut self) -> Result<Blueprint, E>;

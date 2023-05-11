@@ -95,6 +95,7 @@ extern "C" {
     pub fn call_method(
         receiver_ptr: *const u8,
         receive_len: usize,
+        direct_access: u32,
         module_id: u32,
         ident_ptr: *const u8,
         ident_len: usize,
@@ -149,6 +150,8 @@ extern "C" {
     //===============
     // System API
     //===============
+
+    pub fn get_node_id() -> Buffer;
 
     pub fn get_global_address() -> Buffer;
 
@@ -274,6 +277,7 @@ pub unsafe fn kv_store_remove_entry(
 pub unsafe fn call_method(
     _receiver_ptr: *const u8,
     _receive_len: usize,
+    _direct_access: u32,
     _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,
@@ -322,6 +326,11 @@ pub unsafe fn field_lock_release(_handle: u32) {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_global_address() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_node_id() -> Buffer {
     unreachable!()
 }
 
