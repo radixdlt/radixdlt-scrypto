@@ -4,7 +4,8 @@
 set -e
 set -u
 
-SUMMARY_FILE=crash_summary.txt
+CRASH_INVENTORY_FILE=crash_inventory.txt
+CRASH_SUMMARY=crash_summary.txt
 ARTIFACT_NAME=fuzz_transaction.tgz
 INSPECT_TIMEOUT=20000
 url_or_dir=$1
@@ -63,7 +64,7 @@ function get_gh_artifacs() {
     echo "Downloading $ARTIFACT_NAME"
     gh run download $gh_run_id -n $ARTIFACT_NAME -D $work_dir
 
-    tar xf $work_dir/$ARTIFACT_NAME -C $work_dir
+    tar xf $work_dir/$ARTIFACT_NAME -C $work_dir || true
     rm $work_dir/$ARTIFACT_NAME
 }
 
@@ -86,7 +87,7 @@ function inspect_crashes() {
     files=$(find ${afl_dir}/*/* -type f ! -path */queue/* -name "id*")
 
     if [ "$gh_run_id" != "" ] ; then
-        show_gh_summary . > $SUMMARY_FILE
+        show_gh_summary . > $CRASH_INVENTORY_FILE
     fi
 
     if [ "$files" != "" ] ; then
@@ -111,7 +112,7 @@ function inspect_crashes() {
             now=$(date +%s)
             elapsed=$(( now - started ))
             if [ $elapsed -gt $inspect_timeout ] ; then
-                echo "Inspection timeout $inspect_timeout exceeded - interrupt" >> $SUMMARY_FILE
+                echo "Inspection timeout $inspect_timeout exceeded - interrupt" >> $CRASH_INVENTORY_FILE
                 break
             fi
 
@@ -131,7 +132,7 @@ function inspect_crashes() {
             echo "file    : $f" >> $fname
         done
 
-        cat <<EOF >> $SUMMARY_FILE
+        cat <<EOF >> $CRASH_INVENTORY_FILE
 Crash/hang info
 command : radixdlt-scrypto/fuzz-tests/target/release/transaction <file>
 EOF
@@ -141,26 +142,30 @@ EOF
             cnt=$(grep ^file $f | awk 'END{print NR}')
             echo "count   : $cnt"
             echo "list    : $f"
-        done >> $SUMMARY_FILE
+        done >> $CRASH_INVENTORY_FILE
         rm -f output.log
     else
-        echo "No crashes found" >> $SUMMARY_FILE
+        echo "No crashes found" >> $CRASH_INVENTORY_FILE
     fi
 
     popd > /dev/null
 
+    ./group_crashes.sh $work_dir/$CRASH_INVENTORY_FILE | tee $work_dir/$CRASH_SUMMARY
+
 cat <<EOF
 
 ## Fuzzing crash summary
-$(cat $work_dir/$SUMMARY_FILE)
+$(cat $work_dir/$CRASH_INVENTORY_FILE)
 
 ## Processing info
-work dir: $work_dir
-summary : $work_dir/$SUMMARY_FILE
+work dir  : $work_dir
+inventory : $work_dir/$CRASH_INVENTORY_FILE
+summary   : $work_dir/$CRASH_SUMMARY
 EOF
     # copy crash summary to afl output dir, so it is packed to Github run artifact if running on Github
     if [ "$gh_run_id" = "" ] ; then
-        cp $work_dir/$SUMMARY_FILE $(dirname $afl_dir)
+        cp $work_dir/$CRASH_INVENTORY_FILE $(dirname $afl_dir)
+        cp $work_dir/$CRASH_SUMMARY $(dirname $afl_dir)
     fi
 }
 
