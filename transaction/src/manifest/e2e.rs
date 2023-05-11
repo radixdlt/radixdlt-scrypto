@@ -100,22 +100,34 @@ TAKE_FROM_WORKTOP
 CREATE_PROOF_FROM_BUCKET
     Bucket("bucket1")
     Proof("proof1");
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+    Bucket("bucket1")
+    Decimal("1")
+    Proof("proof2");
+CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES
+    Bucket("bucket1")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Proof("proof3");
+CREATE_PROOF_FROM_BUCKET_OF_ALL
+    Bucket("bucket1")
+    Proof("proof4");
 CLONE_PROOF
     Proof("proof1")
-    Proof("proof2");
+    Proof("proof5");
 DROP_PROOF
     Proof("proof1");
 DROP_PROOF
-    Proof("proof2");
+    Proof("proof5");
+CLEAR_AUTH_ZONE;
 CALL_METHOD
     Address("${account_address}")
     "create_proof_of_amount"
     Address("${resource_address}")
     Decimal("5");
 POP_FROM_AUTH_ZONE
-    Proof("proof3");
+    Proof("proof6");
 DROP_PROOF
-    Proof("proof3");
+    Proof("proof6");
 CALL_METHOD
     Address("${account_address}")
     "create_proof_of_amount"
@@ -123,18 +135,18 @@ CALL_METHOD
     Decimal("5");
 CREATE_PROOF_FROM_AUTH_ZONE
     Address("${resource_address}")
-    Proof("proof4");
+    Proof("proof7");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
     Decimal("1")
     Address("${resource_address}")
-    Proof("proof5");
+    Proof("proof8");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
     Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
     Address("${non_fungible_resource_address}")
-    Proof("proof6");
+    Proof("proof9");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${non_fungible_resource_address}")
-    Proof("proof7");
+    Proof("proof10");
 CLEAR_AUTH_ZONE;
 CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;

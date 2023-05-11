@@ -319,6 +319,66 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+
+        Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT\n    Bucket({})\n    Decimal(\"{}\")\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)), 
+                amount,
+                name
+            )?;
+        }
+        Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES\n    Bucket({})\n    Array<NonFungibleLocalId>({})\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+                ids.iter()
+                .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
+                .collect::<Vec<String>>()
+                .join(", "), 
+                name
+            )?;
+        }
+        Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_ALL\n    Bucket({})\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+                name
+            )?;
+        }
         Instruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator

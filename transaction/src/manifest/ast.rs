@@ -74,6 +74,23 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    CreateProofFromBucketOfAmount {
+        bucket: Value,
+        amount: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfNonFungibles {
+        bucket: Value,
+        ids: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAll {
+        bucket: Value,
+        new_proof: Value,
+    },
+
     CloneProof {
         proof: Value,
         new_proof: Value,

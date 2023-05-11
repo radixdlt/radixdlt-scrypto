@@ -261,6 +261,21 @@ impl NotarizedTransactionValidator {
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, .. } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id, .. } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 Instruction::CloneProof { proof_id } => {
                     id_validator
                         .clone_proof(proof_id)

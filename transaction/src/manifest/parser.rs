@@ -135,6 +135,24 @@ impl Parser {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
+            TokenKind::CreateProofFromBucketOfAmount => {
+                Instruction::CreateProofFromBucketOfAmount {
+                    bucket: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfNonFungibles => {
+                Instruction::CreateProofFromBucketOfNonFungibles {
+                    bucket: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfAll => Instruction::CreateProofFromBucketOfAll {
+                bucket: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
             TokenKind::CloneProof => Instruction::CloneProof {
                 proof: self.parse_value()?,
                 new_proof: self.parse_value()?,

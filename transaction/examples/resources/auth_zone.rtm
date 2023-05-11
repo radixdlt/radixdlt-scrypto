@@ -7,9 +7,13 @@ CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_add
 # Create a proof from bucket, clone it and drop both
 TAKE_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
 CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd") Decimal("1") Proof("proof1a");
+CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES Bucket("some_xrd") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Proof("proof1b");
+CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1c");
 CLONE_PROOF Proof("proof1") Proof("proof2");
 DROP_PROOF Proof("proof1");
 DROP_PROOF Proof("proof2");
+CLEAR_AUTH_ZONE;
 
 # Create a proof from account and drop it
 CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");

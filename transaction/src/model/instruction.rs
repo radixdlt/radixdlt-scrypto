@@ -87,6 +87,17 @@ pub enum Instruction {
     CreateProofFromBucket {
         bucket_id: ManifestBucket,
     },
+    CreateProofFromBucketOfAmount {
+        bucket_id: ManifestBucket,
+        amount: Decimal,
+    },
+    CreateProofFromBucketOfNonFungibles {
+        bucket_id: ManifestBucket,
+        ids: BTreeSet<NonFungibleLocalId>,
+    },
+    CreateProofFromBucketOfAll {
+        bucket_id: ManifestBucket,
+    },
 
     /// Clones a proof.
     CloneProof {

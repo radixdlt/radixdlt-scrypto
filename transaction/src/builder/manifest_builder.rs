@@ -77,6 +77,9 @@ impl ManifestBuilder {
             | Instruction::CreateProofFromAuthZoneOfNonFungibles { .. }
             | Instruction::CreateProofFromAuthZoneOfAll { .. }
             | Instruction::CreateProofFromBucket { .. }
+            | Instruction::CreateProofFromBucketOfAmount { .. }
+            | Instruction::CreateProofFromBucketOfNonFungibles { .. }
+            | Instruction::CreateProofFromBucketOfAll { .. }
             | Instruction::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
@@ -262,6 +265,55 @@ impl ManifestBuilder {
         let (builder, _, proof_id) = self.add_instruction(Instruction::CreateProofFromBucket {
             bucket_id: bucket_id.clone(),
         });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_amount<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        amount: Decimal,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfAmount {
+                bucket_id: bucket_id.clone(),
+                amount,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_non_fungibles<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        ids: BTreeSet<NonFungibleLocalId>,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfNonFungibles {
+                bucket_id: bucket_id.clone(),
+                ids,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_all<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfAll {
+                bucket_id: bucket_id.clone(),
+            });
         then(builder, proof_id.unwrap())
     }
 
