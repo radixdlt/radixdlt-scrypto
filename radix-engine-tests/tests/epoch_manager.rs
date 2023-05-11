@@ -816,7 +816,7 @@ fn low_stakes_should_cause_no_problems() {
 }
 
 #[test]
-fn test_registering_many_validators() {
+fn test_registering_and_staking_many_validators() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
