@@ -54,9 +54,9 @@ pub trait ScryptoProof: Sized {
 impl ScryptoProof for Proof {
     /// Uses resources in this proof as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        ComponentAuthZone::push(ScryptoProof::clone(self));
+        LocalAuthZone::push(ScryptoProof::clone(self));
         let output = f();
-        ComponentAuthZone::pop().drop();
+        LocalAuthZone::pop().drop();
         output
     }
 

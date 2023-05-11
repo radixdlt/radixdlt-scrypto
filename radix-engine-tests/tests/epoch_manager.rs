@@ -6,10 +6,15 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use rand::prelude::SliceRandom;
+use rand::Rng;
+use rand_chacha;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -461,17 +466,18 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
-fn registered_validator_test(
+fn create_custom_genesis(
+    initial_epoch: u64,
+    rounds_per_epoch: u64,
     num_initial_validators: usize,
     max_validators: usize,
     initial_stakes: Decimal,
-    validator_stake: Decimal,
-    expect_in_next_epoch: bool,
+    accounts_xrd_balance: Decimal,
+    num_accounts: usize,
+) -> (
+    CustomGenesis,
+    Vec<(EcdsaSecp256k1PublicKey, ComponentAddress)>,
 ) {
-    // Arrange
-    let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
-
     let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
@@ -500,11 +506,20 @@ fn registered_validator_test(
     }
 
     let validator_account_index = num_initial_validators;
-    let pub_key =
-        EcdsaSecp256k1PrivateKey::from_u64((validator_account_index + 1).try_into().unwrap())
-            .unwrap()
-            .public_key();
-    let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+
+    let mut xrd_balances = Vec::new();
+    let mut pub_key_accounts = Vec::new();
+
+    for i in 0..num_accounts {
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(
+            (validator_account_index + 1 + i).try_into().unwrap(),
+        )
+        .unwrap()
+        .public_key();
+        let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        pub_key_accounts.push((pub_key, account_address));
+        xrd_balances.push((account_address, accounts_xrd_balance));
+    }
 
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(validators),
@@ -512,7 +527,7 @@ fn registered_validator_test(
             accounts,
             allocations: stake_allocations,
         },
-        GenesisDataChunk::XrdBalances(vec![(account_address, validator_stake)]),
+        GenesisDataChunk::XrdBalances(xrd_balances),
     ];
 
     let genesis = CustomGenesis {
@@ -525,27 +540,174 @@ fn registered_validator_test(
         },
     };
 
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    (genesis, pub_key_accounts)
+}
+
+#[derive(Clone, Copy)]
+enum RegisterAndStakeTransactionType {
+    SingleManifestRegisterFirst,
+    SingleManifestStakeFirst,
+    RegisterFirst,
+    StakeFirst,
+}
+
+impl RegisterAndStakeTransactionType {
+    const ALL_TYPES: [RegisterAndStakeTransactionType; 4] = [
+        RegisterAndStakeTransactionType::SingleManifestStakeFirst,
+        RegisterAndStakeTransactionType::SingleManifestRegisterFirst,
+        RegisterAndStakeTransactionType::RegisterFirst,
+        RegisterAndStakeTransactionType::StakeFirst,
+    ];
+
+    fn manifests(
+        &self,
+        stake_amount: Decimal,
+        account_address: ComponentAddress,
+        validator_address: ComponentAddress,
+        faucet: ComponentAddress,
+    ) -> Vec<TransactionManifest> {
+        match self {
+            RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
+                let manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
+                    .register_validator(validator_address)
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.stake_validator(validator_address, bucket_id)
+                    })
+                    .call_method(
+                        account_address,
+                        "deposit_batch",
+                        manifest_args!(ManifestExpression::EntireWorktop),
+                    )
+                    .build();
+                vec![manifest]
+            }
+            RegisterAndStakeTransactionType::SingleManifestStakeFirst => {
+                let manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.stake_validator(validator_address, bucket_id)
+                    })
+                    .register_validator(validator_address)
+                    .call_method(
+                        account_address,
+                        "deposit_batch",
+                        manifest_args!(ManifestExpression::EntireWorktop),
+                    )
+                    .build();
+                vec![manifest]
+            }
+            RegisterAndStakeTransactionType::RegisterFirst => {
+                let register_manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .register_validator(validator_address)
+                    .build();
+
+                let stake_manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.stake_validator(validator_address, bucket_id)
+                    })
+                    .call_method(
+                        account_address,
+                        "deposit_batch",
+                        manifest_args!(ManifestExpression::EntireWorktop),
+                    )
+                    .build();
+
+                vec![register_manifest, stake_manifest]
+            }
+            RegisterAndStakeTransactionType::StakeFirst => {
+                let register_manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .register_validator(validator_address)
+                    .build();
+
+                let stake_manifest = ManifestBuilder::new()
+                    .lock_fee(faucet, 10.into())
+                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.stake_validator(validator_address, bucket_id)
+                    })
+                    .call_method(
+                        account_address,
+                        "deposit_batch",
+                        manifest_args!(ManifestExpression::EntireWorktop),
+                    )
+                    .build();
+
+                vec![stake_manifest, register_manifest]
+            }
+        }
+    }
+}
+
+fn register_and_stake_new_validator(
+    register_and_stake_txn_type: RegisterAndStakeTransactionType,
+    pub_key: EcdsaSecp256k1PublicKey,
+    account_address: ComponentAddress,
+    stake_amount: Decimal,
+    test_runner: &mut TestRunner,
+) -> ComponentAddress {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
-        .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
-        .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
-        .register_validator(validator_address)
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.stake_validator(validator_address, bucket_id)
-        })
-        .call_method(
-            account_address,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+
+    let manifests = register_and_stake_txn_type.manifests(
+        stake_amount,
+        account_address,
+        validator_address,
+        test_runner.faucet_component(),
     );
-    receipt.expect_commit_success();
+
+    for manifest in manifests {
+        let receipt = test_runner.execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+        );
+        receipt.expect_commit_success();
+    }
+
+    validator_address
+}
+
+fn registered_validator_test(
+    register_and_stake_txn_type: RegisterAndStakeTransactionType,
+    num_initial_validators: usize,
+    max_validators: usize,
+    initial_stakes: Decimal,
+    validator_to_stake_amount: Decimal,
+    expect_in_next_epoch: bool,
+    expected_num_validators_in_next_epoch: usize,
+) {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let (genesis, accounts) = create_custom_genesis(
+        initial_epoch,
+        rounds_per_epoch,
+        num_initial_validators,
+        max_validators,
+        initial_stakes,
+        validator_to_stake_amount,
+        1,
+    );
+    let (pub_key, account_address) = accounts[0];
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = register_and_stake_new_validator(
+        register_and_stake_txn_type,
+        pub_key,
+        account_address,
+        validator_to_stake_amount,
+        &mut test_runner,
+    );
 
     // Act
     let instructions = vec![Instruction::CallMethod {
@@ -566,7 +728,7 @@ fn registered_validator_test(
     // Assert
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.0.len(), max_validators);
+    assert_eq!(next_epoch.0.len(), expected_num_validators_in_next_epoch);
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
         next_epoch.0.contains_key(&validator_address),
@@ -577,18 +739,122 @@ fn registered_validator_test(
 #[test]
 fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
 ) {
-    registered_validator_test(10, 10, 1000000.into(), 900000.into(), false);
+    for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
+        registered_validator_test(
+            register_and_stake_type,
+            10,
+            10,
+            1000000.into(),
+            900000.into(),
+            false,
+            10,
+        );
+    }
 }
 
 #[test]
 fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
 ) {
-    registered_validator_test(9, 10, 1000000.into(), 900000.into(), true);
+    for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
+        registered_validator_test(
+            register_and_stake_type,
+            9,
+            10,
+            1000000.into(),
+            900000.into(),
+            true,
+            10,
+        );
+    }
 }
 
 #[test]
 fn registered_validator_with_enough_stake_does_become_part_of_validator_on_epoch_change() {
-    registered_validator_test(10, 10, 1000000.into(), 1100000.into(), true);
+    for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
+        registered_validator_test(
+            register_and_stake_type,
+            10,
+            10,
+            1000000.into(),
+            1100000.into(),
+            true,
+            10,
+        );
+    }
+}
+
+#[test]
+fn low_stakes_should_cause_no_problems() {
+    for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
+        registered_validator_test(register_and_stake_type, 1, 10, 1.into(), 1.into(), true, 2);
+    }
+}
+
+#[test]
+fn test_registering_and_staking_many_validators() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let (genesis, accounts) = create_custom_genesis(
+        initial_epoch,
+        rounds_per_epoch,
+        1,
+        10,
+        1.into(),
+        1.into(),
+        10,
+    );
+    let mut rng = ChaCha8Rng::seed_from_u64(1234);
+
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut all_manifests = Vec::new();
+    for (pub_key, account_address) in accounts {
+        let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
+
+        let rand = rng.gen_range(0..RegisterAndStakeTransactionType::ALL_TYPES.len());
+        let register_and_stake_type = RegisterAndStakeTransactionType::ALL_TYPES[rand];
+
+        let manifests = register_and_stake_type.manifests(
+            1.into(),
+            account_address,
+            validator_address,
+            test_runner.faucet_component(),
+        );
+        all_manifests.push((pub_key, manifests));
+    }
+
+    all_manifests.shuffle(&mut rng);
+
+    for (pub_key, manifests) in all_manifests {
+        for manifest in manifests {
+            let receipt = test_runner.execute_manifest(
+                manifest,
+                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            );
+            receipt.expect_commit_success();
+        }
+    }
+
+    // Act
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    let result = receipt.expect_commit(true);
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.0.len(), 10);
+    assert_eq!(next_epoch.1, initial_epoch + 1);
 }
 
 #[test]

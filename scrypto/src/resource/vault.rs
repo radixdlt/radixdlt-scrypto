@@ -239,9 +239,9 @@ impl ScryptoVault for Vault {
 
     /// Uses resources in this vault as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        ComponentAuthZone::push(self.create_proof());
+        LocalAuthZone::push(self.create_proof());
         let output = f();
-        ComponentAuthZone::pop().drop();
+        LocalAuthZone::pop().drop();
         output
     }
 
