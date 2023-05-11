@@ -44,6 +44,7 @@ use radix_engine_interface::schema::{
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::node_modules::access_rules::AccessRulesConfig;
 
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {

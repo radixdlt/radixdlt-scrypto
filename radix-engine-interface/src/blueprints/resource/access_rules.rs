@@ -151,65 +151,6 @@ impl AuthorityRules {
     }
 }
 
-/// Method authorization rules for a component
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct AccessRulesConfig {
-    pub direct_methods: BTreeMap<MethodKey, MethodEntry>,
-    pub methods: BTreeMap<MethodKey, MethodEntry>,
-
-    pub rules: BTreeMap<String, AccessRule>,
-    pub mutability: BTreeMap<String, AccessRule>,
-}
-
-impl AccessRulesConfig {
-    pub fn new() -> Self {
-        Self {
-            direct_methods: BTreeMap::new(),
-            methods: BTreeMap::new(),
-            rules: BTreeMap::new(),
-            mutability: BTreeMap::new(),
-        }
-    }
-
-    pub fn create(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> Self {
-        let direct_methods = method_authorities.direct_methods;
-        let methods = method_authorities.methods;
-        let mut rules = BTreeMap::new();
-        let mut mutability = BTreeMap::new();
-
-        for (authority, (rule, mutability_rule)) in authority_rules.rules {
-            rules.insert(authority.clone(), rule);
-            mutability.insert(authority, mutability_rule);
-        }
-
-        Self {
-            direct_methods,
-            methods,
-            rules,
-            mutability,
-        }
-    }
-
-    pub fn get_authority_mutability(&self, key: &str) -> AccessRule {
-        match self.mutability.get(key) {
-            None => AccessRule::DenyAll,
-            Some(entry) => entry.clone(),
-        }
-    }
-
-    pub fn set_authority_access_rule<E: Into<AccessRule>>(
-        &mut self,
-        group_key: String,
-        access_rule_entry: E,
-    ) {
-        self.rules.insert(group_key, access_rule_entry.into());
-    }
-
-    pub fn set_authority_mutability<M: Into<AccessRule>>(&mut self, key: String, method_auth: M) {
-        self.mutability.insert(key, method_auth.into());
-    }
-}
-
 pub fn package_authority_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> AuthorityRules {

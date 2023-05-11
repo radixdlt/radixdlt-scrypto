@@ -8,6 +8,7 @@ use native_sdk::resource::SysProof;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
+use crate::system::node_modules::access_rules::AccessRulesConfig;
 
 // TODO: Refactor structure to be able to remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
