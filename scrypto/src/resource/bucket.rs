@@ -1,5 +1,5 @@
 use crate::borrow_resource_manager;
-use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
+use crate::resource::{LocalAuthZone, NonFungible, ScryptoProof};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -169,9 +169,9 @@ impl ScryptoBucket for Bucket {
 
     /// Uses resources in this bucket as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        ComponentAuthZone::push(self.create_proof());
+        LocalAuthZone::push(self.create_proof());
         let output = f();
-        ComponentAuthZone::pop().drop();
+        LocalAuthZone::pop().drop();
         output
     }
 
