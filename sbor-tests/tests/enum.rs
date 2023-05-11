@@ -25,7 +25,9 @@ pub enum Mixed {
     #[sbor(id(7))]
     B,
     #[sbor(id("8"))]
-    C { test: String },
+    C {
+        test: String,
+    },
     D = 9,
     E = 11u8,
     F = CONST_32,
@@ -41,26 +43,53 @@ fn can_encode_and_decode() {
     check_encode_decode_schema(&Abc::Variant2);
     check_encode_decode_schema(&Mixed::A);
     check_encode_decode_schema(&Mixed::B);
-    check_encode_decode_schema(&Mixed::C { test: "hello".to_string() });
+    check_encode_decode_schema(&Mixed::C {
+        test: "hello".to_string(),
+    });
     check_encode_decode_schema(&Mixed::D);
     check_encode_decode_schema(&Mixed::E);
     check_encode_decode_schema(&Mixed::F);
     check_encode_decode_schema(&Mixed::G);
     check_encode_decode_schema(&Mixed::H);
-    
-    check_encode_identically(&Mixed::C { test: "hello".to_string() }, &BasicValue::Enum { discriminator: 8, fields: vec![ BasicValue::String { value: "hello".to_string() }] });
-    check_encode_identically(&Mixed::G, &BasicValue::Enum { discriminator: 14, fields: vec![] })
+
+    check_encode_identically(
+        &Mixed::C {
+            test: "hello".to_string(),
+        },
+        &BasicValue::Enum {
+            discriminator: 8,
+            fields: vec![BasicValue::String {
+                value: "hello".to_string(),
+            }],
+        },
+    );
+    check_encode_identically(
+        &Mixed::G,
+        &BasicValue::Enum {
+            discriminator: 14,
+            fields: vec![],
+        },
+    )
 }
 
-fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq + Debug>(value: &T) {
-    assert_eq!(&basic_decode::<T>(&basic_encode(value).unwrap()).unwrap(), value);
+fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq + Debug>(
+    value: &T,
+) {
+    assert_eq!(
+        &basic_decode::<T>(&basic_encode(value).unwrap()).unwrap(),
+        value
+    );
 
     let (type_index, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
-    validate_payload_against_schema::<NoCustomExtension, ()>(&basic_encode(value).unwrap(), &schema, type_index, &()).unwrap();
+    validate_payload_against_schema::<NoCustomExtension, ()>(
+        &basic_encode(value).unwrap(),
+        &schema,
+        type_index,
+        &(),
+    )
+    .unwrap();
 }
-
 
 fn check_encode_identically<T1: BasicEncode, T2: BasicEncode>(value1: &T1, value2: &T2) {
     assert_eq!(basic_encode(value1).unwrap(), basic_encode(value2).unwrap());
 }
-

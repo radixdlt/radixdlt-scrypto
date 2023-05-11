@@ -148,18 +148,21 @@ pub fn handle_normal_decode(
         }
         Data::Enum(DataEnum { variants, .. }) => {
             let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
-                let v_id = &v.ident;
-                let discriminator = &discriminator_mapping[&i];
-                let decode_fields_content =
-                    decode_fields_content(quote! { Self::#v_id }, &v.fields)?;
-                Ok(quote! {
-                    #discriminator => {
-                        #decode_fields_content
-                    }
+            let match_arms = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let v_id = &v.ident;
+                    let discriminator = &discriminator_mapping[&i];
+                    let decode_fields_content =
+                        decode_fields_content(quote! { Self::#v_id }, &v.fields)?;
+                    Ok(quote! {
+                        #discriminator => {
+                            #decode_fields_content
+                        }
+                    })
                 })
-            })
-            .collect::<Result<Vec<_>>>()?;
+                .collect::<Result<Vec<_>>>()?;
 
             quote! {
                 impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
@@ -184,7 +187,10 @@ pub fn handle_normal_decode(
     Ok(output)
 }
 
-pub fn decode_fields_content(self_constructor: TokenStream, fields: &syn::Fields) -> Result<TokenStream> {
+pub fn decode_fields_content(
+    self_constructor: TokenStream,
+    fields: &syn::Fields,
+) -> Result<TokenStream> {
     let FieldsData {
         unskipped_field_names,
         unskipped_field_types,

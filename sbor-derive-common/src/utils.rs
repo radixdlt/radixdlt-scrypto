@@ -1,11 +1,11 @@
 use itertools::Itertools;
-use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
-use syn::token::Comma;
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
+use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
+use syn::token::Comma;
 
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -87,12 +87,9 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
         let Some(value) = self.get(name) else {
             return Ok(false);
         };
-        value.as_bool().ok_or_else(|| {
-            Error::new(
-                value.span(),
-                format!("Expected bool attribute"),
-            )
-        })
+        value
+            .as_bool()
+            .ok_or_else(|| Error::new(value.span(), format!("Expected bool attribute")))
     }
 
     fn string_value(&self, name: &str) -> Result<Option<String>> {
@@ -100,10 +97,7 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
             return Ok(None);
         };
         Ok(Some(value.as_string().ok_or_else(|| {
-            Error::new(
-                value.span(),
-                format!("Expected string attribute value"),
-            )
+            Error::new(value.span(), format!("Expected string attribute value"))
         })?))
     }
 }
@@ -154,15 +148,24 @@ pub fn extract_typed_attributes(
                                 match nested.into_iter().next().unwrap() {
                                     NestedMeta::Meta(inner_meta) => match inner_meta {
                                         Meta::Path(path) => {
-                                            fields.insert(ident.to_string(), AttributeValue::Path(path.clone()));
-                                        },
+                                            fields.insert(
+                                                ident.to_string(),
+                                                AttributeValue::Path(path.clone()),
+                                            );
+                                        }
                                         _ => {
-                                            return Err(Error::new(inner_meta.span(), error_message));
-                                        },
+                                            return Err(Error::new(
+                                                inner_meta.span(),
+                                                error_message,
+                                            ));
+                                        }
                                     },
                                     NestedMeta::Lit(lit) => {
-                                        fields.insert(ident.to_string(), AttributeValue::Lit(lit.clone()));
-                                    },
+                                        fields.insert(
+                                            ident.to_string(),
+                                            AttributeValue::Lit(lit.clone()),
+                                        );
+                                    }
                                 }
                             } else {
                                 return Err(Error::new(nested.span(), error_message));
@@ -188,7 +191,9 @@ enum VariantValue {
     Path(Path), // EG a constant
 }
 
-pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) -> Result<BTreeMap<usize, Expr>> {
+pub fn get_variant_discriminator_mapping(
+    variants: &Punctuated<Variant, Comma>,
+) -> Result<BTreeMap<usize, Expr>> {
     if variants.len() > 255 {
         return Err(Error::new(
             Span::call_site(),
@@ -200,18 +205,17 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
 
     for (i, variant) in variants.iter().enumerate() {
         let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
-        let discriminator_attribute = variant_attributes.remove("discriminator")
+        let discriminator_attribute = variant_attributes
+            .remove("discriminator")
             .or_else(|| variant_attributes.remove("id"));
         if let Some(attribute) = discriminator_attribute {
             let id = match attribute {
                 AttributeValue::None(span) => {
-                    return Err(Error::new(
-                        span,
-                        format!("No discriminator was provided"),
-                    ));
-                },
+                    return Err(Error::new(span, format!("No discriminator was provided")));
+                }
                 AttributeValue::Path(path) => VariantValue::Path(path),
-                AttributeValue::Lit(literal) => parse_u8_from_literal(&literal).map(|b| VariantValue::Byte(b))
+                AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
+                    .map(|b| VariantValue::Byte(b))
                     .ok_or_else(|| {
                         Error::new(
                             literal.span(),
@@ -222,7 +226,6 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
 
             variant_ids.insert(i, id);
         } else if let Some(discriminant) = &variant.discriminant {
-
             let expression = &discriminant.1;
 
             let id = match expression {
@@ -253,19 +256,26 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
                 format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_ids.len(), variants.len()),
             ));
         }
-        return Ok(variant_ids.into_iter().map(|(i, id)| {
-            let expression = match id {
-                VariantValue::Byte(id) => parse_quote!(#id),
-                VariantValue::Path(id) => parse_quote!(#id),
-            };
-            (i, expression)
-        }).collect());
+        return Ok(variant_ids
+            .into_iter()
+            .map(|(i, id)| {
+                let expression = match id {
+                    VariantValue::Byte(id) => parse_quote!(#id),
+                    VariantValue::Path(id) => parse_quote!(#id),
+                };
+                (i, expression)
+            })
+            .collect());
     }
     // If no explicit indices, use default indices
-    Ok(variants.iter().enumerate().map(|(i, _)| {
-        let i_as_u8 = u8::try_from(i).unwrap();
-        (i, parse_quote!(#i_as_u8))
-    }).collect())
+    Ok(variants
+        .iter()
+        .enumerate()
+        .map(|(i, _)| {
+            let i_as_u8 = u8::try_from(i).unwrap();
+            (i, parse_quote!(#i_as_u8))
+        })
+        .collect())
 }
 
 fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
@@ -277,7 +287,10 @@ fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
     }
 }
 
-fn get_sbor_attribute_string_value(attributes: &[Attribute], field_name: &str) -> Result<Option<String>> {
+fn get_sbor_attribute_string_value(
+    attributes: &[Attribute],
+    field_name: &str,
+) -> Result<Option<String>> {
     let attributes = extract_typed_attributes(attributes, "sbor")?;
     Ok(attributes.get(field_name).and_then(|v| v.as_string()))
 }
@@ -329,10 +342,7 @@ pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>
         .collect()
 }
 
-fn get_child_types(
-    attributes: &[Attribute],
-    existing_generics: &Generics,
-) -> Result<Vec<Type>> {
+fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
     let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")? else {
         // If no explicit child_types list is set, we use all pre-existing generic type parameters.
         // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
@@ -401,7 +411,10 @@ pub(crate) fn process_fields_for_describe(fields: &syn::Fields) -> Result<Fields
     process_fields(fields, is_decoding_skipped)
 }
 
-fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> Result<bool>) -> Result<FieldsData> {
+fn process_fields(
+    fields: &syn::Fields,
+    is_skipped: impl Fn(&Field) -> Result<bool>,
+) -> Result<FieldsData> {
     Ok(match fields {
         Fields::Named(fields) => {
             let mut unskipped_field_names = Vec::new();
@@ -413,7 +426,8 @@ fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> Result<bo
                 let ident = &f.ident;
                 if !is_skipped(f)? {
                     unskipped_field_names.push(quote! { #ident });
-                    unskipped_field_name_strings.push(ident.as_ref().map(|i| i.to_string()).unwrap_or_default());
+                    unskipped_field_name_strings
+                        .push(ident.as_ref().map(|i| i.to_string()).unwrap_or_default());
                     unskipped_field_types.push(f.ty.clone());
                 } else {
                     skipped_field_names.push(quote! { #ident });
@@ -774,8 +788,14 @@ mod tests {
         let extracted = extract_typed_attributes(&[attr], "sbor").unwrap();
         assert_eq!(extracted.has_flag_option("skip").unwrap(), true);
         assert_eq!(extracted.has_flag_option("skip2").unwrap(), false);
-        assert!(matches!(extracted.has_flag_option("custom_value_kind"), Err(_)));
-        assert_eq!(extracted.string_value("custom_value_kind").unwrap(), Some("NoCustomValueKind".to_string()));
+        assert!(matches!(
+            extracted.has_flag_option("custom_value_kind"),
+            Err(_)
+        ));
+        assert_eq!(
+            extracted.string_value("custom_value_kind").unwrap(),
+            Some("NoCustomValueKind".to_string())
+        );
         assert_eq!(extracted.string_value("custom_value_kind_2").unwrap(), None);
         assert!(matches!(extracted.string_value("skip"), Err(_)));
     }

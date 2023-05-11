@@ -124,25 +124,28 @@ pub fn handle_normal_encode(
         }
         Data::Enum(DataEnum { variants, .. }) => {
             let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
-                let v_id = &v.ident;
-                let discriminator = &discriminator_mapping[&i];
+            let match_arms = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let v_id = &v.ident;
+                    let discriminator = &discriminator_mapping[&i];
 
-                let FieldsData {
-                    unskipped_field_count,
-                    fields_unpacking,
-                    unskipped_unpacked_field_names,
-                    ..
-                } = process_fields_for_encode(&v.fields)?;
-                Ok(quote! {
-                    Self::#v_id #fields_unpacking => {
-                        encoder.write_discriminator(#discriminator)?;
-                        encoder.write_size(#unskipped_field_count)?;
-                        #(encoder.encode(#unskipped_unpacked_field_names)?;)*
-                    }
+                    let FieldsData {
+                        unskipped_field_count,
+                        fields_unpacking,
+                        unskipped_unpacked_field_names,
+                        ..
+                    } = process_fields_for_encode(&v.fields)?;
+                    Ok(quote! {
+                        Self::#v_id #fields_unpacking => {
+                            encoder.write_discriminator(#discriminator)?;
+                            encoder.write_size(#unskipped_field_count)?;
+                            #(encoder.encode(#unskipped_unpacked_field_names)?;)*
+                        }
+                    })
                 })
-            })
-            .collect::<Result<Vec<_>, >>()?;
+                .collect::<Result<Vec<_>>>()?;
 
             let encode_content = if match_arms.len() == 0 {
                 quote! {}

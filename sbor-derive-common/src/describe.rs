@@ -104,7 +104,6 @@ fn handle_normal_describe(
 
     let output = match data {
         Data::Struct(s) => match &s.fields {
-
             syn::Fields::Named(FieldsNamed { .. }) => {
                 let FieldsData {
                     unskipped_field_types,
@@ -202,9 +201,11 @@ fn handle_normal_describe(
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-
             let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
-            let variant_discriminators = (0..variants.len()).into_iter().map(|i| &discriminator_mapping[&i]).collect::<Vec<_>>();
+            let variant_discriminators = (0..variants.len())
+                .into_iter()
+                .map(|i| &discriminator_mapping[&i])
+                .collect::<Vec<_>>();
             let mut all_field_types = Vec::new();
 
             let variant_type_data: Vec<_> = {
