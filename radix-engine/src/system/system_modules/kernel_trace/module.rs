@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -26,12 +26,12 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation<Actor>,
-        input_size: usize,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            invocation.call_frame_data, input_size
+            invocation.actor,
+            invocation.len(),
         )
         .green();
 
@@ -42,24 +42,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        nodes_and_refs: &mut CallFrameUpdate,
+        message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Sending nodes: {:?}", message.move_nodes);
+        log!(api, "Sending refs: {:?}", message.copy_references);
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        nodes_and_refs: &CallFrameUpdate,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(
-            api,
-            "Returning refs: {:?}",
-            nodes_and_refs.node_refs_to_copy
-        );
+        log!(api, "Returning nodes: {:?}", message.move_nodes);
+        log!(api, "Returning refs: {:?}", message.copy_references);
         Ok(())
     }
 
@@ -100,10 +96,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             }
         }
         let message = format!(
-            "Creating node: id = {:?}, type = {:?}, substates = {:?}",
+            "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
             node_id,
             node_id.entity_type(),
-            module_substate_keys
+            module_substate_keys,
+            node_module_init.get(&PartitionNumber(0))
         )
         .red();
         log!(api, "{}", message);

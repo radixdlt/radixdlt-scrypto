@@ -234,7 +234,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 for tracked_module in tracked_node.tracked_partitions.values() {
                     for tracked_key in tracked_module.substates.values() {
                         if let Some(value) = tracked_key.tracked.get() {
-                            for own in value.owned_node_ids() {
+                            for own in value.owned_nodes() {
                                 self.traverse_state_updates(
                                     balance_changes,
                                     accounted_vaults,
@@ -348,36 +348,36 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
     fn fetch_substate<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         // TODO: we should not need to load substates form substate database
         // - Part of the engine still reads/writes substates without touching the TypeInfo;
         // - Track does not store the initial value of substate.
 
-        self.fetch_substate_from_state_updates::<M, D>(node_id, module_num, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, module_num, key))
+        self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
+            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
     }
 
     fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.substate_db
-            .get_mapped::<M, D>(node_id, module_num, key)
+            .get_mapped::<M, D>(node_id, partition_num, key)
     }
 
     fn fetch_substate_from_state_updates<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
         self.tracked
             .get(node_id)
-            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&module_num))
+            .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
             .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
     }

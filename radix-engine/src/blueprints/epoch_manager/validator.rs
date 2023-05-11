@@ -382,8 +382,9 @@ impl ValidatorBlueprint {
             AccessRuleEntry::Group("owner".to_string())
         };
 
-        api.call_module_method(
+        api.call_method_advanced(
             receiver,
+            false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
             scrypto_encode(&AccessRulesSetMethodAccessRuleInput {

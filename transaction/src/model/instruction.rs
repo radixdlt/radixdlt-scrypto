@@ -1,6 +1,8 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRulesConfig, MethodKey, ObjectKey,
+};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::PackageSchema;
@@ -163,13 +165,11 @@ pub enum Instruction {
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
     },
-
     SetMethodAccessRule {
         entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     },
-
     MintFungible {
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -196,5 +196,17 @@ pub enum Instruction {
         component_address: ComponentAddress,
         method_name: String,
         args: ManifestValue,
+    },
+    SetGroupAccessRule {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        rule: AccessRule,
+    },
+    SetGroupMutability {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        mutability: AccessRule,
     },
 }

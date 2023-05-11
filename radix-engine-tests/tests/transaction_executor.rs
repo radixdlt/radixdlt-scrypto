@@ -120,7 +120,7 @@ fn test_normal_transaction_flow() {
         wasm_metering_config: WasmMeteringConfig::V0,
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, true)
         .bootstrap_test_default()
         .unwrap();
 

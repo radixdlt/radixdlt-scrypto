@@ -1,5 +1,5 @@
 [package]
-name = "resource_creator"
+name = "mini_resource_system"
 version = "0.1.0"
 edition = "2021"
 
