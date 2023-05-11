@@ -119,7 +119,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid
-    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue;
+    fn read_substate(&mut self, handle: u32) -> (&IndexedScryptoValue, StoreAccessInfo);
 
     /// Updates a substate.
     ///
@@ -152,6 +152,9 @@ impl StoreAccessInfo {
             })
             .sum()
     }
+    pub fn push(&mut self, items: &StoreAccessInfo) {
+        self.0.copy_from_slice(items.0.as_slice())
+    }
     pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
         match item {
             StoreAccess::ReadFromDb(size)
@@ -169,9 +172,12 @@ impl StoreAccessInfo {
         }
         self
     }
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum StoreAccess {
     // When store invokes `SubstateDatabase::get_substate()`.
     // size might be zero when the entry does not exist.

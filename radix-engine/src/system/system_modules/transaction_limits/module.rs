@@ -3,6 +3,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::StoreAccessInfo;
 use crate::transaction::{ExecutionMetrics, TransactionResult};
 use crate::types::*;
 use crate::{
@@ -271,18 +272,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let store_acccess_size = store_access.get_whole_size();
 
         // Increase read coutner.
         tlimit.substate_db_read_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_read_size_total += size;
+        tlimit.substate_db_read_size_total += store_acccess_size;
 
         // Validate
-        tlimit.validate_substates(Some(size), None)
+        tlimit.validate_substates(Some(store_acccess_size), None)
     }
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(

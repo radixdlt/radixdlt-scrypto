@@ -197,7 +197,7 @@ impl<D, L: Clone> CallFrame<D, L> {
             &TypeInfoField::TypeInfo.into(),
             LockFlags::read_only(),
         ) {
-            let type_info: TypeInfoSubstate = store.read_substate(handle).as_typed().unwrap();
+            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
             store.release_lock(handle);
             Some(type_info)
         } else {
@@ -248,7 +248,9 @@ impl<D, L: Clone> CallFrame<D, L> {
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store_access = store_access_info;
-            store.read_substate(handle)
+            let (value, read_store_access_info) = store.read_substate(handle);
+            store_access.push(&read_store_access_info);
+            value
         };
 
         // Infer references and owns within the substate
@@ -319,10 +321,13 @@ impl<D, L: Clone> CallFrame<D, L> {
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;
         let substate_key = &substate_lock.substate_key;
+        let mut store_access = StoreAccessInfo::new();
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
-                store.read_substate(handle)
+                let (substate, read_store_access) = store.read_substate(handle);
+                store_access.push(&read_store_access);
+                substate
             } else {
                 heap.get_substate(node_id, partition_num, substate_key)
                     .expect("Substate locked but missing")
@@ -384,10 +389,10 @@ impl<D, L: Clone> CallFrame<D, L> {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            Ok(store.release_lock(handle))
-        } else {
-            Ok(StoreAccessInfo::new())
+            store_access.push(&store.release_lock(handle));
         }
+
+        Ok(store_access)
     }
 
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
@@ -405,7 +410,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         heap: &'f mut Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+    ) -> Result<(&'f IndexedScryptoValue, StoreAccessInfo), ReadSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -420,9 +425,11 @@ impl<D, L: Clone> CallFrame<D, L> {
         if let Some(store_handle) = store_handle {
             Ok(store.read_substate(*store_handle))
         } else {
-            Ok(heap
-                .get_substate(node_id, *partition_num, substate_key)
-                .expect("Substate missing in heap"))
+            Ok((
+                heap.get_substate(node_id, *partition_num, substate_key)
+                    .expect("Substate missing in heap"),
+                StoreAccessInfo::new(),
+            ))
         }
     }
 

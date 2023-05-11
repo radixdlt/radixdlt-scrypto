@@ -18,7 +18,6 @@ pub enum CostingEntry<'a> {
 
     /* node */
     CreateNode {
-        size: u32,
         node_id: &'a NodeId,
     },
     DropNode {
@@ -34,15 +33,14 @@ pub enum CostingEntry<'a> {
         module_num: &'a PartitionNumber,
         substate_key: &'a SubstateKey,
     },
-    ReadSubstate {
-        size: u32,
-    },
+    ReadSubstate,
     WriteSubstate {
         size: u32,
     },
-    DropLock {
-        size: u32,
-    },
+    ScanSubstate,
+    SetSubstate,
+    TakeSubstate,
+    DropLock,
     SubstateReadFromDb {
         size: u32,
     },
@@ -95,7 +93,7 @@ impl FeeTable {
 
     /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
     /// and transformed (classified and groupped) using convert.py script.
-    fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
+    fn kernel_api_cost_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
             CostingEntry::AllocateNodeId { virtual_node } => {
                 if *virtual_node {
@@ -104,7 +102,7 @@ impl FeeTable {
                     212
                 }
             }
-            CostingEntry::CreateNode { size: _, node_id } => match node_id.entity_type() {
+            CostingEntry::CreateNode { node_id } => match node_id.entity_type() {
                 Some(EntityType::GlobalAccessController) => 1736,
                 Some(EntityType::GlobalAccount) => 1640,
                 Some(EntityType::GlobalClock) => 987,
@@ -124,7 +122,7 @@ impl FeeTable {
                 Some(EntityType::InternalNonFungibleVault) => 356,
                 _ => 1182, // average of above values
             },
-            CostingEntry::DropLock { size: _ } => 114,
+            CostingEntry::DropLock => 114,
             CostingEntry::DropNode { size: _ } => 324, // average of gathered data
             CostingEntry::Invoke {
                 input_size,
@@ -314,30 +312,32 @@ impl FeeTable {
                 module_num: _,
                 substate_key: _,
             } => 632, // todo: determine correct value
-            CostingEntry::ReadSubstate { size: _ } => 174,
+            CostingEntry::ScanSubstate => 100, // todo: determine correct value
+            &CostingEntry::SetSubstate => 100, // todo: determine correct value
+            CostingEntry::TakeSubstate => 100, // todo: determine correct value
+            CostingEntry::ReadSubstate => 174,
             CostingEntry::WriteSubstate { size: _ } => 126,
-            CostingEntry::SubstateReadFromDb { size: _ } => 100, // todo: determine correct value
-            CostingEntry::SubstateReadFromTrack { size: _ } => 100, // todo: determine correct value
-            CostingEntry::SubstateWriteToTrack { size: _ } => 100, // todo: determine correct value
+
+            // following variants are used in storage usage part only
+            CostingEntry::SubstateReadFromDb { size: _ } => 0,
+            CostingEntry::SubstateReadFromTrack { size: _ } => 0,
+            CostingEntry::SubstateWriteToTrack { size: _ } => 0,
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new: _,
-            } => 100, // todo: determine correct value
+            } => 0, 
         }) as u64
             * COSTING_COEFFICENT
             >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32
     }
 
-    fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
+    fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
         match entry {
-            CostingEntry::CreateNode { size, node_id: _ } => 100 * size,
             CostingEntry::DropNode { size } => 100 * size,
-            CostingEntry::DropLock { size } => 10 * size, // todo: determine correct value
             CostingEntry::Invoke {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::ReadSubstate { size } => 10 * size,
             CostingEntry::WriteSubstate { size } => 1000 * size,
             CostingEntry::SubstateReadFromDb { size } => 1000 * size, // todo: determine correct value
             CostingEntry::SubstateReadFromTrack { size } => 100 * size, // todo: determine correct value
@@ -351,6 +351,6 @@ impl FeeTable {
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
-        self.kernel_api_cost_from_cpu_usage(&entry) + self.kernel_api_cost_from_memory_usage(&entry)
+        self.kernel_api_cost_cpu_usage(&entry) + self.kernel_api_cost_storage_usage(&entry)
     }
 }

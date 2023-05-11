@@ -1017,17 +1017,21 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         store_access
     }
 
-    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue {
+    fn read_substate(&mut self, handle: u32) -> (&IndexedScryptoValue, StoreAccessInfo) {
         let (node_id, partition_num, substate_key, _flags) =
             self.locks.get(&handle).expect("Invalid lock handle");
 
         let node_id = *node_id;
         let partition_num = *partition_num;
 
-        let (tracked, _) = self.get_tracked_substate(&node_id, partition_num, substate_key.clone());
-        tracked
-            .get()
-            .expect("Could not have created lock on non existent substate")
+        let (tracked, store_access) =
+            self.get_tracked_substate(&node_id, partition_num, substate_key.clone());
+        (
+            tracked
+                .get()
+                .expect("Could not have created lock on non existent substate"),
+            store_access,
+        )
     }
 
     fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {

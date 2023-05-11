@@ -80,7 +80,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle);
+            let substate_ref = kernel.store.read_substate(handle).0;  // MS todo
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.release_lock(handle);
             match type_substate {
@@ -629,26 +629,25 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let mut len = self
+        let (_, mut store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
-            .map_err(KernelError::CallFrameError)?
-            .as_slice()
-            .len();
+            .map_err(KernelError::CallFrameError)?;
 
         // TODO: replace this overwrite with proper packing costing rule
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
-            len = 0;
+            store_access.clear();
         }
 
-        M::on_read_substate(lock_handle, len, self)?;
+        M::on_read_substate(lock_handle, &store_access, self)?;
 
+        // Double read due to borrow chacker of self.
         Ok(self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
-            .unwrap())
+            .unwrap().0)
     }
 
     #[trace_resources]
