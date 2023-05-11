@@ -108,4 +108,17 @@ impl LocalAuthZone {
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
+
+    pub fn clear() {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_CLEAR_IDENT,
+                scrypto_encode(&AuthZoneClearInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 }
