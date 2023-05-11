@@ -1356,9 +1356,9 @@ impl ResourceManagerNativePackage {
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
                 input: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
                 export_name: AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
@@ -1366,9 +1366,10 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
                 export_name: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
             },
         );
@@ -1376,9 +1377,9 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByAllInput>(),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByAllOutput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
                 export_name: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
             },
         );
@@ -2398,7 +2399,7 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AuthZoneCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneCreateProofOfAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
@@ -2413,9 +2414,10 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AuthZoneCreateProofByIdsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AuthZoneCreateProofOfNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
                 let proof = AuthZoneBlueprint::create_proof_of_non_fungibles(
                     input.resource_address,
@@ -2428,7 +2430,7 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AuthZoneCreateProofByAllInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneCreateProofOfAllInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 

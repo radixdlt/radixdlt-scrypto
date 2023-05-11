@@ -181,9 +181,9 @@ impl AccountNativePackage {
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountCreateProofByAmountInput>(),
+                    .add_child_type_and_descendents::<AccountCreateProofOfAmountInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountCreateProofByAmountOutput>(),
+                    .add_child_type_and_descendents::<AccountCreateProofOfAmountOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             },
         );
@@ -192,9 +192,10 @@ impl AccountNativePackage {
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRef),
-                input: aggregator.add_child_type_and_descendents::<AccountCreateProofByIdsInput>(),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountCreateProofByIdsOutput>(),
+                    .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             },
         );
@@ -435,7 +436,7 @@ impl AccountNativePackage {
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountCreateProofByAmountInput = input.as_typed().map_err(|e| {
+                let input: AccountCreateProofOfAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::create_proof_of_amount(
@@ -448,9 +449,10 @@ impl AccountNativePackage {
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountCreateProofByIdsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AccountCreateProofOfNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
                 let rtn = AccountBlueprint::create_proof_of_non_fungibles(
                     input.resource_address,
                     input.ids,

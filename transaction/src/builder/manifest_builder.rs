@@ -994,7 +994,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofByAmountInput {
+        let args = to_manifest_value(&AccountCreateProofOfAmountInput {
             resource_address,
             amount,
         });
@@ -1014,7 +1014,7 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofByIdsInput {
+        let args = to_manifest_value(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
             ids: ids.clone(),
         });

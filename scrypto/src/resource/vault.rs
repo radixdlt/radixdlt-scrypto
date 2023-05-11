@@ -27,8 +27,8 @@ pub trait ScryptoVault {
     fn resource_address(&self) -> ResourceAddress;
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn create_proof(&self) -> Proof;
-    fn create_proof_of_amount(&self, amount: Decimal) -> Proof;
-    fn create_proof_of_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof;
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
@@ -175,28 +175,28 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_of_amount(&self, amount: Decimal) -> Proof {
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
+                scrypto_encode(&VaultCreateProofOfAmountInput {
+                    amount: amount.into(),
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_of_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput {
-                    ids: ids.clone(),
-                })
-                .unwrap(),
+                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
