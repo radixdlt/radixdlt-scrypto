@@ -15,16 +15,26 @@ use crate::*;
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;
+
     fn new(resource_address: ResourceAddress) -> Self;
+
     fn put(&mut self, bucket: Bucket) -> ();
+
     fn amount(&self) -> Decimal;
+
     fn resource_address(&self) -> ResourceAddress;
-    fn create_proof(&self) -> Proof;
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
-    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
-    fn take_all(&mut self) -> Bucket;
-    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+
     fn is_empty(&self) -> bool;
+
+    fn create_proof(&self) -> Proof;
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
+
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
+
+    fn take_all(&mut self) -> Bucket;
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
 pub trait ScryptoFungibleVault {

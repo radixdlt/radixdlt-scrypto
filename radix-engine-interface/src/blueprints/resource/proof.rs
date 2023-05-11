@@ -45,32 +45,32 @@ pub type ProofCloneOutput = Proof;
 /// Specifies the validation mode that should be used for validating a `Proof`.
 pub enum ProofValidationMode {
     /// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
-    ValidateResourceAddress(ResourceAddress),
-
-    /// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
-    /// the `Proof`'s resource address belongs to the set, then its valid.
-    ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
+    Contains(ResourceAddress),
 
     /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleGlobalId`.
-    ValidateContainsNonFungible(NonFungibleGlobalId),
+    ContainsNonFungible(NonFungibleGlobalId),
 
     /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleLocalId`s
     /// to ensure that the `Proof` contains all of the NonFungibles in the set.
-    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleLocalId>),
+    ContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleLocalId>),
 
     /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
-    ValidateContainsAmount(ResourceAddress, Decimal),
+    ContainsAmount(ResourceAddress, Decimal),
+
+    /// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
+    /// the `Proof`'s resource address belongs to the set, then its valid.
+    ContainsAnyOf(BTreeSet<ResourceAddress>),
 }
 
 impl From<ResourceAddress> for ProofValidationMode {
     fn from(resource_address: ResourceAddress) -> Self {
-        Self::ValidateResourceAddress(resource_address)
+        Self::Contains(resource_address)
     }
 }
 
 impl From<NonFungibleGlobalId> for ProofValidationMode {
     fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
-        Self::ValidateContainsNonFungible(non_fungible_global_id)
+        Self::ContainsNonFungible(non_fungible_global_id)
     }
 }
 
@@ -98,8 +98,9 @@ impl fmt::Display for ProofValidationError {
 // Stub
 //========
 
+/// Represents a proof
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub Own); // scrypto stub
+pub struct Proof(pub Own);
 
 //========
 // binary

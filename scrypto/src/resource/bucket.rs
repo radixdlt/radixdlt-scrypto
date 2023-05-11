@@ -1,5 +1,5 @@
 use crate::borrow_resource_manager;
-use crate::resource::{NonFungible, ScryptoProof};
+use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -12,6 +12,8 @@ use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+
+use super::ScryptoUncheckedProof;
 
 pub trait ScryptoBucket {
     fn new(resource_address: ResourceAddress) -> Self;
