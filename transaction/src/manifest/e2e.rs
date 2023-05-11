@@ -57,10 +57,8 @@ CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
     Bucket("bucket1");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT
-    Decimal("3")
-    Address("${gumball_resource_address}");
 ASSERT_WORKTOP_CONTAINS
+    Decimal("3")
     Address("${gumball_resource_address}");
 TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")

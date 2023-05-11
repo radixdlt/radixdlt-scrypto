@@ -147,12 +147,12 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains_by_amount(
+    pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByAmount {
+        self.add_instruction(Instruction::AssertWorktopContains {
             amount,
             resource_address,
         })
@@ -160,12 +160,12 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains_by_ids(
+    pub fn assert_worktop_contains_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByIds {
+        self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
             ids: ids.clone(),
             resource_address,
         })

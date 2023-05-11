@@ -114,10 +114,10 @@ impl Fuzzer {
                     resource_address, ..
                 }
                 | Instruction::AssertWorktopContains { resource_address }
-                | Instruction::AssertWorktopContainsByAmount {
+                | Instruction::AssertWorktopContains {
                     resource_address, ..
                 }
-                | Instruction::AssertWorktopContainsByIds {
+                | Instruction::AssertWorktopContainsNonFungibles {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZone { resource_address }

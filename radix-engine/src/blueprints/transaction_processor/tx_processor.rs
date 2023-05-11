@@ -123,14 +123,14 @@ impl TransactionProcessorBlueprint {
                     worktop.sys_put(bucket, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsByAmount {
+                Instruction::AssertWorktopContains {
                     amount,
                     resource_address,
                 } => {
                     worktop.sys_assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsByIds {
+                Instruction::AssertWorktopContainsNonFungibles {
                     ids,
                     resource_address,
                 } => {

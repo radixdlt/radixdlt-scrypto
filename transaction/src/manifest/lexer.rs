@@ -84,8 +84,7 @@ pub enum TokenKind {
     TakeNonFungiblesFromWorktop,
     ReturnToWorktop,
     AssertWorktopContains,
-    AssertWorktopContainsByAmount,
-    AssertWorktopContainsByIds,
+    AssertWorktopContainsNonFungibles,
     PopFromAuthZone,
     PushToAuthZone,
     ClearAuthZone,
@@ -422,8 +421,9 @@ impl Lexer {
             "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
-            "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT" => Ok(TokenKind::AssertWorktopContainsByAmount),
-            "ASSERT_WORKTOP_CONTAINS_BY_IDS" => Ok(TokenKind::AssertWorktopContainsByIds),
+            "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
+                Ok(TokenKind::AssertWorktopContainsNonFungibles)
+            }
             "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
             "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
             "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),

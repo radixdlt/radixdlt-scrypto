@@ -179,24 +179,24 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
-        Instruction::AssertWorktopContainsByAmount {
+        Instruction::AssertWorktopContains {
             amount,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS\n    Decimal(\"{}\")\n    Address(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder)
             )?;
         }
-        Instruction::AssertWorktopContainsByIds {
+        Instruction::AssertWorktopContainsNonFungibles {
             ids,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))

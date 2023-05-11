@@ -89,16 +89,16 @@ impl Parser {
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
-            TokenKind::AssertWorktopContainsByAmount => {
-                Instruction::AssertWorktopContainsByAmount {
-                    amount: self.parse_value()?,
+            TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
+                amount: self.parse_value()?,
+                resource_address: self.parse_value()?,
+            },
+            TokenKind::AssertWorktopContainsNonFungibles => {
+                Instruction::AssertWorktopContainsNonFungibles {
+                    ids: self.parse_value()?,
                     resource_address: self.parse_value()?,
                 }
             }
-            TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
-                ids: self.parse_value()?,
-                resource_address: self.parse_value()?,
-            },
             TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },

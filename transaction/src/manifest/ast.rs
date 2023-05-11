@@ -23,12 +23,12 @@ pub enum Instruction {
         bucket: Value,
     },
 
-    AssertWorktopContainsByAmount {
+    AssertWorktopContains {
         amount: Value,
         resource_address: Value,
     },
 
-    AssertWorktopContainsByIds {
+    AssertWorktopContainsNonFungibles {
         ids: Value,
         resource_address: Value,
     },

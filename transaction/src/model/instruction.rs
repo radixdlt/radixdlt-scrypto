@@ -34,13 +34,13 @@ pub enum Instruction {
     },
 
     /// Asserts worktop contains resource by at least the given amount.
-    AssertWorktopContainsByAmount {
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
-    AssertWorktopContainsByIds {
+    AssertWorktopContainsNonFungibles {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },

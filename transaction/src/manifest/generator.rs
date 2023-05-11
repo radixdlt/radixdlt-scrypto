@@ -248,17 +248,17 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktopContainsByAmount {
+        ast::Instruction::AssertWorktopContains {
             amount,
             resource_address,
-        } => Instruction::AssertWorktopContainsByAmount {
+        } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
-        ast::Instruction::AssertWorktopContainsByIds {
+        ast::Instruction::AssertWorktopContainsNonFungibles {
             ids,
             resource_address,
-        } => Instruction::AssertWorktopContainsByIds {
+        } => Instruction::AssertWorktopContainsNonFungibles {
             ids: generate_non_fungible_local_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
@@ -1457,8 +1457,8 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");"#,
-            Instruction::AssertWorktopContainsByAmount {
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");"#,
+            Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },

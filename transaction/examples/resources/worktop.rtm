@@ -7,8 +7,7 @@ CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_add
 # Buy GUM with XRD
 TAKE_FROM_WORKTOP Decimal("2.0") Address("${xrd_resource_address}") Bucket("xrd");
 CALL_METHOD Address("${component_address}") "buy_gumball" Bucket("xrd");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("${gumball_resource_address}");
-ASSERT_WORKTOP_CONTAINS Address("${gumball_resource_address}");
+ASSERT_WORKTOP_CONTAINS Decimal("3.0") Address("${gumball_resource_address}");
 
 # Create a proof from bucket, clone it and drop both
 TAKE_ALL_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
