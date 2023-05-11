@@ -34,7 +34,7 @@ impl TransactionFuzzer {
             wasm_metering_config: WasmMeteringConfig::V0,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
             .bootstrap_test_default()
             .unwrap();
 

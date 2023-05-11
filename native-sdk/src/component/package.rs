@@ -22,8 +22,9 @@ impl BorrowedPackage {
     where
         Y: ClientApi<E>,
     {
-        api.call_module_method(
+        api.call_method_advanced(
             self.0.as_node_id(),
+            false,
             ObjectModuleId::Main,
             PACKAGE_SET_ROYALTY_CONFIG_IDENT,
             scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),

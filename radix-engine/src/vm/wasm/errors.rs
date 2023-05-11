@@ -110,6 +110,8 @@ pub enum WasmRuntimeError {
     InvalidString,
     /// Invalid RE node ID
     InvalidNodeId,
+    /// Invalid reference type
+    InvalidReferenceType(u32),
     /// Invalid RE module ID
     InvalidModuleId(u32),
     /// Invalid substate offset

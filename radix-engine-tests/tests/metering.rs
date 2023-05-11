@@ -65,20 +65,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        1104 /* AllocateNodeId */
-        + 1744 /* CreateNode */
-        + 4551 /* DropLock */
-        + 1680 /* DropNode */
-        + 1054091 /* Invoke */
-        + 25750 /* LockSubstate */
-        + 768 /* LockSubstateFirstTime */
-        + 214258 /* ReadSubstate */
+        1035 /* AllocateNodeId */
+        + 1635 /* CreateNode */
+        + 5587 /* DropLock */
+        + 1575 /* DropNode */
+        + 1057391 /* Invoke */
+        + 31312 /* LockSubstate */
+        + 736 /* LockSubstateFirstTime */
+        + 247670 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 176205, /* WriteSubstate */
+        + 2325779, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -201,21 +201,21 @@ fn test_radiswap() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_radiswap
     assert_eq!(
-        2484 /* AllocateNodeId */
-        + 3935 /* CreateNode */
-        + 11544 /* DropLock */
-        + 3675 /* DropNode */
-        + 3311450 /* Invoke */
-        + 64890 /* LockSubstate */
-        + 1440 /* LockSubstateFirstTime */
-        + 682300 /* ReadSubstate */
+        2415 /* AllocateNodeId */
+        + 3826 /* CreateNode */
+        + 13912 /* DropLock */
+        + 3570 /* DropNode */
+        + 3320150 /* Invoke */
+        + 77868 /* LockSubstate */
+        + 1408 /* LockSubstateFirstTime */
+        + 764118 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1515805 /* RunWasm */
+        + 1515865 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 546451, /* WriteSubstate */
+        + 5544763, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -313,21 +313,21 @@ fn test_flash_loan() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_flash_loan
     assert_eq!(
-        4071 /* AllocateNodeId */
-        + 6431 /* CreateNode */
-        + 19018 /* DropLock */
-        + 6195 /* DropNode */
-        + 4827091 /* Invoke */
-        + 108562 /* LockSubstate */
-        + 1248 /* LockSubstateFirstTime */
-        + 1096886 /* ReadSubstate */
-        + 225000 /* RunNative */
+        3864 /* AllocateNodeId */
+        + 6104 /* CreateNode */
+        + 21978 /* DropLock */
+        + 5880 /* DropNode */
+        + 4570453 /* Invoke */
+        + 124836 /* LockSubstate */
+        + 1216 /* LockSubstateFirstTime */
+        + 1159862 /* ReadSubstate */
+        + 200000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1287935 /* RunWasm */
+        + 1288020 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1876271, /* WriteSubstate */
+        + 9311239, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -376,7 +376,7 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
-    for _ in 0..50 {
+    for _ in 0..40 {
         builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });

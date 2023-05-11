@@ -18,6 +18,7 @@ pub trait WasmRuntime {
     fn call_method(
         &mut self,
         receiver: Vec<u8>,
+        direct_access: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -109,6 +110,8 @@ pub trait WasmRuntime {
         &mut self,
         handle: LockHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
+
+    fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 

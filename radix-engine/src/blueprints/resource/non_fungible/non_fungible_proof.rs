@@ -1,5 +1,7 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
+use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
@@ -156,18 +158,25 @@ impl NonFungibleProofBlueprint {
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let parent = api
-            .get_object_info(proof.0.as_node_id())?
-            .outer_object
-            .unwrap();
+        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
-        api.call_method(
-            parent.as_node_id(),
-            RESOURCE_MANAGER_DROP_PROOF_IDENT,
-            scrypto_encode(&ResourceManagerDropProofInput { proof }).unwrap(),
+        // Notify underlying buckets/vaults
+        let handle = api.kernel_lock_substate(
+            proof.0.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &NonFungibleProofField::ProofRefs.into(),
+            LockFlags::read_only(),
+            SystemLockData::Default,
         )?;
+        let proof_substate: NonFungibleProof =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        proof_substate.drop_proof(api)?;
+        api.kernel_drop_lock(handle)?;
+
+        // Drop self
+        api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
     }

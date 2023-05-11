@@ -1,6 +1,7 @@
 use radix_engine::{
     blueprints::resource::BucketError,
-    errors::{ApplicationError, KernelError, RuntimeError},
+    errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
+    kernel::call_frame::DropNodeError,
     types::*,
 };
 use scrypto_unit::*;
@@ -261,7 +262,9 @@ fn test_drop_locked_fungible_bucket() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(_))
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
+                DropNodeError::NodeBorrowed(_, _)
+            )))
         )
     });
 }
@@ -298,7 +301,9 @@ fn test_drop_locked_non_fungible_bucket() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::DropNodeFailure(_))
+            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::DropNodeError(
+                DropNodeError::NodeBorrowed(_, _)
+            )))
         )
     });
 }

@@ -1,11 +1,12 @@
 use crate::types::*;
+use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
-    pub instance: GlobalAddress,
-    pub instance_blueprint: String,
+    pub outer_object: GlobalAddress,
+    pub outer_blueprint: String,
 }
 
 /// No method acting here!
@@ -17,6 +18,7 @@ pub struct MethodActor {
     pub ident: String,
     pub object_info: ObjectInfo,
     pub instance_context: Option<InstanceContext>,
+    pub is_direct_access: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
@@ -28,6 +30,44 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn len(&self) -> usize {
+        match self {
+            Actor::Root => 1,
+            Actor::Method(MethodActor { node_id, ident, .. }) => {
+                node_id.as_ref().len() + ident.len()
+            }
+            Actor::Function { blueprint, ident } => {
+                blueprint.package_address.as_ref().len()
+                    + blueprint.blueprint_name.len()
+                    + ident.len()
+            }
+            Actor::VirtualLazyLoad { blueprint, .. } => {
+                blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1
+            }
+        }
+    }
+
+    pub fn is_auth_zone(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => {
+                object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
+                    && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
+            }
+            Actor::Function { .. } => false,
+            Actor::VirtualLazyLoad { .. } => false,
+            Actor::Root { .. } => false,
+        }
+    }
+
+    pub fn is_barrier(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
+            Actor::Function { .. } => true,
+            Actor::VirtualLazyLoad { .. } => false,
+            Actor::Root { .. } => false,
+        }
+    }
+
     pub fn fn_identifier(&self) -> FnIdentifier {
         match self {
             Actor::Root => panic!("Should never be called"),
@@ -148,6 +188,7 @@ impl Actor {
         method: MethodIdentifier,
         object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
+        is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
             global_address,
@@ -156,6 +197,7 @@ impl Actor {
             ident: method.2,
             object_info,
             instance_context,
+            is_direct_access,
         })
     }
 

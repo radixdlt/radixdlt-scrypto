@@ -12,7 +12,7 @@ use utils::ContextualDisplay;
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
     bytes: Vec<u8>,
-    references: IndexSet<NodeId>,
+    references: Vec<NodeId>,
     owned_nodes: Vec<NodeId>,
     scrypto_value: RefCell<Option<ScryptoValue>>,
 }
@@ -25,7 +25,7 @@ impl IndexedScryptoValue {
             ExpectedStart::PayloadPrefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX),
             true,
         );
-        let mut references = index_set_new::<NodeId>();
+        let mut references = Vec::<NodeId>::new();
         let mut owned_nodes = Vec::<NodeId>::new();
         loop {
             let event = traverser.next_event();
@@ -36,7 +36,7 @@ impl IndexedScryptoValue {
                     if let traversal::TerminalValueRef::Custom(c) = r {
                         match c.0 {
                             ScryptoCustomValue::Reference(node_id) => {
-                                references.insert(node_id.0.into());
+                                references.push(node_id.0.into());
                             }
                             ScryptoCustomValue::Own(node_id) => {
                                 owned_nodes.push(node_id.0.into());
@@ -116,15 +116,19 @@ impl IndexedScryptoValue {
         self.bytes.as_slice()
     }
 
-    pub fn references(&self) -> &IndexSet<NodeId> {
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn references(&self) -> &Vec<NodeId> {
         &self.references
     }
 
-    pub fn owned_node_ids(&self) -> &Vec<NodeId> {
+    pub fn owned_nodes(&self) -> &Vec<NodeId> {
         &self.owned_nodes
     }
 
-    pub fn unpack(self) -> (Vec<u8>, Vec<NodeId>, IndexSet<NodeId>) {
+    pub fn unpack(self) -> (Vec<u8>, Vec<NodeId>, Vec<NodeId>) {
         (self.bytes, self.owned_nodes, self.references)
     }
 }

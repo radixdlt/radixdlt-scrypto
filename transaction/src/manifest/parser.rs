@@ -234,6 +234,18 @@ impl Parser {
                 key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
+            TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
+                entity_address: self.parse_value()?,
+                object_key: self.parse_value()?,
+                group: self.parse_value()?,
+                rule: self.parse_value()?,
+            },
+            TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+                entity_address: self.parse_value()?,
+                object_key: self.parse_value()?,
+                group: self.parse_value()?,
+                mutability: self.parse_value()?,
+            },
             TokenKind::MintFungible => Instruction::MintFungible {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,

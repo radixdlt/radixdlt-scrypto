@@ -86,11 +86,14 @@ fn set_up_package_and_component() -> (
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .call_function(
+            .set_package_royalty_config(
                 package_address,
-                "RoyaltyTest",
-                "enable_royalty_for_this_package",
-                manifest_args!(),
+                btreemap!(
+                    "RoyaltyTest".to_string() => RoyaltyConfigBuilder::new()
+                        .add_rule("paid_method", 2)
+                        .add_rule("paid_method_panic", 2)
+                        .default(0)
+                ),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -264,12 +267,7 @@ fn test_claim_royalty() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "claim_package_royalty",
-                manifest_args!(package_address),
-            )
+            .claim_package_royalty(package_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -284,12 +282,7 @@ fn test_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "claim_component_royalty",
-                manifest_args!(component_address),
-            )
+            .claim_component_royalty(component_address)
             .call_method(
                 account,
                 "deposit_batch",
