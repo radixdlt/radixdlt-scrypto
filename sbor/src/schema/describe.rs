@@ -34,10 +34,10 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// ```
     const TYPE_ID: GlobalTypeId;
 
-    /// Returns the local schema for the given type. Should return `Some(_)` if `TYPE_ID` is Novel, else it should return `None`.
-    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-        None
-    }
+    /// Returns the local schema for the given type.
+    ///
+    /// If the `TYPE_ID` is well_known, then this type data must match the corresponding well known type data.
+    fn type_data() -> TypeData<C, GlobalTypeId>;
 
     /// For each type referenced in `get_local_type_data`, we need to ensure that the type and all of its own references
     /// get added to the aggregator.

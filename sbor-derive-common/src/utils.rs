@@ -299,6 +299,10 @@ fn get_sbor_attribute_string_value(
     Ok(attributes.get(field_name).and_then(|v| v.as_string()))
 }
 
+pub fn get_sbor_bool_value(attributes: &[Attribute], attribute_name: &str) -> Result<bool> {
+    extract_sbor_typed_attributes(&attributes)?.get_bool_value(attribute_name)
+}
+
 pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
     let attributes = extract_sbor_typed_attributes(&f.attrs)?;
     Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_categorize")?)

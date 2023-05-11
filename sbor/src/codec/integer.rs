@@ -165,17 +165,17 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    describe_basic_well_known_type!(u8, U8_ID);
-    describe_basic_well_known_type!(u16, U16_ID);
-    describe_basic_well_known_type!(u32, U32_ID);
-    describe_basic_well_known_type!(u64, U64_ID);
-    describe_basic_well_known_type!(u128, U128_ID);
-    describe_basic_well_known_type!(i8, I8_ID);
-    describe_basic_well_known_type!(i16, I16_ID);
-    describe_basic_well_known_type!(i32, I32_ID);
-    describe_basic_well_known_type!(i64, I64_ID);
-    describe_basic_well_known_type!(i128, I128_ID);
+    describe_basic_well_known_type!(u8, U8_ID, u8_type_data);
+    describe_basic_well_known_type!(u16, U16_ID, u16_type_data);
+    describe_basic_well_known_type!(u32, U32_ID, u32_type_data);
+    describe_basic_well_known_type!(u64, U64_ID, u64_type_data);
+    describe_basic_well_known_type!(u128, U128_ID, u128_type_data);
+    describe_basic_well_known_type!(i8, I8_ID, i8_type_data);
+    describe_basic_well_known_type!(i16, I16_ID, i16_type_data);
+    describe_basic_well_known_type!(i32, I32_ID, i32_type_data);
+    describe_basic_well_known_type!(i64, I64_ID, i64_type_data);
+    describe_basic_well_known_type!(i128, I128_ID, i128_type_data);
 
-    describe_basic_well_known_type!(usize, U64_ID);
-    describe_basic_well_known_type!(isize, I64_ID);
+    describe_basic_well_known_type!(usize, U64_ID, u64_type_data);
+    describe_basic_well_known_type!(isize, I64_ID, i64_type_data);
 }

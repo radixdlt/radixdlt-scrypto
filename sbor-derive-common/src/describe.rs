@@ -23,7 +23,7 @@ pub fn handle_describe(
     let is_transparent = is_transparent(&parsed.attrs)?;
 
     let output = if is_transparent {
-        handle_transparent_describe(parsed, context_custom_type_kind)?
+        handle_transparent_describe(parsed, code_hash, context_custom_type_kind)?
     } else {
         handle_normal_describe(parsed, code_hash, context_custom_type_kind)?
     };
@@ -37,6 +37,7 @@ pub fn handle_describe(
 
 fn handle_transparent_describe(
     parsed: DeriveInput,
+    code_hash: TokenStream,
     context_custom_type_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
     let DeriveInput {
@@ -62,12 +63,35 @@ fn handle_transparent_describe(
 
             let field_type = &unskipped_field_types[0];
 
+            let mut type_data_content = quote! {
+                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+            };
+            let mut type_id = quote! {
+                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
+            };
+
+            // Replace the type name, unless opted out using the "transparent_name" tag
+            if !get_sbor_bool_value(&attrs, "transparent_name")? {
+                type_data_content = quote! {
+                    use ::sbor::rust::prelude::*;
+                    #type_data_content
+                        .with_name(Some(Cow::Borrowed(stringify!(#ident))))
+                };
+                type_id = quote! {
+                    ::sbor::GlobalTypeId::novel_with_code(
+                        stringify!(#ident),
+                        &[#type_id],
+                        &#code_hash
+                    )
+                };
+            };
+
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::GlobalTypeId = <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID;
+                    const TYPE_ID: ::sbor::GlobalTypeId = #type_id;
 
-                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                        #type_data_content
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -129,13 +153,13 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_named_fields(
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_named_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
                                     #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
-                            ))
+                            )
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -169,13 +193,13 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_unnamed_fields(
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_unnamed_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
                                     #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
-                            ))
+                            )
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -193,8 +217,8 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_unit_fields(stringify!(#ident)))
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_unit_fields(stringify!(#ident))
                         }
                     }
                 }
@@ -260,14 +284,14 @@ fn handle_normal_describe(
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::enum_variants(
+                        ::sbor::TypeData::enum_variants(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -311,15 +335,15 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_named_fields(
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                                 ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
                                 ("c", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
@@ -352,11 +376,11 @@ mod tests {
                         &[],
                         &#code_hash
                     );
-                    fn type_data() -> Option<
+                    fn type_data() ->
                         ::sbor::TypeData<
                             radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
-                            ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_named_fields(
+                            ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 (
@@ -378,7 +402,7 @@ mod tests {
                                     >>::TYPE_ID
                                 ),
                             ],
-                        ))
+                        )
                     }
                     fn add_all_dependencies(
                         aggregator: &mut ::sbor::TypeAggregator<
@@ -409,15 +433,15 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_unnamed_fields(
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_unnamed_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                                 <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
@@ -445,8 +469,8 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_unit_fields(stringify!(Test)))
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_unit_fields(stringify!(Test))
                     }
                 }
             },
@@ -474,9 +498,9 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::enum_variants(
+                        ::sbor::TypeData::enum_variants(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
@@ -494,7 +518,7 @@ mod tests {
                                     ],
                                 ),
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
