@@ -58,12 +58,3 @@ pub const RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT: &str = "get_total_supply";
 pub struct ResourceManagerGetTotalSupplyInput {}
 
 pub type ResourceManagerGetTotalSupplyOutput = Decimal;
-
-pub const RESOURCE_MANAGER_DROP_PROOF_IDENT: &str = "drop_proof";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct ResourceManagerDropProofInput {
-    pub proof: Proof,
-}
-
-pub type ResourceManagerDropProofOutput = ();

@@ -5,8 +5,8 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
-    pub instance: GlobalAddress,
-    pub instance_blueprint: String,
+    pub outer_object: GlobalAddress,
+    pub outer_blueprint: String,
 }
 
 /// No method acting here!
@@ -18,6 +18,7 @@ pub struct MethodActor {
     pub ident: String,
     pub object_info: ObjectInfo,
     pub instance_context: Option<InstanceContext>,
+    pub is_direct_access: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
@@ -29,6 +30,23 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn len(&self) -> usize {
+        match self {
+            Actor::Root => 1,
+            Actor::Method(MethodActor { node_id, ident, .. }) => {
+                node_id.as_ref().len() + ident.len()
+            }
+            Actor::Function { blueprint, ident } => {
+                blueprint.package_address.as_ref().len()
+                    + blueprint.blueprint_name.len()
+                    + ident.len()
+            }
+            Actor::VirtualLazyLoad { blueprint, .. } => {
+                blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1
+            }
+        }
+    }
+
     pub fn is_auth_zone(&self) -> bool {
         match self {
             Actor::Method(MethodActor { object_info, .. }) => {
@@ -170,6 +188,7 @@ impl Actor {
         method: MethodIdentifier,
         object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
+        is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
             global_address,
@@ -178,6 +197,7 @@ impl Actor {
             ident: method.2,
             object_info,
             instance_context,
+            is_direct_access,
         })
     }
 

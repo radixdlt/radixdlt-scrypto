@@ -31,7 +31,7 @@ pub enum CostingEntry<'a> {
     /* substate */
     LockSubstate {
         node_id: &'a NodeId,
-        module_num: &'a PartitionNumber,
+        partition_num: &'a PartitionNumber,
         substate_key: &'a SubstateKey,
     },
     LockSubstateFirstTime,
@@ -297,7 +297,7 @@ impl FeeTable {
             }
             CostingEntry::LockSubstate {
                 node_id: _,
-                module_num: _,
+                partition_num: _,
                 substate_key: _,
             } => 632, // todo: determine correct value
             CostingEntry::LockSubstateFirstTime => 100, // todo: determine correct value

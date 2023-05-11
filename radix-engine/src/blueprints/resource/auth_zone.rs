@@ -93,6 +93,7 @@ impl AuthZoneBlueprint {
         let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, input.resource_address, None, api)?;
+        // Handles are dropped automatically; alternatively, we can manually drop them here!
 
         let blueprint_name = match &composed_proof {
             ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
@@ -290,5 +291,44 @@ impl AuthZoneBlueprint {
         api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(IndexedScryptoValue::from_typed(&proofs))
+    }
+
+    pub(crate) fn drop<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    {
+        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+
+        let input: AuthZoneDropInput = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        // Detach proofs from the auth zone
+        let handle = api.kernel_lock_substate(
+            input.auth_zone.0.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+            SystemLockData::Default,
+        )?;
+        let mut auth_zone_substate: AuthZone =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
+        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
+        api.kernel_drop_lock(handle)?;
+
+        // Destroy all proofs
+        // Note: the current auth zone will be used for authentication; It's just empty.
+        for proof in proofs {
+            proof.sys_drop(api)?;
+        }
+
+        // Drop self
+        api.drop_object(input.auth_zone.0.as_node_id())?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }

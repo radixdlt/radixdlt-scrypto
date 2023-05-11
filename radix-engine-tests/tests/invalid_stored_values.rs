@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::UnlockSubstateError;
+use radix_engine::kernel::call_frame::{MoveModuleError, PersistNodeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -27,7 +27,9 @@ fn stored_bucket_in_committed_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
+                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                    PersistNodeError::CantBeStored(_)
+                ))
             ))
         )
     });
@@ -56,7 +58,9 @@ fn stored_bucket_in_owned_component_should_fail() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantBeStored(_))
+                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
+                    PersistNodeError::CantBeStored(_)
+                ))
             ))
         )
     });

@@ -7,7 +7,7 @@ mod reference_test {
     }
 
     impl ReferenceTest {
-        pub fn new() {
+        pub fn create_global_node_with_local_ref() {
             let bucket = Bucket::new(RADIX_TOKEN);
 
             Self {
@@ -17,6 +17,20 @@ mod reference_test {
             .globalize();
 
             bucket.drop_empty();
+        }
+
+        pub fn new() -> ComponentAddress {
+            Self {
+                reference: Reference(RADIX_TOKEN.as_node_id().clone()),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn add_local_ref_to_stored_substate(&mut self) {
+            let bucket = Bucket::new(RADIX_TOKEN);
+
+            self.reference = Reference(bucket.0.as_node_id().clone());
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
@@ -229,20 +229,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api, on_teardown(api))
     }
 
-    #[trace_resources(log=input_size)]
+    #[trace_resources(log=invocation.len())]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<Actor>,
-        input_size: usize,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_invoke(api, identifier, input_size))
+        internal_call_dispatch!(api, before_invoke(api, invocation))
     }
 
     #[trace_resources]
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, before_push_frame(api, callee, update, args))
@@ -256,14 +255,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &CallFrameUpdate,
+        update: &Message,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_execution_finish(api, update))
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api))
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor))
     }
 
     #[trace_resources(log=output_size)]
@@ -317,13 +319,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &PartitionNumber,
+        partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            before_lock_substate(api, node_id, module_id, substate_key, flags)
+            before_lock_substate(api, node_id, partition_number, substate_key, flags)
         )
     }
 

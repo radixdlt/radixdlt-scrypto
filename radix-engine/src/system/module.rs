@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -36,8 +36,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _identifier: &KernelInvocation<Actor>,
-        _input_size: usize,
+        _invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -46,7 +45,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_push_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _callee: &Actor,
-        _down_movement: &mut CallFrameUpdate,
+        _message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -60,13 +59,16 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _up_movement: &CallFrameUpdate,
+        _up_movement: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn after_pop_frame<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_pop_frame<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -129,7 +131,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_lock_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _module_num: &PartitionNumber,
+        _partition_num: &PartitionNumber,
         _offset: &SubstateKey,
         _flags: &LockFlags,
     ) -> Result<(), RuntimeError> {

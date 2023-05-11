@@ -56,10 +56,11 @@ impl VirtualizationModule {
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {
-                    additional_node_ref_to_copy: None,
+                    actor: Actor::VirtualLazyLoad {
+                        blueprint,
+                        ident: virtual_func_id,
+                    },
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
-                    call_frame_data: Actor::virtual_lazy_load(blueprint.clone(), virtual_func_id),
-                    payload_size: 0,
                 };
 
                 let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();

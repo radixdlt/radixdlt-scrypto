@@ -1,5 +1,7 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{LockSubstateError, MoveError, UnlockSubstateError};
+use radix_engine::kernel::call_frame::{
+    CreateNodeError, LockSubstateError, TakeNodeError, UnlockSubstateError,
+};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -66,7 +68,7 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -95,8 +97,8 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::MoveError(
-                    MoveError::CantMoveLockedNode(_)
+                CallFrameError::CreateNodeError(CreateNodeError::TakeNodeError(
+                    TakeNodeError::OwnLocked(_)
                 ))
             ))
         )
@@ -306,7 +308,7 @@ fn cannot_directly_reference_inserted_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -335,7 +337,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -364,7 +366,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotInCallFrame(_))
+                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
             ))
         )
     });

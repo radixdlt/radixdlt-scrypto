@@ -1,6 +1,6 @@
-use super::call_frame::RefType;
+use super::call_frame::NodeVisibility;
 use crate::errors::*;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::actor::Actor;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::system_modules::execution_trace::BucketSnapshot;
 use crate::system::system_modules::execution_trace::ProofSnapshot;
@@ -13,9 +13,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 
 /// API for managing nodes
 pub trait KernelNodeApi {
-    /// Removes an RENode and all of it's children from the Heap
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
-
     /// TODO: Remove
     fn kernel_allocate_virtual_node_id(&mut self, node_id: NodeId) -> Result<(), RuntimeError>;
 
@@ -28,6 +25,33 @@ pub trait KernelNodeApi {
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError>;
+
+    /// Removes an RENode. Owned children will be possessed by the call frame.
+    ///
+    /// Dropped substates can't necessary be added back due to visibility loss.
+    /// Clients should consider the return value as "raw data".
+    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError>;
+
+    /// Moves module substates from one node to another node.
+    ///
+    /// The source node must be in heap and lock-free; otherwise a runtime error is returned.
+    ///
+    /// Note that implementation will not check if the destination already exists.
+    fn kernel_move_module(
+        &mut self,
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+    ) -> Result<(), RuntimeError>;
+
+    /// Lists the modules under a node.
+    ///
+    /// Only allowed for heap nodes; otherwise a runtime error is returned.
+    fn kernel_list_modules(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<BTreeSet<PartitionNumber>, RuntimeError>;
 }
 
 /// Info regarding the substate locked as well as what type of lock
@@ -143,45 +167,32 @@ pub trait KernelSubstateApi<L> {
 }
 
 #[derive(Debug)]
-pub struct KernelInvocation<D> {
+pub struct KernelInvocation {
+    /// TODO: redo actor generification
+    /// Temporarily restored as there's a large conflict with `develop` branch
+    pub actor: Actor,
     pub args: IndexedScryptoValue,
-    /// Used for receiver reference copying
-    /// TODO: Is there a better abstraction for this?
-    pub additional_node_ref_to_copy: Option<NodeId>,
-    pub call_frame_data: D,
-
-    // TODO: Remove
-    pub payload_size: usize,
 }
 
-impl<D> KernelInvocation<D> {
-    pub fn get_update(&self) -> CallFrameUpdate {
-        let nodes_to_move = self.args.owned_node_ids().clone();
-        let mut node_refs_to_copy = self.args.references().clone();
-        if let Some(node_id) = self.additional_node_ref_to_copy {
-            node_refs_to_copy.insert(node_id);
-        }
-
-        CallFrameUpdate {
-            nodes_to_move,
-            node_refs_to_copy,
-        }
+impl KernelInvocation {
+    pub fn len(&self) -> usize {
+        self.actor.len() + self.args.len()
     }
 }
 
 /// API for invoking a function creating a new call frame and passing
 /// control to the callee
-pub trait KernelInvokeApi<D> {
+pub trait KernelInvokeApi {
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation<D>>,
+        invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: &'a M::CallFrameData,
-    pub caller: &'a M::CallFrameData,
+    pub current: &'a Actor,
+    pub caller: &'a Actor,
 }
 
 /// Internal API for kernel modules.
@@ -198,7 +209,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_current_depth(&self) -> usize;
 
     // TODO: Cleanup
-    fn kernel_get_node_info(&self, node_id: &NodeId) -> Option<(RefType, bool)>;
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
@@ -206,9 +217,6 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi
-    + KernelSubstateApi<M::LockData>
-    + KernelInvokeApi<M::CallFrameData>
-    + KernelInternalApi<M>
+    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi + KernelInternalApi<M>
 {
 }
