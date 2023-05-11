@@ -2,8 +2,14 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::math::Decimal;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
+use radix_engine_interface::constants::RESOURCE_PACKAGE;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
+use sbor::rust::vec::Vec;
+use sbor::*;
 
 pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 
@@ -108,3 +114,35 @@ pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
 pub struct AuthZoneDrainInput {}
 
 pub type AuthZoneDrainOutput = Vec<Proof>;
+
+pub const AUTH_ZONE_DROP_IDENT: &str = "drop";
+
+pub const AUTH_ZONE_DROP_EXPORT_NAME: &str = "AuthZone_drop";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AuthZoneDropInput {
+    pub auth_zone: OwnedAuthZone,
+}
+
+pub type AuthZoneDropOutput = ();
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(transparent)]
+pub struct OwnedAuthZone(pub Own);
+
+impl Describe<ScryptoCustomTypeKind> for OwnedAuthZone {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::Novel(const_sha1::sha1("OwnedAuthZone".as_bytes()).as_bytes());
+
+    fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
+        Some(TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
+            metadata: TypeMetadata::no_child_names("OwnedAuthZone"),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT.to_string()),
+            )),
+        })
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}

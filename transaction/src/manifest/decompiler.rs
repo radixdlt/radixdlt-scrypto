@@ -604,6 +604,32 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
+        Instruction::SetGroupAccessRule {
+            entity_address,
+            object_key,
+            group,
+            rule,
+        } => {
+            f.write_str("SET_GROUP_ACCESS_RULE")?;
+            format_typed_value(f, context, entity_address)?;
+            format_typed_value(f, context, object_key)?;
+            format_typed_value(f, context, group)?;
+            format_typed_value(f, context, rule)?;
+            f.write_str(";")?;
+        }
+        Instruction::SetGroupMutability {
+            entity_address,
+            object_key,
+            group,
+            mutability,
+        } => {
+            f.write_str("SET_GROUP_MUTABILITY")?;
+            format_typed_value(f, context, entity_address)?;
+            format_typed_value(f, context, object_key)?;
+            format_typed_value(f, context, group)?;
+            format_typed_value(f, context, mutability)?;
+            f.write_str(";")?;
+        }
         Instruction::MintFungible {
             resource_address,
             amount,

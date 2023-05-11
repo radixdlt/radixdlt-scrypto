@@ -27,26 +27,5 @@ mod royalty_test {
 
             local_component.globalize_with_royalty_config(config)
         }
-
-        pub fn enable_royalty_for_this_package() {
-            let package_address = Runtime::package_address();
-
-            borrow_package!(package_address).set_royalty_config(BTreeMap::from([(
-                "RoyaltyTest".to_owned(),
-                RoyaltyConfigBuilder::new()
-                    .add_rule("paid_method", 2)
-                    .add_rule("paid_method_panic", 2)
-                    .default(0),
-            )]));
-        }
-
-        pub fn claim_package_royalty(address: PackageAddress) -> Bucket {
-            borrow_package!(address).claim_royalty()
-        }
-
-        pub fn claim_component_royalty(address: ComponentAddress) -> Bucket {
-            let royalty = borrow_component!(address).royalty();
-            royalty.claim_royalty()
-        }
     }
 }
