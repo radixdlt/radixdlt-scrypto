@@ -13,8 +13,8 @@ pub enum ManifestCustomValue {
     NonFungibleLocalId(ManifestNonFungibleLocalId),
 }
 
-impl ManifestCustomValue {
-    pub fn get_custom_value_kind(&self) -> ManifestCustomValueKind {
+impl CustomValue<ManifestCustomValueKind> for ManifestCustomValue {
+    fn get_custom_value_kind(&self) -> ManifestCustomValueKind {
         match self {
             ManifestCustomValue::Address(_) => ManifestCustomValueKind::Address,
             ManifestCustomValue::Bucket(_) => ManifestCustomValueKind::Bucket,

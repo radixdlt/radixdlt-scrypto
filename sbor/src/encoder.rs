@@ -6,7 +6,22 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum EncodeError {
     MaxDepthExceeded(usize),
-    SizeTooLarge { actual: usize, max_allowed: usize },
+    SizeTooLarge {
+        actual: usize,
+        max_allowed: usize,
+    },
+    MismatchingArrayElementValueKind {
+        element_value_kind: u8,
+        actual_value_kind: u8,
+    },
+    MismatchingMapKeyType {
+        key_value_kind: u8,
+        actual_value_kind: u8,
+    },
+    MismatchingMapValueType {
+        value_value_kind: u8,
+        actual_value_kind: u8,
+    },
 }
 
 pub trait Encoder<X: CustomValueKind>: Sized {
