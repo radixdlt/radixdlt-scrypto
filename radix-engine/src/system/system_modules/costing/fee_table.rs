@@ -5,9 +5,13 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-const COSTING_COEFFICENT: u64 = 335;
-const COSTING_COEFFICENT_DIV_BITS: u64 = 4; // used to divide by shift left operator
-const COSTING_COEFFICENT_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
+const COSTING_COEFFICENT_CPU: u64 = 335;
+const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
+const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
+
+const COSTING_COEFFICENT_STORAGE: u64 = 10;
+const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
+
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -311,10 +315,10 @@ impl FeeTable {
                 node_id: _,
                 partition_num: _,
                 substate_key: _,
-            } => 632, // todo: determine correct value
-            CostingEntry::ScanSubstate => 100, // todo: determine correct value
-            CostingEntry::SetSubstate => 100,  // todo: determine correct value
-            CostingEntry::TakeSubstate => 100, // todo: determine correct value
+            } => 100, // todo: determine correct value
+            CostingEntry::ScanSubstate => 16, // todo: determine correct value
+            CostingEntry::SetSubstate => 16,  // todo: determine correct value
+            CostingEntry::TakeSubstate => 16, // todo: determine correct value
             CostingEntry::ReadSubstate { size: _ } => 174,
             CostingEntry::WriteSubstate { size: _ } => 126,
 
@@ -327,27 +331,28 @@ impl FeeTable {
                 size_new: _,
             } => 0,
         }) as u64
-            * COSTING_COEFFICENT
-            >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32
+            * COSTING_COEFFICENT_CPU
+            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON)) as u32
     }
 
     fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
-        match entry {
+        ((match entry {
             CostingEntry::Invoke {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::ReadSubstate { size } => 10 * size,
+            CostingEntry::ReadSubstate { size } => 100 * size,
             CostingEntry::WriteSubstate { size } => 1000 * size,
-            CostingEntry::SubstateReadFromDb { size } => 10 * size, // todo: determine correct value
-            CostingEntry::SubstateReadFromTrack { size } => 1 * size, // todo: determine correct value
-            CostingEntry::SubstateWriteToTrack { size } => 1 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromDb { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
+            CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
-            } => 1 * size_new, // todo: determine correct value
+            } => 10 * size_new, // todo: determine correct value
             _ => 0,
-        }
+        }) as u64 
+            * COSTING_COEFFICENT_STORAGE >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {

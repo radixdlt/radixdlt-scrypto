@@ -688,12 +688,13 @@ where
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
-        let value_size = value.as_slice().len();
+        let mut value_size = value.len();
 
         // TODO: replace this overwrite with proper packing costing rule
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
             store_access.clear();
+            value_size = 0;
         }
 
         M::on_read_substate(lock_handle, value_size, &store_access, self)?;
