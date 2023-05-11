@@ -89,9 +89,6 @@ impl Parser {
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
-            TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
-                resource_address: self.parse_value()?,
-            },
             TokenKind::AssertWorktopContainsByAmount => {
                 Instruction::AssertWorktopContainsByAmount {
                     amount: self.parse_value()?,

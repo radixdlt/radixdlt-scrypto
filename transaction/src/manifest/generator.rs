@@ -248,11 +248,6 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktopContains { resource_address } => {
-            Instruction::AssertWorktopContains {
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            }
-        }
         ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,

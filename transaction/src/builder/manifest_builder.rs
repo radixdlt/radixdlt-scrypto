@@ -147,12 +147,6 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains(&mut self, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains { resource_address })
-            .0
-    }
-
-    /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,

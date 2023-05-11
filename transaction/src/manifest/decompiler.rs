@@ -179,13 +179,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
-        Instruction::AssertWorktopContains { resource_address } => {
-            write!(
-                f,
-                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\");",
-                resource_address.display(context.bech32_encoder)
-            )?;
-        }
         Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,

@@ -33,11 +33,6 @@ pub enum Instruction {
         bucket_id: ManifestBucket,
     },
 
-    /// Asserts worktop contains resource.
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-
     /// Asserts worktop contains resource by at least the given amount.
     AssertWorktopContainsByAmount {
         amount: Decimal,

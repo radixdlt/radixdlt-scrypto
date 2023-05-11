@@ -23,10 +23,6 @@ pub enum Instruction {
         bucket: Value,
     },
 
-    AssertWorktopContains {
-        resource_address: Value,
-    },
-
     AssertWorktopContainsByAmount {
         amount: Value,
         resource_address: Value,
