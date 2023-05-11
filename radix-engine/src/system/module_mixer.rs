@@ -340,7 +340,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api, after_lock_substate(api, handle, store_access, size))
     }
 
-    #[trace_resources(log=size)]
+    #[trace_resources(log=value_size)]
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
@@ -353,7 +353,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
-    #[trace_resources(log=size)]
+    #[trace_resources(log=value_size)]
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
