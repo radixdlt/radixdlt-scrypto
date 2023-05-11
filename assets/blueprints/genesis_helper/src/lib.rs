@@ -53,7 +53,6 @@ pub enum GenesisDataChunk {
 mod genesis_helper {
     struct GenesisHelper {
         epoch_manager: ComponentAddress,
-        rounds_per_epoch: u64,
         xrd_vault: Vault,
         resource_vaults: KeyValueStore<ResourceAddress, Vault>,
         validators: KeyValueStore<EcdsaSecp256k1PublicKey, ComponentAddress>,
@@ -64,7 +63,6 @@ mod genesis_helper {
             preallocated_address_bytes: [u8; 30],
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
-            rounds_per_epoch: u64,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
             let mut config = AccessRulesConfig::new();
@@ -82,7 +80,6 @@ mod genesis_helper {
 
             Self {
                 epoch_manager,
-                rounds_per_epoch,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
                 resource_vaults: KeyValueStore::new(),
                 validators: KeyValueStore::new(),
