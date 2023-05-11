@@ -497,7 +497,7 @@ fn test_mint_update_and_withdraw() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account, badge_resource_address, 1.into())
         .create_proof_from_account_of_amount(account, nft_resource_address, 1.into())
-        .take_from_worktop(badge_resource_address, |builder, bucket_id| {
+        .take_all_from_worktop(badge_resource_address, |builder, bucket_id| {
             builder.pop_from_auth_zone(|builder, proof_id| {
                 builder.call_function(
                     package_address,

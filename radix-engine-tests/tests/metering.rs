@@ -122,8 +122,8 @@ fn test_radiswap() {
                 .lock_fee(account2, 10u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
-                .take_from_worktop(btc, |builder, bucket1| {
-                    builder.take_from_worktop(eth, |builder, bucket2| {
+                .take_all_from_worktop(btc, |builder, bucket1| {
+                    builder.take_all_from_worktop(eth, |builder, bucket2| {
                         builder.call_function(
                             package_address,
                             "Radiswap",
@@ -175,7 +175,7 @@ fn test_radiswap() {
         ManifestBuilder::new()
             .lock_fee(account3, 10u32.into())
             .withdraw_from_account(account3, btc, btc_to_swap)
-            .take_from_worktop(btc, |builder, bucket| {
+            .take_all_from_worktop(btc, |builder, bucket| {
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
             .call_method(
@@ -252,7 +252,7 @@ fn test_flash_loan() {
             ManifestBuilder::new()
                 .lock_fee(account2, 10u32.into())
                 .withdraw_from_account(account2, RADIX_TOKEN, xrd_init_amount)
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket1| {
+                .take_all_from_worktop(RADIX_TOKEN, |builder, bucket1| {
                     builder.call_function(
                         package_address,
                         "BasicFlashLoan",
@@ -280,8 +280,8 @@ fn test_flash_loan() {
             .lock_fee(account3, 10u32.into())
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
             .withdraw_from_account(account3, RADIX_TOKEN, dec!(10))
-            .take_from_worktop_by_amount(repay_amount, RADIX_TOKEN, |builder, bucket1| {
-                builder.take_from_worktop(promise_token_address, |builder, bucket2| {
+            .take_from_worktop(repay_amount, RADIX_TOKEN, |builder, bucket1| {
+                builder.take_all_from_worktop(promise_token_address, |builder, bucket2| {
                     builder.call_method(
                         component_address,
                         "repay_loan",
@@ -377,7 +377,7 @@ fn should_be_able_run_large_manifest() {
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..50 {
-        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
+        builder.take_from_worktop(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
     }
@@ -434,7 +434,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })

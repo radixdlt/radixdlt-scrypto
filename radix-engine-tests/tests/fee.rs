@@ -33,7 +33,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })

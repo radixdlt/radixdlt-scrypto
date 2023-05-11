@@ -106,11 +106,11 @@ impl Fuzzer {
                         *component_address = address;
                     }
                 }
-                Instruction::TakeFromWorktop { resource_address }
-                | Instruction::TakeFromWorktopByAmount {
+                Instruction::TakeAllFromWorktop { resource_address }
+                | Instruction::TakeFromWorktop {
                     resource_address, ..
                 }
-                | Instruction::TakeFromWorktopByIds {
+                | Instruction::TakeNonFungiblesFromWorktop {
                     resource_address, ..
                 }
                 | Instruction::AssertWorktopContains { resource_address }

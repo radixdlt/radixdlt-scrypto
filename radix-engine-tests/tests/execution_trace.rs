@@ -155,7 +155,7 @@ fn test_instruction_traces() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder.drop_proof(proof_id)
@@ -236,7 +236,7 @@ fn test_instruction_traces() {
     }
 
     {
-        // TAKE_FROM_WORKTOP
+        // TAKE_ALL_FROM_WORKTOP
         let traces = traces_for_instruction(&child_traces, 2);
         // Take from worktop is just a single sys call with a single bucket output
         assert_eq!(1, traces.len());
@@ -393,11 +393,11 @@ fn test_worktop_changes() {
             ]
             .into(),
         )
-        .take_from_worktop(fungible_resource, return_to_worktop)
-        .take_from_worktop_by_amount(20.into(), fungible_resource, return_to_worktop)
-        .take_from_worktop(non_fungible_resource, return_to_worktop)
-        .take_from_worktop_by_amount(2.into(), non_fungible_resource, return_to_worktop)
-        .take_from_worktop_by_ids(
+        .take_all_from_worktop(fungible_resource, return_to_worktop)
+        .take_from_worktop(20.into(), fungible_resource, return_to_worktop)
+        .take_all_from_worktop(non_fungible_resource, return_to_worktop)
+        .take_from_worktop(2.into(), non_fungible_resource, return_to_worktop)
+        .take_non_fungibles_from_worktop(
             &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),

@@ -66,9 +66,9 @@ impl ManifestBuilder {
         let mut new_proof_id: Option<ManifestProof> = None;
 
         match &inst {
-            Instruction::TakeFromWorktop { .. }
-            | Instruction::TakeFromWorktopByAmount { .. }
-            | Instruction::TakeFromWorktopByIds { .. } => {
+            Instruction::TakeAllFromWorktop { .. }
+            | Instruction::TakeFromWorktop { .. }
+            | Instruction::TakeNonFungiblesFromWorktop { .. } => {
                 new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
             Instruction::PopFromAuthZone { .. }
@@ -92,17 +92,21 @@ impl ManifestBuilder {
     }
 
     /// Takes resource from worktop.
-    pub fn take_from_worktop<F>(&mut self, resource_address: ResourceAddress, then: F) -> &mut Self
+    pub fn take_all_from_worktop<F>(
+        &mut self,
+        resource_address: ResourceAddress,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeFromWorktop { resource_address });
+            self.add_instruction(Instruction::TakeAllFromWorktop { resource_address });
         then(builder, bucket_id.unwrap())
     }
 
     /// Takes resource from worktop, by amount.
-    pub fn take_from_worktop_by_amount<F>(
+    pub fn take_from_worktop<F>(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
@@ -111,7 +115,7 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByAmount {
+        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktop {
             amount,
             resource_address,
         });
@@ -119,7 +123,7 @@ impl ManifestBuilder {
     }
 
     /// Takes resource from worktop, by non-fungible ids.
-    pub fn take_from_worktop_by_ids<F>(
+    pub fn take_non_fungibles_from_worktop<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
@@ -128,10 +132,11 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByIds {
-            ids: ids.clone(),
-            resource_address,
-        });
+        let (builder, bucket_id, _) =
+            self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
+                ids: ids.clone(),
+                resource_address,
+            });
         then(builder, bucket_id.unwrap())
     }
 
@@ -765,7 +770,7 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+        self.take_from_worktop(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -773,7 +778,7 @@ impl ManifestBuilder {
     }
 
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
-        self.take_from_worktop(resource_address, |builder, bucket_id| {
+        self.take_all_from_worktop(resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -844,7 +849,7 @@ impl ManifestBuilder {
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_global_id.local_id().clone());
-        self.take_from_worktop_by_ids(
+        self.take_non_fungibles_from_worktop(
             &ids,
             non_fungible_global_id.resource_address().clone(),
             |builder, bucket_id| {

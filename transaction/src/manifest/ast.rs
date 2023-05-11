@@ -2,18 +2,18 @@ use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestVa
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    TakeFromWorktop {
+    TakeAllFromWorktop {
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeFromWorktopByAmount {
+    TakeFromWorktop {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeFromWorktopByIds {
+    TakeNonFungiblesFromWorktop {
         ids: Value,
         resource_address: Value,
         new_bucket: Value,

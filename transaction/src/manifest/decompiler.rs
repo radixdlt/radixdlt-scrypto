@@ -115,7 +115,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        Instruction::TakeFromWorktop { resource_address } => {
+        Instruction::TakeAllFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -123,13 +123,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
         }
-        Instruction::TakeFromWorktopByAmount {
+        Instruction::TakeFromWorktop {
             amount,
             resource_address,
         } => {
@@ -141,13 +141,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
-        Instruction::TakeFromWorktopByIds {
+        Instruction::TakeNonFungiblesFromWorktop {
             ids,
             resource_address,
         } => {
@@ -159,7 +159,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_NON_FUNGIBLES_FROM_WORKTOP\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()

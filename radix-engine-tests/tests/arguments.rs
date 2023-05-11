@@ -11,8 +11,8 @@ fn vector_of_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
+            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
                     package_address,
                     "Arguments",
@@ -37,8 +37,8 @@ fn tuple_of_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
+            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
                     package_address,
                     "Arguments",
@@ -63,8 +63,8 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
+            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = BTreeMap::new();
                 map.insert("first".to_string(), bucket_id1);
                 map.insert("second".to_string(), bucket_id2);
@@ -93,8 +93,8 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
+            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = hash_map_new();
                 map.insert("first".to_string(), bucket_id1);
                 map.insert("second".to_string(), bucket_id2);
@@ -123,7 +123,7 @@ fn some_optional_bucket_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "Arguments",

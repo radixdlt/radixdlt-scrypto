@@ -306,7 +306,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, admin_token)
         .mint_fungible(resource, 1.into())
-        .take_from_worktop(resource, |builder, bucket| {
+        .take_all_from_worktop(resource, |builder, bucket| {
             builder.call_method(component, "burn", manifest_args!(bucket))
         })
         .build();

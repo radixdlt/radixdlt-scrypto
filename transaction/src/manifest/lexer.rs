@@ -79,9 +79,9 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
+    TakeAllFromWorktop,
     TakeFromWorktop,
-    TakeFromWorktopByAmount,
-    TakeFromWorktopByIds,
+    TakeNonFungiblesFromWorktop,
     ReturnToWorktop,
     AssertWorktopContains,
     AssertWorktopContainsByAmount,
@@ -417,9 +417,9 @@ impl Lexer {
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
+            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
-            "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
-            "TAKE_FROM_WORKTOP_BY_IDS" => Ok(TokenKind::TakeFromWorktopByIds),
+            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
             "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT" => Ok(TokenKind::AssertWorktopContainsByAmount),

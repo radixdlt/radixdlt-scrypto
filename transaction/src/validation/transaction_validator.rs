@@ -202,17 +202,17 @@ impl NotarizedTransactionValidator {
         let mut id_validator = ManifestValidator::new();
         for inst in &manifest.instructions {
             match inst {
+                Instruction::TakeAllFromWorktop { .. } => {
+                    id_validator
+                        .new_bucket()
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 Instruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktopByAmount { .. } => {
-                    id_validator
-                        .new_bucket()
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                Instruction::TakeFromWorktopByIds { .. } => {
+                Instruction::TakeNonFungiblesFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;

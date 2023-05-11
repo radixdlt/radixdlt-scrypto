@@ -399,7 +399,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
 
     let manifest = builder
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.call_method(validator_address, "stake", manifest_args!(bucket))
         })
         .call_method(
@@ -556,7 +556,7 @@ fn registered_validator_test(
         .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account_address, RADIX_TOKEN, validator_stake)
         .register_validator(validator_address)
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
         })
         .call_method(
@@ -774,10 +774,10 @@ fn cannot_claim_unstake_immediately() {
             validator_substate.liquidity_token,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
-        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
@@ -834,7 +834,7 @@ fn can_claim_unstake_after_epochs() {
             validator_substate.liquidity_token,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -854,7 +854,7 @@ fn can_claim_unstake_after_epochs() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
-        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
@@ -906,7 +906,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             validator_substate.liquidity_token,
             Decimal::one(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(

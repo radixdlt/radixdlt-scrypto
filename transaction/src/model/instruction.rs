@@ -12,18 +12,18 @@ use sbor::rust::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
     /// Takes resource from worktop.
-    TakeFromWorktop {
+    TakeAllFromWorktop {
         resource_address: ResourceAddress,
     },
 
     /// Takes resource from worktop by the given amount.
-    TakeFromWorktopByAmount {
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Takes resource from worktop by the given non-fungible IDs.
-    TakeFromWorktopByIds {
+    TakeNonFungiblesFromWorktop {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
