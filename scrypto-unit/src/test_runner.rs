@@ -534,7 +534,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(account_address, "deposit", manifest_args!(bucket))
             })
             .build();

@@ -12,18 +12,18 @@ use sbor::rust::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
     /// Takes resource from worktop.
-    TakeFromWorktop {
+    TakeAllFromWorktop {
         resource_address: ResourceAddress,
     },
 
     /// Takes resource from worktop by the given amount.
-    TakeFromWorktopByAmount {
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Takes resource from worktop by the given non-fungible IDs.
-    TakeFromWorktopByIds {
+    TakeNonFungiblesFromWorktop {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
@@ -33,19 +33,14 @@ pub enum Instruction {
         bucket_id: ManifestBucket,
     },
 
-    /// Asserts worktop contains resource.
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-
     /// Asserts worktop contains resource by at least the given amount.
-    AssertWorktopContainsByAmount {
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
-    AssertWorktopContainsByIds {
+    AssertWorktopContainsNonFungibles {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
@@ -68,19 +63,34 @@ pub enum Instruction {
     },
 
     /// Creates a proof from the auth zone, by the given amount
-    CreateProofOfAmountFromAuthZone {
+    CreateProofFromAuthZoneOfAmount {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
-    CreateProofOfNonFungiblesFromAuthZone {
+    CreateProofFromAuthZoneOfNonFungibles {
         ids: BTreeSet<NonFungibleLocalId>,
+        resource_address: ResourceAddress,
+    },
+
+    CreateProofFromAuthZoneOfAll {
         resource_address: ResourceAddress,
     },
 
     /// Creates a proof from a bucket.
     CreateProofFromBucket {
+        bucket_id: ManifestBucket,
+    },
+    CreateProofFromBucketOfAmount {
+        bucket_id: ManifestBucket,
+        amount: Decimal,
+    },
+    CreateProofFromBucketOfNonFungibles {
+        bucket_id: ManifestBucket,
+        ids: BTreeSet<NonFungibleLocalId>,
+    },
+    CreateProofFromBucketOfAll {
         bucket_id: ManifestBucket,
     },
 

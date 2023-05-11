@@ -20,8 +20,7 @@ pub trait ScryptoVault {
     fn amount(&self) -> Decimal;
     fn resource_address(&self) -> ResourceAddress;
     fn create_proof(&self) -> Proof;
-    fn create_proof_of_amount(&self, amount: Decimal) -> Proof;
-    fn create_proof_of_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof;
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
     fn take_all(&mut self) -> Bucket;
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
@@ -49,6 +48,8 @@ pub trait ScryptoNonFungibleVault {
         &mut self,
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Bucket;
+
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
 }
 
 impl ScryptoVault for Vault {
@@ -106,33 +107,21 @@ impl ScryptoVault for Vault {
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
-                VAULT_CREATE_PROOF_OF_ALL_IDENT,
-                scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
+                VAULT_CREATE_PROOF_IDENT,
+                scrypto_encode(&VaultCreateProofInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_of_amount(&self, amount: Decimal) -> Proof {
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
                 self.0.as_node_id(),
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    fn create_proof_of_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> Proof {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput {
-                    ids: ids.clone(),
+                scrypto_encode(&VaultCreateProofOfAmountInput {
+                    amount: amount.into(),
                 })
                 .unwrap(),
             )
@@ -285,6 +274,18 @@ impl ScryptoNonFungibleVault for Vault {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
                 })
                 .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

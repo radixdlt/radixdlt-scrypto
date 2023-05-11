@@ -27,6 +27,7 @@ members = [
     "package_schema",
     "package_token",
     "proof",
+    "proof_creation",
     "recursion",
     "reentrancy",
     "reference",

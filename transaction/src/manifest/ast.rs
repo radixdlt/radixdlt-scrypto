@@ -2,18 +2,18 @@ use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestVa
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    TakeFromWorktop {
+    TakeAllFromWorktop {
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeFromWorktopByAmount {
+    TakeFromWorktop {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeFromWorktopByIds {
+    TakeNonFungiblesFromWorktop {
         ids: Value,
         resource_address: Value,
         new_bucket: Value,
@@ -24,15 +24,11 @@ pub enum Instruction {
     },
 
     AssertWorktopContains {
-        resource_address: Value,
-    },
-
-    AssertWorktopContainsByAmount {
         amount: Value,
         resource_address: Value,
     },
 
-    AssertWorktopContainsByIds {
+    AssertWorktopContainsNonFungibles {
         ids: Value,
         resource_address: Value,
     },
@@ -52,19 +48,41 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofOfAmountFromAuthZone {
+    CreateProofFromAuthZoneOfAmount {
         amount: Value,
         resource_address: Value,
         new_proof: Value,
     },
 
-    CreateProofOfNonFungiblesFromAuthZone {
+    CreateProofFromAuthZoneOfNonFungibles {
         ids: Value,
         resource_address: Value,
         new_proof: Value,
     },
 
+    CreateProofFromAuthZoneOfAll {
+        resource_address: Value,
+        new_proof: Value,
+    },
+
     CreateProofFromBucket {
+        bucket: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAmount {
+        bucket: Value,
+        amount: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfNonFungibles {
+        bucket: Value,
+        ids: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAll {
         bucket: Value,
         new_proof: Value,
     },

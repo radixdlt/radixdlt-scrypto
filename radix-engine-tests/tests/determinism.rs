@@ -51,7 +51,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let proof_ids = (0..20)
         .map(|_| {
             builder
-                .create_proof_of_amount_from_account(account, resource_address, 1.into())
+                .create_proof_from_account_of_amount(account, resource_address, 1.into())
                 .add_instruction(Instruction::PopFromAuthZone)
                 .2
                 .unwrap()

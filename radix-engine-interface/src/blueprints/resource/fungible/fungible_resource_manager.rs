@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::math::*;
 use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::collections::BTreeMap;

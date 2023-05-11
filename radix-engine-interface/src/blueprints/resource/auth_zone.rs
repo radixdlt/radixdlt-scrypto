@@ -51,12 +51,12 @@ pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount
 pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str = "AuthZone_create_proof_of_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct AuthZoneCreateProofByAmountInput {
+pub struct AuthZoneCreateProofOfAmountInput {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
 }
 
-pub type AuthZoneCreateProofByAmountOutput = Proof;
+pub type AuthZoneCreateProofOfAmountOutput = Proof;
 
 pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
@@ -64,12 +64,23 @@ pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
     "AuthZone_create_proof_of_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct AuthZoneCreateProofByIdsInput {
+pub struct AuthZoneCreateProofOfNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleLocalId>,
     pub resource_address: ResourceAddress,
 }
 
-pub type AuthZoneCreateProofByIdsOutput = Proof;
+pub type AuthZoneCreateProofOfNonFungiblesOutput = Proof;
+
+pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
+
+pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct AuthZoneCreateProofOfAllInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AuthZoneCreateProofOfAllOutput = Proof;
 
 pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
 

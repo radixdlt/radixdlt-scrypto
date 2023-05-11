@@ -33,7 +33,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })
@@ -297,7 +297,7 @@ fn test_fee_accounting_failure() {
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
-        .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
+        .assert_worktop_contains(1.into(), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -438,7 +438,7 @@ fn test_contingent_fee_accounting_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account1, dec!("10"))
         .lock_contingent_fee(account2, dec!("0.001"))
-        .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
+        .assert_worktop_contains(1.into(), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

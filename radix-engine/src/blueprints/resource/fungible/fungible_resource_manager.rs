@@ -39,7 +39,7 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
 }
 
 fn check_new_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
-    if !check_amount(Some(divisibility), amount) {
+    if !check_fungible_amount(&amount, divisibility) {
         return Err(RuntimeError::ApplicationError(
             ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
                 amount,

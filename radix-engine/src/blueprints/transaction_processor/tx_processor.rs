@@ -6,6 +6,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
+use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::{LocalAuthZone, Runtime};
 use radix_engine_interface::api::node_modules::auth::{
@@ -97,12 +98,12 @@ impl TransactionProcessorBlueprint {
             api.update_instruction_index(index)?;
 
             let result = match inst {
-                Instruction::TakeFromWorktop { resource_address } => {
+                Instruction::TakeAllFromWorktop { resource_address } => {
                     let bucket = worktop.take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByAmount {
+                Instruction::TakeFromWorktop {
                     amount,
                     resource_address,
                 } => {
@@ -110,7 +111,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByIds {
+                Instruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_address,
                 } => {
@@ -123,18 +124,14 @@ impl TransactionProcessorBlueprint {
                     worktop.put(bucket, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    worktop.assert_contains(resource_address, api)?;
-                    InstructionOutput::None
-                }
-                Instruction::AssertWorktopContainsByAmount {
+                Instruction::AssertWorktopContains {
                     amount,
                     resource_address,
                 } => {
                     worktop.assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsByIds {
+                Instruction::AssertWorktopContainsNonFungibles {
                     ids,
                     resource_address,
                 } => {
@@ -164,7 +161,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofOfAmountFromAuthZone {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     amount,
                     resource_address,
                 } => {
@@ -173,7 +170,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofOfNonFungiblesFromAuthZone {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
                     ids,
                     resource_address,
                 } => {
@@ -182,9 +179,32 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
+                Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+                    let proof = LocalAuthZone::create_proof_of_all(resource_address, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof(api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_amount(amount, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_non_fungibles(ids, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }

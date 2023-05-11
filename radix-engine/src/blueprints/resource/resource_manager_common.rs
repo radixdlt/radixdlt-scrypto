@@ -218,7 +218,7 @@ fn build_access_rules(
         DenyAll,
     );
     vault_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_OF_ALL_IDENT),
+        MethodKey::new(ObjectModuleId::Main, VAULT_CREATE_PROOF_IDENT),
         AllowAll,
         DenyAll,
     );

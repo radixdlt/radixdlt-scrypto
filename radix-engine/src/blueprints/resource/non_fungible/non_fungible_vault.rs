@@ -23,16 +23,12 @@ pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
-    fn check_amount(amount: &Decimal) -> bool {
-        !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
-    }
-
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Check amount
-        if !Self::check_amount(amount) {
+        if !check_non_fungible_amount(amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -96,7 +92,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !Self::check_amount(&amount) {
+        if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -142,7 +138,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !Self::check_amount(&amount) {
+        if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));

@@ -29,18 +29,14 @@ fn create_manifest_with_middle(
     ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .take_from_worktop_by_amount(dec!("1"), RADIX_TOKEN, |builder, bucket| {
-            builder.take_from_worktop_by_amount(dec!("0"), RADIX_TOKEN, |builder, empty_bucket| {
-                builder.take_from_worktop_by_amount(
-                    dec!("1"),
-                    RADIX_TOKEN,
-                    |builder, proof_bucket| {
-                        builder.create_proof_from_bucket(&proof_bucket, |builder, proof| {
-                            constructor(builder, component_address, empty_bucket, bucket, proof);
-                            builder.return_to_worktop(proof_bucket)
-                        })
-                    },
-                )
+        .take_from_worktop(dec!("1"), RADIX_TOKEN, |builder, bucket| {
+            builder.take_from_worktop(dec!("0"), RADIX_TOKEN, |builder, empty_bucket| {
+                builder.take_from_worktop(dec!("1"), RADIX_TOKEN, |builder, proof_bucket| {
+                    builder.create_proof_from_bucket(&proof_bucket, |builder, proof| {
+                        constructor(builder, component_address, empty_bucket, bucket, proof);
+                        builder.return_to_worktop(proof_bucket)
+                    })
+                })
             })
         })
         .call_method(

@@ -99,7 +99,7 @@ impl LocalAuthZone {
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
-            scrypto_encode(&AuthZoneCreateProofByAmountInput {
+            scrypto_encode(&AuthZoneCreateProofOfAmountInput {
                 resource_address,
                 amount,
             })
@@ -121,11 +121,28 @@ impl LocalAuthZone {
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-            scrypto_encode(&AuthZoneCreateProofByIdsInput {
+            scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
                 resource_address,
                 ids: ids.clone(),
             })
             .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let auth_zone = api.get_auth_zone().unwrap();
+        let rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

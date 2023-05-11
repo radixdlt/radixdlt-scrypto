@@ -58,6 +58,21 @@ pub trait NativeBucket {
     where
         Y: ClientApi<E>;
 
+    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
     fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -88,6 +103,14 @@ pub trait NativeNonFungibleBucket {
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
     where
         Y: ClientApi<E>;
 }
@@ -213,6 +236,37 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
+    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&BucketCreateProofOfAmountInput { amount }).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -257,6 +311,22 @@ impl NativeNonFungibleBucket for Bucket {
             scrypto_encode(&BucketTakeNonFungiblesInput { ids }).unwrap(),
         )?;
 
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&NonFungibleBucketCreateProofOfNonFungiblesInput { ids }).unwrap(),
+        )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
 }
