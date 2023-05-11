@@ -1,6 +1,8 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, MethodKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRulesConfig, MethodKey, ObjectKey,
+};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::PackageSchema;
@@ -167,6 +169,22 @@ pub enum Instruction {
         rule: AccessRule,
     },
 
+    #[sbor(discriminator(INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR))]
+    SetGroupAccessRule {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        rule: AccessRule,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR))]
+    SetGroupMutability {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        mutability: AccessRule,
+    },
+
     #[sbor(discriminator(INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR))]
     MintFungible {
         resource_address: ResourceAddress,
@@ -248,3 +266,5 @@ pub const INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR: u8 = 30;
 pub const INSTRUCTION_MINT_UUID_NON_FUNGIBLE_DISCRIMINATOR: u8 = 31;
 pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 32;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 33;
+pub const INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR: u8 = 34;
+pub const INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR: u8 = 35;

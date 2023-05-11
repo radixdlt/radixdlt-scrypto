@@ -1,4 +1,5 @@
 use crate::types::*;
+use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
@@ -28,6 +29,27 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn is_auth_zone(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => {
+                object_info.blueprint.package_address.eq(&RESOURCE_PACKAGE)
+                    && object_info.blueprint.blueprint_name.eq(AUTH_ZONE_BLUEPRINT)
+            }
+            Actor::Function { .. } => false,
+            Actor::VirtualLazyLoad { .. } => false,
+            Actor::Root { .. } => false,
+        }
+    }
+
+    pub fn is_barrier(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
+            Actor::Function { .. } => true,
+            Actor::VirtualLazyLoad { .. } => false,
+            Actor::Root { .. } => false,
+        }
+    }
+
     pub fn fn_identifier(&self) -> FnIdentifier {
         match self {
             Actor::Root => panic!("Should never be called"),

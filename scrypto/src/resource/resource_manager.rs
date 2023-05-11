@@ -3,7 +3,6 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
 };
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -50,11 +49,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    name: "burn".to_string(),
+                    rule: access_rule,
                 })
                 .unwrap(),
             )
@@ -90,11 +89,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    method_key: MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    name: "deposit".to_string(),
+                    rule: access_rule,
                 })
                 .unwrap(),
             )
@@ -122,11 +121,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    name: "update_metadata".to_string(),
+                    rule: access_rule,
                 })
                 .unwrap(),
             )
@@ -173,11 +172,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_BURN_IDENT),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    name: "burn".to_string(),
+                    mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
             )
@@ -189,11 +188,11 @@ impl ResourceManager {
             .call_module_method(
                 self.0.as_node_id(),
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    name: "update_metadata".to_string(),
+                    mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
             )
@@ -237,11 +236,11 @@ impl ResourceManager {
         let _rtn = ScryptoEnv.call_module_method(
             self.0.as_node_id(),
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
                 object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                method_key: MethodKey::new(ObjectModuleId::Main, VAULT_PUT_IDENT),
-                mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                name: "deposit".to_string(),
+                mutability: AccessRule::DenyAll,
             })
             .unwrap(),
         );
