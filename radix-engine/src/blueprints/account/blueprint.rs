@@ -37,7 +37,13 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
+        vec![
+            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
+            ("lock_fee", rule!(require("owner")), rule!(deny_all)),
+            ("withdraw", rule!(require("owner")), rule!(deny_all)),
+            ("create_proof", rule!(require("owner")), rule!(deny_all)),
+            ("lock_fee_and_withdraw", rule!(require("lock_fee") && require("withdraw")), rule!(deny_all)),
+        ]
     }
 
     fn methods() -> Vec<(&'static str, MethodType)> {
@@ -46,39 +52,39 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
             (
                 ACCOUNT_LOCK_FEE_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("lock_fee".to_string()),
             ),
             (
                 ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("lock_fee".to_string()),
             ),
             (
                 ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("lock_fee".to_string()),
             ),
             (
                 ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("lock_fee_and_withdraw".to_string()),
             ),
             (
                 ACCOUNT_WITHDRAW_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("withdraw".to_string()),
             ),
             (
                 ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("withdraw".to_string()),
             ),
             (
                 ACCOUNT_CREATE_PROOF_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("create_proof".to_string()),
             ),
             (
                 ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("create_proof".to_string()),
             ),
             (
                 ACCOUNT_CREATE_PROOF_BY_IDS_IDENT,
-                MethodType::Group("owner".to_string()),
+                MethodType::Group("create_proof".to_string()),
             ),
         ]
     }
