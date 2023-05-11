@@ -155,27 +155,11 @@ pub enum Instruction {
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
     },
-
     SetMethodAccessRule {
         entity_address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     },
-
-    SetGroupAccessRule {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        rule: AccessRule,
-    },
-
-    SetGroupMutability {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        mutability: AccessRule,
-    },
-
     MintFungible {
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -202,5 +186,17 @@ pub enum Instruction {
         component_address: ComponentAddress,
         method_name: String,
         args: ManifestValue,
+    },
+    SetGroupAccessRule {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        rule: AccessRule,
+    },
+    SetGroupMutability {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        group: String,
+        mutability: AccessRule,
     },
 }

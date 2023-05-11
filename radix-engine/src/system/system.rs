@@ -883,10 +883,11 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let receiver_info = self.get_object_info(receiver)?;
+
         let (object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let object_info = self.get_object_info(receiver)?;
-                let global_address = if object_info.global {
+                let global_address = if receiver_info.global {
                     Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                 } else {
                     // See if we have a parent
@@ -909,14 +910,14 @@ where
                     }
                 };
 
-                (object_info, global_address)
+                (receiver_info, global_address)
             }
             // TODO: Check if type has these object modules
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
                     blueprint: object_module_id.static_blueprint().unwrap(),
                     outer_object: None,
-                    global: true,
+                    global: receiver_info.global,
                     instance_schema: None,
                 },
                 None,
