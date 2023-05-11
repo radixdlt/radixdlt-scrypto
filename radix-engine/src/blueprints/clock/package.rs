@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver, ReceiverInfo};
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
 
@@ -48,7 +48,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeOutput>(),
                 export_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
@@ -57,7 +57,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeOutput>(),
                 export_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
@@ -66,7 +66,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<ClockCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ClockCompareCurrentTimeOutput>(),

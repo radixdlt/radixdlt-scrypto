@@ -18,7 +18,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -277,7 +277,7 @@ impl PackageNativePackage {
         functions.insert(
             PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(schema::Receiver::SelfRefMut),
+                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageSetRoyaltyConfigInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<PackageSetRoyaltyConfigOutput>(),
@@ -287,7 +287,7 @@ impl PackageNativePackage {
         functions.insert(
             PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(schema::Receiver::SelfRefMut),
+                receiver: Some(schema::ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyInput>(),
                 output: aggregator.add_child_type_and_descendents::<PackageClaimRoyaltyOutput>(),
                 export_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
@@ -553,6 +553,7 @@ impl PackageNativePackage {
             collections,
             outer_blueprint: parent,
             virtual_lazy_load_functions,
+            functions,
             ..
         } in schema.blueprints.values()
         {
@@ -576,6 +577,18 @@ impl PackageNativePackage {
                         "Static collections not supported".to_string(),
                     )),
                 ));
+            }
+
+            for (_name, schema) in functions {
+                if let Some(info) = &schema.receiver {
+                    if info.ref_types != RefTypes::NORMAL {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Irregular ref types not supported".to_string(),
+                            )),
+                        ));
+                    }
+                }
             }
         }
 

@@ -533,10 +533,10 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
 
                                 if r.mutability.is_some() {
                                     receiver =
-                                        Some(quote! { ::scrypto::schema::Receiver::SelfRefMut });
+                                        Some(quote! { ::scrypto::schema::ReceiverInfo::normal_ref_mut() });
                                 } else {
                                     receiver =
-                                        Some(quote! { ::scrypto::schema::Receiver::SelfRef });
+                                        Some(quote! { ::scrypto::schema::ReceiverInfo::normal_ref() });
                                 }
                             }
                             FnArg::Typed(_) => {}
