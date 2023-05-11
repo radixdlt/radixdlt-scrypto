@@ -14,8 +14,9 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, Metadat
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerNextRoundInput, LeaderProposalHistory, ValidatorUpdateAcceptDelegatedStakeInput,
-    EPOCH_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+    EpochManagerInitialConfiguration, EpochManagerNextRoundInput, LeaderProposalHistory,
+    ValidatorUpdateAcceptDelegatedStakeInput, EPOCH_MANAGER_NEXT_ROUND_IDENT,
+    VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, AccessRulesConfig, FromPublicKey, ResourceMethodAuthKey};
@@ -626,9 +627,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
 #[test]
 fn epoch_manager_round_update_emits_correct_event() {
-    let rounds_per_epoch = 5u64;
-    let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(1u64, dummy_epoch_manager_configuration());
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
@@ -667,8 +666,14 @@ fn epoch_manager_round_update_emits_correct_event() {
 #[test]
 fn epoch_manager_epoch_update_emits_correct_event() {
     let rounds_per_epoch = 5u64;
-    let num_unstake_epochs = 1u64;
-    let genesis = CustomGenesis::default(1u64, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(
+        1u64,
+        EpochManagerInitialConfiguration {
+            max_validators: 10,
+            rounds_per_epoch,
+            num_unstake_epochs: 1,
+        },
+    );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Prepare: advance to round `rounds_per_epoch - 1` by a gap followed by a fallback round; disregard the receipt
@@ -732,13 +737,10 @@ fn epoch_manager_epoch_update_emits_correct_event() {
 fn validator_registration_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
-    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis =
-        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(initial_epoch, dummy_epoch_manager_configuration());
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -784,13 +786,10 @@ fn validator_registration_emits_correct_event() {
 fn validator_unregistration_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
-    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis =
-        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(initial_epoch, dummy_epoch_manager_configuration());
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -847,13 +846,10 @@ fn validator_unregistration_emits_correct_event() {
 fn validator_staking_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
-    let num_unstake_epochs = 1u64;
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let genesis =
-        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(initial_epoch, dummy_epoch_manager_configuration());
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
@@ -972,7 +968,6 @@ fn validator_staking_emits_correct_event() {
 fn validator_unstake_emits_correct_events() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
@@ -986,9 +981,11 @@ fn validator_unstake_emits_correct_events() {
         Decimal::from(10),
         account_with_lp,
         initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
+        EpochManagerInitialConfiguration {
+            max_validators: 10,
+            rounds_per_epoch: 5,
+            num_unstake_epochs,
+        },
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1131,7 +1128,6 @@ fn validator_unstake_emits_correct_events() {
 fn validator_claim_xrd_emits_correct_events() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
@@ -1145,9 +1141,11 @@ fn validator_claim_xrd_emits_correct_events() {
         Decimal::from(10),
         account_with_lp,
         initial_epoch,
-        10u32,
-        rounds_per_epoch,
-        num_unstake_epochs,
+        EpochManagerInitialConfiguration {
+            max_validators: 10,
+            rounds_per_epoch: 5,
+            num_unstake_epochs,
+        },
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1279,10 +1277,7 @@ fn validator_claim_xrd_emits_correct_events() {
 fn validator_update_stake_delegation_status_emits_correct_event() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
-    let num_unstake_epochs = 1u64;
-    let genesis =
-        CustomGenesis::default(initial_epoch, 10u32, rounds_per_epoch, num_unstake_epochs);
+    let genesis = CustomGenesis::default(initial_epoch, dummy_epoch_manager_configuration());
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account) = test_runner.new_account(false);
 
@@ -1483,4 +1478,12 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         .new_resource_addresses()
         .get(0)
         .unwrap()
+}
+
+fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
+    EpochManagerInitialConfiguration {
+        max_validators: 10,
+        rounds_per_epoch: 5,
+        num_unstake_epochs: 1,
+    }
 }
