@@ -42,7 +42,8 @@ mod factory {
                 AccessRule::DenyAll,
             );
 
-            let component_address = component.globalize_with_access_rules(method_authorities, authority_rules);
+            let component_address =
+                component.globalize_with_access_rules(method_authorities, authority_rules);
             let component_ref: FactoryGlobalComponentRef = component_address.into();
             component_ref.set_address(component_address);
 

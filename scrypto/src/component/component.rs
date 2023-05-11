@@ -6,7 +6,9 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, NonFungibleGlobalId, MethodAuthorities, AuthorityRules};
+use radix_engine_interface::blueprints::resource::{
+    require, AccessRule, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
+};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -55,9 +57,16 @@ pub trait LocalComponent: Sized {
 
     fn globalize(self) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules
-            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
-        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
+        authority_rules.set_authority(
+            "update_metadata".to_string(),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+        );
+        authority_rules.set_authority(
+            "royalty".to_string(),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
 
         self.globalize_with_modules(
             AccessRules::new(MethodAuthorities::new(), authority_rules),
@@ -68,9 +77,16 @@ pub trait LocalComponent: Sized {
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules
-            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
-        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
+        authority_rules.set_authority(
+            "update_metadata".to_string(),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+        );
+        authority_rules.set_authority(
+            "royalty".to_string(),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
 
         self.globalize_at_address_with_modules(
             preallocated_address,
@@ -82,9 +98,16 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules
-            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
-        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
+        authority_rules.set_authority(
+            "update_metadata".to_string(),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+        );
+        authority_rules.set_authority(
+            "royalty".to_string(),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
 
         self.globalize_with_modules(
             AccessRules::new(MethodAuthorities::new(), authority_rules),
@@ -95,9 +118,16 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules
-            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
-        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
+        authority_rules.set_authority(
+            "update_metadata".to_string(),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+        );
+        authority_rules.set_authority(
+            "royalty".to_string(),
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+        );
 
         self.globalize_with_modules(
             AccessRules::new(MethodAuthorities::new(), authority_rules),
@@ -138,11 +168,7 @@ pub trait LocalComponent: Sized {
 
         let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
 
-        self.globalize_with_modules(
-            access_rules,
-            Metadata::new(),
-            Royalty::new(royalty_config),
-        )
+        self.globalize_with_modules(access_rules, Metadata::new(), Royalty::new(royalty_config))
     }
 }
 

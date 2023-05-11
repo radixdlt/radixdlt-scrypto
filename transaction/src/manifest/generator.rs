@@ -19,7 +19,15 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{FungibleResourceManagerCreateInput, FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, AuthorityRules};
+use radix_engine_interface::blueprints::resource::{
+    AuthorityRules, FungibleResourceManagerCreateInput,
+    FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
@@ -477,10 +485,10 @@ pub fn generate_instruction(
             object_key,
             group,
             rule,
-        } => Instruction::SetGroupAccessRule {
+        } => Instruction::SetAuthorityAccessRule {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            group: generate_string(group)?,
+            authority: generate_string(group)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetGroupMutability {
@@ -488,10 +496,10 @@ pub fn generate_instruction(
             object_key,
             group,
             mutability,
-        } => Instruction::SetGroupMutability {
+        } => Instruction::SetAuthorityMutability {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            group: generate_string(group)?,
+            authority: generate_string(group)?,
             mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintFungible {
@@ -1220,7 +1228,11 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput, NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey};
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, AuthorityRules, NonFungibleDataSchema,
+        NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
+    };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::PackageSchema;
     use radix_engine_interface::types::NonFungibleData;

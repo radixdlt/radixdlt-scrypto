@@ -539,10 +539,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetGroupAccessRule {
+                Instruction::SetAuthorityAccessRule {
                     entity_address,
                     object_key,
-                    group,
+                    authority: group,
                     rule,
                 } => {
                     let receiver = entity_address.into();
@@ -567,10 +567,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetGroupMutability {
+                Instruction::SetAuthorityMutability {
                     entity_address,
                     object_key,
-                    group,
+                    authority: group,
                     mutability,
                 } => {
                     let receiver = entity_address.into();

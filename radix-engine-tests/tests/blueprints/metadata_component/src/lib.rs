@@ -26,7 +26,8 @@ mod metadata_component {
                 AccessRule::DenyAll,
             );
 
-            let component_address = component.globalize_with_access_rules(MethodAuthorities::new(), authority_rules);
+            let component_address =
+                component.globalize_with_access_rules(MethodAuthorities::new(), authority_rules);
 
             let global: MetadataComponentGlobalComponentRef = component_address.into();
             let metadata = global.metadata();

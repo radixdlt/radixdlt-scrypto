@@ -54,7 +54,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_group_access_rule(
+            .set_authority_access_rule(
                 token_address.into(),
                 object_key,
                 group.to_string(),

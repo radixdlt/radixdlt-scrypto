@@ -10,9 +10,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, Bucket, Proof,
-};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, Proof};
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
@@ -42,7 +40,11 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             ("lock_fee", rule!(require("owner")), rule!(deny_all)),
             ("withdraw", rule!(require("owner")), rule!(deny_all)),
             ("create_proof", rule!(require("owner")), rule!(deny_all)),
-            ("lock_fee_and_withdraw", rule!(require("lock_fee") && require("withdraw")), rule!(deny_all)),
+            (
+                "lock_fee_and_withdraw",
+                rule!(require("lock_fee") && require("withdraw")),
+                rule!(deny_all),
+            ),
         ]
     }
 

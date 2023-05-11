@@ -5,7 +5,10 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> ComponentAddress {
+        pub fn new(
+            method_authorities: MethodAuthorities,
+            authority_rules: AuthorityRules,
+        ) -> ComponentAddress {
             let component = Self {}.instantiate();
             component.globalize_with_access_rules(method_authorities, authority_rules)
         }

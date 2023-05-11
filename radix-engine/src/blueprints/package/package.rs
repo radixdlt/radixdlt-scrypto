@@ -121,8 +121,14 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn methods() -> Vec<(&'static str, MethodType)> {
         vec![
-            (PACKAGE_CLAIM_ROYALTY_IDENT, MethodType::Group("package_royalty".to_string())),
-            (PACKAGE_SET_ROYALTY_CONFIG_IDENT, MethodType::Group("package_royalty".to_string())),
+            (
+                PACKAGE_CLAIM_ROYALTY_IDENT,
+                MethodType::Group("package_royalty".to_string()),
+            ),
+            (
+                PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+                MethodType::Group("package_royalty".to_string()),
+            ),
         ]
     }
 }

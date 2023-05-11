@@ -526,10 +526,10 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
-        Instruction::SetGroupAccessRule {
+        Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            group,
+            authority: group,
             rule,
         } => {
             f.write_str("SET_GROUP_ACCESS_RULE")?;
@@ -539,10 +539,10 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
-        Instruction::SetGroupMutability {
+        Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            group,
+            authority: group,
             mutability,
         } => {
             f.write_str("SET_GROUP_MUTABILITY")?;

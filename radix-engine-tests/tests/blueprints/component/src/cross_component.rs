@@ -10,10 +10,7 @@ mod cross_component {
     impl CrossComponent {
         pub fn create_component_with_auth(authority_rules: AuthorityRules) -> ComponentAddress {
             let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority(
-                "get_component_state",
-                "auth",
-            );
+            method_authorities.set_main_method_authority("get_component_state", "auth");
             let component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,

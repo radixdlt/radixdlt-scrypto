@@ -181,16 +181,16 @@ pub enum Instruction {
         method_name: String,
         args: ManifestValue,
     },
-    SetGroupAccessRule {
+    SetAuthorityAccessRule {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority: String,
         rule: AccessRule,
     },
-    SetGroupMutability {
+    SetAuthorityMutability {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority: String,
         mutability: AccessRule,
     },
 }

@@ -525,33 +525,33 @@ impl ManifestBuilder {
             .0
     }
 
-    pub fn set_group_access_rule(
+    pub fn set_authority_access_rule(
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority: String,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupAccessRule {
+        self.add_instruction(Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            group,
+            authority,
             rule,
         })
         .0
     }
 
-    pub fn set_group_mutability(
+    pub fn set_authority_mutability(
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
         group: String,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupMutability {
+        self.add_instruction(Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            group,
+            authority: group,
             mutability,
         })
         .0

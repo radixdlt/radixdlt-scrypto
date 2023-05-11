@@ -90,24 +90,43 @@ impl MethodAuthorities {
     }
 
     pub fn set_public(&mut self, method: &str) {
-        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority("public"));
+        self.methods.insert(
+            MethodKey::new(ObjectModuleId::Main, method),
+            MethodEntry::authority("public"),
+        );
     }
 
-    pub fn set_module_method_authority(&mut self, module_id: ObjectModuleId, method: &str, authority: &str) {
-        self.methods.insert(MethodKey::new(module_id, method), MethodEntry::authority(authority));
+    pub fn set_module_method_authority(
+        &mut self,
+        module_id: ObjectModuleId,
+        method: &str,
+        authority: &str,
+    ) {
+        self.methods.insert(
+            MethodKey::new(module_id, method),
+            MethodEntry::authority(authority),
+        );
     }
-
 
     pub fn set_main_method_authority(&mut self, method: &str, authority: &str) {
-        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority(authority));
+        self.methods.insert(
+            MethodKey::new(ObjectModuleId::Main, method),
+            MethodEntry::authority(authority),
+        );
     }
 
     pub fn set_main_method_authorities(&mut self, method: &str, authorities: Vec<String>) {
-        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authorities(authorities));
+        self.methods.insert(
+            MethodKey::new(ObjectModuleId::Main, method),
+            MethodEntry::authorities(authorities),
+        );
     }
 
     pub fn set_main_direct_method_authority(&mut self, method: &str, authority: &str) {
-        self.direct_methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority(authority));
+        self.direct_methods.insert(
+            MethodKey::new(ObjectModuleId::Main, method),
+            MethodEntry::authority(authority),
+        );
     }
 }
 
@@ -119,12 +138,15 @@ pub struct AuthorityRules {
 
 impl AuthorityRules {
     pub fn new() -> Self {
-        Self {
-            rules: btreemap!(),
-        }
+        Self { rules: btreemap!() }
     }
 
-    pub fn set_authority<S: Into<String>>(&mut self, authority: S, rule: AccessRule, mutability: AccessRule) {
+    pub fn set_authority<S: Into<String>>(
+        &mut self,
+        authority: S,
+        rule: AccessRule,
+        mutability: AccessRule,
+    ) {
         self.rules.insert(authority.into(), (rule, mutability));
     }
 }

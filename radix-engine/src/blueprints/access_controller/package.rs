@@ -544,15 +544,10 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-
-        let (method_authorities, authority_rules) = init_access_rules_from_rule_set(address, input.rule_set);
-        let access_rules = AccessRules::sys_new(
-            method_authorities,
-            authority_rules,
-            btreemap!(),
-            api,
-        )?
-        .0;
+        let (method_authorities, authority_rules) =
+            init_access_rules_from_rule_set(address, input.rule_set);
+        let access_rules =
+            AccessRules::sys_new(method_authorities, authority_rules, btreemap!(), api)?.0;
 
         let metadata = Metadata::sys_create(api)?;
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
@@ -1066,7 +1061,10 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (MethodAuthorities, AuthorityRules) {
+fn init_access_rules_from_rule_set(
+    address: GlobalAddress,
+    rule_set: RuleSet,
+) -> (MethodAuthorities, AuthorityRules) {
     let mut authority_rules = AuthorityRules::new();
 
     // Primary Role Rules
@@ -1089,83 +1087,80 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         rule!(require(global_caller(address))),
     );
 
-
     let mut method_authorities = MethodAuthorities::new();
 
+    method_authorities
+        .set_main_method_authority(ACCESS_CONTROLLER_CREATE_PROOF_IDENT, primary_group.into());
     method_authorities.set_main_method_authority(
-        ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
         primary_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         primary_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
         primary_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
-        primary_group.into(),
-    );
-    method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         primary_group.into(),
     );
 
     // Recovery Role Rules
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
+        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
+        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
         recovery_group.into(),
     );
     method_authorities.set_main_method_authority(
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
+        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
         recovery_group.into(),
     );
 
     // Recovery || Confirmation Role Rules
     method_authorities.set_main_method_authorities(
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
         vec!["recovery".to_string(), "confirmation".to_string()],
     );
     method_authorities.set_main_method_authorities(
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         vec!["recovery".to_string(), "confirmation".to_string()],
     );
 
     // Primary || Confirmation Role Rules
     method_authorities.set_main_method_authorities(
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
         vec!["primary".to_string(), "confirmation".to_string()],
     );
     method_authorities.set_main_method_authorities(
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         vec!["primary".to_string(), "confirmation".to_string()],
     );
 
     // Other methods
     method_authorities.set_main_method_authorities(
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
+        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
         vec![
             "primary".to_string(),
             "recovery".to_string(),

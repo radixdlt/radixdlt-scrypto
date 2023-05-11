@@ -10,6 +10,71 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TransactionManifest;
 
 #[test]
+fn initial_circular_authority_rule_should_not_be_allowed() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
+        "deposit_funds",
+        rule!(require("deposit_funds")),
+        rule!(deny_all),
+    );
+
+    // Act
+    let receipt = MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+}
+
+#[test]
+fn initial_circular_authority_mutability_should_not_be_allowed() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
+        "deposit_funds",
+        rule!(deny_all),
+        rule!(require("deposit_funds")),
+    );
+
+    // Act
+    let receipt = MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+}
+
+#[test]
+fn setting_circular_authority_rule_should_fail() {
+    // Arrange
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority("deposit_funds", rule!(allow_all), rule!(allow_all));
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
+
+    // Act
+    let receipt = test_runner.set_authority_rule("deposit_funds", rule!(require("deposit_funds")));
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+}
+
+#[test]
+fn setting_circular_authority_mutability_should_fail() {
+    // Arrange
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority("deposit_funds", rule!(allow_all), rule!(allow_all));
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
+
+    // Act
+    let receipt =
+        test_runner.set_authority_mutability("deposit_funds", rule!(require("deposit_funds")));
+
+    // Assert
+    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ModuleError(..)));
+}
+
+#[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let mut authority_rules = AuthorityRules::new();
@@ -21,7 +86,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
-    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_authority_rule("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -45,7 +110,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules.clone());
 
     // Act
-    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_authority_rule("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -94,7 +159,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_authority_rule("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -123,7 +188,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
+    let receipt = test_runner.set_authority_rule("deposit_funds", rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -160,7 +225,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Act
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
-            .set_group_access_rule(
+            .set_authority_access_rule(
                 test_runner.component_address.into(),
                 ObjectKey::SELF,
                 "owner".to_string(),
@@ -288,12 +353,14 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn new(authority_rules: AuthorityRules) -> Self {
+    pub fn create_component(
+        authority_rules: AuthorityRules,
+        test_runner: &mut TestRunner,
+    ) -> TransactionReceipt {
         let mut method_authorities = MethodAuthorities::new();
         method_authorities.set_main_method_authority("deposit_funds", "deposit_funds");
         method_authorities.set_main_method_authority("borrow_funds", "borrow_funds");
 
-        let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -304,7 +371,12 @@ impl MutableAccessRulesTestRunner {
                 manifest_args!(method_authorities, authority_rules),
             )
             .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    }
+
+    pub fn new(authority_rules: AuthorityRules) -> Self {
+        let mut test_runner = TestRunner::builder().build();
+        let receipt = Self::create_component(authority_rules, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -318,33 +390,41 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.insert(initial_proof);
     }
 
-    pub fn set_group_auth(&mut self, group: &str, access_rule: AccessRule) -> TransactionReceipt {
+    pub fn set_authority_rule(
+        &mut self,
+        authority: &str,
+        access_rule: AccessRule,
+    ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .set_group_access_rule(
+            .set_authority_access_rule(
                 self.component_address.into(),
                 ObjectKey::SELF,
-                group.to_string(),
+                authority.to_string(),
                 access_rule,
             )
             .build();
         self.execute_manifest(manifest)
     }
 
-    pub fn _set_default_auth(
+    pub fn set_authority_mutability(
         &mut self,
-        index: usize,
-        access_rule: AccessRule,
+        authority: &str,
+        mutability: AccessRule,
     ) -> TransactionReceipt {
-        let args = manifest_args!(index, access_rule);
         let manifest = Self::manifest_builder()
-            .call_method(self.component_address, "set_default", args)
+            .set_authority_mutability(
+                self.component_address.into(),
+                ObjectKey::SELF,
+                authority.to_string(),
+                mutability,
+            )
             .build();
         self.execute_manifest(manifest)
     }
 
     pub fn lock_group_auth(&mut self, group: &str) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .set_group_mutability(
+            .set_authority_mutability(
                 self.component_address.into(),
                 ObjectKey::SELF,
                 group.to_string(),

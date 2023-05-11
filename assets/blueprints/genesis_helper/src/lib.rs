@@ -69,14 +69,12 @@ mod genesis_helper {
             method_authorities.set_main_method_authority("ingest_data_chunk", "system");
             method_authorities.set_main_method_authority("wrap_up", "system");
 
-
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_authority(
                 "system",
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
             );
-
 
             let access_rules = AccessRules::new(method_authorities, authority_rules);
 
