@@ -50,9 +50,21 @@ pub enum ProofRule {
     AnyOf(Vec<ResourceOrNonFungible>),
 }
 
-impl From<ResourceAddress> for ProofRule {
+impl From<ResourceAddress> for AccessRuleNode {
     fn from(resource_address: ResourceAddress) -> Self {
-        ProofRule::Require(resource_address.into())
+        AccessRuleNode::ProofRule(ProofRule::Require(resource_address.into()))
+    }
+}
+
+impl From<NonFungibleGlobalId> for AccessRuleNode {
+    fn from(id: NonFungibleGlobalId) -> Self {
+        AccessRuleNode::ProofRule(ProofRule::Require(id.into()))
+    }
+}
+
+impl From<ResourceOrNonFungible> for AccessRuleNode {
+    fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
+        AccessRuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
     }
 }
 
@@ -100,44 +112,44 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ))
 }
 
-pub fn require<T>(resource: T) -> ProofRule
+pub fn require<T>(required: T) -> AccessRuleNode
 where
-    T: Into<ResourceOrNonFungible>,
+    T: Into<AccessRuleNode>,
 {
-    ProofRule::Require(resource.into())
+    required.into()
 }
 
-pub fn require_any_of<T>(resources: T) -> ProofRule
-where
-    T: Into<ResourceOrNonFungibleList>,
-{
-    let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::AnyOf(list.list)
-}
-
-pub fn require_all_of<T>(resources: T) -> ProofRule
+pub fn require_any_of<T>(resources: T) -> AccessRuleNode
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::AllOf(list.list)
+    AccessRuleNode::ProofRule(ProofRule::AnyOf(list.list))
 }
 
-pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
+pub fn require_all_of<T>(resources: T) -> AccessRuleNode
+where
+    T: Into<ResourceOrNonFungibleList>,
+{
+    let list: ResourceOrNonFungibleList = resources.into();
+    AccessRuleNode::ProofRule(ProofRule::AllOf(list.list))
+}
+
+pub fn require_n_of<C, T>(count: C, resources: T) -> AccessRuleNode
 where
     C: Into<u8>,
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    ProofRule::CountOf(count.into(), list.list)
+    AccessRuleNode::ProofRule(ProofRule::CountOf(count.into(), list.list))
 }
 
-pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> AccessRuleNode
 where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    ProofRule::AmountOf(amount.into(), resource.into())
+    AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
