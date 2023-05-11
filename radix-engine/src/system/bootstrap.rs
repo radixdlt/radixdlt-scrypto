@@ -25,7 +25,7 @@ use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
+    EpochManagerInitialConfiguration, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -113,6 +113,7 @@ where
 {
     substate_db: &'s mut S,
     scrypto_vm: &'i ScryptoVm<W>,
+    trace: bool,
 }
 
 impl<'s, 'i, S, W> Bootstrapper<'s, 'i, S, W>
@@ -120,24 +121,35 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
 {
-    pub fn new(substate_db: &'s mut S, scrypto_vm: &'i ScryptoVm<W>) -> Bootstrapper<'s, 'i, S, W> {
+    pub fn new(
+        substate_db: &'s mut S,
+        scrypto_vm: &'i ScryptoVm<W>,
+        trace: bool,
+    ) -> Bootstrapper<'s, 'i, S, W> {
         Bootstrapper {
             substate_db,
             scrypto_vm,
+            trace,
         }
     }
 
     pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
-        self.bootstrap_with_genesis_data(vec![], 1u64, 10u32, 1u64, 1u64)
+        self.bootstrap_with_genesis_data(
+            vec![],
+            1u64,
+            EpochManagerInitialConfiguration {
+                max_validators: 10,
+                rounds_per_epoch: 1,
+                num_unstake_epochs: 1,
+            },
+        )
     }
 
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
-        max_validators: u32,
-        rounds_per_epoch: u64,
-        num_unstake_epochs: u64,
+        initial_configuration: EpochManagerInitialConfiguration,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -148,12 +160,8 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt = self.execute_system_bootstrap(
-                initial_epoch,
-                max_validators,
-                rounds_per_epoch,
-                num_unstake_epochs,
-            );
+            let system_bootstrap_receipt =
+                self.execute_system_bootstrap(initial_epoch, initial_configuration);
 
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
@@ -178,22 +186,15 @@ where
     fn execute_system_bootstrap(
         &mut self,
         initial_epoch: u64,
-        max_validators: u32,
-        rounds_per_epoch: u64,
-        num_unstake_epochs: u64,
+        initial_configuration: EpochManagerInitialConfiguration,
     ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(
-            initial_epoch,
-            max_validators,
-            rounds_per_epoch,
-            num_unstake_epochs,
-        );
+        let transaction = create_system_bootstrap_transaction(initial_epoch, initial_configuration);
 
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(self.trace),
             &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
@@ -215,7 +216,7 @@ where
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::genesis(),
+            &ExecutionConfig::genesis().with_trace(self.trace),
             &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
@@ -247,9 +248,7 @@ where
 
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
-    max_validators: u32,
-    rounds_per_epoch: u64,
-    num_unstake_epochs: u64,
+    initial_configuration: EpochManagerInitialConfiguration,
 ) -> SystemTransaction {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -795,9 +794,7 @@ pub fn create_system_bootstrap_transaction(
                 validator_owner_token,
                 epoch_manager_component_address,
                 initial_epoch,
-                max_validators,
-                rounds_per_epoch,
-                num_unstake_epochs
+                initial_configuration
             ),
         });
     }
@@ -821,7 +818,6 @@ pub fn create_system_bootstrap_transaction(
                 address_bytes,
                 whole_lotta_xrd,
                 EPOCH_MANAGER,
-                rounds_per_epoch,
                 AuthAddresses::system_role()
             ),
         });

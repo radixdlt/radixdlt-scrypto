@@ -168,11 +168,11 @@ where
         if execution_config.kernel_trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", executable.transaction_hash());
-            println!(
-                "Preallocated Node IDs: {:?}",
-                executable.pre_allocated_ids()
-            );
-            println!("Number of blobs: {}", executable.blobs().len());
+            println!("Payload size: {}", executable.payload_size());
+            println!("Fee payment: {:?}", executable.fee_payment());
+            println!("Pre-allocated IDs: {:?}", executable.pre_allocated_ids());
+            println!("Blobs: {:?}", executable.blobs().keys());
+            println!("References: {:?}", executable.references());
 
             println!("{:-^80}", "Engine Execution Log");
         }

@@ -254,9 +254,7 @@ impl EpochManagerNativePackage {
                     input.validator_owner_token,
                     input.component_address,
                     input.initial_epoch,
-                    input.max_validators,
-                    input.rounds_per_epoch,
-                    input.num_unstake_epochs,
+                    input.initial_configuration,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

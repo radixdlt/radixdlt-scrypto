@@ -1,6 +1,8 @@
-use crate::errors::{KernelError, RuntimeError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::blueprints::resource::AuthZone;
+use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::kernel::actor::Actor;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -13,8 +15,7 @@ use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::ClientBlueprintApi;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -133,7 +134,6 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type LockData = SystemLockData;
-    type CallFrameData = Actor;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -266,15 +266,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_create_node(api, node_id, store_access)
     }
 
-    fn before_invoke<Y>(
-        identifier: &KernelInvocation<Actor>,
-        input_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_invoke(api, identifier, input_size)
+        SystemModuleMixer::before_invoke(api, invocation)
     }
 
     fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
@@ -286,32 +282,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        match callee {
-            Actor::Method(MethodActor {
-                global_address,
-                object_info,
-                ..
-            }) => {
-                if let Some(address) = global_address {
-                    update
-                        .node_refs_to_copy
-                        .insert(address.as_node_id().clone());
-                }
-                if let Some(blueprint_parent) = object_info.outer_object {
-                    update
-                        .node_refs_to_copy
-                        .insert(blueprint_parent.as_node_id().clone());
-                }
-            }
-            _ => {}
-        }
         SystemModuleMixer::before_push_frame(api, callee, update, args)
     }
 
@@ -439,7 +416,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(output)
     }
 
-    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -450,53 +427,98 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        let mut system = SystemService::new(api);
+        // Note: this function is not responsible for checking if all nodes are dropped!
         for node_id in nodes {
-            if let Ok(blueprint) = system.get_object_info(&node_id).map(|x| x.blueprint) {
-                match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
-                    (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
-                        system.call_function(
-                            RESOURCE_PACKAGE,
-                            FUNGIBLE_PROOF_BLUEPRINT,
-                            PROOF_DROP_IDENT,
-                            scrypto_encode(&ProofDropInput {
-                                proof: Proof(Own(node_id)),
-                            })
-                            .unwrap(),
-                        )?;
-                    }
-                    (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                        system.call_function(
-                            RESOURCE_PACKAGE,
-                            NON_FUNGIBLE_PROOF_BLUEPRINT,
-                            PROOF_DROP_IDENT,
-                            scrypto_encode(&ProofDropInput {
-                                proof: Proof(Own(node_id)),
-                            })
-                            .unwrap(),
-                        )?;
-                    }
-                    _ => {
-                        return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                            node_id,
-                        )))
+            let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint, .. }) => {
+                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                        (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
+                            let mut system = SystemService::new(api);
+                            system.call_function(
+                                RESOURCE_PACKAGE,
+                                FUNGIBLE_PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(Own(node_id)),
+                                })
+                                .unwrap(),
+                            )?;
+                        }
+                        (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                            let mut system = SystemService::new(api);
+                            system.call_function(
+                                RESOURCE_PACKAGE,
+                                NON_FUNGIBLE_PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(Own(node_id)),
+                                })
+                                .unwrap(),
+                            )?;
+                        }
+                        _ => {
+                            // no-op
+                        }
                     }
                 }
-            } else {
-                return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
-                    node_id,
-                )));
+                TypeInfoSubstate::KeyValueStore(_) => {}
             }
+        }
+
+        // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
+        // to make sure the auth zone stack is in good state for the proof dropping above.
+
+        // Detach proofs from the auth zone
+        if let Some(auth_zone_id) = api
+            .kernel_get_system()
+            .modules
+            .auth
+            .auth_zone_stack
+            .last()
+            .cloned()
+        {
+            let handle = api.kernel_lock_substate(
+                &auth_zone_id,
+                OBJECT_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::MUTABLE,
+                SystemLockData::Default,
+            )?;
+            let mut auth_zone_substate: AuthZone =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
+            api.kernel_write_substate(
+                handle,
+                IndexedScryptoValue::from_typed(&auth_zone_substate),
+            )?;
+            api.kernel_drop_lock(handle)?;
+
+            // Drop the proofs
+            let mut system = SystemService::new(api);
+            for proof in proofs {
+                let object_info = system.get_object_info(proof.0.as_node_id())?;
+                system.call_function(
+                    RESOURCE_PACKAGE,
+                    &object_info.blueprint.blueprint_name,
+                    PROOF_DROP_IDENT,
+                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
+                )?;
+            }
+
+            // Drop the auth zone
+            api.kernel_drop_node(&auth_zone_id)?;
         }
 
         Ok(())
     }
 
-    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_pop_frame(api)
+        SystemModuleMixer::after_pop_frame(api, dropped_actor)
     }
 
     fn on_substate_lock_fault<Y>(

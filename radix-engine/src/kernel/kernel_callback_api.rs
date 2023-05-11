@@ -1,14 +1,15 @@
 use crate::errors::*;
-use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 
+use super::actor::Actor;
+use super::call_frame::Message;
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
-    type CallFrameData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -44,7 +45,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_num: &PartitionNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -105,11 +106,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_invoke<Y>(
-        invocation: &KernelInvocation<Self::CallFrameData>,
-        input_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -118,8 +115,8 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Self::CallFrameData,
-        update: &mut CallFrameUpdate,
+        callee: &Actor,
+        update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -137,7 +134,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -145,13 +142,13 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

@@ -35,7 +35,7 @@ use radix_engine_interface::blueprints::clock::{
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerSetEpochInput,
+    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerSetEpochInput,
     EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
@@ -130,17 +130,13 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub max_validators: u32,
-    pub rounds_per_epoch: u64,
-    pub num_unstake_epochs: u64,
+    pub initial_configuration: EpochManagerInitialConfiguration,
 }
 
 impl CustomGenesis {
     pub fn default(
         initial_epoch: u64,
-        max_validators: u32,
-        rounds_per_epoch: u64,
-        num_unstake_epochs: u64,
+        initial_configuration: EpochManagerInitialConfiguration,
     ) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
@@ -150,9 +146,7 @@ impl CustomGenesis {
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
-            max_validators,
-            rounds_per_epoch,
-            num_unstake_epochs,
+            initial_configuration,
         )
     }
 
@@ -161,9 +155,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        max_validators: u32,
-        rounds_per_epoch: u64,
-        num_unstake_epochs: u64,
+        initial_configuration: EpochManagerInitialConfiguration,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -182,9 +174,7 @@ impl CustomGenesis {
         CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
-            max_validators,
-            rounds_per_epoch,
-            num_unstake_epochs,
+            initial_configuration,
         }
     }
 }
@@ -219,7 +209,7 @@ impl TestRunnerBuilder {
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
         } = match self.custom_genesis {
@@ -227,9 +217,7 @@ impl TestRunnerBuilder {
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
-                    custom_genesis.max_validators,
-                    custom_genesis.rounds_per_epoch,
-                    custom_genesis.num_unstake_epochs,
+                    custom_genesis.initial_configuration,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),

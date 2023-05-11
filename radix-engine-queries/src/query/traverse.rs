@@ -176,15 +176,15 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         );
                     }
                 } else {
-                    for module_num in [
+                    for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
                         ROYALTY_FIELD_PARTITION,
                         ACCESS_RULES_FIELD_PARTITION,
                     ] {
-                        self.traverse_substates::<TupleKey>(node_id, module_num, depth)
+                        self.traverse_substates::<TupleKey>(node_id, partition_num, depth)
                     }
-                    for module_num in [METADATA_KV_STORE_PARTITION] {
-                        self.traverse_substates::<MapKey>(node_id, module_num, depth)
+                    for partition_num in [METADATA_KV_STORE_PARTITION] {
+                        self.traverse_substates::<MapKey>(node_id, partition_num, depth)
                     }
 
                     if blueprint.package_address.eq(&ACCOUNT_PACKAGE)
@@ -202,18 +202,18 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
     fn traverse_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         depth: u32,
     ) {
         let entries = self
             .substate_db
-            .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, K>(&node_id, module_num);
+            .list_mapped::<SpreadPrefixKeyMapper, ScryptoValue, K>(&node_id, partition_num);
         for (substate_key, substate_value) in entries {
             let (_, owned_nodes, _) =
                 IndexedScryptoValue::from_scrypto_value(substate_value).unpack();
             for child_node_id in owned_nodes {
                 self.traverse_recursive(
-                    Some(&(node_id, module_num, substate_key.clone())),
+                    Some(&(node_id, partition_num, substate_key.clone())),
                     child_node_id,
                     depth + 1,
                 );
