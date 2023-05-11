@@ -199,11 +199,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
     }
 
-    fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_lock<Y>(
+        lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drop_lock(api, lock_handle)
+        SystemModuleMixer::on_drop_lock(api, lock_handle, store_access)
     }
 
     fn on_read_substate<Y>(

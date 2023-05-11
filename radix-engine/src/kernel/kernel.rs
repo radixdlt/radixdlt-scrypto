@@ -613,12 +613,13 @@ where
 
     #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        M::on_drop_lock(lock_handle, self)?;
-
-        self.current_frame
+        let store_access = self
+            .current_frame
             .drop_lock(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
+
+        M::on_drop_lock(lock_handle, &store_access, self)?;
 
         Ok(())
     }

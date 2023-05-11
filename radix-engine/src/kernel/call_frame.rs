@@ -310,7 +310,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         heap: &mut Heap,
         store: &mut S,
         lock_handle: LockHandle,
-    ) -> Result<(), UnlockSubstateError> {
+    ) -> Result<StoreAccessInfo, UnlockSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -384,10 +384,10 @@ impl<D, L: Clone> CallFrame<D, L> {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            store.release_lock(handle);
+            Ok(store.release_lock(handle))
+        } else {
+            Ok(StoreAccessInfo::new())
         }
-
-        Ok(())
     }
 
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {

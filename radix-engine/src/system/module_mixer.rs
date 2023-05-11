@@ -360,8 +360,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drop_lock(api, lock_handle))
+        internal_call_dispatch!(api, on_drop_lock(api, lock_handle, store_access))
     }
 
     #[trace_resources]

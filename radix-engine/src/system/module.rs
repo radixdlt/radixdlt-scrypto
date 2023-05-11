@@ -169,6 +169,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_drop_lock<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

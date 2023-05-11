@@ -113,7 +113,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid.
-    fn release_lock(&mut self, handle: u32);
+    fn release_lock(&mut self, handle: u32) -> StoreAccessInfo;
 
     /// Reads a substate of the given node partition.
     ///

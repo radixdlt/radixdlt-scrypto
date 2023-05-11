@@ -434,13 +434,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::DropLock,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
+                |fee_table| {
+                    fee_table.kernel_api_cost(CostingEntry::DropLock {
+                        size: store_access.get_whole_size() as u32,
+                    })
+                },
                 1,
             )?;
         Ok(())

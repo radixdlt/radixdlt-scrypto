@@ -40,7 +40,9 @@ pub enum CostingEntry<'a> {
     WriteSubstate {
         size: u32,
     },
-    DropLock,
+    DropLock {
+        size: u32,
+    },
     SubstateReadFromDb {
         size: u32,
     },
@@ -122,7 +124,7 @@ impl FeeTable {
                 Some(EntityType::InternalNonFungibleVault) => 356,
                 _ => 1182, // average of above values
             },
-            CostingEntry::DropLock => 114,
+            CostingEntry::DropLock { size: _ } => 114,
             CostingEntry::DropNode { size: _ } => 324, // average of gathered data
             CostingEntry::Invoke {
                 input_size,
@@ -330,6 +332,7 @@ impl FeeTable {
         match entry {
             CostingEntry::CreateNode { size, node_id: _ } => 100 * size,
             CostingEntry::DropNode { size } => 100 * size,
+            CostingEntry::DropLock { size } => 10 * size, // todo: determine correct value
             CostingEntry::Invoke {
                 input_size,
                 actor: _,

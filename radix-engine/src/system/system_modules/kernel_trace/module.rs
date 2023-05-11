@@ -178,6 +178,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())
