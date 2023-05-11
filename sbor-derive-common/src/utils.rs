@@ -78,12 +78,12 @@ impl AttributeValue {
 }
 
 trait AttributeMap {
-    fn has_flag_option(&self, name: &str) -> Result<bool>;
-    fn string_value(&self, name: &str) -> Result<Option<String>>;
+    fn get_bool_value(&self, name: &str) -> Result<bool>;
+    fn get_string_value(&self, name: &str) -> Result<Option<String>>;
 }
 
 impl AttributeMap for BTreeMap<String, AttributeValue> {
-    fn has_flag_option(&self, name: &str) -> Result<bool> {
+    fn get_bool_value(&self, name: &str) -> Result<bool> {
         let Some(value) = self.get(name) else {
             return Ok(false);
         };
@@ -92,7 +92,7 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
             .ok_or_else(|| Error::new(value.span(), format!("Expected bool attribute")))
     }
 
-    fn string_value(&self, name: &str) -> Result<Option<String>> {
+    fn get_string_value(&self, name: &str) -> Result<Option<String>> {
         let Some(value) = self.get(name) else {
             return Ok(None);
         };
@@ -102,25 +102,32 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
     }
 }
 
+/// Permits attribute of the form #[sbor(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
+pub fn extract_sbor_typed_attributes(
+    attributes: &[Attribute],
+) -> Result<BTreeMap<String, AttributeValue>> {
+    extract_typed_attributes(attributes, "sbor")
+}
+
 /// Permits attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
 pub fn extract_typed_attributes(
-    attrs: &[Attribute],
+    attributes: &[Attribute],
     name: &str,
 ) -> Result<BTreeMap<String, AttributeValue>> {
     let mut fields = BTreeMap::new();
-    for attr in attrs {
-        if !attr.path.is_ident(name) {
+    for attribute in attributes {
+        if !attribute.path.is_ident(name) {
             continue;
         }
-        let Ok(meta) = attr.parse_meta() else {
+        let Ok(meta) = attribute.parse_meta() else {
             return Err(Error::new(
-                attr.span(),
+                attribute.span(),
                 format!("Attribute content is not valid"),
             ));
         };
         let Meta::List(MetaList { nested: options, .. }) = meta else {
             return Err(Error::new(
-                attr.span(),
+                attribute.span(),
                 format!("Expected list-based attribute as #[{name}(..)]"),
             ));
         };
@@ -205,10 +212,7 @@ pub fn get_variant_discriminator_mapping(
 
     for (i, variant) in variants.iter().enumerate() {
         let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
-        let discriminator_attribute = variant_attributes
-            .remove("discriminator")
-            .or_else(|| variant_attributes.remove("id"));
-        if let Some(attribute) = discriminator_attribute {
+        if let Some(attribute) = variant_attributes.remove("discriminator") {
             let id = match attribute {
                 AttributeValue::None(span) => {
                     return Err(Error::new(span, format!("No discriminator was provided")));
@@ -291,36 +295,36 @@ fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
     field_name: &str,
 ) -> Result<Option<String>> {
-    let attributes = extract_typed_attributes(attributes, "sbor")?;
+    let attributes = extract_sbor_typed_attributes(attributes)?;
     Ok(attributes.get(field_name).and_then(|v| v.as_string()))
 }
 
 pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_typed_attributes(&f.attrs, "sbor")?;
-    Ok(attributes.has_flag_option("skip")? || attributes.has_flag_option("skip_categorize")?)
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_categorize")?)
 }
 
 pub fn is_decoding_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_typed_attributes(&f.attrs, "sbor")?;
-    Ok(attributes.has_flag_option("skip")? || attributes.has_flag_option("skip_decode")?)
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_decode")?)
 }
 
 pub fn is_encoding_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_typed_attributes(&f.attrs, "sbor")?;
-    Ok(attributes.has_flag_option("skip")? || attributes.has_flag_option("skip_encode")?)
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_encode")?)
 }
 
 pub fn is_transparent(attributes: &[Attribute]) -> Result<bool> {
-    let attributes = extract_typed_attributes(attributes, "sbor")?;
-    Ok(attributes.has_flag_option("transparent")?)
+    let attributes = extract_sbor_typed_attributes(attributes)?;
+    Ok(attributes.get_bool_value("transparent")?)
 }
 
 pub fn get_custom_value_kind(attributes: &[Attribute]) -> Result<Option<String>> {
-    extract_typed_attributes(attributes, "sbor")?.string_value("custom_value_kind")
+    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_value_kind")
 }
 
 pub fn get_custom_type_kind(attributes: &[Attribute]) -> Result<Option<String>> {
-    extract_typed_attributes(attributes, "sbor")?.string_value("custom_type_kind")
+    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_type_kind")
 }
 
 pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
@@ -786,17 +790,20 @@ mod tests {
             #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
         let extracted = extract_typed_attributes(&[attr], "sbor").unwrap();
-        assert_eq!(extracted.has_flag_option("skip").unwrap(), true);
-        assert_eq!(extracted.has_flag_option("skip2").unwrap(), false);
+        assert_eq!(extracted.get_bool_value("skip").unwrap(), true);
+        assert_eq!(extracted.get_bool_value("skip2").unwrap(), false);
         assert!(matches!(
-            extracted.has_flag_option("custom_value_kind"),
+            extracted.get_bool_value("custom_value_kind"),
             Err(_)
         ));
         assert_eq!(
-            extracted.string_value("custom_value_kind").unwrap(),
+            extracted.get_string_value("custom_value_kind").unwrap(),
             Some("NoCustomValueKind".to_string())
         );
-        assert_eq!(extracted.string_value("custom_value_kind_2").unwrap(), None);
-        assert!(matches!(extracted.string_value("skip"), Err(_)));
+        assert_eq!(
+            extracted.get_string_value("custom_value_kind_2").unwrap(),
+            None
+        );
+        assert!(matches!(extracted.get_string_value("skip"), Err(_)));
     }
 }

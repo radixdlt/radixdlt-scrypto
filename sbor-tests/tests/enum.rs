@@ -8,9 +8,9 @@ const VARIANT_2: u8 = 5;
 
 #[derive(Sbor, PartialEq, Eq, Debug)]
 pub enum Abc {
-    #[sbor(id(VARIANT_1))]
+    #[sbor(discriminator(VARIANT_1))]
     Variant1,
-    #[sbor(id(VARIANT_2))]
+    #[sbor(discriminator(VARIANT_2))]
     Variant2,
 }
 
@@ -20,11 +20,11 @@ const CONST_55: u8 = 55;
 #[derive(Sbor, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub enum Mixed {
-    #[sbor(id = 5)]
+    #[sbor(discriminator = 5)]
     A,
-    #[sbor(id(7))]
+    #[sbor(discriminator(7))]
     B,
-    #[sbor(id("8"))]
+    #[sbor(discriminator("8"))]
     C {
         test: String,
     },
