@@ -18,11 +18,11 @@ use crate::resource::*;
 use crate::*;
 
 pub trait ScryptoUncheckedProof {
-    // Apply basic resource address check and converts self into `ValidatedProof`.
-    fn check(self, resource_address: ResourceAddress) -> ValidatedProof;
+    // Apply basic resource address check and converts self into `CheckedProof`.
+    fn check(self, resource_address: ResourceAddress) -> CheckedProof;
 
-    // Converts self into `ValidatedProof` with no check.
-    fn no_check(self) -> ValidatedProof;
+    // Converts self into `CheckedProof` with no check.
+    fn no_check(self) -> CheckedProof;
 
     fn resource_address(&self) -> ResourceAddress;
 
@@ -34,8 +34,7 @@ pub trait ScryptoUncheckedProof {
 }
 
 pub trait ScryptoProof {
-    /// Check if the proof satisfies the given `ProofValidation`
-    fn validate(&self, validation_mode: ProofValidation) -> bool;
+    fn validate(&self, validation: ProofValidation) -> bool;
 
     fn amount(&self) -> Decimal;
 
@@ -64,27 +63,27 @@ pub trait ScryptoNonFungibleProof {
 ///
 /// This may become unnecessary when `Proof<X>` is supported.
 ///
-// TODO: cache resource address in `ValidatedProof`!
+// TODO: cache resource address in `CheckedProof`!
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
 #[sbor(transparent)]
-pub struct ValidatedProof(pub Proof);
+pub struct CheckedProof(pub Proof);
 
-impl ValidatedProof {}
+impl CheckedProof {}
 
-impl From<ValidatedProof> for Proof {
-    fn from(value: ValidatedProof) -> Self {
+impl From<CheckedProof> for Proof {
+    fn from(value: CheckedProof) -> Self {
         value.0
     }
 }
 
 impl ScryptoUncheckedProof for Proof {
-    fn check(self, expected_resource_address: ResourceAddress) -> ValidatedProof {
+    fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
         assert_eq!(self.resource_address(), expected_resource_address);
-        ValidatedProof(self)
+        CheckedProof(self)
     }
 
-    fn no_check(self) -> ValidatedProof {
-        ValidatedProof(self)
+    fn no_check(self) -> CheckedProof {
+        CheckedProof(self)
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -135,7 +134,7 @@ impl ScryptoUncheckedProof for Proof {
     }
 }
 
-impl ScryptoProof for ValidatedProof {
+impl ScryptoProof for CheckedProof {
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -190,7 +189,7 @@ impl ScryptoProof for ValidatedProof {
     }
 }
 
-impl ScryptoNonFungibleProof for ValidatedProof {
+impl ScryptoNonFungibleProof for CheckedProof {
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
