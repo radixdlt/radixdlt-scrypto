@@ -287,6 +287,20 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+        Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL\n    Address(\"{}\")\n    Proof(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
         Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator

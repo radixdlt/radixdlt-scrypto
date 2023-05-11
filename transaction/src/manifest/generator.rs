@@ -330,6 +330,18 @@ pub fn generate_instruction(
                 resource_address,
             }
         }
+        ast::Instruction::CreateProofFromAuthZoneOfAll {
+            resource_address,
+            new_proof,
+        } => {
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromAuthZoneOfAll { resource_address }
+        }
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator

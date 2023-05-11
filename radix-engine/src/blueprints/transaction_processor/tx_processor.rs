@@ -185,6 +185,11 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
+                Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+                    let proof = LocalAuthZone::sys_create_proof_of_all(resource_address, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.sys_create_proof(api)?;

@@ -75,6 +75,7 @@ impl ManifestBuilder {
             | Instruction::CreateProofFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZoneOfAmount { .. }
             | Instruction::CreateProofFromAuthZoneOfNonFungibles { .. }
+            | Instruction::CreateProofFromAuthZoneOfAll { .. }
             | Instruction::CreateProofFromBucket { .. }
             | Instruction::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
@@ -236,6 +237,20 @@ impl ManifestBuilder {
                 ids: ids.clone(),
                 resource_address,
             });
+        then(builder, proof_id.unwrap())
+    }
+
+    /// Creates proof from the auth zone
+    pub fn create_proof_from_auth_zone_of_all<F>(
+        &mut self,
+        resource_address: ResourceAddress,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAll { resource_address });
         then(builder, proof_id.unwrap())
     }
 

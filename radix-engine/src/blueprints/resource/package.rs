@@ -1315,6 +1315,16 @@ impl ResourceManagerNativePackage {
             },
         );
         functions.insert(
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByAllInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofByAllOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
             AUTH_ZONE_CLEAR_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -2266,6 +2276,17 @@ impl ResourceManagerNativePackage {
                     input.ids,
                     api,
                 )?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
+            }
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AuthZoneCreateProofByAllInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_all(input.resource_address, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }

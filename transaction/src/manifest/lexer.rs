@@ -92,6 +92,7 @@ pub enum TokenKind {
     CreateProofFromAuthZone,
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
+    CreateProofFromAuthZoneOfAll,
     CreateProofFromBucket,
     CloneProof,
     DropProof,
@@ -430,6 +431,7 @@ impl Lexer {
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES" => {
                 Ok(TokenKind::CreateProofFromAuthZoneOfNonFungibles)
             }
+            "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => Ok(TokenKind::CreateProofFromAuthZoneOfAll),
             "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),

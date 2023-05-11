@@ -132,6 +132,9 @@ CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
     Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
     Address("${non_fungible_resource_address}")
     Proof("proof6");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
+    Address("${non_fungible_resource_address}")
+    Proof("proof7");
 CLEAR_AUTH_ZONE;
 CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;

@@ -127,6 +127,10 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
+            TokenKind::CreateProofFromAuthZoneOfAll => Instruction::CreateProofFromAuthZoneOfAll {
+                resource_address: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
             TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,

@@ -131,6 +131,23 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
+    pub fn sys_create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let auth_zone = api.get_auth_zone().unwrap();
+        let rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&AuthZoneCreateProofByAllInput { resource_address }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     pub fn sys_push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         proof: P,
         api: &mut Y,

@@ -160,6 +160,46 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
+    pub(crate) fn create_proof_of_all<Y>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    {
+        let auth_zone_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+        )?;
+
+        let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+        let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
+        let composed_proof = compose_proof_by_amount(&proofs, resource_address, None, api)?;
+
+        let blueprint_name = match &composed_proof {
+            ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
+            ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
+        };
+        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
+
+        let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+        api.kernel_create_node(
+            node_id,
+            btreemap!(
+                OBJECT_BASE_PARTITION => composed_proof.into(),
+                TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, blueprint_name),
+                    global: false,
+                    outer_object: Some(resource_address.into()),
+                    instance_schema: None,
+                })).to_substates()
+            ),
+        )?;
+
+        Ok(Proof(Own(node_id)))
+    }
+
     pub(crate) fn clear<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

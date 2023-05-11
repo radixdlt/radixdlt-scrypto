@@ -71,6 +71,17 @@ pub struct AuthZoneCreateProofByIdsInput {
 
 pub type AuthZoneCreateProofByIdsOutput = Proof;
 
+pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
+
+pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct AuthZoneCreateProofByAllInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AuthZoneCreateProofByAllOutput = Proof;
+
 pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
 
 pub const AUTH_ZONE_CLEAR_EXPORT_NAME: &str = "AuthZone_clear";

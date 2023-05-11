@@ -64,6 +64,11 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    CreateProofFromAuthZoneOfAll {
+        resource_address: Value,
+        new_proof: Value,
+    },
+
     CreateProofFromBucket {
         bucket: Value,
         new_proof: Value,

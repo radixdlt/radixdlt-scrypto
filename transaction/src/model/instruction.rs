@@ -79,6 +79,10 @@ pub enum Instruction {
         resource_address: ResourceAddress,
     },
 
+    CreateProofFromAuthZoneOfAll {
+        resource_address: ResourceAddress,
+    },
+
     /// Creates a proof from a bucket.
     CreateProofFromBucket {
         bucket_id: ManifestBucket,
