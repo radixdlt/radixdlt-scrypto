@@ -41,9 +41,10 @@ pub struct ProofCloneInput {}
 
 pub type ProofCloneOutput = Proof;
 
-// TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
-/// Specifies the validation mode that should be used for validating a `Proof`.
-pub enum ProofValidationMode {
+/// The validation to be evaluated against a `Proof`.
+///
+/// TODO: Evaluate if we should have a ProofValidationBuilder to construct more complex validation modes.
+pub enum ProofValidation {
     /// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
     Contains(ResourceAddress),
 
@@ -62,13 +63,13 @@ pub enum ProofValidationMode {
     ContainsAnyOf(BTreeSet<ResourceAddress>),
 }
 
-impl From<ResourceAddress> for ProofValidationMode {
+impl From<ResourceAddress> for ProofValidation {
     fn from(resource_address: ResourceAddress) -> Self {
         Self::Contains(resource_address)
     }
 }
 
-impl From<NonFungibleGlobalId> for ProofValidationMode {
+impl From<NonFungibleGlobalId> for ProofValidation {
     fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
         Self::ContainsNonFungible(non_fungible_global_id)
     }

@@ -18,14 +18,24 @@ use crate::resource::*;
 use crate::*;
 
 pub trait ScryptoUncheckedProof {
+    // Apply basic resource address check and converts self into `ValidatedProof`.
+    fn check(self, resource_address: ResourceAddress) -> ValidatedProof;
+
+    // Converts self into `ValidatedProof` with no check.
+    fn no_check(self) -> ValidatedProof;
+
     fn resource_address(&self) -> ResourceAddress;
 
     fn drop(self);
+
+    fn clone(&self) -> Self;
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
 pub trait ScryptoProof {
-    /// Check if the proof satisfies the given `ProofValidationMode`
-    fn validate_with<T>(&self, validation_mode: ProofValidationMode) -> bool;
+    /// Check if the proof satisfies the given `ProofValidation`
+    fn validate(&self, validation_mode: ProofValidation) -> bool;
 
     fn amount(&self) -> Decimal;
 
@@ -53,33 +63,13 @@ pub trait ScryptoNonFungibleProof {
 /// Represents an address-checked proof
 ///
 /// This may become unnecessary when `Proof<X>` is supported.
+///
+// TODO: cache resource address in `ValidatedProof`!
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct ValidatedProof(pub Proof);
 
-impl ValidatedProof {
-    pub fn from(proof: Proof, expected_resource_address: ResourceAddress) -> Option<Self> {
-        let mut env = ScryptoEnv;
-        let resource_address: ResourceAddress = scrypto_decode(
-            &env.call_method(
-                proof.0.as_node_id(),
-                PROOF_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap(),
-        )
-        .unwrap();
-        if resource_address.eq(&expected_resource_address) {
-            Some(Self(proof))
-        } else {
-            None
-        }
-    }
-
-    pub fn unchecked(proof: Proof) -> Self {
-        Self(proof)
-    }
-}
+impl ValidatedProof {}
 
 impl From<ValidatedProof> for Proof {
     fn from(value: ValidatedProof) -> Self {
@@ -88,6 +78,15 @@ impl From<ValidatedProof> for Proof {
 }
 
 impl ScryptoUncheckedProof for Proof {
+    fn check(self, expected_resource_address: ResourceAddress) -> ValidatedProof {
+        assert_eq!(self.resource_address(), expected_resource_address);
+        ValidatedProof(self)
+    }
+
+    fn no_check(self) -> ValidatedProof {
+        ValidatedProof(self)
+    }
+
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -115,6 +114,25 @@ impl ScryptoUncheckedProof for Proof {
         )
         .unwrap();
     }
+
+    fn clone(&self) -> Self {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                PROOF_CLONE_IDENT,
+                scrypto_encode(&ProofCloneInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        LocalAuthZone::push(self.clone());
+        let output = f();
+        LocalAuthZone::pop().drop();
+        output
+    }
 }
 
 impl ScryptoProof for ValidatedProof {
@@ -131,17 +149,7 @@ impl ScryptoProof for ValidatedProof {
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        // TODO: cache resource address in `ValidatedProof`!
-
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                PROOF_GET_RESOURCE_ADDRESS_IDENT,
-                scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        self.0.resource_address()
     }
 
     fn drop(self) {
@@ -149,45 +157,33 @@ impl ScryptoProof for ValidatedProof {
     }
 
     fn clone(&self) -> Self {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0 .0.as_node_id(),
-                PROOF_CLONE_IDENT,
-                scrypto_encode(&ProofCloneInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
+        Self(self.0.clone())
     }
 
-    /// Uses resources in this proof as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        LocalAuthZone::push(ScryptoProof::clone(self));
-        let output = f();
-        LocalAuthZone::pop().drop();
-        output
+        self.0.authorize(f)
     }
 
-    fn validate_with<T>(&self, validation_mode: ProofValidationMode) -> bool {
-        match validation_mode {
-            ProofValidationMode::Contains(resource_address) => {
+    fn validate(&self, validation: ProofValidation) -> bool {
+        match validation {
+            ProofValidation::Contains(resource_address) => {
                 self.resource_address().eq(&resource_address)
             }
-            ProofValidationMode::ContainsNonFungible(non_fungible_global_id) => {
+            ProofValidation::ContainsNonFungible(non_fungible_global_id) => {
                 self.resource_address()
                     .eq(&non_fungible_global_id.resource_address())
                     && self
                         .non_fungible_local_ids()
                         .contains(non_fungible_global_id.local_id())
             }
-            ProofValidationMode::ContainsNonFungibles(resource_address, local_ids) => {
+            ProofValidation::ContainsNonFungibles(resource_address, local_ids) => {
                 self.resource_address().eq(&resource_address)
                     && self.non_fungible_local_ids().is_superset(&local_ids)
             }
-            ProofValidationMode::ContainsAmount(resource_address, amount) => {
+            ProofValidation::ContainsAmount(resource_address, amount) => {
                 self.resource_address().eq(&resource_address) && self.amount() >= amount
             }
-            ProofValidationMode::ContainsAnyOf(resource_addresses) => {
+            ProofValidation::ContainsAnyOf(resource_addresses) => {
                 resource_addresses.contains(&self.resource_address())
             }
         }
