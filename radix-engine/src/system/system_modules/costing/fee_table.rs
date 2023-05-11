@@ -12,7 +12,6 @@ const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or dow
 const COSTING_COEFFICENT_STORAGE: u64 = 10;
 const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
 
-
 pub enum CostingEntry<'a> {
     /* invoke */
     Invoke {
@@ -332,7 +331,8 @@ impl FeeTable {
             } => 0,
         }) as u64
             * COSTING_COEFFICENT_CPU
-            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON)) as u32
+            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
+            as u32
     }
 
     fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
@@ -351,8 +351,9 @@ impl FeeTable {
                 size_new,
             } => 10 * size_new, // todo: determine correct value
             _ => 0,
-        }) as u64 
-            * COSTING_COEFFICENT_STORAGE >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
+        }) as u64
+            * COSTING_COEFFICENT_STORAGE
+            >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {

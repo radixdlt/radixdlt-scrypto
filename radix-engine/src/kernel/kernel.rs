@@ -317,7 +317,8 @@ where
         M::before_create_node(&node_id, &node_substates, self)?;
 
         self.id_allocator.take_node_id(node_id)?;
-        let store_access = self.current_frame
+        let store_access = self
+            .current_frame
             .create_node(node_id, node_substates, &mut self.heap, self.store)
             .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
