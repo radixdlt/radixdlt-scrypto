@@ -290,17 +290,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
+        let store_acccess_size = store_access.get_whole_size();
 
         // Increase write coutner.
         tlimit.substate_db_write_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_write_size_total += size;
+        tlimit.substate_db_write_size_total += store_acccess_size;
 
         // Validate
-        tlimit.validate_substates(None, Some(size))
+        tlimit.validate_substates(None, Some(store_acccess_size))
     }
 }

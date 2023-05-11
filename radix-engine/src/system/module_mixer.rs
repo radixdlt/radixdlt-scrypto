@@ -351,9 +351,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_write_substate(api, lock_handle, size))
+        internal_call_dispatch!(api, on_write_substate(api, lock_handle, store_access))
     }
 
     #[trace_resources]

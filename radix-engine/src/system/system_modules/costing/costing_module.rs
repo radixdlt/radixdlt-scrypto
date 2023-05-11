@@ -347,13 +347,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // TODO: calculate size
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::DropNode,
-                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode { size: 0 }),
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropNode),
                 1,
             )
     }
@@ -419,18 +418,22 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
+        // CPU execution part
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::WriteSubstate,
-                |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::WriteSubstate { size: size as u32 })
-                },
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::WriteSubstate),
                 1,
-            )
+            )?;
+        // Storage usage part
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_access_store_costs(CostingReason::WriteSubstate, store_access)
     }
 
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
@@ -444,9 +447,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(
                 CostingReason::DropLock,
-                |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::DropLock)
-                },
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::DropLock),
                 1,
             )?;
         // Storage usage part
@@ -462,13 +463,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         // CPU execution part
         api.kernel_get_system()
-        .modules
-        .costing
-        .apply_execution_cost(
-            CostingReason::ScanSubstate,
-            |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstate),
-            1,
-        )?;
+            .modules
+            .costing
+            .apply_execution_cost(
+                CostingReason::ScanSubstate,
+                |fee_table| fee_table.kernel_api_cost(CostingEntry::ScanSubstate),
+                1,
+            )?;
         // Storage usage part
         api.kernel_get_system()
             .modules

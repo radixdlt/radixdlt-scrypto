@@ -80,7 +80,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle).0;  // MS todo
+            let substate_ref = kernel.store.read_substate(handle).0; // MS todo
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.release_lock(handle);
             match type_substate {
@@ -647,7 +647,8 @@ where
         Ok(self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
-            .unwrap().0)
+            .unwrap()
+            .0)
     }
 
     #[trace_resources]
@@ -656,13 +657,14 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_write_substate(lock_handle, value.as_slice().len(), self)?;
-
-        self.current_frame
+        let store_access = self
+            .current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_write_substate(lock_handle, &store_access, self)
     }
 
     fn kernel_set_substate(

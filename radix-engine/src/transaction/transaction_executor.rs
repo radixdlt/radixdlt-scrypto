@@ -529,7 +529,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let mut substate: LiquidFungibleResource = track.read_substate(handle).0.as_typed().unwrap();  // MS todo
+        let mut substate: LiquidFungibleResource =
+            track.read_substate(handle).0.as_typed().unwrap(); // MS todo
         substate.put(LiquidFungibleResource::new(amount)).unwrap();
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
@@ -564,7 +565,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let mut substate: LiquidFungibleResource = track.read_substate(handle).0.as_typed().unwrap();  // MS todo
+        let mut substate: LiquidFungibleResource =
+            track.read_substate(handle).0.as_typed().unwrap(); // MS todo
         substate.put(locked).unwrap();
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);

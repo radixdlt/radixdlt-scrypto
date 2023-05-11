@@ -164,13 +164,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
             "Writing substate: handle = {}, size = {:?}",
             lock_handle,
-            size
+            store_access.get_whole_size()
         );
         Ok(())
     }

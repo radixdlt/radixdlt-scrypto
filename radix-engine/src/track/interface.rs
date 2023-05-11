@@ -126,7 +126,11 @@ pub trait SubstateStore {
     /// # Panics
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
+    fn update_substate(
+        &mut self,
+        handle: u32,
+        substate_value: IndexedScryptoValue,
+    ) -> StoreAccessInfo;
 }
 
 #[derive(Clone)]
@@ -155,7 +159,11 @@ impl StoreAccessInfo {
     pub fn push(&mut self, items: &StoreAccessInfo) {
         self.0.copy_from_slice(items.0.as_slice())
     }
-    pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
+    pub fn builder_push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
+        self.push_if_not_empty(item);
+        self
+    }
+    pub fn push_if_not_empty(&mut self, item: StoreAccess) {
         match item {
             StoreAccess::ReadFromDb(size)
             | StoreAccess::ReadFromTrack(size)
@@ -170,7 +178,6 @@ impl StoreAccessInfo {
                 }
             }
         }
-        self
     }
     pub fn clear(&mut self) {
         self.0.clear();

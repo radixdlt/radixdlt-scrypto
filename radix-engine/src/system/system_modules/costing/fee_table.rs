@@ -20,9 +20,7 @@ pub enum CostingEntry<'a> {
     CreateNode {
         node_id: &'a NodeId,
     },
-    DropNode {
-        size: u32,
-    },
+    DropNode,
     AllocateNodeId {
         virtual_node: bool,
     },
@@ -34,9 +32,7 @@ pub enum CostingEntry<'a> {
         substate_key: &'a SubstateKey,
     },
     ReadSubstate,
-    WriteSubstate {
-        size: u32,
-    },
+    WriteSubstate,
     ScanSubstate,
     SetSubstate,
     TakeSubstate,
@@ -123,7 +119,7 @@ impl FeeTable {
                 _ => 1182, // average of above values
             },
             CostingEntry::DropLock => 114,
-            CostingEntry::DropNode { size: _ } => 324, // average of gathered data
+            CostingEntry::DropNode => 324, // average of gathered data
             CostingEntry::Invoke {
                 input_size,
                 actor: identifier,
@@ -316,7 +312,7 @@ impl FeeTable {
             &CostingEntry::SetSubstate => 100, // todo: determine correct value
             CostingEntry::TakeSubstate => 100, // todo: determine correct value
             CostingEntry::ReadSubstate => 174,
-            CostingEntry::WriteSubstate { size: _ } => 126,
+            CostingEntry::WriteSubstate => 126,
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
@@ -325,7 +321,7 @@ impl FeeTable {
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new: _,
-            } => 0, 
+            } => 0,
         }) as u64
             * COSTING_COEFFICENT
             >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32
@@ -333,12 +329,10 @@ impl FeeTable {
 
     fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
         match entry {
-            CostingEntry::DropNode { size } => 100 * size,
             CostingEntry::Invoke {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::WriteSubstate { size } => 1000 * size,
             CostingEntry::SubstateReadFromDb { size } => 1000 * size, // todo: determine correct value
             CostingEntry::SubstateReadFromTrack { size } => 100 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 100 * size, // todo: determine correct value

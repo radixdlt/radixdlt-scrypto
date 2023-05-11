@@ -439,7 +439,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         store: &'f mut S,
         lock_handle: LockHandle,
         substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
+    ) -> Result<StoreAccessInfo, WriteSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -457,11 +457,11 @@ impl<D, L: Clone> CallFrame<D, L> {
         }
 
         if let Some(store_handle) = store_handle {
-            store.update_substate(*store_handle, substate);
+            Ok(store.update_substate(*store_handle, substate))
         } else {
             heap.set_substate(*node_id, *partition_num, substate_key.clone(), substate);
+            Ok(StoreAccessInfo::new())
         }
-        Ok(())
     }
 
     // Substate Virtualization does not apply to this call
