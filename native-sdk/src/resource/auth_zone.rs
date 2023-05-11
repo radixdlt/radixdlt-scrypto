@@ -10,9 +10,9 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-pub struct ComponentAuthZone {}
+pub struct LocalAuthZone {}
 
-impl ComponentAuthZone {
+impl LocalAuthZone {
     pub fn sys_drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<Vec<Proof>, E>

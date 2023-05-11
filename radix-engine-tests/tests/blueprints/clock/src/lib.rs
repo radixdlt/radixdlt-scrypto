@@ -113,15 +113,5 @@ mod clock_test {
         pub fn get_current_time_rounded_to_minutes() -> i64 {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
-
-        pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
-            ScryptoEnv
-                .call_method(
-                    &clock.into(),
-                    CLOCK_SET_CURRENT_TIME_IDENT,
-                    scrypto_encode(&ClockSetCurrentTimeInput { current_time_ms }).unwrap(),
-                )
-                .unwrap();
-        }
     }
 }

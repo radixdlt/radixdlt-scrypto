@@ -136,19 +136,24 @@ pub struct CustomGenesis {
 }
 
 impl CustomGenesis {
-    pub fn empty(
+    pub fn default(
         initial_epoch: u64,
         max_validators: u32,
         rounds_per_epoch: u64,
         num_unstake_epochs: u64,
     ) -> CustomGenesis {
-        CustomGenesis {
-            genesis_data_chunks: vec![],
+        let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+            .unwrap()
+            .public_key();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
             initial_epoch,
             max_validators,
             rounds_per_epoch,
             num_unstake_epochs,
-        }
+        )
     }
 
     pub fn single_validator_and_staker(
@@ -901,59 +906,6 @@ impl TestRunner {
                 .build(),
             vec![],
         )
-    }
-
-    pub fn lock_resource_auth(
-        &mut self,
-        function: &str,
-        auth: ResourceAddress,
-        token: ResourceAddress,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) {
-        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
-            .create_proof_from_account(account, auth)
-            .call_function(package, "ResourceCreator", function, manifest_args!(token))
-            .build();
-        self.execute_manifest(
-            manifest,
-            vec![NonFungibleGlobalId::from_public_key(&signer_public_key)],
-        )
-        .expect_commit_success();
-    }
-
-    pub fn update_resource_auth(
-        &mut self,
-        function: &str,
-        auth: ResourceAddress,
-        token: ResourceAddress,
-        set_auth: ResourceAddress,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) {
-        let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
-            .create_proof_from_account(account, auth)
-            .call_function(
-                package,
-                "ResourceCreator",
-                function,
-                manifest_args!(token, set_auth),
-            )
-            .call_method(
-                account,
-                "deposit_batch",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
-            .build();
-        self.execute_manifest(
-            manifest,
-            btreeset![NonFungibleGlobalId::from_public_key(&signer_public_key)],
-        )
-        .expect_commit_success();
     }
 
     fn create_fungible_resource_and_deposit(

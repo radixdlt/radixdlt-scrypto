@@ -1,6 +1,4 @@
-use crate::blueprints::epoch_manager::{
-    EpochManagerConfigSubstate, EpochManagerSubstate, Validator, EPOCH_MANAGER_SECONDARY_INDEX,
-};
+use crate::blueprints::epoch_manager::*;
 use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -412,14 +410,8 @@ impl ValidatorBlueprint {
         if !registered || stake.is_zero() {
             None
         } else {
-            let stake_100k =
-                stake / Decimal::from(10).powi(Decimal::SCALE.into()) / Decimal::from(100000);
-            let stake_100k_le = stake_100k.to_vec();
-            let bytes = [stake_100k_le[1], stake_100k_le[0]];
-            let reverse_stake_u16 = u16::from_be_bytes(bytes);
-            let sorted_key = u16::MAX - reverse_stake_u16;
             Some(SortedKey::new(
-                sorted_key,
+                create_sort_prefix_from_stake(stake),
                 scrypto_encode(&address).unwrap(),
             ))
         }
@@ -441,7 +433,7 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_SECONDARY_INDEX,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     (address, Validator { key, stake }),
                 )?;
@@ -450,14 +442,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_SECONDARY_INDEX,
+                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_SECONDARY_INDEX,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     (address, validator),
                 )?;
@@ -470,14 +462,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_SECONDARY_INDEX,
+                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_SECONDARY_INDEX,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
                     (address, validator),
                 )?;
@@ -485,7 +477,7 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_SECONDARY_INDEX,
+                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     &index_key,
                 )?;
             }
@@ -493,6 +485,22 @@ impl ValidatorBlueprint {
 
         Ok(())
     }
+}
+
+fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
+    // Note: XRD max supply is 24bn
+    // 24bn / MAX::16 = 366210.9375 - so 100k as a divisor here is sensible.
+    // If all available XRD was staked to one validator, they'd have 3.6 * u16::MAX * 100k stake
+    // In reality, validators will have far less than u16::MAX * 100k stake, but let's handle that case just in case
+    let stake_100k = stake / Decimal::from(100000);
+    let stake_100k_whole_units = (stake_100k / Decimal::from(10).powi(Decimal::SCALE.into())).0;
+    let stake_u16 = if stake_100k_whole_units > BnumI256::from(u16::MAX) {
+        u16::MAX
+    } else {
+        stake_100k_whole_units.try_into().unwrap()
+    };
+    // We invert the key because we need high stake to appear first and it's ordered ASC
+    u16::MAX - stake_u16
 }
 
 struct SecurifiedValidator;
@@ -629,5 +637,22 @@ impl ValidatorCreator {
             ComponentAddress::new_or_panic(address.into()),
             owner_token_bucket,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_key_is_calculated_correctly() {
+        assert_eq!(create_sort_prefix_from_stake(Decimal::ZERO), u16::MAX);
+        assert_eq!(create_sort_prefix_from_stake(dec!(99_999)), u16::MAX);
+        assert_eq!(create_sort_prefix_from_stake(dec!(100_000)), u16::MAX - 1);
+        assert_eq!(create_sort_prefix_from_stake(dec!(199_999)), u16::MAX - 1);
+        assert_eq!(create_sort_prefix_from_stake(dec!(200_000)), u16::MAX - 2);
+        // https://learn.radixdlt.com/article/start-here-radix-tokens-and-tokenomics
+        let max_xrd_supply = dec!(24) * dec!(10).powi(12);
+        assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
     }
 }

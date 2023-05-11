@@ -62,16 +62,15 @@ pub const GLOBAL_CALLER_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or
 // TRANSACTION BADGES
 //=========================================================================
 
-/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is a system transaction.
+/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is
+/// a system transaction.
+///
+/// The following ids have meanings:
+/// * `0` is used to represent a full-authority system transaction such as genesis, or a protocol update
+/// * `1` is used to represent a consensus-authrority transaction, such as a round change
 pub const SYSTEM_TRANSACTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 104, 18, 11, 52, 204, 99, 24, 198, 49, 140, 247, 171, 71, 140,
     85, 71, 199, 198, 49, 140, 99, 24, 198,
-]);
-
-/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is a consensus/validator transaction.
-pub const CONSENSUS_TRANSACTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
-    154, 76, 99, 24, 198, 49, 140, 108, 78, 11, 52, 204, 99, 24, 198, 49, 140, 247, 189, 90, 122,
-    171, 74, 81, 70, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
@@ -266,11 +265,6 @@ mod tests {
             SYSTEM_TRANSACTION_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResource,
             "resource_rdx1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxsystxn",
-        );
-        check_address(
-            CONSENSUS_TRANSACTION_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
-            "resource_rdx1nfxxxxxxxxxxcnstxnxxxxxxxxx000260245552xxxxxxxxxcnstxn",
         );
 
         // Entity owner badges
