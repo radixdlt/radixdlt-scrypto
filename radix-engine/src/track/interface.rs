@@ -135,50 +135,59 @@ pub trait SubstateStore {
 
 #[derive(Clone)]
 pub struct StoreAccessInfo(Vec<StoreAccess>);
+
 impl StoreAccessInfo {
+
     pub fn new() -> Self {
         Self(Vec::new())
     }
+
     pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
         Self(vector)
     }
+
     pub fn data(&self) -> &Vec<StoreAccess> {
         &self.0
     }
+
     pub fn get_whole_size(&self) -> usize {
         self.0
             .iter()
             .map(|item| match item {
                 StoreAccess::ReadFromDb(size)
                 | StoreAccess::ReadFromTrack(size)
-                | StoreAccess::Write(size) => size,
-                StoreAccess::Rewrite(_size_old, size_new) => size_new,
+                | StoreAccess::WriteToTrack(size) => size,
+                StoreAccess::RewriteToTrack(_size_old, size_new) => size_new,
             })
             .sum()
     }
+
     pub fn push(&mut self, items: &StoreAccessInfo) {
-        self.0.copy_from_slice(items.0.as_slice())
+        self.0.extend(&items.0)
     }
+
     pub fn builder_push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
         self.push_if_not_empty(item);
         self
     }
+
     pub fn push_if_not_empty(&mut self, item: StoreAccess) {
         match item {
             StoreAccess::ReadFromDb(size)
             | StoreAccess::ReadFromTrack(size)
-            | StoreAccess::Write(size) => {
+            | StoreAccess::WriteToTrack(size) => {
                 if size > 0 {
                     self.0.push(item)
                 }
             }
-            StoreAccess::Rewrite(size_old, size_new) => {
+            StoreAccess::RewriteToTrack(size_old, size_new) => {
                 if size_old > 0 || size_new > 0 {
                     self.0.push(item)
                 }
             }
         }
     }
+
     pub fn clear(&mut self) {
         self.0.clear();
     }
@@ -186,18 +195,11 @@ impl StoreAccessInfo {
 
 #[derive(Clone, Copy)]
 pub enum StoreAccess {
-    // When store invokes `SubstateDatabase::get_substate()`.
-    // size might be zero when the entry does not exist.
     ReadFromDb(usize),
-    // When store reads from the `tracked_nodes`.
     ReadFromTrack(usize),
-    // When store writes into the `tracked_nodes`.
-    // This will eventually be flushed into database.
-    Write(usize),
-    // When store updates an entry for the second time
+    WriteToTrack(usize),
+    // Updates an entry for the second time
     // Need to report both the previous size and new size as partial refund may be required
     // (Reason: only one write will be applied when the transaction finishes, despite substate being updated twice)
-    Rewrite(usize, usize),
-    // In future, we may want to introduce something like `Clear` to rebate behaviours that
-    // help reduce the state size.
+    RewriteToTrack(usize, usize),
 }

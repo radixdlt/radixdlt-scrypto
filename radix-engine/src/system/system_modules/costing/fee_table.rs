@@ -333,13 +333,13 @@ impl FeeTable {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::SubstateReadFromDb { size } => 1000 * size, // todo: determine correct value
-            CostingEntry::SubstateReadFromTrack { size } => 100 * size, // todo: determine correct value
-            CostingEntry::SubstateWriteToTrack { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromDb { size } => 10 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromTrack { size } => 1 * size, // todo: determine correct value
+            CostingEntry::SubstateWriteToTrack { size } => 1 * size, // todo: determine correct value
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
                 size_new,
-            } => 100 * size_new, // todo: determine correct value
+            } => 1 * size_new, // todo: determine correct value
             _ => 0,
         }
     }

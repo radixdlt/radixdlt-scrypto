@@ -111,7 +111,7 @@ impl CostingModule {
                     },
                     1,
                 )?,
-                StoreAccess::Write(size) => self.apply_execution_cost(
+                StoreAccess::WriteToTrack(size) => self.apply_execution_cost(
                     costing_reason.clone(),
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::SubstateWriteToTrack {
@@ -120,7 +120,7 @@ impl CostingModule {
                     },
                     1,
                 )?,
-                StoreAccess::Rewrite(size_old, size_new) => self.apply_execution_cost(
+                StoreAccess::RewriteToTrack(size_old, size_new) => self.apply_execution_cost(
                     costing_reason.clone(),
                     |fee_table| {
                         fee_table.kernel_api_cost(CostingEntry::SubstateRewriteToTrack {

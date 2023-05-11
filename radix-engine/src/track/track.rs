@@ -489,7 +489,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                 if let Some(value) = value {
                     let value_len = value.as_slice().len();
                     store_access.push(StoreAccess::ReadFromDb(value_len));
-                    store_access.push(StoreAccess::Write(value_len));
+                    store_access.push(StoreAccess::WriteToTrack(value_len));
 
                     let tracked = TrackedSubstateKey {
                         substate_key,
@@ -501,7 +501,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                 } else {
                     let value = virtualize();
                     if let Some(value) = value {
-                        store_access.push(StoreAccess::Write(value.as_slice().len()));
+                        store_access.push(StoreAccess::WriteToTrack(value.as_slice().len()));
                         let tracked = TrackedSubstateKey {
                             substate_key,
                             tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
@@ -566,7 +566,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             },
         );
 
-        StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::Write(track_write_size))
+        StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::WriteToTrack(track_write_size))
     }
 
     fn set_substate(
@@ -600,7 +600,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 };
                 e.insert(tracked);
 
-                Ok(StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::Write(value_len)))
+                Ok(StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::WriteToTrack(value_len)))
             }
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
@@ -623,7 +623,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 tracked.tracked.set(substate_value);
 
                 Ok(StoreAccessInfo::new()
-                    .builder_push_if_not_empty(StoreAccess::Rewrite(old_value_len, new_value_len)))
+                    .builder_push_if_not_empty(StoreAccess::RewriteToTrack(old_value_len, new_value_len)))
             }
         }
     }
@@ -845,7 +845,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             StoreAccessInfo::new()
                 .builder_push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size))
                 .builder_push_if_not_empty(StoreAccess::ReadFromDb(db_read_size))
-                .builder_push_if_not_empty(StoreAccess::Rewrite(
+                .builder_push_if_not_empty(StoreAccess::RewriteToTrack(
                     track_write_size_old,
                     track_write_size_new,
                 )),
@@ -1059,13 +1059,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             | TrackedKey::ReadNonExistAndWrite(substate) => {
                 let size_old = substate.value.as_slice().len();
                 let size_new = substate_value.as_slice().len();
-                store_access.push_if_not_empty(StoreAccess::Rewrite(size_old, size_new));
+                store_access.push_if_not_empty(StoreAccess::RewriteToTrack(size_old, size_new));
 
                 substate.value = substate_value;
             }
             TrackedKey::ReadOnly(ReadOnly::NonExistent) => {
                 let size = substate_value.as_slice().len();
-                store_access.push_if_not_empty(StoreAccess::Write(size));
+                store_access.push_if_not_empty(StoreAccess::WriteToTrack(size));
 
                 let new_tracked =
                     TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(substate_value));
@@ -1076,7 +1076,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             TrackedKey::ReadOnly(ReadOnly::Existent(substate)) => {
                 let size_old = substate.value.as_slice().len();
                 let size_new = substate_value.as_slice().len();
-                store_access.push_if_not_empty(StoreAccess::Rewrite(size_old, size_new));
+                store_access.push_if_not_empty(StoreAccess::RewriteToTrack(size_old, size_new));
 
                 let new_tracked = TrackedKey::ReadExistAndWrite(
                     substate.value.clone(),
