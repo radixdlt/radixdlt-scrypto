@@ -724,9 +724,9 @@ where
         Ok(())
     }
 
-    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
         let actor = self.api.kernel_get_system_state().current;
-        actor.try_as_method().map(|a| a.node_id)
+        actor.try_as_method().map(|a| (a.node_id, a.is_direct_access))
     }
 
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
@@ -1573,7 +1573,7 @@ where
         let node_id = match actor_object_type {
             ActorObjectType::SELF => self
                 .actor_get_receiver_node_id()
-                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
+                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?.0,
             ActorObjectType::OuterObject => self
                 .actor_get_info()?
                 .outer_object

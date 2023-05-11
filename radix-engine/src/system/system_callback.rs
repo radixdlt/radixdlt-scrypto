@@ -19,13 +19,13 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
 };
-use radix_engine_interface::schema::IndexedBlueprintSchema;
+use radix_engine_interface::schema::{IndexedBlueprintSchema, RefTypes};
 
 fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
     service: &mut SystemService<'a, Y, V>,
     blueprint_schema: &IndexedBlueprintSchema,
     fn_ident: &str,
-    with_receiver: bool,
+    with_receiver: Option<(NodeId, bool)>,
     input: &IndexedScryptoValue,
 ) -> Result<String, RuntimeError> {
     let function_schema =
@@ -36,10 +36,20 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
                 SystemUpstreamError::FunctionNotFound(fn_ident.to_string()),
             ))?;
 
-    if function_schema.receiver.is_some() != with_receiver {
-        return Err(RuntimeError::SystemUpstreamError(
-            SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
-        ));
+    match (&function_schema.receiver, with_receiver.as_ref()) {
+        (Some(receiver_info), Some((_, direct_access))) => {
+            if *direct_access != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS) {
+                return Err(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
+                ));
+            }
+        }
+        (None, None) => { }
+        _ => {
+            return Err(RuntimeError::SystemUpstreamError(
+                SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
+            ));
+        }
     }
 
     service
@@ -296,7 +306,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
             let output =
-                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
+                { vm_instance.invoke(receiver.as_ref().map(|r| &r.0), &export_name, args, &mut system)? };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
@@ -321,7 +331,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?
             };
             let output =
-                { vm_instance.invoke(receiver.as_ref(), &export_name, args, &mut system)? };
+                { vm_instance.invoke(receiver.as_ref().map(|r| &r.0), &export_name, args, &mut system)? };
 
             output
         } else {
@@ -342,7 +352,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let export_name = match &ident {
                 FnIdent::Application(ident) => {
                     let export_name =
-                        validate_input(&mut system, &schema, &ident, receiver.is_some(), &args)?;
+                        validate_input(&mut system, &schema, &ident, receiver, &args)?;
                     export_name
                 }
                 FnIdent::System(system_func_id) => {
@@ -361,7 +371,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let output = {
                 C::invoke(
                     &blueprint.package_address,
-                    receiver.as_ref(),
+                    receiver.as_ref().map(|r| &r.0),
                     &export_name,
                     args,
                     &mut system,
