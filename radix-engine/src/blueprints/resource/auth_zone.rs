@@ -99,7 +99,7 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    outer_object: Some( resource_address.into()),
+                    outer_object: Some(resource_address.into()),
                     instance_schema: None,
                 })).to_substates()
             ),
@@ -113,7 +113,7 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    outer_object: Some( resource_address.into()),
+                    outer_object: Some(resource_address.into()),
                     instance_schema: None,
                 })).to_substates()),
                 )?;
@@ -151,7 +151,7 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
                     blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
-                    outer_object: Some( resource_address.into()),
+                    outer_object: Some(resource_address.into()),
                     instance_schema: None,
                 })).to_substates()
             ),
