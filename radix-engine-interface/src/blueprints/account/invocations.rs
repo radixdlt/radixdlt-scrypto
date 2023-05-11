@@ -32,7 +32,7 @@ pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateAdvancedInput {
-    pub config: AccessRulesConfig,
+    pub authority_rules: AuthorityRules,
 }
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;

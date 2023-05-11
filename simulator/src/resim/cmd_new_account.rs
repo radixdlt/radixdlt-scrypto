@@ -41,15 +41,15 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
-        let mut config = AccessRulesConfig::new();
-        config.set_authority_access_rule_and_mutability(
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_authority(
             "owner",
             withdraw_auth.clone(),
             withdraw_auth,
         );
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())
-            .new_account_advanced(config)
+            .new_account_advanced(authority_rules)
             .build();
 
         let receipt = handle_manifest(

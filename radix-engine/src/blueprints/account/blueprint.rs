@@ -11,7 +11,7 @@ use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, Bucket, Proof,
+    require, AccessRule, Bucket, Proof,
 };
 
 use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
@@ -60,7 +60,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             ),
             (
                 ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-                MethodType::Group("lock_fee".to_string()),
+                MethodType::Group("lock_fee_and_withdraw".to_string()),
             ),
             (
                 ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
@@ -194,14 +194,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(config, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(authority_rules, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();

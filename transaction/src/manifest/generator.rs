@@ -19,15 +19,7 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{
-    AccessRulesConfig, FungibleResourceManagerCreateInput,
-    FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
-    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{FungibleResourceManagerCreateInput, FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT, AuthorityRules};
 use radix_engine_interface::blueprints::resource::{
     NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
@@ -421,13 +413,13 @@ pub fn generate_instruction(
             schema,
             royalty_config,
             metadata,
-            access_rules,
+            authority_rules: access_rules,
         } => Instruction::PublishPackageAdvanced {
             code: generate_blob(code, blobs)?,
             schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            authority_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
@@ -638,13 +630,13 @@ pub fn generate_instruction(
             function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateInput {}),
         },
-        ast::Instruction::CreateIdentityAdvanced { config } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentityAdvanced { authority_rules } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateAdvancedInput {
-                config: generate_typed_value::<AccessRulesConfig>(
-                    config,
+                authority_rules: generate_typed_value::<AuthorityRules>(
+                    authority_rules,
                     resolver,
                     bech32_decoder,
                     blobs,
@@ -663,7 +655,7 @@ pub fn generate_instruction(
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&AccountCreateAdvancedInput {
-                config: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
+                authority_rules: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
             }),
         },
     })
@@ -1228,11 +1220,7 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
-        NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
-    };
+    use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput, NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey};
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::PackageSchema;
     use radix_engine_interface::types::NonFungibleData;
@@ -1471,7 +1459,7 @@ mod tests {
                 },
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new()
+                authority_rules: AuthorityRules::new(),
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"

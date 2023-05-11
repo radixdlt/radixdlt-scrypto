@@ -20,30 +20,4 @@ PUBLISH_PACKAGE_ADVANCED
     )
     Map<String, Tuple>()       # Royalty Configuration
     Map<String, String>()      # Metadata 
-    Tuple(                     # Access Rules Config Struct
-        Map<Tuple, Array>(),     # Direct Access Method auth Field
-        Map<Tuple, Array>(       # Method auth Field
-            Tuple(
-                Enum("TypedModuleId::ObjectState"),
-                "set_royalty_config"
-            ),
-            Array<String>("owner"),
-            Tuple(
-                Enum("TypedModuleId::ObjectState"),
-                "claim_royalty"
-            ),
-            Array<String>("owner"),
-            Tuple(
-                Enum("TypedModuleId::Metadata"),
-                "set"
-            ),
-            Array<String>("owner"),
-            Tuple(
-                Enum("TypedModuleId::Metadata"),
-                "get"
-            ),
-            Array<String>("public")
-        ),
-        Map<String, Enum>(),     # Grouped Auth Field
-        Map<String, Enum>()     # Group Auth Mutability Field
-    );
+    Map<String, Tuple>();      # Authority Rules

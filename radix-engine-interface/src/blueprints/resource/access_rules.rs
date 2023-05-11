@@ -10,6 +10,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use utils::btreemap;
 
 use super::AccessRule;
 
@@ -76,13 +77,31 @@ impl From<String> for AccessRule {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct AuthorityRules {
+    pub rules: BTreeMap<String, (AccessRule, AccessRule)>,
+}
+
+impl AuthorityRules {
+    pub fn new() -> Self {
+        Self {
+            rules: btreemap!(),
+        }
+    }
+
+    pub fn set_authority<S: Into<String>>(&mut self, authority: S, rule: AccessRule, mutability: AccessRule) {
+        self.rules.insert(authority.into(), (rule, mutability));
+    }
+}
+
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct AccessRulesConfig {
     pub direct_methods: BTreeMap<MethodKey, MethodEntry>,
     pub methods: BTreeMap<MethodKey, MethodEntry>,
 
-    pub authorities: BTreeMap<String, AccessRule>,
+    pub rules: BTreeMap<String, AccessRule>,
     pub mutability: BTreeMap<String, AccessRule>,
 }
 
@@ -91,7 +110,7 @@ impl AccessRulesConfig {
         Self {
             direct_methods: BTreeMap::new(),
             methods: BTreeMap::new(),
-            authorities: BTreeMap::new(),
+            rules: BTreeMap::new(),
             mutability: BTreeMap::new(),
         }
     }
@@ -108,20 +127,20 @@ impl AccessRulesConfig {
         group_key: String,
         access_rule_entry: E,
     ) {
-        self.authorities.insert(group_key, access_rule_entry.into());
+        self.rules.insert(group_key, access_rule_entry.into());
     }
 
     pub fn set_authority_mutability<M: Into<AccessRule>>(&mut self, key: String, method_auth: M) {
         self.mutability.insert(key, method_auth.into());
     }
 
-    pub fn set_authority_access_rule_and_mutability<E: Into<AccessRule>, M: Into<AccessRule>>(
+    pub fn set_authority<E: Into<AccessRule>, M: Into<AccessRule>>(
         &mut self,
         authority: &str,
         access_rule: E,
         mutability: M,
     ) {
-        self.authorities
+        self.rules
             .insert(authority.to_string(), access_rule.into());
         self.mutability
             .insert(authority.to_string(), mutability.into());
@@ -153,29 +172,16 @@ impl AccessRulesConfig {
     }
 }
 
-pub fn package_access_rules_from_owner_badge(
+pub fn package_authority_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
-) -> AccessRulesConfig {
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority_access_rule_and_mutability(
-        "update_metadata",
+) -> AuthorityRules {
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
+        "owner",
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
-    access_rules.set_authority_access_rule_and_mutability(
-        "royalty",
-        rule!(require(owner_badge.clone())),
-        rule!(require(owner_badge.clone())),
-    );
-    access_rules.set_group(
-        MethodKey::new(ObjectModuleId::Main, PACKAGE_SET_ROYALTY_CONFIG_IDENT),
-        "royalty",
-    );
-    access_rules.set_group(
-        MethodKey::new(ObjectModuleId::Main, PACKAGE_CLAIM_ROYALTY_IDENT),
-        "royalty",
-    );
-    access_rules
+    authority_rules
 }
 
 pub fn resource_access_rules_from_owner_badge(

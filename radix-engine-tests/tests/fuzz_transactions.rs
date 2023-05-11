@@ -5,7 +5,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig};
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
 use rand_chacha;
@@ -71,32 +71,32 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    let mut config = AccessRulesConfig::new();
-                    config.set_authority_access_rule_and_mutability(
+                    let mut authority_rules = AuthorityRules::new();
+                    authority_rules.set_authority(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
                     );
 
-                    builder.new_account_advanced(config);
+                    builder.new_account_advanced(authority_rules);
                 }
                 1 => {
-                    let mut config = AccessRulesConfig::new();
-                    config.set_authority_access_rule_and_mutability(
+                    let mut authority_rules = AuthorityRules::new();
+                    authority_rules.set_authority(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
                     );
-                    builder.new_account_advanced(config);
+                    builder.new_account_advanced(authority_rules);
                 }
                 2 => {
-                    let mut config = AccessRulesConfig::new();
-                    config.set_authority_access_rule_and_mutability(
+                    let mut authority_rules = AuthorityRules::new();
+                    authority_rules.set_authority(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
                     );
-                    builder.new_account_advanced(config);
+                    builder.new_account_advanced(authority_rules);
                 }
                 3 => {
                     builder.call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")));

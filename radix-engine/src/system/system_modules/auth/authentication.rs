@@ -291,7 +291,7 @@ impl Authorization {
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
             AccessRuleNode::Authority(authority) => {
-                match access_rules.authorities.get(authority.as_str()) {
+                match access_rules.rules.get(authority.as_str()) {
                     Some(access_rule) => {
                         // TODO: Make sure we don't have circular entries!
                         Self::check_authorization_against_access_rule(

@@ -1,6 +1,6 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, ObjectKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, ObjectKey};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::PackageSchema;
@@ -113,7 +113,7 @@ pub enum Instruction {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        authority_rules: AuthorityRules,
     },
 
     BurnResource {

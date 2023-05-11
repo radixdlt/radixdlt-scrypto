@@ -72,7 +72,7 @@ fn test_basic_transfer() {
         + 1054091 /* Invoke */
         + 25750 /* LockSubstate */
         + 768 /* LockSubstateFirstTime */
-        + 175528 /* ReadSubstate */
+        + 182938 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -107,7 +107,7 @@ fn test_radiswap() {
                 .default(0),
         ),
         btreemap!(),
-        package_access_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+        package_authority_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -208,10 +208,10 @@ fn test_radiswap() {
         + 3311450 /* Invoke */
         + 64890 /* LockSubstate */
         + 1440 /* LockSubstateFirstTime */
-        + 516880 /* ReadSubstate */
+        + 524290 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1525560 /* RunWasm */
+        + 1517015 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -242,7 +242,7 @@ fn test_flash_loan() {
                 .default(0),
         ),
         btreemap!(),
-        package_access_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+        package_authority_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate flash_loan
@@ -320,10 +320,10 @@ fn test_flash_loan() {
         + 4691111 /* Invoke */
         + 108150 /* LockSubstate */
         + 1216 /* LockSubstateFirstTime */
-        + 836884 /* ReadSubstate */
+        + 844294 /* ReadSubstate */
         + 225000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1305675 /* RunWasm */
+        + 1290125 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -355,7 +355,7 @@ fn test_publish_large_package() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 

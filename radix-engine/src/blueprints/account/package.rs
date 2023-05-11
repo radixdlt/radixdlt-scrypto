@@ -281,7 +281,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.config, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.authority_rules, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

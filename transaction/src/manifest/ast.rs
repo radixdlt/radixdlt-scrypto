@@ -106,7 +106,7 @@ pub enum Instruction {
         schema: Value,
         royalty_config: Value,
         metadata: Value,
-        access_rules: Value,
+        authority_rules: Value,
     },
 
     BurnResource {
@@ -218,7 +218,7 @@ pub enum Instruction {
 
     CreateIdentity {},
     CreateIdentityAdvanced {
-        config: Value,
+        authority_rules: Value,
     },
 
     CreateAccount {},

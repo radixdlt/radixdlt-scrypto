@@ -22,64 +22,70 @@ pub trait SecurifiedAccessRules {
         vec![]
     }
 
-    fn set_non_owner_rules(access_rules_config: &mut AccessRulesConfig) {
+    fn create_config(authority_rules: AuthorityRules) -> AccessRulesConfig {
+        let mut config = AccessRulesConfig::new();
+
+        for (method, method_type) in Self::methods() {
+            let method_key = MethodKey::new(ObjectModuleId::Main, method);
+            match method_type {
+                MethodType::Public => {
+                    config.set_public(method_key);
+                }
+                MethodType::Group(group) => {
+                    config.set_group(method_key, group.as_str());
+                }
+            };
+        }
+
+        if let Some(securify_ident) = Self::SECURIFY_IDENT {
+            config.set_group(
+                MethodKey::new(ObjectModuleId::Main, securify_ident),
+                "securify",
+            );
+        }
+
         for (authority, access_rule, mutability) in Self::authorities() {
-            access_rules_config.set_authority_access_rule_and_mutability(
+            config.set_authority(
                 authority,
                 access_rule,
                 mutability,
             );
         }
 
-        for (method, method_type) in Self::methods() {
-            match method_type {
-                MethodType::Public => {
-                    access_rules_config.set_public(MethodKey::new(ObjectModuleId::Main, method));
-                }
-                MethodType::Group(group) => {
-                    access_rules_config
-                        .set_group(MethodKey::new(ObjectModuleId::Main, method), group.as_str());
-                }
-            };
+        for (authority, (access_rule, mutability)) in authority_rules.rules {
+            config.set_authority(
+                authority.as_str(),
+                access_rule,
+                mutability,
+            );
         }
+
+        config
     }
 
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut access_rules = AccessRulesConfig::new();
-
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules.set_group(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                "securify",
-            );
-        }
-
-        Self::set_non_owner_rules(&mut access_rules);
-        let access_rules = AccessRules::sys_new(access_rules, btreemap!(), api)?;
+        let config = Self::create_config(AuthorityRules::new());
+        let access_rules = AccessRules::sys_new(config, btreemap!(), api)?;
         Ok(access_rules)
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        mut access_rules_config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        Self::set_non_owner_rules(&mut access_rules_config);
+        let mut config = Self::create_config(authority_rules);
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            access_rules_config.set_authority_access_rule_and_mutability(
+            config.set_authority(
                 "securify",
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
-            );
-            access_rules_config.set_group(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                "securify",
             );
         }
 
-        let access_rules = AccessRules::sys_new(access_rules_config, btreemap!(), api)?;
+        let access_rules = AccessRules::sys_new(config, btreemap!(), api)?;
 
         Ok(access_rules)
     }

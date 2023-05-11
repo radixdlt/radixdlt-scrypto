@@ -28,7 +28,7 @@ fn build_access_rules(
 
     let mut resman_access_rules = AccessRulesConfig::new();
     {
-        resman_access_rules.set_authority_access_rule_and_mutability(
+        resman_access_rules.set_authority(
             "update_metadata",
             update_metadata_access_rule,
             update_metadata_mutability,
@@ -36,7 +36,7 @@ fn build_access_rules(
     }
 
     {
-        resman_access_rules.set_authority_access_rule_and_mutability(
+        resman_access_rules.set_authority(
             "mint",
             mint_access_rule,
             mint_mutability,
@@ -69,7 +69,7 @@ fn build_access_rules(
     }
 
     {
-        resman_access_rules.set_authority_access_rule_and_mutability(
+        resman_access_rules.set_authority(
             "burn",
             burn_access_rule,
             burn_mutability,
@@ -81,7 +81,7 @@ fn build_access_rules(
     }
 
     {
-        resman_access_rules.set_authority_access_rule_and_mutability(
+        resman_access_rules.set_authority(
             "update_non_fungible_data",
             update_non_fungible_data_access_rule,
             update_non_fungible_data_mutability,
@@ -139,7 +139,7 @@ fn build_access_rules(
         .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut vault_access_rules = AccessRulesConfig::new();
-    vault_access_rules.set_authority_access_rule_and_mutability(
+    vault_access_rules.set_authority(
         "withdraw",
         withdraw_access_rule,
         withdraw_mutability,
@@ -160,7 +160,7 @@ fn build_access_rules(
         "withdraw",
     );
 
-    vault_access_rules.set_authority_access_rule_and_mutability(
+    vault_access_rules.set_authority(
         "recall",
         recall_access_rule,
         recall_mutability,
@@ -177,7 +177,7 @@ fn build_access_rules(
         "recall",
     );
 
-    vault_access_rules.set_authority_access_rule_and_mutability(
+    vault_access_rules.set_authority(
         "deposit",
         deposit_access_rule,
         deposit_mutability,
@@ -205,7 +205,7 @@ fn build_access_rules(
         NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
     ));
 
-    vault_access_rules.set_authority_access_rule_and_mutability(
+    vault_access_rules.set_authority(
         "this_package",
         rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         DenyAll,
@@ -244,7 +244,7 @@ fn build_access_rules(
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
     let mut bucket_access_rules = AccessRulesConfig::new();
-    bucket_access_rules.set_authority_access_rule_and_mutability(
+    bucket_access_rules.set_authority(
         "this_package",
         rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         DenyAll,

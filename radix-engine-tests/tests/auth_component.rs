@@ -11,7 +11,7 @@ fn create_secured_component(
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let mut authorization = AccessRulesConfig::new();
-    authorization.set_authority_access_rule_and_mutability(
+    authorization.set_authority(
         "auth",
         rule!(require(auth)),
         rule!(deny_all),

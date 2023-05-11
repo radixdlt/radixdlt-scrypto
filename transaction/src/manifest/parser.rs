@@ -173,7 +173,7 @@ impl Parser {
                 schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,
                 metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
@@ -267,7 +267,7 @@ impl Parser {
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {},
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                config: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {

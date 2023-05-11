@@ -126,12 +126,12 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress {
         let mut access_rules_config = AccessRulesConfig::new();
 
-        access_rules_config.set_authority_access_rule_and_mutability(
+        access_rules_config.set_authority(
             "update_metadata".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_authority_access_rule_and_mutability(
+        access_rules_config.set_authority(
             "royalty".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),

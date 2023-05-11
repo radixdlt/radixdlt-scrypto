@@ -298,7 +298,7 @@ impl TransactionProcessorBlueprint {
                     schema,
                     royalty_config,
                     metadata,
-                    access_rules,
+                    authority_rules,
                 } => {
                     let code = processor.get_blob(&code)?;
 
@@ -311,7 +311,7 @@ impl TransactionProcessorBlueprint {
                             package_address: None,
                             code: code.to_vec(), // TODO: cow?
                             schema: schema.clone(),
-                            access_rules: access_rules.clone(),
+                            authority_rules: authority_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
                         })

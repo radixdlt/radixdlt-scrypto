@@ -536,15 +536,15 @@ impl TestRunner {
         withdraw_auth: AccessRule,
         mutability: AccessRule,
     ) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_authority_access_rule_and_mutability(
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_authority(
             "owner",
             withdraw_auth,
             mutability,
         );
 
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(access_rules_config)
+            .new_account_advanced(authority_rules)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -646,15 +646,15 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let mut config = AccessRulesConfig::new();
-            config.set_authority_access_rule_and_mutability(
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority(
                 "owner",
                 rule!(require(owner_id.clone())),
                 rule!(require(owner_id)),
             );
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(config)
+                .create_identity_advanced(authority_rules)
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -706,11 +706,11 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        authority_rules: AuthorityRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, access_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, authority_rules)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -739,7 +739,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
     }
 

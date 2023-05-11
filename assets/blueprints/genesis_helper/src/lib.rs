@@ -66,7 +66,7 @@ mod genesis_helper {
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
             let mut config = AccessRulesConfig::new();
-            config.set_authority_access_rule_and_mutability(
+            config.set_authority(
                 "system",
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),

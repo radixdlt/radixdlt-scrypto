@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use scrypto::prelude::AccessRulesConfig;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -30,7 +29,7 @@ fn test_call_package_address_undeclared() {
         schema,
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRulesConfig::new(),
+        AuthorityRules::new(),
     );
 
     let manifest = ManifestBuilder::new()

@@ -451,14 +451,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             schema,
             royalty_config,
             metadata,
-            access_rules,
+            authority_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;
             format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, authority_rules)?;
             f.write_str(";")?;
         }
         Instruction::BurnResource { bucket_id } => {

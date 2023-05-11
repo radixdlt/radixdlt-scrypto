@@ -1,4 +1,4 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
@@ -113,7 +113,17 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
+        vec![
+            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
+            ("package_royalty", rule!(require("owner")), rule!(deny_all)),
+        ]
+    }
+
+    fn methods() -> Vec<(&'static str, MethodType)> {
+        vec![
+            (PACKAGE_CLAIM_ROYALTY_IDENT, MethodType::Group("package_royalty".to_string())),
+            (PACKAGE_SET_ROYALTY_CONFIG_IDENT, MethodType::Group("package_royalty".to_string())),
+        ]
     }
 }
 
@@ -393,7 +403,7 @@ impl PackageNativePackage {
                     input.schema,
                     input.royalty_config,
                     input.metadata,
-                    input.access_rules,
+                    input.authority_rules,
                     api,
                 )?;
 
@@ -498,13 +508,13 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedPackage::create_advanced(config, api)?;
+        let access_rules = SecurifiedPackage::create_advanced(authority_rules, api)?;
         let address = Self::publish_wasm_internal(
             package_address,
             code,

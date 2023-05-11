@@ -31,7 +31,7 @@ fn generate_deep_access_rules(
         curr_depth += 2;
     }
     let mut config = AccessRulesConfig::new();
-    config.set_authority_access_rule_and_mutability(
+    config.set_authority(
         "test",
         AccessRule::Protected(access_rule_node.clone()),
         AccessRule::Protected(access_rule_node),
