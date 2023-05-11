@@ -113,7 +113,6 @@ impl Fuzzer {
                 | Instruction::TakeNonFungiblesFromWorktop {
                     resource_address, ..
                 }
-                | Instruction::AssertWorktopContains { resource_address }
                 | Instruction::AssertWorktopContains {
                     resource_address, ..
                 }

@@ -4,7 +4,6 @@ CALL_METHOD Address("${account}") "lock_fee" Decimal("10");
 CALL_METHOD Address("${component}") "free_token";
 
 # Test - assertions
-ASSERT_WORKTOP_CONTAINS Address("${resource}");
 ASSERT_WORKTOP_CONTAINS Decimal("1.0") Address("${resource}");
 
 # Test - worktop
