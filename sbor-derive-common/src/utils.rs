@@ -196,8 +196,7 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
         ));
     }
 
-    let mut variant_id_bytes = BTreeMap::new();
-    let mut variant_id_paths = BTreeMap::new();
+    let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
 
     for (i, variant) in variants.iter().enumerate() {
         let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
@@ -221,14 +220,7 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
                     })?,
             };
 
-            match id {
-                VariantValue::Byte(id) => {
-                    variant_id_bytes.insert(i, id);
-                }
-                VariantValue::Path(id) => {
-                    variant_id_paths.insert(i, id);
-                }
-            }
+            variant_ids.insert(i, id);
         } else if let Some(discriminant) = &variant.discriminant {
 
             let expression = &discriminant.1;
@@ -250,62 +242,24 @@ pub fn get_variant_discriminator_mapping(variants: &Punctuated<Variant, Comma>) 
                 ));
             };
 
-            match id {
-                VariantValue::Byte(id) => {
-                    variant_id_bytes.insert(i, id);
-                }
-                VariantValue::Path(id) => {
-                    variant_id_paths.insert(i, id);
-                }
-            }
+            variant_ids.insert(i, id);
         }
     }
 
-    if variant_id_bytes.len() > 0 {
-        if variant_id_paths.len() > 0 {
+    if variant_ids.len() > 0 {
+        if variant_ids.len() < variants.len() {
             return Err(Error::new(
                 Span::call_site(),
-                format!("The variant ids must either all be explicitly provided bytes or all be paths (to eg constants)."),
+                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_ids.len(), variants.len()),
             ));
         }
-        if variant_id_bytes.len() < variants.len() {
-            return Err(Error::new(
-                Span::call_site(),
-                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_id_bytes.len(), variants.len()),
-            ));
-        }
-        let mut id_counts: BTreeMap<u8, usize> = BTreeMap::new();
-        for (_, id) in variant_id_bytes.iter() {
-            *id_counts.entry(*id).or_default() += 1;
-        }
-        let (id, repeat_count) = id_counts.into_iter().max_by_key(|(_, v)| *v).unwrap();
-        if repeat_count > 1 {
-            return Err(Error::new(
-                Span::call_site(),
-                format!("Some variant ids are repeated, for example {} is repeated {} times.", id, repeat_count),
-            ));
-        }
-        return Ok(variant_id_bytes.into_iter().map(|(i, id)| (i, parse_quote! { #id })).collect());
-    }
-    if variant_id_paths.len() > 0 {
-        if variant_id_paths.len() < variants.len() {
-            return Err(Error::new(
-                Span::call_site(),
-                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_id_paths.len(), variants.len()),
-            ));
-        }
-        let mut id_counts: BTreeMap<String, usize> = BTreeMap::new();
-        for (_, id) in variant_id_paths.iter() {
-            *id_counts.entry(quote!(#id).to_string()).or_default() += 1;
-        }
-        let (id, repeat_count) = id_counts.into_iter().max_by_key(|(_, v)| *v).unwrap();
-        if repeat_count > 1 {
-            return Err(Error::new(
-                Span::call_site(),
-                format!("Some variant id paths are repeated, for example {} is repeated {} times.", id, repeat_count),
-            ));
-        }
-        return Ok(variant_id_paths.into_iter().map(|(i, id)| (i, parse_quote!(#id))).collect());
+        return Ok(variant_ids.into_iter().map(|(i, id)| {
+            let expression = match id {
+                VariantValue::Byte(id) => parse_quote!(#id),
+                VariantValue::Path(id) => parse_quote!(#id),
+            };
+            (i, expression)
+        }).collect());
     }
     // If no explicit indices, use default indices
     Ok(variants.iter().enumerate().map(|(i, _)| {
