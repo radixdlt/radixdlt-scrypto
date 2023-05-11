@@ -521,7 +521,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
     for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
         let node_id = recipient_vault_id;
         let substate_key = FungibleVaultField::LiquidFungible.into();
-        let (handle, _) = track
+        let (handle, _store_access) = track
             .acquire_lock(
                 &node_id,
                 OBJECT_BASE_PARTITION,
@@ -529,8 +529,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let mut substate: LiquidFungibleResource =
-            track.read_substate(handle).0.as_typed().unwrap(); // MS todo
+        let (substate_value, _store_access) = track.read_substate(handle);
+        let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
         substate.put(LiquidFungibleResource::new(amount)).unwrap();
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);
@@ -557,7 +557,7 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
         required -= amount;
 
         // Refund overpayment
-        let (handle, _) = track
+        let (handle, _store_access) = track
             .acquire_lock(
                 &vault_id,
                 OBJECT_BASE_PARTITION,
@@ -565,8 +565,8 @@ fn distribute_fees<S: SubstateDatabase, M: DatabaseKeyMapper>(
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let mut substate: LiquidFungibleResource =
-            track.read_substate(handle).0.as_typed().unwrap(); // MS todo
+        let (substate_value, _store_access) = track.read_substate(handle);
+        let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
         substate.put(locked).unwrap();
         track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
         track.release_lock(handle);

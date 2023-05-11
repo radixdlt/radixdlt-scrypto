@@ -71,7 +71,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 continue;
             }
 
-            let (handle, _) = kernel
+            let (handle, _store_access) = kernel
                 .store
                 .acquire_lock(
                     node_id,
@@ -80,7 +80,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle).0; // MS todo
+            let (substate_ref, _store_access) = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.release_lock(handle);
             match type_substate {
