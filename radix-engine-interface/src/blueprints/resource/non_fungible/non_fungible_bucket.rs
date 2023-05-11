@@ -1,8 +1,18 @@
-use crate::blueprints::resource::Bucket;
+use crate::blueprints::resource::{Bucket, Proof};
 use crate::data::scrypto::model::*;
 use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
+
+pub const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str =
+    "create_proof_of_non_fungibles";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleBucketCreateProofOfNonFungiblesInput {
+    pub ids: BTreeSet<NonFungibleLocalId>,
+}
+
+pub type NonFungibleBucketCreateProofOfNonFungiblesOutput = Proof;
 
 pub const NON_FUNGIBLE_BUCKET_BLUEPRINT: &str = "NonFungibleBucket";
 

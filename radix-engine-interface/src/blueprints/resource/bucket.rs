@@ -4,7 +4,7 @@ use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
 use radix_engine_common::types::*;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 use super::Proof;
@@ -55,6 +55,22 @@ pub const BUCKET_CREATE_PROOF_IDENT: &str = "create_proof";
 pub struct BucketCreateProofInput {}
 
 pub type BucketCreateProofOutput = Proof;
+
+pub const BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct BucketCreateProofOfAmountInput {
+    pub amount: Decimal,
+}
+
+pub type BucketCreateProofOfAmountOutput = Proof;
+
+pub const BUCKET_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct BucketCreateProofOfAllInput {}
+
+pub type BucketCreateProofOfAllOutput = Proof;
 
 //========
 // Stub

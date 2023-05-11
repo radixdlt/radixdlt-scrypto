@@ -196,6 +196,24 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_amount(amount, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_non_fungibles(ids, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_all(api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
                 Instruction::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
                     let proof = proof.sys_clone(api)?;

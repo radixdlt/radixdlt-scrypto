@@ -76,6 +76,29 @@ pub trait SysBucket {
     where
         Y: ClientApi<E>;
 
+    fn sys_create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
+    fn sys_create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
+
     fn sys_is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -241,6 +264,53 @@ impl SysBucket for Bucket {
             self.0.as_node_id(),
             BUCKET_CREATE_PROOF_IDENT,
             scrypto_encode(&BucketCreateProofInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn sys_create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&BucketCreateProofOfAmountInput { amount }).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&NonFungibleBucketCreateProofOfNonFungiblesInput { ids }).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn sys_create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_CREATE_PROOF_IDENT,
+            scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

@@ -115,8 +115,8 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_OF_ALL_IDENT,
-            scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
+            VAULT_CREATE_PROOF_IDENT,
+            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
