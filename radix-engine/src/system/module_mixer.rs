@@ -296,8 +296,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_create_node(api, node_id))
+        internal_call_dispatch!(api, after_create_node(api, node_id, store_access))
     }
 
     #[trace_resources]
@@ -334,10 +335,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_lock_substate(api, handle, store_access, size)
-        )
+        internal_call_dispatch!(api, after_lock_substate(api, handle, store_access, size))
     }
 
     #[trace_resources(log=size)]

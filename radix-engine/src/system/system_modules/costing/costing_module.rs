@@ -21,7 +21,6 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::blueprints::package::PackageRoyaltySubstate;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -325,19 +324,21 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        _node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        // TODO: calculate size
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(
                 CostingReason::CreateNode,
                 |fee_table| {
-                    fee_table.kernel_api_cost(CostingEntry::CreateNode { size: 0, node_id })
+                    fee_table.kernel_api_cost(CostingEntry::CreateNode {
+                        size: store_access.get_whole_size() as u32,
+                        node_id,
+                    })
                 },
                 1,
             )?;

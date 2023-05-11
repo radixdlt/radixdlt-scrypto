@@ -35,7 +35,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the partition is invalid
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates);
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) -> StoreAccessInfo;
 
     /// Inserts a substate into the substate store.
     ///
@@ -140,6 +140,17 @@ impl StoreAccessInfo {
     }
     pub fn data(&self) -> &Vec<StoreAccess> {
         &self.0
+    }
+    pub fn get_whole_size(&self) -> usize {
+        self.0
+            .iter()
+            .map(|item| match item {
+                StoreAccess::ReadFromDb(size)
+                | StoreAccess::ReadFromTrack(size)
+                | StoreAccess::Write(size) => size,
+                StoreAccess::Rewrite(_size_old, size_new) => size_new,
+            })
+            .sum()
     }
     pub fn push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
         match item {

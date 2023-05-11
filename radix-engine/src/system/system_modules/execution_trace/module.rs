@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -304,6 +304,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);

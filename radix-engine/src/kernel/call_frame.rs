@@ -731,7 +731,7 @@ impl<D, L: Clone> CallFrame<D, L> {
         heap: &mut Heap,
         store: &'f mut S,
         push_to_store: bool,
-    ) -> Result<(), UnlockSubstateError> {
+    ) -> Result<StoreAccessInfo, UnlockSubstateError> {
         for (_partition_num, partition) in &node_substates {
             for (_substate_key, substate_value) in partition {
                 // FIXME there is a huge mismatch between drop_lock and create_node
@@ -754,15 +754,16 @@ impl<D, L: Clone> CallFrame<D, L> {
             }
         }
 
-        if push_to_store {
-            store.create_node(node_id, node_substates);
+        let store_access = if push_to_store {
             self.add_ref(node_id, RefType::Normal);
+            store.create_node(node_id, node_substates)
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0u32);
-        }
+            StoreAccessInfo::new()
+        };
 
-        Ok(())
+        Ok(store_access)
     }
 
     pub fn add_ref(&mut self, node_id: NodeId, visibility: RefType) {

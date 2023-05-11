@@ -143,11 +143,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Substate locked: handle = {:?}",
-            handle
-        );
+        log!(api, "Substate locked: handle = {:?}", handle);
         Ok(())
     }
 

@@ -536,13 +536,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, S, M> {
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) {
+    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) -> StoreAccessInfo {
+        let mut track_write_size = 0;
         let tracked_partitions = node_substates
             .into_iter()
             .map(|(partition_num, partition)| {
                 let partition_substates = partition
                     .into_iter()
                     .map(|(substate_key, value)| {
+                        track_write_size += value.as_slice().len();
                         let db_sort_key = M::to_db_sort_key(&substate_key);
                         let tracked = TrackedSubstateKey {
                             substate_key,
@@ -563,6 +565,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 is_new: true,
             },
         );
+
+        StoreAccessInfo::new().push_if_not_empty(StoreAccess::Write(track_write_size))
     }
 
     fn set_substate(
@@ -618,7 +622,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
                 tracked.tracked.set(substate_value);
 
-                Ok(StoreAccessInfo::new().push_if_not_empty(StoreAccess::Rewrite(old_value_len, new_value_len)))
+                Ok(StoreAccessInfo::new()
+                    .push_if_not_empty(StoreAccess::Rewrite(old_value_len, new_value_len)))
             }
         }
     }
@@ -840,7 +845,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             StoreAccessInfo::new()
                 .push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size))
                 .push_if_not_empty(StoreAccess::ReadFromDb(db_read_size))
-                .push_if_not_empty(StoreAccess::Rewrite(track_write_size_old, track_write_size_new)),
+                .push_if_not_empty(StoreAccess::Rewrite(
+                    track_write_size_old,
+                    track_write_size_new,
+                )),
         )
     }
 

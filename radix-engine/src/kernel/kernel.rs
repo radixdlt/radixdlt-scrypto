@@ -16,9 +16,7 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SubstateStore, StoreAccessInfo,
-};
+use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -294,7 +292,8 @@ where
         let push_to_store = node_id.is_global();
 
         self.id_allocator.take_node_id(node_id)?;
-        self.current_frame
+        let store_access = self
+            .current_frame
             .create_node(
                 node_id,
                 node_substates,
@@ -305,7 +304,7 @@ where
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::after_create_node(&node_id, self)?;
+        M::after_create_node(&node_id, &store_access, self)?;
 
         Ok(())
     }
@@ -512,8 +511,7 @@ where
             data,
         );
 
-        let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle
-        {
+        let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle {
             Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
@@ -674,7 +672,8 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let store_access = self.current_frame
+        let store_access = self
+            .current_frame
             .set_substate(
                 node_id,
                 partition_num,
