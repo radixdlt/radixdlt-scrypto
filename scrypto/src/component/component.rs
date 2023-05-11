@@ -6,9 +6,7 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRulesConfig, NonFungibleGlobalId,
-};
+use radix_engine_interface::blueprints::resource::{require, AccessRule, NonFungibleGlobalId, MethodAuthorities, AuthorityRules};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -56,53 +54,53 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config
-            .set_authority_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
-        access_rules_config.set_authority_access_rule("royalty".to_string(), AccessRule::DenyAll);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules
+            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
+        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
 
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), authority_rules),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config
-            .set_authority_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
-        access_rules_config.set_authority_access_rule("royalty".to_string(), AccessRule::DenyAll);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules
+            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
+        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
 
         self.globalize_at_address_with_modules(
             preallocated_address,
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), authority_rules),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config
-            .set_authority_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
-        access_rules_config.set_authority_access_rule("royalty".to_string(), AccessRule::DenyAll);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules
+            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
+        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
 
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), authority_rules),
             metadata,
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config
-            .set_authority_access_rule("update_metadata".to_string(), AccessRule::DenyAll);
-        access_rules_config.set_authority_access_rule("royalty".to_string(), AccessRule::AllowAll);
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules
+            .set_authority("update_metadata".to_string(), AccessRule::DenyAll, AccessRule::DenyAll);
+        authority_rules.set_authority("royalty".to_string(), AccessRule::AllowAll, AccessRule::DenyAll);
 
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), authority_rules),
             Metadata::new(),
             Royalty::new(royalty_config),
         )
@@ -110,10 +108,11 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_access_rules(
         self,
-        access_rules_config: AccessRulesConfig,
+        method_authorities: MethodAuthorities,
+        authority_rules: AuthorityRules,
     ) -> ComponentAddress {
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(method_authorities, authority_rules),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
@@ -124,21 +123,23 @@ pub trait LocalComponent: Sized {
         owner_badge: NonFungibleGlobalId,
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
+        let mut authority_rules = AuthorityRules::new();
 
-        access_rules_config.set_authority(
+        authority_rules.set_authority(
             "update_metadata".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        access_rules_config.set_authority(
+        authority_rules.set_authority(
             "royalty".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
 
+        let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
+
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            access_rules,
             Metadata::new(),
             Royalty::new(royalty_config),
         )

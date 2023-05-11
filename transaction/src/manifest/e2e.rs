@@ -29,7 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(Tuple(Enum(1u8), "claim_royalty"), Array<String>("owner"), Tuple(Enum(1u8), "set_royalty_config"), Array<String>("owner"), Tuple(Enum(2u8), "get"), Array<String>("public"), Tuple(Enum(2u8), "set"), Array<String>("owner")), Map<String, Enum>(), Map<String, Enum>());
+    Map<String, Tuple>();
 "##,
             ),
         );
@@ -600,7 +600,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Map<String, Enum>());
+    Map<String, Tuple>();
 CREATE_ACCOUNT;
 "##,
             ),
@@ -617,7 +617,7 @@ CREATE_ACCOUNT;
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Tuple(Map<Tuple, Array>(), Map<Tuple, Array>(), Map<String, Enum>(), Map<String, Enum>());
+    Map<String, Tuple>();
 CREATE_IDENTITY;
 "##,
             ),

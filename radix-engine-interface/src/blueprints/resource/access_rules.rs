@@ -1,6 +1,4 @@
 use crate::api::ObjectModuleId;
-use crate::blueprints::package::PACKAGE_CLAIM_ROYALTY_IDENT;
-use crate::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use crate::blueprints::resource::*;
 use crate::rule;
 use crate::*;
@@ -78,6 +76,42 @@ impl From<String> for AccessRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct MethodAuthorities {
+    pub direct_methods: BTreeMap<MethodKey, MethodEntry>,
+    pub methods: BTreeMap<MethodKey, MethodEntry>,
+}
+
+impl MethodAuthorities {
+    pub fn new() -> Self {
+        Self {
+            direct_methods: btreemap!(),
+            methods: btreemap!(),
+        }
+    }
+
+    pub fn set_public(&mut self, method: &str) {
+        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority("public"));
+    }
+
+    pub fn set_module_method_authority(&mut self, module_id: ObjectModuleId, method: &str, authority: &str) {
+        self.methods.insert(MethodKey::new(module_id, method), MethodEntry::authority(authority));
+    }
+
+
+    pub fn set_main_method_authority(&mut self, method: &str, authority: &str) {
+        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority(authority));
+    }
+
+    pub fn set_main_method_authorities(&mut self, method: &str, authorities: Vec<String>) {
+        self.methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authorities(authorities));
+    }
+
+    pub fn set_main_direct_method_authority(&mut self, method: &str, authority: &str) {
+        self.direct_methods.insert(MethodKey::new(ObjectModuleId::Main, method), MethodEntry::authority(authority));
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AuthorityRules {
     pub rules: BTreeMap<String, (AccessRule, AccessRule)>,
@@ -115,6 +149,25 @@ impl AccessRulesConfig {
         }
     }
 
+    pub fn create(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> Self {
+        let direct_methods = method_authorities.direct_methods;
+        let methods = method_authorities.methods;
+        let mut rules = BTreeMap::new();
+        let mut mutability = BTreeMap::new();
+
+        for (authority, (rule, mutability_rule)) in authority_rules.rules {
+            rules.insert(authority.clone(), rule);
+            mutability.insert(authority, mutability_rule);
+        }
+
+        Self {
+            direct_methods,
+            methods,
+            rules,
+            mutability,
+        }
+    }
+
     pub fn get_authority_mutability(&self, key: &str) -> AccessRule {
         match self.mutability.get(key) {
             None => AccessRule::DenyAll,
@@ -132,43 +185,6 @@ impl AccessRulesConfig {
 
     pub fn set_authority_mutability<M: Into<AccessRule>>(&mut self, key: String, method_auth: M) {
         self.mutability.insert(key, method_auth.into());
-    }
-
-    pub fn set_authority<E: Into<AccessRule>, M: Into<AccessRule>>(
-        &mut self,
-        authority: &str,
-        access_rule: E,
-        mutability: M,
-    ) {
-        self.rules
-            .insert(authority.to_string(), access_rule.into());
-        self.mutability
-            .insert(authority.to_string(), mutability.into());
-    }
-
-    pub fn set_public(&mut self, key: MethodKey) {
-        self.set_group(key, "public");
-    }
-
-    pub fn set_group(&mut self, key: MethodKey, group: &str) {
-        self.methods
-            .insert(key.clone(), MethodEntry::authority(group));
-    }
-
-    pub fn set_groups(&mut self, key: MethodKey, groups: Vec<String>) {
-        self.methods
-            .insert(key.clone(), MethodEntry::authorities(groups));
-    }
-
-    pub fn set_main_method_group(&mut self, method: &str, group: &str) {
-        let key = MethodKey::new(ObjectModuleId::Main, method);
-        self.methods
-            .insert(key.clone(), MethodEntry::authority(group));
-    }
-
-    pub fn set_direct_access_group(&mut self, key: MethodKey, group: &str) {
-        self.direct_methods
-            .insert(key.clone(), MethodEntry::authority(group));
     }
 }
 

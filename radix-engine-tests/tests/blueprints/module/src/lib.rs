@@ -44,7 +44,8 @@ mod component_module {
                     ACCESS_RULES_BLUEPRINT,
                     ACCESS_RULES_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
-                        access_rules: AccessRulesConfig::new(),
+                        method_authorities: MethodAuthorities::new(),
+                        authority_rules: AuthorityRules::new(),
                         child_blueprint_rules: BTreeMap::new(),
                     })
                     .unwrap(),

@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -10,15 +9,11 @@ fn create_secured_component(
     auth: NonFungibleGlobalId,
     package_address: PackageAddress,
 ) -> ComponentAddress {
-    let mut authorization = AccessRulesConfig::new();
-    authorization.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "auth",
         rule!(require(auth)),
         rule!(deny_all),
-    );
-    authorization.set_group(
-        MethodKey::new(ObjectModuleId::Main, "get_component_state"),
-        "auth",
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -26,7 +21,7 @@ fn create_secured_component(
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            manifest_args!(authorization),
+            manifest_args!(authority_rules),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

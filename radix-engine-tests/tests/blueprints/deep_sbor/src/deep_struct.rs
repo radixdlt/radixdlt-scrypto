@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[blueprint]
 mod deep_struct {
     struct DeepStruct {
-        deep_object: Option<AccessRulesConfig>,
+        deep_object: Option<AuthorityRules>,
     }
 
     impl DeepStruct {
@@ -20,7 +20,7 @@ mod deep_struct {
 fn generate_deep_access_rules(
     resource_address: ResourceAddress,
     exceed_depth: usize,
-) -> AccessRulesConfig {
+) -> AuthorityRules {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         ResourceOrNonFungible::Resource(resource_address),
     ));
@@ -29,11 +29,11 @@ fn generate_deep_access_rules(
         access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
         curr_depth += 2;
     }
-    let mut config = AccessRulesConfig::new();
-    config.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "test",
         AccessRule::Protected(access_rule_node.clone()),
         AccessRule::Protected(access_rule_node),
     );
-    config
+    authority_rules
 }

@@ -204,7 +204,7 @@ where
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
                 access_rules: AccessRulesConfig::new(),
-                child_blueprint_rules: BTreeMap::new(),
+                inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );
     }

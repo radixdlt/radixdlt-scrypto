@@ -11,10 +11,11 @@ mod auth_list_component {
         pub fn create_component(
             count: u8,
             auth: Vec<NonFungibleGlobalId>,
-            access_rules: AccessRulesConfig,
+            authority_rules: AuthorityRules,
         ) -> ComponentAddress {
+            let method_authorities = MethodAuthorities::new();
             let component = Self { count, auth }.instantiate();
-            component.globalize_with_access_rules(access_rules)
+            component.globalize_with_access_rules(method_authorities, authority_rules)
         }
 
         pub fn update_count(&mut self, count: u8) {

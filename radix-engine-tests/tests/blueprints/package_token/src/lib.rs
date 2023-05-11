@@ -13,15 +13,17 @@ mod factory {
             }
             .instantiate();
 
-            let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_authority(
+            let mut method_authorities = MethodAuthorities::new();
+            method_authorities.set_main_method_authority("set_address", "set_address");
+
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,
             );
-            access_rules.set_main_method_group("set_address", "set_address");
 
-            component.globalize_with_access_rules(access_rules)
+            component.globalize_with_access_rules(method_authorities, authority_rules)
         }
 
         pub fn create() -> ComponentAddress {
@@ -30,16 +32,17 @@ mod factory {
             }
             .instantiate();
 
-            let mut access_rules = AccessRulesConfig::new();
-            access_rules.set_authority(
+            let mut method_authorities = MethodAuthorities::new();
+            method_authorities.set_main_method_authority("set_address", "set_address");
+
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_authority(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,
             );
 
-            access_rules.set_main_method_group("set_address", "set_address");
-
-            let component_address = component.globalize_with_access_rules(access_rules);
+            let component_address = component.globalize_with_access_rules(method_authorities, authority_rules);
             let component_ref: FactoryGlobalComponentRef = component_address.into();
             component_ref.set_address(component_address);
 

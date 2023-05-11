@@ -165,50 +165,44 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_authority(
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(
+            EPOCH_MANAGER_START_IDENT,
+            "start",
+        );
+        method_authorities.set_main_method_authority(
+            EPOCH_MANAGER_NEXT_ROUND_IDENT,
+            "validator",
+        );
+        method_authorities.set_main_method_authority(
+            EPOCH_MANAGER_SET_EPOCH_IDENT,
+            "system",
+        );
+        method_authorities.set_public(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT);
+        method_authorities.set_public(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT);
+
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_authority(
             "start",
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        access_rules.set_authority(
+        authority_rules.set_authority(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );
-        access_rules.set_authority(
+        authority_rules.set_authority(
             "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
             DenyAll,
         );
 
-        access_rules.set_group(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
-            "start",
-        );
-        access_rules.set_group(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
-            "validator",
-        );
-        access_rules.set_group(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
-            "system",
-        );
-        access_rules.set_public(MethodKey::new(
-            ObjectModuleId::Main,
-            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
-        ));
-        access_rules.set_public(MethodKey::new(
-            ObjectModuleId::Main,
-            EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-        ));
-
-        let validator_access_rules = AccessRulesConfig::new();
-
         let access_rules = AccessRules::sys_new(
-            access_rules,
+            method_authorities,
+            authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => validator_access_rules
+                VALIDATOR_BLUEPRINT.to_string() => (MethodAuthorities::new(), AuthorityRules::new())
             ),
             api,
         )?

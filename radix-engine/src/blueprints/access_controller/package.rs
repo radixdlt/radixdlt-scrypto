@@ -544,8 +544,11 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
+
+        let (method_authorities, authority_rules) = init_access_rules_from_rule_set(address, input.rule_set);
         let access_rules = AccessRules::sys_new(
-            init_access_rules_from_rule_set(address, input.rule_set),
+            method_authorities,
+            authority_rules,
             btreemap!(),
             api,
         )?
@@ -1063,151 +1066,106 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AccessRulesConfig {
-    let mut access_rules = AccessRulesConfig::new();
+fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (MethodAuthorities, AuthorityRules) {
+    let mut authority_rules = AuthorityRules::new();
 
     // Primary Role Rules
     let primary_group = "primary";
-    access_rules.set_authority(
-        primary_group.into(),
+    authority_rules.set_authority(
+        primary_group,
         rule_set.primary_role.clone(),
         rule!(require(global_caller(address))),
     );
     let recovery_group = "recovery";
-    access_rules.set_authority(
-        recovery_group.into(),
+    authority_rules.set_authority(
+        recovery_group,
         rule_set.recovery_role.clone(),
         rule!(require(global_caller(address))),
     );
     let confirmation_group = "confirmation";
-    access_rules.set_authority(
-        confirmation_group.into(),
+    authority_rules.set_authority(
+        confirmation_group,
         rule_set.confirmation_role.clone(),
         rule!(require(global_caller(address))),
     );
 
-    access_rules.set_group(
-        MethodKey::new(ObjectModuleId::Main, ACCESS_CONTROLLER_CREATE_PROOF_IDENT),
+
+    let mut method_authorities = MethodAuthorities::new();
+
+    method_authorities.set_main_method_authority(
+        ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
         primary_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
-        ),
         primary_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
         primary_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
-        ),
         primary_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
         primary_group.into(),
     );
 
     // Recovery Role Rules
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
-        ),
         recovery_group.into(),
     );
-    access_rules.set_group(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authority(
             ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
-        ),
         recovery_group.into(),
     );
 
     // Recovery || Confirmation Role Rules
-    access_rules.set_groups(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authorities(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
         vec!["recovery".to_string(), "confirmation".to_string()],
     );
-    access_rules.set_groups(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authorities(
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
         vec!["recovery".to_string(), "confirmation".to_string()],
     );
 
     // Primary || Confirmation Role Rules
-    access_rules.set_groups(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authorities(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        ),
         vec!["primary".to_string(), "confirmation".to_string()],
     );
-    access_rules.set_groups(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authorities(
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        ),
         vec!["primary".to_string(), "confirmation".to_string()],
     );
 
     // Other methods
-    access_rules.set_groups(
-        MethodKey::new(
-            ObjectModuleId::Main,
+    method_authorities.set_main_method_authorities(
             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
-        ),
         vec![
             "primary".to_string(),
             "recovery".to_string(),
@@ -1215,7 +1173,7 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         ],
     );
 
-    access_rules
+    (method_authorities, authority_rules)
 }
 
 fn transition<Y, I>(

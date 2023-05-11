@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
 pub enum MethodType {
@@ -22,52 +22,52 @@ pub trait SecurifiedAccessRules {
         vec![]
     }
 
-    fn create_config(authority_rules: AuthorityRules) -> AccessRulesConfig {
-        let mut config = AccessRulesConfig::new();
-
+    fn create_config(authority_rules: AuthorityRules) -> (MethodAuthorities, AuthorityRules) {
+        let mut method_authorities = MethodAuthorities::new();
         for (method, method_type) in Self::methods() {
-            let method_key = MethodKey::new(ObjectModuleId::Main, method);
             match method_type {
                 MethodType::Public => {
-                    config.set_public(method_key);
+                    method_authorities.set_public(method);
                 }
                 MethodType::Group(group) => {
-                    config.set_group(method_key, group.as_str());
+                    method_authorities.set_main_method_authority(method, group.as_str());
                 }
             };
         }
 
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            config.set_group(
-                MethodKey::new(ObjectModuleId::Main, securify_ident),
-                "securify",
-            );
+            method_authorities.set_main_method_authority(securify_ident, "securify");
         }
 
+        let mut authority_rules_to_use = AuthorityRules::new();
         for (authority, access_rule, mutability) in Self::authorities() {
-            config.set_authority(
+            authority_rules_to_use.set_authority(
                 authority,
                 access_rule,
                 mutability,
             );
         }
-
         for (authority, (access_rule, mutability)) in authority_rules.rules {
-            config.set_authority(
+            authority_rules_to_use.set_authority(
                 authority.as_str(),
                 access_rule,
                 mutability,
             );
         }
 
-        config
+        (method_authorities, authority_rules_to_use)
     }
 
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let config = Self::create_config(AuthorityRules::new());
-        let access_rules = AccessRules::sys_new(config, btreemap!(), api)?;
+        let (method_authorities, authority_rules) = Self::create_config(AuthorityRules::new());
+        let access_rules = AccessRules::sys_new(
+            method_authorities,
+            authority_rules,
+            btreemap!(),
+            api,
+        )?;
         Ok(access_rules)
     }
 
@@ -75,17 +75,22 @@ pub trait SecurifiedAccessRules {
         authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut config = Self::create_config(authority_rules);
+        let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
 
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            config.set_authority(
+        if Self::SECURIFY_IDENT.is_some() {
+            authority_rules.set_authority(
                 "securify",
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
             );
         }
 
-        let access_rules = AccessRules::sys_new(config, btreemap!(), api)?;
+        let access_rules = AccessRules::sys_new(
+            method_authorities,
+            authority_rules,
+            btreemap!(),
+            api,
+        )?;
 
         Ok(access_rules)
     }

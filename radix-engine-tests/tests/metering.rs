@@ -208,7 +208,7 @@ fn test_radiswap() {
         + 3311450 /* Invoke */
         + 64890 /* LockSubstate */
         + 1440 /* LockSubstateFirstTime */
-        + 524290 /* ReadSubstate */
+        + 524570 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1517015 /* RunWasm */
@@ -320,7 +320,7 @@ fn test_flash_loan() {
         + 4691111 /* Invoke */
         + 108150 /* LockSubstate */
         + 1216 /* LockSubstateFirstTime */
-        + 844294 /* ReadSubstate */
+        + 844854 /* ReadSubstate */
         + 225000 /* RunNative */
         + 40000 /* RunSystem */
         + 1290125 /* RunWasm */

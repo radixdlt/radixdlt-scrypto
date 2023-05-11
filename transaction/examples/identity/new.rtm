@@ -1,8 +1,3 @@
 CREATE_IDENTITY_ADVANCED
-    Tuple(                                    # Access Rules Config Struct
-        Map<Tuple, Array>(),                   # Direct Method auth Field
-        Map<Tuple, Array>(),                   # Method auth Field
-        Map<String, Enum>(),                  # Grouped Auth Field
-        Map<String, Enum>()                  # Group Auth Mutability Field
-    );
+    Map<String, Tuple>();                  # Authority Rules
 CREATE_IDENTITY;

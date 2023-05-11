@@ -2,7 +2,6 @@ use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -13,14 +12,13 @@ use transaction::model::TransactionManifest;
 #[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(deny_all),
     );
-    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
@@ -38,14 +36,13 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
-    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules.clone());
 
     // Act
     let receipt = test_runner.set_group_auth("deposit_funds", rule!(allow_all));
@@ -63,14 +60,13 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
-    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     let receipt = test_runner.lock_group_auth("deposit_funds");
@@ -88,14 +84,13 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
-    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
@@ -112,14 +107,13 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_authority(
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
         "deposit_funds",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
-    access_rules.set_main_method_group("deposit_funds", "deposit_funds");
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
@@ -143,22 +137,24 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut access_rules = AccessRulesConfig::new();
-    access_rules.set_group(
-        MethodKey::new(ObjectModuleId::Main, "deposit_funds"),
-        "owner",
+    let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_authority(
+        "deposit_funds",
+        rule!(require("owner")),
+        rule!(require("owner")),
     );
-    access_rules.set_group(
-        MethodKey::new(ObjectModuleId::Main, "borrow_funds"),
-        "owner",
+    authority_rules.set_authority(
+        "borrow_funds",
+        rule!(require("owner")),
+        rule!(require("owner")),
     );
-    access_rules.set_authority(
+    authority_rules.set_authority(
         "owner",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
 
-    let mut test_runner = MutableAccessRulesTestRunner::new(access_rules.clone());
+    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
@@ -292,7 +288,11 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn new(access_rules: AccessRulesConfig) -> Self {
+    pub fn new(authority_rules: AuthorityRules) -> Self {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority("deposit_funds", "deposit_funds");
+        method_authorities.set_main_method_authority("borrow_funds", "borrow_funds");
+
         let mut test_runner = TestRunner::builder().build();
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
@@ -301,7 +301,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new",
-                manifest_args!(access_rules),
+                manifest_args!(method_authorities, authority_rules),
             )
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);

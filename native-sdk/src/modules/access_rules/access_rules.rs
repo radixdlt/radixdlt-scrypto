@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRulesConfig, ObjectKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodAuthorities, ObjectKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -21,8 +21,9 @@ pub struct AccessRules(pub Own);
 
 impl AccessRules {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
-        access_rules: AccessRulesConfig,
-        child_blueprint_rules: BTreeMap<String, AccessRulesConfig>,
+        method_authorities: MethodAuthorities,
+        authority_rules: AuthorityRules,
+        child_blueprint_rules: BTreeMap<String, (MethodAuthorities, AuthorityRules)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -33,7 +34,8 @@ impl AccessRules {
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
             scrypto_encode(&AccessRulesCreateInput {
-                access_rules,
+                method_authorities,
+                authority_rules,
                 child_blueprint_rules,
             })
             .unwrap(),

@@ -198,7 +198,7 @@ impl AuthModule {
             ObjectKey::SELF => &access_rules.access_rules,
             ObjectKey::ChildBlueprint(blueprint_name) => {
                 let child_rules = access_rules
-                    .child_blueprint_rules
+                    .inner_blueprint_access_rules
                     .get(&blueprint_name)
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
                         AuthError::InnerBlueprintDoesNotExist(blueprint_name),

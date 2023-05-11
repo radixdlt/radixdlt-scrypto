@@ -4,6 +4,7 @@ use crate::math::Decimal;
 use crate::*;
 use radix_engine_common::types::*;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
