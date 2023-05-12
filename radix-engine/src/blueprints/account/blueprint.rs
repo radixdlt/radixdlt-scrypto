@@ -10,9 +10,9 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
 
-use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -34,61 +34,34 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![
-            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
-            ("lock_fee", rule!(require("owner")), rule!(deny_all)),
-            ("withdraw", rule!(require("owner")), rule!(deny_all)),
-            ("create_proof", rule!(require("owner")), rule!(deny_all)),
-            (
-                "lock_fee_and_withdraw",
-                rule!(require("lock_fee") && require("withdraw")),
-                rule!(deny_all),
-            ),
-        ]
+    fn method_authorities() -> MethodAuthorities {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_public(ACCOUNT_DEPOSIT_IDENT);
+        method_authorities.set_public(ACCOUNT_DEPOSIT_BATCH_IDENT);
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT, "lock_fee_and_withdraw");
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT, "lock_fee_and_withdraw");
+        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, "withdraw");
+        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
+        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
+        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, "create_proof");
+        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, "create_proof");
+        method_authorities
     }
 
-    fn methods() -> Vec<(&'static str, MethodType)> {
-        vec![
-            (ACCOUNT_DEPOSIT_IDENT, MethodType::Public),
-            (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
-            (
-                ACCOUNT_LOCK_FEE_IDENT,
-                MethodType::Group("lock_fee".to_string()),
-            ),
-            (
-                ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
-                MethodType::Group("lock_fee".to_string()),
-            ),
-            (
-                ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-                MethodType::Group("lock_fee_and_withdraw".to_string()),
-            ),
-            (
-                ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-                MethodType::Group("lock_fee_and_withdraw".to_string()),
-            ),
-            (
-                ACCOUNT_WITHDRAW_IDENT,
-                MethodType::Group("withdraw".to_string()),
-            ),
-            (
-                ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-                MethodType::Group("withdraw".to_string()),
-            ),
-            (
-                ACCOUNT_CREATE_PROOF_IDENT,
-                MethodType::Group("create_proof".to_string()),
-            ),
-            (
-                ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT,
-                MethodType::Group("create_proof".to_string()),
-            ),
-            (
-                ACCOUNT_CREATE_PROOF_BY_IDS_IDENT,
-                MethodType::Group("create_proof".to_string()),
-            ),
-        ]
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule("lock_fee", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule("withdraw", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule("create_proof", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule(
+            "lock_fee_and_withdraw",
+            rule!(require("lock_fee") && require("withdraw")),
+            rule!(deny_all),
+        );
+        authority_rules
     }
 }
 

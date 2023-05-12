@@ -186,8 +186,14 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![("update_metadata", rule!(require("owner")), rule!(deny_all))]
+    fn method_authorities() -> MethodAuthorities {
+        MethodAuthorities::new()
+    }
+
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
+        authority_rules
     }
 }
 

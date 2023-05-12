@@ -5,44 +5,21 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
-pub enum MethodType {
-    Public,
-    Group(String),
-}
-
 pub trait SecurifiedAccessRules {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress;
 
-    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![]
-    }
+    fn method_authorities() -> MethodAuthorities;
 
-    fn methods() -> Vec<(&'static str, MethodType)> {
-        vec![]
-    }
+    fn authority_rules() -> AuthorityRules;
 
     fn create_config(authority_rules: AuthorityRules) -> (MethodAuthorities, AuthorityRules) {
-        let mut method_authorities = MethodAuthorities::new();
-        for (method, method_type) in Self::methods() {
-            match method_type {
-                MethodType::Public => {
-                    method_authorities.set_public(method);
-                }
-                MethodType::Group(group) => {
-                    method_authorities.set_main_method_authority(method, group.as_str());
-                }
-            };
-        }
-
+        let mut method_authorities = Self::method_authorities();
         if let Some(securify_ident) = Self::SECURIFY_IDENT {
             method_authorities.set_main_method_authority(securify_ident, "securify");
         }
 
-        let mut authority_rules_to_use = AuthorityRules::new();
-        for (authority, access_rule, mutability) in Self::authorities() {
-            authority_rules_to_use.set_rule(authority, access_rule, mutability);
-        }
+        let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
             authority_rules_to_use.set_rule(authority.as_str(), access_rule, mutability);
         }

@@ -1,4 +1,4 @@
-use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
@@ -110,24 +110,18 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![
-            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
-            ("package_royalty", rule!(require("owner")), rule!(deny_all)),
-        ]
+    fn method_authorities() -> MethodAuthorities {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
+        method_authorities.set_main_method_authority(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
+        method_authorities
     }
 
-    fn methods() -> Vec<(&'static str, MethodType)> {
-        vec![
-            (
-                PACKAGE_CLAIM_ROYALTY_IDENT,
-                MethodType::Group("package_royalty".to_string()),
-            ),
-            (
-                PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-                MethodType::Group("package_royalty".to_string()),
-            ),
-        ]
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule("package_royalty", rule!(require("owner")), rule!(deny_all));
+        authority_rules
     }
 }
 

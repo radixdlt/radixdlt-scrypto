@@ -1,5 +1,5 @@
 use crate::blueprints::epoch_manager::*;
-use crate::blueprints::util::{MethodType, SecurifiedAccessRules};
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -510,42 +510,23 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
 
-    fn authorities() -> Vec<(&'static str, AccessRule, AccessRule)> {
-        vec![
-            (
-                "stake",
-                rule!(require("owner")),
-                rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-            ),
-            ("update_metadata", rule!(require("owner")), rule!(deny_all)),
-        ]
+    fn method_authorities() -> MethodAuthorities {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_public(VALIDATOR_UNSTAKE_IDENT);
+        method_authorities.set_public(VALIDATOR_CLAIM_XRD_IDENT);
+        method_authorities.set_main_method_authority(VALIDATOR_STAKE_IDENT, "stake");
+        method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, "owner");
+        method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, "owner");
+        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, "owner");
+        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, "owner");
+        method_authorities
     }
 
-    fn methods() -> Vec<(&'static str, MethodType)> {
-        vec![
-            (VALIDATOR_UNSTAKE_IDENT, MethodType::Public),
-            (VALIDATOR_CLAIM_XRD_IDENT, MethodType::Public),
-            (
-                VALIDATOR_STAKE_IDENT,
-                MethodType::Group("stake".to_string()),
-            ),
-            (
-                VALIDATOR_REGISTER_IDENT,
-                MethodType::Group("owner".to_string()),
-            ),
-            (
-                VALIDATOR_UNREGISTER_IDENT,
-                MethodType::Group("owner".to_string()),
-            ),
-            (
-                VALIDATOR_UPDATE_KEY_IDENT,
-                MethodType::Group("owner".to_string()),
-            ),
-            (
-                VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-                MethodType::Group("owner".to_string()),
-            ),
-        ]
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule("stake", rule!(require("owner")), rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))));
+        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
+        authority_rules
     }
 }
 
