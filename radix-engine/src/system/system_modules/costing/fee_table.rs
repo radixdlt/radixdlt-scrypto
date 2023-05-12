@@ -318,8 +318,8 @@ impl FeeTable {
             CostingEntry::ScanSubstate => 16, // todo: determine correct value
             CostingEntry::SetSubstate => 16,  // todo: determine correct value
             CostingEntry::TakeSubstate => 16, // todo: determine correct value
-            CostingEntry::ReadSubstate { size: _ } => 174,
-            CostingEntry::WriteSubstate { size: _ } => 126,
+            CostingEntry::ReadSubstate { size: _ } => 174, // todo: determine correct value size dependent
+            CostingEntry::WriteSubstate { size: _ } => 126, // todo: determine correct value size dependent
 
             // following variants are used in storage usage part only
             CostingEntry::SubstateReadFromDb { size: _ } => 0,
@@ -341,8 +341,6 @@ impl FeeTable {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::ReadSubstate { size } => 100 * size,
-            CostingEntry::WriteSubstate { size } => 1000 * size,
             CostingEntry::SubstateReadFromDb { size } => 100 * size, // todo: determine correct value
             CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
             CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
