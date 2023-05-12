@@ -194,11 +194,12 @@ pub fn extract_typed_attributes(
 }
 
 enum VariantValue {
-    Byte(u8),
+    Byte(LitByte),
     Path(Path), // EG a constant
 }
 
 pub fn get_variant_discriminator_mapping(
+    enum_attributes: &[Attribute],
     variants: &Punctuated<Variant, Comma>,
 ) -> Result<BTreeMap<usize, Expr>> {
     if variants.len() > 255 {
@@ -208,6 +209,8 @@ pub fn get_variant_discriminator_mapping(
         ));
     }
 
+    let use_repr_discriminators =
+        get_sbor_attribute_boolean_value(enum_attributes, "use_repr_discriminators")?;
     let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
 
     for (i, variant) in variants.iter().enumerate() {
@@ -219,7 +222,7 @@ pub fn get_variant_discriminator_mapping(
                 }
                 AttributeValue::Path(path) => VariantValue::Path(path),
                 AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
-                    .map(|b| VariantValue::Byte(b))
+                    .map(|b| VariantValue::Byte(LitByte::new(b, literal.span())))
                     .ok_or_else(|| {
                         Error::new(
                             literal.span(),
@@ -229,27 +232,31 @@ pub fn get_variant_discriminator_mapping(
             };
 
             variant_ids.insert(i, id);
-        } else if let Some(discriminant) = &variant.discriminant {
-            let expression = &discriminant.1;
+            continue;
+        }
+        if use_repr_discriminators {
+            if let Some(discriminant) = &variant.discriminant {
+                let expression = &discriminant.1;
 
-            let id = match expression {
-                Expr::Lit(literal_expression) => {
-                    parse_u8_from_literal(&literal_expression.lit).map(|b| VariantValue::Byte(b))
-                }
-                Expr::Path(path_expression) => {
-                    Some(VariantValue::Path(path_expression.path.clone()))
-                }
-                _ => None,
-            };
+                let id = match expression {
+                    Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
+                        .map(|b| VariantValue::Byte(LitByte::new(b, literal_expression.span()))),
+                    Expr::Path(path_expression) => {
+                        Some(VariantValue::Path(path_expression.path.clone()))
+                    }
+                    _ => None,
+                };
 
-            let Some(id) = id else {
-                return Err(Error::new(
-                    expression.span(),
-                    format!("This discriminator is not a u8-convertible value or a path to a variable"),
-                ));
-            };
+                let Some(id) = id else {
+                    return Err(Error::new(
+                        expression.span(),
+                        format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
+                    ));
+                };
 
-            variant_ids.insert(i, id);
+                variant_ids.insert(i, id);
+                continue;
+            }
         }
     }
 
@@ -295,8 +302,11 @@ fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
     field_name: &str,
 ) -> Result<Option<String>> {
-    let attributes = extract_sbor_typed_attributes(attributes)?;
-    Ok(attributes.get(field_name).and_then(|v| v.as_string()))
+    extract_sbor_typed_attributes(attributes)?.get_string_value(&field_name)
+}
+
+fn get_sbor_attribute_boolean_value(attributes: &[Attribute], field_name: &str) -> Result<bool> {
+    extract_sbor_typed_attributes(attributes)?.get_bool_value(&field_name)
 }
 
 pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
