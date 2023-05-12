@@ -288,26 +288,35 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
         auth_rule: &AccessRuleNode,
+        already_verified_authorities: &mut NonIterMap<String, ()>,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match auth_rule {
             AccessRuleNode::Authority(authority) => {
+                if already_verified_authorities.contains_key(authority) {
+                    return Ok(true);
+                }
+
                 match access_rules.rules.get(authority.as_str()) {
                     Some(access_rule) => {
                         // TODO: Add costing for every access rule hop
-                        Self::check_authorization_against_access_rule(
+                        Self::check_authorization_against_access_rule_internal(
                             acting_location,
                             auth_zone_id,
                             access_rules,
                             access_rule,
+                            already_verified_authorities,
                             api,
                         )
                         .map(|rtn| match rtn {
-                            AuthorizationCheckResult::Authorized => true,
+                            AuthorizationCheckResult::Authorized => {
+                                already_verified_authorities.insert(authority.to_string(), ());
+                                true
+                            },
                             AuthorizationCheckResult::Failed(..) => false,
                         })
                     }
-                    None => return Ok(false),
+                    None => Ok(false),
                 }
             }
             AccessRuleNode::ProofRule(rule) => {
@@ -315,7 +324,7 @@ impl Authorization {
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)?
+                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, already_verified_authorities, api)?
                     {
                         return Ok(true);
                     }
@@ -324,7 +333,7 @@ impl Authorization {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, api)?
+                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, already_verified_authorities, api)?
                     {
                         return Ok(false);
                     }
@@ -335,25 +344,42 @@ impl Authorization {
         }
     }
 
+    fn check_authorization_against_access_rule_internal<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
+        acting_location: ActingLocation,
+        auth_zone_id: NodeId,
+        access_rules: &AccessRulesConfig,
+        rule: &AccessRule,
+        already_verified_authorities: &mut NonIterMap<String, ()>,
+        api: &mut Y,
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+        match rule {
+            AccessRule::Protected(rule_node) => {
+                if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule_node, already_verified_authorities, api)? {
+                    Ok(AuthorizationCheckResult::Authorized)
+                } else {
+                    Ok(AuthorizationCheckResult::Failed(rule.clone()))
+                }
+            }
+            AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(rule.clone())),
+        }
+    }
+
     pub fn check_authorization_against_access_rule<
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
-        method_auth: &AccessRule,
+        rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        match method_auth {
-            AccessRule::Protected(rule) => {
-                if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule, api)? {
-                    Ok(AuthorizationCheckResult::Authorized)
-                } else {
-                    Ok(AuthorizationCheckResult::Failed(method_auth.clone()))
-                }
-            }
-            AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
-            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(method_auth.clone())),
-        }
+
+        let mut already_verified_authorities = NonIterMap::new();
+
+        Self::check_authorization_against_access_rule_internal(
+            acting_location, auth_zone_id, access_rules, rule, &mut already_verified_authorities, api)
     }
 }
