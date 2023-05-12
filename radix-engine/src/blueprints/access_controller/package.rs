@@ -1229,9 +1229,9 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.set_group_access_rule("primary".into(), rule_set.primary_role.clone(), api)?;
-    attached.set_group_access_rule("recovery".into(), rule_set.recovery_role.clone(), api)?;
-    attached.set_group_access_rule(
+    attached.set_authority_rule("primary".into(), rule_set.primary_role.clone(), api)?;
+    attached.set_authority_rule("recovery".into(), rule_set.recovery_role.clone(), api)?;
+    attached.set_authority_rule(
         "confirmation".into(),
         rule_set.confirmation_role.clone(),
         api,

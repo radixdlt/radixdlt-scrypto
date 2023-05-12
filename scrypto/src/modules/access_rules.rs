@@ -62,7 +62,7 @@ impl From<Mutability> for AccessRule {
 pub struct ActorAccessRules;
 
 impl ActorAccessRules {
-    pub fn set_group_access_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         let _rtn = ScryptoEnv
             .actor_call_module_method(
                 OBJECT_HANDLE_SELF,
@@ -78,7 +78,7 @@ impl ActorAccessRules {
             .unwrap();
     }
 
-    pub fn set_group_mutability(&self, name: &str, mutability: AccessRule) {
+    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
         let _rtn = ScryptoEnv
             .actor_call_module_method(
                 OBJECT_HANDLE_SELF,

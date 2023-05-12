@@ -250,7 +250,7 @@ impl EpochManagerBlueprint {
         Self::epoch_change(mgr.epoch, config.max_validators, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_group_access_rule_and_mutability(
+        access_rules.set_authority_rule_and_mutability(
             "start",
             AccessRule::DenyAll,
             AccessRule::DenyAll,

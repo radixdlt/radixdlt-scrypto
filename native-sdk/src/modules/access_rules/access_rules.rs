@@ -65,7 +65,7 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+    fn set_authority_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
         name: &str,
         entry: A,
@@ -88,7 +88,7 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_group_access_rule_and_mutability<
+    fn set_authority_rule_and_mutability<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
         R: Into<AccessRule>,

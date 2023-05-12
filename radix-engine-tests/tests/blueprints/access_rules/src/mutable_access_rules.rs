@@ -18,14 +18,14 @@ mod mutable_access_rules_component {
             component.access_rules()
         }
 
-        pub fn set_group_auth(&self, group_name: String, rule: AccessRule) {
+        pub fn set_group_auth(&self, authority: String, rule: AccessRule) {
             let access_rules = Runtime::get_access_rules();
-            access_rules.set_group_access_rule(group_name.as_str(), rule);
+            access_rules.set_authority_rule(authority.as_str(), rule);
         }
 
-        pub fn lock_group_auth(&self, group_name: String) {
+        pub fn lock_group_auth(&self, authority: String) {
             let access_rules = Runtime::get_access_rules();
-            access_rules.set_group_mutability(group_name.as_str(), AccessRule::DenyAll);
+            access_rules.set_authority_mutability(authority.as_str(), AccessRule::DenyAll);
         }
 
         // The methods that the access rules will be added to
