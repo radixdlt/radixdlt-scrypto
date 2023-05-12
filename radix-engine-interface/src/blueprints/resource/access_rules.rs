@@ -132,7 +132,7 @@ impl AuthorityRules {
         Self { rules: btreemap!() }
     }
 
-    pub fn set_authority<S: Into<String>>(
+    pub fn set_rule<S: Into<String>>(
         &mut self,
         authority: S,
         rule: AccessRule,
@@ -140,20 +140,19 @@ impl AuthorityRules {
     ) {
         self.rules.insert(authority.into(), (rule, mutability));
     }
+
+    pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule(
+            "owner",
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        authority_rules
+    }
 }
 
-pub fn package_authority_rules_from_owner_badge(
-    owner_badge: &NonFungibleGlobalId,
-) -> AuthorityRules {
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_authority(
-        "owner",
-        rule!(require(owner_badge.clone())),
-        rule!(require(owner_badge.clone())),
-    );
-    authority_rules
-}
-
+// TODO: Remove?
 pub fn resource_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
 ) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {

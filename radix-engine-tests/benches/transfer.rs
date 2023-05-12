@@ -34,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
     let accounts = (0..2)
         .map(|_| {
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_authority(
+            authority_rules.set_rule(
                 "owner",
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),

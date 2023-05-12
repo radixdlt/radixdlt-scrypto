@@ -31,7 +31,7 @@ fn generate_deep_access_rules(
         curr_depth += 2;
     }
     let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_authority(
+    authority_rules.set_rule(
         "test",
         AccessRule::Protected(access_rule_node.clone()),
         AccessRule::Protected(access_rule_node),

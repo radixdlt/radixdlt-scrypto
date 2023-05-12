@@ -173,17 +173,17 @@ impl EpochManagerBlueprint {
         method_authorities.set_public(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT);
 
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "start",
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
             DenyAll,

@@ -1068,19 +1068,19 @@ fn init_access_rules_from_rule_set(
 
     // Primary Role Rules
     let primary_group = "primary";
-    authority_rules.set_authority(
+    authority_rules.set_rule(
         primary_group,
         rule_set.primary_role.clone(),
         rule!(require(global_caller(address))),
     );
     let recovery_group = "recovery";
-    authority_rules.set_authority(
+    authority_rules.set_rule(
         recovery_group,
         rule_set.recovery_role.clone(),
         rule!(require(global_caller(address))),
     );
     let confirmation_group = "confirmation";
-    authority_rules.set_authority(
+    authority_rules.set_rule(
         confirmation_group,
         rule_set.confirmation_role.clone(),
         rule!(require(global_caller(address))),

@@ -20,7 +20,7 @@ mod metadata_component {
             let component = MetadataComponent {}.instantiate();
 
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_authority(
+            authority_rules.set_rule(
                 "update_metadata",
                 AccessRule::AllowAll,
                 AccessRule::DenyAll,

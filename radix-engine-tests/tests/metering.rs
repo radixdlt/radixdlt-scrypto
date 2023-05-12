@@ -107,7 +107,7 @@ fn test_radiswap() {
                 .default(0),
         ),
         btreemap!(),
-        package_authority_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -242,7 +242,7 @@ fn test_flash_loan() {
                 .default(0),
         ),
         btreemap!(),
-        package_authority_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate flash_loan

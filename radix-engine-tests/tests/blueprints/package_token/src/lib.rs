@@ -17,7 +17,7 @@ mod factory {
             method_authorities.set_main_method_authority("set_address", "set_address");
 
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_authority(
+            authority_rules.set_rule(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,
@@ -36,7 +36,7 @@ mod factory {
             method_authorities.set_main_method_authority("set_address", "set_address");
 
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_authority(
+            authority_rules.set_rule(
                 "set_address",
                 rule!(require(Runtime::package_token())),
                 AccessRule::DenyAll,

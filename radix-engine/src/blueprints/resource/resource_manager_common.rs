@@ -59,14 +59,14 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut resman_authority_rules = AuthorityRules::new();
-        resman_authority_rules.set_authority(
+        resman_authority_rules.set_rule(
             "update_metadata",
             update_metadata_access_rule,
             update_metadata_mutability,
         );
-        resman_authority_rules.set_authority("mint", mint_access_rule, mint_mutability);
-        resman_authority_rules.set_authority("burn", burn_access_rule, burn_mutability);
-        resman_authority_rules.set_authority(
+        resman_authority_rules.set_rule("mint", mint_access_rule, mint_mutability);
+        resman_authority_rules.set_rule("burn", burn_access_rule, burn_mutability);
+        resman_authority_rules.set_rule(
             "update_non_fungible_data",
             update_non_fungible_data_access_rule,
             update_non_fungible_data_mutability,
@@ -119,12 +119,12 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut vault_authority_rules = AuthorityRules::new();
-        vault_authority_rules.set_authority("withdraw", withdraw_access_rule, withdraw_mutability);
-        vault_authority_rules.set_authority("recall", recall_access_rule, recall_mutability);
+        vault_authority_rules.set_rule("withdraw", withdraw_access_rule, withdraw_mutability);
+        vault_authority_rules.set_rule("recall", recall_access_rule, recall_mutability);
 
-        vault_authority_rules.set_authority("deposit", deposit_access_rule, deposit_mutability);
+        vault_authority_rules.set_rule("deposit", deposit_access_rule, deposit_mutability);
 
-        vault_authority_rules.set_authority(
+        vault_authority_rules.set_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
             DenyAll,
@@ -156,7 +156,7 @@ fn build_access_rules(
 
     let bucket_authority_rules = {
         let mut bucket_authority_rules = AuthorityRules::new();
-        bucket_authority_rules.set_authority(
+        bucket_authority_rules.set_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
             DenyAll,

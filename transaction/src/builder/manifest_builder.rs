@@ -622,7 +622,7 @@ impl ManifestBuilder {
             schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            authority_rules: package_authority_rules_from_owner_badge(&owner_badge),
+            authority_rules: AuthorityRules::owner_authority(&owner_badge),
         });
         self
     }

@@ -57,12 +57,12 @@ pub trait LocalComponent: Sized {
 
     fn globalize(self) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "update_metadata".to_string(),
             AccessRule::DenyAll,
             AccessRule::DenyAll,
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "royalty".to_string(),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
@@ -77,12 +77,12 @@ pub trait LocalComponent: Sized {
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "update_metadata".to_string(),
             AccessRule::DenyAll,
             AccessRule::DenyAll,
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "royalty".to_string(),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
@@ -98,12 +98,12 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "update_metadata".to_string(),
             AccessRule::DenyAll,
             AccessRule::DenyAll,
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "royalty".to_string(),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
@@ -118,12 +118,12 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "update_metadata".to_string(),
             AccessRule::DenyAll,
             AccessRule::DenyAll,
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "royalty".to_string(),
             AccessRule::AllowAll,
             AccessRule::DenyAll,
@@ -155,12 +155,12 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
 
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "update_metadata".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
-        authority_rules.set_authority(
+        authority_rules.set_rule(
             "royalty".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
