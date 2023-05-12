@@ -532,7 +532,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             authority: group,
             rule,
         } => {
-            f.write_str("SET_GROUP_ACCESS_RULE")?;
+            f.write_str("SET_AUTHORITY_ACCESS_RULE")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;
@@ -545,7 +545,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             authority: group,
             mutability,
         } => {
-            f.write_str("SET_GROUP_MUTABILITY")?;
+            f.write_str("SET_AUTHORITY_MUTABILITY")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;

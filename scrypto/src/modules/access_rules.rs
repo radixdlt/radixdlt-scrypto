@@ -30,7 +30,7 @@ impl AccessRules {
                 scrypto_encode(&AccessRulesCreateInput {
                     method_authorities,
                     authority_rules,
-                    child_blueprint_rules: btreemap!(),
+                    inner_blueprint_rules: btreemap!(),
                 })
                 .unwrap(),
             )

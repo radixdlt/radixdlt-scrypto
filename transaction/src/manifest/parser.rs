@@ -205,13 +205,13 @@ impl Parser {
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
             },
-            TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
+            TokenKind::SetAuthorityAccessRule => Instruction::SetGroupAccessRule {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
                 group: self.parse_value()?,
                 rule: self.parse_value()?,
             },
-            TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+            TokenKind::SetAuthorityMutability => Instruction::SetGroupMutability {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
                 group: self.parse_value()?,

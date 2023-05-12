@@ -24,7 +24,7 @@ impl AccessRules {
     pub fn sys_new<Y, E: Debug + ScryptoDecode>(
         method_authorities: MethodAuthorities,
         authority_rules: AuthorityRules,
-        child_blueprint_rules: BTreeMap<String, (MethodAuthorities, AuthorityRules)>,
+        inner_blueprint_rules: BTreeMap<String, (MethodAuthorities, AuthorityRules)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -37,7 +37,7 @@ impl AccessRules {
             scrypto_encode(&AccessRulesCreateInput {
                 method_authorities,
                 authority_rules,
-                child_blueprint_rules,
+                inner_blueprint_rules,
             })
             .unwrap(),
         )?;

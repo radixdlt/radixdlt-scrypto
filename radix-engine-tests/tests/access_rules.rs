@@ -52,7 +52,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
             matches!(
                 e,
                 &RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::CyclicAuthorityDetected(..)
+                    AuthError::InitializationCycleCheckError(..)
                 ))
             )
         });
@@ -73,7 +73,7 @@ fn setting_circular_authority_rule_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::UpdateAuthCycleCheckError(
                 ..
             )))
         )
@@ -95,7 +95,7 @@ fn setting_circular_authority_rule_should_fail_2() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::UpdateAuthCycleCheckError(
                 ..
             )))
         )
@@ -117,7 +117,7 @@ fn setting_circular_authority_mutability_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::UpdateAuthCycleCheckError(
                 ..
             )))
         )
@@ -139,7 +139,7 @@ fn setting_circular_authority_mutability_should_fail2() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CyclicAuthorityDetected(
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::UpdateAuthCycleCheckError(
                 ..
             )))
         )
