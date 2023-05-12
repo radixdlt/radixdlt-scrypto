@@ -68,8 +68,48 @@ pub type VaultCreateProofOfAmountOutput = Proof;
 // Stub
 //========
 
+// TODO: update schema type
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub Own);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct FungibleVault(pub Vault);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct NonFungibleVault(pub Vault);
+
+impl From<FungibleVault> for Vault {
+    fn from(value: FungibleVault) -> Self {
+        value.0
+    }
+}
+
+impl From<NonFungibleVault> for Vault {
+    fn from(value: NonFungibleVault) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Vault> for Vault {
+    fn as_ref(&self) -> &Vault {
+        self
+    }
+}
+
+impl AsRef<Vault> for FungibleVault {
+    fn as_ref(&self) -> &Vault {
+        &self.0
+    }
+}
+
+impl AsRef<Vault> for NonFungibleVault {
+    fn as_ref(&self) -> &Vault {
+        &self.0
+    }
+}
 
 //========
 // binary

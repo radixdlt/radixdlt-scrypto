@@ -35,6 +35,10 @@ pub trait ScryptoVault {
     fn take_all(&mut self) -> Bucket;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+
+    fn as_fungible_vault(&self) -> FungibleVault;
+
+    fn as_no_fungible_vault(&self) -> NonFungibleVault;
 }
 
 pub trait ScryptoFungibleVault {
@@ -52,12 +56,15 @@ pub trait ScryptoNonFungibleVault {
 
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 
-    fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Bucket;
+    fn take_non_fungible(
+        &mut self,
+        non_fungible_local_id: &NonFungibleLocalId,
+    ) -> NonFungibleBucket;
 
     fn take_non_fungibles(
         &mut self,
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Bucket;
+    ) -> NonFungibleBucket;
 
     fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
 }
@@ -172,9 +179,20 @@ impl ScryptoVault for Vault {
     fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }
+
+    // TODO: should we check fungibility here?
+    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
+
+    fn as_fungible_vault(&self) -> FungibleVault {
+        FungibleVault(Vault(self.as_ref().0))
+    }
+
+    fn as_no_fungible_vault(&self) -> NonFungibleVault {
+        NonFungibleVault(Vault(self.as_ref().0))
+    }
 }
 
-impl ScryptoFungibleVault for Vault {
+impl ScryptoFungibleVault for FungibleVault {
     /// Locks the specified amount as transaction fee.
     ///
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
@@ -182,7 +200,7 @@ impl ScryptoFungibleVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&FungibleVaultLockFeeInput {
                     amount: amount.into(),
@@ -201,7 +219,7 @@ impl ScryptoFungibleVault for Vault {
         let mut env = ScryptoEnv;
         let _rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT,
                 scrypto_encode(&FungibleVaultLockFeeInput {
                     amount: amount.into(),
@@ -213,12 +231,12 @@ impl ScryptoFungibleVault for Vault {
     }
 }
 
-impl ScryptoNonFungibleVault for Vault {
+impl ScryptoNonFungibleVault for NonFungibleVault {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -231,7 +249,7 @@ impl ScryptoNonFungibleVault for Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let resource_address = self.resource_address();
+        let resource_address = self.0.resource_address();
         self.non_fungible_local_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
@@ -266,19 +284,21 @@ impl ScryptoNonFungibleVault for Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
-    fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Bucket {
-        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_local_id.clone()]));
-        Bucket(bucket.0)
+    fn take_non_fungible(
+        &mut self,
+        non_fungible_local_id: &NonFungibleLocalId,
+    ) -> NonFungibleBucket {
+        self.take_non_fungibles(&BTreeSet::from([non_fungible_local_id.clone()]))
     }
 
     fn take_non_fungibles(
         &mut self,
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Bucket {
+    ) -> NonFungibleBucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&NonFungibleVaultTakeNonFungiblesInput {
                     non_fungible_local_ids: non_fungible_local_ids.clone(),
@@ -293,7 +313,7 @@ impl ScryptoNonFungibleVault for Vault {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&NonFungibleVaultCreateProofOfNonFungiblesInput { ids }).unwrap(),
             )

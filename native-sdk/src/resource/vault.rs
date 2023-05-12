@@ -7,6 +7,8 @@ use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
+// TODO: split impl
+
 pub trait NativeVault {
     fn create<Y, E: Debug + ScryptoDecode>(
         resource_address: ResourceAddress,

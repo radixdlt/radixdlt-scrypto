@@ -56,10 +56,8 @@ pub trait ScryptoNonFungibleBucket {
 
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 
-    fn take_non_fungibles(
-        &mut self,
-        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Bucket;
+    fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>)
+        -> Self;
 
     fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Self;
 
@@ -217,14 +215,14 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
     }
 }
 
-impl ScryptoFungibleBucket for Bucket {}
+impl ScryptoFungibleBucket for FungibleBucket {}
 
-impl ScryptoNonFungibleBucket for Bucket {
+impl ScryptoNonFungibleBucket for NonFungibleBucket {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
                 scrypto_encode(&BucketGetNonFungibleLocalIdsInput {}).unwrap(),
             )
@@ -279,11 +277,11 @@ impl ScryptoNonFungibleBucket for Bucket {
     fn take_non_fungibles(
         &mut self,
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
-    ) -> Bucket {
+    ) -> Self {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&BucketTakeNonFungiblesInput {
                     ids: non_fungible_local_ids.clone(),
@@ -298,7 +296,7 @@ impl ScryptoNonFungibleBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.0 .0.as_node_id(),
                 NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
                 scrypto_encode(&NonFungibleBucketCreateProofOfNonFungiblesInput { ids }).unwrap(),
             )
