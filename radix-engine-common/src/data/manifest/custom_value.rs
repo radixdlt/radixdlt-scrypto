@@ -1,5 +1,6 @@
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
+use crate::types::EntityType;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 
@@ -68,7 +69,16 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
-            ManifestCustomValue::Address(v) => v.encode_body(encoder),
+            ManifestCustomValue::Address(v) => {
+                let id = v.to_vec()[0];
+                if EntityType::from_repr(id).is_none() {
+                    return Err(EncodeError::ApplicationError(format!(
+                        "Invalid address entity type {}",
+                        id
+                    )));
+                }
+                v.encode_body(encoder)
+            }
             ManifestCustomValue::Bucket(v) => v.encode_body(encoder),
             ManifestCustomValue::Proof(v) => v.encode_body(encoder),
             ManifestCustomValue::Expression(v) => v.encode_body(encoder),
