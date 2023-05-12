@@ -555,8 +555,48 @@ impl TxFuzzer {
                         royalty_config,
                     })
                 }
-                // SetMetadata
+                // SetGroupAccessRule
                 38 => {
+                    let groups = vec![
+                        "owner".to_string(),
+                        String::arbitrary(&mut unstructured).unwrap(),
+                    ];
+                    global_addresses.push(
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
+                    let group = unstructured.choose(&groups[..]).unwrap().to_string();
+                    let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
+
+                    Some(Instruction::SetGroupAccessRule {
+                        entity_address,
+                        object_key,
+                        group,
+                        rule,
+                    })
+                }
+                // SetGroupMutability
+                39 => {
+                    let groups = vec![
+                        "owner".to_string(),
+                        String::arbitrary(&mut unstructured).unwrap(),
+                    ];
+                    global_addresses.push(
+                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
+                    let group = unstructured.choose(&groups[..]).unwrap().to_string();
+                    let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
+
+                    Some(Instruction::SetGroupMutability {
+                        entity_address,
+                        object_key,
+                        group,
+                        mutability,
+                    })
+                }
+                // SetMetadata
+                40 => {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
@@ -569,7 +609,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetMethodAccessRule
-                39 => {
+                41 => {
                     global_addresses.push(
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
@@ -582,7 +622,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetPackageRoyaltyConfig
-                40 => {
+                42 => {
                     package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
@@ -594,9 +634,9 @@ impl TxFuzzer {
                     })
                 }
                 // TakeFromWorktop
-                41 => Some(Instruction::TakeFromWorktop { resource_address }),
+                43 => Some(Instruction::TakeFromWorktop { resource_address }),
                 // TakeFromWorktopByAmount
-                42 => {
+                44 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     Some(Instruction::TakeFromWorktopByAmount {
                         amount,
@@ -604,10 +644,13 @@ impl TxFuzzer {
                     })
                 }
                 // TakeFromWorktopByIds
-                43 => Some(Instruction::TakeFromWorktopByIds {
+                45 => Some(Instruction::TakeFromWorktopByIds {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
+                // If you encounter this error you can check what are the current instructions
+                // using below command:
+                //   cat transaction/src/manifest/ast.rs | awk '/pub enum Instruction/,/^}/ {print $0}' | grep -E "^[ ]*[A-Z][a-zA-Z]*" | sed -E "s/[ ,\{\}]//g" | sort
                 _ => unreachable!(
                     "Not all instructions (current count is {}) covered by this match, current instruction {}",
                     ast::Instruction::COUNT, next
