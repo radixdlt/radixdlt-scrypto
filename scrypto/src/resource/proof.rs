@@ -17,6 +17,11 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 use crate::resource::*;
 use crate::*;
 
+// Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
+// and `CheckedNonFungibleProof` (instead of `Proof`/`FungibleProof`/`NonFungibleProof`)
+// to prevent developers from reading proof states (and having business logic relying on them)
+// without checking the resource address.
+
 pub trait ScryptoUncheckedProof {
     // Apply basic resource address check and converts self into `CheckedProof`.
     fn check(self, resource_address: ResourceAddress) -> CheckedProof;
@@ -34,7 +39,7 @@ pub trait ScryptoUncheckedProof {
 }
 
 pub trait ScryptoProof {
-    fn validate(&self, validation: ProofValidation) -> bool;
+    fn contains_amount(&self, amount: Decimal) -> bool;
 
     fn amount(&self) -> Decimal;
 
@@ -45,11 +50,19 @@ pub trait ScryptoProof {
     fn clone(&self) -> Self;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+
+    fn as_fungible_proof(&self) -> CheckedFungibleProof;
+
+    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof;
 }
 
 pub trait ScryptoFungibleProof {}
 
 pub trait ScryptoNonFungibleProof {
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool;
+
+    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool;
+
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
@@ -68,7 +81,43 @@ pub trait ScryptoNonFungibleProof {
 #[sbor(transparent)]
 pub struct CheckedProof(pub Proof);
 
-impl CheckedProof {}
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct CheckedFungibleProof(pub CheckedProof);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct CheckedNonFungibleProof(pub CheckedProof);
+
+impl From<CheckedFungibleProof> for CheckedProof {
+    fn from(value: CheckedFungibleProof) -> Self {
+        value.0
+    }
+}
+
+impl From<CheckedNonFungibleProof> for CheckedProof {
+    fn from(value: CheckedNonFungibleProof) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<CheckedProof> for CheckedProof {
+    fn as_ref(&self) -> &CheckedProof {
+        self
+    }
+}
+
+impl AsRef<CheckedProof> for CheckedFungibleProof {
+    fn as_ref(&self) -> &CheckedProof {
+        &self.0
+    }
+}
+
+impl AsRef<CheckedProof> for CheckedNonFungibleProof {
+    fn as_ref(&self) -> &CheckedProof {
+        &self.0
+    }
+}
 
 impl From<CheckedProof> for Proof {
     fn from(value: CheckedProof) -> Self {
@@ -135,6 +184,10 @@ impl ScryptoUncheckedProof for Proof {
 }
 
 impl ScryptoProof for CheckedProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        self.amount() >= amount
+    }
+
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -163,39 +216,35 @@ impl ScryptoProof for CheckedProof {
         self.0.authorize(f)
     }
 
-    fn validate(&self, validation: ProofValidation) -> bool {
-        match validation {
-            ProofValidation::Contains(resource_address) => {
-                self.resource_address().eq(&resource_address)
-            }
-            ProofValidation::ContainsNonFungible(non_fungible_global_id) => {
-                self.resource_address()
-                    .eq(&non_fungible_global_id.resource_address())
-                    && self
-                        .non_fungible_local_ids()
-                        .contains(non_fungible_global_id.local_id())
-            }
-            ProofValidation::ContainsNonFungibles(resource_address, local_ids) => {
-                self.resource_address().eq(&resource_address)
-                    && self.non_fungible_local_ids().is_superset(&local_ids)
-            }
-            ProofValidation::ContainsAmount(resource_address, amount) => {
-                self.resource_address().eq(&resource_address) && self.amount() >= amount
-            }
-            ProofValidation::ContainsAnyOf(resource_addresses) => {
-                resource_addresses.contains(&self.resource_address())
-            }
-        }
+    // TODO: should we check fungibility here?
+    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
+
+    fn as_fungible_proof(&self) -> CheckedFungibleProof {
+        CheckedFungibleProof(CheckedProof(Proof(self.as_ref().0 .0)))
+    }
+
+    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
+        CheckedNonFungibleProof(CheckedProof(Proof(self.as_ref().0 .0)))
     }
 }
 
-impl ScryptoNonFungibleProof for CheckedProof {
+impl ScryptoFungibleProof for CheckedFungibleProof {}
+
+impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
+    fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {
+        self.non_fungible_local_ids().contains(&id)
+    }
+
+    fn contains_non_fungibles(&self, ids: &BTreeSet<NonFungibleLocalId>) -> bool {
+        self.non_fungible_local_ids().is_superset(&ids)
+    }
+
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible proof.
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let resource_address = self.resource_address();
+        let resource_address = self.0.resource_address();
         self.non_fungible_local_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleGlobalId::new(resource_address, id.clone())))
@@ -230,7 +279,7 @@ impl ScryptoNonFungibleProof for CheckedProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0 .0.as_node_id(),
+                self.0 .0 .0.as_node_id(),
                 NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT,
                 scrypto_encode(&NonFungibleProofGetLocalIdsInput {}).unwrap(),
             )

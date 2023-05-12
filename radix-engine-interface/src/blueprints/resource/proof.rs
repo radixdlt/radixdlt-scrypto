@@ -1,13 +1,9 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
 use radix_engine_common::types::*;
-use sbor::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -41,67 +37,52 @@ pub struct ProofCloneInput {}
 
 pub type ProofCloneOutput = Proof;
 
-/// The validation to be evaluated against a `Proof`.
-///
-/// TODO: Evaluate if we should have a ProofValidationBuilder to construct more complex validation modes.
-pub enum ProofValidation {
-    /// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
-    Contains(ResourceAddress),
-
-    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleGlobalId`.
-    ContainsNonFungible(NonFungibleGlobalId),
-
-    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleLocalId`s
-    /// to ensure that the `Proof` contains all of the NonFungibles in the set.
-    ContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleLocalId>),
-
-    /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
-    ContainsAmount(ResourceAddress, Decimal),
-
-    /// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
-    /// the `Proof`'s resource address belongs to the set, then its valid.
-    ContainsAnyOf(BTreeSet<ResourceAddress>),
-}
-
-impl From<ResourceAddress> for ProofValidation {
-    fn from(resource_address: ResourceAddress) -> Self {
-        Self::Contains(resource_address)
-    }
-}
-
-impl From<NonFungibleGlobalId> for ProofValidation {
-    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
-        Self::ContainsNonFungible(non_fungible_global_id)
-    }
-}
-
-/// Represents an error when validating proof.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProofValidationError {
-    InvalidResourceAddress(ResourceAddress),
-    ResourceAddressDoesNotBelongToList,
-    DoesNotContainOneNonFungible,
-    NonFungibleLocalIdNotFound,
-    InvalidAmount(Decimal),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ProofValidationError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ProofValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 //========
 // Stub
 //========
 
-/// Represents a proof
+// TODO: update schema type
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub Own);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct FungibleProof(pub Proof);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct NonFungibleProof(pub Proof);
+
+impl From<FungibleProof> for Proof {
+    fn from(value: FungibleProof) -> Self {
+        value.0
+    }
+}
+
+impl From<NonFungibleProof> for Proof {
+    fn from(value: NonFungibleProof) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Proof> for Proof {
+    fn as_ref(&self) -> &Proof {
+        self
+    }
+}
+
+impl AsRef<Proof> for FungibleProof {
+    fn as_ref(&self) -> &Proof {
+        &self.0
+    }
+}
+
+impl AsRef<Proof> for NonFungibleProof {
+    fn as_ref(&self) -> &Proof {
+        &self.0
+    }
+}
 
 //========
 // binary
