@@ -338,7 +338,9 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
     }
 }
 
-impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C> for Value<X, Y> {
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
+    for Value<X, Y>
+{
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
 
     fn type_data() -> TypeData<C, GlobalTypeId> {
