@@ -44,7 +44,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
                 ));
             }
         }
-        (None, None) => { }
+        (None, None) => {}
         _ => {
             return Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::ReceiverNotMatch(fn_ident.to_string()),
@@ -305,8 +305,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             let mut vm_instance =
                 { NativeVm::create_instance(&blueprint.package_address, &[PACKAGE_CODE_ID])? };
-            let output =
-                { vm_instance.invoke(receiver.as_ref().map(|r| &r.0), &export_name, args, &mut system)? };
+            let output = {
+                vm_instance.invoke(
+                    receiver.as_ref().map(|r| &r.0),
+                    &export_name,
+                    args,
+                    &mut system,
+                )?
+            };
 
             output
         } else if blueprint.package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE) {
@@ -330,8 +336,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     &[TRANSACTION_PROCESSOR_CODE_ID],
                 )?
             };
-            let output =
-                { vm_instance.invoke(receiver.as_ref().map(|r| &r.0), &export_name, args, &mut system)? };
+            let output = {
+                vm_instance.invoke(
+                    receiver.as_ref().map(|r| &r.0),
+                    &export_name,
+                    args,
+                    &mut system,
+                )?
+            };
 
             output
         } else {

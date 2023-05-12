@@ -726,7 +726,9 @@ where
 
     pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
         let actor = self.api.kernel_get_system_state().current;
-        actor.try_as_method().map(|a| (a.node_id, a.is_direct_access))
+        actor
+            .try_as_method()
+            .map(|a| (a.node_id, a.is_direct_access))
     }
 
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
@@ -1571,9 +1573,11 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF => self
-                .actor_get_receiver_node_id()
-                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?.0,
+            ActorObjectType::SELF => {
+                self.actor_get_receiver_node_id()
+                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
+                    .0
+            }
             ActorObjectType::OuterObject => self
                 .actor_get_info()?
                 .outer_object

@@ -82,11 +82,9 @@ fn build_access_rules(
         vault_method_authorities.set_main_method_authority(VAULT_TAKE_IDENT, "withdraw");
         vault_method_authorities
             .set_main_method_authority(FUNGIBLE_VAULT_LOCK_FEE_IDENT, "withdraw");
-        vault_method_authorities.set_main_direct_method_authority(VAULT_RECALL_IDENT, "recall");
-        vault_method_authorities.set_main_direct_method_authority(
-            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
-            "recall",
-        );
+        vault_method_authorities.set_main_method_authority(VAULT_RECALL_IDENT, "recall");
+        vault_method_authorities
+            .set_main_method_authority(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT, "recall");
         vault_method_authorities.set_main_method_authority(VAULT_PUT_IDENT, "deposit");
 
         vault_method_authorities.set_public(VAULT_GET_AMOUNT_IDENT);

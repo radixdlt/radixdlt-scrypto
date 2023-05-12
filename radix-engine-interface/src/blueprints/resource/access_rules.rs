@@ -77,14 +77,12 @@ impl From<String> for AccessRule {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct MethodAuthorities {
-    pub direct_methods: BTreeMap<MethodKey, MethodEntry>,
     pub methods: BTreeMap<MethodKey, MethodEntry>,
 }
 
 impl MethodAuthorities {
     pub fn new() -> Self {
         Self {
-            direct_methods: btreemap!(),
             methods: btreemap!(),
         }
     }
@@ -119,13 +117,6 @@ impl MethodAuthorities {
         self.methods.insert(
             MethodKey::new(ObjectModuleId::Main, method),
             MethodEntry::authorities(authorities),
-        );
-    }
-
-    pub fn set_main_direct_method_authority(&mut self, method: &str, authority: &str) {
-        self.direct_methods.insert(
-            MethodKey::new(ObjectModuleId::Main, method),
-            MethodEntry::authority(authority),
         );
     }
 }

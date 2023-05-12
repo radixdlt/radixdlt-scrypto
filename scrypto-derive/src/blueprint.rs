@@ -532,11 +532,13 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
                                 }
 
                                 if r.mutability.is_some() {
-                                    receiver =
-                                        Some(quote! { ::scrypto::schema::ReceiverInfo::normal_ref_mut() });
+                                    receiver = Some(
+                                        quote! { ::scrypto::schema::ReceiverInfo::normal_ref_mut() },
+                                    );
                                 } else {
-                                    receiver =
-                                        Some(quote! { ::scrypto::schema::ReceiverInfo::normal_ref() });
+                                    receiver = Some(
+                                        quote! { ::scrypto::schema::ReceiverInfo::normal_ref() },
+                                    );
                                 }
                             }
                             FnArg::Typed(_) => {}
@@ -710,7 +712,7 @@ mod tests {
                         functions.insert(
                             "x".to_string(),
                             ::scrypto::schema::FunctionSchema {
-                                receiver: Option::Some(::scrypto::schema::Receiver::SelfRef),
+                                receiver: Option::Some(::scrypto::schema::ReceiverInfo::normal_ref()),
                                 input: aggregator.add_child_type_and_descendents::<Test_x_Input>(),
                                 output: aggregator.add_child_type_and_descendents::<u32>(),
                                 export_name: "Test_x".to_string(),

@@ -4,7 +4,10 @@ use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, Receiver, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
+    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
+};
 
 use crate::blueprints::account::AccountBlueprint;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;

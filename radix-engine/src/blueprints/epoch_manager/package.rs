@@ -8,7 +8,10 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, Receiver, ReceiverInfo};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
+    PackageSchema, ReceiverInfo,
+};
 use resources_tracker_macro::trace_resources;
 
 use super::*;

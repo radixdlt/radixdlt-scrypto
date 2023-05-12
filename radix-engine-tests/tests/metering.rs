@@ -72,7 +72,7 @@ fn test_basic_transfer() {
         + 1057391 /* Invoke */
         + 31312 /* LockSubstate */
         + 736 /* LockSubstateFirstTime */
-        + 211790 /* ReadSubstate */
+        + 210710 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
@@ -208,10 +208,10 @@ fn test_radiswap() {
         + 3320150 /* Invoke */
         + 77868 /* LockSubstate */
         + 1408 /* LockSubstateFirstTime */
-        + 590428 /* ReadSubstate */
+        + 586908 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1517075 /* RunWasm */
+        + 1517085 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -320,10 +320,10 @@ fn test_flash_loan() {
         + 4434473 /* Invoke */
         + 124836 /* LockSubstate */
         + 1184 /* LockSubstateFirstTime */
-        + 903302 /* ReadSubstate */
+        + 898302 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1290210 /* RunWasm */
+        + 1290250 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

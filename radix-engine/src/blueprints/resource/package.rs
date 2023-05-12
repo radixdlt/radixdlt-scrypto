@@ -8,10 +8,10 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
+use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";

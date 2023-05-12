@@ -2,8 +2,8 @@ use super::Authorization;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::kernel::call_frame::Message;
+use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
@@ -142,7 +142,6 @@ impl AuthModule {
                         actor.fn_identifier(),
                         auth_zone_id,
                         acting_location,
-                        actor.is_direct_access,
                         parent.as_node_id(),
                         ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
                         method_key,
@@ -155,7 +154,6 @@ impl AuthModule {
                         actor.fn_identifier(),
                         auth_zone_id,
                         acting_location,
-                        actor.is_direct_access,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
@@ -175,7 +173,6 @@ impl AuthModule {
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        is_direct_access: bool,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -209,7 +206,6 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             &access_rules_config,
-            is_direct_access,
             &key,
             api,
         )?;
@@ -227,16 +223,10 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &AccessRulesConfig,
-        is_direct_access: bool,
         key: &MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let auth = if is_direct_access {
-            &access_rules.direct_methods
-        } else {
-            &access_rules.methods
-        };
-        let authorities = match auth.get(key) {
+        let authorities = match access_rules.methods.get(key) {
             Some(entry) => &entry.authorities,
             None => return Ok(()),
         };

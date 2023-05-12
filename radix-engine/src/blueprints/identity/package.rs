@@ -12,9 +12,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
-use radix_engine_interface::schema::{BlueprintSchema, Receiver};
+use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
