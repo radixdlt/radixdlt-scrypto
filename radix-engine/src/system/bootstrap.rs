@@ -174,8 +174,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt =
-                self.execute_genesis_wrap_up(next_nonce, initial_time_ms);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce, initial_time_ms);
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -231,11 +230,7 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(
-        &mut self,
-        nonce: u64,
-        initial_time_ms: i64,
-    ) -> TransactionReceipt {
+    fn execute_genesis_wrap_up(&mut self, nonce: u64, initial_time_ms: i64) -> TransactionReceipt {
         let transaction = create_genesis_wrap_up_transaction(nonce, initial_time_ms);
 
         let receipt = execute_transaction(
