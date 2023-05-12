@@ -13,8 +13,8 @@ pub enum ScryptoCustomValue {
     NonFungibleLocalId(NonFungibleLocalId),
 }
 
-impl ScryptoCustomValue {
-    pub fn get_custom_value_kind(&self) -> ScryptoCustomValueKind {
+impl CustomValue<ScryptoCustomValueKind> for ScryptoCustomValue {
+    fn get_custom_value_kind(&self) -> ScryptoCustomValueKind {
         match self {
             ScryptoCustomValue::Reference(_) => ScryptoCustomValueKind::Reference,
             ScryptoCustomValue::Own(_) => ScryptoCustomValueKind::Own,

@@ -1,7 +1,7 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{ModuleError, RuntimeError};
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -161,10 +161,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        call_frame_update: &mut CallFrameUpdate,
+        message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &message.move_nodes {
             // TODO: Move into system layer
             Self::prepare_move_downstream(*node_id, callee, api)?;
         }
@@ -174,9 +174,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        call_frame_update: &CallFrameUpdate,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &message.move_nodes {
             Self::prepare_move_upstream(*node_id, api)?;
         }
 

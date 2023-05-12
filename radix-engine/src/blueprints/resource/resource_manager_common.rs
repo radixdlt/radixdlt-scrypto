@@ -161,11 +161,6 @@ fn build_access_rules(
         AllowAll,
         DenyAll,
     );
-    resman_access_rules.set_method_access_rule_and_mutability(
-        MethodKey::new(ObjectModuleId::Main, RESOURCE_MANAGER_DROP_PROOF_IDENT),
-        AllowAll,
-        DenyAll,
-    );
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)
@@ -294,7 +289,7 @@ fn build_access_rules(
         DenyAll,
     );
 
-    // Not that if a local reference to a bucket is passed to another actor, the recipient will be able
+    // Note that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
     let mut bucket_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);

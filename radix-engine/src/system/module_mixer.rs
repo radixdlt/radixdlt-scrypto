@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
@@ -20,7 +20,7 @@ use crate::system::system_modules::transaction_limits::{
 };
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::virtualization::VirtualizationModule;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -229,20 +229,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api, on_teardown(api))
     }
 
-    #[trace_resources(log=input_size)]
+    #[trace_resources(log=invocation.len())]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        identifier: &KernelInvocation<Actor>,
-        input_size: usize,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_invoke(api, identifier, input_size))
+        internal_call_dispatch!(api, before_invoke(api, invocation))
     }
 
     #[trace_resources]
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, before_push_frame(api, callee, update, args))
@@ -256,14 +255,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &CallFrameUpdate,
+        update: &Message,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_execution_finish(api, update))
     }
 
     #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api))
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor))
     }
 
     #[trace_resources(log=output_size)]
@@ -296,8 +298,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_create_node(api, node_id))
+        internal_call_dispatch!(api, after_create_node(api, node_id, store_access))
     }
 
     #[trace_resources]
@@ -317,13 +320,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        module_id: &PartitionNumber,
+        partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            before_lock_substate(api, node_id, module_id, substate_key, flags)
+            before_lock_substate(api, node_id, partition_number, substate_key, flags)
         )
     }
 
@@ -331,38 +334,68 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        first_lock_from_db: bool,
+        store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_lock_substate(api, handle, first_lock_from_db, size)
-        )
+        internal_call_dispatch!(api, after_lock_substate(api, handle, store_access, size))
     }
 
-    #[trace_resources(log=size)]
+    #[trace_resources(log=value_size)]
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_read_substate(api, lock_handle, size))
+        internal_call_dispatch!(
+            api,
+            on_read_substate(api, lock_handle, value_size, store_access)
+        )
     }
 
-    #[trace_resources(log=size)]
+    #[trace_resources(log=value_size)]
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_write_substate(api, lock_handle, size))
+        internal_call_dispatch!(
+            api,
+            on_write_substate(api, lock_handle, value_size, store_access)
+        )
     }
 
     #[trace_resources]
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drop_lock(api, lock_handle))
+        internal_call_dispatch!(api, on_drop_lock(api, lock_handle, store_access))
+    }
+
+    #[trace_resources]
+    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_scan_substate(api, store_access))
+    }
+
+    #[trace_resources]
+    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_set_substate(api, store_access))
+    }
+
+    #[trace_resources]
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_take_substates(api, store_access))
     }
 }

@@ -70,6 +70,7 @@ mod tests {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
+                        #[deny(unreachable_patterns)]
                         match discriminator {
                             0u8 => {
                                 decoder.read_and_check_size(1)?;

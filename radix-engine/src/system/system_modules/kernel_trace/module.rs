@@ -1,9 +1,10 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
@@ -26,12 +27,12 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation<Actor>,
-        input_size: usize,
+        invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            invocation.call_frame_data, input_size
+            invocation.actor,
+            invocation.len(),
         )
         .green();
 
@@ -42,24 +43,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        nodes_and_refs: &mut CallFrameUpdate,
+        message: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(api, "Sending refs: {:?}", nodes_and_refs.node_refs_to_copy);
+        log!(api, "Sending nodes: {:?}", message.move_nodes);
+        log!(api, "Sending refs: {:?}", message.copy_references);
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        nodes_and_refs: &CallFrameUpdate,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Returning nodes: {:?}", nodes_and_refs.nodes_to_move);
-        log!(
-            api,
-            "Returning refs: {:?}",
-            nodes_and_refs.node_refs_to_copy
-        );
+        log!(api, "Returning nodes: {:?}", message.move_nodes);
+        log!(api, "Returning refs: {:?}", message.copy_references);
         Ok(())
     }
 
@@ -100,10 +97,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             }
         }
         let message = format!(
-            "Creating node: id = {:?}, type = {:?}, substates = {:?}",
+            "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
             node_id,
             node_id.entity_type(),
-            module_substate_keys
+            module_substate_keys,
+            node_module_init.get(&PartitionNumber(0))
         )
         .red();
         log!(api, "{}", message);
@@ -139,28 +137,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        first_lock_from_db: bool,
+        _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Substate locked: handle = {:?}, first_lock_from_db = {:?}",
-            handle,
-            first_lock_from_db
-        );
+        log!(api, "Substate locked: handle = {:?}", handle);
         Ok(())
     }
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {:?}",
+            "Reading substate: handle = {}, size = {}, storage_acces_total_read = {}",
             lock_handle,
-            size
+            value_size,
+            store_access.total_read_size()
         );
         Ok(())
     }
@@ -168,13 +163,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Writing substate: handle = {}, size = {:?}",
+            "Writing substate: handle = {}, size = {}, storage_acces_total_write = {}",
             lock_handle,
-            size
+            value_size,
+            store_access.total_write_size()
         );
         Ok(())
     }
@@ -182,6 +179,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())

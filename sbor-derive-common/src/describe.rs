@@ -225,7 +225,7 @@ fn handle_normal_describe(
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
             let variant_discriminators = (0..variants.len())
                 .into_iter()
                 .map(|i| &discriminator_mapping[&i])

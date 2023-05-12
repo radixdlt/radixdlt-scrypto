@@ -120,7 +120,7 @@ fn test_normal_transaction_flow() {
         wasm_metering_config: WasmMeteringConfig::V0,
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, true)
         .bootstrap_test_default()
         .unwrap();
 
@@ -128,7 +128,7 @@ fn test_normal_transaction_flow() {
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::standard().with_trace(true);
     let raw_transaction = create_notarized_transaction(TransactionParams {
-        cost_unit_limit: 5_000_000,
+        cost_unit_limit: 6_000_000,
         start_epoch_inclusive: 0,
         end_epoch_exclusive: 100,
     })

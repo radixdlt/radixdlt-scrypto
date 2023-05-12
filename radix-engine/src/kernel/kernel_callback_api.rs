@@ -1,14 +1,15 @@
 use crate::errors::*;
-use crate::kernel::call_frame::CallFrameUpdate;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 
+use super::actor::Actor;
+use super::call_frame::Message;
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
-    type CallFrameData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -34,13 +35,17 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn after_create_node<Y>(
+        node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn before_lock_substate<Y>(
         node_id: &NodeId,
-        module_num: &PartitionNumber,
+        partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
         flags: &LockFlags,
         api: &mut Y,
@@ -51,19 +56,24 @@ pub trait KernelCallbackObject: Sized {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        first_lock_from_db: bool,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_lock<Y>(
+        lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -71,17 +81,32 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn before_invoke<Y>(
-        invocation: &KernelInvocation<Self::CallFrameData>,
-        input_size: usize,
+    fn on_scan_substates<Y>(
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_set_substate<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_take_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -90,8 +115,8 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Self::CallFrameData,
-        update: &mut CallFrameUpdate,
+        callee: &Actor,
+        update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -109,7 +134,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(update: &CallFrameUpdate, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -117,13 +142,13 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
-        module_num: PartitionNumber,
+        partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>

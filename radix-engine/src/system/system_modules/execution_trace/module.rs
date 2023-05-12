@@ -1,13 +1,13 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::{TransactionExecutionTrace, TransactionResult};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -254,13 +254,13 @@ impl ResourceSummary {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
 
-    pub fn from_call_frame_update<Y: KernelApi<M>, M: KernelCallbackObject>(
+    pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
         api: &mut Y,
-        call_frame_update: &CallFrameUpdate,
+        message: &Message,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
-        for node_id in &call_frame_update.nodes_to_move {
+        for node_id in &message.move_nodes {
             if let Some(x) = api.kernel_read_bucket(node_id) {
                 buckets.insert(*node_id, x);
             }
@@ -304,6 +304,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
@@ -343,10 +344,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut CallFrameUpdate,
+        update: &mut Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
+        let resource_summary = ResourceSummary::from_message(api, update);
         let system_state = api.kernel_get_system_state();
         system_state
             .system
@@ -358,10 +359,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &CallFrameUpdate,
+        update: &Message,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        let resource_summary = ResourceSummary::from_call_frame_update(api, update);
+        let resource_summary = ResourceSummary::from_message(api, update);
 
         let system_state = api.kernel_get_system_state();
 

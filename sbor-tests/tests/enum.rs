@@ -14,11 +14,25 @@ pub enum Abc {
     Variant2,
 }
 
-const CONST_32: u8 = 32;
-const CONST_55: u8 = 55;
+const CONST_55_U8: u8 = 55;
+const CONST_32_U32: u32 = 32;
+const CONST_32_U8: u8 = 32;
 
+/// This enum demonstrates the following:
+/// * `#[sbor(use_repr_discriminators)]` works and provides the default value
+/// * `#[sbor(discriminator(X)))]` overrides the repr if both are provided
+/// * The Sbor macro is flexible at picking up different discriminators - including:
+///   - Binary
+///   - Non-u8 integer literals
+///   - U8 constants (nb - doesn't support non-u8 constants - need to override with `#[sbor(discriminator(X)))])`
+///
+/// You can also play about with the errors if you set up duplicate discriminators in different modes.
+///
+/// The combination of correct treatment of spans with `#[deny(unreachable_patterns)]` on the decode implementation
+/// means that duplicate values (even for constants) results in a compile error, flagged at the duplicated value.
 #[derive(Sbor, PartialEq, Eq, Debug)]
-#[repr(u8)]
+#[repr(u32)]
+#[sbor(use_repr_discriminators)]
 pub enum Mixed {
     #[sbor(discriminator = 5)]
     A,
@@ -29,12 +43,14 @@ pub enum Mixed {
         test: String,
     },
     D = 9,
-    E = 11u8,
-    F = CONST_32,
+    E = 11u32,
+    #[sbor(discriminator(CONST_32_U8))]
+    F = CONST_32_U32,
     #[sbor(discriminator(14))]
     G = 111,
-    #[sbor(discriminator(CONST_55))]
+    #[sbor(discriminator(CONST_55_U8))]
     H = 14,
+    I = 0b11011,
 }
 
 #[test]
@@ -51,6 +67,7 @@ fn can_encode_and_decode() {
     check_encode_decode_schema(&Mixed::F);
     check_encode_decode_schema(&Mixed::G);
     check_encode_decode_schema(&Mixed::H);
+    check_encode_decode_schema(&Mixed::I);
 
     check_encode_identically(
         &Mixed::C {

@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::kernel::heap::DroppedNonFungibleProof;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
@@ -725,16 +724,5 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let total_supply: Decimal = api.field_lock_read_typed(handle)?;
         Ok(total_supply)
-    }
-
-    pub(crate) fn drop_proof<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let node_substates = api.drop_object(proof.0.as_node_id())?;
-        let dropped_proof: DroppedNonFungibleProof = node_substates.into();
-        dropped_proof.non_fungible_proof.drop_proof(api)?;
-
-        Ok(())
     }
 }

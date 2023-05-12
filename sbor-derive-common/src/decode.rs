@@ -147,7 +147,7 @@ pub fn handle_normal_decode(
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
             let match_arms = variants
                 .iter()
                 .enumerate()
@@ -164,6 +164,8 @@ pub fn handle_normal_decode(
                 })
                 .collect::<Result<Vec<_>>>()?;
 
+            // Note: We use #[deny(unreachable_patterns)] to protect against users
+            // defining overlapping consts in their custom #[sbor(discriminator(X))] definitions
             quote! {
                 impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -171,6 +173,7 @@ pub fn handle_normal_decode(
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
+                        #[deny(unreachable_patterns)]
                         match discriminator {
                             #(#match_arms,)*
                             _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
@@ -374,6 +377,7 @@ mod tests {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
+                        #[deny(unreachable_patterns)]
                         match discriminator {
                             0u8 => {
                                 decoder.read_and_check_size(0)?;

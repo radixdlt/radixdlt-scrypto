@@ -123,7 +123,7 @@ pub fn handle_normal_encode(
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&variants)?;
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
             let match_arms = variants
                 .iter()
                 .enumerate()

@@ -5,9 +5,12 @@ pub const FIXED_LOW_FEE: u32 = 500;
 pub const FIXED_MEDIUM_FEE: u32 = 2500;
 pub const FIXED_HIGH_FEE: u32 = 5000;
 
-const COSTING_COEFFICENT: u64 = 335;
-const COSTING_COEFFICENT_DIV_BITS: u64 = 4; // used to divide by shift left operator
-const COSTING_COEFFICENT_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
+const COSTING_COEFFICENT_CPU: u64 = 335;
+const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
+const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
+
+const COSTING_COEFFICENT_STORAGE: u64 = 10;
+const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -18,12 +21,9 @@ pub enum CostingEntry<'a> {
 
     /* node */
     CreateNode {
-        size: u32,
         node_id: &'a NodeId,
     },
-    DropNode {
-        size: u32,
-    },
+    DropNode,
     AllocateNodeId {
         virtual_node: bool,
     },
@@ -31,17 +31,32 @@ pub enum CostingEntry<'a> {
     /* substate */
     LockSubstate {
         node_id: &'a NodeId,
-        module_num: &'a PartitionNumber,
+        partition_num: &'a PartitionNumber,
         substate_key: &'a SubstateKey,
     },
-    LockSubstateFirstTime,
     ReadSubstate {
         size: u32,
     },
     WriteSubstate {
         size: u32,
     },
+    ScanSubstate,
+    SetSubstate,
+    TakeSubstate,
     DropLock,
+    SubstateReadFromDb {
+        size: u32,
+    },
+    SubstateReadFromTrack {
+        size: u32,
+    },
+    SubstateWriteToTrack {
+        size: u32,
+    },
+    SubstateRewriteToTrack {
+        size_old: u32,
+        size_new: u32,
+    },
     // TODO: more costing after API becomes stable.
 }
 
@@ -81,7 +96,7 @@ impl FeeTable {
 
     /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
     /// and transformed (classified and groupped) using convert.py script.
-    fn kernel_api_cost_from_cpu_usage(&self, entry: &CostingEntry) -> u32 {
+    fn kernel_api_cost_cpu_usage(&self, entry: &CostingEntry) -> u32 {
         ((match entry {
             CostingEntry::AllocateNodeId { virtual_node } => {
                 if *virtual_node {
@@ -90,7 +105,7 @@ impl FeeTable {
                     212
                 }
             }
-            CostingEntry::CreateNode { size: _, node_id } => match node_id.entity_type() {
+            CostingEntry::CreateNode { node_id } => match node_id.entity_type() {
                 Some(EntityType::GlobalAccessController) => 1736,
                 Some(EntityType::GlobalAccount) => 1640,
                 Some(EntityType::GlobalClock) => 987,
@@ -111,7 +126,7 @@ impl FeeTable {
                 _ => 1182, // average of above values
             },
             CostingEntry::DropLock => 114,
-            CostingEntry::DropNode { size: _ } => 324, // average of gathered data
+            CostingEntry::DropNode => 324, // average of gathered data
             CostingEntry::Invoke {
                 input_size,
                 actor: identifier,
@@ -297,32 +312,49 @@ impl FeeTable {
             }
             CostingEntry::LockSubstate {
                 node_id: _,
-                module_num: _,
+                partition_num: _,
                 substate_key: _,
-            } => 632, // todo: determine correct value
-            CostingEntry::LockSubstateFirstTime => 100, // todo: determine correct value
-            CostingEntry::ReadSubstate { size: _ } => 174,
-            CostingEntry::WriteSubstate { size: _ } => 126,
+            } => 100, // todo: determine correct value
+            CostingEntry::ScanSubstate => 16, // todo: determine correct value
+            CostingEntry::SetSubstate => 16,  // todo: determine correct value
+            CostingEntry::TakeSubstate => 16, // todo: determine correct value
+            CostingEntry::ReadSubstate { size: _ } => 174, // todo: determine correct value size dependent
+            CostingEntry::WriteSubstate { size: _ } => 126, // todo: determine correct value size dependent
+
+            // following variants are used in storage usage part only
+            CostingEntry::SubstateReadFromDb { size: _ } => 0,
+            CostingEntry::SubstateReadFromTrack { size: _ } => 0,
+            CostingEntry::SubstateWriteToTrack { size: _ } => 0,
+            CostingEntry::SubstateRewriteToTrack {
+                size_old: _,
+                size_new: _,
+            } => 0,
         }) as u64
-            * COSTING_COEFFICENT
-            >> (COSTING_COEFFICENT_DIV_BITS + COSTING_COEFFICENT_DIV_BITS_ADDON)) as u32
+            * COSTING_COEFFICENT_CPU
+            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
+            as u32
     }
 
-    fn kernel_api_cost_from_memory_usage(&self, entry: &CostingEntry) -> u32 {
-        match entry {
-            CostingEntry::CreateNode { size, node_id: _ } => 100 * size,
-            CostingEntry::DropNode { size } => 100 * size,
+    fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
+        ((match entry {
             CostingEntry::Invoke {
                 input_size,
                 actor: _,
             } => 10 * input_size,
-            CostingEntry::ReadSubstate { size } => 10 * size,
-            CostingEntry::WriteSubstate { size } => 1000 * size,
+            CostingEntry::SubstateReadFromDb { size } => 100 * size, // todo: determine correct value
+            CostingEntry::SubstateReadFromTrack { size } => 10 * size, // todo: determine correct value
+            CostingEntry::SubstateWriteToTrack { size } => 10 * size, // todo: determine correct value
+            CostingEntry::SubstateRewriteToTrack {
+                size_old: _,
+                size_new,
+            } => 10 * size_new, // todo: determine correct value
             _ => 0,
-        }
+        }) as u64
+            * COSTING_COEFFICENT_STORAGE
+            >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
     }
 
     pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
-        self.kernel_api_cost_from_cpu_usage(&entry) + self.kernel_api_cost_from_memory_usage(&entry)
+        self.kernel_api_cost_cpu_usage(&entry) + self.kernel_api_cost_storage_usage(&entry)
     }
 }
