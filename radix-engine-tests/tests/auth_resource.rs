@@ -1,5 +1,6 @@
 extern crate core;
 
+use radix_engine::system::node_modules::access_rules::METADATA_AUTHORITY;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::resource::{
@@ -36,7 +37,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let (object_key, group) = match action {
             Action::Mint => (ObjectKey::SELF, "mint"),
             Action::Burn => (ObjectKey::SELF, "burn"),
-            Action::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+            Action::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
             Action::Withdraw => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                 "withdraw",

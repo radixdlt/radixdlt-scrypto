@@ -16,6 +16,7 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
+use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
@@ -195,7 +196,8 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(require("owner")), rule!(deny_all));
         authority_rules
     }
 }

@@ -18,6 +18,7 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -525,8 +526,9 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
         authority_rules.set_rule("stake", rule!(require("owner")), rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))));
-        authority_rules.set_rule("update_metadata", rule!(require("owner")), rule!(deny_all));
         authority_rules
     }
 }

@@ -8,6 +8,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -60,9 +61,14 @@ fn build_access_rules(
 
         let mut resman_authority_rules = AuthorityRules::new();
         resman_authority_rules.set_rule(
-            "update_metadata",
+            METADATA_AUTHORITY,
             update_metadata_access_rule,
             update_metadata_mutability,
+        );
+        resman_authority_rules.set_rule(
+            ROYALTY_AUTHORITY,
+            rule!(deny_all),
+            rule!(deny_all),
         );
         resman_authority_rules.set_rule("mint", mint_access_rule, mint_mutability);
         resman_authority_rules.set_rule("burn", burn_access_rule, burn_mutability);
