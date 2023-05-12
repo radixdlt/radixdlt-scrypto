@@ -507,8 +507,9 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
-    const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
+    const OWNER_AUTHORITY: &'static str = "owner";
+    const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();

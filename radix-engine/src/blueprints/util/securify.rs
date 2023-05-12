@@ -6,19 +6,16 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 
 pub trait SecurifiedAccessRules {
-    const SECURIFY_IDENT: Option<&'static str> = None;
     const OWNER_BADGE: ResourceAddress;
+    const SECURIFY_AUTHORITY: Option<&'static str> = None;
+    const OWNER_AUTHORITY: &'static str;
 
     fn method_authorities() -> MethodAuthorities;
 
     fn authority_rules() -> AuthorityRules;
 
     fn create_config(authority_rules: AuthorityRules) -> (MethodAuthorities, AuthorityRules) {
-        let mut method_authorities = Self::method_authorities();
-        if let Some(securify_ident) = Self::SECURIFY_IDENT {
-            method_authorities.set_main_method_authority(securify_ident, "securify");
-        }
-
+        let method_authorities = Self::method_authorities();
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
             authority_rules_to_use.set_rule(authority.as_str(), access_rule, mutability);
@@ -42,8 +39,8 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
 
-        if Self::SECURIFY_IDENT.is_some() {
-            authority_rules.set_rule("securify", AccessRule::DenyAll, AccessRule::DenyAll);
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
+            authority_rules.set_rule(securify, AccessRule::DenyAll, AccessRule::DenyAll);
         }
 
         let access_rules =
@@ -66,9 +63,9 @@ pub trait SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
-        if Self::SECURIFY_IDENT.is_some() {
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_group_access_rule_and_mutability(
-                "securify",
+                securify,
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
                 api,
@@ -77,7 +74,7 @@ pub trait SecurifiedAccessRules {
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
 
         access_rules.set_group_access_rule_and_mutability(
-            "owner",
+            Self::OWNER_AUTHORITY,
             rule!(require(global_id.clone())),
             rule!(require(global_id.clone())),
             api,
@@ -99,9 +96,9 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let this_package_rule = rule!(require(package_of_direct_caller(Self::PACKAGE)));
         let access_rule = rule!(require(owner_id));
 
-        if Self::SECURIFY_IDENT.is_some() {
+        if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_group_access_rule_and_mutability(
-                "securify",
+                securify,
                 access_rule.clone(),
                 this_package_rule.clone(),
                 api,
@@ -109,7 +106,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         }
 
         access_rules.set_group_access_rule_and_mutability(
-            "owner",
+            Self::OWNER_AUTHORITY,
             access_rule.clone(),
             this_package_rule.clone(),
             api,

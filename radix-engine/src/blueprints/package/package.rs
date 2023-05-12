@@ -108,6 +108,7 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
+    const OWNER_AUTHORITY: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn method_authorities() -> MethodAuthorities {

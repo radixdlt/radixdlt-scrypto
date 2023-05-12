@@ -183,11 +183,14 @@ impl IdentityNativePackage {
 struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
-    const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
+    const OWNER_AUTHORITY: &'static str = "owner";
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
 
     fn method_authorities() -> MethodAuthorities {
-        MethodAuthorities::new()
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(IDENTITY_SECURIFY_IDENT, "securify");
+        method_authorities
     }
 
     fn authority_rules() -> AuthorityRules {

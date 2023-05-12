@@ -31,13 +31,15 @@ impl From<AccountError> for RuntimeError {
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
-    const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
+    const OWNER_AUTHORITY: &'static str = "owner";
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
         method_authorities.set_public(ACCOUNT_DEPOSIT_IDENT);
         method_authorities.set_public(ACCOUNT_DEPOSIT_BATCH_IDENT);
+        method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT, "lock_fee_and_withdraw");
