@@ -14,11 +14,11 @@ pub enum EncodeError {
         element_value_kind: u8,
         actual_value_kind: u8,
     },
-    MismatchingMapKeyType {
+    MismatchingMapKeyValueKind {
         key_value_kind: u8,
         actual_value_kind: u8,
     },
-    MismatchingMapValueType {
+    MismatchingMapValueValueKind {
         value_value_kind: u8,
         actual_value_kind: u8,
     },

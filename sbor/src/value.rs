@@ -210,7 +210,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode
                 for entry in entries {
                     let actual_key_value_kind = entry.0.get_value_kind();
                     if actual_key_value_kind != *key_value_kind {
-                        return Err(EncodeError::MismatchingMapKeyType {
+                        return Err(EncodeError::MismatchingMapKeyValueKind {
                             key_value_kind: key_value_kind.as_u8(),
                             actual_value_kind: actual_key_value_kind.as_u8(),
                         });
@@ -218,7 +218,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode
                     encoder.encode_deeper_body(&entry.0)?;
                     let actual_value_value_kind = entry.1.get_value_kind();
                     if actual_value_value_kind != *value_value_kind {
-                        return Err(EncodeError::MismatchingMapValueType {
+                        return Err(EncodeError::MismatchingMapValueValueKind {
                             value_value_kind: value_value_kind.as_u8(),
                             actual_value_kind: actual_value_value_kind.as_u8(),
                         });
@@ -647,7 +647,7 @@ mod tests {
         };
         assert!(matches!(
             basic_encode(&invalid_value),
-            Err(EncodeError::MismatchingMapKeyType { .. })
+            Err(EncodeError::MismatchingMapKeyValueKind { .. })
         ));
 
         let invalid_value = BasicValue::Map {
@@ -657,7 +657,7 @@ mod tests {
         };
         assert!(matches!(
             basic_encode(&invalid_value),
-            Err(EncodeError::MismatchingMapValueType { .. })
+            Err(EncodeError::MismatchingMapValueValueKind { .. })
         ));
     }
 
