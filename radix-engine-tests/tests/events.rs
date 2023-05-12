@@ -664,15 +664,12 @@ fn epoch_manager_round_update_emits_correct_event() {
 }
 
 #[test]
-fn epoch_manager_epoch_update_emits_correct_event() {
+fn epoch_manager_epoch_update_emits_epoch_change_event() {
+    let initial_epoch = 3;
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
-        1u64,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        initial_epoch,
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -717,15 +714,63 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 1); // One event: epoch change event
-        assert!(match events.get(0) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ..,
-            )) if test_runner.is_event_name_equal::<EpochChangeEvent>(event_identifier) => true,
-            _ => false,
-        });
+        let epoch_change_events = events
+            .into_iter()
+            .filter(|(id, _data)| test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(epoch_change_events.len(), 1);
+        assert_eq!(
+            epoch_change_events.first().unwrap().epoch,
+            initial_epoch + 1
+        );
+    }
+}
+
+#[test]
+fn epoch_manager_epoch_update_emits_xrd_minting_event() {
+    // Arrange: some validator, and a degenerate 1-round epoch config, to advance it easily
+    let emission_xrd = dec!("13.37");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        Decimal::one(),
+        ComponentAddress::virtual_account_from_public_key(&validator_key),
+        4,
+        dummy_epoch_manager_configuration()
+            .with_rounds_per_epoch(1)
+            .with_total_emission_xrd_per_epoch(emission_xrd),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Act
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    {
+        let events = receipt.expect_commit(true).clone().application_events;
+        let mint_events = events
+            .into_iter()
+            .filter(|(id, _data)| test_runner.is_event_name_equal::<MintFungibleResourceEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<MintFungibleResourceEvent>(&data).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(mint_events.len(), 1);
+        assert_eq!(mint_events.first().unwrap().amount, emission_xrd)
     }
 }
 
@@ -981,11 +1026,7 @@ fn validator_unstake_emits_correct_events() {
         Decimal::from(10),
         account_with_lp,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch: 5,
-            num_unstake_epochs,
-        },
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1141,11 +1182,7 @@ fn validator_claim_xrd_emits_correct_events() {
         Decimal::from(10),
         account_with_lp,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch: 5,
-            num_unstake_epochs,
-        },
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1485,5 +1522,7 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         max_validators: 10,
         rounds_per_epoch: 5,
         num_unstake_epochs: 1,
+        total_emission_xrd_per_epoch: Decimal::one(),
+        min_validator_reliability: Decimal::one(),
     }
 }
