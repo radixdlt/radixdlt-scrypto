@@ -66,24 +66,6 @@ impl From<NonFungibleProof> for Proof {
     }
 }
 
-impl AsRef<Proof> for Proof {
-    fn as_ref(&self) -> &Proof {
-        self
-    }
-}
-
-impl AsRef<Proof> for FungibleProof {
-    fn as_ref(&self) -> &Proof {
-        &self.0
-    }
-}
-
-impl AsRef<Proof> for NonFungibleProof {
-    fn as_ref(&self) -> &Proof {
-        &self.0
-    }
-}
-
 //========
 // binary
 //========

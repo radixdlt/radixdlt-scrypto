@@ -1,3 +1,5 @@
+use crate::resource::*;
+use crate::*;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -14,13 +16,14 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::resource::*;
-use crate::*;
-
 // Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
 // and `CheckedNonFungibleProof` (instead of `Proof`/`FungibleProof`/`NonFungibleProof`)
 // to prevent developers from reading proof states (and having business logic relying on them)
 // without checking the resource address.
+
+//========
+// Traits
+//========
 
 pub trait ScryptoUncheckedProof {
     // Apply basic resource address check and converts self into `CheckedProof`.
@@ -72,6 +75,10 @@ pub trait ScryptoNonFungibleProof {
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
 }
 
+//=====================
+// Checked proof types
+//=====================
+
 /// Represents an address-checked proof
 ///
 /// This may become unnecessary when `Proof<X>` is supported.
@@ -101,29 +108,9 @@ impl From<CheckedNonFungibleProof> for CheckedProof {
     }
 }
 
-impl AsRef<CheckedProof> for CheckedProof {
-    fn as_ref(&self) -> &CheckedProof {
-        self
-    }
-}
-
-impl AsRef<CheckedProof> for CheckedFungibleProof {
-    fn as_ref(&self) -> &CheckedProof {
-        &self.0
-    }
-}
-
-impl AsRef<CheckedProof> for CheckedNonFungibleProof {
-    fn as_ref(&self) -> &CheckedProof {
-        &self.0
-    }
-}
-
-impl From<CheckedProof> for Proof {
-    fn from(value: CheckedProof) -> Self {
-        value.0
-    }
-}
+//=================
+// Unchecked proof
+//=================
 
 impl ScryptoUncheckedProof for Proof {
     fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
@@ -183,6 +170,10 @@ impl ScryptoUncheckedProof for Proof {
     }
 }
 
+//===================
+// Any checked Proof
+//===================
+
 impl ScryptoProof for CheckedProof {
     fn contains_amount(&self, amount: Decimal) -> bool {
         self.amount() >= amount
@@ -220,15 +211,91 @@ impl ScryptoProof for CheckedProof {
     // Currently, it will fail at runtime when invoking fungible/non-fungible methods
 
     fn as_fungible_proof(&self) -> CheckedFungibleProof {
-        CheckedFungibleProof(CheckedProof(Proof(self.as_ref().0 .0)))
+        CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
     fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
-        CheckedNonFungibleProof(CheckedProof(Proof(self.as_ref().0 .0)))
+        CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
+    }
+}
+
+//========================
+// Checked fungible proof
+//========================
+
+impl ScryptoProof for CheckedFungibleProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn drop(self) {
+        todo!()
+    }
+
+    fn clone(&self) -> Self {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_proof(&self) -> CheckedFungibleProof {
+        todo!()
+    }
+
+    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
+        todo!()
     }
 }
 
 impl ScryptoFungibleProof for CheckedFungibleProof {}
+
+//============================
+// Checked non-fungible proof
+//============================
+
+impl ScryptoProof for CheckedNonFungibleProof {
+    fn contains_amount(&self, amount: Decimal) -> bool {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn drop(self) {
+        todo!()
+    }
+
+    fn clone(&self) -> Self {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_proof(&self) -> CheckedFungibleProof {
+        todo!()
+    }
+
+    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
+        todo!()
+    }
+}
 
 impl ScryptoNonFungibleProof for CheckedNonFungibleProof {
     fn contains_non_fungible(&self, id: &NonFungibleLocalId) -> bool {

@@ -93,24 +93,6 @@ impl From<NonFungibleVault> for Vault {
     }
 }
 
-impl AsRef<Vault> for Vault {
-    fn as_ref(&self) -> &Vault {
-        self
-    }
-}
-
-impl AsRef<Vault> for FungibleVault {
-    fn as_ref(&self) -> &Vault {
-        &self.0
-    }
-}
-
-impl AsRef<Vault> for NonFungibleVault {
-    fn as_ref(&self) -> &Vault {
-        &self.0
-    }
-}
-
 //========
 // binary
 //========

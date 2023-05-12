@@ -101,24 +101,6 @@ impl From<NonFungibleBucket> for Bucket {
     }
 }
 
-impl AsRef<Bucket> for Bucket {
-    fn as_ref(&self) -> &Bucket {
-        self
-    }
-}
-
-impl AsRef<Bucket> for FungibleBucket {
-    fn as_ref(&self) -> &Bucket {
-        &self.0
-    }
-}
-
-impl AsRef<Bucket> for NonFungibleBucket {
-    fn as_ref(&self) -> &Bucket {
-        &self.0
-    }
-}
-
 //========
 // binary
 //========

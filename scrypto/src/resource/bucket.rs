@@ -1,9 +1,10 @@
+use super::ScryptoUncheckedProof;
 use crate::borrow_resource_manager;
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::{model::*, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
@@ -13,20 +14,24 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use super::ScryptoUncheckedProof;
+//=============
+// Traits
+//=============
 
 pub trait ScryptoBucket {
+    type ProofType;
+
     fn new(resource_address: ResourceAddress) -> Self;
 
     fn drop_empty(self);
 
     fn burn(self);
 
-    fn create_proof(&self) -> Proof;
+    fn create_proof(&self) -> Self::ProofType;
 
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType;
 
-    fn create_proof_of_all(&self) -> Proof;
+    fn create_proof_of_all(&self) -> Self::ProofType;
 
     fn resource_address(&self) -> ResourceAddress;
 
@@ -61,10 +66,16 @@ pub trait ScryptoNonFungibleBucket {
 
     fn take_non_fungible(&mut self, non_fungible_local_id: &NonFungibleLocalId) -> Self;
 
-    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> NonFungibleProof;
 }
 
-impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
+//=============
+// Any bucket
+//=============
+
+impl ScryptoBucket for Bucket {
+    type ProofType = Proof;
+
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -84,7 +95,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
                 resource_address.as_node_id(),
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
                 scrypto_encode(&ResourceManagerDropEmptyBucketInput {
-                    bucket: Bucket(self.as_ref().0),
+                    bucket: Bucket(self.0),
                 })
                 .unwrap(),
             )
@@ -93,14 +104,14 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
 
     fn burn(self) {
         let resource_address = self.resource_address();
-        borrow_resource_manager!(resource_address).burn(Bucket(self.as_ref().0));
+        borrow_resource_manager!(resource_address).burn(Bucket(self.0));
     }
 
     fn create_proof(&self) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_IDENT,
                 scrypto_encode(&BucketCreateProofInput {}).unwrap(),
             )
@@ -112,7 +123,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
                 scrypto_encode(&BucketCreateProofOfAmountInput {
                     amount: amount.into(),
@@ -127,7 +138,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT,
                 scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
             )
@@ -139,7 +150,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
             )
@@ -151,12 +162,9 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_PUT_IDENT,
-                scrypto_encode(&BucketPutInput {
-                    bucket: Bucket(other.as_ref().0),
-                })
-                .unwrap(),
+                scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -166,7 +174,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_GET_AMOUNT_IDENT,
                 scrypto_encode(&BucketGetAmountInput {}).unwrap(),
             )
@@ -179,7 +187,7 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.as_ref().0.as_node_id(),
+                self.0.as_node_id(),
                 BUCKET_TAKE_IDENT,
                 scrypto_encode(&BucketTakeInput {
                     amount: amount.into(),
@@ -207,15 +215,143 @@ impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
     // Currently, it will fail at runtime when invoking fungible/non-fungible methods
 
     fn as_fungible_bucket(&self) -> FungibleBucket {
-        FungibleBucket(Bucket(self.as_ref().0))
+        FungibleBucket(Bucket(self.0))
     }
 
     fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
-        NonFungibleBucket(Bucket(self.as_ref().0))
+        NonFungibleBucket(Bucket(self.0))
+    }
+}
+
+//=================
+// Fungible bucket
+//=================
+
+impl ScryptoBucket for FungibleBucket {
+    type ProofType = FungibleProof;
+
+    fn new(resource_address: ResourceAddress) -> Self {
+        todo!()
+    }
+
+    fn drop_empty(self) {
+        todo!()
+    }
+
+    fn burn(self) {
+        todo!()
+    }
+
+    fn create_proof(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_all(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn put(&mut self, other: Self) -> () {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
+        todo!()
+    }
+
+    fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_bucket(&self) -> FungibleBucket {
+        todo!()
+    }
+
+    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
+        todo!()
     }
 }
 
 impl ScryptoFungibleBucket for FungibleBucket {}
+
+//====================
+// Non-Fungible bucket
+//====================
+
+impl ScryptoBucket for NonFungibleBucket {
+    type ProofType = NonFungibleProof;
+
+    fn new(resource_address: ResourceAddress) -> Self {
+        todo!()
+    }
+
+    fn drop_empty(self) {
+        todo!()
+    }
+
+    fn burn(self) {
+        todo!()
+    }
+
+    fn create_proof(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_all(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn put(&mut self, other: Self) -> () {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
+        todo!()
+    }
+
+    fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_bucket(&self) -> FungibleBucket {
+        todo!()
+    }
+
+    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
+        todo!()
+    }
+}
 
 impl ScryptoNonFungibleBucket for NonFungibleBucket {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId> {
@@ -292,7 +428,7 @@ impl ScryptoNonFungibleBucket for NonFungibleBucket {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof {
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> NonFungibleProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(

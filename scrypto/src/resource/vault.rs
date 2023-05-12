@@ -1,3 +1,5 @@
+use crate::resource::*;
+use crate::*;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
@@ -10,15 +12,19 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
-use crate::resource::*;
-use crate::*;
+//========
+// Traits
+//========
 
 pub trait ScryptoVault {
-    fn with_bucket(bucket: Bucket) -> Self;
+    type BucketType;
+    type ProofType;
+
+    fn with_bucket(bucket: Self::BucketType) -> Self;
 
     fn new(resource_address: ResourceAddress) -> Self;
 
-    fn put(&mut self, bucket: Bucket) -> ();
+    fn put(&mut self, bucket: Self::BucketType) -> ();
 
     fn amount(&self) -> Decimal;
 
@@ -26,13 +32,13 @@ pub trait ScryptoVault {
 
     fn is_empty(&self) -> bool;
 
-    fn create_proof(&self) -> Proof;
+    fn create_proof(&self) -> Self::ProofType;
 
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType;
 
-    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType;
 
-    fn take_all(&mut self) -> Bucket;
+    fn take_all(&mut self) -> Self::BucketType;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 
@@ -66,10 +72,18 @@ pub trait ScryptoNonFungibleVault {
         non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> NonFungibleBucket;
 
-    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> NonFungibleProof;
 }
 
+//===========
+// Any vault
+//===========
+
 impl ScryptoVault for Vault {
+    type BucketType = Bucket;
+
+    type ProofType = Proof;
+
     /// Creates an empty vault and fills it with an initial bucket of resource.
     fn with_bucket(bucket: Bucket) -> Self {
         let mut vault = Vault::new(bucket.resource_address());
@@ -184,11 +198,73 @@ impl ScryptoVault for Vault {
     // Currently, it will fail at runtime when invoking fungible/non-fungible methods
 
     fn as_fungible_vault(&self) -> FungibleVault {
-        FungibleVault(Vault(self.as_ref().0))
+        FungibleVault(Vault(self.0))
     }
 
     fn as_no_fungible_vault(&self) -> NonFungibleVault {
-        NonFungibleVault(Vault(self.as_ref().0))
+        NonFungibleVault(Vault(self.0))
+    }
+}
+
+//================
+// Fungible vault
+//================
+
+impl ScryptoVault for FungibleVault {
+    type BucketType = FungibleBucket;
+
+    type ProofType = FungibleProof;
+
+    fn with_bucket(bucket: Self::BucketType) -> Self {
+        todo!()
+    }
+
+    fn new(resource_address: ResourceAddress) -> Self {
+        todo!()
+    }
+
+    fn put(&mut self, bucket: Self::BucketType) -> () {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn create_proof(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
+        todo!()
+    }
+
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
+        todo!()
+    }
+
+    fn take_all(&mut self) -> Self::BucketType {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_vault(&self) -> FungibleVault {
+        todo!()
+    }
+
+    fn as_no_fungible_vault(&self) -> NonFungibleVault {
+        todo!()
     }
 }
 
@@ -228,6 +304,68 @@ impl ScryptoFungibleVault for FungibleVault {
                 .unwrap(),
             )
             .unwrap();
+    }
+}
+
+//====================
+// Non-fungible vault
+//====================
+
+impl ScryptoVault for NonFungibleVault {
+    type BucketType = NonFungibleBucket;
+
+    type ProofType = NonFungibleVault;
+
+    fn with_bucket(bucket: Self::BucketType) -> Self {
+        todo!()
+    }
+
+    fn new(resource_address: ResourceAddress) -> Self {
+        todo!()
+    }
+
+    fn put(&mut self, bucket: Self::BucketType) -> () {
+        todo!()
+    }
+
+    fn amount(&self) -> Decimal {
+        todo!()
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        todo!()
+    }
+
+    fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn create_proof(&self) -> Self::ProofType {
+        todo!()
+    }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
+        todo!()
+    }
+
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
+        todo!()
+    }
+
+    fn take_all(&mut self) -> Self::BucketType {
+        todo!()
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        todo!()
+    }
+
+    fn as_fungible_vault(&self) -> FungibleVault {
+        todo!()
+    }
+
+    fn as_no_fungible_vault(&self) -> NonFungibleVault {
+        todo!()
     }
 }
 
@@ -309,7 +447,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof {
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> NonFungibleProof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
