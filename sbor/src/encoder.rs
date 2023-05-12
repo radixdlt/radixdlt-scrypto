@@ -22,6 +22,9 @@ pub enum EncodeError {
         value_value_kind: u8,
         actual_value_kind: u8,
     },
+    InvalidAddressEntityType {
+        id: u8,
+    },
 }
 
 pub trait Encoder<X: CustomValueKind>: Sized {
