@@ -11,6 +11,8 @@ use sbor::rust::fmt::Debug;
 
 use super::ResourceManager;
 
+// TODO: split impl
+
 pub trait NativeBucket {
     fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,

@@ -76,8 +76,48 @@ pub type BucketCreateProofOfAllOutput = Proof;
 // Stub
 //========
 
+// TODO: update schema type
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub Own);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct FungibleBucket(pub Bucket);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct NonFungibleBucket(pub Bucket);
+
+impl From<FungibleBucket> for Bucket {
+    fn from(value: FungibleBucket) -> Self {
+        value.0
+    }
+}
+
+impl From<NonFungibleBucket> for Bucket {
+    fn from(value: NonFungibleBucket) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Bucket> for Bucket {
+    fn as_ref(&self) -> &Bucket {
+        self
+    }
+}
+
+impl AsRef<Bucket> for FungibleBucket {
+    fn as_ref(&self) -> &Bucket {
+        &self.0
+    }
+}
+
+impl AsRef<Bucket> for NonFungibleBucket {
+    fn as_ref(&self) -> &Bucket {
+        &self.0
+    }
+}
 
 //========
 // binary

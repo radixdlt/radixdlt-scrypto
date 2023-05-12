@@ -3,7 +3,7 @@ use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::data::scrypto::model::*;
+use radix_engine_interface::data::scrypto::{model::*, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
@@ -39,6 +39,10 @@ pub trait ScryptoBucket {
     fn is_empty(&self) -> bool;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+
+    fn as_fungible_bucket(&self) -> FungibleBucket;
+
+    fn as_no_fungible_bucket(&self) -> NonFungibleBucket;
 }
 
 pub trait ScryptoFungibleBucket {}
@@ -62,7 +66,7 @@ pub trait ScryptoNonFungibleBucket {
     fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
 }
 
-impl ScryptoBucket for Bucket {
+impl<T: AsRef<Bucket> + ScryptoEncode + ScryptoDecode> ScryptoBucket for T {
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
         let rtn = env
@@ -81,21 +85,24 @@ impl ScryptoBucket for Bucket {
             .call_method(
                 resource_address.as_node_id(),
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT,
-                scrypto_encode(&ResourceManagerDropEmptyBucketInput { bucket: self }).unwrap(),
+                scrypto_encode(&ResourceManagerDropEmptyBucketInput {
+                    bucket: Bucket(self.as_ref().0),
+                })
+                .unwrap(),
             )
             .unwrap();
     }
 
     fn burn(self) {
         let resource_address = self.resource_address();
-        borrow_resource_manager!(resource_address).burn(self);
+        borrow_resource_manager!(resource_address).burn(Bucket(self.as_ref().0));
     }
 
     fn create_proof(&self) -> Proof {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_CREATE_PROOF_IDENT,
                 scrypto_encode(&BucketCreateProofInput {}).unwrap(),
             )
@@ -107,7 +114,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
                 scrypto_encode(&BucketCreateProofOfAmountInput {
                     amount: amount.into(),
@@ -122,7 +129,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_CREATE_PROOF_OF_ALL_IDENT,
                 scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
             )
@@ -134,7 +141,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT,
                 scrypto_encode(&BucketGetResourceAddressInput {}).unwrap(),
             )
@@ -146,9 +153,12 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_PUT_IDENT,
-                scrypto_encode(&BucketPutInput { bucket: other }).unwrap(),
+                scrypto_encode(&BucketPutInput {
+                    bucket: Bucket(other.as_ref().0),
+                })
+                .unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -158,7 +168,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_GET_AMOUNT_IDENT,
                 scrypto_encode(&BucketGetAmountInput {}).unwrap(),
             )
@@ -171,7 +181,7 @@ impl ScryptoBucket for Bucket {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                self.0.as_node_id(),
+                self.as_ref().0.as_node_id(),
                 BUCKET_TAKE_IDENT,
                 scrypto_encode(&BucketTakeInput {
                     amount: amount.into(),
@@ -193,6 +203,17 @@ impl ScryptoBucket for Bucket {
     /// Checks if this bucket is empty.
     fn is_empty(&self) -> bool {
         self.amount() == 0.into()
+    }
+
+    // TODO: should we check fungibility here?
+    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
+
+    fn as_fungible_bucket(&self) -> FungibleBucket {
+        FungibleBucket(Bucket(self.as_ref().0))
+    }
+
+    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
+        NonFungibleBucket(Bucket(self.as_ref().0))
     }
 }
 
