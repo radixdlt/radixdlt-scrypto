@@ -13,10 +13,10 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
 
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -43,13 +43,22 @@ impl SecurifiedAccessRules for SecurifiedAccount {
         method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT, "lock_fee_and_withdraw");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT, "lock_fee_and_withdraw");
+        method_authorities.set_main_method_authority(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
+            "lock_fee_and_withdraw",
+        );
+        method_authorities.set_main_method_authority(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
+            "lock_fee_and_withdraw",
+        );
         method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, "withdraw");
-        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
         method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
-        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, "create_proof");
-        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, "create_proof");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, "create_proof");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, "create_proof");
         method_authorities
     }
 

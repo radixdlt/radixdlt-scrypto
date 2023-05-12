@@ -1,6 +1,7 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -16,7 +17,6 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
-use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";

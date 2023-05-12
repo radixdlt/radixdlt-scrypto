@@ -2,6 +2,13 @@ use crate::blueprints::resource::*;
 use crate::math::*;
 use crate::*;
 
+pub const MINT_AUTHORITY: &str = "mint";
+pub const BURN_AUTHORITY: &str = "burn";
+pub const UPDATE_NON_FUNGIBLE_DATA_AUTHORITY: &str = "update_non_fungible_data";
+pub const WITHDRAW_AUTHORITY: &str = "withdraw";
+pub const DEPOSIT_AUTHORITY: &str = "deposit";
+pub const RECALL_AUTHORITY: &str = "recall";
+
 // TODO: Remove?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum ResourceMethodAuthKey {

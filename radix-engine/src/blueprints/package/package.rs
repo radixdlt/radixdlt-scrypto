@@ -2,7 +2,9 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{AccessRulesConfig, FunctionAccessRulesSubstate, METADATA_AUTHORITY, MethodAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    AccessRulesConfig, FunctionAccessRulesSubstate, MethodAccessRulesSubstate, METADATA_AUTHORITY,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
 use crate::track::interface::NodeSubstates;
@@ -111,8 +113,10 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
-        method_authorities.set_main_method_authority(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
+        method_authorities
+            .set_main_method_authority(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
+        method_authorities
+            .set_main_method_authority(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
         method_authorities
     }
 

@@ -9,8 +9,8 @@ use crate::types::*;
 use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
+    AccessRulesSetAuthorityMutabilityInput, AccessRulesSetAuthorityRuleInput,
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -558,8 +558,8 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                        ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                             object_key,
                             name: group,
                             rule: rule.into(),
@@ -587,8 +587,8 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                        ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                             object_key,
                             name: group,
                             mutability,

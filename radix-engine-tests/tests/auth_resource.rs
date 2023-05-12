@@ -34,21 +34,21 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let (object_key, group) = match action {
-            Action::Mint => (ObjectKey::SELF, "mint"),
-            Action::Burn => (ObjectKey::SELF, "burn"),
+        let (object_key, authority) = match action {
+            Action::Mint => (ObjectKey::SELF, MINT_AUTHORITY),
+            Action::Burn => (ObjectKey::SELF, BURN_AUTHORITY),
             Action::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
             Action::Withdraw => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "withdraw",
+                WITHDRAW_AUTHORITY,
             ),
             Action::Deposit => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "deposit",
+                DEPOSIT_AUTHORITY,
             ),
             Action::Recall => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "recall",
+                RECALL_AUTHORITY,
             ),
         };
 
@@ -58,7 +58,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .set_authority_access_rule(
                 token_address.into(),
                 object_key,
-                group.to_string(),
+                authority.to_string(),
                 rule!(require(updated_auth)),
             )
             .build();

@@ -3,6 +3,7 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
+use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -11,14 +12,13 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use crate::system::node_modules::access_rules::{ROYALTY_AUTHORITY, METADATA_AUTHORITY};
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -385,8 +385,8 @@ impl ValidatorBlueprint {
             receiver,
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
                 name: "stake".to_string(),
                 rule,
@@ -520,7 +520,8 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, "owner");
         method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, "owner");
         method_authorities.set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, "owner");
-        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, "owner");
+        method_authorities
+            .set_main_method_authority(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, "owner");
         method_authorities
     }
 
@@ -528,7 +529,11 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
         authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
-        authority_rules.set_rule("stake", rule!(require("owner")), rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))));
+        authority_rules.set_rule(
+            "stake",
+            rule!(require("owner")),
+            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+        );
         authority_rules
     }
 }

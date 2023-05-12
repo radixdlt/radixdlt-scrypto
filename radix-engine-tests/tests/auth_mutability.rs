@@ -48,7 +48,12 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_mutability(token_address.into(), object_key, authority.to_string(), DenyAll)
+            .set_authority_mutability(
+                token_address.into(),
+                object_key,
+                authority.to_string(),
+                DenyAll,
+            )
             .build();
         test_runner
             .execute_manifest(

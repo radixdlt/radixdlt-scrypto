@@ -1,8 +1,7 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
-    AccessRulesSetGroupAccessRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    AccessRulesCreateInput, AccessRulesSetAuthorityRuleAndMutabilityInput,
+    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -77,8 +76,8 @@ pub trait AccessRulesObject {
             node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
                 name: name.into(),
                 rule: entry.into(),
@@ -105,8 +104,8 @@ pub trait AccessRulesObject {
             &node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
+            ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
                 object_key: ObjectKey::SELF,
                 name: name.to_string(),
                 rule: rule.into(),
