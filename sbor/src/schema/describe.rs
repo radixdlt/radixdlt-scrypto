@@ -29,7 +29,7 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// ```ignore
     /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
     ///     const TYPE_ID: GlobalTypeId = GlobalTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
-    /// #   fn type_data() -> Option<TypeData<C, GlobalTypeId>> { todo!() }
+    /// #   fn type_data() -> TypeData<C, GlobalTypeId> { todo!() }
     /// }
     /// ```
     const TYPE_ID: GlobalTypeId;

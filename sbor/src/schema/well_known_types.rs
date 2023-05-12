@@ -1,6 +1,7 @@
 pub const CUSTOM_WELL_KNOWN_TYPE_START: u8 = 0x80;
 
 pub mod basic_well_known_types {
+    use sbor::rust::prelude::*;
     use sbor::*;
 
     pub const BOOL_ID: u8 = VALUE_KIND_BOOL;
@@ -77,12 +78,9 @@ pub mod basic_well_known_types {
 
     pub const UNIT_ID: u8 = 0x42; // `()`
     pub fn unit_type_data<C: CustomTypeKind<L>, L: SchemaTypeLink>() -> TypeData<C, L> {
-        TypeData::no_child_names(
-            TypeKind::Tuple {
-                field_types: sbor::rust::prelude::vec![],
-            },
-            "None",
-        )
+        TypeData::unnamed(TypeKind::Tuple {
+            field_types: vec![],
+        })
     }
 }
 
