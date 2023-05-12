@@ -11,6 +11,7 @@ use crate::system::module_mixer::SystemModuleMixer;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::virtualization::VirtualizationModule;
+use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -189,49 +190,80 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        first_lock_from_db: bool,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, first_lock_from_db, size)
+        SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
     }
 
-    fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_lock<Y>(
+        lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drop_lock(api, lock_handle)
+        SystemModuleMixer::on_drop_lock(api, lock_handle, store_access)
     }
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_read_substate(api, lock_handle, size)
+        SystemModuleMixer::on_read_substate(api, lock_handle, value_size, store_access)
     }
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_write_substate(api, lock_handle, size)
+        SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_create_node(api, node_id)
+        SystemModuleMixer::on_scan_substate(api, store_access)
+    }
+
+    fn on_set_substate<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_set_substate(api, store_access)
+    }
+
+    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_take_substates(api, store_access)
+    }
+
+    fn after_create_node<Y>(
+        node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_create_node(api, node_id, store_access)
     }
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>

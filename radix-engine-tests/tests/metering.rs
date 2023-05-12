@@ -69,16 +69,15 @@ fn test_basic_transfer() {
         + 1635 /* CreateNode */
         + 5587 /* DropLock */
         + 1575 /* DropNode */
-        + 1057391 /* Invoke */
-        + 31312 /* LockSubstate */
-        + 736 /* LockSubstateFirstTime */
-        + 248510 /* ReadSubstate */
+        + 1050432 /* Invoke */
+        + 526396 /* LockSubstate */
+        + 7840 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 2325779, /* WriteSubstate */
+        + 938, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -205,17 +204,16 @@ fn test_radiswap() {
         + 3826 /* CreateNode */
         + 13912 /* DropLock */
         + 3570 /* DropNode */
-        + 3320150 /* Invoke */
-        + 77868 /* LockSubstate */
-        + 1408 /* LockSubstateFirstTime */
-        + 767058 /* ReadSubstate */
+        + 3305144 /* Invoke */
+        + 5641349 /* LockSubstate */
+        + 19488 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1515865 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 5544763, /* WriteSubstate */
+        + 2330, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -317,17 +315,16 @@ fn test_flash_loan() {
         + 6104 /* CreateNode */
         + 21978 /* DropLock */
         + 5880 /* DropNode */
-        + 4434473 /* Invoke */
-        + 124836 /* LockSubstate */
-        + 1184 /* LockSubstateFirstTime */
-        + 1163382 /* ReadSubstate */
+        + 4407857 /* Invoke */
+        + 6838988 /* LockSubstate */
+        + 31192 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
         + 1288020 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 9311239, /* WriteSubstate */
+        + 4354, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
