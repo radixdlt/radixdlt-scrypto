@@ -66,6 +66,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             num_unstake_epochs: 1,
             max_validators,
         },
+        initial_time_ms: 1,
     };
 
     // Act
@@ -538,6 +539,7 @@ fn create_custom_genesis(
             rounds_per_epoch,
             num_unstake_epochs: 1,
         },
+        initial_time_ms: 1,
     };
 
     (genesis, pub_key_accounts)

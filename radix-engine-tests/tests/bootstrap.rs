@@ -1,3 +1,4 @@
+use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
@@ -46,6 +47,7 @@ fn test_bootstrap_receipt_should_match_constants() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -101,6 +103,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -159,6 +162,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -220,6 +224,7 @@ fn test_genesis_resource_with_initial_allocation() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -324,6 +329,7 @@ fn test_genesis_stake_allocation() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -361,6 +367,36 @@ fn test_genesis_stake_allocation() {
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
     }
+}
+
+#[test]
+fn test_genesis_time() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = InMemorySubstateDatabase::standard();
+
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, false);
+
+    let _ = bootstrapper
+        .bootstrap_with_genesis_data(
+            vec![],
+            1u64,
+            dummy_epoch_manager_configuration(),
+            123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+        )
+        .unwrap();
+
+    let current_time_substate = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, ClockSubstate>(
+            CLOCK.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ClockField::CurrentTimeRoundedToMinutes.into(),
+        )
+        .unwrap();
+
+    assert_eq!(
+        current_time_substate.current_time_rounded_to_minutes_ms,
+        123 * 60 * 1000
+    );
 }
 
 fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {

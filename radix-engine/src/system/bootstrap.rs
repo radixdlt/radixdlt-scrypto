@@ -22,7 +22,8 @@ use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+    ClockCreateInput, ClockSetCurrentTimeInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
+    CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerInitialConfiguration, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
@@ -142,6 +143,7 @@ where
                 rounds_per_epoch: 1,
                 num_unstake_epochs: 1,
             },
+            1,
         )
     }
 
@@ -150,6 +152,7 @@ where
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
         initial_configuration: EpochManagerInitialConfiguration,
+        initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -171,7 +174,8 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
+            let genesis_wrap_up_receipt =
+                self.execute_genesis_wrap_up(next_nonce, initial_time_ms);
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -227,8 +231,12 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(nonce);
+    fn execute_genesis_wrap_up(
+        &mut self,
+        nonce: u64,
+        initial_time_ms: i64,
+    ) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(nonce, initial_time_ms);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -862,7 +870,7 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction(nonce: u64, initial_time_ms: i64) -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -887,6 +895,18 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
         args: manifest_args!(address_bytes, bucket),
+    });
+
+    instructions.push(Instruction::CallMethod {
+        component_address: CLOCK,
+        method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+        args: manifest_decode::<ManifestValue>(
+            &manifest_encode(&ClockSetCurrentTimeInput {
+                current_time_ms: initial_time_ms,
+            })
+            .unwrap(),
+        )
+        .unwrap(),
     });
 
     SystemTransaction {
