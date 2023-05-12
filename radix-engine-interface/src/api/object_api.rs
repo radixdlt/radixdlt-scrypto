@@ -120,13 +120,25 @@ pub trait ClientObjectApi<E> {
         receiver: &NodeId,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, E>;
+    ) -> Result<Vec<u8>, E> {
+        self.call_method_advanced(receiver, false, ObjectModuleId::Main, method_name, args)
+    }
+
+    fn call_direct_access_method(
+        &mut self,
+        receiver: &NodeId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E> {
+        self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
+    }
 
     // TODO: Add Object Module logic
     /// Calls a method on an object module
-    fn call_module_method(
+    fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
+        direct_access: bool, // May change to enum for other types of reference in future
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,

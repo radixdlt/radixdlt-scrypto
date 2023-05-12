@@ -65,6 +65,8 @@ pub const GET_AUTH_ZONE_FUNCTION_ID: usize = 0x56;
 pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
 pub const ASSERT_ACCESS_RULE_FUNCTION_ID: usize = 0x57;
 pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
+pub const GET_NODE_ID_FUNCTION_ID: usize = 0x58;
+pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";

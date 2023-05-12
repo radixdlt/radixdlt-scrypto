@@ -206,6 +206,7 @@ impl WasmModule {
                                         ValueType::I32,
                                         ValueType::I32,
                                         ValueType::I32,
+                                        ValueType::I32,
                                     ],
                                     vec![ValueType::I64],
                                 ) {
@@ -433,6 +434,24 @@ impl WasmModule {
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
                                         FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_NODE_ID_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_NODE_ID_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

@@ -2,8 +2,7 @@ use super::Authentication;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, MethodActor};
-use crate::kernel::call_frame::CallFrameUpdate;
-use crate::kernel::call_frame::RefType;
+use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -36,26 +35,20 @@ pub enum AuthError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub access_rule: AccessRule,
+    pub fn_identifier: FnIdentifier,
 }
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
+    /// Invariants:
+    /// - An auth zone is created for every non-frame.
+    /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
 
 impl AuthModule {
-    fn is_barrier(actor: &Actor) -> bool {
-        // FIXME update the rule to be consistent with internal design
-        match actor {
-            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
-            Actor::Function { .. } => false,
-            Actor::VirtualLazyLoad { .. } => false,
-            Actor::Root { .. } => false,
-        }
-    }
-
     fn function_auth<Y: KernelApi<M>, M: KernelCallbackObject>(
         blueprint: &Blueprint,
         ident: &str,
@@ -94,6 +87,7 @@ impl AuthModule {
     }
 
     fn method_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        is_direct_access: bool,
         node_id: &NodeId,
         module_id: &ObjectModuleId,
         ident: &str,
@@ -107,45 +101,38 @@ impl AuthModule {
                 )?]
             }
             (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(*module_id, ident);
+                let mut authorizations = Vec::new();
 
-                let info = {
+                let method_key = MethodKey::new(*module_id, ident);
+                let object_info = {
                     let mut system = SystemService::new(api);
                     system.get_object_info(node_id)?
                 };
-
-                let mut auths = Vec::new();
-
-                if let Some(parent) = info.outer_object {
-                    let (ref_type, _) =
-                        api.kernel_get_node_info(node_id)
-                            .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::VisibilityError(node_id.clone()),
-                            )))?;
+                if let Some(parent) = object_info.outer_object {
                     let method_key = MethodKey::new(*module_id, ident);
                     let auth = Self::method_authorization_stateless(
-                        ref_type,
+                        is_direct_access,
                         parent.as_node_id(),
-                        ObjectKey::ChildBlueprint(info.blueprint.blueprint_name),
+                        ObjectKey::ChildBlueprint(object_info.blueprint.blueprint_name),
                         method_key,
                         api,
                     )?;
 
-                    auths.push(auth);
+                    authorizations.push(auth);
                 }
 
-                if info.global {
+                if object_info.global {
                     let auth = Self::method_authorization_stateless(
-                        RefType::Normal,
+                        is_direct_access,
                         &node_id,
                         ObjectKey::SELF,
                         method_key,
                         api,
                     )?;
-                    auths.push(auth);
+                    authorizations.push(auth);
                 }
 
-                auths
+                authorizations
             }
         };
 
@@ -153,7 +140,7 @@ impl AuthModule {
     }
 
     fn method_authorization_stateless<Y: KernelApi<M>, M: KernelCallbackObject>(
-        ref_type: RefType,
+        is_direct_access: bool,
         receiver: &NodeId,
         object_key: ObjectKey,
         key: MethodKey,
@@ -168,8 +155,6 @@ impl AuthModule {
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-
-        let is_direct_access = matches!(ref_type, RefType::DirectAccess);
 
         let method_auth = match object_key {
             ObjectKey::SELF => access_rules
@@ -191,83 +176,85 @@ impl AuthModule {
         Ok(method_auth)
     }
 
-    pub fn last_auth_zone(&self) -> NodeId {
-        self.auth_zone_stack
-            .last()
-            .cloned()
-            .expect("Missing auth zone")
-    }
-}
-
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Create sentinel node
-        Self::on_execution_start(api)
+    pub fn last_auth_zone(&self) -> Option<NodeId> {
+        self.auth_zone_stack.last().cloned()
     }
 
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        // Destroy sentinel node
-        Self::on_execution_finish(api, &CallFrameUpdate::empty())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
+    /// Check authorization
+    fn check_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut Y,
         callee: &Actor,
-        _call_frame_update: &mut CallFrameUpdate,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-        let authorizations = match &callee {
-            Actor::Method(MethodActor {
-                node_id,
-                module_id,
-                ident,
-                ..
-            }) => Self::method_auth(node_id, module_id, ident.as_str(), &args, api)?,
-            Actor::Function { blueprint, ident } => {
-                vec![Self::function_auth(blueprint, ident.as_str(), api)?]
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+            // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
+            let authorizations = match &callee {
+                Actor::Method(MethodActor {
+                    node_id,
+                    is_direct_access,
+                    module_id,
+                    ident,
+                    ..
+                }) => Self::method_auth(
+                    *is_direct_access,
+                    node_id,
+                    module_id,
+                    ident.as_str(),
+                    &args,
+                    api,
+                )?,
+                Actor::Function { blueprint, ident } => {
+                    vec![Self::function_auth(blueprint, ident.as_str(), api)?]
+                }
+                Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
+            };
+            let acting_location = if callee.is_barrier() {
+                ActingLocation::AtBarrier
+            } else {
+                ActingLocation::AtLocalBarrier
+            };
+
+            // Authenticate
+            let mut system = SystemService::new(api);
+            for access_rule in authorizations {
+                if !Authentication::verify_method_auth(
+                    acting_location,
+                    auth_zone_id,
+                    &access_rule,
+                    &mut system,
+                )? {
+                    return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                        AuthError::Unauthorized(Box::new(Unauthorized {
+                            access_rule,
+                            fn_identifier: callee.fn_identifier(),
+                        })),
+                    )));
+                }
             }
-            Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
-        };
-        let acting_location = if Self::is_barrier(callee) {
-            ActingLocation::AtBarrier
         } else {
-            ActingLocation::AtLocalBarrier
-        };
-        let auth_zone_id = api.kernel_get_system().modules.auth.last_auth_zone();
-
-        let mut system = SystemService::new(api);
-
-        // Authenticate
-        for authorization in authorizations {
-            if !Authentication::verify_method_auth(
-                acting_location,
-                auth_zone_id,
-                &authorization,
-                &mut system,
-            )? {
-                return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        access_rule: authorization,
-                    })),
-                )));
-            }
+            // Bypass auth check for ROOT frame
         }
-
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        let actor = api.kernel_get_system_state().current;
-
+    /// Create a new auth zone and move it to next frame.
+    ///
+    /// Must be done before a new frame is created, as
+    /// borrowed references must be wrapped and passed.
+    ///
+    fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+        api: &mut Y,
+        callee: &Actor,
+        message: &mut Message,
+    ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
-        let virtual_non_fungibles_non_extending = actor.get_virtual_non_extending_proofs();
+        let virtual_non_fungibles_non_extending = callee.get_virtual_non_extending_proofs();
         let virtual_non_fungibles_non_extending_barrier =
-            actor.get_virtual_non_extending_barrier_proofs();
+            callee.get_virtual_non_extending_barrier_proofs();
 
         // Prepare a new auth zone
-        let is_barrier = Self::is_barrier(actor);
-        let is_transaction_processor = actor.is_transaction_processor();
+        let is_barrier = callee.is_barrier();
+        let is_transaction_processor = callee.is_transaction_processor();
         let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
             let auth_module = &api.kernel_get_system().modules.auth;
             (
@@ -297,6 +284,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         // Create node
         let auth_zone_node_id =
             api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
         api.kernel_create_node(
             auth_zone_node_id,
             btreemap!(
@@ -312,6 +300,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
             ),
         )?;
 
+        // Move auth zone (containing borrowed reference)!
+        message.add_move_node(auth_zone_node_id);
+
+        // Update auth zone stack
         api.kernel_get_system()
             .modules
             .auth
@@ -320,23 +312,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
 
         Ok(())
     }
+}
 
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
+    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _update: &CallFrameUpdate,
+        callee: &Actor,
+        message: &mut Message,
+        args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let auth_zone = api
-            .kernel_get_system()
-            .modules
-            .auth
-            .auth_zone_stack
-            .pop()
-            .expect("Auth zone stack is broken");
+        AuthModule::check_authorization(api, callee, args)
+            .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
+    }
 
-        api.kernel_drop_node(&auth_zone)?;
-
-        // Proofs in auth zone will be re-owned by the frame and auto dropped.
-
+    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _dropped_actor: &Actor,
+    ) -> Result<(), RuntimeError> {
+        // update internal state
+        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }

@@ -183,6 +183,7 @@ impl WasmerModule {
             env: &WasmerInstanceEnv,
             receiver_ptr: u32,
             receiver_len: u32,
+            direct_access: u32,
             module_id: u32,
             ident_ptr: u32,
             ident_len: u32,
@@ -202,7 +203,7 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
-                .call_method(receiver, module_id, ident, args)
+                .call_method(receiver, direct_access, module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -480,6 +481,16 @@ impl WasmerModule {
             Ok(())
         }
 
+        pub fn get_node_id(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_node_id()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
         pub fn get_global_address(env: &WasmerInstanceEnv) -> Result<u64, RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
@@ -611,6 +622,7 @@ impl WasmerModule {
                 FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_read),
                 FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
                 FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
+                GET_NODE_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
                 GET_AUTH_ZONE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_auth_zone),

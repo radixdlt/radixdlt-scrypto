@@ -138,7 +138,7 @@ pub fn to_typed_substate_key(
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match partition_num {
         TYPE_INFO_FIELD_PARTITION => TypedSubstateKey::TypeInfoModuleField(
-            TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoOffset"))?,
+            TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
         ),
         METADATA_KV_STORE_PARTITION => TypedSubstateKey::MetadataModuleEntryKey(
             scrypto_decode(
@@ -149,10 +149,10 @@ pub fn to_typed_substate_key(
             .map_err(|_| error("string Metadata key"))?,
         ),
         ROYALTY_FIELD_PARTITION => TypedSubstateKey::RoyaltyModuleField(
-            RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyOffset"))?,
+            RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
         ),
         ACCESS_RULES_FIELD_PARTITION => TypedSubstateKey::AccessRulesModuleField(
-            AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesOffset"))?,
+            AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
         ),
         partition_num @ _ if partition_num >= OBJECT_BASE_PARTITION => {
             TypedSubstateKey::MainModule(to_typed_object_module_substate_key(

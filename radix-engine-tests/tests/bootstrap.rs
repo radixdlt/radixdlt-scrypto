@@ -9,6 +9,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::blueprints::epoch_manager::EpochManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -34,14 +35,18 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
         wrap_up_receipt,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     assert!(system_bootstrap_receipt
@@ -85,14 +90,18 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
         data_ingestion_receipts,
         wrap_up_receipt,
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     validate_receipt_substate_changes_which_can_be_typed(
@@ -106,10 +115,10 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 
 fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
     let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, module_num), partition_updates) in system_updates.into_iter() {
+    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
         for (substate_key, database_update) in partition_updates.into_iter() {
             let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *module_num, substate_key)
+                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
                     .expect("Substate key should be typeable");
             if !typed_substate_key.value_is_mappable() {
                 continue;
@@ -140,13 +149,17 @@ fn test_genesis_xrd_allocation_to_accounts() {
         allocation_amount,
     )])];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     assert!(data_ingestion_receipts[0]
@@ -197,13 +210,17 @@ fn test_genesis_resource_with_initial_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     let total_supply = substate_db
@@ -297,13 +314,17 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
         ..
     } = bootstrapper
-        .bootstrap_with_genesis_data(genesis_data_chunks, 1u64, 100u32, 1u64, 1u64)
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            1u64,
+            dummy_epoch_manager_configuration(),
+        )
         .unwrap();
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
@@ -339,5 +360,13 @@ fn test_genesis_stake_allocation() {
         assert!(balances
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
+    }
+}
+
+fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
+    EpochManagerInitialConfiguration {
+        max_validators: 100,
+        rounds_per_epoch: 1,
+        num_unstake_epochs: 1,
     }
 }

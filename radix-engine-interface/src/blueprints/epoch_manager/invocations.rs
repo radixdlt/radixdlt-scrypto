@@ -17,6 +17,11 @@ pub struct EpochManagerCreateInput {
     pub validator_owner_token: [u8; NodeId::LENGTH], // TODO: Clean this up
     pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
     pub initial_epoch: u64,
+    pub initial_configuration: EpochManagerInitialConfiguration,
+}
+
+#[derive(Debug, Eq, PartialEq, Sbor)]
+pub struct EpochManagerInitialConfiguration {
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,

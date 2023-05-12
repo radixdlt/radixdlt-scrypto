@@ -1,4 +1,4 @@
-use radix_engine_interface::api::{ClientApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientApi, ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -110,7 +110,7 @@ impl SysProof for Proof {
 
     fn sys_drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: ClientObjectApi<E> + ClientBlueprintApi<E>,
     {
         let info = api.get_object_info(self.0.as_node_id())?;
         let blueprint = info.blueprint.blueprint_name;

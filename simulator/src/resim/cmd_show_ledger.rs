@@ -17,7 +17,7 @@ impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter).bootstrap_test_default();
+        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
         // Close the database
         drop(substate_db);
