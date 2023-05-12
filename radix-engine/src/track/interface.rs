@@ -149,14 +149,23 @@ impl StoreAccessInfo {
         &self.0
     }
 
-    pub fn get_whole_size(&self) -> usize {
+    pub fn total_read_size(&self) -> usize {
         self.0
             .iter()
             .map(|item| match item {
-                StoreAccess::ReadFromDb(size)
-                | StoreAccess::ReadFromTrack(size)
-                | StoreAccess::WriteToTrack(size) => size,
+                StoreAccess::ReadFromDb(size) | StoreAccess::ReadFromTrack(size) => size,
+                _ => &0,
+            })
+            .sum()
+    }
+
+    pub fn total_write_size(&self) -> usize {
+        self.0
+            .iter()
+            .map(|item| match item {
+                StoreAccess::WriteToTrack(size) => size,
                 StoreAccess::RewriteToTrack(_size_old, size_new) => size_new,
+                _ => &0,
             })
             .sum()
     }
