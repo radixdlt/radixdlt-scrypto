@@ -25,8 +25,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    UpdateAuthCycleCheckError(String),
-    InitializationCycleCheckError(CycleCheckError),
+    CycleCheckError(CycleCheckError),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),

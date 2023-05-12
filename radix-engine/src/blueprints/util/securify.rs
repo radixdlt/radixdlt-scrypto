@@ -4,7 +4,6 @@ use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, Attached
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 
 pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
@@ -35,10 +34,9 @@ pub trait SecurifiedAccessRules {
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        mut authority_rules: AuthorityRules,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-
         let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
