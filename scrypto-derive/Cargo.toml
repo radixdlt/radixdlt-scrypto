@@ -14,6 +14,7 @@ quote = { version = "1.0.18" }
 serde = { version = "1.0.137", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 scrypto-schema = { path = "../scrypto-schema", default-features = false }
+sbor = { path = "../sbor", default-features = false }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
@@ -29,11 +30,13 @@ scrypto-schema = { path = "../scrypto-schema", default-features = false }
 default = ["std"]
 std = [
     "serde/std", "serde_json/std",
-    "scrypto-schema/std", "scrypto-schema/serde"
+    "scrypto-schema/std", "scrypto-schema/serde",
+    "sbor/std"
 ]
 alloc = [
     "serde/alloc", "serde_json/alloc",
-    "scrypto-schema/alloc", "scrypto-schema/serde"
+    "scrypto-schema/alloc", "scrypto-schema/serde",
+    "sbor/alloc"
 ]
 
 # Enable trace
