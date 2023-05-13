@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+use std::ops::Deref;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
@@ -14,7 +16,13 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Metadata(pub Own);
+pub enum ObjectType {
+    Own(Own),
+    Attached(GlobalAddress),
+}
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Metadata(pub ObjectType);
 
 impl Metadata {
     pub fn new() -> Self {
@@ -27,22 +35,43 @@ impl Metadata {
             )
             .unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
-        Self(metadata)
+        Self(ObjectType::Own(metadata))
+    }
+
+    pub(crate) fn attached<'a>(address: GlobalAddress) -> Attached<'a, Metadata> {
+        Attached(Metadata(ObjectType::Attached(address)), PhantomData::default())
+    }
+
+    pub(crate) fn to_owned(self) -> Own {
+        match self.0 {
+            ObjectType::Own(own) => own,
+            _ => panic!("oops"),
+
+        }
     }
 }
 
 impl MetadataObject for Metadata {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (self.0.as_node_id(), ObjectModuleId::Main)
+        match &self.0 {
+            ObjectType::Own(own) => {
+                (own.as_node_id(), ObjectModuleId::Main)
+            }
+            ObjectType::Attached(global_address) => {
+                (global_address.as_node_id(), ObjectModuleId::Metadata)
+            }
+        }
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
-pub struct AttachedMetadata(pub GlobalAddress);
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Attached<'a, O>(O, PhantomData<&'a ()>);
 
-impl MetadataObject for AttachedMetadata {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (self.0.as_node_id(), ObjectModuleId::Metadata)
+impl<'a, O> Deref for Attached<'a, O> {
+    type Target = O;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

@@ -13,8 +13,9 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::modules::Metadata;
 
-use crate::modules::AttachedMetadata;
+use crate::modules::{Attached, ObjectType};
 use crate::prelude::ScryptoEncode;
 
 /// Represents a resource manager.
@@ -22,8 +23,8 @@ use crate::prelude::ScryptoEncode;
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn metadata(&self) -> AttachedMetadata {
-        AttachedMetadata(self.0.into())
+    pub fn metadata(&self) -> Attached<Metadata> {
+        Metadata::attached(self.0.into())
     }
 
     pub fn set_mintable(&self, access_rule: AccessRule) {

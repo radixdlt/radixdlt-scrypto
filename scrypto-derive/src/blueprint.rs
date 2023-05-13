@@ -496,7 +496,7 @@ fn generate_stubs(
                 self.component.access_rules()
             }
 
-            pub fn metadata(&self) -> AttachedMetadata {
+            pub fn metadata(&self) -> Attached<Metadata> {
                 self.component.metadata()
             }
 
@@ -804,7 +804,7 @@ mod tests {
                             self.component.access_rules()
                         }
 
-                        pub fn metadata(&self) -> AttachedMetadata {
+                        pub fn metadata(&self) -> Attached<Metadata> {
                             self.component.metadata()
                         }
 

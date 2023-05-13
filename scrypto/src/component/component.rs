@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::{
-    AccessRules, AttachedAccessRules, AttachedMetadata, AttachedRoyalty, Royalty,
+    AccessRules, AttachedAccessRules, AttachedRoyalty, Royalty,
 };
 use crate::runtime::*;
 use crate::*;
@@ -19,7 +19,7 @@ use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-use scrypto::modules::Metadata;
+use scrypto::modules::{Attached, Metadata};
 
 pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> T;
@@ -144,7 +144,7 @@ impl<T: Into<OwnedComponent>> LocalComponent for T {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let metadata: Own = metadata.0;
+        let metadata: Own = metadata.to_owned();
         let access_rules: Own = access_rules.0;
         let royalty: Own = royalty.0;
 
@@ -170,7 +170,7 @@ impl<T: Into<OwnedComponent>> LocalComponent for T {
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
             ObjectModuleId::Main => self.into().0.as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.0.0,
-            ObjectModuleId::Metadata => metadata.0.0,
+            ObjectModuleId::Metadata => metadata.to_owned().0,
             ObjectModuleId::Royalty => royalty.0.0,
         );
 
@@ -190,8 +190,8 @@ impl GlobalComponentRef {
         AttachedAccessRules(self.0.into())
     }
 
-    pub fn metadata(&self) -> AttachedMetadata {
-        AttachedMetadata(self.0.into())
+    pub fn metadata(&self) -> Attached<Metadata> {
+        Metadata::attached(self.0.into())
     }
 
     pub fn royalty(&self) -> AttachedRoyalty {

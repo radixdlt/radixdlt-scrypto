@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::AttachedMetadata;
+use crate::modules::{Attached};
 use crate::runtime::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -14,6 +14,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto::prelude::Metadata;
 
 /// Represents a published package.
 #[derive(Debug)]
@@ -25,8 +26,8 @@ impl BorrowedPackage {
         Runtime::call_function(self.0, blueprint_name, function, args)
     }
 
-    pub fn metadata(&self) -> AttachedMetadata {
-        AttachedMetadata(self.0.into())
+    pub fn metadata(&self) -> Attached<Metadata> {
+        Metadata::attached(self.0.into())
     }
 
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
