@@ -9,17 +9,16 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     require, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
 };
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
+    own_type_data, OWN_ID,
+};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
-use sbor::{
-    Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
-    ValueKind,
-};
+use sbor::*;
 use scrypto::modules::Metadata;
 
 pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
@@ -259,5 +258,9 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
 
 // TODO: generics support for Scrypto components?
 impl Describe<ScryptoCustomTypeKind> for OwnedComponent {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::WellKnown([OWN_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(OWN_ID);
+
+    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        own_type_data()
+    }
 }

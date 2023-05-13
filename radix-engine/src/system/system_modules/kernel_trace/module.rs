@@ -4,6 +4,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
@@ -136,28 +137,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
-        first_lock_from_db: bool,
+        _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Substate locked: handle = {:?}, first_lock_from_db = {:?}",
-            handle,
-            first_lock_from_db
-        );
+        log!(api, "Substate locked: handle = {:?}", handle);
         Ok(())
     }
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {:?}",
+            "Reading substate: handle = {}, size = {}, storage_acces_total_read = {}",
             lock_handle,
-            size
+            value_size,
+            store_access.total_read_size()
         );
         Ok(())
     }
@@ -165,13 +163,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Writing substate: handle = {}, size = {:?}",
+            "Writing substate: handle = {}, size = {}, storage_acces_total_write = {}",
             lock_handle,
-            size
+            value_size,
+            store_access.total_write_size()
         );
         Ok(())
     }
@@ -179,6 +179,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())

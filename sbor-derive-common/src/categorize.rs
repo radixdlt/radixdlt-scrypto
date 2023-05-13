@@ -18,7 +18,7 @@ pub fn handle_categorize(
     trace!("handle_categorize() starts");
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs);
+    let is_transparent = is_transparent(&parsed.attrs)?;
 
     let output = if is_transparent {
         handle_transparent_categorize(parsed, context_custom_value_kind)?
@@ -90,7 +90,7 @@ fn handle_transparent_categorize(
             let FieldsData {
                 unskipped_field_types,
                 ..
-            } = process_fields_for_categorize(&s.fields);
+            } = process_fields_for_categorize(&s.fields)?;
             if unskipped_field_types.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }

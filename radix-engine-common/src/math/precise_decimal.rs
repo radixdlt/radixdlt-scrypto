@@ -467,7 +467,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::PreciseDecimal,
     Type::PreciseDecimal,
     PreciseDecimal::BITS / 8,
-    PRECISE_DECIMAL_ID
+    PRECISE_DECIMAL_ID,
+    precise_decimal_type_data
 );
 
 manifest_type!(
