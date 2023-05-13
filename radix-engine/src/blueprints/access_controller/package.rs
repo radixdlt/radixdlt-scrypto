@@ -1145,14 +1145,10 @@ fn init_access_rules_from_rule_set(
         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         recovery.into(),
     );
-    method_authorities.set_main_method_authority(
-        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT,
-        recovery.into(),
-    );
-    method_authorities.set_main_method_authority(
-        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT,
-        recovery.into(),
-    );
+    method_authorities
+        .set_main_method_authority(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT, recovery.into());
+    method_authorities
+        .set_main_method_authority(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery.into());
 
     // Recovery || Confirmation Role Rules
     method_authorities.set_main_method_authority(
@@ -1175,10 +1171,8 @@ fn init_access_rules_from_rule_set(
     );
 
     // Other methods
-    method_authorities.set_main_method_authority(
-        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
-        any_role,
-    );
+    method_authorities
+        .set_main_method_authority(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT, any_role);
 
     (method_authorities, authority_rules)
 }

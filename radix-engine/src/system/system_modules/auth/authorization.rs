@@ -290,11 +290,11 @@ impl Authorization {
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<String, ()>,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
             AccessRuleNode::Authority(authority) => {
                 if already_verified_authorities.contains_key(authority) {
-                    return Ok(true);
+                    return Ok(AuthorizationCheckResult::Authorized);
                 }
 
                 match access_rules.rules.get(authority.as_str()) {
@@ -308,38 +308,49 @@ impl Authorization {
                             already_verified_authorities,
                             api,
                         )
-                        .map(|rtn| match rtn {
-                            AuthorizationCheckResult::Authorized => {
-                                already_verified_authorities.insert(authority.to_string(), ());
-                                true
-                            },
-                            AuthorizationCheckResult::Failed(..) => false,
-                        })
                     }
-                    None => Ok(false),
+                    None => Ok(AuthorizationCheckResult::Failed(vec![])),
                 }
             }
             AccessRuleNode::ProofRule(rule) => {
-                Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)
+                if Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)? {
+                    Ok(AuthorizationCheckResult::Authorized)
+                } else {
+                    Ok(AuthorizationCheckResult::Failed(vec![]))
+                }
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, already_verified_authorities, api)?
-                    {
-                        return Ok(true);
+                    let rtn = Self::verify_auth_rule(
+                        acting_location,
+                        auth_zone_id,
+                        access_rules,
+                        r,
+                        already_verified_authorities,
+                        api,
+                    )?;
+                    if matches!(rtn, AuthorizationCheckResult::Authorized) {
+                        return Ok(rtn);
                     }
                 }
-                Ok(false)
+                Ok(AuthorizationCheckResult::Failed(vec![]))
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, r, already_verified_authorities, api)?
-                    {
-                        return Ok(false);
+                    let rtn = Self::verify_auth_rule(
+                        acting_location,
+                        auth_zone_id,
+                        access_rules,
+                        r,
+                        already_verified_authorities,
+                        api,
+                    )?;
+                    if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
+                        return Ok(rtn);
                     }
                 }
 
-                Ok(true)
+                return Ok(AuthorizationCheckResult::Authorized);
             }
         }
     }
@@ -356,14 +367,24 @@ impl Authorization {
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
             AccessRule::Protected(rule_node) => {
-                if Self::verify_auth_rule(acting_location, auth_zone_id, access_rules, rule_node, already_verified_authorities, api)? {
-                    Ok(AuthorizationCheckResult::Authorized)
-                } else {
-                    Ok(AuthorizationCheckResult::Failed(rule.clone()))
+                let mut rtn = Self::verify_auth_rule(
+                    acting_location,
+                    auth_zone_id,
+                    access_rules,
+                    rule_node,
+                    already_verified_authorities,
+                    api,
+                )?;
+                match &mut rtn {
+                    AuthorizationCheckResult::Authorized => {}
+                    AuthorizationCheckResult::Failed(stack) => {
+                        stack.push(rule.clone());
+                    }
                 }
+                Ok(rtn)
             }
             AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
-            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(rule.clone())),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
         }
     }
 
@@ -376,10 +397,15 @@ impl Authorization {
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-
         let mut already_verified_authorities = NonIterMap::new();
 
         Self::check_authorization_against_access_rule_internal(
-            acting_location, auth_zone_id, access_rules, rule, &mut already_verified_authorities, api)
+            acting_location,
+            auth_zone_id,
+            access_rules,
+            rule,
+            &mut already_verified_authorities,
+            api,
+        )
     }
 }

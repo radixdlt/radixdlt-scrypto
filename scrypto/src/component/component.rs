@@ -57,10 +57,7 @@ pub trait LocalComponent: Sized {
 
     fn globalize(self) -> ComponentAddress {
         self.globalize_with_modules(
-            AccessRules::new(
-                MethodAuthorities::new(),
-                AuthorityRules::new(),
-            ),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
@@ -69,10 +66,7 @@ pub trait LocalComponent: Sized {
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
         self.globalize_at_address_with_modules(
             preallocated_address,
-            AccessRules::new(
-                MethodAuthorities::new(),
-                AuthorityRules::new(),
-            ),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
@@ -80,10 +74,7 @@ pub trait LocalComponent: Sized {
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
         self.globalize_with_modules(
-            AccessRules::new(
-                MethodAuthorities::new(),
-                AuthorityRules::new(),
-            ),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             metadata,
             Royalty::new(RoyaltyConfig::default()),
         )

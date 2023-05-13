@@ -51,9 +51,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                &RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::CycleCheckError(..)
-                ))
+                &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
             )
         });
     }
@@ -73,9 +71,7 @@ fn setting_circular_authority_rule_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(
-                ..
-            )))
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
         )
     });
 }
@@ -95,9 +91,7 @@ fn setting_circular_authority_rule_should_fail_2() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(
-                ..
-            )))
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
         )
     });
 }
@@ -117,9 +111,7 @@ fn setting_circular_authority_mutability_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(
-                ..
-            )))
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
         )
     });
 }
@@ -139,9 +131,7 @@ fn setting_circular_authority_mutability_should_fail2() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(
-                ..
-            )))
+            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
         )
     });
 }

@@ -3,7 +3,9 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
+use crate::system::node_modules::access_rules::{
+    METADATA_AUTHORITY, OWNER_AUTHORITY, ROYALTY_AUTHORITY,
+};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -515,17 +517,23 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
         method_authorities.set_main_method_authority(VALIDATOR_STAKE_IDENT, "stake");
-        method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, "owner");
-        method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, "owner");
-        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, "owner");
-        method_authorities
-            .set_main_method_authority(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, "owner");
+        method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, OWNER_AUTHORITY);
+        method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, OWNER_AUTHORITY);
+        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, OWNER_AUTHORITY);
+        method_authorities.set_main_method_authority(
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+            OWNER_AUTHORITY,
+        );
         method_authorities
     }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_rule(
+            METADATA_AUTHORITY,
+            rule!(require(OWNER_AUTHORITY)),
+            rule!(deny_all),
+        );
         authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
         authority_rules.set_rule(
             "stake",

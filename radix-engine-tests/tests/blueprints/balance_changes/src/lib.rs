@@ -22,10 +22,7 @@ mod balance_changes_test {
             authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
 
             local_component.globalize_with_modules(
-                AccessRules::new(
-                    MethodAuthorities::new(),
-                    authority_rules,
-                ),
+                AccessRules::new(MethodAuthorities::new(), authority_rules),
                 Metadata::new(),
                 Royalty::new(config),
             )
