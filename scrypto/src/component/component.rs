@@ -21,10 +21,33 @@ use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto::modules::{Attached, Metadata};
-use crate::prelude::ScryptoSbor;
+use crate::prelude::{scrypto_encode, ScryptoSbor};
 
-pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
-    fn instantiate(self) -> T;
+pub trait ComponentState<T: LocalComponent>: ScryptoEncode + ScryptoDecode {
+    const BLUEPRINT_NAME: &'static str;
+
+    fn instantiate(self) -> T {
+        let node_id = ScryptoEnv
+            .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
+            .unwrap();
+
+        T::new(ComponentHandle::Own(Own(node_id)))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ComponentHandle {
+    Own(Own),
+    Global(GlobalAddress),
+}
+
+impl ComponentHandle {
+    pub fn as_node_id(&self) -> &NodeId {
+        match self {
+            ComponentHandle::Own(own) => own.as_node_id(),
+            ComponentHandle::Global(address) => address.as_node_id()
+        }
+    }
 }
 
 // TODO: I've temporarily disabled &mut requirement on the Component trait.
@@ -153,30 +176,6 @@ pub trait LocalComponent: Component + Sized {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ComponentHandle {
-    Own(Own),
-    Global(GlobalAddress),
-}
-
-impl ComponentHandle {
-    pub fn as_node_id(&self) -> &NodeId {
-        match self {
-            ComponentHandle::Own(own) => own.as_node_id(),
-            ComponentHandle::Global(address) => address.as_node_id()
-        }
-    }
-}
-
-impl Component for ComponentHandle {
-    fn new(handle: ComponentHandle) -> Self {
-        handle
-    }
-
-    fn handle(&self) -> &ComponentHandle {
-        self
-    }
-}
 
 impl<T: Component> LocalComponent for T {
     fn globalize2(

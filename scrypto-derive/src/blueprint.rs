@@ -79,15 +79,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl ::scrypto::component::ComponentState<#component_ident> for #bp_ident {
-            fn instantiate(self) -> #component_ident {
-                let component = ::scrypto::component::create_component(
-                    #bp_name,
-                    self
-                );
-                #component_ident {
-                    component
-                }
-            }
+            const BLUEPRINT_NAME: &'static str = #bp_name;
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_original_code });
@@ -609,15 +601,7 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState<TestComponent> for Test {
-                        fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::create_component(
-                                "Test",
-                                self
-                            );
-                            TestComponent {
-                                component
-                            }
-                        }
+                        const BLUEPRINT_NAME: &'static str = "Test";
                     }
 
                     #[allow(non_camel_case_types)]

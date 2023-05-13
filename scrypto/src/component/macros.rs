@@ -12,13 +12,6 @@ macro_rules! borrow_package {
     };
 }
 
-#[macro_export]
-macro_rules! borrow_component {
-    ($address:expr) => {
-        $crate::component::GlobalComponentRef($address.clone())
-    };
-}
-
 /// Instantiates a component.
 pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
     blueprint_name: &str,
