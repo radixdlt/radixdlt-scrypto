@@ -119,14 +119,14 @@ mod schema {
             impl<C: CustomTypeKind<GlobalTypeId>$(, $name: Describe<C>)*> Describe<C> for ($($name,)*) {
                 const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID),*]);
 
-                fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-                    Some(TypeData::unnamed(
+                fn type_data() -> TypeData<C, GlobalTypeId> {
+                    TypeData::unnamed(
                         TypeKind::Tuple {
                             field_types: crate::rust::vec![
                                 $($name::TYPE_ID,)*
                             ]
                         }
-                    ))
+                    )
                 }
 
                 #[allow(unused_variables)] // For the unit case
@@ -137,7 +137,7 @@ mod schema {
         };
     }
 
-    describe_basic_well_known_type!((), UNIT_ID);
+    describe_basic_well_known_type!((), UNIT_ID, unit_type_data);
     describe_tuple! { 1 0 T0 }
     describe_tuple! { 2 0 T0 1 T1 }
     describe_tuple! { 3 0 T0 1 T1 2 T2 }

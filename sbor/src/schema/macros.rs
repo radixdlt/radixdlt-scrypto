@@ -1,8 +1,12 @@
 macro_rules! describe_basic_well_known_type {
-    ($type:ty, $well_known_index:ident) => {
+    ($type:ty, $well_known_index:ident, $well_known_type_data_method:ident) => {
         impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for $type {
             const TYPE_ID: GlobalTypeId =
                 GlobalTypeId::well_known(basic_well_known_types::$well_known_index);
+
+            fn type_data() -> TypeData<C, GlobalTypeId> {
+                basic_well_known_types::$well_known_type_data_method()
+            }
         }
     };
 }
@@ -13,7 +17,7 @@ macro_rules! wrapped_generic_describe {
         impl<C: CustomTypeKind<GlobalTypeId>, $generic: Describe<C>> Describe<C> for $type {
             const TYPE_ID: GlobalTypeId = <$other_type>::TYPE_ID;
 
-            fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            fn type_data() -> TypeData<C, GlobalTypeId> {
                 <$other_type>::type_data()
             }
 
@@ -35,7 +39,7 @@ macro_rules! wrapped_double_generic_describe {
         {
             const TYPE_ID: GlobalTypeId = <$other_type>::TYPE_ID;
 
-            fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            fn type_data() -> TypeData<C, GlobalTypeId> {
                 <$other_type>::type_data()
             }
 

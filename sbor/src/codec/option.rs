@@ -53,16 +53,16 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option
 impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
 
-    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+    fn type_data() -> TypeData<C, GlobalTypeId> {
         #[allow(unused_imports)]
         use crate::rust::borrow::ToOwned;
-        Some(TypeData::enum_variants(
+        TypeData::enum_variants(
             "Option",
             crate::rust::collections::btree_map::btreemap![
                 OPTION_VARIANT_NONE => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![]}, "None"),
                 OPTION_VARIANT_SOME => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Some"),
             ],
-        ))
+        )
     }
 
     fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

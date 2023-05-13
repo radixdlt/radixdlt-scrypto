@@ -3,6 +3,7 @@ use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -112,7 +113,10 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for B
 }
 
 impl Describe<ScryptoCustomTypeKind> for Bucket {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
-        crate::data::scrypto::well_known_scrypto_custom_types::OWN_BUCKET_ID,
-    );
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_BUCKET_ID);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_bucket_type_data()
+    }
 }

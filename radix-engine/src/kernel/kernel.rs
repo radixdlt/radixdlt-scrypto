@@ -16,7 +16,7 @@ use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{AcquireLockError, NodeSubstates, SubstateStore};
+use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -77,7 +77,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 continue;
             }
 
-            let (handle, _) = kernel
+            let (handle, _store_access) = kernel
                 .store
                 .acquire_lock(
                     node_id,
@@ -86,7 +86,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     LockFlags::read_only(),
                 )
                 .map_err(|_| KernelError::NodeNotFound(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle);
+            let (substate_ref, _store_access) = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.release_lock(handle);
             match type_substate {
@@ -317,12 +317,13 @@ where
         M::before_create_node(&node_id, &node_substates, self)?;
 
         self.id_allocator.take_node_id(node_id)?;
-        self.current_frame
+        let store_access = self
+            .current_frame
             .create_node(node_id, node_substates, &mut self.heap, self.store)
             .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::after_create_node(&node_id, self)?;
+        M::after_create_node(&node_id, &store_access, self)?;
 
         Ok(())
     }
@@ -564,8 +565,8 @@ where
             data,
         );
 
-        let (lock_handle, first_lock_from_db) = match &maybe_lock_handle {
-            Ok((lock_handle, first_lock_from_db)) => (*lock_handle, *first_lock_from_db),
+        let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle {
+            Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
             Err(LockSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
@@ -605,7 +606,7 @@ where
                     // TODO: This is a hack to allow for package imports to be visible
                     // TODO: Remove this once we are able to get this information through the Blueprint ABI
                     LockSubstateError::NodeNotVisible(node_id) if node_id.is_global_package() => {
-                        let (handle, first_lock_from_db) = self
+                        let (handle, store_access) = self
                             .store
                             .acquire_lock(
                                 node_id,
@@ -636,7 +637,7 @@ where
                             )
                             .map_err(CallFrameError::LockSubstateError)
                             .map_err(KernelError::CallFrameError)?;
-                        (lock_handle, first_lock_from_db)
+                        (lock_handle, store_access)
                     }
                     _ => {
                         return Err(RuntimeError::KernelError(KernelError::CallFrameError(
@@ -648,7 +649,7 @@ where
         };
 
         // TODO: pass the right size
-        M::after_lock_substate(lock_handle, 0, first_lock_from_db, self)?;
+        M::after_lock_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
     }
@@ -667,12 +668,13 @@ where
 
     #[trace_resources]
     fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        M::on_drop_lock(lock_handle, self)?;
-
-        self.current_frame
+        let store_access = self
+            .current_frame
             .drop_lock(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
+
+        M::on_drop_lock(lock_handle, &store_access, self)?;
 
         Ok(())
     }
@@ -682,26 +684,28 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let mut len = self
+        let (value, mut store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
-            .map_err(KernelError::CallFrameError)?
-            .as_slice()
-            .len();
+            .map_err(KernelError::CallFrameError)?;
+        let mut value_size = value.len();
 
         // TODO: replace this overwrite with proper packing costing rule
         let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
         if lock_info.node_id.is_global_package() {
-            len = 0;
+            store_access.clear();
+            value_size = 0;
         }
 
-        M::on_read_substate(lock_handle, len, self)?;
+        M::on_read_substate(lock_handle, value_size, &store_access, self)?;
 
+        // Double read due to borrow chacker of self.
         Ok(self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
-            .unwrap())
+            .unwrap()
+            .0)
     }
 
     #[trace_resources]
@@ -710,13 +714,16 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_write_substate(lock_handle, value.len(), self)?;
+        let value_size = value.len();
 
-        self.current_frame
+        let store_access = self
+            .current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_write_substate(lock_handle, value_size, &store_access, self)
     }
 
     fn kernel_set_substate(
@@ -726,7 +733,8 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.current_frame
+        let store_access = self
+            .current_frame
             .set_substate(
                 node_id,
                 partition_num,
@@ -737,7 +745,11 @@ where
             )
             .map_err(CallFrameError::SetSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_set_substate(&store_access, self)?;
+
+        Ok(())
     }
 
     fn kernel_remove_substate(
@@ -746,7 +758,8 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substate, store_access) = self
+            .current_frame
             .remove_substate(
                 node_id,
                 partition_num,
@@ -756,7 +769,11 @@ where
             )
             .map_err(CallFrameError::RemoveSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_take_substates(&store_access, self)?;
+
+        Ok(substate)
     }
 
     fn kernel_scan_sorted_substates(
@@ -765,11 +782,16 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substates, store_access) = self
+            .current_frame
             .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_scan_substates(&store_access, self)?;
+
+        Ok(substates)
     }
 
     fn kernel_scan_substates(
@@ -778,11 +800,16 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substeates, store_access) = self
+            .current_frame
             .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_scan_substates(&store_access, self)?;
+
+        Ok(substeates)
     }
 
     fn kernel_take_substates(
@@ -791,11 +818,16 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.current_frame
+        let (substeates, store_access) = self
+            .current_frame
             .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::on_take_substates(&store_access, self)?;
+
+        Ok(substeates)
     }
 }
 
