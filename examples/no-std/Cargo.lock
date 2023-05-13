@@ -350,6 +350,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "paste",
+ "radix-engine-common",
  "radix-engine-derive",
  "radix-engine-interface",
  "sbor",

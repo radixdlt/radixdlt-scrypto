@@ -45,7 +45,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let module_ident = bp.module_ident;
     let component_ident = format_ident!("{}Component", bp_ident);
-    let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -185,7 +184,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(&component_ident, &component_ref_ident, bp_ident, bp_items)?;
+    let output_stubs = generate_stubs(&component_ident, bp_ident, bp_items)?;
 
     let output = quote! {
         pub mod #module_ident {
@@ -352,7 +351,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
 
 fn generate_stubs(
     component_ident: &Ident,
-    component_ref_ident: &Ident,
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
@@ -461,40 +459,6 @@ fn generate_stubs(
 
         impl #component_ident {
             #(#functions)*
-
-            #(#methods)*
-        }
-
-        #[allow(non_camel_case_types)]
-        pub struct #component_ref_ident {
-            pub component: ::scrypto::component::GlobalComponentRef,
-        }
-
-        impl From<ComponentAddress> for #component_ref_ident {
-            fn from(address: ComponentAddress) -> Self {
-                Self {
-                    component: ::scrypto::component::GlobalComponentRef(address)
-                }
-            }
-        }
-
-        impl ::scrypto::component::Component for #component_ref_ident {
-            fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
-                todo!()
-            }
-            fn handle(&self) -> &::scrypto::component::ComponentHandle {
-                todo!()
-            }
-        }
-
-        impl #component_ref_ident {
-            pub fn access_rules(&self) -> AttachedAccessRules {
-                self.component.access_rules()
-            }
-
-            pub fn royalty(&self) -> AttachedRoyalty {
-                self.component.royalty()
-            }
 
             #(#methods)*
         }
@@ -758,42 +722,6 @@ mod tests {
                     impl TestComponent {
                         pub fn y(arg0: u32) -> u32 {
                             ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(arg0))
-                        }
-
-                        pub fn x(&self, arg0: u32) -> u32 {
-                            self.call("x", scrypto_args!(arg0))
-                        }
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    pub struct TestGlobalComponentRef {
-                        pub component: ::scrypto::component::GlobalComponentRef,
-                    }
-
-                    impl From<ComponentAddress> for TestGlobalComponentRef {
-                        fn from(address: ComponentAddress) -> Self {
-                            Self {
-                                component: ::scrypto::component::GlobalComponentRef(address)
-                            }
-                        }
-                    }
-
-                    impl ::scrypto::component::Component for TestGlobalComponentRef {
-                        fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
-                            todo!()
-                        }
-                        fn handle(&self) -> &::scrypto::component::ComponentHandle {
-                            todo!()
-                        }
-                    }
-
-                    impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> AttachedAccessRules {
-                            self.component.access_rules()
-                        }
-
-                        pub fn royalty(&self) -> AttachedRoyalty {
-                            self.component.royalty()
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {
