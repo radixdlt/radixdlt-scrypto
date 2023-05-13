@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::{
     AccessRules, AttachedAccessRules, AttachedRoyalty, Royalty,
@@ -181,6 +182,26 @@ impl<T: Into<OwnedComponent>> LocalComponent for T {
         ComponentAddress::new_or_panic(preallocated_address.into())
     }
 }
+
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Global<O>(pub O);
+
+impl<O> Deref for Global<O> {
+    type Target = O;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: From<ComponentAddress>> From<ComponentAddress> for Global<T> {
+    fn from(value: ComponentAddress) -> Self {
+        let t: T = value.into();
+        Global(t)
+    }
+}
+
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct GlobalComponentRef(pub ComponentAddress);

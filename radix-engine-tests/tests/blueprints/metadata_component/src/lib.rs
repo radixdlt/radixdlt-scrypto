@@ -10,7 +10,7 @@ mod metadata_component {
             let metadata = Metadata::new();
             metadata.set(key.clone(), value.clone());
             let component_address = component.globalize_with_metadata(metadata);
-            let global: MetadataComponentGlobalComponentRef = component_address.into();
+            let global: Global<MetadataComponentGlobalComponentRef> = component_address.into();
             let metadata = global.metadata();
 
             assert_eq!(metadata.get_string(key).unwrap(), value);
@@ -25,7 +25,7 @@ mod metadata_component {
             let component_address =
                 component.globalize_with_access_rules(MethodAuthorities::new(), authority_rules);
 
-            let global: MetadataComponentGlobalComponentRef = component_address.into();
+            let global: Global<MetadataComponentGlobalComponentRef> = component_address.into();
             let metadata = global.metadata();
             metadata.set(key.clone(), value.clone());
 
