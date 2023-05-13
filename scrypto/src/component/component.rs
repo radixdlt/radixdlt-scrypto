@@ -21,6 +21,7 @@ use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto::modules::{Attached, Metadata};
+use crate::prelude::ScryptoSbor;
 
 pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> T;
@@ -110,7 +111,7 @@ pub trait LocalComponent: Sized {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentHandle(pub Own);
 
 impl Component for ComponentHandle {
@@ -249,6 +250,7 @@ impl Component for GlobalComponentRef {
 // binary
 //========
 
+/*
 impl Categorize<ScryptoCustomValueKind> for ComponentHandle {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -285,3 +287,4 @@ impl Describe<ScryptoCustomTypeKind> for ComponentHandle {
         own_type_data()
     }
 }
+ */
