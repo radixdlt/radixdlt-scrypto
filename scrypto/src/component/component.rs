@@ -34,13 +34,14 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 // with &mut, other than to frustrate developers.
 
 pub trait Component {
+    fn new(handle: ComponentHandle) -> Self;
     fn handle(&mut self) -> &mut ComponentHandle;
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
 }
 
-pub trait LocalComponent: Sized {
+pub trait LocalComponent: Component + Sized {
     fn globalize2(
         self,
         access_rules: AccessRules,
@@ -135,6 +136,10 @@ impl ComponentHandle {
 }
 
 impl Component for ComponentHandle {
+    fn new(handle: ComponentHandle) -> Self {
+        handle
+    }
+
     fn handle(&mut self) -> &mut ComponentHandle {
         self
     }
@@ -233,10 +238,10 @@ impl<T: Component> LocalComponent for T {
 }
 
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Global<O>(pub O);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+pub struct Global<O: Component>(pub O);
 
-impl<O> Deref for Global<O> {
+impl<O: Component> Deref for Global<O> {
     type Target = O;
 
     fn deref(&self) -> &Self::Target {
@@ -244,10 +249,9 @@ impl<O> Deref for Global<O> {
     }
 }
 
-impl<T: From<ComponentAddress>> From<ComponentAddress> for Global<T> {
+impl<O: Component> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
-        let t: T = value.into();
-        Global(t)
+        Global(Component::new(ComponentHandle::Global(value.into())))
     }
 }
 
@@ -276,6 +280,9 @@ impl GlobalComponentRef {
 }
 
 impl Component for GlobalComponentRef {
+    fn new(handle: ComponentHandle) -> Self {
+        todo!()
+    }
     fn handle(&mut self) -> &mut ComponentHandle {
         todo!()
     }

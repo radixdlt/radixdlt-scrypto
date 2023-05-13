@@ -443,6 +443,11 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::Component for #component_ident {
+            fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+                Self {
+                    component: handle
+                }
+            }
             fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
                 &mut self.component
             }
@@ -483,6 +488,9 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::Component for #component_ref_ident {
+            fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+                todo!()
+            }
             fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
                 todo!()
             }
@@ -753,6 +761,11 @@ mod tests {
                     }
 
                     impl ::scrypto::component::Component for TestComponent {
+                        fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+                            Self {
+                                component: handle
+                            }
+                        }
                         fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
                             &mut self.component
                         }
@@ -797,6 +810,9 @@ mod tests {
                     }
 
                     impl ::scrypto::component::Component for TestGlobalComponentRef {
+                        fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+                            todo!()
+                        }
                         fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
                             todo!()
                         }
