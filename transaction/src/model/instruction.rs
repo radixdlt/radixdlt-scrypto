@@ -14,19 +14,19 @@ use sbor::rust::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
     /// Takes resource from worktop.
-    #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR))]
-    TakeFromWorktop { resource_address: ResourceAddress },
+    #[sbor(discriminator(INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR))]
+    TakeAllFromWorktop { resource_address: ResourceAddress },
 
     /// Takes resource from worktop by the given amount.
-    #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_BY_AMOUNT_DISCRIMINATOR))]
-    TakeFromWorktopByAmount {
+    #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR))]
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Takes resource from worktop by the given non-fungible IDs.
-    #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_BY_IDS_DISCRIMINATOR))]
-    TakeFromWorktopByIds {
+    #[sbor(discriminator(INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR))]
+    TakeNonFungiblesFromWorktop {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
@@ -35,20 +35,16 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR))]
     ReturnToWorktop { bucket_id: ManifestBucket },
 
-    /// Asserts worktop contains resource.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR))]
-    AssertWorktopContains { resource_address: ResourceAddress },
-
     /// Asserts worktop contains resource by at least the given amount.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_BY_AMOUNT_DISCRIMINATOR))]
-    AssertWorktopContainsByAmount {
+    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR))]
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: ResourceAddress,
     },
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
-    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_BY_IDS_DISCRIMINATOR))]
-    AssertWorktopContainsByIds {
+    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
+    AssertWorktopContainsNonFungibles {
         ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     },
@@ -249,13 +245,12 @@ pub enum Instruction {
 
 // Note: instruction discriminator is not finalized yet!!
 
-pub const INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR: u8 = 0;
-pub const INSTRUCTION_TAKE_FROM_WORKTOP_BY_AMOUNT_DISCRIMINATOR: u8 = 1;
-pub const INSTRUCTION_TAKE_FROM_WORKTOP_BY_IDS_DISCRIMINATOR: u8 = 2;
+pub const INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR: u8 = 0;
+pub const INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR: u8 = 1;
+pub const INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR: u8 = 2;
 pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 3;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 4;
-pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_BY_AMOUNT_DISCRIMINATOR: u8 = 5;
-pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_BY_IDS_DISCRIMINATOR: u8 = 6;
+pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 6;
 pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 7;
 pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 8;
 pub const INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR: u8 = 9;

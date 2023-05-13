@@ -83,7 +83,7 @@ fn recursion_bomb() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
@@ -117,7 +117,7 @@ fn recursion_bomb_to_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
@@ -159,7 +159,7 @@ fn recursion_bomb_2() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
@@ -193,7 +193,7 @@ fn recursion_bomb_2_to_failure() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",

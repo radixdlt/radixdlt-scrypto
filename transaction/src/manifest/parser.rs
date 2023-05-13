@@ -72,16 +72,16 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
+            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::TakeFromWorktopByAmount => Instruction::TakeFromWorktopByAmount {
+            TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::TakeFromWorktopByIds => Instruction::TakeFromWorktopByIds {
+            TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
                 ids: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
@@ -90,18 +90,15 @@ impl Parser {
                 bucket: self.parse_value()?,
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
+                amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
             },
-            TokenKind::AssertWorktopContainsByAmount => {
-                Instruction::AssertWorktopContainsByAmount {
-                    amount: self.parse_value()?,
+            TokenKind::AssertWorktopContainsNonFungibles => {
+                Instruction::AssertWorktopContainsNonFungibles {
+                    ids: self.parse_value()?,
                     resource_address: self.parse_value()?,
                 }
             }
-            TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
-                ids: self.parse_value()?,
-                resource_address: self.parse_value()?,
-            },
             TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },

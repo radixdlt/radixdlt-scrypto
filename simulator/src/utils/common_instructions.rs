@@ -336,7 +336,7 @@ fn build_call_argument<'a>(
                         builder.withdraw_from_account(account, resource_address, amount);
                     }
                     builder
-                        .add_instruction(Instruction::TakeFromWorktopByAmount {
+                        .add_instruction(Instruction::TakeFromWorktop {
                             amount,
                             resource_address,
                         })
@@ -352,7 +352,7 @@ fn build_call_argument<'a>(
                         );
                     }
                     builder
-                        .add_instruction(Instruction::TakeFromWorktopByIds {
+                        .add_instruction(Instruction::TakeNonFungiblesFromWorktop {
                             ids,
                             resource_address,
                         })

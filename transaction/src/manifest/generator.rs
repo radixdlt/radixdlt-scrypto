@@ -198,7 +198,7 @@ pub fn generate_instruction(
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::TakeFromWorktop {
+        ast::Instruction::TakeAllFromWorktop {
             resource_address,
             new_bucket,
         } => {
@@ -207,11 +207,11 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktop {
+            Instruction::TakeAllFromWorktop {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
-        ast::Instruction::TakeFromWorktopByAmount {
+        ast::Instruction::TakeFromWorktop {
             amount,
             resource_address,
             new_bucket,
@@ -221,12 +221,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByAmount {
+            Instruction::TakeFromWorktop {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
-        ast::Instruction::TakeFromWorktopByIds {
+        ast::Instruction::TakeNonFungiblesFromWorktop {
             ids,
             resource_address,
             new_bucket,
@@ -236,7 +236,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByIds {
+            Instruction::TakeNonFungiblesFromWorktop {
                 ids: generate_non_fungible_local_ids(ids)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -248,22 +248,17 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktopContains { resource_address } => {
-            Instruction::AssertWorktopContains {
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            }
-        }
-        ast::Instruction::AssertWorktopContainsByAmount {
+        ast::Instruction::AssertWorktopContains {
             amount,
             resource_address,
-        } => Instruction::AssertWorktopContainsByAmount {
+        } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
-        ast::Instruction::AssertWorktopContainsByIds {
+        ast::Instruction::AssertWorktopContainsNonFungibles {
             ids,
             resource_address,
-        } => Instruction::AssertWorktopContainsByIds {
+        } => Instruction::AssertWorktopContainsNonFungibles {
             ids: generate_non_fungible_local_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
@@ -1471,21 +1466,21 @@ mod tests {
         .unwrap();
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktopByAmount {
+            r#"TAKE_FROM_WORKTOP  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktop {
+            r#"TAKE_ALL_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromWorktop {
                 resource_address: resource
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");"#,
-            Instruction::AssertWorktopContainsByAmount {
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");"#,
+            Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address: resource,
             },

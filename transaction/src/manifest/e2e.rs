@@ -49,7 +49,7 @@ CALL_METHOD
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("5");
-TAKE_FROM_WORKTOP_BY_AMOUNT
+TAKE_FROM_WORKTOP
     Decimal("2")
     Address("${xrd_resource_address}")
     Bucket("bucket1");
@@ -57,17 +57,15 @@ CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
     Bucket("bucket1");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT
+ASSERT_WORKTOP_CONTAINS
     Decimal("3")
     Address("${gumball_resource_address}");
-ASSERT_WORKTOP_CONTAINS
-    Address("${gumball_resource_address}");
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Bucket("bucket2");
 RETURN_TO_WORKTOP
     Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
     Address("${non_fungible_resource_address}")
     Bucket("bucket3");
@@ -94,7 +92,7 @@ CALL_METHOD
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("5");
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Bucket("bucket1");
 CREATE_PROOF_FROM_BUCKET
@@ -223,7 +221,7 @@ CALL_METHOD
             vec![include_bytes!("../../examples/package/code.wasm").to_vec()],
             apply_address_replacements(
                 r##"
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
     Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE
@@ -647,7 +645,7 @@ CREATE_IDENTITY;
             vec![],
             apply_address_replacements(
                 r##"
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${badge_resource_address}")
     Bucket("bucket1");
 CREATE_ACCESS_CONTROLLER

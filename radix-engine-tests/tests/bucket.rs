@@ -134,7 +134,7 @@ fn test_take_with_invalid_granularity() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .withdraw_from_account(account, resource_address, 100.into())
-        .take_from_worktop(resource_address, |builder, bucket_id| {
+        .take_all_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
             builder.call_function(
                 package_address,
@@ -172,7 +172,7 @@ fn test_take_with_negative_amount() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .withdraw_from_account(account, resource_address, 100.into())
-        .take_from_worktop(resource_address, |builder, bucket_id| {
+        .take_all_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
             builder.call_function(
                 package_address,
@@ -208,13 +208,13 @@ fn create_empty_bucket() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
+        .take_from_worktop(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop_by_ids(
+        .take_non_fungibles_from_worktop(
             &BTreeSet::new(),
             non_fungible_resource,
             |builder, bucket_id| builder.return_to_worktop(bucket_id),

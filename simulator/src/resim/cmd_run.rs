@@ -84,8 +84,8 @@ mod tests {
                 ),
             ],
             || {
-                let manifest = r#"CALL_METHOD ComponentAddress("${  faucet  }") "free";\nTAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
-                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free";\nTAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
+                let manifest = r#"CALL_METHOD ComponentAddress("${  faucet  }") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
+                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free";\nTAKE_ALL_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
                 assert_eq!(Run::pre_process_manifest(manifest), after);
             },
         );

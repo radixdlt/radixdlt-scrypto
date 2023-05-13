@@ -99,12 +99,12 @@ impl TransactionProcessorBlueprint {
             api.update_instruction_index(index)?;
 
             let result = match inst {
-                Instruction::TakeFromWorktop { resource_address } => {
+                Instruction::TakeAllFromWorktop { resource_address } => {
                     let bucket = worktop.sys_take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByAmount {
+                Instruction::TakeFromWorktop {
                     amount,
                     resource_address,
                 } => {
@@ -112,7 +112,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByIds {
+                Instruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_address,
                 } => {
@@ -125,18 +125,14 @@ impl TransactionProcessorBlueprint {
                     worktop.sys_put(bucket, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    worktop.sys_assert_contains(resource_address, api)?;
-                    InstructionOutput::None
-                }
-                Instruction::AssertWorktopContainsByAmount {
+                Instruction::AssertWorktopContains {
                     amount,
                     resource_address,
                 } => {
                     worktop.sys_assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsByIds {
+                Instruction::AssertWorktopContainsNonFungibles {
                     ids,
                     resource_address,
                 } => {
