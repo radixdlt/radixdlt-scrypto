@@ -6,8 +6,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
 use utils::btreemap;
 
 use super::AccessRule;
@@ -54,18 +52,14 @@ impl MethodKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct MethodEntry {
-    pub authorities: Vec<String>,
+    pub authority: String,
 }
 
 impl MethodEntry {
     fn authority(authority: &str) -> Self {
         MethodEntry {
-            authorities: vec![authority.to_string()],
+            authority: authority.to_string(),
         }
-    }
-
-    fn authorities(authorities: Vec<String>) -> Self {
-        MethodEntry { authorities }
     }
 }
 
@@ -110,13 +104,6 @@ impl MethodAuthorities {
         self.methods.insert(
             MethodKey::new(ObjectModuleId::Main, method),
             MethodEntry::authority(authority),
-        );
-    }
-
-    pub fn set_main_method_authorities(&mut self, method: &str, authorities: Vec<String>) {
-        self.methods.insert(
-            MethodKey::new(ObjectModuleId::Main, method),
-            MethodEntry::authorities(authorities),
         );
     }
 }

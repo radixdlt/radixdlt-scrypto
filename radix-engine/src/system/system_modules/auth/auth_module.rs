@@ -223,39 +223,29 @@ impl AuthModule {
         key: &MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let authorities = match access_rules.methods.get(key) {
-            Some(entry) => &entry.authorities,
+        let authority = match access_rules.methods.get(key) {
+            Some(entry) => &entry.authority,
             None => return Ok(()),
         };
 
-        let mut failed_authorizations = Vec::new();
-
-        for authority in authorities {
-            let result = Authorization::check_authorization_against_access_rule(
-                acting_location,
-                *auth_zone_id,
-                access_rules,
-                &rule!(require(authority.to_string())),
-                api,
-            )?;
-            match result {
-                AuthorizationCheckResult::Authorized => return Ok(()),
-                AuthorizationCheckResult::Failed(rule) => {
-                    failed_authorizations.push(rule);
-                }
+        let result = Authorization::check_authorization_against_access_rule(
+            acting_location,
+            *auth_zone_id,
+            access_rules,
+            &rule!(require(authority.to_string())),
+            api,
+        )?;
+        match result {
+            AuthorizationCheckResult::Authorized => Ok(()),
+            AuthorizationCheckResult::Failed(rule) => {
+                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        failed_authorizations: vec![rule],
+                        fn_identifier,
+                    })),
+                )))
             }
         }
-
-        if !failed_authorizations.is_empty() {
-            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                AuthError::Unauthorized(Box::new(Unauthorized {
-                    failed_authorizations,
-                    fn_identifier,
-                })),
-            )));
-        }
-
-        Ok(())
     }
 
     pub fn last_auth_zone(&self) -> Option<NodeId> {
