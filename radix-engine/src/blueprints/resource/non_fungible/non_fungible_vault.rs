@@ -23,16 +23,12 @@ pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
 pub struct NonFungibleVaultBlueprint;
 
 impl NonFungibleVaultBlueprint {
-    fn check_amount(amount: &Decimal) -> bool {
-        !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
-    }
-
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         // Check amount
-        if !Self::check_amount(amount) {
+        if !check_non_fungible_amount(amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -96,7 +92,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !Self::check_amount(&amount) {
+        if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -131,23 +127,10 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = NonFungibleVault::liquid_amount(api)? + NonFungibleVault::locked_amount(api)?;
-
-        let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
-
-        let proof_id = api.new_simple_object(
-            NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
-            ],
-        )?;
-
-        Ok(Proof(Own(proof_id)))
+        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
     }
 
-    pub fn create_proof_by_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
@@ -155,7 +138,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !Self::check_amount(&amount) {
+        if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -174,7 +157,7 @@ impl NonFungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn create_proof_by_ids<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

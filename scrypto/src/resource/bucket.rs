@@ -17,6 +17,9 @@ pub trait ScryptoBucket {
     fn drop_empty(self);
     fn burn(self);
     fn create_proof(&self) -> Proof;
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
+    fn create_proof_of_all(&self) -> Proof;
     fn resource_address(&self) -> ResourceAddress;
     fn take_internal(&mut self, amount: Decimal) -> Bucket;
     fn take_non_fungibles(
@@ -71,6 +74,45 @@ impl ScryptoBucket for Bucket {
                 self.0.as_node_id(),
                 BUCKET_CREATE_PROOF_IDENT,
                 scrypto_encode(&BucketCreateProofInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&BucketCreateProofOfAmountInput {
+                    amount: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&NonFungibleBucketCreateProofOfNonFungiblesInput { ids }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    fn create_proof_of_all(&self) -> Proof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                BUCKET_CREATE_PROOF_OF_ALL_IDENT,
+                scrypto_encode(&BucketCreateProofOfAllInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

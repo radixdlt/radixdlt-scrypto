@@ -1,4 +1,4 @@
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
     Bucket("temp1");
 CREATE_PROOF_FROM_AUTH_ZONE

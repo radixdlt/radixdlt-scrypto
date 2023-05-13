@@ -66,16 +66,20 @@ impl ManifestBuilder {
         let mut new_proof_id: Option<ManifestProof> = None;
 
         match &inst {
-            Instruction::TakeFromWorktop { .. }
-            | Instruction::TakeFromWorktopByAmount { .. }
-            | Instruction::TakeFromWorktopByIds { .. } => {
+            Instruction::TakeAllFromWorktop { .. }
+            | Instruction::TakeFromWorktop { .. }
+            | Instruction::TakeNonFungiblesFromWorktop { .. } => {
                 new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
             Instruction::PopFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZoneByAmount { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. }
+            | Instruction::CreateProofFromAuthZoneOfAmount { .. }
+            | Instruction::CreateProofFromAuthZoneOfNonFungibles { .. }
+            | Instruction::CreateProofFromAuthZoneOfAll { .. }
             | Instruction::CreateProofFromBucket { .. }
+            | Instruction::CreateProofFromBucketOfAmount { .. }
+            | Instruction::CreateProofFromBucketOfNonFungibles { .. }
+            | Instruction::CreateProofFromBucketOfAll { .. }
             | Instruction::CloneProof { .. } => {
                 new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
@@ -88,17 +92,21 @@ impl ManifestBuilder {
     }
 
     /// Takes resource from worktop.
-    pub fn take_from_worktop<F>(&mut self, resource_address: ResourceAddress, then: F) -> &mut Self
+    pub fn take_all_from_worktop<F>(
+        &mut self,
+        resource_address: ResourceAddress,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeFromWorktop { resource_address });
+            self.add_instruction(Instruction::TakeAllFromWorktop { resource_address });
         then(builder, bucket_id.unwrap())
     }
 
     /// Takes resource from worktop, by amount.
-    pub fn take_from_worktop_by_amount<F>(
+    pub fn take_from_worktop<F>(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
@@ -107,7 +115,7 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByAmount {
+        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktop {
             amount,
             resource_address,
         });
@@ -115,7 +123,7 @@ impl ManifestBuilder {
     }
 
     /// Takes resource from worktop, by non-fungible ids.
-    pub fn take_from_worktop_by_ids<F>(
+    pub fn take_non_fungibles_from_worktop<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
@@ -124,10 +132,11 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ManifestBucket) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByIds {
-            ids: ids.clone(),
-            resource_address,
-        });
+        let (builder, bucket_id, _) =
+            self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
+                ids: ids.clone(),
+                resource_address,
+            });
         then(builder, bucket_id.unwrap())
     }
 
@@ -138,18 +147,12 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains(&mut self, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains { resource_address })
-            .0
-    }
-
-    /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains_by_amount(
+    pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByAmount {
+        self.add_instruction(Instruction::AssertWorktopContains {
             amount,
             resource_address,
         })
@@ -157,12 +160,12 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains_by_ids(
+    pub fn assert_worktop_contains_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByIds {
+        self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
             ids: ids.clone(),
             resource_address,
         })
@@ -204,7 +207,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by amount.
-    pub fn create_proof_from_auth_zone_by_amount<F>(
+    pub fn create_proof_from_auth_zone_of_amount<F>(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
@@ -214,7 +217,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByAmount {
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             });
@@ -222,7 +225,7 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from the auth zone by non-fungible ids.
-    pub fn create_proof_from_auth_zone_by_ids<F>(
+    pub fn create_proof_from_auth_zone_of_non_fungibles<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
@@ -232,10 +235,24 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByIds {
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfNonFungibles {
                 ids: ids.clone(),
                 resource_address,
             });
+        then(builder, proof_id.unwrap())
+    }
+
+    /// Creates proof from the auth zone
+    pub fn create_proof_from_auth_zone_of_all<F>(
+        &mut self,
+        resource_address: ResourceAddress,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromAuthZoneOfAll { resource_address });
         then(builder, proof_id.unwrap())
     }
 
@@ -247,6 +264,55 @@ impl ManifestBuilder {
         let (builder, _, proof_id) = self.add_instruction(Instruction::CreateProofFromBucket {
             bucket_id: bucket_id.clone(),
         });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_amount<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        amount: Decimal,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfAmount {
+                bucket_id: bucket_id.clone(),
+                amount,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_non_fungibles<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        ids: BTreeSet<NonFungibleLocalId>,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfNonFungibles {
+                bucket_id: bucket_id.clone(),
+                ids,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket_of_all<F>(
+        &mut self,
+        bucket_id: &ManifestBucket,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucketOfAll {
+                bucket_id: bucket_id.clone(),
+            });
         then(builder, proof_id.unwrap())
     }
 
@@ -716,7 +782,7 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+        self.take_from_worktop(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -724,7 +790,7 @@ impl ManifestBuilder {
     }
 
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
-        self.take_from_worktop(resource_address, |builder, bucket_id| {
+        self.take_all_from_worktop(resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -795,7 +861,7 @@ impl ManifestBuilder {
     pub fn burn_non_fungible(&mut self, non_fungible_global_id: NonFungibleGlobalId) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_global_id.local_id().clone());
-        self.take_from_worktop_by_ids(
+        self.take_non_fungibles_from_worktop(
             &ids,
             non_fungible_global_id.resource_address().clone(),
             |builder, bucket_id| {
@@ -939,40 +1005,40 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_from_account_by_amount(
+    pub fn create_proof_from_account_of_amount(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofByAmountInput {
+        let args = to_manifest_value(&AccountCreateProofOfAmountInput {
             resource_address,
             amount,
         });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            method_name: ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
         })
         .0
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_from_account_by_ids(
+    pub fn create_proof_from_account_of_non_fungibles(
         &mut self,
         account: ComponentAddress,
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
-        let args = to_manifest_value(&AccountCreateProofByIdsInput {
+        let args = to_manifest_value(&AccountCreateProofOfNonFungiblesInput {
             resource_address,
             ids: ids.clone(),
         });
 
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            method_name: ACCOUNT_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            method_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
         .0
