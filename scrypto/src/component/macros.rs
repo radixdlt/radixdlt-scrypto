@@ -23,10 +23,10 @@ macro_rules! borrow_component {
 pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
     blueprint_name: &str,
     state: T,
-) -> OwnedComponent {
+) -> ComponentHandle {
     let mut env = ScryptoEnv;
     let node_id = env
         .new_simple_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
         .unwrap();
-    OwnedComponent(Own(node_id))
+    ComponentHandle(Own(node_id))
 }

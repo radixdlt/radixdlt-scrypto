@@ -439,7 +439,7 @@ fn generate_stubs(
         #[allow(non_camel_case_types)]
         #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
-            pub component: ::scrypto::component::OwnedComponent,
+            pub component: ::scrypto::component::ComponentHandle,
         }
 
         impl ::scrypto::component::Component for #component_ident {
@@ -454,7 +454,7 @@ fn generate_stubs(
             }
         }
 
-        impl From<#component_ident> for ::scrypto::component::OwnedComponent {
+        impl From<#component_ident> for ::scrypto::component::ComponentHandle {
             fn from(value: #component_ident) -> Self {
                 value.component
             }
@@ -743,7 +743,7 @@ mod tests {
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct TestComponent {
-                        pub component: ::scrypto::component::OwnedComponent,
+                        pub component: ::scrypto::component::ComponentHandle,
                     }
 
                     impl ::scrypto::component::Component for TestComponent {
@@ -758,7 +758,7 @@ mod tests {
                         }
                     }
 
-                    impl From<TestComponent> for ::scrypto::component::OwnedComponent {
+                    impl From<TestComponent> for ::scrypto::component::ComponentHandle {
                         fn from(value: TestComponent) -> Self {
                             value.component
                         }

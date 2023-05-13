@@ -111,9 +111,9 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct OwnedComponent(pub Own);
+pub struct ComponentHandle(pub Own);
 
-impl Component for OwnedComponent {
+impl Component for ComponentHandle {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
             .call_method(self.0.as_node_id(), method, args)
@@ -138,7 +138,7 @@ impl Component for OwnedComponent {
     }
 }
 
-impl<T: Into<OwnedComponent>> LocalComponent for T {
+impl<T: Into<ComponentHandle>> LocalComponent for T {
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
@@ -249,14 +249,14 @@ impl Component for GlobalComponentRef {
 // binary
 //========
 
-impl Categorize<ScryptoCustomValueKind> for OwnedComponent {
+impl Categorize<ScryptoCustomValueKind> for ComponentHandle {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
         ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for OwnedComponent {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ComponentHandle {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -268,7 +268,7 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for O
     }
 }
 
-impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for OwnedComponent {
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for ComponentHandle {
     fn decode_body_with_value_kind(
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
@@ -278,7 +278,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for O
 }
 
 // TODO: generics support for Scrypto components?
-impl Describe<ScryptoCustomTypeKind> for OwnedComponent {
+impl Describe<ScryptoCustomTypeKind> for ComponentHandle {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(OWN_ID);
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
