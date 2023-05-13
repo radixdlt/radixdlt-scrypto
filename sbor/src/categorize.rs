@@ -14,6 +14,19 @@ pub trait Categorize<X: CustomValueKind> {
     fn value_kind() -> ValueKind<X>;
 }
 
+/// Marker trait for encoding as an Sbor Tuple
+pub trait SborTuple {}
+
+/// Marker trait for encoding as an Sbor Tuple
+pub trait SborEnum {
+    fn get_discriminator(&self) -> u8;
+}
+
+pub trait SborVariantFor<TInner, TEnum> {
+    const DISCRIMINATOR: u8;
+    const IS_FLATTENED: bool;
+}
+
 // Macros for use within this crate
 macro_rules! categorize_simple {
     ($type:ty, $value_kind:expr) => {

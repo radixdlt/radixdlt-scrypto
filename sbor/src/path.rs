@@ -2,6 +2,7 @@ use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::value::Value;
 use crate::CustomValueKind;
+use crate::*;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);
@@ -41,7 +42,7 @@ impl SborPath {
         SborPath(path)
     }
 
-    pub fn get_from_value<'a, X: CustomValueKind, Y>(
+    pub fn get_from_value<'a, X: CustomValueKind, Y: CustomValue<X>>(
         &'a self,
         value: &'a Value<X, Y>,
     ) -> Option<&'a Value<X, Y>> {
@@ -49,7 +50,7 @@ impl SborPath {
         rel_path.get_from(value)
     }
 
-    pub fn get_from_value_mut<'a, X: CustomValueKind, Y>(
+    pub fn get_from_value_mut<'a, X: CustomValueKind, Y: CustomValue<X>>(
         &'a self,
         value: &'a mut Value<X, Y>,
     ) -> Option<&'a mut Value<X, Y>> {
@@ -76,7 +77,10 @@ impl<'a> ValueRetriever<'a> {
         Some((index, ValueRetriever(extended_path)))
     }
 
-    fn get_from<X: CustomValueKind, Y>(self, value: &'a Value<X, Y>) -> Option<&'a Value<X, Y>> {
+    fn get_from<X: CustomValueKind, Y: CustomValue<X>>(
+        self,
+        value: &'a Value<X, Y>,
+    ) -> Option<&'a Value<X, Y>> {
         if self.is_empty() {
             return Option::Some(value);
         }
@@ -106,7 +110,7 @@ impl<'a> ValueRetriever<'a> {
         }
     }
 
-    fn get_from_mut<X: CustomValueKind, Y>(
+    fn get_from_mut<X: CustomValueKind, Y: CustomValue<X>>(
         self,
         value: &'a mut Value<X, Y>,
     ) -> Option<&'a mut Value<X, Y>> {
@@ -144,7 +148,6 @@ impl<'a> ValueRetriever<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::*;
 
     #[test]
     fn query_array() {

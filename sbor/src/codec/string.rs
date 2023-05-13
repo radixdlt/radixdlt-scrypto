@@ -49,6 +49,6 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    describe_basic_well_known_type!(String, STRING_ID);
-    describe_basic_well_known_type!(str, STRING_ID);
+    describe_basic_well_known_type!(String, STRING_ID, string_type_data);
+    describe_basic_well_known_type!(str, STRING_ID, string_type_data);
 }

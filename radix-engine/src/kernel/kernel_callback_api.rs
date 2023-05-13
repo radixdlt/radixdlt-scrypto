@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::track::interface::NodeSubstates;
+use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 
@@ -35,7 +35,11 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn after_create_node<Y>(
+        node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -52,19 +56,24 @@ pub trait KernelCallbackObject: Sized {
     fn after_lock_substate<Y>(
         handle: LockHandle,
         size: usize,
-        first_lock_from_db: bool,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_drop_lock<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_lock<Y>(
+        lock_handle: LockHandle,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -72,7 +81,26 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_scan_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_set_substate<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_take_substates<Y>(
+        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

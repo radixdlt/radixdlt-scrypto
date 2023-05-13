@@ -4,7 +4,7 @@ use sbor::*;
 /// Marker trait for a link between [`TypeKind`]s:
 /// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
 /// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
-pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq {}
+pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeIndex> {}
 
 /// This is a global identifier for a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
@@ -16,6 +16,13 @@ pub enum GlobalTypeId {
     /// The global type hash of a type - used for types which aren't well known.
     Novel(TypeHash),
 }
+
+impl From<WellKnownTypeIndex> for GlobalTypeId {
+    fn from(value: WellKnownTypeIndex) -> Self {
+        GlobalTypeId::WellKnown([value.0])
+    }
+}
+
 impl SchemaTypeLink for GlobalTypeId {}
 
 pub type TypeHash = [u8; 20];
@@ -110,6 +117,13 @@ pub enum LocalTypeIndex {
     /// For non-simple types
     SchemaLocalIndex(usize),
 }
+
+impl From<WellKnownTypeIndex> for LocalTypeIndex {
+    fn from(value: WellKnownTypeIndex) -> Self {
+        LocalTypeIndex::WellKnown(value.0)
+    }
+}
+
 impl SchemaTypeLink for LocalTypeIndex {}
 
 impl LocalTypeIndex {
@@ -117,3 +131,5 @@ impl LocalTypeIndex {
         Self::WellKnown(basic_well_known_types::ANY_ID)
     }
 }
+
+pub struct WellKnownTypeIndex(pub u8);

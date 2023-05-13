@@ -101,13 +101,19 @@ pub enum CostingReason {
     CreateNode,
     AllocateNodeId,
     LockSubstate,
-    LockSubstateFirstTime,
+    ScanSubstate,
+    SetSubstate,
+    TakeSubstate,
     ReadSubstate,
     WriteSubstate,
     DropLock,
     RunWasm,
     RunNative,
     RunSystem,
+    SubstateReadFromDb,
+    SubstateReadFromTrack,
+    SubstateWriteToTrack,
+    SubstateRewriteToTrack,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]

@@ -19,6 +19,12 @@ pub enum NoCustomValueKind {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NoCustomValue {}
 
+impl CustomValue<NoCustomValueKind> for NoCustomValue {
+    fn get_custom_value_kind(&self) -> NoCustomValueKind {
+        panic!("No custom value")
+    }
+}
+
 pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind>;
 pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind>;
 pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal>;
