@@ -226,10 +226,11 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Result
             for input in method.sig.inputs.iter() {
                 match input {
                     FnArg::Receiver(_) => {}
-                    FnArg::Typed(parameter_type) => {
-                        let arg_ident = get_arg_ident(parameter_type.pat.as_ref(), index)?;
+                    FnArg::Typed(argument_and_type) => {
+                        let arg_ident =
+                            create_argument_ident(argument_and_type.pat.as_ref(), index)?;
                         index += 1;
-                        let arg_type = parameter_type.ty.as_ref();
+                        let arg_type = argument_and_type.ty.as_ref();
                         let arg: Field = Field::parse_named
                             .parse2(quote! {
                                 #arg_ident : #arg_type
@@ -294,9 +295,10 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                                 });
                             }
                         }
-                        FnArg::Typed(parameter_type) => {
+                        FnArg::Typed(argument_and_type) => {
                             let arg_index = if get_state.is_some() { i - 1 } else { i };
-                            let arg_ident = get_arg_ident(parameter_type.pat.as_ref(), arg_index)?;
+                            let arg_ident =
+                                create_argument_ident(argument_and_type.pat.as_ref(), arg_index)?;
 
                             match_args.push(parse_quote! { #arg_ident });
                             dispatch_args.push(parse_quote! { input.#arg_ident });
@@ -356,15 +358,25 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
     Ok(functions)
 }
 
-fn get_arg_ident(parameter: &Pat, index: usize) -> Result<Ident> {
-    Ok(match parameter {
+fn create_argument_ident(argument: &Pat, index: usize) -> Result<Ident> {
+    Ok(match argument {
         // If we have a standard parameter name - use that
         Pat::Ident(ident_pattern) => {
-            validate_field_ident(&ident_pattern.ident)?;
-            ident_pattern.ident.clone()
+            let ident = if ident_pattern.ident.to_string().starts_with("_") {
+                // Handle parameters starting with `_` - strip them to pass validation
+                Ident::new(
+                    ident_pattern.ident.to_string().trim_start_matches('_'),
+                    ident_pattern.ident.span(),
+                )
+            } else {
+                // Otherwise, just use the parameter as-is
+                ident_pattern.ident.clone()
+            };
+            validate_field_ident(&ident)?;
+            ident
         }
-        // Otherwise, if it's something more complicated (such as a destructuring), just use `argX`
-        _ => format_ident!("arg{}", index, span = parameter.span()),
+        // If it's not an ident, it's something more complicated (such as a destructuring), just use `argX`
+        _ => format_ident!("arg{}", index, span = argument.span()),
     })
 }
 
@@ -429,11 +441,14 @@ fn generate_stubs(
                                     mutable = Some(false);
                                 }
                             }
-                            FnArg::Typed(parameter_type) => {
-                                let arg = get_arg_ident(parameter_type.pat.as_ref(), input_len)?;
+                            FnArg::Typed(argument_and_type) => {
+                                let arg = create_argument_ident(
+                                    argument_and_type.pat.as_ref(),
+                                    input_len,
+                                )?;
                                 input_args.push(arg);
 
-                                let ty = replace_self_with(&parameter_type.ty, bp_ident);
+                                let ty = replace_self_with(&argument_and_type.ty, bp_ident);
                                 input_types.push(ty);
 
                                 input_len += 1;
