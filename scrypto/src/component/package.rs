@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{Attached};
+use crate::modules::{Attachable, Attached, ModuleHandle};
 use crate::runtime::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -27,7 +27,8 @@ impl BorrowedPackage {
     }
 
     pub fn metadata(&self) -> Attached<Metadata> {
-        Metadata::attached(self.0.into())
+        let metadata = Metadata::attached(self.0.into());
+        Attached::new(metadata)
     }
 
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
