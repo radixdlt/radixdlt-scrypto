@@ -34,6 +34,7 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 // with &mut, other than to frustrate developers.
 
 pub trait Component {
+    fn handle(&mut self) -> &mut ComponentHandle;
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
@@ -125,6 +126,10 @@ impl ComponentHandle {
 }
 
 impl Component for ComponentHandle {
+    fn handle(&mut self) -> &mut ComponentHandle {
+        self
+    }
+
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         match self {
             ComponentHandle::Own(own) => {
@@ -249,6 +254,10 @@ impl GlobalComponentRef {
 }
 
 impl Component for GlobalComponentRef {
+    fn handle(&mut self) -> &mut ComponentHandle {
+        todo!()
+    }
+
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
             .call_method(self.0.as_node_id(), method, args)

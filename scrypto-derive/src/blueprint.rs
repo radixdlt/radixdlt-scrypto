@@ -443,6 +443,9 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::Component for #component_ident {
+            fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+                &mut self.component
+            }
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
@@ -480,6 +483,9 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::Component for #component_ref_ident {
+            fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+                todo!()
+            }
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
             }
@@ -747,6 +753,9 @@ mod tests {
                     }
 
                     impl ::scrypto::component::Component for TestComponent {
+                        fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+                            &mut self.component
+                        }
                         fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                             self.component.call(method, args)
                         }
@@ -788,6 +797,9 @@ mod tests {
                     }
 
                     impl ::scrypto::component::Component for TestGlobalComponentRef {
+                        fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+                            todo!()
+                        }
                         fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                             self.component.call(method, args)
                         }
