@@ -35,7 +35,7 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 
 pub trait Component {
     fn new(handle: ComponentHandle) -> Self;
-    fn handle(&mut self) -> &mut ComponentHandle;
+    fn handle(&self) -> &ComponentHandle;
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
@@ -140,7 +140,7 @@ impl Component for ComponentHandle {
         handle
     }
 
-    fn handle(&mut self) -> &mut ComponentHandle {
+    fn handle(&self) -> &ComponentHandle {
         self
     }
 
@@ -188,9 +188,7 @@ impl<T: Component> LocalComponent for T {
             ))
             .unwrap();
 
-        *self.handle() = ComponentHandle::Global(address);
-
-        Global(self)
+        Global(T::new(ComponentHandle::Global(address)))
     }
 
     fn globalize_with_modules(
@@ -249,6 +247,12 @@ impl<O: Component> Deref for Global<O> {
     }
 }
 
+impl<O: Component> Global<O> {
+    pub fn metadata(&self) -> Attached<Metadata> {
+        Metadata::attached(GlobalAddress::new_or_panic(self.handle().as_node_id().0))
+    }
+}
+
 impl<O: Component> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
         Global(Component::new(ComponentHandle::Global(value.into())))
@@ -283,7 +287,7 @@ impl Component for GlobalComponentRef {
     fn new(handle: ComponentHandle) -> Self {
         todo!()
     }
-    fn handle(&mut self) -> &mut ComponentHandle {
+    fn handle(&self) -> &ComponentHandle {
         todo!()
     }
 

@@ -448,8 +448,8 @@ fn generate_stubs(
                     component: handle
                 }
             }
-            fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
-                &mut self.component
+            fn handle(&self) -> &::scrypto::component::ComponentHandle {
+                &self.component
             }
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                 self.component.call(method, args)
@@ -491,7 +491,7 @@ fn generate_stubs(
             fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
                 todo!()
             }
-            fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+            fn handle(&self) -> &::scrypto::component::ComponentHandle {
                 todo!()
             }
             fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
@@ -766,8 +766,8 @@ mod tests {
                                 component: handle
                             }
                         }
-                        fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
-                            &mut self.component
+                        fn handle(&self) -> &::scrypto::component::ComponentHandle {
+                            &self.component
                         }
                         fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
                             self.component.call(method, args)
@@ -813,7 +813,7 @@ mod tests {
                         fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
                             todo!()
                         }
-                        fn handle(&mut self) -> &mut ::scrypto::component::ComponentHandle {
+                        fn handle(&self) -> &::scrypto::component::ComponentHandle {
                             todo!()
                         }
                         fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
