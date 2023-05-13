@@ -25,14 +25,14 @@ impl Describe<ScryptoCustomTypeKind> for OwnedWorktop {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::Novel(const_sha1::sha1("OwnedWorktop".as_bytes()).as_bytes());
 
-    fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
-        Some(TypeData {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedWorktop"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(RESOURCE_PACKAGE, WORKTOP_BLUEPRINT.to_string()),
             )),
-        })
+        }
     }
 
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}

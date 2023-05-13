@@ -172,7 +172,7 @@ mod schema {
     {
         const TYPE_ID: GlobalTypeId = <B>::TYPE_ID;
 
-        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> TypeData<C, GlobalTypeId> {
             <B>::type_data()
         }
 

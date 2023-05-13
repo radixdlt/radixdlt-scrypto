@@ -3,6 +3,7 @@ use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
@@ -102,4 +103,8 @@ impl Describe<ScryptoCustomTypeKind> for Proof {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
         crate::data::scrypto::well_known_scrypto_custom_types::OWN_PROOF_ID,
     );
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_proof_type_data()
+    }
 }

@@ -3,6 +3,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::interface::StoreAccessInfo;
 use crate::transaction::{ExecutionMetrics, TransactionResult};
 use crate::types::*;
 use crate::{
@@ -273,7 +274,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
 
@@ -281,16 +283,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         tlimit.substate_db_read_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_read_size_total += size;
+        tlimit.substate_db_read_size_total += value_size;
 
         // Validate
-        tlimit.validate_substates(Some(size), None)
+        tlimit.validate_substates(Some(value_size), None)
     }
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
-        size: usize,
+        value_size: usize,
+        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let tlimit = &mut api.kernel_get_system().modules.transaction_limits;
 
@@ -298,9 +301,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for TransactionLimit
         tlimit.substate_db_write_count += 1;
 
         // Increase total size.
-        tlimit.substate_db_write_size_total += size;
+        tlimit.substate_db_write_size_total += value_size;
 
         // Validate
-        tlimit.validate_substates(None, Some(size))
+        tlimit.validate_substates(None, Some(value_size))
     }
 }

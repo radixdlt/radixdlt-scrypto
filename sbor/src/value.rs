@@ -7,6 +7,7 @@ use crate::rust::fmt::Debug;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::value_kind::*;
+use crate::*;
 
 /// Y is the CustomValue type. This is likely an enum, capturing all the custom values for the
 /// particular SBOR extension.
@@ -16,7 +17,7 @@ use crate::value_kind::*;
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Value<X: CustomValueKind, Y> {
+pub enum Value<X: CustomValueKind, Y: CustomValue<X>> {
     Bool {
         value: bool,
     },
@@ -74,7 +75,37 @@ pub enum Value<X: CustomValueKind, Y> {
     },
 }
 
-impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<X, Y> {
+pub trait CustomValue<X: CustomValueKind> {
+    fn get_custom_value_kind(&self) -> X;
+}
+
+impl<X: CustomValueKind, Y: CustomValue<X>> Value<X, Y> {
+    fn get_value_kind(&self) -> ValueKind<X> {
+        match self {
+            Value::Bool { .. } => ValueKind::Bool,
+            Value::I8 { .. } => ValueKind::I8,
+            Value::I16 { .. } => ValueKind::I16,
+            Value::I32 { .. } => ValueKind::I32,
+            Value::I64 { .. } => ValueKind::I64,
+            Value::I128 { .. } => ValueKind::U128,
+            Value::U8 { .. } => ValueKind::U8,
+            Value::U16 { .. } => ValueKind::U16,
+            Value::U32 { .. } => ValueKind::U32,
+            Value::U64 { .. } => ValueKind::U64,
+            Value::U128 { .. } => ValueKind::U128,
+            Value::String { .. } => ValueKind::String,
+            Value::Enum { .. } => ValueKind::Enum,
+            Value::Array { .. } => ValueKind::Array,
+            Value::Tuple { .. } => ValueKind::Tuple,
+            Value::Map { .. } => ValueKind::Map,
+            Value::Custom { value } => ValueKind::Custom(value.get_custom_value_kind()),
+        }
+    }
+}
+
+impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode<X, E>
+    for Value<X, Y>
+{
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
@@ -154,6 +185,12 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 encoder.write_value_kind(*element_value_kind)?;
                 encoder.write_size(elements.len())?;
                 for item in elements {
+                    if item.get_value_kind() != *element_value_kind {
+                        return Err(EncodeError::MismatchingArrayElementValueKind {
+                            element_value_kind: element_value_kind.as_u8(),
+                            actual_value_kind: item.get_value_kind().as_u8(),
+                        });
+                    }
                     encoder.encode_deeper_body(item)?;
                 }
             }
@@ -172,7 +209,21 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 encoder.write_value_kind(*value_value_kind)?;
                 encoder.write_size(entries.len())?;
                 for entry in entries {
+                    let actual_key_value_kind = entry.0.get_value_kind();
+                    if actual_key_value_kind != *key_value_kind {
+                        return Err(EncodeError::MismatchingMapKeyValueKind {
+                            key_value_kind: key_value_kind.as_u8(),
+                            actual_value_kind: actual_key_value_kind.as_u8(),
+                        });
+                    }
                     encoder.encode_deeper_body(&entry.0)?;
+                    let actual_value_value_kind = entry.1.get_value_kind();
+                    if actual_value_value_kind != *value_value_kind {
+                        return Err(EncodeError::MismatchingMapValueValueKind {
+                            value_value_kind: value_value_kind.as_u8(),
+                            actual_value_kind: actual_value_value_kind.as_u8(),
+                        });
+                    }
                     encoder.encode_deeper_body(&entry.1)?;
                 }
             }
@@ -185,7 +236,9 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
     }
 }
 
-impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<X, Y> {
+impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode<X, D>
+    for Value<X, Y>
+{
     #[inline]
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -285,18 +338,17 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
     }
 }
 
-pub use schema::*;
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
+    for Value<X, Y>
+{
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
 
-mod schema {
-    use super::*;
-    use crate::*;
-
-    impl<X: CustomValueKind, Y, C: CustomTypeKind<GlobalTypeId>> Describe<C> for Value<X, Y> {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+    fn type_data() -> TypeData<C, GlobalTypeId> {
+        basic_well_known_types::any_type_data()
     }
 }
 
-pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
+pub fn traverse_any<X: CustomValueKind, Y: CustomValue<X>, V: ValueVisitor<X, Y, Err = E>, E>(
     path: &mut SborPathBuf,
     value: &Value<X, Y>,
     visitor: &mut V,
@@ -369,7 +421,7 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
     Ok(())
 }
 
-pub trait ValueVisitor<X: CustomValueKind, Y> {
+pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
     type Err;
 
     fn visit_array(
@@ -396,13 +448,8 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
-    use crate::*;
-
     use super::*;
+    use crate::rust::prelude::*;
 
     #[derive(Categorize, Encode)]
     struct TestStruct {
@@ -570,6 +617,41 @@ mod tests {
         let encoded_sbor_value = basic_encode(&sbor_value).unwrap();
 
         assert_eq!(encoded_sbor_value, encoded_typed_value);
+    }
+
+    #[test]
+    pub fn invalid_array_value_errors_on_encode() {
+        let invalid_value = BasicValue::Array {
+            element_value_kind: ValueKind::U8,
+            elements: vec![BasicValue::U8 { value: 1 }, BasicValue::U16 { value: 2 }],
+        };
+        assert!(matches!(
+            basic_encode(&invalid_value),
+            Err(EncodeError::MismatchingArrayElementValueKind { .. })
+        ));
+    }
+
+    #[test]
+    pub fn invalid_map_value_errors_on_encode() {
+        let invalid_value = BasicValue::Map {
+            key_value_kind: ValueKind::U8,
+            value_value_kind: ValueKind::I8,
+            entries: vec![(BasicValue::U16 { value: 1 }, BasicValue::I8 { value: 1 })],
+        };
+        assert!(matches!(
+            basic_encode(&invalid_value),
+            Err(EncodeError::MismatchingMapKeyValueKind { .. })
+        ));
+
+        let invalid_value = BasicValue::Map {
+            key_value_kind: ValueKind::U8,
+            value_value_kind: ValueKind::I8,
+            entries: vec![(BasicValue::U8 { value: 1 }, BasicValue::I16 { value: 1 })],
+        };
+        assert!(matches!(
+            basic_encode(&invalid_value),
+            Err(EncodeError::MismatchingMapValueValueKind { .. })
+        ));
     }
 
     #[test]

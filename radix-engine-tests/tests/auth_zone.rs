@@ -3,7 +3,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn test_auth_zone_create_proof_by_all_for_fungible() {
+fn test_auth_zone_create_proof_of_all_for_fungible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -26,7 +26,7 @@ fn test_auth_zone_create_proof_by_all_for_fungible() {
 }
 
 #[test]
-fn test_auth_zone_create_proof_by_all_for_non_fungible() {
+fn test_auth_zone_create_proof_of_all_for_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
