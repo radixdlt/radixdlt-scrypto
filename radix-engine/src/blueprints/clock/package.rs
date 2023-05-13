@@ -164,8 +164,6 @@ impl ClockNativePackage {
 
         let mut method_authorities = MethodAuthorities::new();
         method_authorities.set_main_method_authority(CLOCK_SET_CURRENT_TIME_IDENT, "validator");
-        method_authorities.set_public(CLOCK_GET_CURRENT_TIME_IDENT);
-        method_authorities.set_public(CLOCK_COMPARE_CURRENT_TIME_IDENT);
 
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_rule(

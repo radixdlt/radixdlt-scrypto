@@ -37,8 +37,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_public(ACCOUNT_DEPOSIT_IDENT);
-        method_authorities.set_public(ACCOUNT_DEPOSIT_BATCH_IDENT);
         method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
         method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");

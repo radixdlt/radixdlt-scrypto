@@ -37,13 +37,6 @@ fn build_access_rules(
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
             UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
         );
-        resman_method_authorities.set_public(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT);
-        resman_method_authorities.set_public(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT);
-        resman_method_authorities.set_public(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT);
-        resman_method_authorities.set_public(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT);
-        resman_method_authorities.set_public(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT);
-        resman_method_authorities.set_public(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT);
-        resman_method_authorities.set_public(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT);
         resman_method_authorities
     };
 
@@ -95,12 +88,6 @@ fn build_access_rules(
             RECALL_AUTHORITY,
         );
         vault_method_authorities.set_main_method_authority(VAULT_PUT_IDENT, DEPOSIT_AUTHORITY);
-
-        vault_method_authorities.set_public(VAULT_GET_AMOUNT_IDENT);
-        vault_method_authorities.set_public(NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT);
-        vault_method_authorities.set_public(VAULT_CREATE_PROOF_OF_ALL_IDENT);
-        vault_method_authorities.set_public(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT);
-        vault_method_authorities.set_public(NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT);
 
         vault_method_authorities
             .set_main_method_authority(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");

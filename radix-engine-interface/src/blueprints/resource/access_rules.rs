@@ -81,13 +81,6 @@ impl MethodAuthorities {
         }
     }
 
-    pub fn set_public(&mut self, method: &str) {
-        self.methods.insert(
-            MethodKey::new(ObjectModuleId::Main, method),
-            MethodEntry::authority("public"),
-        );
-    }
-
     pub fn set_module_method_authority(
         &mut self,
         module_id: ObjectModuleId,

@@ -169,8 +169,6 @@ impl EpochManagerBlueprint {
         method_authorities.set_main_method_authority(EPOCH_MANAGER_START_IDENT, "start");
         method_authorities.set_main_method_authority(EPOCH_MANAGER_NEXT_ROUND_IDENT, "validator");
         method_authorities.set_main_method_authority(EPOCH_MANAGER_SET_EPOCH_IDENT, "system");
-        method_authorities.set_public(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT);
-        method_authorities.set_public(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT);
 
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_rule(

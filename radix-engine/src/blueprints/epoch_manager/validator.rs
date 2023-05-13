@@ -514,8 +514,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_public(VALIDATOR_UNSTAKE_IDENT);
-        method_authorities.set_public(VALIDATOR_CLAIM_XRD_IDENT);
         method_authorities.set_main_method_authority(VALIDATOR_STAKE_IDENT, "stake");
         method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, "owner");
         method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, "owner");
