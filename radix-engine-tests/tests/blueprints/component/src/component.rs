@@ -25,9 +25,10 @@ mod component_test {
         }
 
         pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
+            let component: Global<AnyComponent> = component_address.into();
             (
-                borrow_component!(component_address).package_address(),
-                borrow_component!(component_address).blueprint_name(),
+                component.package_address(),
+                component.blueprint_name(),
             )
         }
 

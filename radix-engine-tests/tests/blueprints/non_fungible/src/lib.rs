@@ -157,7 +157,9 @@ mod non_fungible_test {
                 .get_non_fungible_data(&NonFungibleLocalId::integer(0));
             let address = data.reference.unwrap();
 
-            let metadata = borrow_component!(address).metadata();
+            let some_component: Global<AnyComponent> = address.into();
+
+            let metadata = some_component.metadata();
             metadata.get_string("test_key").unwrap()
         }
 

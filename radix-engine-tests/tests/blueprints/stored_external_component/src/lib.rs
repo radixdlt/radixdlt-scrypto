@@ -39,7 +39,7 @@ mod external_component {
 
         pub fn func(&mut self) {
             if let Some(component) = self.external_component {
-                let component_ref: ExternalComponentGlobalComponentRef = component.into();
+                let component_ref: Global<ExternalComponentComponent> = component.into();
                 component_ref.func();
             }
         }

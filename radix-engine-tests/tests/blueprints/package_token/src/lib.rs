@@ -44,7 +44,7 @@ mod factory {
 
             let component_address =
                 component.globalize_with_access_rules(method_authorities, authority_rules);
-            let component_ref: FactoryGlobalComponentRef = component_address.into();
+            let component_ref: Global<FactoryComponent> = component_address.into();
             component_ref.set_address(component_address);
 
             component_address

@@ -416,7 +416,7 @@ fn generate_stubs(
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, scrypto_args!(
+                                self.call(#name, scrypto_args!(
                                     #(
                                        #input_args
                                     ),*
@@ -450,15 +450,6 @@ fn generate_stubs(
             }
             fn handle(&self) -> &::scrypto::component::ComponentHandle {
                 &self.component
-            }
-            fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                self.component.call(method, args)
-            }
-            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                self.component.package_address()
-            }
-            fn blueprint_name(&self) -> String {
-                self.component.blueprint_name()
             }
         }
 
@@ -494,24 +485,11 @@ fn generate_stubs(
             fn handle(&self) -> &::scrypto::component::ComponentHandle {
                 todo!()
             }
-            fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                self.component.call(method, args)
-            }
-            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                self.component.package_address()
-            }
-            fn blueprint_name(&self) -> String {
-                self.component.blueprint_name()
-            }
         }
 
         impl #component_ref_ident {
             pub fn access_rules(&self) -> AttachedAccessRules {
                 self.component.access_rules()
-            }
-
-            pub fn metadata(&self) -> Attached<Metadata> {
-                self.component.metadata()
             }
 
             pub fn royalty(&self) -> AttachedRoyalty {
@@ -769,15 +747,6 @@ mod tests {
                         fn handle(&self) -> &::scrypto::component::ComponentHandle {
                             &self.component
                         }
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
                     }
 
                     impl From<TestComponent> for ::scrypto::component::ComponentHandle {
@@ -792,7 +761,7 @@ mod tests {
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(arg0))
+                            self.call("x", scrypto_args!(arg0))
                         }
                     }
 
@@ -816,15 +785,6 @@ mod tests {
                         fn handle(&self) -> &::scrypto::component::ComponentHandle {
                             todo!()
                         }
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
                     }
 
                     impl TestGlobalComponentRef {
@@ -832,16 +792,12 @@ mod tests {
                             self.component.access_rules()
                         }
 
-                        pub fn metadata(&self) -> Attached<Metadata> {
-                            self.component.metadata()
-                        }
-
                         pub fn royalty(&self) -> AttachedRoyalty {
                             self.component.royalty()
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(arg0))
+                            self.call("x", scrypto_args!(arg0))
                         }
                     }
                 }

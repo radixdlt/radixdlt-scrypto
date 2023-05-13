@@ -35,10 +35,43 @@ pub trait ComponentState<T: Component + LocalComponent>: ScryptoEncode + Scrypto
 
 pub trait Component {
     fn new(handle: ComponentHandle) -> Self;
+
     fn handle(&self) -> &ComponentHandle;
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T;
-    fn package_address(&self) -> PackageAddress;
-    fn blueprint_name(&self) -> String;
+
+    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+        let output = ScryptoEnv
+            .call_method(self.handle().as_node_id(), method, args)
+            .unwrap();
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn package_address(&self) -> PackageAddress {
+        ScryptoEnv
+            .get_object_info(self.handle().as_node_id())
+            .unwrap()
+            .blueprint
+            .package_address
+    }
+
+    fn blueprint_name(&self) -> String {
+        ScryptoEnv
+            .get_object_info(self.handle().as_node_id())
+            .unwrap()
+            .blueprint
+            .blueprint_name
+    }
+}
+
+pub struct AnyComponent(ComponentHandle);
+
+impl Component for AnyComponent {
+    fn new(handle: ComponentHandle) -> Self {
+        Self(handle)
+    }
+
+    fn handle(&self) -> &ComponentHandle {
+        &self.0
+    }
 }
 
 pub trait LocalComponent: Component + Sized {
@@ -142,29 +175,6 @@ impl Component for ComponentHandle {
 
     fn handle(&self) -> &ComponentHandle {
         self
-    }
-
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(self.as_node_id(), method, args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
-    }
-
-    fn package_address(&self) -> PackageAddress {
-        ScryptoEnv
-            .get_object_info(self.as_node_id())
-            .unwrap()
-            .blueprint
-            .package_address
-    }
-
-    fn blueprint_name(&self) -> String {
-        ScryptoEnv
-            .get_object_info(self.as_node_id())
-            .unwrap()
-            .blueprint
-            .blueprint_name
     }
 }
 
@@ -289,29 +299,6 @@ impl Component for GlobalComponentRef {
     }
     fn handle(&self) -> &ComponentHandle {
         todo!()
-    }
-
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(self.0.as_node_id(), method, args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
-    }
-
-    fn package_address(&self) -> PackageAddress {
-        ScryptoEnv
-            .get_object_info(self.0.as_node_id())
-            .unwrap()
-            .blueprint
-            .package_address
-    }
-
-    fn blueprint_name(&self) -> String {
-        ScryptoEnv
-            .get_object_info(self.0.as_node_id())
-            .unwrap()
-            .blueprint
-            .blueprint_name
     }
 }
 
