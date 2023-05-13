@@ -7,7 +7,7 @@ use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
+    require, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::OWN_ID;
 use radix_engine_interface::data::scrypto::{
@@ -56,83 +56,36 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-        );
-        authority_rules.set_rule(
-            "royalty".to_string(),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-
         self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), authority_rules),
+            AccessRules::new(
+                MethodAuthorities::new(),
+                AuthorityRules::new(),
+            ),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-        );
-        authority_rules.set_rule(
-            "royalty".to_string(),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-
         self.globalize_at_address_with_modules(
             preallocated_address,
-            AccessRules::new(MethodAuthorities::new(), authority_rules),
+            AccessRules::new(
+                MethodAuthorities::new(),
+                AuthorityRules::new(),
+            ),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-        );
-        authority_rules.set_rule(
-            "royalty".to_string(),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-
         self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), authority_rules),
+            AccessRules::new(
+                MethodAuthorities::new(),
+                AuthorityRules::new(),
+            ),
             metadata,
             Royalty::new(RoyaltyConfig::default()),
-        )
-    }
-
-    fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "update_metadata".to_string(),
-            AccessRule::DenyAll,
-            AccessRule::DenyAll,
-        );
-        authority_rules.set_rule(
-            "royalty".to_string(),
-            AccessRule::AllowAll,
-            AccessRule::DenyAll,
-        );
-
-        self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), authority_rules),
-            Metadata::new(),
-            Royalty::new(royalty_config),
         )
     }
 
@@ -154,14 +107,8 @@ pub trait LocalComponent: Sized {
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-
         authority_rules.set_rule(
-            "update_metadata".clone(),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        authority_rules.set_rule(
-            "royalty".clone(),
+            "owner".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );

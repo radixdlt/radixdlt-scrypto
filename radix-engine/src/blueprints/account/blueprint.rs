@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
 
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
-use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
 use native_sdk::resource::{SysBucket, Vault};
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -64,8 +63,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
-        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(require("owner")), rule!(deny_all));
         authority_rules.set_rule("lock_fee", rule!(require("owner")), rule!(deny_all));
         authority_rules.set_rule("withdraw", rule!(require("owner")), rule!(deny_all));
         authority_rules.set_rule("create_proof", rule!(require("owner")), rule!(deny_all));

@@ -46,7 +46,7 @@ mod component_module {
                     scrypto_encode(&AccessRulesCreateInput {
                         method_authorities: MethodAuthorities::new(),
                         authority_rules: AuthorityRules::new(),
-                        child_blueprint_rules: BTreeMap::new(),
+                        inner_blueprint_rules: BTreeMap::new(),
                     })
                     .unwrap(),
                 )

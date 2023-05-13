@@ -397,7 +397,7 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-SET_GROUP_ACCESS_RULE
+SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
     Enum(0u8)
     "Group"
