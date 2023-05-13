@@ -35,7 +35,7 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn get_access_rules() -> Attached<'static, AccessRules> {
+    pub fn access_rules() -> Attached<'static, AccessRules> {
         Attached::new(AccessRules::self_attached())
     }
 

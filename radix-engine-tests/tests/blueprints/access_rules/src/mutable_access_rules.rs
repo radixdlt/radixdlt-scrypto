@@ -19,12 +19,12 @@ mod mutable_access_rules_component {
         }
 
         pub fn set_group_auth(&self, authority: String, rule: AccessRule) {
-            let access_rules = Runtime::get_access_rules();
+            let access_rules = Runtime::access_rules();
             access_rules.set_authority_rule(authority.as_str(), rule);
         }
 
         pub fn lock_group_auth(&self, authority: String) {
-            let access_rules = Runtime::get_access_rules();
+            let access_rules = Runtime::access_rules();
             access_rules.set_authority_mutability(authority.as_str(), AccessRule::DenyAll);
         }
 

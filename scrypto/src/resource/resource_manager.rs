@@ -15,7 +15,7 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::modules::Metadata;
 
-use crate::modules::{Attachable, Attached, ModuleHandle};
+use crate::modules::{Attachable, Attached};
 use crate::prelude::ScryptoEncode;
 
 /// Represents a resource manager.

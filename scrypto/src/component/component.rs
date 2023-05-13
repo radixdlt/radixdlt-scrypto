@@ -1,6 +1,6 @@
 use std::ops::Deref;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, AttachedRoyalty, ModuleHandle, Royalty};
+use crate::modules::{AccessRules, Attachable, ModuleHandle, Royalty};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -17,7 +17,6 @@ use radix_engine_interface::data::scrypto::{
 use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
-use sbor::*;
 use scrypto::modules::{Attached, Metadata};
 use crate::prelude::{scrypto_encode, ScryptoSbor};
 
@@ -177,19 +176,17 @@ pub trait LocalComponent: Component + Sized {
 
 impl<T: Component> LocalComponent for T {
     fn globalize2(
-        mut self,
+        self,
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
     ) -> Global<Self> {
-        let royalty: Own = royalty.0;
-
         let address = ScryptoEnv
             .globalize(btreemap!(
                 ObjectModuleId::Main => self.handle().as_node_id().clone(),
                 ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
                 ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-                ObjectModuleId::Royalty => royalty.0,
+                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
             ))
             .unwrap();
 
@@ -197,19 +194,17 @@ impl<T: Component> LocalComponent for T {
     }
 
     fn globalize_with_modules(
-        mut self,
+        self,
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let royalty: Own = royalty.0;
-
         let address = ScryptoEnv
             .globalize(btreemap!(
                 ObjectModuleId::Main => self.handle().as_node_id().clone(),
                 ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
                 ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-                ObjectModuleId::Royalty => royalty.0,
+                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
             ))
             .unwrap();
 
@@ -217,7 +212,7 @@ impl<T: Component> LocalComponent for T {
     }
 
     fn globalize_at_address_with_modules(
-        mut self,
+        self,
         preallocated_address: ComponentAddress,
         access_rules: AccessRules,
         metadata: Metadata,
@@ -227,7 +222,7 @@ impl<T: Component> LocalComponent for T {
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
             ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-            ObjectModuleId::Royalty => royalty.0.0,
+            ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
         ScryptoEnv
@@ -261,6 +256,12 @@ impl<O: Component> Global<O> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let access_rules = AccessRules::attached(address);
         Attached(access_rules, PhantomData::default())
+    }
+
+    pub fn royalty(&self) -> Attached<Royalty> {
+        let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
+        let royalty = Royalty::attached(address);
+        Attached(royalty, PhantomData::default())
     }
 }
 
