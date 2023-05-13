@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sbor::rust::prelude::*;
 use sbor::*;
 
 #[derive(Sbor, PartialEq, Eq, Debug)]
@@ -132,20 +133,37 @@ fn decode_is_correct() {
 #[test]
 fn describe_is_correct() {
     // With inner u32
-    check_identical_schemas::<TestStructNamed, u32>();
-    check_identical_schemas::<TestStructUnnamed, u32>();
-    check_identical_schemas::<TestStruct<u32>, u32>();
+    check_identical_types::<TestStructNamed, u32>("TestStructNamed");
+    check_identical_types::<TestStructUnnamed, u32>("TestStructUnnamed");
+    check_identical_types::<TestStruct<u32>, u32>("TestStruct");
 
     // With inner tuple
-    check_identical_schemas::<TestStruct<()>, ()>();
+    check_identical_types::<TestStruct<()>, ()>("TestStruct");
 
     // With multiple layers of transparent
-    check_identical_schemas::<TestStruct<TestStructNamed>, u32>();
+    check_identical_types::<TestStruct<TestStructNamed>, u32>("TestStruct");
 }
 
-fn check_identical_schemas<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>() {
+fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>(
+    rename: &'static str,
+) {
     let (type_index1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
     let (type_index2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
-    assert_eq!(type_index1, type_index2);
-    assert_eq!(schema1, schema2);
+
+    assert_eq!(
+        schema1.resolve_type_kind(type_index1),
+        schema2.resolve_type_kind(type_index2)
+    );
+    assert_eq!(
+        schema1.resolve_type_metadata(type_index1).unwrap().clone(),
+        schema2
+            .resolve_type_metadata(type_index2)
+            .unwrap()
+            .clone()
+            .with_name(Some(Cow::Borrowed(rename)))
+    );
+    assert_eq!(
+        schema1.resolve_type_validation(type_index1),
+        schema2.resolve_type_validation(type_index2)
+    );
 }

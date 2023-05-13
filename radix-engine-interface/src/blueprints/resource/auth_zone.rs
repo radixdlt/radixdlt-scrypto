@@ -122,14 +122,14 @@ impl Describe<ScryptoCustomTypeKind> for OwnedAuthZone {
     const TYPE_ID: GlobalTypeId =
         GlobalTypeId::Novel(const_sha1::sha1("OwnedAuthZone".as_bytes()).as_bytes());
 
-    fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
-        Some(TypeData {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
             metadata: TypeMetadata::no_child_names("OwnedAuthZone"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsTypedObject(RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT.to_string()),
             )),
-        })
+        }
     }
 
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}

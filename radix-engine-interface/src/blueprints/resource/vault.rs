@@ -4,6 +4,7 @@ use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -108,4 +109,8 @@ impl Describe<ScryptoCustomTypeKind> for Vault {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
         crate::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID,
     );
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_vault_type_data()
+    }
 }
