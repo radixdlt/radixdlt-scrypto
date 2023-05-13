@@ -33,15 +33,15 @@ mod cross_component {
         }
 
         pub fn cross_component_call(&mut self, component_address: ComponentAddress) -> String {
-            let other_component_ref: CrossComponentGlobalComponentRef = component_address.into();
+            let other_component: Global<CrossComponentComponent> = component_address.into();
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = auth_bucket.authorize(|| other_component_ref.get_component_state());
+                    let value = auth_bucket.authorize(|| other_component.get_component_state());
                     vault.put(auth_bucket);
                     value
                 }
-                None => other_component_ref.get_component_state(),
+                None => other_component.get_component_state(),
             }
         }
 
