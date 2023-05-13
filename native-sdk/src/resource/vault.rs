@@ -115,14 +115,14 @@ impl Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_OF_ALL_IDENT,
-            scrypto_encode(&VaultCreateProofOfAllInput {}).unwrap(),
+            VAULT_CREATE_PROOF_IDENT,
+            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
         &self,
         amount: Decimal,
         api: &mut Y,
@@ -139,7 +139,7 @@ impl Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

@@ -106,25 +106,27 @@ impl Fuzzer {
                         *component_address = address;
                     }
                 }
-                Instruction::TakeFromWorktop { resource_address }
-                | Instruction::TakeFromWorktopByAmount {
+                Instruction::TakeAllFromWorktop { resource_address }
+                | Instruction::TakeFromWorktop {
                     resource_address, ..
                 }
-                | Instruction::TakeFromWorktopByIds {
+                | Instruction::TakeNonFungiblesFromWorktop {
                     resource_address, ..
                 }
-                | Instruction::AssertWorktopContains { resource_address }
-                | Instruction::AssertWorktopContainsByAmount {
+                | Instruction::AssertWorktopContains {
                     resource_address, ..
                 }
-                | Instruction::AssertWorktopContainsByIds {
+                | Instruction::AssertWorktopContainsNonFungibles {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZone { resource_address }
-                | Instruction::CreateProofFromAuthZoneByAmount {
+                | Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address, ..
                 }
-                | Instruction::CreateProofFromAuthZoneByIds {
+                | Instruction::CreateProofFromAuthZoneOfNonFungibles {
+                    resource_address, ..
+                }
+                | Instruction::CreateProofFromAuthZoneOfAll {
                     resource_address, ..
                 }
                 | Instruction::MintFungible {

@@ -915,7 +915,7 @@ fn validator_staking_emits_correct_event() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.stake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1040,7 +1040,7 @@ fn validator_unstake_emits_correct_events() {
             validator_substate.liquidity_token,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1194,7 +1194,7 @@ fn validator_claim_xrd_emits_correct_events() {
             validator_substate.liquidity_token,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1214,7 +1214,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
-        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(

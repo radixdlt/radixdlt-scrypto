@@ -31,4 +31,4 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for bool {
     }
 }
 
-describe_basic_well_known_type!(bool, BOOL_ID);
+describe_basic_well_known_type!(bool, BOOL_ID, bool_type_data);

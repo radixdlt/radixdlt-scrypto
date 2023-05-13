@@ -812,7 +812,7 @@ pub fn create_system_bootstrap_transaction(
     {
         let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
         instructions.push(
-            Instruction::TakeFromWorktop {
+            Instruction::TakeAllFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
@@ -882,7 +882,7 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     });
 
     instructions.push(
-        Instruction::TakeFromWorktop {
+        Instruction::TakeAllFromWorktop {
             resource_address: RADIX_TOKEN,
         }
         .into(),

@@ -3,6 +3,9 @@ use std::collections::BTreeMap;
 use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
+use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
+use syn::token::Comma;
 
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -38,98 +41,304 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     }
 }
 
-pub fn extract_attributes(
-    attrs: &[Attribute],
+pub enum AttributeValue {
+    None(Span),
+    Path(Path),
+    Lit(Lit),
+}
+
+impl AttributeValue {
+    fn as_string(&self) -> Option<String> {
+        match self {
+            AttributeValue::Lit(Lit::Str(str)) => Some(str.value()),
+            _ => None,
+        }
+    }
+
+    fn as_bool(&self) -> Option<bool> {
+        match self {
+            AttributeValue::None(_) => Some(true),
+            AttributeValue::Lit(Lit::Str(str)) => match str.value().as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            },
+            AttributeValue::Lit(Lit::Bool(bool)) => Some(bool.value()),
+            _ => None,
+        }
+    }
+
+    fn span(&self) -> Span {
+        match self {
+            AttributeValue::None(span) => *span,
+            AttributeValue::Path(path) => path.span(),
+            AttributeValue::Lit(lit) => lit.span(),
+        }
+    }
+}
+
+trait AttributeMap {
+    fn get_bool_value(&self, name: &str) -> Result<bool>;
+    fn get_string_value(&self, name: &str) -> Result<Option<String>>;
+}
+
+impl AttributeMap for BTreeMap<String, AttributeValue> {
+    fn get_bool_value(&self, name: &str) -> Result<bool> {
+        let Some(value) = self.get(name) else {
+            return Ok(false);
+        };
+        value
+            .as_bool()
+            .ok_or_else(|| Error::new(value.span(), format!("Expected bool attribute")))
+    }
+
+    fn get_string_value(&self, name: &str) -> Result<Option<String>> {
+        let Some(value) = self.get(name) else {
+            return Ok(None);
+        };
+        Ok(Some(value.as_string().ok_or_else(|| {
+            Error::new(value.span(), format!("Expected string attribute value"))
+        })?))
+    }
+}
+
+/// Permits attribute of the form #[sbor(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
+pub fn extract_sbor_typed_attributes(
+    attributes: &[Attribute],
+) -> Result<BTreeMap<String, AttributeValue>> {
+    extract_typed_attributes(attributes, "sbor")
+}
+
+/// Permits attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
+pub fn extract_typed_attributes(
+    attributes: &[Attribute],
     name: &str,
-) -> Option<BTreeMap<String, Option<String>>> {
-    for attr in attrs {
-        if !attr.path.is_ident(name) {
+) -> Result<BTreeMap<String, AttributeValue>> {
+    let mut fields = BTreeMap::new();
+    for attribute in attributes {
+        if !attribute.path.is_ident(name) {
             continue;
         }
-
-        let mut fields = BTreeMap::new();
-        if let Ok(meta) = attr.parse_meta() {
-            if let Meta::List(MetaList { nested, .. }) = meta {
-                nested.into_iter().for_each(|m| match m {
-                    NestedMeta::Meta(m) => match m {
-                        Meta::NameValue(name_value) => {
-                            if let Some(ident) = name_value.path.get_ident() {
-                                if let Lit::Str(s) = name_value.lit {
-                                    fields.insert(ident.to_string(), Some(s.value()));
+        let Ok(meta) = attribute.parse_meta() else {
+            return Err(Error::new(
+                attribute.span(),
+                format!("Attribute content is not valid"),
+            ));
+        };
+        let Meta::List(MetaList { nested: options, .. }) = meta else {
+            return Err(Error::new(
+                attribute.span(),
+                format!("Expected list-based attribute as #[{name}(..)]"),
+            ));
+        };
+        let error_message = format!("Expected attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.");
+        for option in options.into_iter() {
+            match option {
+                NestedMeta::Meta(m) => match m {
+                    Meta::Path(path) => {
+                        if let Some(ident) = path.get_ident() {
+                            fields.insert(ident.to_string(), AttributeValue::None(path.span()));
+                        } else {
+                            return Err(Error::new(path.span(), error_message));
+                        }
+                    }
+                    Meta::NameValue(name_value) => {
+                        if let Some(ident) = name_value.path.get_ident() {
+                            fields.insert(ident.to_string(), AttributeValue::Lit(name_value.lit));
+                        } else {
+                            return Err(Error::new(name_value.path.span(), error_message));
+                        }
+                    }
+                    Meta::List(MetaList { nested, path, .. }) => {
+                        if let Some(ident) = path.get_ident() {
+                            if nested.len() == 1 {
+                                match nested.into_iter().next().unwrap() {
+                                    NestedMeta::Meta(inner_meta) => match inner_meta {
+                                        Meta::Path(path) => {
+                                            fields.insert(
+                                                ident.to_string(),
+                                                AttributeValue::Path(path.clone()),
+                                            );
+                                        }
+                                        _ => {
+                                            return Err(Error::new(
+                                                inner_meta.span(),
+                                                error_message,
+                                            ));
+                                        }
+                                    },
+                                    NestedMeta::Lit(lit) => {
+                                        fields.insert(
+                                            ident.to_string(),
+                                            AttributeValue::Lit(lit.clone()),
+                                        );
+                                    }
                                 }
+                            } else {
+                                return Err(Error::new(nested.span(), error_message));
                             }
+                        } else {
+                            return Err(Error::new(path.span(), error_message));
                         }
-                        Meta::Path(path) => {
-                            if let Some(ident) = path.get_ident() {
-                                fields.insert(ident.to_string(), None);
-                            }
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                })
+                    }
+                },
+                _ => {
+                    return Err(Error::new(option.span(), error_message));
+                }
             }
         }
-        return Some(fields);
+        return Ok(fields);
     }
 
-    None
+    Ok(fields)
 }
 
-fn get_sbor_attribute_field_value(attributes: &[Attribute], field_name: &str) -> Option<String> {
-    if let Some(fields) = extract_attributes(attributes, "sbor") {
-        fields.get(field_name).cloned().unwrap_or_default()
-    } else {
-        None
+enum VariantValue {
+    Byte(LitByte),
+    Path(Path), // EG a constant
+}
+
+pub fn get_variant_discriminator_mapping(
+    enum_attributes: &[Attribute],
+    variants: &Punctuated<Variant, Comma>,
+) -> Result<BTreeMap<usize, Expr>> {
+    if variants.len() > 255 {
+        return Err(Error::new(
+            Span::call_site(),
+            format!("SBOR can only support enums of size <= 255"),
+        ));
+    }
+
+    let use_repr_discriminators =
+        get_sbor_attribute_boolean_value(enum_attributes, "use_repr_discriminators")?;
+    let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
+
+    for (i, variant) in variants.iter().enumerate() {
+        let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
+        if let Some(attribute) = variant_attributes.remove("discriminator") {
+            let id = match attribute {
+                AttributeValue::None(span) => {
+                    return Err(Error::new(span, format!("No discriminator was provided")));
+                }
+                AttributeValue::Path(path) => VariantValue::Path(path),
+                AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
+                    .map(|b| VariantValue::Byte(LitByte::new(b, literal.span())))
+                    .ok_or_else(|| {
+                        Error::new(
+                            literal.span(),
+                            format!("This discriminator is not a u8-convertible value"),
+                        )
+                    })?,
+            };
+
+            variant_ids.insert(i, id);
+            continue;
+        }
+        if use_repr_discriminators {
+            if let Some(discriminant) = &variant.discriminant {
+                let expression = &discriminant.1;
+
+                let id = match expression {
+                    Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
+                        .map(|b| VariantValue::Byte(LitByte::new(b, literal_expression.span()))),
+                    Expr::Path(path_expression) => {
+                        Some(VariantValue::Path(path_expression.path.clone()))
+                    }
+                    _ => None,
+                };
+
+                let Some(id) = id else {
+                    return Err(Error::new(
+                        expression.span(),
+                        format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
+                    ));
+                };
+
+                variant_ids.insert(i, id);
+                continue;
+            }
+        }
+    }
+
+    if variant_ids.len() > 0 {
+        if variant_ids.len() < variants.len() {
+            return Err(Error::new(
+                Span::call_site(),
+                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_ids.len(), variants.len()),
+            ));
+        }
+        return Ok(variant_ids
+            .into_iter()
+            .map(|(i, id)| {
+                let expression = match id {
+                    VariantValue::Byte(id) => parse_quote!(#id),
+                    VariantValue::Path(id) => parse_quote!(#id),
+                };
+                (i, expression)
+            })
+            .collect());
+    }
+    // If no explicit indices, use default indices
+    Ok(variants
+        .iter()
+        .enumerate()
+        .map(|(i, _)| {
+            let i_as_u8 = u8::try_from(i).unwrap();
+            (i, parse_quote!(#i_as_u8))
+        })
+        .collect())
+}
+
+fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
+    match literal {
+        Lit::Byte(byte_literal) => Some(byte_literal.value()),
+        Lit::Int(int_literal) => int_literal.base10_parse::<u8>().ok(),
+        Lit::Str(str_literal) => str_literal.value().parse::<u8>().ok(),
+        _ => None,
     }
 }
 
-pub fn is_categorize_skipped(f: &Field) -> bool {
-    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
-        fields.contains_key("skip") || fields.contains_key("skip_categorize")
-    } else {
-        false
-    }
+fn get_sbor_attribute_string_value(
+    attributes: &[Attribute],
+    field_name: &str,
+) -> Result<Option<String>> {
+    extract_sbor_typed_attributes(attributes)?.get_string_value(&field_name)
 }
 
-pub fn is_decoding_skipped(f: &Field) -> bool {
-    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
-        fields.contains_key("skip") || fields.contains_key("skip_decode")
-    } else {
-        false
-    }
+fn get_sbor_attribute_boolean_value(attributes: &[Attribute], field_name: &str) -> Result<bool> {
+    extract_sbor_typed_attributes(attributes)?.get_bool_value(&field_name)
 }
 
-pub fn is_encoding_skipped(f: &Field) -> bool {
-    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
-        fields.contains_key("skip") || fields.contains_key("skip_encode")
-    } else {
-        false
-    }
+pub fn get_sbor_bool_value(attributes: &[Attribute], attribute_name: &str) -> Result<bool> {
+    extract_sbor_typed_attributes(&attributes)?.get_bool_value(attribute_name)
 }
 
-pub fn is_describing_skipped(f: &Field) -> bool {
-    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
-        fields.contains_key("skip") || fields.contains_key("skip_describe")
-    } else {
-        false
-    }
+pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_categorize")?)
 }
 
-pub fn is_transparent(attributes: &[Attribute]) -> bool {
-    if let Some(fields) = extract_attributes(attributes, "sbor") {
-        fields.contains_key("transparent")
-    } else {
-        false
-    }
+pub fn is_decoding_skipped(f: &Field) -> Result<bool> {
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_decode")?)
 }
 
-pub fn get_custom_value_kind(attributes: &[Attribute]) -> Option<String> {
-    get_sbor_attribute_field_value(attributes, "custom_value_kind")
+pub fn is_encoding_skipped(f: &Field) -> Result<bool> {
+    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_encode")?)
 }
 
-pub fn get_custom_type_kind(attributes: &[Attribute]) -> Option<String> {
-    get_sbor_attribute_field_value(attributes, "custom_type_kind")
+pub fn is_transparent(attributes: &[Attribute]) -> Result<bool> {
+    let attributes = extract_sbor_typed_attributes(attributes)?;
+    Ok(attributes.get_bool_value("transparent")?)
+}
+
+pub fn get_custom_value_kind(attributes: &[Attribute]) -> Result<Option<String>> {
+    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_value_kind")
+}
+
+pub fn get_custom_type_kind(attributes: &[Attribute]) -> Result<Option<String>> {
+    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_type_kind")
 }
 
 pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
@@ -151,11 +360,8 @@ pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>
         .collect()
 }
 
-fn get_child_types(
-    attributes: &[Attribute],
-    existing_generics: &Generics,
-) -> syn::Result<Vec<Type>> {
-    let Some(comma_separated_types) = get_sbor_attribute_field_value(attributes, "child_types") else {
+fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
+    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")? else {
         // If no explicit child_types list is set, we use all pre-existing generic type parameters.
         // This means (eg) that they all have to implement the relevant trait (Encode/Decode/Describe)
         // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
@@ -169,8 +375,8 @@ fn get_child_types(
 fn get_types_requiring_categorize_bound(
     attributes: &[Attribute],
     child_types: &[Type],
-) -> syn::Result<Vec<Type>> {
-    let Some(comma_separated_types) = get_sbor_attribute_field_value(attributes, "categorize_types") else {
+) -> Result<Vec<Type>> {
+    let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "categorize_types")? else {
         // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
         // But if no explicit "categorize_types" is set, we assume all are needed.
         // These can be removed / overriden with the "categorize_types" field
@@ -191,65 +397,74 @@ pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
     const_sha1::sha1(input.to_string().as_bytes()).as_bytes()
 }
 
-pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {
-    types.into_iter().unique().cloned().collect()
+pub fn get_unique_types<'a>(types: &[syn::Type]) -> Vec<syn::Type> {
+    types.iter().unique().cloned().collect()
 }
 
 pub(crate) struct FieldsData {
-    pub unskipped_self_field_names: Vec<TokenStream>,
+    pub unskipped_field_names: Vec<TokenStream>,
+    pub unskipped_field_name_strings: Vec<String>,
     pub unskipped_field_types: Vec<Type>,
-    pub skipped_self_field_names: Vec<TokenStream>,
+    pub skipped_field_names: Vec<TokenStream>,
     pub skipped_field_types: Vec<Type>,
     pub fields_unpacking: TokenStream,
     pub unskipped_unpacked_field_names: Vec<TokenStream>,
     pub unskipped_field_count: Index,
 }
 
-pub(crate) fn process_fields_for_categorize(fields: &syn::Fields) -> FieldsData {
+pub(crate) fn process_fields_for_categorize(fields: &syn::Fields) -> Result<FieldsData> {
     process_fields(fields, is_categorize_skipped)
 }
 
-pub(crate) fn process_fields_for_encode(fields: &syn::Fields) -> FieldsData {
+pub(crate) fn process_fields_for_encode(fields: &syn::Fields) -> Result<FieldsData> {
     process_fields(fields, is_encoding_skipped)
 }
 
-pub(crate) fn process_fields_for_decode(fields: &syn::Fields) -> FieldsData {
+pub(crate) fn process_fields_for_decode(fields: &syn::Fields) -> Result<FieldsData> {
     process_fields(fields, is_decoding_skipped)
 }
 
-pub(crate) fn process_fields_for_describe(fields: &syn::Fields) -> FieldsData {
-    process_fields(fields, is_describing_skipped)
+pub(crate) fn process_fields_for_describe(fields: &syn::Fields) -> Result<FieldsData> {
+    // Note - describe has to agree with decoding / encoding
+    process_fields(fields, is_decoding_skipped)
 }
 
-fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> bool) -> FieldsData {
-    match fields {
+fn process_fields(
+    fields: &syn::Fields,
+    is_skipped: impl Fn(&Field) -> Result<bool>,
+) -> Result<FieldsData> {
+    Ok(match fields {
         Fields::Named(fields) => {
-            let mut unskipped_self_field_names = Vec::new();
+            let mut unskipped_field_names = Vec::new();
+            let mut unskipped_field_name_strings = Vec::new();
             let mut unskipped_field_types = Vec::new();
-            let mut skipped_self_field_names = Vec::new();
+            let mut skipped_field_names = Vec::new();
             let mut skipped_field_types = Vec::new();
             for f in fields.named.iter() {
                 let ident = &f.ident;
-                if !is_skipped(f) {
-                    unskipped_self_field_names.push(quote! { #ident });
+                if !is_skipped(f)? {
+                    unskipped_field_names.push(quote! { #ident });
+                    unskipped_field_name_strings
+                        .push(ident.as_ref().map(|i| i.to_string()).unwrap_or_default());
                     unskipped_field_types.push(f.ty.clone());
                 } else {
-                    skipped_self_field_names.push(quote! { #ident });
+                    skipped_field_names.push(quote! { #ident });
                     skipped_field_types.push(f.ty.clone());
                 }
             }
 
             let fields_unpacking = quote! {
-                {#(#unskipped_self_field_names,)* ..}
+                {#(#unskipped_field_names,)* ..}
             };
-            let unskipped_unpacked_field_names = unskipped_self_field_names.clone();
+            let unskipped_unpacked_field_names = unskipped_field_names.clone();
 
-            let unskipped_field_count = Index::from(unskipped_self_field_names.len());
+            let unskipped_field_count = Index::from(unskipped_field_names.len());
 
             FieldsData {
-                unskipped_self_field_names,
+                unskipped_field_names,
+                unskipped_field_name_strings,
                 unskipped_field_types,
-                skipped_self_field_names,
+                skipped_field_names,
                 skipped_field_types,
                 fields_unpacking,
                 unskipped_unpacked_field_names,
@@ -258,6 +473,7 @@ fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> bool) -> 
         }
         Fields::Unnamed(fields) => {
             let mut unskipped_indices = Vec::new();
+            let mut unskipped_field_name_strings = Vec::new();
             let mut unskipped_field_types = Vec::new();
             let mut unskipped_unpacked_field_names = Vec::new();
             let mut skipped_indices = Vec::new();
@@ -265,8 +481,9 @@ fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> bool) -> 
             let mut unpacking_idents = Vec::new();
             for (i, f) in fields.unnamed.iter().enumerate() {
                 let index = Index::from(i);
-                if !is_skipped(f) {
+                if !is_skipped(f)? {
                     unskipped_indices.push(quote! { #index });
+                    unskipped_field_name_strings.push(i.to_string());
                     unskipped_field_types.push(f.ty.clone());
                     let unpacked_name_ident = format_ident!("a{}", i);
                     unskipped_unpacked_field_names.push(quote! { #unpacked_name_ident });
@@ -284,9 +501,10 @@ fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> bool) -> 
             let unskipped_field_count = Index::from(unskipped_indices.len());
 
             FieldsData {
-                unskipped_self_field_names: unskipped_indices,
+                unskipped_field_names: unskipped_indices,
+                unskipped_field_name_strings,
                 unskipped_field_types,
-                skipped_self_field_names: skipped_indices,
+                skipped_field_names: skipped_indices,
                 skipped_field_types,
                 fields_unpacking,
                 unskipped_unpacked_field_names,
@@ -294,15 +512,16 @@ fn process_fields(fields: &syn::Fields, is_skipped: impl Fn(&Field) -> bool) -> 
             }
         }
         Fields::Unit => FieldsData {
-            unskipped_self_field_names: vec![],
+            unskipped_field_names: vec![],
+            unskipped_field_name_strings: vec![],
             unskipped_field_types: vec![],
-            skipped_self_field_names: vec![],
+            skipped_field_names: vec![],
             skipped_field_types: vec![],
             fields_unpacking: quote! {},
             unskipped_unpacked_field_names: vec![],
             unskipped_field_count: Index::from(0),
         },
-    }
+    })
 }
 
 pub fn build_decode_generics<'a>(
@@ -310,7 +529,7 @@ pub fn build_decode_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -375,7 +594,7 @@ pub fn build_encode_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<WhereClause>, Path, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -440,7 +659,7 @@ pub fn build_describe_generics<'a>(
     attributes: &'a [Attribute],
     context_custom_type_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, Generics, Option<WhereClause>, Vec<Type>, Path)> {
-    let custom_type_kind = get_custom_type_kind(attributes);
+    let custom_type_kind = get_custom_type_kind(attributes)?;
 
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
@@ -496,7 +715,7 @@ pub fn build_custom_categorize_generic<'a>(
     context_custom_value_kind: Option<&'static str>,
     require_categorize_on_generic_params: bool,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
-    let custom_value_kind = get_custom_value_kind(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Unwrap for mutation
@@ -580,32 +799,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_attribute_name_values() {
+    fn test_extract_attributes() {
         let attr: Attribute = parse_quote! {
             #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
+        let extracted = extract_typed_attributes(&[attr], "sbor").unwrap();
+        assert_eq!(extracted.get_bool_value("skip").unwrap(), true);
+        assert_eq!(extracted.get_bool_value("skip2").unwrap(), false);
+        assert!(matches!(
+            extracted.get_bool_value("custom_value_kind"),
+            Err(_)
+        ));
         assert_eq!(
-            extract_attributes(&[attr.clone()], "sbor"),
-            Some(BTreeMap::from([
-                ("skip".to_owned(), None),
-                (
-                    "custom_value_kind".to_owned(),
-                    Some("NoCustomValueKind".to_owned())
-                )
-            ]))
+            extracted.get_string_value("custom_value_kind").unwrap(),
+            Some("NoCustomValueKind".to_string())
         );
-        assert_eq!(extract_attributes(&[attr], "mutable"), None);
-    }
-
-    #[test]
-    fn test_extract_attribute_path() {
-        let attr: Attribute = parse_quote! {
-            #[mutable]
-        };
-        assert_eq!(extract_attributes(&[attr.clone()], "sbor"), None);
         assert_eq!(
-            extract_attributes(&[attr], "mutable"),
-            Some(BTreeMap::new())
+            extracted.get_string_value("custom_value_kind_2").unwrap(),
+            None
         );
+        assert!(matches!(extracted.get_string_value("skip"), Err(_)));
     }
 }
