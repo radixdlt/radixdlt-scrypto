@@ -113,19 +113,43 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
-            TokenKind::CreateProofFromAuthZoneByAmount => {
-                Instruction::CreateProofFromAuthZoneByAmount {
+            TokenKind::CreateProofFromAuthZoneOfAmount => {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     amount: self.parse_value()?,
                     resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }
-            TokenKind::CreateProofFromAuthZoneByIds => Instruction::CreateProofFromAuthZoneByIds {
-                ids: self.parse_value()?,
+            TokenKind::CreateProofFromAuthZoneOfNonFungibles => {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
+                    ids: self.parse_value()?,
+                    resource_address: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromAuthZoneOfAll => Instruction::CreateProofFromAuthZoneOfAll {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
             TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
+                bucket: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
+            TokenKind::CreateProofFromBucketOfAmount => {
+                Instruction::CreateProofFromBucketOfAmount {
+                    bucket: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfNonFungibles => {
+                Instruction::CreateProofFromBucketOfNonFungibles {
+                    bucket: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfAll => Instruction::CreateProofFromBucketOfAll {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },

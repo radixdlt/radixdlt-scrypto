@@ -1,6 +1,6 @@
 use crate::math::*;
 use crate::*;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
 
 // Protected
 

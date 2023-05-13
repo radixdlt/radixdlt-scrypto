@@ -166,27 +166,53 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByAmount {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     amount,
                     resource_address,
                 } => {
                     let proof =
-                        LocalAuthZone::sys_create_proof_by_amount(amount, resource_address, api)?;
+                        LocalAuthZone::sys_create_proof_of_amount(amount, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByIds {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
                     ids,
                     resource_address,
                 } => {
-                    let proof =
-                        LocalAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
+                    let proof = LocalAuthZone::sys_create_proof_of_non_fungibles(
+                        &ids,
+                        resource_address,
+                        api,
+                    )?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+                    let proof = LocalAuthZone::sys_create_proof_of_all(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.sys_create_proof(api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_amount(amount, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_non_fungibles(ids, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.sys_create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }

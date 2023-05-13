@@ -65,19 +65,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
     assert_eq!(
-        1035 /* AllocateNodeId */
-        + 1635 /* CreateNode */
-        + 5587 /* DropLock */
-        + 1575 /* DropNode */
-        + 1050432 /* Invoke */
-        + 529146 /* LockSubstate */
-        + 7840 /* ReadSubstate */
-        + 62500 /* RunNative */
-        + 7500 /* RunSystem */
+        2415 /* AllocateNodeId */
+        + 3826 /* CreateNode */
+        + 13912 /* DropLock */
+        + 3570 /* DropNode */
+        + 3305144 /* Invoke */
+        + 5658758 /* LockSubstate */
+        + 19488 /* ReadSubstate */
+        + 135000 /* RunNative */
+        + 15000 /* RunSystem */
+        + 1515865 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
+        + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 938, /* WriteSubstate */
+        + 2330, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
     );
 }
@@ -204,9 +205,10 @@ fn test_radiswap() {
         + 3826 /* CreateNode */
         + 13912 /* DropLock */
         + 3570 /* DropNode */
-        + 3305144 /* Invoke */
-        + 5644099 /* LockSubstate */
-        + 19488 /* ReadSubstate */
+        + 3320150 /* Invoke */
+        + 77868 /* LockSubstate */
+        + 1408 /* LockSubstateFirstTime */
+        + 764118 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1515865 /* RunWasm */
@@ -315,8 +317,8 @@ fn test_flash_loan() {
         + 6104 /* CreateNode */
         + 21978 /* DropLock */
         + 5880 /* DropNode */
-        + 4407857 /* Invoke */
-        + 6841738 /* LockSubstate */
+        + 4543955 /* Invoke */
+        + 6856603 /* LockSubstate */
         + 31192 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
@@ -405,7 +407,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Act
     let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
-        builder.create_proof_from_account_by_amount(account, resource_address, 1.into());
+        builder.create_proof_from_account_of_amount(account, resource_address, 1.into());
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();

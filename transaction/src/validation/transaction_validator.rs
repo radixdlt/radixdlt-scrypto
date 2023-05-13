@@ -241,17 +241,37 @@ impl NotarizedTransactionValidator {
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
+                Instruction::CreateProofFromAuthZoneOfAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByIds { .. } => {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles { .. } => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromAuthZoneOfAll { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, .. } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id, .. } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;

@@ -52,19 +52,41 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByAmount {
+    CreateProofFromAuthZoneOfAmount {
         amount: Value,
         resource_address: Value,
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByIds {
+    CreateProofFromAuthZoneOfNonFungibles {
         ids: Value,
         resource_address: Value,
         new_proof: Value,
     },
 
+    CreateProofFromAuthZoneOfAll {
+        resource_address: Value,
+        new_proof: Value,
+    },
+
     CreateProofFromBucket {
+        bucket: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAmount {
+        bucket: Value,
+        amount: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfNonFungibles {
+        bucket: Value,
+        ids: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAll {
         bucket: Value,
         new_proof: Value,
     },

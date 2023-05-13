@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
-use crate::math::*;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
 use sbor::rust::prelude::*;
@@ -50,12 +49,12 @@ pub struct VaultGetAmountInput {}
 
 pub type VaultGetAmountOutput = Decimal;
 
-pub const VAULT_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
+pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofOfAllInput {}
+pub struct VaultCreateProofInput {}
 
-pub type VaultCreateProofOfAllOutput = Proof;
+pub type VaultCreateProofOutput = Proof;
 
 pub const VAULT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 

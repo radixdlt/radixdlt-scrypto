@@ -21,7 +21,7 @@ CALL_METHOD
 # proof from this badge which will allow us to mint the resource
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${minter_badge_resource_address}")
     Decimal("1");
 

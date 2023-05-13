@@ -56,25 +56,8 @@ impl LocalAuthZone {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-        let mut env = ScryptoEnv;
-        let node_id = env.get_auth_zone().unwrap();
-        let rtn = env
-            .call_method(
-                &node_id,
-                AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
-                scrypto_encode(&AuthZoneCreateProofByAmountInput {
-                    resource_address,
-                    amount,
-                })
-                .unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    pub fn create_proof_by_ids(
-        ids: &BTreeSet<NonFungibleLocalId>,
+    pub fn create_proof_of_amount<A: Into<Decimal>>(
+        amount: A,
         resource_address: ResourceAddress,
     ) -> Proof {
         let mut env = ScryptoEnv;
@@ -82,12 +65,58 @@ impl LocalAuthZone {
         let rtn = env
             .call_method(
                 &node_id,
-                AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
-                scrypto_encode(&AuthZoneCreateProofByIdsInput {
+                AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&AuthZoneCreateProofOfAmountInput {
                     resource_address,
-                    ids: ids.clone(),
+                    amount: amount.into(),
                 })
                 .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn create_proof_of_non_fungibles(
+        ids: BTreeSet<NonFungibleLocalId>,
+        resource_address: ResourceAddress,
+    ) -> Proof {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+                scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
+                    resource_address,
+                    ids,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn create_proof_of_all(resource_address: ResourceAddress) -> Proof {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
+                scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn clear() {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_CLEAR_IDENT,
+                scrypto_encode(&AuthZoneClearInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

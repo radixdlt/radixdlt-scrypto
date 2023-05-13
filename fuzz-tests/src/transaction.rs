@@ -121,10 +121,13 @@ impl Fuzzer {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZone { resource_address }
-                | Instruction::CreateProofFromAuthZoneByAmount {
+                | Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address, ..
                 }
-                | Instruction::CreateProofFromAuthZoneByIds {
+                | Instruction::CreateProofFromAuthZoneOfNonFungibles {
+                    resource_address, ..
+                }
+                | Instruction::CreateProofFromAuthZoneOfAll {
                     resource_address, ..
                 }
                 | Instruction::MintFungible {

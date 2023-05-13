@@ -153,10 +153,14 @@ pub fn create_proof_from_account<'a>(
         .map_err(|_| BuildCallArgumentError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
         ResourceSpecifier::Amount(amount, resource_address) => {
-            builder.create_proof_from_account_by_amount(account, resource_address, amount)
+            builder.create_proof_from_account_of_amount(account, resource_address, amount)
         }
         ResourceSpecifier::Ids(non_fungible_local_ids, resource_address) => builder
-            .create_proof_from_account_by_ids(account, resource_address, &non_fungible_local_ids),
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                resource_address,
+                &non_fungible_local_ids,
+            ),
     };
     Ok(builder)
 }
@@ -374,7 +378,7 @@ fn build_call_argument<'a>(
             let proof_id = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
-                        builder.create_proof_from_account_by_amount(
+                        builder.create_proof_from_account_of_amount(
                             account,
                             resource_address,
                             amount,
@@ -389,7 +393,11 @@ fn build_call_argument<'a>(
                 }
                 ResourceSpecifier::Ids(ids, resource_address) => {
                     if let Some(account) = account {
-                        builder.create_proof_from_account_by_ids(account, resource_address, &ids);
+                        builder.create_proof_from_account_of_non_fungibles(
+                            account,
+                            resource_address,
+                            &ids,
+                        );
                         builder
                             .add_instruction(Instruction::PopFromAuthZone)
                             .2

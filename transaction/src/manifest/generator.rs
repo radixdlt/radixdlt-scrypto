@@ -296,7 +296,7 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZone { resource_address }
         }
-        ast::Instruction::CreateProofFromAuthZoneByAmount {
+        ast::Instruction::CreateProofFromAuthZoneOfAmount {
             amount,
             resource_address,
             new_proof,
@@ -308,12 +308,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByAmount {
+            Instruction::CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             }
         }
-        ast::Instruction::CreateProofFromAuthZoneByIds {
+        ast::Instruction::CreateProofFromAuthZoneOfNonFungibles {
             ids,
             resource_address,
             new_proof,
@@ -325,10 +325,22 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByIds {
+            Instruction::CreateProofFromAuthZoneOfNonFungibles {
                 ids,
                 resource_address,
             }
+        }
+        ast::Instruction::CreateProofFromAuthZoneOfAll {
+            resource_address,
+            new_proof,
+        } => {
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromAuthZoneOfAll { resource_address }
         }
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
@@ -339,6 +351,45 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromBucket { bucket_id }
         }
+
+        ast::Instruction::CreateProofFromBucketOfAmount {
+            bucket,
+            amount,
+            new_proof,
+        } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            let amount = generate_decimal(amount)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromBucketOfAmount { bucket_id, amount }
+        }
+        ast::Instruction::CreateProofFromBucketOfNonFungibles {
+            bucket,
+            ids,
+            new_proof,
+        } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            let ids = generate_non_fungible_local_ids(ids)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids }
+        }
+        ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromBucketOfAll { bucket_id }
+        }
+
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
