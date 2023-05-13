@@ -28,5 +28,5 @@ pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
     let node_id = env
         .new_simple_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
         .unwrap();
-    ComponentHandle(Own(node_id))
+    ComponentHandle::Own(Own(node_id))
 }

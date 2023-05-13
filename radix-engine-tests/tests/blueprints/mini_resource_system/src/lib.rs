@@ -22,7 +22,7 @@ mod mini_proof {
 
         pub fn drop(proof: MiniProofComponent) {
             ScryptoEnv
-                .drop_object(proof.component.0.as_node_id())
+                .drop_object(proof.component.as_node_id())
                 .unwrap();
         }
     }
@@ -55,7 +55,7 @@ mod mini_bucket {
 
         pub fn drop(bucket: MiniBucketComponent) {
             ScryptoEnv
-                .drop_object(bucket.component.0.as_node_id())
+                .drop_object(bucket.component.as_node_id())
                 .unwrap();
         }
     }

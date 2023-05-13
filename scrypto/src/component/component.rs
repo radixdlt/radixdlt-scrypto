@@ -112,30 +112,52 @@ pub trait LocalComponent: Sized {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ComponentHandle(pub Own);
+pub enum ComponentHandle {
+    Own(Own)
+}
+
+impl ComponentHandle {
+    pub fn as_node_id(&self) -> &NodeId {
+        match self {
+            ComponentHandle::Own(own) => own.as_node_id()
+        }
+    }
+}
 
 impl Component for ComponentHandle {
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv
-            .call_method(self.0.as_node_id(), method, args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
+        match self {
+            ComponentHandle::Own(own) => {
+                let output = ScryptoEnv
+                    .call_method(own.as_node_id(), method, args)
+                    .unwrap();
+                scrypto_decode(&output).unwrap()
+            }
+        }
     }
 
     fn package_address(&self) -> PackageAddress {
-        ScryptoEnv
-            .get_object_info(self.0.as_node_id())
-            .unwrap()
-            .blueprint
-            .package_address
+        match self {
+            ComponentHandle::Own(own) => {
+                ScryptoEnv
+                    .get_object_info(own.as_node_id())
+                    .unwrap()
+                    .blueprint
+                    .package_address
+            }
+        }
     }
 
     fn blueprint_name(&self) -> String {
-        ScryptoEnv
-            .get_object_info(self.0.as_node_id())
-            .unwrap()
-            .blueprint
-            .blueprint_name
+        match self {
+            ComponentHandle::Own(own) => {
+                ScryptoEnv
+                    .get_object_info(own.as_node_id())
+                    .unwrap()
+                    .blueprint
+                    .blueprint_name
+            }
+        }
     }
 }
 
@@ -150,9 +172,11 @@ impl<T: Into<ComponentHandle>> LocalComponent for T {
         let access_rules: Own = access_rules.0;
         let royalty: Own = royalty.0;
 
+        let handle = self.into();
+
         let address = ScryptoEnv
             .globalize(btreemap!(
-                ObjectModuleId::Main => self.into().0.as_node_id().clone(),
+                ObjectModuleId::Main => handle.as_node_id().clone(),
                 ObjectModuleId::AccessRules => access_rules.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
@@ -169,8 +193,11 @@ impl<T: Into<ComponentHandle>> LocalComponent for T {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
+
+        let handle = self.into();
+
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
-            ObjectModuleId::Main => self.into().0.as_node_id().clone(),
+            ObjectModuleId::Main => handle.as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.0.0,
             ObjectModuleId::Metadata => metadata.to_owned().0,
             ObjectModuleId::Royalty => royalty.0.0,
