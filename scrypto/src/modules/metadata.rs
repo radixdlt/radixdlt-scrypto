@@ -21,16 +21,14 @@ use crate::modules::{Attached, ModuleHandle};
 pub struct Metadata(pub ModuleHandle);
 
 impl Attachable for Metadata {
-    fn attached(address: GlobalAddress) -> Self {
-        Metadata(ModuleHandle::Attached(address, ObjectModuleId::Metadata))
-    }
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
 
     fn new(handle: ModuleHandle) -> Self {
         Metadata(handle)
     }
 
     fn handle(&self) -> &ModuleHandle {
-        &self.handle()
+        &self.0
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::modules::ActorAccessRules;
+use crate::modules::{AccessRules, Attachable};
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -15,6 +15,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
+use crate::prelude::Attached;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -34,8 +35,8 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn get_access_rules() -> ActorAccessRules {
-        ActorAccessRules
+    pub fn get_access_rules() -> Attached<'static, AccessRules> {
+        Attached::new(AccessRules::self_attached())
     }
 
     /// Returns the running entity.

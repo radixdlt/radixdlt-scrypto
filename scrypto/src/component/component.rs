@@ -1,6 +1,6 @@
 use std::ops::Deref;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, AttachedAccessRules, AttachedRoyalty, ModuleHandle, Royalty};
+use crate::modules::{AccessRules, Attachable, AttachedRoyalty, ModuleHandle, Royalty};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -84,6 +84,16 @@ pub trait Component {
 }
 
 pub struct AnyComponent(ComponentHandle);
+
+impl Component for AnyComponent {
+    fn new(handle: ComponentHandle) -> Self {
+        Self(handle)
+    }
+
+    fn handle(&self) -> &ComponentHandle {
+        &self.0
+    }
+}
 
 pub trait LocalComponent: Component + Sized {
     fn globalize2(
@@ -172,13 +182,12 @@ impl<T: Component> LocalComponent for T {
         metadata: Metadata,
         royalty: Royalty,
     ) -> Global<Self> {
-        let access_rules: Own = access_rules.0;
         let royalty: Own = royalty.0;
 
         let address = ScryptoEnv
             .globalize(btreemap!(
                 ObjectModuleId::Main => self.handle().as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
                 ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
                 ObjectModuleId::Royalty => royalty.0,
             ))
@@ -193,13 +202,12 @@ impl<T: Component> LocalComponent for T {
         metadata: Metadata,
         royalty: Royalty,
     ) -> ComponentAddress {
-        let access_rules: Own = access_rules.0;
         let royalty: Own = royalty.0;
 
         let address = ScryptoEnv
             .globalize(btreemap!(
                 ObjectModuleId::Main => self.handle().as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
                 ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
                 ObjectModuleId::Royalty => royalty.0,
             ))
@@ -217,7 +225,7 @@ impl<T: Component> LocalComponent for T {
     ) -> ComponentAddress {
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
-            ObjectModuleId::AccessRules => access_rules.0.0,
+            ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
             ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
             ObjectModuleId::Royalty => royalty.0.0,
         );
@@ -247,6 +255,12 @@ impl<O: Component> Global<O> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);
         Attached(metadata, PhantomData::default())
+    }
+
+    pub fn access_rules(&self) -> Attached<AccessRules> {
+        let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
+        let access_rules = AccessRules::attached(address);
+        Attached(access_rules, PhantomData::default())
     }
 }
 

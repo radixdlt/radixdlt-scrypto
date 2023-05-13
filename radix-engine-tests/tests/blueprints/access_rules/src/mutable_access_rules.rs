@@ -13,9 +13,9 @@ mod mutable_access_rules_component {
             component.globalize_with_access_rules(method_authorities, authority_rules)
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) -> AttachedAccessRules {
-            let component = borrow_component!(component_address);
-            component.access_rules()
+        pub fn access_rules_function(component_address: ComponentAddress) {
+            let component: Global<AnyComponent> = component_address.into();
+            let _access_rules = component.access_rules();
         }
 
         pub fn set_group_auth(&self, authority: String, rule: AccessRule) {

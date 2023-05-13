@@ -16,9 +16,11 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
+use crate::modules::ModuleHandle;
+use crate::prelude::Attachable;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct AccessRules(pub Own);
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
     pub fn new(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> Self {
@@ -36,12 +38,45 @@ impl AccessRules {
             )
             .unwrap();
         let access_rules: Own = scrypto_decode(&rtn).unwrap();
-        Self(access_rules)
+        Self(ModuleHandle::Own(access_rules))
+    }
+
+    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::SELF,
+                name: name.into(),
+                rule: entry.into(),
+            })
+                .unwrap()
+        );
+    }
+
+    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::SELF,
+                name: name.to_string(),
+                mutability,
+            })
+                .unwrap(),
+        );
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct AttachedAccessRules(pub GlobalAddress);
+impl Attachable for AccessRules {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::AccessRules;
+
+    fn new(handle: ModuleHandle) -> Self {
+        Self(handle)
+    }
+
+    fn handle(&self) -> &ModuleHandle {
+        &self.0
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Mutability {
@@ -55,42 +90,5 @@ impl From<Mutability> for AccessRule {
             Mutability::LOCKED => AccessRule::DenyAll,
             Mutability::MUTABLE(rule) => rule,
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ActorAccessRules;
-
-impl ActorAccessRules {
-    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
-        let _rtn = ScryptoEnv
-            .actor_call_module_method(
-                OBJECT_HANDLE_SELF,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
-                    object_key: ObjectKey::SELF,
-                    name: name.into(),
-                    rule: entry.into(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
-    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
-        let _rtn = ScryptoEnv
-            .actor_call_module_method(
-                OBJECT_HANDLE_SELF,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
-                    object_key: ObjectKey::SELF,
-                    name: name.to_string(),
-                    mutability,
-                })
-                .unwrap(),
-            )
-            .unwrap();
     }
 }
