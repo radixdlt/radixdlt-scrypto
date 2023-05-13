@@ -187,26 +187,26 @@ pub type AccountCreateProofOutput = Proof;
 // Account Create Proof By Amount
 //================================
 
-pub const ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+pub const ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateProofByAmountInput {
+pub struct AccountCreateProofOfAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-pub type AccountCreateProofByAmountOutput = Proof;
+pub type AccountCreateProofOfAmountOutput = Proof;
 
 //=============================
 // Account Create Proof By Ids
 //=============================
 
-pub const ACCOUNT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+pub const ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateProofByIdsInput {
+pub struct AccountCreateProofOfNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub type AccountCreateProofByIdsOutput = Proof;
+pub type AccountCreateProofOfNonFungiblesOutput = Proof;

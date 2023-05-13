@@ -53,9 +53,9 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             .set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
         method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
         method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT, "create_proof");
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT, "create_proof");
         method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_BY_IDS_IDENT, "create_proof");
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT, "create_proof");
         method_authorities
     }
 
@@ -500,7 +500,7 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn create_proof_by_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -510,14 +510,14 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_by_amount(amount, api),
+            |vault, api| vault.sys_create_proof_of_amount(amount, api),
             api,
         )?;
 
         Ok(proof)
     }
 
-    pub fn create_proof_by_ids<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -527,7 +527,7 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_by_ids(ids, api),
+            |vault, api| vault.sys_create_proof_of_non_fungibles(ids, api),
             api,
         )?;
 

@@ -79,20 +79,23 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
+    TakeAllFromWorktop,
     TakeFromWorktop,
-    TakeFromWorktopByAmount,
-    TakeFromWorktopByIds,
+    TakeNonFungiblesFromWorktop,
     ReturnToWorktop,
     AssertWorktopContains,
-    AssertWorktopContainsByAmount,
-    AssertWorktopContainsByIds,
+    AssertWorktopContainsNonFungibles,
     PopFromAuthZone,
     PushToAuthZone,
     ClearAuthZone,
     CreateProofFromAuthZone,
-    CreateProofFromAuthZoneByAmount,
-    CreateProofFromAuthZoneByIds,
+    CreateProofFromAuthZoneOfAmount,
+    CreateProofFromAuthZoneOfNonFungibles,
+    CreateProofFromAuthZoneOfAll,
     CreateProofFromBucket,
+    CreateProofFromBucketOfAmount,
+    CreateProofFromBucketOfNonFungibles,
+    CreateProofFromBucketOfAll,
     CloneProof,
     DropProof,
     DropAllProofs,
@@ -414,22 +417,31 @@ impl Lexer {
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
+            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
-            "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
-            "TAKE_FROM_WORKTOP_BY_IDS" => Ok(TokenKind::TakeFromWorktopByIds),
+            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
-            "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT" => Ok(TokenKind::AssertWorktopContainsByAmount),
-            "ASSERT_WORKTOP_CONTAINS_BY_IDS" => Ok(TokenKind::AssertWorktopContainsByIds),
+            "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
+                Ok(TokenKind::AssertWorktopContainsNonFungibles)
+            }
             "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
             "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
             "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
             "CREATE_PROOF_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZone),
-            "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT" => {
-                Ok(TokenKind::CreateProofFromAuthZoneByAmount)
+            "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
+                Ok(TokenKind::CreateProofFromAuthZoneOfAmount)
             }
-            "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS" => Ok(TokenKind::CreateProofFromAuthZoneByIds),
+            "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES" => {
+                Ok(TokenKind::CreateProofFromAuthZoneOfNonFungibles)
+            }
+            "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => Ok(TokenKind::CreateProofFromAuthZoneOfAll),
             "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
+            "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => Ok(TokenKind::CreateProofFromBucketOfAmount),
+            "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
+                Ok(TokenKind::CreateProofFromBucketOfNonFungibles)
+            }
+            "CREATE_PROOF_FROM_BUCKET_OF_ALL" => Ok(TokenKind::CreateProofFromBucketOfAll),
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),

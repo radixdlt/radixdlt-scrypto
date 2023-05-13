@@ -51,7 +51,7 @@ fn test_balance_changes_when_success() {
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100.into())
             .withdraw_from_account(account, RADIX_TOKEN, Decimal::ONE)
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(component_address, "put", manifest_args!(bucket))
             })
             .build(),
@@ -126,7 +126,7 @@ fn test_balance_changes_when_failure() {
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100.into())
             .withdraw_from_account(account, RADIX_TOKEN, Decimal::ONE)
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(component_address, "boom", manifest_args!(bucket))
             })
             .build(),

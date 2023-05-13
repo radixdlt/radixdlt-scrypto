@@ -3,7 +3,6 @@ use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
-use crate::math::*;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
