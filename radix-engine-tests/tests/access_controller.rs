@@ -466,9 +466,11 @@ pub fn minting_of_recovery_badges_succeeds_for_primary_role() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(100));
 
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
     // Act
-    let receipt =
-        test_runner.mint_recovery_badges(Role::Primary, [NonFungibleLocalId::integer(1)].into());
+    let receipt = test_runner.mint_recovery_badges(Role::Primary, non_fungible_local_ids);
 
     // Assert
     receipt.expect_commit_success();
@@ -479,9 +481,11 @@ pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(100));
 
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
     // Act
-    let receipt =
-        test_runner.mint_recovery_badges(Role::Recovery, [NonFungibleLocalId::integer(1)].into());
+    let receipt = test_runner.mint_recovery_badges(Role::Recovery, non_fungible_local_ids);
 
     // Assert
     receipt.expect_commit_success();
@@ -1640,7 +1644,7 @@ struct AccessControllerTestRunner {
 #[allow(dead_code)]
 impl AccessControllerTestRunner {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunner::builder().build();
 
         // Creating a new account - this is where the badges will be held
         let (public_key, _, account) = test_runner.new_account(false);
