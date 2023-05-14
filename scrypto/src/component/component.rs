@@ -16,9 +16,11 @@ use radix_engine_interface::data::scrypto::{
 };
 use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
+use sbor::{Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId, ValueKind};
 use sbor::rust::prelude::*;
 use scrypto::modules::{Attached, Metadata};
 use crate::prelude::{scrypto_encode, ScryptoSbor};
+use crate::prelude::well_known_scrypto_custom_types::{REFERENCE_ID, reference_type_data};
 
 pub trait ComponentState<T: LocalComponent>: ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
@@ -234,7 +236,7 @@ impl<T: Component> LocalComponent for T {
 }
 
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Global<O: Component>(pub O);
 
 impl<O: Component> Deref for Global<O> {
@@ -268,5 +270,50 @@ impl<O: Component> Global<O> {
 impl<O: Component> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
         Global(Component::new(ComponentHandle::Global(value.into())))
+    }
+}
+
+impl<O: Component> Categorize<ScryptoCustomValueKind> for Global<O> {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Reference)
+    }
+}
+
+impl<O: Component, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Global<O> {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self.0.handle() {
+            ComponentHandle::Global(address) => {
+                encoder.write_slice(&address.to_vec())
+            }
+            _ => panic!("Unexpected"),
+        }
+    }
+}
+
+impl<O: Component, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Global<O> {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        Reference::decode_body_with_value_kind(decoder, value_kind).map(|reference| {
+            let o = O::new(ComponentHandle::Global(GlobalAddress::new_or_panic(reference.as_node_id().0)));
+            Self(o)
+        })
+    }
+}
+
+// TODO: generics support for Scrypto components?
+impl<O: Component> Describe<ScryptoCustomTypeKind> for Global<O> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(REFERENCE_ID);
+
+    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        reference_type_data()
     }
 }

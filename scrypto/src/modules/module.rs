@@ -9,11 +9,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
-use sbor::rust::prelude::ToOwned;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::prelude::ScryptoDecode;
 

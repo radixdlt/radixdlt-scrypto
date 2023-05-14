@@ -17,7 +17,7 @@ mod royalty_test {
             1
         }
 
-        pub fn create_component_with_royalty_enabled() -> ComponentAddress {
+        pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTestComponent> {
             let local_component = Self {}.instantiate();
 
             let config = RoyaltyConfigBuilder::new()
@@ -28,7 +28,7 @@ mod royalty_test {
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
 
-            local_component.globalize_with_modules(
+            local_component.globalize2(
                 AccessRules::new(MethodAuthorities::new(), authority_rules),
                 Metadata::new(),
                 Royalty::new(config),
