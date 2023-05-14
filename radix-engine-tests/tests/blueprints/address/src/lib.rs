@@ -18,7 +18,8 @@ mod child_component {
         }
 
         pub fn call_other_component(&self, child: bool) {
-            self.to_call.protected_method(Runtime::global_address(), child);
+            self.to_call
+                .protected_method(Runtime::global_address(), child);
         }
 
         pub fn assert_check_on_package(&self, package_address: PackageAddress) {
@@ -55,7 +56,9 @@ mod my_component {
             self.child.get_global_address()
         }
 
-        pub fn get_global_address_in_local(to_call: Global<CalledComponentComponent>) -> ComponentAddress {
+        pub fn get_global_address_in_local(
+            to_call: Global<CalledComponentComponent>,
+        ) -> ComponentAddress {
             let child = ChildComponent::create(to_call.clone());
             let address = child.get_global_address();
             Self { child, to_call }.instantiate().globalize();
@@ -78,7 +81,8 @@ mod my_component {
             if child {
                 self.child.call_other_component(called_child);
             } else {
-                self.to_call.protected_method(Runtime::global_address(), called_child);
+                self.to_call
+                    .protected_method(Runtime::global_address(), called_child);
             }
         }
 
@@ -153,7 +157,8 @@ mod preallocation_component {
             let component_address = Runtime::preallocate_global_component_address();
             Self {}
                 .instantiate()
-                .globalize_at_address(component_address)
+                .attach_address(component_address)
+                .globalize()
         }
 
         pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponentComponent>
@@ -162,7 +167,8 @@ mod preallocation_component {
             Runtime::preallocate_global_component_address();
             Self {}
                 .instantiate()
-                .globalize_at_address(component_address)
+                .attach_address(component_address)
+                .globalize()
         }
 
         pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponentComponent>
@@ -178,10 +184,12 @@ mod preallocation_component {
             let component_address = Runtime::preallocate_global_component_address();
             let one = Self {}
                 .instantiate()
-                .globalize_at_address(component_address);
+                .attach_address(component_address)
+                .globalize();
             let two = Self {}
                 .instantiate()
-                .globalize_at_address(component_address);
+                .attach_address(component_address)
+                .globalize();
             (one, two)
         }
     }
@@ -211,7 +219,8 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
-            .globalize_at_address(component_address)
+            .attach_address(component_address)
+            .globalize()
         }
 
         pub fn create_empty_at_address(
@@ -221,7 +230,8 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
-            .globalize_at_address(preallocated_address)
+            .attach_address(preallocated_address)
+            .globalize()
         }
 
         pub fn create_with_smuggled_address() -> Global<PreallocationSmugglerComponentComponent> {
@@ -272,7 +282,8 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
-            .globalize_at_address(component_address)
+            .attach_address(component_address)
+            .globalize()
         }
     }
 }

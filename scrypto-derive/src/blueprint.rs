@@ -429,21 +429,21 @@ fn generate_stubs(
         #[allow(non_camel_case_types)]
         #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
-            pub component: ::scrypto::component::ComponentHandle,
+            pub component: ::scrypto::component::ObjectStubHandle,
         }
 
         impl ::scrypto::component::Component for #component_ident {
-            fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
                     component: handle
                 }
             }
-            fn handle(&self) -> &::scrypto::component::ComponentHandle {
+            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
                 &self.component
             }
         }
 
-        impl From<#component_ident> for ::scrypto::component::ComponentHandle {
+        impl From<#component_ident> for ::scrypto::component::ObjectStubHandle {
             fn from(value: #component_ident) -> Self {
                 value.component
             }
@@ -683,21 +683,21 @@ mod tests {
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct TestComponent {
-                        pub component: ::scrypto::component::ComponentHandle,
+                        pub component: ::scrypto::component::ObjectStubHandle,
                     }
 
                     impl ::scrypto::component::Component for TestComponent {
-                        fn new(handle: ::scrypto::component::ComponentHandle) -> Self {
+                        fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                             Self {
                                 component: handle
                             }
                         }
-                        fn handle(&self) -> &::scrypto::component::ComponentHandle {
+                        fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
                             &self.component
                         }
                     }
 
-                    impl From<TestComponent> for ::scrypto::component::ComponentHandle {
+                    impl From<TestComponent> for ::scrypto::component::ObjectStubHandle {
                         fn from(value: TestComponent) -> Self {
                             value.component
                         }

@@ -21,9 +21,9 @@ mod cross_component {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-                .instantiate()
-                .attach_access_rules(access_rules)
-                .globalize()
+            .instantiate()
+            .attach_access_rules(access_rules)
+            .globalize()
         }
 
         pub fn create_component() -> Global<CrossComponentComponent> {

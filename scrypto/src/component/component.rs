@@ -5,22 +5,18 @@ use crate::prelude::{scrypto_encode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{
-    require, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
-};
+use radix_engine_interface::api::{ClientObjectApi};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
+use sbor::rust::ops::Deref;
 use sbor::rust::prelude::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
     ValueKind,
 };
 use scrypto::modules::{Attached, Metadata};
-use sbor::rust::ops::Deref;
 
 pub trait ComponentState<C: Component>: ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
@@ -30,30 +26,30 @@ pub trait ComponentState<C: Component>: ScryptoEncode + ScryptoDecode {
             .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
             .unwrap();
 
-        let stub = C::new(ComponentHandle::Own(Own(node_id)));
+        let stub = C::new(ObjectStubHandle::Own(Own(node_id)));
         Globalizeable::new(stub)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ComponentHandle {
+pub enum ObjectStubHandle {
     Own(Own),
     Global(GlobalAddress),
 }
 
-impl ComponentHandle {
+impl ObjectStubHandle {
     pub fn as_node_id(&self) -> &NodeId {
         match self {
-            ComponentHandle::Own(own) => own.as_node_id(),
-            ComponentHandle::Global(address) => address.as_node_id(),
+            ObjectStubHandle::Own(own) => own.as_node_id(),
+            ObjectStubHandle::Global(address) => address.as_node_id(),
         }
     }
 }
 
 pub trait Component {
-    fn new(handle: ComponentHandle) -> Self;
+    fn new(handle: ObjectStubHandle) -> Self;
 
-    fn handle(&self) -> &ComponentHandle;
+    fn handle(&self) -> &ObjectStubHandle;
 
     fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let output = ScryptoEnv
@@ -62,31 +58,22 @@ pub trait Component {
         scrypto_decode(&output).unwrap()
     }
 
-    fn package_address(&self) -> PackageAddress {
+    fn blueprint(&self) -> Blueprint {
         ScryptoEnv
             .get_object_info(self.handle().as_node_id())
             .unwrap()
             .blueprint
-            .package_address
-    }
-
-    fn blueprint_name(&self) -> String {
-        ScryptoEnv
-            .get_object_info(self.handle().as_node_id())
-            .unwrap()
-            .blueprint
-            .blueprint_name
     }
 }
 
-pub struct AnyComponent(ComponentHandle);
+pub struct AnyComponent(ObjectStubHandle);
 
 impl Component for AnyComponent {
-    fn new(handle: ComponentHandle) -> Self {
+    fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }
 
-    fn handle(&self) -> &ComponentHandle {
+    fn handle(&self) -> &ObjectStubHandle {
         &self.0
     }
 }
@@ -97,6 +84,7 @@ pub struct Globalizeable<O: Component> {
     pub metadata: Option<Metadata>,
     pub royalty: Option<Royalty>,
     pub access_rules: Option<AccessRules>,
+    pub address: Option<ComponentAddress>,
 }
 
 impl<O: Component> Deref for Globalizeable<O> {
@@ -114,6 +102,7 @@ impl<O: Component> Globalizeable<O> {
             metadata: None,
             royalty: None,
             access_rules: None,
+            address: None,
         }
     }
 
@@ -124,7 +113,7 @@ impl<O: Component> Globalizeable<O> {
         self.stub
     }
 
-    fn handle(&self) -> &ComponentHandle {
+    fn handle(&self) -> &ObjectStubHandle {
         self.stub.handle()
     }
 
@@ -143,66 +132,35 @@ impl<O: Component> Globalizeable<O> {
         self
     }
 
-    pub fn globalize_at_address(
-        mut self,
-        preallocated_address: ComponentAddress,
-    ) -> Global<O> {
+    pub fn attach_address(mut self, address: ComponentAddress) -> Self {
+        let _ = self.address.insert(address);
+        self
+    }
+
+    pub fn globalize(mut self) -> Global<O> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
-        let access_rules = self.access_rules.take().unwrap_or_else(|| AccessRules::default());
+        let access_rules = self
+            .access_rules
+            .take()
+            .unwrap_or_else(|| AccessRules::default());
 
-        let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
+        let modules = btreemap!(
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
             ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
         );
 
-        ScryptoEnv
-            .globalize_with_address(modules, preallocated_address.into())
-            .unwrap();
-
-        Global(O::new(ComponentHandle::Global(
-            preallocated_address.into(),
-        )))
-    }
-
-    pub fn globalize(mut self) -> Global<O> {
-        let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
-        let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
-        let access_rules = self.access_rules.take().unwrap_or_else(|| AccessRules::default());
-
-        let address = ScryptoEnv
-            .globalize(btreemap!(
-                ObjectModuleId::Main => self.handle().as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-                ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-            ))
-            .unwrap();
-
-        Global(O::new(ComponentHandle::Global(address)))
-    }
-
-    pub fn globalize_with_owner_badge(
-        self,
-        owner_badge: NonFungibleGlobalId,
-        royalty_config: RoyaltyConfig,
-    ) -> Global<O> {
-
-        let access_rules = {
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule(
-                "owner".clone(),
-                rule!(require(owner_badge.clone())),
-                rule!(require(owner_badge.clone())),
-            );
-            AccessRules::new(MethodAuthorities::new(), authority_rules)
+        let address = if let Some(address) = self.address {
+            let address: GlobalAddress = address.into();
+            ScryptoEnv.globalize_with_address(modules, address).unwrap();
+            address
+        } else {
+            ScryptoEnv.globalize(modules).unwrap()
         };
 
-        self.attach_royalty(Royalty::new(royalty_config))
-            .attach_access_rules(access_rules)
-            .globalize()
+        Global(O::new(ObjectStubHandle::Global(address)))
     }
 }
 
@@ -249,7 +207,7 @@ impl<O: Component> Global<O> {
 
 impl<O: Component> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
-        Global(Component::new(ComponentHandle::Global(value.into())))
+        Global(Component::new(ObjectStubHandle::Global(value.into())))
     }
 }
 
@@ -271,7 +229,7 @@ impl<O: Component, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValue
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self.0.handle() {
-            ComponentHandle::Global(address) => encoder.write_slice(&address.to_vec()),
+            ObjectStubHandle::Global(address) => encoder.write_slice(&address.to_vec()),
             _ => panic!("Unexpected"),
         }
     }
@@ -285,7 +243,7 @@ impl<O: Component, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValue
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         Reference::decode_body_with_value_kind(decoder, value_kind).map(|reference| {
-            let o = O::new(ComponentHandle::Global(GlobalAddress::new_or_panic(
+            let o = O::new(ObjectStubHandle::Global(GlobalAddress::new_or_panic(
                 reference.as_node_id().0,
             )));
             Self(o)

@@ -44,8 +44,10 @@ mod secret {
         ) -> Global<SecretComponent> {
             let local_component = Self { secret: 12345 }.instantiate();
 
-            assert_eq!(local_component.package_address(), expected_package_address);
-            assert_eq!(local_component.blueprint_name(), expected_blueprint_name);
+            let blueprint = local_component.blueprint();
+
+            assert_eq!(blueprint.package_address, expected_package_address);
+            assert_eq!(blueprint.blueprint_name, expected_blueprint_name);
 
             local_component.globalize()
         }

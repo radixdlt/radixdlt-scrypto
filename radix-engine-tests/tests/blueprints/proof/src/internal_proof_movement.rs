@@ -26,9 +26,7 @@ mod outer {
     impl Outer {
         pub fn instantiate() -> Global<OuterComponent> {
             let inner = Inner::instantiate();
-            Self { inner }
-                .instantiate()
-                .globalize()
+            Self { inner }.instantiate().globalize()
         }
 
         pub fn pass_fungible_proof(&self, proof: Proof) {

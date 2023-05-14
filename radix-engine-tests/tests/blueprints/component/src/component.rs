@@ -24,8 +24,8 @@ mod component_test {
             .globalize()
         }
 
-        pub fn get_component_info(component: Global<AnyComponent>) -> (PackageAddress, String) {
-            (component.package_address(), component.blueprint_name())
+        pub fn get_component_info(component: Global<AnyComponent>) -> Blueprint {
+            component.blueprint()
         }
 
         pub fn get_component_state(&self) -> String {

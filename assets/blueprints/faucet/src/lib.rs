@@ -21,7 +21,8 @@ mod faucet {
             }
             .instantiate()
             .attach_access_rules(access_rules)
-            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .attach_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .globalize()
         }
 
         /// Gives away tokens.

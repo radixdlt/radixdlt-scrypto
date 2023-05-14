@@ -13,9 +13,7 @@ mod mutable_access_rules_component {
 
             let access_rules = AccessRules::new(method_authorities, authority_rules);
 
-            component
-                .attach_access_rules(access_rules)
-                .globalize()
+            component.attach_access_rules(access_rules).globalize()
         }
 
         pub fn access_rules_function(component_address: ComponentAddress) {

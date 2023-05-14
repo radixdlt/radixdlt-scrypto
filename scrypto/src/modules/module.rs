@@ -8,10 +8,10 @@ use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
-use sbor::rust::vec::Vec;
-use scrypto::prelude::ScryptoDecode;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::Deref;
+use sbor::rust::vec::Vec;
+use scrypto::prelude::ScryptoDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ModuleHandle {

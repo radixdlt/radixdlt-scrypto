@@ -36,11 +36,28 @@ mod royalty_test {
             badge: NonFungibleGlobalId,
         ) -> Global<RoyaltyTestComponent> {
             let local_component = Self {}.instantiate();
-            let royalty_config = RoyaltyConfigBuilder::new()
-                .add_rule("paid_method", 1)
-                .add_rule("paid_method_panic", 1)
-                .default(0);
-            local_component.globalize_with_owner_badge(badge, royalty_config)
+            let royalty = {
+                let royalty_config = RoyaltyConfigBuilder::new()
+                    .add_rule("paid_method", 1)
+                    .add_rule("paid_method_panic", 1)
+                    .default(0);
+                Royalty::new(royalty_config)
+            };
+
+            let access_rules = {
+                let mut authority_rules = AuthorityRules::new();
+                authority_rules.set_rule(
+                    "owner".clone(),
+                    rule!(require(badge.clone())),
+                    rule!(require(badge.clone())),
+                );
+                AccessRules::new(MethodAuthorities::new(), authority_rules)
+            };
+
+            local_component
+                .attach_royalty(royalty)
+                .attach_access_rules(access_rules)
+                .globalize()
         }
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {

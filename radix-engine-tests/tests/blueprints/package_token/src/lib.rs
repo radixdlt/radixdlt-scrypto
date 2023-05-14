@@ -8,10 +8,7 @@ mod factory {
 
     impl Factory {
         pub fn create_raw() -> Global<FactoryComponent> {
-            let component = Self {
-                my_component: None,
-            }
-            .instantiate();
+            let component = Self { my_component: None }.instantiate();
 
             let access_rules = {
                 let mut method_authorities = MethodAuthorities::new();
@@ -26,9 +23,7 @@ mod factory {
                 AccessRules::new(method_authorities, authority_rules)
             };
 
-            component
-                .attach_access_rules(access_rules)
-                .globalize()
+            component.attach_access_rules(access_rules).globalize()
         }
 
         pub fn create() -> Global<FactoryComponent> {
@@ -50,10 +45,7 @@ mod factory {
                 AccessRules::new(method_authorities, authority_rules)
             };
 
-
-            let component = component
-                .attach_access_rules(access_rules)
-                .globalize();
+            let component = component.attach_access_rules(access_rules).globalize();
             component.set_address(component.clone());
 
             component

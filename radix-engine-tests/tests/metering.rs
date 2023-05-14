@@ -36,7 +36,6 @@ fn execute_with_time_logging(
 }
 
 #[test]
-#[ignore]
 fn test_basic_transfer() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -84,7 +83,6 @@ fn test_basic_transfer() {
 }
 
 #[test]
-#[ignore]
 fn test_radiswap() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -207,7 +205,7 @@ fn test_radiswap() {
         + 13912 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5559776 /* LockSubstate */
+        + 5561821 /* LockSubstate */
         + 19488 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
@@ -221,7 +219,6 @@ fn test_radiswap() {
 }
 
 #[test]
-#[ignore]
 fn test_flash_loan() {
     let mut test_runner = TestRunner::builder().build();
 
@@ -319,7 +316,7 @@ fn test_flash_loan() {
         + 21978 /* DropLock */
         + 5880 /* DropNode */
         + 4543955 /* Invoke */
-        + 6840861 /* LockSubstate */
+        + 6842856 /* LockSubstate */
         + 31192 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
