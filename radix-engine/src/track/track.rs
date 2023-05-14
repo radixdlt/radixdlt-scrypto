@@ -862,7 +862,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .entry(partition_num)
             .or_insert(TrackedPartition::new());
 
-        // initialize the "from db" iterator: use lazy init, since we want to skip it altogether if the node is marked as `is_new` in our track
+        // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
         let mut db_values_size = 0usize;
         let raw_db_entries: Box<dyn Iterator<Item = PartitionEntry>> = if tracked_node.is_new {
