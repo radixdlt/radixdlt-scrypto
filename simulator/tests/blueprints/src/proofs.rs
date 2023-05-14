@@ -39,7 +39,9 @@ mod proofs {
 
             let local_component = Self {}.instantiate();
             (
-                local_component.attach_access_rules(access_rules).globalize(),
+                local_component
+                    .attach_access_rules(access_rules)
+                    .globalize(),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

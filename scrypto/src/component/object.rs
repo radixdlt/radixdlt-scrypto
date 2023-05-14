@@ -1,16 +1,10 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Royalty};
-use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFERENCE_ID};
-use crate::prelude::{scrypto_encode, ScryptoSbor};
+use crate::prelude::ScryptoSbor;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientObjectApi};
-use radix_engine_interface::data::scrypto::{
-    scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
-};
+use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::types::*;
-use sbor::rust::ops::Deref;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

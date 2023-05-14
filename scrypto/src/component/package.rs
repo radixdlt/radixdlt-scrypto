@@ -1,21 +1,13 @@
-use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::Attached;
-use crate::runtime::*;
-use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientObjectApi;
+use crate::prelude::{Global, ObjectStub, ObjectStubHandle};
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto::prelude::Metadata;
-use crate::prelude::{Global, ObjectStub, ObjectStubHandle};
 
 pub type Package = Global<PackageStub>;
 

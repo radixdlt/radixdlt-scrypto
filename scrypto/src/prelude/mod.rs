@@ -8,9 +8,8 @@ pub use crate::modules::*;
 pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
-    blueprint, borrow_resource_manager, debug, error, external_blueprint,
-    external_component, include_code, include_schema, info, resource_list, this_package, trace,
-    warn, NonFungibleData,
+    blueprint, debug, error, external_blueprint, external_component, include_code, include_schema,
+    info, resource_list, this_package, trace, warn, NonFungibleData,
 };
 
 //=========================

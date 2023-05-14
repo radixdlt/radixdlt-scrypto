@@ -3,17 +3,17 @@ use scrypto::prelude::*;
 #[blueprint]
 mod stored_resource {
     struct StoredResource {
-        resource_address: ResourceAddress,
+        resource_manager: ResourceManager,
     }
 
     impl StoredResource {
         pub fn create() -> Global<StoredResourceComponent> {
-            let resource_address = ResourceBuilder::new_fungible().create_with_no_initial_supply();
-            Self { resource_address }.instantiate().globalize()
+            let resource_manager = ResourceBuilder::new_fungible().create_with_no_initial_supply();
+            Self { resource_manager }.instantiate().globalize()
         }
 
         pub fn total_supply(&self) -> Decimal {
-            borrow_resource_manager!(self.resource_address).total_supply()
+            self.resource_manager.total_supply()
         }
     }
 }

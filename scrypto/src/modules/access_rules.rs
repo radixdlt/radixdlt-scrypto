@@ -52,6 +52,23 @@ impl AccessRules {
         );
     }
 
+    pub fn set_authority_rule_on_inner_blueprint<A: Into<AccessRule>>(
+        &self,
+        inner_blueprint: &str,
+        name: &str,
+        entry: A,
+    ) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::inner_blueprint(inner_blueprint),
+                name: name.into(),
+                rule: entry.into(),
+            })
+            .unwrap(),
+        );
+    }
+
     pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,

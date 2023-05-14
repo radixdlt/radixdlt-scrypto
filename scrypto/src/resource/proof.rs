@@ -49,6 +49,7 @@ pub trait ScryptoProof: Sized {
     fn resource_address(&self) -> ResourceAddress;
     fn drop(self);
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+    fn resource_manager(&self) -> ResourceManager;
 }
 
 impl ScryptoProof for Proof {
@@ -259,6 +260,10 @@ impl ScryptoProof for Proof {
         scrypto_decode(&rtn).unwrap()
     }
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self) {
         let mut env = ScryptoEnv;
         // TODO: Clean this up
@@ -310,6 +315,10 @@ impl ValidatedProof {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     pub fn resource_address(&self) -> ResourceAddress {

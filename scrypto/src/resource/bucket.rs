@@ -1,4 +1,4 @@
-use crate::borrow_resource_manager;
+use crate::prelude::ResourceManager;
 use crate::resource::{LocalAuthZone, NonFungible, ScryptoProof};
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -20,7 +20,6 @@ pub trait ScryptoBucket {
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof;
     fn create_proof_of_non_fungibles(&self, ids: BTreeSet<NonFungibleLocalId>) -> Proof;
     fn create_proof_of_all(&self) -> Proof;
-    fn resource_address(&self) -> ResourceAddress;
     fn take_internal(&mut self, amount: Decimal) -> Bucket;
     fn take_non_fungibles(
         &mut self,
@@ -36,6 +35,8 @@ pub trait ScryptoBucket {
     fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
+    fn resource_manager(&self) -> ResourceManager;
+    fn resource_address(&self) -> ResourceAddress;
 }
 
 impl ScryptoBucket for Bucket {
@@ -63,8 +64,8 @@ impl ScryptoBucket for Bucket {
     }
 
     fn burn(self) {
-        let resource_address = self.resource_address();
-        borrow_resource_manager!(resource_address).burn(self);
+        let manager = self.resource_manager();
+        manager.burn(self);
     }
 
     fn create_proof(&self) -> Proof {
@@ -116,6 +117,10 @@ impl ScryptoBucket for Bucket {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {
