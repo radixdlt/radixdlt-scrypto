@@ -440,6 +440,24 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
+        Instruction::CallAccessRulesMethod {
+            address ,
+            method_name,
+            args,
+        } => {
+            match method_name.as_str() {
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ACCESS_RULES_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
         Instruction::CallFunction {
             package_address,
             blueprint_name,

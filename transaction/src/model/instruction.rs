@@ -217,6 +217,13 @@ pub enum Instruction {
         method_name: String,
         args: ManifestValue,
     },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
+    CallAccessRulesMethod {
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
 }
 
 //===============================================================
@@ -270,3 +277,4 @@ pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 37;
 pub const INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR: u8 = 38;
 pub const INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR: u8 = 39;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 40;
+pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 41;
