@@ -78,8 +78,6 @@ mod genesis_helper {
 
             let access_rules = AccessRules::new(method_authorities, authority_rules);
 
-            let metadata = Metadata::new();
-
             Self {
                 epoch_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
@@ -90,7 +88,6 @@ mod genesis_helper {
             .globalize_at_address_with_modules(
                 ComponentAddress::new_or_panic(preallocated_address_bytes),
                 access_rules,
-                metadata,
                 Royalty::new(RoyaltyConfig::default()),
             )
         }

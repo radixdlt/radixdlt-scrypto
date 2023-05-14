@@ -12,7 +12,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Attachable;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ModuleHandle);
 
 impl Attachable for Metadata {

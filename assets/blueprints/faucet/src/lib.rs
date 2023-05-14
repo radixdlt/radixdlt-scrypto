@@ -14,7 +14,6 @@ mod faucet {
             bucket: Bucket,
         ) -> Global<FaucetComponent> {
             let access_rules = AccessRules::new(MethodAuthorities::new(), AuthorityRules::new());
-            let metadata = Metadata::new();
 
             Self {
                 vault: Vault::with_bucket(bucket),
@@ -24,7 +23,6 @@ mod faucet {
             .globalize_at_address_with_modules(
                 ComponentAddress::new_or_panic(preallocated_address_bytes),
                 access_rules,
-                metadata,
                 Royalty::new(RoyaltyConfig::default()),
             )
         }

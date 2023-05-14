@@ -23,7 +23,6 @@ mod balance_changes_test {
 
             local_component.globalize_with_modules(
                 AccessRules::new(MethodAuthorities::new(), authority_rules),
-                Metadata::new(),
                 Royalty::new(config),
             )
         }

@@ -78,7 +78,7 @@ mod my_component {
             if child {
                 self.child.call_other_component(called_child);
             } else {
-                let address = self.to_call.protected_method(Runtime::global_address(), called_child);
+                self.to_call.protected_method(Runtime::global_address(), called_child);
             }
         }
 
