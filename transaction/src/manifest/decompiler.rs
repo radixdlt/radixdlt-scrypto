@@ -28,6 +28,7 @@ use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
+use radix_engine_interface::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -516,10 +517,18 @@ pub fn decompile_instruction<F: fmt::Write>(
             method_name,
             args,
         } => {
+
             match (address, method_name.as_str()) {
                 (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
                     if address.eq(&EPOCH_MANAGER.clone().into())=> {
                     write!(f, "CREATE_VALIDATOR")?;
+                }
+                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                if address.as_node_id().is_global_package() => {
+                    f.write_str(&format!(
+                        "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
                 }
                 _ => {
                     f.write_str(&format!(
@@ -596,15 +605,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("REMOVE_METADATA")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_PACKAGE_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, package_address)?;
-            format_typed_value(f, context, royalty_config)?;
             f.write_str(";")?;
         }
         Instruction::ClaimPackageRoyalty { package_address } => {

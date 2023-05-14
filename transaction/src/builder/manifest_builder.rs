@@ -29,6 +29,7 @@ use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput};
+use radix_engine_interface::blueprints::package::{PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -563,9 +564,12 @@ impl ManifestBuilder {
         package_address: PackageAddress,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
+        self.add_instruction(Instruction::CallMethod {
+            address: package_address.into(),
+            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyConfigInput {
+                royalty_config
+            })
         })
         .0
     }

@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::package::{PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
 use radix_engine_interface::blueprints::resource::{
     AccessRulesConfig, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
@@ -506,9 +507,12 @@ pub fn generate_instruction(
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
-        } => Instruction::SetPackageRoyaltyConfig {
-            package_address: generate_package_address(package_address, bech32_decoder)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+        } => Instruction::CallMethod {
+            address: generate_global_address(package_address, bech32_decoder)?,
+            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyConfigInput {
+                royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            })
         },
         ast::Instruction::ClaimPackageRoyalty { package_address } => {
             Instruction::ClaimPackageRoyalty {

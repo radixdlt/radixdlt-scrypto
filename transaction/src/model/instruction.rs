@@ -155,12 +155,6 @@ pub enum Instruction {
         key: String,
     },
 
-    #[sbor(discriminator(INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR))]
-    SetPackageRoyaltyConfig {
-        package_address: PackageAddress,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-    },
-
     #[sbor(discriminator(INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR))]
     ClaimPackageRoyalty { package_address: PackageAddress },
 
@@ -270,7 +264,6 @@ pub const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 24;
 pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 25;
 pub const INSTRUCTION_SET_METADATA_DISCRIMINATOR: u8 = 26;
 pub const INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR: u8 = 27;
-pub const INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 28;
 pub const INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 30;
 pub const INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR: u8 = 32;
 pub const INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR: u8 = 33;

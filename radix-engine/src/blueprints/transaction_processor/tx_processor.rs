@@ -509,30 +509,6 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetPackageRoyaltyConfig {
-                    package_address,
-                    royalty_config,
-                } => {
-                    let result = api.call_method_advanced(
-                        package_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Main,
-                        PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-                        scrypto_encode(&PackageSetRoyaltyConfigInput {
-                            royalty_config: royalty_config.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
                 Instruction::ClaimPackageRoyalty { package_address } => {
                     let result = api.call_method_advanced(
                         package_address.as_node_id(),
