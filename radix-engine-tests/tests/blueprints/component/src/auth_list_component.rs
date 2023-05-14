@@ -13,9 +13,13 @@ mod auth_list_component {
             auth: Vec<NonFungibleGlobalId>,
             authority_rules: AuthorityRules,
         ) -> Global<AuthListComponentComponent> {
-            let method_authorities = MethodAuthorities::new();
             let component = Self { count, auth }.instantiate();
-            component.globalize_with_access_rules(method_authorities, authority_rules)
+
+            let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
+
+            component
+                .attach_access_rules(access_rules)
+                .globalize()
         }
 
         pub fn update_count(&mut self, count: u8) {

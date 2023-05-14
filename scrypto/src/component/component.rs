@@ -96,6 +96,7 @@ pub struct Globalizeable<O: Component> {
     pub stub: O,
     pub metadata: Option<Metadata>,
     pub royalty: Option<Royalty>,
+    pub access_rules: Option<AccessRules>,
 }
 
 impl<O: Component> Deref for Globalizeable<O> {
@@ -112,12 +113,13 @@ impl<O: Component> Globalizeable<O> {
             stub,
             metadata: None,
             royalty: None,
+            access_rules: None,
         }
     }
 
     pub fn own(self) -> O {
-        if self.metadata.is_some() || self.royalty.is_some() {
-            panic!("Cannot own with attached metadata.");
+        if self.metadata.is_some() || self.royalty.is_some() || self.access_rules.is_some() {
+            panic!("Cannot own with already attached objects.");
         }
         self.stub
     }
@@ -126,42 +128,28 @@ impl<O: Component> Globalizeable<O> {
         self.stub.handle()
     }
 
-    pub fn attach_metadata(&mut self, metadata: Metadata) -> &mut Self {
+    pub fn attach_metadata(mut self, metadata: Metadata) -> Self {
         let _ = self.metadata.insert(metadata);
         self
     }
 
-    pub fn attach_royalty(&mut self, royalty: Royalty) -> &mut Self {
+    pub fn attach_royalty(mut self, royalty: Royalty) -> Self {
         let _ = self.royalty.insert(royalty);
         self
     }
 
-    pub fn globalize_with_modules(
-        mut self,
-        access_rules: AccessRules,
-    ) -> Global<O> {
-        let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
-        let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
-
-        let address = ScryptoEnv
-            .globalize(btreemap!(
-                ObjectModuleId::Main => self.handle().as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-                ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-            ))
-            .unwrap();
-
-        Global(O::new(ComponentHandle::Global(address)))
+    pub fn attach_access_rules(mut self, access_rules: AccessRules) -> Self {
+        let _ = self.access_rules.insert(access_rules);
+        self
     }
 
-    pub fn globalize_at_address_with_modules(
+    pub fn globalize_at_address(
         mut self,
         preallocated_address: ComponentAddress,
-        access_rules: AccessRules,
     ) -> Global<O> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
+        let access_rules = self.access_rules.take().unwrap_or_else(|| AccessRules::default());
 
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
@@ -179,45 +167,42 @@ impl<O: Component> Globalizeable<O> {
         )))
     }
 
-    pub fn globalize(self) -> Global<O> {
-        self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
-        )
-    }
+    pub fn globalize(mut self) -> Global<O> {
+        let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
+        let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
+        let access_rules = self.access_rules.take().unwrap_or_else(|| AccessRules::default());
 
-    pub fn globalize_at_address(self, preallocated_address: ComponentAddress) -> Global<O> {
-        self.globalize_at_address_with_modules(
-            preallocated_address,
-            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
-        )
-    }
+        let address = ScryptoEnv
+            .globalize(btreemap!(
+                ObjectModuleId::Main => self.handle().as_node_id().clone(),
+                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
+                ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
+                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
+            ))
+            .unwrap();
 
-    pub fn globalize_with_access_rules(
-        self,
-        method_authorities: MethodAuthorities,
-        authority_rules: AuthorityRules,
-    ) -> Global<O> {
-        self.globalize_with_modules(
-            AccessRules::new(method_authorities, authority_rules),
-        )
+        Global(O::new(ComponentHandle::Global(address)))
     }
 
     pub fn globalize_with_owner_badge(
-        mut self,
+        self,
         owner_badge: NonFungibleGlobalId,
         royalty_config: RoyaltyConfig,
     ) -> Global<O> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "owner".clone(),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
 
-        let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
+        let access_rules = {
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_rule(
+                "owner".clone(),
+                rule!(require(owner_badge.clone())),
+                rule!(require(owner_badge.clone())),
+            );
+            AccessRules::new(MethodAuthorities::new(), authority_rules)
+        };
 
-        self.attach_royalty(Royalty::new(royalty_config));
-        self.globalize_with_modules(access_rules)
+        self.attach_royalty(Royalty::new(royalty_config))
+            .attach_access_rules(access_rules)
+            .globalize()
     }
 }
 

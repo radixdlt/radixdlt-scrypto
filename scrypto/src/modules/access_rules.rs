@@ -18,7 +18,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
@@ -74,6 +74,12 @@ impl Attachable for AccessRules {
 
     fn handle(&self) -> &ModuleHandle {
         &self.0
+    }
+}
+
+impl Default for AccessRules {
+    fn default() -> Self {
+        AccessRules::new(MethodAuthorities::new(), AuthorityRules::new())
     }
 }
 

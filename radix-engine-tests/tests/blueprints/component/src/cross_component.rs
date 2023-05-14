@@ -11,14 +11,19 @@ mod cross_component {
         pub fn create_component_with_auth(
             authority_rules: AuthorityRules,
         ) -> Global<CrossComponentComponent> {
-            let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority("get_component_state", "auth");
-            let component = Self {
+            let access_rules = {
+                let mut method_authorities = MethodAuthorities::new();
+                method_authorities.set_main_method_authority("get_component_state", "auth");
+                AccessRules::new(method_authorities, authority_rules)
+            };
+
+            Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate();
-            component.globalize_with_access_rules(method_authorities, authority_rules)
+                .instantiate()
+                .attach_access_rules(access_rules)
+                .globalize()
         }
 
         pub fn create_component() -> Global<CrossComponentComponent> {

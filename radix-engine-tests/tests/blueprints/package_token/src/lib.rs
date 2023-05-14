@@ -9,21 +9,26 @@ mod factory {
     impl Factory {
         pub fn create_raw() -> Global<FactoryComponent> {
             let component = Self {
-                my_component: Option::None,
+                my_component: None,
             }
             .instantiate();
 
-            let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority("set_address", "set_address");
+            let access_rules = {
+                let mut method_authorities = MethodAuthorities::new();
+                method_authorities.set_main_method_authority("set_address", "set_address");
 
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule(
-                "set_address",
-                rule!(require(Runtime::package_token())),
-                AccessRule::DenyAll,
-            );
+                let mut authority_rules = AuthorityRules::new();
+                authority_rules.set_rule(
+                    "set_address",
+                    rule!(require(Runtime::package_token())),
+                    AccessRule::DenyAll,
+                );
+                AccessRules::new(method_authorities, authority_rules)
+            };
 
-            component.globalize_with_access_rules(method_authorities, authority_rules)
+            component
+                .attach_access_rules(access_rules)
+                .globalize()
         }
 
         pub fn create() -> Global<FactoryComponent> {
@@ -32,18 +37,23 @@ mod factory {
             }
             .instantiate();
 
-            let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority("set_address", "set_address");
+            let access_rules = {
+                let mut method_authorities = MethodAuthorities::new();
+                method_authorities.set_main_method_authority("set_address", "set_address");
 
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule(
-                "set_address",
-                rule!(require(Runtime::package_token())),
-                AccessRule::DenyAll,
-            );
+                let mut authority_rules = AuthorityRules::new();
+                authority_rules.set_rule(
+                    "set_address",
+                    rule!(require(Runtime::package_token())),
+                    AccessRule::DenyAll,
+                );
+                AccessRules::new(method_authorities, authority_rules)
+            };
 
-            let component =
-                component.globalize_with_access_rules(method_authorities, authority_rules);
+
+            let component = component
+                .attach_access_rules(access_rules)
+                .globalize();
             component.set_address(component.clone());
 
             component

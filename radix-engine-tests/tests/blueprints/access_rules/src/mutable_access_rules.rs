@@ -10,7 +10,12 @@ mod mutable_access_rules_component {
             authority_rules: AuthorityRules,
         ) -> Global<MutableAccessRulesComponentComponent> {
             let component = Self {}.instantiate();
-            component.globalize_with_access_rules(method_authorities, authority_rules)
+
+            let access_rules = AccessRules::new(method_authorities, authority_rules);
+
+            component
+                .attach_access_rules(access_rules)
+                .globalize()
         }
 
         pub fn access_rules_function(component_address: ComponentAddress) {

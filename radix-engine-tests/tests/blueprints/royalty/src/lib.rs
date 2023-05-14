@@ -28,13 +28,16 @@ mod royalty_test {
                 Royalty::new(config)
             };
 
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
+            let access_rules = {
+                let mut authority_rules = AuthorityRules::new();
+                authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
+                AccessRules::new(MethodAuthorities::new(), authority_rules)
+            };
 
-            local_component.attach_royalty(royalty);
-            local_component.globalize_with_modules(
-                AccessRules::new(MethodAuthorities::new(), authority_rules),
-            )
+            local_component
+                .attach_royalty(royalty)
+                .attach_access_rules(access_rules)
+                .globalize()
         }
     }
 }

@@ -28,7 +28,7 @@ mod outer {
             let inner = Inner::instantiate();
             Self { inner }
                 .instantiate()
-                .globalize_with_access_rules(MethodAuthorities::new(), AuthorityRules::new())
+                .globalize()
         }
 
         pub fn pass_fungible_proof(&self, proof: Proof) {

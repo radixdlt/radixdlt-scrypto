@@ -6,7 +6,7 @@ mod metadata_component {
 
     impl MetadataComponent {
         pub fn new(key: String, value: String) {
-            let mut component = Self {}.instantiate();
+            let component = Self {}.instantiate();
 
             let metadata = {
                 let metadata = Metadata::new();
@@ -14,10 +14,7 @@ mod metadata_component {
                 metadata
             };
 
-            let global = {
-                component.attach_metadata(metadata);
-                component.globalize()
-            };
+            let global = component.attach_metadata(metadata).globalize();
 
             let metadata = global.metadata();
 
@@ -27,12 +24,13 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
 
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll);
+            let access_rules = {
+                let mut authority_rules = AuthorityRules::new();
+                authority_rules.set_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll);
+                AccessRules::new(MethodAuthorities::new(), authority_rules)
+            };
 
-            let global =
-                component.globalize_with_access_rules(MethodAuthorities::new(), authority_rules);
-
+            let global = component.attach_access_rules(access_rules).globalize();
             let metadata = global.metadata();
             metadata.set(key.clone(), value.clone());
 
