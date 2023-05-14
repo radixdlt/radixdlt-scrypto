@@ -35,9 +35,11 @@ mod proofs {
                 AccessRule::DenyAll,
             );
 
+            let access_rules = AccessRules::new(method_authorities, authority_rules);
+
             let local_component = Self {}.instantiate();
             (
-                local_component.globalize_with_access_rules(method_authorities, authority_rules),
+                local_component.attach_access_rules(access_rules).globalize(),
                 vec![supervisor_badge, admin_badge, superadmin_badge, token],
             )
         }

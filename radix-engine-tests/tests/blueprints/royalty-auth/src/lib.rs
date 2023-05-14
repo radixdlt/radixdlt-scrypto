@@ -20,9 +20,9 @@ mod royalty_test {
         // Doesn't really work because of proof downstream movement limitation
         // TODO: make it work by changing the rule to "1-barrier".
 
-        pub fn enable_royalty_for_package(address: PackageAddress, proof: Proof) {
+        pub fn enable_royalty_for_package(package: Package, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(BTreeMap::from([(
+                package.set_royalty_config(BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
                     RoyaltyConfigBuilder::new()
                         .add_rule("paid_method", 2)
@@ -60,9 +60,9 @@ mod royalty_test {
                 .globalize()
         }
 
-        pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {
+        pub fn disable_package_royalty(package: Package, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(BTreeMap::from([]));
+                package.set_royalty_config(BTreeMap::from([]));
             })
         }
 
@@ -74,8 +74,8 @@ mod royalty_test {
             })
         }
 
-        pub fn claim_package_royalty(address: PackageAddress, proof: Proof) -> Bucket {
-            proof.authorize(|| borrow_package!(address).claim_royalty())
+        pub fn claim_package_royalty(package: Package, proof: Proof) -> Bucket {
+            proof.authorize(|| package.claim_royalty())
         }
 
         pub fn claim_component_royalty(address: ComponentAddress, proof: Proof) -> Bucket {

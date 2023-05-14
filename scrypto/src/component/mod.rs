@@ -1,9 +1,9 @@
 mod component;
 mod kv_store;
-mod macros;
 mod package;
+mod object;
 
 pub use component::*;
 pub use kv_store::*;
-pub use macros::*;
 pub use package::*;
+pub use object::*;

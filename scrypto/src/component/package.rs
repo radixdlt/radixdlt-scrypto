@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{Attachable, Attached};
+use crate::modules::Attached;
 use crate::runtime::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
@@ -15,45 +15,34 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::prelude::Metadata;
+use crate::prelude::{Global, ObjectStub, ObjectStubHandle};
 
-/// Represents a published package.
-#[derive(Debug)]
-pub struct BorrowedPackage(pub PackageAddress);
+pub type Package = Global<PackageStub>;
 
-impl BorrowedPackage {
-    /// Invokes a function on this package.
-    pub fn call<T: ScryptoDecode>(&self, blueprint_name: &str, function: &str, args: Vec<u8>) -> T {
-        Runtime::call_function(self.0, blueprint_name, function, args)
+pub struct PackageStub(ObjectStubHandle);
+
+impl ObjectStub for PackageStub {
+    fn new(handle: ObjectStubHandle) -> Self {
+        Self(handle)
     }
 
-    pub fn metadata(&self) -> Attached<Metadata> {
-        let metadata = Metadata::attached(self.0.into());
-        Attached::new(metadata)
+    fn handle(&self) -> &ObjectStubHandle {
+        &self.0
     }
+}
 
+impl PackageStub {
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
-        ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::Main,
-                PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-                scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
-            )
-            .unwrap();
+        self.call_ignore_rtn(
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+            scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
+        );
     }
 
     pub fn claim_royalty(&self) -> Bucket {
-        let rtn = ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::Main,
-                PACKAGE_CLAIM_ROYALTY_IDENT,
-                scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
-            )
-            .unwrap();
-
-        scrypto_decode(&rtn).unwrap()
+        self.call(
+            PACKAGE_CLAIM_ROYALTY_IDENT,
+            scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
+        )
     }
 }

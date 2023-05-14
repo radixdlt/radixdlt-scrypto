@@ -432,7 +432,7 @@ fn generate_stubs(
             pub component: ::scrypto::component::ObjectStubHandle,
         }
 
-        impl ::scrypto::component::Component for #component_ident {
+        impl ::scrypto::component::ObjectStub for #component_ident {
             fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
                     component: handle
@@ -686,7 +686,7 @@ mod tests {
                         pub component: ::scrypto::component::ObjectStubHandle,
                     }
 
-                    impl ::scrypto::component::Component for TestComponent {
+                    impl ::scrypto::component::ObjectStub for TestComponent {
                         fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                             Self {
                                 component: handle
