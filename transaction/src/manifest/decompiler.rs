@@ -28,7 +28,7 @@ use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::package::PACKAGE_SET_ROYALTY_CONFIG_IDENT;
+use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -517,7 +517,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             method_name,
             args,
         } => {
-
             match (address, method_name.as_str()) {
                 (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
                     if address.eq(&EPOCH_MANAGER.clone().into())=> {
@@ -527,6 +526,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                 if address.as_node_id().is_global_package() => {
                     f.write_str(&format!(
                         "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                if address.as_node_id().is_global_package() => {
+                    f.write_str(&format!(
+                        "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),
                     ))?;
                 }
@@ -605,11 +611,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("REMOVE_METADATA")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimPackageRoyalty { package_address } => {
-            f.write_str("CLAIM_PACKAGE_ROYALTY")?;
-            format_typed_value(f, context, package_address)?;
             f.write_str(";")?;
         }
         Instruction::SetMethodAccessRule {

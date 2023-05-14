@@ -306,7 +306,6 @@ impl NotarizedTransactionValidator {
                 | Instruction::RecallResource { .. }
                 | Instruction::SetMetadata { .. }
                 | Instruction::RemoveMetadata { .. }
-                | Instruction::ClaimPackageRoyalty { .. }
                 | Instruction::SetMethodAccessRule { .. }
                 | Instruction::SetGroupAccessRule { .. }
                 | Instruction::SetGroupMutability { .. }

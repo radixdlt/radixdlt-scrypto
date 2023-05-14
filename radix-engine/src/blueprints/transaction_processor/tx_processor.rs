@@ -509,24 +509,6 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::ClaimPackageRoyalty { package_address } => {
-                    let result = api.call_method_advanced(
-                        package_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Main,
-                        PACKAGE_CLAIM_ROYALTY_IDENT,
-                        scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
                 Instruction::SetMethodAccessRule {
                     entity_address,
                     key,

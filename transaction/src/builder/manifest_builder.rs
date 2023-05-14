@@ -29,7 +29,7 @@ use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput};
-use radix_engine_interface::blueprints::package::{PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageSetRoyaltyConfigInput};
+use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -575,7 +575,11 @@ impl ManifestBuilder {
     }
 
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
-        self.add_instruction(Instruction::ClaimPackageRoyalty { package_address })
+        self.add_instruction(Instruction::CallMethod {
+            address: package_address.into(),
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
+        })
             .0
     }
 
