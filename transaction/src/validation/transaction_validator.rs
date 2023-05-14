@@ -308,7 +308,6 @@ impl NotarizedTransactionValidator {
                 | Instruction::RemoveMetadata { .. }
                 | Instruction::SetPackageRoyaltyConfig { .. }
                 | Instruction::ClaimPackageRoyalty { .. }
-                | Instruction::ClaimComponentRoyalty { .. }
                 | Instruction::SetMethodAccessRule { .. }
                 | Instruction::SetGroupAccessRule { .. }
                 | Instruction::SetGroupMutability { .. }

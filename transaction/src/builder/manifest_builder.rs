@@ -28,7 +28,7 @@ use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentSetRoyaltyConfigInput};
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -570,6 +570,11 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+        self.add_instruction(Instruction::ClaimPackageRoyalty { package_address })
+            .0
+    }
+
     pub fn set_component_royalty_config(
         &mut self,
         component_address: ComponentAddress,
@@ -585,13 +590,13 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
-        self.add_instruction(Instruction::ClaimPackageRoyalty { package_address })
-            .0
-    }
-
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::ClaimComponentRoyalty { component_address })
+        self.add_instruction(Instruction::CallRoyaltyMethod {
+            entity_address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentClaimRoyaltyInput {
+            }),
+        })
             .0
     }
 

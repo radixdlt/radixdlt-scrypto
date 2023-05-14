@@ -164,9 +164,6 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR))]
     ClaimPackageRoyalty { package_address: PackageAddress },
 
-    #[sbor(discriminator(INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR))]
-    ClaimComponentRoyalty { component_address: ComponentAddress },
-
     #[sbor(discriminator(INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR))]
     SetMethodAccessRule {
         entity_address: GlobalAddress,
@@ -275,7 +272,6 @@ pub const INSTRUCTION_SET_METADATA_DISCRIMINATOR: u8 = 26;
 pub const INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR: u8 = 27;
 pub const INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 28;
 pub const INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 30;
-pub const INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR: u8 = 31;
 pub const INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR: u8 = 32;
 pub const INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR: u8 = 33;
 pub const INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR: u8 = 34;

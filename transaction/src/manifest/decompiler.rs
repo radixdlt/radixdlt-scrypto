@@ -26,7 +26,7 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -420,6 +420,12 @@ pub fn decompile_instruction<F: fmt::Write>(
                         entity_address.display(context.bech32_encoder),
                     ))?;
                 }
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT => {
+                    f.write_str(&format!(
+                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
+                        entity_address.display(context.bech32_encoder),
+                    ))?;
+                }
                 _ => {
                     f.write_str(&format!(
                         "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
@@ -602,11 +608,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::ClaimPackageRoyalty { package_address } => {
             f.write_str("CLAIM_PACKAGE_ROYALTY")?;
             format_typed_value(f, context, package_address)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimComponentRoyalty { component_address } => {
-            f.write_str("CLAIM_COMPONENT_ROYALTY")?;
-            format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
         Instruction::SetMethodAccessRule {
