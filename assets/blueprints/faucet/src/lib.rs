@@ -23,7 +23,6 @@ mod faucet {
             .globalize_at_address_with_modules(
                 ComponentAddress::new_or_panic(preallocated_address_bytes),
                 access_rules,
-                Royalty::new(RoyaltyConfig::default()),
             )
         }
 

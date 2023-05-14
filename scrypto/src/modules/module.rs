@@ -10,8 +10,8 @@ use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::vec::Vec;
 use scrypto::prelude::ScryptoDecode;
-use std::marker::PhantomData;
-use std::ops::Deref;
+use sbor::rust::marker::PhantomData;
+use sbor::rust::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ModuleHandle {

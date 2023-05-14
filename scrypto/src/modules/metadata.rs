@@ -27,6 +27,12 @@ impl Attachable for Metadata {
     }
 }
 
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata::new()
+    }
+}
+
 impl Metadata {
     pub fn new() -> Self {
         let rtn = ScryptoEnv

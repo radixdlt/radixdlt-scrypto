@@ -15,7 +15,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::RoyaltyConfig;
 use scrypto::modules::Attachable;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Royalty(pub ModuleHandle);
 
 impl Attachable for Royalty {
@@ -27,6 +27,12 @@ impl Attachable for Royalty {
 
     fn handle(&self) -> &ModuleHandle {
         &self.0
+    }
+}
+
+impl Default for Royalty {
+    fn default() -> Self {
+        Royalty::new(RoyaltyConfig::default())
     }
 }
 
