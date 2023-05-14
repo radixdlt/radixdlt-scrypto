@@ -185,6 +185,17 @@ impl AccessControllerNativePackage {
             },
         );
         functions.insert(
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
+                export_name: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
@@ -424,6 +435,11 @@ impl AccessControllerNativePackage {
                 }
                 Self::create_global(input, api)
             }
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::post_instantiation(input, api)
+            }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -631,83 +647,6 @@ impl AccessControllerNativePackage {
                 scrypto_decode::<ResourceAddress>(result.as_slice()).unwrap()
             };
 
-            api.call_module_method(
-                resource_address.as_node_id(),
-                ObjectModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: "name".to_owned(),
-                    value: scrypto_decode(
-                        &scrypto_encode(&MetadataEntry::Value(MetadataValue::String(
-                            "Recovery Badge".into(),
-                        )))
-                        .unwrap(),
-                    )
-                    .unwrap(),
-                })
-                .unwrap(),
-            )?;
-            api.call_module_method(
-                resource_address.as_node_id(),
-                ObjectModuleId::Metadata,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: "icon_url".to_owned(),
-                    value: scrypto_decode(
-                        &scrypto_encode(&MetadataEntry::Value(MetadataValue::Url(Url(
-                            "https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned(),
-                        ))))
-                        .unwrap(),
-                    )
-                    .unwrap(),
-                })
-                .unwrap(),
-            )?;
-            /*
-            If we enable this we get the following error when trying to instantiate the AC:
-            KernelError(CallFrameError(MoveError(RefNotFound(NodeId("c3933af67f969fea5c6250df27513ec410e9eaee07173748d41cce7ab2fe")))))
-            seems like an issue with the references where allocating the node id doesn't seem to
-            give the current call frame a reference to the node id.
-            */
-            // api.call_module_method(
-            //     resource_address.as_node_id(),
-            //     ObjectModuleId::Metadata,
-            //     METADATA_SET_IDENT,
-            //     scrypto_encode(&MetadataSetInput {
-            //         key: "access_controller".to_owned(),
-            //         value: scrypto_decode(
-            //             &scrypto_encode(&MetadataEntry::Value(MetadataValue::Address(address)))
-            //                 .unwrap(),
-            //         )
-            //         .unwrap(),
-            //     })
-            //     .unwrap(),
-            // )?;
-
-            api.call_module_method(
-                resource_address.as_node_id(),
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                    rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                })
-                .unwrap(),
-            )?;
-            api.call_module_method(
-                resource_address.as_node_id(),
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                    rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                })
-                .unwrap(),
-            )?;
-
             resource_address
         };
 
@@ -742,7 +681,132 @@ impl AccessControllerNativePackage {
             address,
         )?;
 
+        // Invoking the post-initialization method on the component
+        api.call_method(
+            &node_id,
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
+            scrypto_encode(&AccessControllerPostInstantiationInput).unwrap(),
+        )?;
+
         Ok(IndexedScryptoValue::from_typed(&address))
+    }
+
+    /// This method is only callable when the access controller virtual direct package caller
+    /// badge is present.
+    ///
+    /// This method has been added due to an issue with setting the metadata of the recovery badge
+    /// resource to include the address of the access controller before the access controller was
+    /// globalized. Doing that lead to an error along the lines of "callframe has no reference to
+    /// the (access controller) node id" because the access controller's node id has been allocated
+    /// but nothing has been globalized to it. Thus, the call frame did not have a reference to the
+    /// global address to pass when calling the metadata set method.
+    ///
+    /// A minimal example that reproduces this issue is only possible after the metadata interfaces
+    /// are updated to support any MetadataEntry.
+    ///
+    /// The method below can be removed and the logic can be moved to the instantiation function
+    /// once this bug is fixed.
+    fn post_instantiation<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerPostInstantiationInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let global_address = api.actor_get_global_address()?;
+        let resource_address = {
+            let substate_key = AccessControllerField::AccessController.into();
+            let handle =
+                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+
+            let access_controller = {
+                let access_controller: AccessControllerSubstate =
+                    api.field_lock_read_typed(handle)?;
+                access_controller
+            };
+            access_controller.recovery_badge
+        };
+
+        api.call_module_method(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            METADATA_SET_IDENT,
+            scrypto_encode(&MetadataSetInput {
+                key: "name".to_owned(),
+                value: scrypto_decode(
+                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::String(
+                        "Recovery Badge".into(),
+                    )))
+                    .unwrap(),
+                )
+                .unwrap(),
+            })
+            .unwrap(),
+        )?;
+        api.call_module_method(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            METADATA_SET_IDENT,
+            scrypto_encode(&MetadataSetInput {
+                key: "icon_url".to_owned(),
+                value: scrypto_decode(
+                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::Url(Url(
+                        "https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned(),
+                    ))))
+                    .unwrap(),
+                )
+                .unwrap(),
+            })
+            .unwrap(),
+        )?;
+        api.call_module_method(
+            resource_address.as_node_id(),
+            ObjectModuleId::Metadata,
+            METADATA_SET_IDENT,
+            scrypto_encode(&MetadataSetInput {
+                key: "access_controller".to_owned(),
+                value: scrypto_decode(
+                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::Address(
+                        global_address,
+                    )))
+                    .unwrap(),
+                )
+                .unwrap(),
+            })
+            .unwrap(),
+        )?;
+
+        api.call_module_method(
+            resource_address.as_node_id(),
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                object_key: ObjectKey::SELF,
+                method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            })
+            .unwrap(),
+        )?;
+        api.call_module_method(
+            resource_address.as_node_id(),
+            ObjectModuleId::AccessRules,
+            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
+                object_key: ObjectKey::SELF,
+                method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            })
+            .unwrap(),
+        )?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn create_proof<Y>(
@@ -1429,6 +1493,15 @@ fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> Acce
             ]
             .into(),
         ),
+    );
+    access_rules.set_method_access_rule(
+        MethodKey::new(
+            ObjectModuleId::Main,
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
+        ),
+        rule!(require(
+            NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)
+        )),
     );
 
     access_rules.default(rule!(deny_all), rule!(require(global_caller(address))))
