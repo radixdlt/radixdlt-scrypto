@@ -1,4 +1,5 @@
 use super::utils::OverlayingIterator;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
 #[test]
