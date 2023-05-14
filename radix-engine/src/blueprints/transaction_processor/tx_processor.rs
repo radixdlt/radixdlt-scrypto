@@ -16,10 +16,7 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
+use radix_engine_interface::api::node_modules::royalty::{ ComponentClaimRoyaltyInput, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
@@ -522,30 +519,6 @@ impl TransactionProcessorBlueprint {
                         ObjectModuleId::Main,
                         PACKAGE_SET_ROYALTY_CONFIG_IDENT,
                         scrypto_encode(&PackageSetRoyaltyConfigInput {
-                            royalty_config: royalty_config.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetComponentRoyaltyConfig {
-                    component_address,
-                    royalty_config,
-                } => {
-                    let result = api.call_method_advanced(
-                        component_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Royalty,
-                        COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-                        scrypto_encode(&ComponentSetRoyaltyConfigInput {
                             royalty_config: royalty_config.clone(),
                         })
                         .unwrap(),

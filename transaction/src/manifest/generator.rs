@@ -4,6 +4,7 @@ use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentSetRoyaltyConfigInput};
 use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -512,9 +513,12 @@ pub fn generate_instruction(
         ast::Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
-        } => Instruction::SetComponentRoyaltyConfig {
-            component_address: generate_component_address(component_address, bech32_decoder)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+        } => Instruction::CallRoyaltyMethod {
+            entity_address: generate_global_address(component_address, bech32_decoder)?,
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
+                royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            })
         },
         ast::Instruction::ClaimPackageRoyalty { package_address } => {
             Instruction::ClaimPackageRoyalty {

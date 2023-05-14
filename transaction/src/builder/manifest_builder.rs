@@ -28,6 +28,7 @@ use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentSetRoyaltyConfigInput};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -574,9 +575,12 @@ impl ManifestBuilder {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
+        self.add_instruction(Instruction::CallRoyaltyMethod {
+            entity_address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
+                royalty_config,
+            }),
         })
         .0
     }

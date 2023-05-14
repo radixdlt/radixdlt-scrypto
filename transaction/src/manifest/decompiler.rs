@@ -26,6 +26,7 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -412,11 +413,22 @@ pub fn decompile_instruction<F: fmt::Write>(
             method_name,
             args,
         } => {
-            f.write_str(&format!(
-                "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                entity_address.display(context.bech32_encoder),
-                method_name
-            ))?;
+            match method_name.as_str() {
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        entity_address.display(context.bech32_encoder),
+                    ))?;
+                }
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        entity_address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
@@ -584,15 +596,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             f.write_str("SET_PACKAGE_ROYALTY_CONFIG")?;
             format_typed_value(f, context, package_address)?;
-            format_typed_value(f, context, royalty_config)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_COMPONENT_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, component_address)?;
             format_typed_value(f, context, royalty_config)?;
             f.write_str(";")?;
         }

@@ -161,12 +161,6 @@ pub enum Instruction {
         royalty_config: BTreeMap<String, RoyaltyConfig>,
     },
 
-    #[sbor(discriminator(INSTRUCTION_SET_COMPONENT_ROYALTY_DISCRIMINATOR))]
-    SetComponentRoyaltyConfig {
-        component_address: ComponentAddress,
-        royalty_config: RoyaltyConfig,
-    },
-
     #[sbor(discriminator(INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR))]
     ClaimPackageRoyalty { package_address: PackageAddress },
 
@@ -280,7 +274,6 @@ pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 25;
 pub const INSTRUCTION_SET_METADATA_DISCRIMINATOR: u8 = 26;
 pub const INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR: u8 = 27;
 pub const INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 28;
-pub const INSTRUCTION_SET_COMPONENT_ROYALTY_DISCRIMINATOR: u8 = 29;
 pub const INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 30;
 pub const INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR: u8 = 31;
 pub const INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR: u8 = 32;
