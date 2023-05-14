@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::prelude::ScryptoSbor;
+use crate::prelude::{scrypto_encode, ScryptoEncode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::ClientObjectApi;
@@ -27,17 +27,32 @@ pub trait ObjectStub {
 
     fn handle(&self) -> &ObjectStubHandle;
 
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+    fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
         let output = ScryptoEnv
-            .call_method(self.handle().as_node_id(), method, args)
+            .call_method(
+                self.handle().as_node_id(),
+                method,
+                scrypto_encode(args).unwrap(),
+            )
             .unwrap();
         scrypto_decode(&output).unwrap()
     }
 
-    fn call_ignore_rtn(&self, method: &str, args: Vec<u8>) {
+    fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
         ScryptoEnv
+            .call_method(
+                self.handle().as_node_id(),
+                method,
+                scrypto_encode(args).unwrap(),
+            )
+            .unwrap();
+    }
+
+    fn call_raw<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+        let output = ScryptoEnv
             .call_method(self.handle().as_node_id(), method, args)
             .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     fn blueprint(&self) -> Blueprint {

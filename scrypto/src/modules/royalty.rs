@@ -54,14 +54,14 @@ impl Royalty {
     pub fn set_config(&self, royalty_config: RoyaltyConfig) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            scrypto_encode(&ComponentSetRoyaltyConfigInput { royalty_config }).unwrap(),
+            &ComponentSetRoyaltyConfigInput { royalty_config },
         );
     }
 
     pub fn claim_royalty(&self) -> Bucket {
         self.call(
             COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
+            &ComponentClaimRoyaltyInput {},
         )
     }
 }

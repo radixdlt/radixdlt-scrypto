@@ -1,16 +1,16 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::prelude::ScryptoEncode;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
-use radix_engine_interface::data::scrypto::scrypto_decode;
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::Deref;
-use sbor::rust::vec::Vec;
 use scrypto::prelude::ScryptoDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
@@ -60,7 +60,8 @@ pub trait Attachable: Sized {
 
     fn handle(&self) -> &ModuleHandle;
 
-    fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+    fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
+        let args = scrypto_encode(args).unwrap();
         match self.handle() {
             ModuleHandle::Own(own) => {
                 let output = ScryptoEnv
@@ -89,7 +90,8 @@ pub trait Attachable: Sized {
         }
     }
 
-    fn call_ignore_rtn(&self, method: &str, args: Vec<u8>) {
+    fn call_ignore_rtn<A: ScryptoEncode>(&self, method: &str, args: &A) {
+        let args = scrypto_encode(args).unwrap();
         match self.handle() {
             ModuleHandle::Own(own) => {
                 ScryptoEnv

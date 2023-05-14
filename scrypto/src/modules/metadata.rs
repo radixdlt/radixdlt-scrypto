@@ -52,32 +52,29 @@ impl Metadata {
             scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
         self.call_ignore_rtn(
             METADATA_SET_IDENT,
-            scrypto_encode(&MetadataSetInput {
+            &MetadataSetInput {
                 key: name.as_ref().to_owned(),
                 value,
-            })
-            .unwrap(),
+            },
         );
     }
 
     pub fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         self.call_ignore_rtn(
             METADATA_SET_IDENT,
-            scrypto_encode(&MetadataSetInput {
+            &MetadataSetInput {
                 key: name.as_ref().to_owned(),
                 value: value.to_metadata_entry(),
-            })
-            .unwrap(),
+            },
         );
     }
 
     pub fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
         let value: Option<ScryptoValue> = self.call(
             METADATA_GET_IDENT,
-            scrypto_encode(&MetadataGetInput {
+            &MetadataGetInput {
                 key: name.as_ref().to_owned(),
-            })
-            .unwrap(),
+            },
         );
 
         match value {
@@ -89,10 +86,9 @@ impl Metadata {
     pub fn remove<K: AsRef<str>>(&self, name: K) -> bool {
         let rtn = self.call(
             METADATA_REMOVE_IDENT,
-            scrypto_encode(&MetadataRemoveInput {
+            &MetadataRemoveInput {
                 key: name.as_ref().to_owned(),
-            })
-            .unwrap(),
+            },
         );
 
         rtn

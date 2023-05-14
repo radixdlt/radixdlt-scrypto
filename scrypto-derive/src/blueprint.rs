@@ -406,7 +406,7 @@ fn generate_stubs(
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.call(#name, scrypto_args!(
+                                self.call_raw(#name, scrypto_args!(
                                     #(
                                        #input_args
                                     ),*
@@ -709,7 +709,7 @@ mod tests {
                         }
 
                         pub fn x(&self, arg0: u32) -> u32 {
-                            self.call("x", scrypto_args!(arg0))
+                            self.call_raw("x", scrypto_args!(arg0))
                         }
                     }
                 }

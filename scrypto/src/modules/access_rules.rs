@@ -43,12 +43,11 @@ impl AccessRules {
     pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+            &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
                 name: name.into(),
                 rule: entry.into(),
-            })
-            .unwrap(),
+            },
         );
     }
 
@@ -60,24 +59,22 @@ impl AccessRules {
     ) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+            &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
                 name: name.into(),
                 rule: entry.into(),
-            })
-            .unwrap(),
+            },
         );
     }
 
     pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+            &AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::SELF,
                 name: name.to_string(),
                 mutability,
-            })
-            .unwrap(),
+            },
         );
     }
 }

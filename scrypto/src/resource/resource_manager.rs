@@ -147,31 +147,28 @@ impl ResourceManagerStub {
     pub fn resource_type(&self) -> ResourceType {
         self.call(
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
-            scrypto_encode(&ResourceManagerGetResourceTypeInput {}).unwrap(),
+            &ResourceManagerGetResourceTypeInput {},
         )
     }
 
     pub fn total_supply(&self) -> Decimal {
         self.call(
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
-            scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
+            &ResourceManagerGetTotalSupplyInput {},
         )
     }
 
     pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerExistsInput { id: id.clone() }).unwrap(),
+            &NonFungibleResourceManagerExistsInput { id: id.clone() },
         )
     }
 
     pub fn burn(&self, bucket: Bucket) {
         self.call(
             RESOURCE_MANAGER_BURN_IDENT,
-            scrypto_encode(&ResourceManagerBurnInput {
-                bucket: Bucket(bucket.0),
-            })
-            .unwrap(),
+            &ResourceManagerBurnInput { bucket },
         )
     }
 
@@ -179,10 +176,9 @@ impl ResourceManagerStub {
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            scrypto_encode(&FungibleResourceManagerMintInput {
+            &FungibleResourceManagerMintInput {
                 amount: amount.into(),
-            })
-            .unwrap(),
+            },
         )
     }
 
@@ -197,7 +193,7 @@ impl ResourceManagerStub {
         entries.insert(id.clone(), (value,));
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintInput { entries }).unwrap(),
+            &NonFungibleResourceManagerMintInput { entries },
         )
     }
 
@@ -209,7 +205,7 @@ impl ResourceManagerStub {
 
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerMintUuidInput { entries }).unwrap(),
+            &NonFungibleResourceManagerMintUuidInput { entries },
         )
     }
 
@@ -220,8 +216,7 @@ impl ResourceManagerStub {
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() })
-                .unwrap(),
+            &NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() },
         )
     }
 
@@ -237,12 +232,11 @@ impl ResourceManagerStub {
     ) {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerUpdateDataInput {
+            &NonFungibleResourceManagerUpdateDataInput {
                 id: id.clone(),
                 field_name: field_name.to_string(),
                 data: scrypto_decode(&scrypto_encode(&new_data).unwrap()).unwrap(),
-            })
-            .unwrap(),
+            },
         )
     }
 }

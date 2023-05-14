@@ -4,7 +4,6 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
-use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
@@ -27,14 +26,11 @@ impl PackageStub {
     pub fn set_royalty_config(&self, royalty_config: BTreeMap<String, RoyaltyConfig>) {
         self.call_ignore_rtn(
             PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-            scrypto_encode(&PackageSetRoyaltyConfigInput { royalty_config }).unwrap(),
+            &PackageSetRoyaltyConfigInput { royalty_config },
         );
     }
 
     pub fn claim_royalty(&self) -> Bucket {
-        self.call(
-            PACKAGE_CLAIM_ROYALTY_IDENT,
-            scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
-        )
+        self.call(PACKAGE_CLAIM_ROYALTY_IDENT, &PackageClaimRoyaltyInput {})
     }
 }
