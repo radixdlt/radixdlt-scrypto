@@ -22,15 +22,16 @@ use sbor::{
 use scrypto::modules::{Attached, Metadata};
 use std::ops::Deref;
 
-pub trait ComponentState<T: LocalComponent>: ScryptoEncode + ScryptoDecode {
+pub trait ComponentState<C: Component>: ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
-    fn instantiate(self) -> T {
+    fn instantiate(self) -> Globalizeable<C> {
         let node_id = ScryptoEnv
             .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
             .unwrap();
 
-        T::new(ComponentHandle::Own(Own(node_id)))
+        let stub = C::new(ComponentHandle::Own(Own(node_id)));
+        Globalizeable(stub)
     }
 }
 
@@ -48,12 +49,6 @@ impl ComponentHandle {
         }
     }
 }
-
-// TODO: I've temporarily disabled &mut requirement on the Component trait.
-// If not, I will have to overhaul the `ComponentSystem` infra, which will be likely be removed anyway.
-//
-// Since there is no mutability semantics in the system and kernel, there is no technical benefits
-// with &mut, other than to frustrate developers.
 
 pub trait Component {
     fn new(handle: ComponentHandle) -> Self;
@@ -96,85 +91,32 @@ impl Component for AnyComponent {
     }
 }
 
-pub trait LocalComponent: Component + Sized {
-    fn globalize_with_modules(
-        self,
-        access_rules: AccessRules,
-        metadata: Metadata,
-        royalty: Royalty,
-    ) -> Global<Self>;
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Globalizeable<O: Component>(pub O);
 
-    // TODO - Change all this into a builder when we do the auth changes
-    fn globalize_at_address_with_modules(
-        self,
-        preallocated_address: ComponentAddress,
-        access_rules: AccessRules,
-        metadata: Metadata,
-        royalty: Royalty,
-    ) -> Global<Self>;
+impl<O: Component> Deref for Globalizeable<O> {
+    type Target = O;
 
-    fn globalize(self) -> Global<Self> {
-        self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
-            Metadata::new(),
-            Royalty::new(RoyaltyConfig::default()),
-        )
-    }
-
-    fn globalize_at_address(self, preallocated_address: ComponentAddress) -> Global<Self> {
-        self.globalize_at_address_with_modules(
-            preallocated_address,
-            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
-            Metadata::new(),
-            Royalty::new(RoyaltyConfig::default()),
-        )
-    }
-
-    fn globalize_with_metadata(self, metadata: Metadata) -> Global<Self> {
-        self.globalize_with_modules(
-            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
-            metadata,
-            Royalty::new(RoyaltyConfig::default()),
-        )
-    }
-
-    fn globalize_with_access_rules(
-        self,
-        method_authorities: MethodAuthorities,
-        authority_rules: AuthorityRules,
-    ) -> Global<Self> {
-        self.globalize_with_modules(
-            AccessRules::new(method_authorities, authority_rules),
-            Metadata::new(),
-            Royalty::new(RoyaltyConfig::default()),
-        )
-    }
-
-    fn globalize_with_owner_badge(
-        self,
-        owner_badge: NonFungibleGlobalId,
-        royalty_config: RoyaltyConfig,
-    ) -> Global<Self> {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            "owner".clone(),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-
-        let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
-
-        self.globalize_with_modules(access_rules, Metadata::new(), Royalty::new(royalty_config))
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl<T: Component> LocalComponent for T {
-    fn globalize_with_modules(
+impl<O: Component> Globalizeable<O> {
+    pub fn own(self) -> O {
+        self.0
+    }
+
+    fn handle(&self) -> &ComponentHandle {
+        self.0.handle()
+    }
+
+    pub fn globalize_with_modules(
         self,
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
-    ) -> Global<Self> {
+    ) -> Global<O> {
         let address = ScryptoEnv
             .globalize(btreemap!(
                 ObjectModuleId::Main => self.handle().as_node_id().clone(),
@@ -184,16 +126,16 @@ impl<T: Component> LocalComponent for T {
             ))
             .unwrap();
 
-        Global(Self::new(ComponentHandle::Global(address)))
+        Global(O::new(ComponentHandle::Global(address)))
     }
 
-    fn globalize_at_address_with_modules(
+    pub fn globalize_at_address_with_modules(
         self,
         preallocated_address: ComponentAddress,
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
-    ) -> Global<Self> {
+    ) -> Global<O> {
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
@@ -205,9 +147,63 @@ impl<T: Component> LocalComponent for T {
             .globalize_with_address(modules, preallocated_address.into())
             .unwrap();
 
-        Global(Self::new(ComponentHandle::Global(
+        Global(O::new(ComponentHandle::Global(
             preallocated_address.into(),
         )))
+    }
+
+    pub fn globalize(self) -> Global<O> {
+        self.globalize_with_modules(
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
+        )
+    }
+
+    pub fn globalize_at_address(self, preallocated_address: ComponentAddress) -> Global<O> {
+        self.globalize_at_address_with_modules(
+            preallocated_address,
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
+        )
+    }
+
+    pub fn globalize_with_metadata(self, metadata: Metadata) -> Global<O> {
+        self.globalize_with_modules(
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
+            metadata,
+            Royalty::new(RoyaltyConfig::default()),
+        )
+    }
+
+    pub fn globalize_with_access_rules(
+        self,
+        method_authorities: MethodAuthorities,
+        authority_rules: AuthorityRules,
+    ) -> Global<O> {
+        self.globalize_with_modules(
+            AccessRules::new(method_authorities, authority_rules),
+            Metadata::new(),
+            Royalty::new(RoyaltyConfig::default()),
+        )
+    }
+
+    pub fn globalize_with_owner_badge(
+        self,
+        owner_badge: NonFungibleGlobalId,
+        royalty_config: RoyaltyConfig,
+    ) -> Global<O> {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_rule(
+            "owner".clone(),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+
+        let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
+
+        self.globalize_with_modules(access_rules, Metadata::new(), Royalty::new(royalty_config))
     }
 }
 

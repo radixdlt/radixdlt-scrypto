@@ -10,7 +10,7 @@ mod child_component {
 
     impl ChildComponent {
         pub fn create(to_call: Global<CalledComponentComponent>) -> ChildComponentComponent {
-            Self { to_call }.instantiate()
+            Self { to_call }.instantiate().own()
         }
 
         pub fn get_global_address(&self) -> ComponentAddress {
@@ -134,7 +134,7 @@ mod called_component_child {
 
     impl CalledComponentChild {
         pub fn create() -> CalledComponentChildComponent {
-            Self {}.instantiate()
+            Self {}.instantiate().own()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {

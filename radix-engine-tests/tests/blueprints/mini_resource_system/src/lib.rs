@@ -38,7 +38,7 @@ mod mini_bucket {
 
     impl MiniBucket {
         pub fn new(amount: u32) -> MiniBucketComponent {
-            Self { amount }.instantiate()
+            Self { amount }.instantiate().own()
         }
 
         pub fn amount(&self) -> u32 {
@@ -51,6 +51,7 @@ mod mini_bucket {
                 bucket: InternalAddress::new_or_panic(node_id.into()),
             }
             .instantiate()
+            .own()
         }
 
         pub fn drop(bucket: MiniBucketComponent) {

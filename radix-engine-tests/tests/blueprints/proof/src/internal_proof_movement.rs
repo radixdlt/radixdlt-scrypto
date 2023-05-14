@@ -6,7 +6,7 @@ mod inner {
 
     impl Inner {
         pub fn instantiate() -> InnerComponent {
-            Self {}.instantiate()
+            Self {}.instantiate().own()
         }
 
         pub fn receive_proof(&self, proof: Proof) {
