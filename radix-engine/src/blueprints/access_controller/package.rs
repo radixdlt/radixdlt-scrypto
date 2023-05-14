@@ -11,6 +11,15 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleAndMutabilityInput;
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInput;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::metadata::MetadataSetInput;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -35,6 +44,10 @@ pub struct AccessControllerSubstate {
     /// recovery can not be performed through this access controller.
     pub timed_recovery_delay_in_minutes: Option<u32>,
 
+    /// The resource address of the recovery badge that will be used by the wallet and optionally
+    /// by other clients as well.
+    pub recovery_badge: ResourceAddress,
+
     /// The states of the Access Controller.
     pub state: (
         // Controls whether the primary role is locked or unlocked
@@ -49,10 +62,15 @@ pub struct AccessControllerSubstate {
 }
 
 impl AccessControllerSubstate {
-    pub fn new(controlled_asset: Own, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
+    pub fn new(
+        controlled_asset: Own,
+        timed_recovery_delay_in_minutes: Option<u32>,
+        recovery_badge: ResourceAddress,
+    ) -> Self {
         Self {
             controlled_asset,
             timed_recovery_delay_in_minutes,
+            recovery_badge,
             state: Default::default(),
         }
     }
@@ -523,6 +541,11 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        // Allocating the address of the access controller - this will be needed for the metadata
+        // and access rules of the recovery badge
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
+        let address = GlobalAddress::new_or_panic(node_id.0);
+
         // Creating a new vault and putting in it the controlled asset
         let vault = {
             let mut vault = input
@@ -534,15 +557,169 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        let substate =
-            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
+        // Creating a new recovery badge resource
+        let recovery_badge_resource = {
+            let global_component_caller_badge =
+                NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
+
+            // Hack: Interfaces for initializing metadata only allows for <String, String> metadata
+            // but the interfaces for setting metadata allow for any `MetadataEntry`. So we will
+            // set the metadata to be updatable by the component caller badge and then switch it
+            // back to only be immutable.
+            // TODO: When metadata initialization allows MetadataEntry stop making update metadata
+            // rule be transient
+            let access_rules = [
+                (
+                    ResourceMethodAuthKey::Mint,
+                    (
+                        rule!(require(global_component_caller_badge.clone())),
+                        AccessRule::DenyAll,
+                    ),
+                ),
+                (
+                    ResourceMethodAuthKey::Burn,
+                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::Withdraw,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::Deposit,
+                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::UpdateMetadata,
+                    (
+                        // This is transient and is only here because of limitations of the metadata
+                        // initialization interface. This rule is overridden later on to be deny all
+                        AccessRule::AllowAll,
+                        AccessRule::AllowAll,
+                    ),
+                ),
+                (
+                    ResourceMethodAuthKey::Recall,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::UpdateNonFungibleData,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+            ];
+
+            let resource_address = {
+                let (local_type_index, schema) =
+                    generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
+                let non_fungible_schema = NonFungibleDataSchema {
+                    schema: schema,
+                    non_fungible: local_type_index,
+                    mutable_fields: Default::default(),
+                };
+
+                let result = api.call_function(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema,
+                        metadata: Default::default(),
+                        access_rules: access_rules.into(),
+                    })
+                    .unwrap(),
+                )?;
+                scrypto_decode::<ResourceAddress>(result.as_slice()).unwrap()
+            };
+
+            api.call_module_method(
+                resource_address.as_node_id(),
+                ObjectModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: "name".to_owned(),
+                    value: scrypto_decode(
+                        &scrypto_encode(&MetadataEntry::Value(MetadataValue::String(
+                            "Recovery Badge".into(),
+                        )))
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                })
+                .unwrap(),
+            )?;
+            api.call_module_method(
+                resource_address.as_node_id(),
+                ObjectModuleId::Metadata,
+                METADATA_SET_IDENT,
+                scrypto_encode(&MetadataSetInput {
+                    key: "icon_url".to_owned(),
+                    value: scrypto_decode(
+                        &scrypto_encode(&MetadataEntry::Value(MetadataValue::Url(Url(
+                            "https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned(),
+                        ))))
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                })
+                .unwrap(),
+            )?;
+            /*
+            If we enable this we get the following error when trying to instantiate the AC:
+            KernelError(CallFrameError(MoveError(RefNotFound(NodeId("c3933af67f969fea5c6250df27513ec410e9eaee07173748d41cce7ab2fe")))))
+            seems like an issue with the references where allocating the node id doesn't seem to
+            give the current call frame a reference to the node id.
+            */
+            // api.call_module_method(
+            //     resource_address.as_node_id(),
+            //     ObjectModuleId::Metadata,
+            //     METADATA_SET_IDENT,
+            //     scrypto_encode(&MetadataSetInput {
+            //         key: "access_controller".to_owned(),
+            //         value: scrypto_decode(
+            //             &scrypto_encode(&MetadataEntry::Value(MetadataValue::Address(address)))
+            //                 .unwrap(),
+            //         )
+            //         .unwrap(),
+            //     })
+            //     .unwrap(),
+            // )?;
+
+            api.call_module_method(
+                resource_address.as_node_id(),
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                    rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                })
+                .unwrap(),
+            )?;
+            api.call_module_method(
+                resource_address.as_node_id(),
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
+                    object_key: ObjectKey::SELF,
+                    method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+                    rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                })
+                .unwrap(),
+            )?;
+
+            resource_address
+        };
+
+        let substate = AccessControllerSubstate::new(
+            vault.0,
+            input.timed_recovery_delay_in_minutes,
+            recovery_badge_resource,
+        );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;
-
-        let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
-        let address = GlobalAddress::new_or_panic(address.0);
 
         let access_rules = AccessRules::sys_new(
             access_rules_from_rule_set(address, input.rule_set),
