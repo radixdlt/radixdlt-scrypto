@@ -285,6 +285,32 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
+                Instruction::CallRoyaltyMethod {
+                    entity_address,
+                    method_name,
+                    args,
+                } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
+                    let rtn = api.call_method_advanced(
+                        entity_address.as_node_id(),
+                        false,
+                        ObjectModuleId::Royalty,
+                        &method_name,
+                        scrypto_encode(&scrypto_value).unwrap(),
+                    )?;
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, &worktop, api,
+                    )?;
+                    InstructionOutput::CallReturn(result.into())
+                }
                 Instruction::PublishPackage {
                     code,
                     schema,

@@ -407,6 +407,19 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::ClearSignatureProofs => {
             f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
         }
+        Instruction::CallRoyaltyMethod {
+            entity_address,
+            method_name,
+            args,
+        } => {
+            f.write_str(&format!(
+                "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                entity_address.display(context.bech32_encoder),
+                method_name
+            ))?;
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
         Instruction::CallFunction {
             package_address,
             blueprint_name,
