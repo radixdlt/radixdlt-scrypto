@@ -3,6 +3,7 @@ use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
 };
+use crate::track::utils::OverlayingIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::types::*;
@@ -10,6 +11,7 @@ use radix_engine_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbSortKey, PartitionEntry, SubstateDatabase,
 };
 use sbor::rust::collections::btree_map::Entry;
+use sbor::rust::iter::empty;
 use sbor::rust::mem;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -245,21 +247,21 @@ impl TrackedKey {
 #[derive(Debug)]
 pub struct TrackedPartition {
     pub substates: BTreeMap<DbSortKey, TrackedSubstateKey>,
-    pub range_read: Option<u32>,
+    pub range_read: u32,
 }
 
 impl TrackedPartition {
     pub fn new() -> Self {
         Self {
             substates: BTreeMap::new(),
-            range_read: None,
+            range_read: 0,
         }
     }
 
     pub fn new_with_substates(substates: BTreeMap<DbSortKey, TrackedSubstateKey>) -> Self {
         Self {
             substates,
-            range_read: None,
+            range_read: 0,
         }
     }
 
@@ -446,14 +448,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .or_insert(TrackedNode::new(false))
             .tracked_partitions
             .entry(partition_num)
-            .or_insert(TrackedPartition::new());
-
-        self.tracked_nodes
-            .get_mut(node_id)
-            .unwrap()
-            .tracked_partitions
-            .get_mut(&partition_num)
-            .unwrap()
+            .or_insert(TrackedPartition::new())
     }
 
     /// Returns tuple of TrackedKey and boolean value which is true if substate
@@ -720,11 +715,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         // Update track
         let num_iterations = tracked_iter.num_iterations;
         let tracked_partition = self.get_tracked_partition(node_id, partition_num);
-        let next_range_read = tracked_partition
-            .range_read
-            .map(|cur| u32::max(cur, num_iterations))
-            .unwrap_or(num_iterations);
-        tracked_partition.range_read = Some(next_range_read);
+        tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
         (
             items,
@@ -825,11 +816,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         {
             let num_iterations = tracked_iter.num_iterations;
             let tracked_partition = self.get_tracked_partition(node_id, partition_num);
-            let next_range_read = tracked_partition
-                .range_read
-                .map(|cur| u32::max(cur, num_iterations))
-                .unwrap_or(num_iterations);
-            tracked_partition.range_read = Some(next_range_read);
+            tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
             for (db_sort_key, tracked) in new_updates {
                 if let Some(value) = tracked.tracked.get() {
@@ -864,62 +851,60 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
         // TODO: Add partition dependencies/lock
         let count: usize = count.try_into().unwrap();
-        let node_updates = self.tracked_nodes.get_mut(node_id);
-        let is_new = node_updates
-            .as_ref()
-            .map(|tracked_node| tracked_node.is_new)
-            .unwrap_or(false);
-        let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
-        if is_new {
-            let mut track_read_size = 0;
-            let mut items = Vec::new();
-            if let Some(tracked_partition) = tracked_partition {
-                for (_key, tracked) in tracked_partition.substates.iter() {
-                    if items.len() == count {
-                        break;
-                    }
+        // initialize the track partition, since we will definitely need it: either to read values from it OR to update the `range_read` on it
+        let tracked_node = self
+            .tracked_nodes
+            .entry(node_id.clone())
+            .or_insert(TrackedNode::new(false));
+        let tracked_partition = tracked_node
+            .tracked_partitions
+            .entry(partition_num)
+            .or_insert(TrackedPartition::new());
 
-                    // TODO: Check that substate is not write locked
-                    if let Some(substate) = tracked.tracked.get() {
-                        track_read_size += substate.len();
-                        items.push(substate.clone());
-                    }
-                }
-            }
+        // initialize the "from db" iterator: use lazy init, since we want to skip it altogether if the node is marked as `is_new` in our track
+        let mut db_values_count = 0u32;
+        let mut db_values_size = 0usize;
+        let raw_db_entries: Box<dyn Iterator<Item = PartitionEntry>> = if tracked_node.is_new {
+            Box::new(empty()) // optimization: avoid touching the database altogether
+        } else {
+            let partition_key = M::to_db_partition_key(node_id, partition_num);
+            Box::new(self.substate_db.list_entries(&partition_key))
+        };
+        let db_read_entries = raw_db_entries
+            .map(|(key, db_value)| (key, IndexedScryptoValue::from_vec(db_value).unwrap()))
+            .inspect(|(_key, value)| {
+                db_values_count += 1;
+                db_values_size += value.len();
+            });
 
-            return (
-                items,
-                StoreAccessInfo::new()
-                    .builder_push_if_not_empty(StoreAccess::ReadFromTrack(track_read_size)),
-            );
-        }
+        // initialize the "from track" iterator
+        let mut tracked_values_size = 0usize;
+        let tracked_entry_changes = tracked_partition
+            .substates
+            .iter()
+            .map(|(key, tracked_substate_key)| {
+                // TODO: Check that substate is not write locked
+                (key.clone(), tracked_substate_key.tracked.get().cloned())
+            })
+            .inspect(|(_key, value)| {
+                tracked_values_size += value.as_ref().map(|value| value.len()).unwrap_or_default()
+            });
 
-        // TODO: Add interleaving updates
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
-        let items: Vec<IndexedScryptoValue> = tracked_iter
+        // construct the composite iterator, which applies changes read from our track on top of db values
+        let items = OverlayingIterator::new(db_read_entries, tracked_entry_changes)
+            .map(|(_key, value)| value)
             .take(count)
-            .map(|(_key, buf)| IndexedScryptoValue::from_vec(buf).unwrap())
             .collect();
 
-        let db_read_size = items.iter().map(|item| item.len()).sum();
-
-        // Update track
-        {
-            let num_iterations: u32 = items.len().try_into().unwrap();
-            let tracked_partition = self.get_tracked_partition(node_id, partition_num);
-            let next_range_read = tracked_partition
-                .range_read
-                .map(|cur| u32::max(cur, num_iterations))
-                .unwrap_or(num_iterations);
-            tracked_partition.range_read = Some(next_range_read);
-        }
-
-        (
+        // Use the statistics (gathered by the `.inspect()`s above) to update the track's metadata and to return costing info
+        tracked_partition.range_read = u32::max(tracked_partition.range_read, db_values_count);
+        return (
             items,
-            StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::ReadFromDb(db_read_size)),
-        )
+            StoreAccessInfo::new()
+                .builder_push_if_not_empty(StoreAccess::ReadFromTrack(tracked_values_size))
+                .builder_push_if_not_empty(StoreAccess::ReadFromDb(db_values_size)),
+        );
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
