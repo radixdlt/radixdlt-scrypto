@@ -382,6 +382,17 @@ impl AccessControllerNativePackage {
                 export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
+        functions.insert(
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
+                export_name: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -539,6 +550,11 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
+            }
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::mint_recovery_badges(input, api)
             }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
@@ -1308,6 +1324,54 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
+
+    fn mint_recovery_badges<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let AccessControllerMintRecoveryBadgesInput {
+            non_fungible_local_ids,
+        } = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let resource_address = {
+            let substate_key = AccessControllerField::AccessController.into();
+            let handle =
+                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+
+            let access_controller = {
+                let access_controller: AccessControllerSubstate =
+                    api.field_lock_read_typed(handle)?;
+                access_controller
+            };
+            access_controller.recovery_badge
+        };
+
+        let non_fungibles: BTreeMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
+            .into_iter()
+            .map(|local_id| {
+                (
+                    local_id,
+                    (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+                )
+            })
+            .collect();
+
+        let rtn = api.call_method(
+            resource_address.as_node_id(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintInput {
+                entries: non_fungibles,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(IndexedScryptoValue::from_slice(&rtn).unwrap())
+    }
 }
 
 fn access_rule_or(access_rules: Vec<AccessRule>) -> AccessRule {
@@ -1477,6 +1541,23 @@ fn access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> Acce
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
         ),
         primary_or_confirmation_group.into(),
+    );
+
+    // Primary || Recovery Role Rules
+    let primary_or_recovery = "primary_or_recovery";
+    access_rules.set_group_access_rule(
+        primary_or_recovery.into(),
+        access_rule_or(vec![
+            rule_set.primary_role.clone(),
+            rule_set.recovery_role.clone(),
+        ]),
+    );
+    access_rules.set_method_access_rule_to_group(
+        MethodKey::new(
+            ObjectModuleId::Main,
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
+        ),
+        primary_or_recovery.into(),
     );
 
     // Other methods
