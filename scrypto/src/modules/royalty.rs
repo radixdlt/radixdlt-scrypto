@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -8,14 +9,11 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::*;
-use radix_engine_interface::types::{NodeId, RoyaltyConfig};
+use radix_engine_interface::types::RoyaltyConfig;
 use scrypto::modules::Attachable;
-use crate::modules::ModuleHandle;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Royalty(pub ModuleHandle);

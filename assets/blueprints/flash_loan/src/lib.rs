@@ -22,7 +22,7 @@ mod basic_flash_loan {
         /// https://github.com/radixdlt/scrypto-examples/tree/main/defi/radiswap
         pub fn instantiate_default(
             initial_liquidity: Bucket,
-        ) -> (ComponentAddress, ResourceAddress) {
+        ) -> (Global<BasicFlashLoanComponent>, ResourceAddress) {
             let auth_token = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "Admin authority for BasicFlashLoan")
@@ -39,7 +39,7 @@ mod basic_flash_loan {
                 .restrict_deposit(rule!(deny_all), LOCKED)
                 .create_with_no_initial_supply();
 
-            let component_address = Self {
+            let global_component = Self {
                 loan_vault: Vault::with_bucket(initial_liquidity),
                 auth_vault: Vault::with_bucket(auth_token),
                 transient_resource_address,
@@ -47,7 +47,7 @@ mod basic_flash_loan {
             .instantiate()
             .globalize();
 
-            (component_address, transient_resource_address)
+            (global_component, transient_resource_address)
         }
 
         pub fn available_liquidity(&self) -> Decimal {

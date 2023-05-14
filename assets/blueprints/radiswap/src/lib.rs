@@ -29,7 +29,7 @@ mod radiswap {
             lp_name: String,
             lp_url: String,
             fee: Decimal,
-        ) -> (ComponentAddress, Bucket) {
+        ) -> (Global<RadiswapComponent>, Bucket) {
             // Check arguments
             assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),

@@ -19,7 +19,7 @@ mod reference_test {
             bucket.drop_empty();
         }
 
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<ReferenceTestComponent> {
             Self {
                 reference: Reference(RADIX_TOKEN.as_node_id().clone()),
             }

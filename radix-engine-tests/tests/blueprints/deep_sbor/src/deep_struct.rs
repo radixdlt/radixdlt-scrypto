@@ -7,7 +7,7 @@ mod deep_struct {
     }
 
     impl DeepStruct {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<DeepStructComponent> {
             Self { deep_object: None }.instantiate().globalize()
         }
 

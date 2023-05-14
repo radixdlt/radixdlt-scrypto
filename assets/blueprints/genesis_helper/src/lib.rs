@@ -64,7 +64,7 @@ mod genesis_helper {
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
-        ) -> ComponentAddress {
+        ) -> Global<GenesisHelperComponent> {
             let mut method_authorities = MethodAuthorities::new();
             method_authorities.set_main_method_authority("ingest_data_chunk", "system");
             method_authorities.set_main_method_authority("wrap_up", "system");

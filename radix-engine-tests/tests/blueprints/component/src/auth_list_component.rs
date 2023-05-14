@@ -12,7 +12,7 @@ mod auth_list_component {
             count: u8,
             auth: Vec<NonFungibleGlobalId>,
             authority_rules: AuthorityRules,
-        ) -> ComponentAddress {
+        ) -> Global<AuthListComponentComponent> {
             let method_authorities = MethodAuthorities::new();
             let component = Self { count, auth }.instantiate();
             component.globalize_with_access_rules(method_authorities, authority_rules)

@@ -8,7 +8,7 @@ mod ref_check {
     }
 
     impl RefCheck {
-        pub fn cannot_directly_reference_inserted_vault() -> ComponentAddress {
+        pub fn cannot_directly_reference_inserted_vault() -> Global<RefCheckComponent> {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -29,7 +29,8 @@ mod ref_check {
             .globalize()
         }
 
-        pub fn cannot_directly_reference_vault_after_container_moved() -> ComponentAddress {
+        pub fn cannot_directly_reference_vault_after_container_moved() -> Global<RefCheckComponent>
+        {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)

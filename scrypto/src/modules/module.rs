@@ -1,19 +1,17 @@
-use std::marker::PhantomData;
-use std::ops::Deref;
-use radix_engine_derive::ScryptoSbor;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientActorApi, ClientBlueprintApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
+use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::data::scrypto::scrypto_decode;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::vec::Vec;
 use scrypto::prelude::ScryptoDecode;
+use std::marker::PhantomData;
+use std::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ModuleHandle {
@@ -84,12 +82,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 let output = ScryptoEnv
-                    .actor_call_module_method(
-                        OBJECT_HANDLE_SELF,
-                        *module_id,
-                        method,
-                        args,
-                    )
+                    .actor_call_module_method(OBJECT_HANDLE_SELF, *module_id, method, args)
                     .unwrap();
                 scrypto_decode(&output).unwrap()
             }
@@ -116,12 +109,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 ScryptoEnv
-                    .actor_call_module_method(
-                        OBJECT_HANDLE_SELF,
-                        *module_id,
-                        method,
-                        args,
-                    )
+                    .actor_call_module_method(OBJECT_HANDLE_SELF, *module_id, method, args)
                     .unwrap();
             }
         }

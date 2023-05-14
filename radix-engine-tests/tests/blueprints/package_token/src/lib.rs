@@ -3,13 +3,13 @@ use scrypto::prelude::*;
 #[blueprint]
 mod factory {
     struct Factory {
-        my_address: Option<ComponentAddress>,
+        my_component: Option<Global<FactoryComponent>>,
     }
 
     impl Factory {
-        pub fn create_raw() -> ComponentAddress {
+        pub fn create_raw() -> Global<FactoryComponent> {
             let component = Self {
-                my_address: Option::None,
+                my_component: Option::None,
             }
             .instantiate();
 
@@ -26,9 +26,9 @@ mod factory {
             component.globalize_with_access_rules(method_authorities, authority_rules)
         }
 
-        pub fn create() -> ComponentAddress {
+        pub fn create() -> Global<FactoryComponent> {
             let component = Self {
-                my_address: Option::None,
+                my_component: Option::None,
             }
             .instantiate();
 
@@ -42,16 +42,15 @@ mod factory {
                 AccessRule::DenyAll,
             );
 
-            let component_address =
+            let component =
                 component.globalize_with_access_rules(method_authorities, authority_rules);
-            let component_ref: Global<FactoryComponent> = component_address.into();
-            component_ref.set_address(component_address);
+            component.set_address(component.clone());
 
-            component_address
+            component
         }
 
-        pub fn set_address(&mut self, my_address: ComponentAddress) {
-            self.my_address = Option::Some(my_address);
+        pub fn set_address(&mut self, my_component: Global<FactoryComponent>) {
+            self.my_component = Option::Some(my_component);
         }
     }
 }

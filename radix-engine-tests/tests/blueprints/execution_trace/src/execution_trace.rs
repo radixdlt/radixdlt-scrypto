@@ -9,7 +9,11 @@ mod execution_trace_test {
     impl ExecutionTraceTest {
         pub fn transfer_resource_between_two_components(
             amount: u8,
-        ) -> (ResourceAddress, ComponentAddress, ComponentAddress) {
+        ) -> (
+            ResourceAddress,
+            Global<ExecutionTraceTestComponent>,
+            Global<ExecutionTraceTestComponent>,
+        ) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .mint_initial_supply(1000000);
@@ -28,10 +32,8 @@ mod execution_trace_test {
             .instantiate()
             .globalize();
 
-            let transfer_bucket: Bucket =
-                Runtime::call_method(source_component, "take", scrypto_args!(amount));
-            let _: () =
-                Runtime::call_method(target_component, "put", scrypto_args!(transfer_bucket));
+            let transfer_bucket: Bucket = source_component.take(amount);
+            target_component.put(transfer_bucket);
 
             (resource_address, source_component, target_component)
         }
@@ -44,7 +46,9 @@ mod execution_trace_test {
             self.vault.put(b)
         }
 
-        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> ComponentAddress {
+        pub fn create_and_fund_a_component(
+            xrd: Vec<Bucket>,
+        ) -> Global<ExecutionTraceTestComponent> {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
             ExecutionTraceTest { vault }.instantiate().globalize()
         }

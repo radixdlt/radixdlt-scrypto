@@ -10,7 +10,7 @@ mod super_key_value_store {
     }
 
     impl SuperKeyValueStore {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<SuperKeyValueStoreComponent> {
             let map0 = KeyValueStore::new();
             let map1 = KeyValueStore::new();
             let map2 = KeyValueStore::new();

@@ -11,7 +11,7 @@ mod cyclic_map {
     }
 
     impl CyclicMap {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<CyclicMapComponent> {
             let kv_store0 = KeyValueStore::new();
             let kv_store0_id = kv_store0.id.clone();
             let kv_store1 = KeyValueStore::new();
@@ -41,7 +41,7 @@ mod cyclic_map {
             CyclicMap { store: kv_store0 }.instantiate().globalize()
         }
 
-        pub fn new_self_cyclic() -> ComponentAddress {
+        pub fn new_self_cyclic() -> Global<CyclicMapComponent> {
             let kv_store = KeyValueStore::new();
             let kv_store_id = kv_store.id.clone();
 

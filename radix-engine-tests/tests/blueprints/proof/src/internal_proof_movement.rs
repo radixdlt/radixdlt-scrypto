@@ -24,7 +24,7 @@ mod outer {
     }
 
     impl Outer {
-        pub fn instantiate() -> ComponentAddress {
+        pub fn instantiate() -> Global<OuterComponent> {
             let inner = Inner::instantiate();
             Self { inner }
                 .instantiate()

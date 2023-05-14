@@ -7,7 +7,7 @@ mod schema_component {
     struct SchemaComponent {}
 
     impl SchemaComponent {
-        pub fn create_component() -> ComponentAddress {
+        pub fn create_component() -> Global<SchemaComponentComponent> {
             let component = Self {}.instantiate();
             component.globalize()
         }
@@ -199,7 +199,7 @@ mod simple {
     }
 
     impl Simple {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<SimpleComponent> {
             Self { state: 0 }.instantiate().globalize()
         }
 

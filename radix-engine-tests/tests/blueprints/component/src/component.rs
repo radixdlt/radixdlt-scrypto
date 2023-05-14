@@ -15,7 +15,7 @@ mod component_test {
                 .mint_initial_supply(amount)
         }
 
-        pub fn create_component() -> ComponentAddress {
+        pub fn create_component() -> Global<ComponentTestComponent> {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
@@ -24,12 +24,8 @@ mod component_test {
             .globalize()
         }
 
-        pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
-            let component: Global<AnyComponent> = component_address.into();
-            (
-                component.package_address(),
-                component.blueprint_name(),
-            )
+        pub fn get_component_info(component: Global<AnyComponent>) -> (PackageAddress, String) {
+            (component.package_address(), component.blueprint_name())
         }
 
         pub fn get_component_state(&self) -> String {

@@ -1,5 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 
+use crate::modules::ModuleHandle;
+use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesSetAuthorityMutabilityInput,
@@ -13,11 +15,8 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
-use crate::modules::ModuleHandle;
-use crate::prelude::Attachable;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessRules(pub ModuleHandle);
@@ -49,7 +48,7 @@ impl AccessRules {
                 name: name.into(),
                 rule: entry.into(),
             })
-                .unwrap()
+            .unwrap(),
         );
     }
 
@@ -61,7 +60,7 @@ impl AccessRules {
                 name: name.to_string(),
                 mutability,
             })
-                .unwrap(),
+            .unwrap(),
         );
     }
 }

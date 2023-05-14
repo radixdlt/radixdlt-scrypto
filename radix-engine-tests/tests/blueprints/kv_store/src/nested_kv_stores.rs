@@ -7,7 +7,7 @@ mod nested_kv_stores {
     }
 
     impl NestedKvStores {
-        pub fn instantiate() -> ComponentAddress {
+        pub fn instantiate() -> Global<NestedKvStoresComponent> {
             let mut counters = KeyValueStore::<String, KeyValueStore<String, u64>>::new();
             counters.insert("A".into(), {
                 let kv_store = KeyValueStore::new();

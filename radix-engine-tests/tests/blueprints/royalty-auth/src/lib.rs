@@ -34,7 +34,7 @@ mod royalty_test {
 
         pub fn create_component_with_royalty_enabled(
             badge: NonFungibleGlobalId,
-        ) -> ComponentAddress {
+        ) -> Global<RoyaltyTestComponent> {
             let local_component = Self {}.instantiate();
             let royalty_config = RoyaltyConfigBuilder::new()
                 .add_rule("paid_method", 1)

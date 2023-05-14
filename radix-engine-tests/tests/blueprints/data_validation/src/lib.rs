@@ -10,7 +10,7 @@ mod data_validation {
     }
 
     impl DataValidation {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<DataValidationComponent> {
             let resource = ResourceBuilder::new_fungible().mint_initial_supply(100);
 
             Self {

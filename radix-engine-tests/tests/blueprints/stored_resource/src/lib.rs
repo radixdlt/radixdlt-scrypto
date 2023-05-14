@@ -7,7 +7,7 @@ mod stored_resource {
     }
 
     impl StoredResource {
-        pub fn create() -> ComponentAddress {
+        pub fn create() -> Global<StoredResourceComponent> {
             let resource_address = ResourceBuilder::new_fungible().create_with_no_initial_supply();
             Self { resource_address }.instantiate().globalize()
         }

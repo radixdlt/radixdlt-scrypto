@@ -7,7 +7,7 @@ mod balance_changes_test {
     }
 
     impl BalanceChangesTest {
-        pub fn instantiate() -> ComponentAddress {
+        pub fn instantiate() -> Global<BalanceChangesTestComponent> {
             let local_component = Self {
                 vault: Vault::new(RADIX_TOKEN),
             }

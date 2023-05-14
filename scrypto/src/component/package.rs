@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{Attachable, Attached, ModuleHandle};
+use crate::modules::{Attachable, Attached};
 use crate::runtime::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;

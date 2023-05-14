@@ -138,7 +138,7 @@ mod auth_resource {
     struct AuthResource;
 
     impl AuthResource {
-        pub fn create() -> ComponentAddress {
+        pub fn create() -> Global<AuthResourceComponent> {
             Self {}.instantiate().globalize()
         }
 

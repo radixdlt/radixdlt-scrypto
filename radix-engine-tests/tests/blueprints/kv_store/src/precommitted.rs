@@ -9,7 +9,7 @@ mod precommitted {
     }
 
     impl Precommitted {
-        pub fn can_reference_precommitted_vault() -> ComponentAddress {
+        pub fn can_reference_precommitted_vault() -> Global<PrecommittedComponent> {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -30,7 +30,7 @@ mod precommitted {
             .globalize()
         }
 
-        pub fn can_reference_deep_precommitted_value() -> ComponentAddress {
+        pub fn can_reference_deep_precommitted_value() -> Global<PrecommittedComponent> {
             let deep_store = KeyValueStore::new();
             let sub_store = KeyValueStore::new();
             sub_store.insert(0u32, 2u32);
@@ -48,7 +48,7 @@ mod precommitted {
             .globalize()
         }
 
-        pub fn can_reference_deep_precommitted_vault() -> ComponentAddress {
+        pub fn can_reference_deep_precommitted_vault() -> Global<PrecommittedComponent> {
             let deep_vault = KeyValueStore::new();
             let sub_store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()

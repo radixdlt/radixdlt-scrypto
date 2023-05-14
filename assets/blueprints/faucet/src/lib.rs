@@ -9,7 +9,10 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
+        pub fn new(
+            preallocated_address_bytes: [u8; 30],
+            bucket: Bucket,
+        ) -> Global<FaucetComponent> {
             let access_rules = AccessRules::new(MethodAuthorities::new(), AuthorityRules::new());
             let metadata = Metadata::new();
 

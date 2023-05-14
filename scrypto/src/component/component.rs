@@ -1,6 +1,7 @@
-use std::ops::Deref;
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, ModuleHandle, Royalty};
+use crate::modules::{AccessRules, Attachable, Royalty};
+use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFERENCE_ID};
+use crate::prelude::{scrypto_encode, ScryptoSbor};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -8,19 +9,18 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
     require, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
 };
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
-    own_type_data, OWN_ID,
-};
 use radix_engine_interface::data::scrypto::{
     scrypto_decode, ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::rule;
 use radix_engine_interface::types::*;
-use sbor::{Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId, ValueKind};
 use sbor::rust::prelude::*;
+use sbor::{
+    Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
+    ValueKind,
+};
 use scrypto::modules::{Attached, Metadata};
-use crate::prelude::{scrypto_encode, ScryptoSbor};
-use crate::prelude::well_known_scrypto_custom_types::{REFERENCE_ID, reference_type_data};
+use std::ops::Deref;
 
 pub trait ComponentState<T: LocalComponent>: ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
@@ -44,7 +44,7 @@ impl ComponentHandle {
     pub fn as_node_id(&self) -> &NodeId {
         match self {
             ComponentHandle::Own(own) => own.as_node_id(),
-            ComponentHandle::Global(address) => address.as_node_id()
+            ComponentHandle::Global(address) => address.as_node_id(),
         }
     }
 }
@@ -97,19 +97,12 @@ impl Component for AnyComponent {
 }
 
 pub trait LocalComponent: Component + Sized {
-    fn globalize2(
-        self,
-        access_rules: AccessRules,
-        metadata: Metadata,
-        royalty: Royalty,
-    ) -> Global<Self>;
-
     fn globalize_with_modules(
         self,
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
-    ) -> ComponentAddress;
+    ) -> Global<Self>;
 
     // TODO - Change all this into a builder when we do the auth changes
     fn globalize_at_address_with_modules(
@@ -118,9 +111,9 @@ pub trait LocalComponent: Component + Sized {
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
-    ) -> ComponentAddress;
+    ) -> Global<Self>;
 
-    fn globalize(self) -> ComponentAddress {
+    fn globalize(self) -> Global<Self> {
         self.globalize_with_modules(
             AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             Metadata::new(),
@@ -128,7 +121,7 @@ pub trait LocalComponent: Component + Sized {
         )
     }
 
-    fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
+    fn globalize_at_address(self, preallocated_address: ComponentAddress) -> Global<Self> {
         self.globalize_at_address_with_modules(
             preallocated_address,
             AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
@@ -137,7 +130,7 @@ pub trait LocalComponent: Component + Sized {
         )
     }
 
-    fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
+    fn globalize_with_metadata(self, metadata: Metadata) -> Global<Self> {
         self.globalize_with_modules(
             AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             metadata,
@@ -149,7 +142,7 @@ pub trait LocalComponent: Component + Sized {
         self,
         method_authorities: MethodAuthorities,
         authority_rules: AuthorityRules,
-    ) -> ComponentAddress {
+    ) -> Global<Self> {
         self.globalize_with_modules(
             AccessRules::new(method_authorities, authority_rules),
             Metadata::new(),
@@ -161,7 +154,7 @@ pub trait LocalComponent: Component + Sized {
         self,
         owner_badge: NonFungibleGlobalId,
         royalty_config: RoyaltyConfig,
-    ) -> ComponentAddress {
+    ) -> Global<Self> {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_rule(
             "owner".clone(),
@@ -175,9 +168,8 @@ pub trait LocalComponent: Component + Sized {
     }
 }
 
-
 impl<T: Component> LocalComponent for T {
-    fn globalize2(
+    fn globalize_with_modules(
         self,
         access_rules: AccessRules,
         metadata: Metadata,
@@ -192,25 +184,7 @@ impl<T: Component> LocalComponent for T {
             ))
             .unwrap();
 
-        Global(T::new(ComponentHandle::Global(address)))
-    }
-
-    fn globalize_with_modules(
-        self,
-        access_rules: AccessRules,
-        metadata: Metadata,
-        royalty: Royalty,
-    ) -> ComponentAddress {
-        let address = ScryptoEnv
-            .globalize(btreemap!(
-                ObjectModuleId::Main => self.handle().as_node_id().clone(),
-                ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-                ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-                ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-            ))
-            .unwrap();
-
-        ComponentAddress::new_or_panic(address.into())
+        Global(Self::new(ComponentHandle::Global(address)))
     }
 
     fn globalize_at_address_with_modules(
@@ -219,7 +193,7 @@ impl<T: Component> LocalComponent for T {
         access_rules: AccessRules,
         metadata: Metadata,
         royalty: Royalty,
-    ) -> ComponentAddress {
+    ) -> Global<Self> {
         let modules: BTreeMap<ObjectModuleId, NodeId> = btreemap!(
             ObjectModuleId::Main => self.handle().as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
@@ -231,13 +205,20 @@ impl<T: Component> LocalComponent for T {
             .globalize_with_address(modules, preallocated_address.into())
             .unwrap();
 
-        ComponentAddress::new_or_panic(preallocated_address.into())
+        Global(Self::new(ComponentHandle::Global(
+            preallocated_address.into(),
+        )))
     }
 }
 
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, PartialEq, Eq, Hash)]
 pub struct Global<O: Component>(pub O);
+
+impl<O: Component> Clone for Global<O> {
+    fn clone(&self) -> Self {
+        Global(O::new(self.0.handle().clone()))
+    }
+}
 
 impl<O: Component> Deref for Global<O> {
     type Target = O;
@@ -280,7 +261,9 @@ impl<O: Component> Categorize<ScryptoCustomValueKind> for Global<O> {
     }
 }
 
-impl<O: Component, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Global<O> {
+impl<O: Component, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
+    for Global<O>
+{
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -289,21 +272,23 @@ impl<O: Component, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValue
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self.0.handle() {
-            ComponentHandle::Global(address) => {
-                encoder.write_slice(&address.to_vec())
-            }
+            ComponentHandle::Global(address) => encoder.write_slice(&address.to_vec()),
             _ => panic!("Unexpected"),
         }
     }
 }
 
-impl<O: Component, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Global<O> {
+impl<O: Component, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
+    for Global<O>
+{
     fn decode_body_with_value_kind(
         decoder: &mut D,
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         Reference::decode_body_with_value_kind(decoder, value_kind).map(|reference| {
-            let o = O::new(ComponentHandle::Global(GlobalAddress::new_or_panic(reference.as_node_id().0)));
+            let o = O::new(ComponentHandle::Global(GlobalAddress::new_or_panic(
+                reference.as_node_id().0,
+            )));
             Self(o)
         })
     }

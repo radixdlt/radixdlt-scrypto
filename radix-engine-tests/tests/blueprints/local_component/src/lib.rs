@@ -19,7 +19,7 @@ mod secret {
             Self { secret }.instantiate()
         }
 
-        pub fn read_local_component() -> ComponentAddress {
+        pub fn read_local_component() -> Global<SecretComponent> {
             let local_component = Self::new(12345);
 
             let rtn = local_component.get_secret();
@@ -28,7 +28,7 @@ mod secret {
             local_component.globalize()
         }
 
-        pub fn write_local_component() -> ComponentAddress {
+        pub fn write_local_component() -> Global<SecretComponent> {
             let local_component = Self::new(12345);
             local_component.set_secret(99999u32);
             let rtn = local_component.get_secret();
@@ -40,7 +40,7 @@ mod secret {
         pub fn check_info_of_local_component(
             expected_package_address: PackageAddress,
             expected_blueprint_name: String,
-        ) -> ComponentAddress {
+        ) -> Global<SecretComponent> {
             let local_component = Self::new(12345);
 
             assert_eq!(local_component.package_address(), expected_package_address);
@@ -76,11 +76,12 @@ mod stored_kv_local {
             Self { components }.instantiate()
         }
 
-        pub fn new_global(secret: u32) -> ComponentAddress {
+        pub fn new_global(secret: u32) -> Global<StoredKVLocalComponent> {
             Self::new(secret).globalize()
         }
 
-        pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
+        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredKVLocalComponent>
+        {
             let my_component = Self::new(12345);
 
             let rtn = my_component.parent_get_secret();
@@ -89,7 +90,8 @@ mod stored_kv_local {
             my_component.globalize()
         }
 
-        pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
+        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredKVLocalComponent>
+        {
             let my_component = Self::new(12345);
 
             my_component.parent_set_secret(99999);
@@ -124,11 +126,11 @@ mod stored_secret {
             Self { component }.instantiate()
         }
 
-        pub fn new_global(secret: u32) -> ComponentAddress {
+        pub fn new_global(secret: u32) -> Global<StoredSecretComponent> {
             Self::new(secret).globalize()
         }
 
-        pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
+        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredSecretComponent> {
             let my_component = Self::new(12345);
             let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
@@ -136,7 +138,8 @@ mod stored_secret {
             my_component.globalize()
         }
 
-        pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
+        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredSecretComponent>
+        {
             let my_component = Self::new(12345);
 
             my_component.parent_set_secret(99999);
