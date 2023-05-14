@@ -2,12 +2,14 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod child_component {
+    use called_component::*;
+
     struct ChildComponent {
-        to_call: ComponentAddress,
+        to_call: Global<CalledComponentComponent>,
     }
 
     impl ChildComponent {
-        pub fn create(to_call: ComponentAddress) -> ChildComponentComponent {
+        pub fn create(to_call: Global<CalledComponentComponent>) -> ChildComponentComponent {
             Self { to_call }.instantiate()
         }
 
@@ -16,11 +18,7 @@ mod child_component {
         }
 
         pub fn call_other_component(&self, child: bool) {
-            let _: () = Runtime::call_method(
-                self.to_call,
-                "protected_method",
-                scrypto_args!(Runtime::global_address(), child),
-            );
+            self.to_call.protected_method(Runtime::global_address(), child);
         }
 
         pub fn assert_check_on_package(&self, package_address: PackageAddress) {
@@ -35,16 +33,17 @@ mod child_component {
 
 #[blueprint]
 mod my_component {
+    use called_component::*;
     use child_component::*;
 
     struct MyComponent {
         child: ChildComponentComponent,
-        to_call: ComponentAddress,
+        to_call: Global<CalledComponentComponent>,
     }
 
     impl MyComponent {
-        pub fn create(to_call: ComponentAddress) -> Global<MyComponentComponent> {
-            let child = ChildComponent::create(to_call);
+        pub fn create(to_call: Global<CalledComponentComponent>) -> Global<MyComponentComponent> {
+            let child = ChildComponent::create(to_call.clone());
             Self { child, to_call }.instantiate().globalize()
         }
 
@@ -56,8 +55,8 @@ mod my_component {
             self.child.get_global_address()
         }
 
-        pub fn get_global_address_in_local(to_call: ComponentAddress) -> ComponentAddress {
-            let child = ChildComponent::create(to_call);
+        pub fn get_global_address_in_local(to_call: Global<CalledComponentComponent>) -> ComponentAddress {
+            let child = ChildComponent::create(to_call.clone());
             let address = child.get_global_address();
             Self { child, to_call }.instantiate().globalize();
             address
@@ -65,29 +64,21 @@ mod my_component {
 
         pub fn get_global_address_in_local_of_parent_method(
             &self,
-            to_call: ComponentAddress,
+            to_call: Global<CalledComponentComponent>,
         ) -> ComponentAddress {
             Self::get_global_address_in_local(to_call)
         }
 
         pub fn call_other_component_with_wrong_address(&self) {
-            let address = self.to_call;
-            Runtime::call_method(
-                self.to_call,
-                "protected_method",
-                scrypto_args!(address, false),
-            )
+            let address = self.to_call.component_address();
+            self.to_call.protected_method(address, false);
         }
 
         pub fn call_other_component(&self, child: bool, called_child: bool) {
             if child {
                 self.child.call_other_component(called_child);
             } else {
-                Runtime::call_method(
-                    self.to_call,
-                    "protected_method",
-                    scrypto_args!(Runtime::global_address(), called_child),
-                )
+                let address = self.to_call.protected_method(Runtime::global_address(), called_child);
             }
         }
 

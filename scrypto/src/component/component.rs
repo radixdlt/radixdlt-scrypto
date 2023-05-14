@@ -229,6 +229,10 @@ impl<O: Component> Deref for Global<O> {
 }
 
 impl<O: Component> Global<O> {
+    pub fn component_address(&self) -> ComponentAddress {
+        ComponentAddress::new_or_panic(self.handle().as_node_id().0)
+    }
+
     pub fn metadata(&self) -> Attached<Metadata> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);

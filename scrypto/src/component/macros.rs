@@ -11,15 +11,3 @@ macro_rules! borrow_package {
         $crate::component::BorrowedPackage($address.clone())
     };
 }
-
-/// Instantiates a component.
-pub fn create_component<T: ComponentState<C>, C: Component + LocalComponent>(
-    blueprint_name: &str,
-    state: T,
-) -> ComponentHandle {
-    let mut env = ScryptoEnv;
-    let node_id = env
-        .new_simple_object(blueprint_name, vec![scrypto_encode(&state).unwrap()])
-        .unwrap();
-    ComponentHandle::Own(Own(node_id))
-}
