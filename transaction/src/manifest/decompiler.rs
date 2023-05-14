@@ -1,3 +1,4 @@
+use radix_engine_common::native_addresses::EPOCH_MANAGER_PACKAGE;
 use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
@@ -409,7 +410,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
         }
         Instruction::CallRoyaltyMethod {
-            entity_address,
+            address: entity_address,
             method_name,
             args,
         } => {
@@ -511,18 +512,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
-            component_address,
+            address ,
             method_name,
             args,
         } => {
-            match (component_address, method_name.as_str()) {
-                (&EPOCH_MANAGER, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => {
+            match (address, method_name.as_str()) {
+                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
+                    if address.eq(&EPOCH_MANAGER.clone().into())=> {
                     write!(f, "CREATE_VALIDATOR")?;
                 }
                 _ => {
                     f.write_str(&format!(
                         "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                        component_address.display(context.bech32_encoder),
+                        address.display(context.bech32_encoder),
                         method_name
                     ))?;
                 }

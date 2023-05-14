@@ -259,7 +259,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
-                    component_address,
+                    address: component_address,
                     method_name,
                     args,
                 } => {
@@ -283,7 +283,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallRoyaltyMethod {
-                    entity_address,
+                    address: entity_address,
                     method_name,
                     args,
                 } => {

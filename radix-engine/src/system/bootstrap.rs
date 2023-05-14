@@ -849,7 +849,7 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 
     instructions.push(Instruction::CallMethod {
-        component_address: genesis_helper.clone(),
+        address: genesis_helper.clone().into(),
         method_name: "ingest_data_chunk".to_string(),
         args: manifest_args!(chunk),
     });
@@ -867,7 +867,7 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let mut instructions = Vec::new();
 
     instructions.push(Instruction::CallMethod {
-        component_address: GENESIS_HELPER,
+        address: GENESIS_HELPER.clone().into(),
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });

@@ -172,7 +172,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_address: self.parse_value()?,
+                address: self.parse_value()?,
                 method_name: self.parse_value()?,
                 args: {
                     let mut values = Vec::new();

@@ -462,7 +462,7 @@ impl ManifestBuilder {
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
         });
@@ -471,7 +471,7 @@ impl ManifestBuilder {
 
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: manifest_args!(),
         });
@@ -480,7 +480,7 @@ impl ManifestBuilder {
 
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
         });
@@ -493,7 +493,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -506,7 +506,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -519,7 +519,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -544,14 +544,14 @@ impl ManifestBuilder {
     }
 
     /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
-    pub fn call_method(
+    pub fn call_method<A: Into<GlobalAddress>>(
         &mut self,
-        component_address: ComponentAddress,
+        address: A,
         method_name: &str,
         args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address,
+            address: address.into(),
             method_name: method_name.to_owned(),
             args: args,
         });
@@ -581,7 +581,7 @@ impl ManifestBuilder {
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallRoyaltyMethod {
-            entity_address: component_address.into(),
+            address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
                 royalty_config,
@@ -592,7 +592,7 @@ impl ManifestBuilder {
 
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallRoyaltyMethod {
-            entity_address: component_address.into(),
+            address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&ComponentClaimRoyaltyInput {
             }),
@@ -920,7 +920,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args: args,
         })
@@ -941,7 +941,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
@@ -949,11 +949,11 @@ impl ManifestBuilder {
     }
 
     /// Locks a fee from the XRD vault of an account.
-    pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
+    pub fn lock_fee<A: Into<GlobalAddress>>(&mut self, account: A, amount: Decimal) -> &mut Self {
         let args = to_manifest_value(&AccountLockFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
         })
@@ -964,7 +964,7 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
         })
@@ -984,7 +984,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
             args,
         })
@@ -1004,7 +1004,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
@@ -1020,7 +1020,7 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountCreateProofInput { resource_address });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             args,
         })
@@ -1040,7 +1040,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
         })
@@ -1060,7 +1060,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })

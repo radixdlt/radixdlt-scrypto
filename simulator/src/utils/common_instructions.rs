@@ -135,7 +135,7 @@ pub fn add_call_method_instruction_with_schema<'a>(
     )?;
 
     builder.add_instruction(Instruction::CallMethod {
-        component_address,
+        address: component_address,
         method_name: method_name.to_owned(),
         args: built_args,
     });

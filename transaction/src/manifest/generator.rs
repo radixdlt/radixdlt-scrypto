@@ -436,18 +436,18 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::CallMethod {
-            component_address,
+            address,
             method_name,
             args,
         } => {
-            let component_address = generate_component_address(component_address, bech32_decoder)?;
+            let address = generate_global_address(address, bech32_decoder)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethod {
-                component_address,
+                address,
                 method_name,
                 args,
             }
@@ -519,7 +519,7 @@ pub fn generate_instruction(
             component_address,
             royalty_config,
         } => Instruction::CallRoyaltyMethod {
-            entity_address: generate_global_address(component_address, bech32_decoder)?,
+            address: generate_global_address(component_address, bech32_decoder)?,
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
                 royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -527,7 +527,7 @@ pub fn generate_instruction(
         },
         ast::Instruction::ClaimComponentRoyalty { component_address } => {
             Instruction::CallRoyaltyMethod {
-                entity_address: generate_global_address(component_address, bech32_decoder)?,
+                address: generate_global_address(component_address, bech32_decoder)?,
                 method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
                 args: to_manifest_value(&ComponentClaimRoyaltyInput {
                 })
@@ -588,7 +588,7 @@ pub fn generate_instruction(
         },
 
         ast::Instruction::CreateValidator { key } => Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput {
                 key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
@@ -824,26 +824,6 @@ fn generate_package_address(
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::PackageAddress),
-    }
-}
-
-fn generate_component_address(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<ComponentAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(inner) => match &**inner {
-            ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
-                    if let Ok(address) = ComponentAddress::try_from(full_data.as_ref()) {
-                        return Ok(address);
-                    }
-                }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::ComponentAddress, ast::Type::Address),
     }
 }
 
@@ -1504,7 +1484,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")  "refill";"#,
             Instruction::CallMethod {
-                component_address: component,
+                address: component.into(),
                 method_name: "refill".to_string(),
                 args: manifest_args!()
             },
@@ -1765,7 +1745,7 @@ mod tests {
             CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
-                component_address: EPOCH_MANAGER,
+                address: EPOCH_MANAGER.into(),
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&EpochManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)

@@ -215,14 +215,14 @@ pub enum Instruction {
 
     #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
     CallMethod {
-        component_address: ComponentAddress,
+        address: GlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
 
     #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
     CallRoyaltyMethod {
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         method_name: String,
         args: ManifestValue,
     },

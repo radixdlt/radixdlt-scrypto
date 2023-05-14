@@ -225,7 +225,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
-                    component_address: account,
+                    address: account.into(),
                     method_name: "deposit".to_string(),
                     args: manifest_args!(bucket_id),
                 })

@@ -21,7 +21,7 @@ fn cannot_securify_in_advanced_mode() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
-            component_address,
+            address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
@@ -55,7 +55,7 @@ fn can_securify_from_virtual_identity() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
-            component_address,
+            address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
@@ -82,7 +82,7 @@ fn cannot_securify_twice() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
-            component_address,
+            address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
@@ -101,7 +101,7 @@ fn cannot_securify_twice() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
-            component_address,
+            address: component_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
@@ -133,7 +133,7 @@ fn can_set_metadata_after_securify() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .add_instruction(Instruction::CallMethod {
-            component_address: identity_address,
+            address: identity_address.into(),
             method_name: IDENTITY_SECURIFY_IDENT.to_string(),
             args: to_manifest_value(&IdentitySecurifyToSingleBadgeInput {}),
         })
