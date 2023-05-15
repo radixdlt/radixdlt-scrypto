@@ -44,7 +44,7 @@ pub trait ScryptoVault {
 
     fn as_fungible_vault(&self) -> FungibleVault;
 
-    fn as_no_fungible_vault(&self) -> NonFungibleVault;
+    fn as_non_fungible_vault(&self) -> NonFungibleVault;
 }
 
 pub trait ScryptoFungibleVault {
@@ -202,7 +202,7 @@ impl ScryptoVault for Vault {
         FungibleVault(Vault(self.0))
     }
 
-    fn as_no_fungible_vault(&self) -> NonFungibleVault {
+    fn as_non_fungible_vault(&self) -> NonFungibleVault {
         assert!(self
             .resource_address()
             .as_node_id()
@@ -269,8 +269,8 @@ impl ScryptoVault for FungibleVault {
         self.0.as_fungible_vault()
     }
 
-    fn as_no_fungible_vault(&self) -> NonFungibleVault {
-        self.0.as_no_fungible_vault()
+    fn as_non_fungible_vault(&self) -> NonFungibleVault {
+        self.0.as_non_fungible_vault()
     }
 }
 
@@ -373,8 +373,8 @@ impl ScryptoVault for NonFungibleVault {
         self.0.as_fungible_vault()
     }
 
-    fn as_no_fungible_vault(&self) -> NonFungibleVault {
-        self.0.as_no_fungible_vault()
+    fn as_non_fungible_vault(&self) -> NonFungibleVault {
+        self.0.as_non_fungible_vault()
     }
 }
 

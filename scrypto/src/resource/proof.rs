@@ -56,7 +56,7 @@ pub trait ScryptoProof {
 
     fn as_fungible_proof(&self) -> CheckedFungibleProof;
 
-    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof;
+    fn as_non_fungible_proof(&self) -> CheckedNonFungibleProof;
 }
 
 pub trait ScryptoFungibleProof {}
@@ -215,7 +215,7 @@ impl ScryptoProof for CheckedProof {
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
-    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
+    fn as_non_fungible_proof(&self) -> CheckedNonFungibleProof {
         assert!(self
             .resource_address()
             .as_node_id()
@@ -257,8 +257,8 @@ impl ScryptoProof for CheckedFungibleProof {
         self.0.as_fungible_proof()
     }
 
-    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
-        self.0.as_no_fungible_proof()
+    fn as_non_fungible_proof(&self) -> CheckedNonFungibleProof {
+        self.0.as_non_fungible_proof()
     }
 }
 
@@ -297,8 +297,8 @@ impl ScryptoProof for CheckedNonFungibleProof {
         self.0.as_fungible_proof()
     }
 
-    fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
-        self.0.as_no_fungible_proof()
+    fn as_non_fungible_proof(&self) -> CheckedNonFungibleProof {
+        self.0.as_non_fungible_proof()
     }
 }
 

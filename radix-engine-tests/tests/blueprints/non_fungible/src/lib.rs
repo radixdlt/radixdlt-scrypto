@@ -312,11 +312,13 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_ids(),
+                non_fungible_bucket
+                    .as_non_fungible_bucket()
+                    .non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                bucket.non_fungible_local_ids(),
+                bucket.as_non_fungible_bucket().non_fungible_local_ids(),
                 BTreeSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -343,7 +345,9 @@ mod non_fungible_test {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_ids(),
+                non_fungible_bucket
+                    .as_non_fungible_bucket()
+                    .non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(

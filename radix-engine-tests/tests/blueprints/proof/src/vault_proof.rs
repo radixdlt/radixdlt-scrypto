@@ -57,7 +57,10 @@ mod vault_proof {
             assert!(proof.validate(ProofValidation::Contains(self.vault.resource_address())));
             let clone = proof.clone();
 
-            assert_eq!(self.vault.non_fungible_local_ids(), non_fungible_local_ids);
+            assert_eq!(
+                self.vault.as_non_fungible_vault().non_fungible_local_ids(),
+                non_fungible_local_ids
+            );
             assert_eq!(proof.non_fungible_local_ids(), proof_non_fungible_local_ids);
             assert_eq!(clone.non_fungible_local_ids(), proof_non_fungible_local_ids);
 

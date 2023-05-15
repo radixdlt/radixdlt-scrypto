@@ -47,7 +47,7 @@ pub trait ScryptoBucket {
 
     fn as_fungible_bucket(&self) -> FungibleBucket;
 
-    fn as_no_fungible_bucket(&self) -> NonFungibleBucket;
+    fn as_non_fungible_bucket(&self) -> NonFungibleBucket;
 }
 
 pub trait ScryptoFungibleBucket {}
@@ -219,7 +219,7 @@ impl ScryptoBucket for Bucket {
         FungibleBucket(Bucket(self.0))
     }
 
-    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
+    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
         assert!(self
             .resource_address()
             .as_node_id()
@@ -288,8 +288,8 @@ impl ScryptoBucket for FungibleBucket {
         self.0.as_fungible_bucket()
     }
 
-    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
-        self.0.as_no_fungible_bucket()
+    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
+        self.0.as_non_fungible_bucket()
     }
 }
 
@@ -357,8 +357,8 @@ impl ScryptoBucket for NonFungibleBucket {
         self.0.as_fungible_bucket()
     }
 
-    fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
-        self.0.as_no_fungible_bucket()
+    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
+        self.0.as_non_fungible_bucket()
     }
 }
 
