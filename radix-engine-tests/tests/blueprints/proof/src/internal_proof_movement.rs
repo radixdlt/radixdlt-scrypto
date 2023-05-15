@@ -5,8 +5,8 @@ mod inner {
     struct Inner {}
 
     impl Inner {
-        pub fn instantiate() -> InnerComponent {
-            Self {}.instantiate().own()
+        pub fn instantiate() -> Owned<Inner> {
+            Self {}.instantiate()
         }
 
         pub fn receive_proof(&self, proof: Proof) {
@@ -20,7 +20,7 @@ mod outer {
     use super::inner::{Inner, InnerComponent};
 
     struct Outer {
-        inner: InnerComponent,
+        inner: Owned<Inner>,
     }
 
     impl Outer {

@@ -9,8 +9,8 @@ mod child_component {
     }
 
     impl ChildComponent {
-        pub fn create(to_call: Global<CalledComponent>) -> ChildComponentComponent {
-            Self { to_call }.instantiate().own()
+        pub fn create(to_call: Global<CalledComponent>) -> Owned<ChildComponent> {
+            Self { to_call }.instantiate()
         }
 
         pub fn get_global_address(&self) -> ComponentAddress {
@@ -38,7 +38,7 @@ mod my_component {
     use child_component::*;
 
     struct MyComponent {
-        child: ChildComponentComponent,
+        child: Owned<ChildComponent>,
         to_call: Global<CalledComponent>,
     }
 
@@ -112,7 +112,7 @@ mod called_component {
     use called_component_child::*;
 
     struct CalledComponent {
-        child: CalledComponentChildComponent,
+        child: Owned<CalledComponentChild>,
     }
 
     impl CalledComponent {
@@ -137,8 +137,8 @@ mod called_component_child {
     struct CalledComponentChild {}
 
     impl CalledComponentChild {
-        pub fn create() -> CalledComponentChildComponent {
-            Self {}.instantiate().own()
+        pub fn create() -> Owned<CalledComponentChild> {
+            Self {}.instantiate()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress) {

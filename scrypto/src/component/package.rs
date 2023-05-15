@@ -1,4 +1,4 @@
-use crate::prelude::{Global, ObjectStub, ObjectStubHandle};
+use crate::prelude::{Global, HasStub, ObjectStub, ObjectStubHandle};
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
@@ -11,6 +11,10 @@ use sbor::rust::string::String;
 pub type Package = Global<PackageStub>;
 
 pub struct PackageStub(ObjectStubHandle);
+
+impl HasStub for PackageStub {
+    type Stub = Self;
+}
 
 impl ObjectStub for PackageStub {
     fn new(handle: ObjectStubHandle) -> Self {

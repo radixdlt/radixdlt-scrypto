@@ -9,6 +9,7 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::prelude::*;
@@ -17,17 +18,18 @@ use sbor::{
     ValueKind,
 };
 use scrypto::modules::{Attached, Metadata};
+use scrypto::prelude::well_known_scrypto_custom_types::OWN_ID;
 
 pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
-    fn instantiate(self) -> Globalizeable<Self> {
+    fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoEnv
             .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
             .unwrap();
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
-        Globalizeable::new(stub)
+        Owned(stub)
     }
 }
 
@@ -48,7 +50,97 @@ impl ObjectStub for AnyComponent {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Globalizeable<C: HasStub> {
+pub struct Owned<C: HasStub>(pub C::Stub);
+
+impl<C: HasStub> Deref for Owned<C> {
+    type Target = C::Stub;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<C: HasStub> Categorize<ScryptoCustomValueKind> for Owned<C> {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
+    }
+}
+
+impl<C: HasStub, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
+for Owned<C>
+{
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self.0.handle() {
+            ObjectStubHandle::Own(own) => encoder.write_slice(&own.to_vec()),
+            _ => panic!("Unexpected"),
+        }
+    }
+}
+
+impl<C: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
+for Owned<C>
+{
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        Own::decode_body_with_value_kind(decoder, value_kind).map(|own| {
+            let o = C::Stub::new(ObjectStubHandle::Own(own));
+            Self(o)
+        })
+    }
+}
+
+// TODO: generics support for Scrypto components?
+impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(OWN_ID);
+
+    fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        own_type_data()
+    }
+}
+
+
+impl<C: HasStub> Owned<C> {
+    pub fn attach_metadata(self, metadata: Metadata) -> Globalizing<C> {
+        let mut globalizing = Globalizing::new(self.0);
+        let _ = globalizing.metadata.insert(metadata);
+        globalizing
+    }
+
+    pub fn attach_royalty(self, royalty: Royalty) -> Globalizing<C> {
+        let mut globalizing = Globalizing::new(self.0);
+        let _ = globalizing.royalty.insert(royalty);
+        globalizing
+    }
+
+    pub fn attach_access_rules(self, access_rules: AccessRules) -> Globalizing<C> {
+        let mut globalizing = Globalizing::new(self.0);
+        let _ = globalizing.access_rules.insert(access_rules);
+        globalizing
+    }
+
+    pub fn attach_address(self, address: ComponentAddress) -> Globalizing<C> {
+        let mut globalizing = Globalizing::new(self.0);
+        let _ = globalizing.address.insert(address);
+        globalizing
+    }
+
+    pub fn globalize(self) -> Global<C> {
+        let globalizing: Globalizing<C> = Globalizing::new(self.0);
+        globalizing.globalize()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: Option<Royalty>,
@@ -56,7 +148,7 @@ pub struct Globalizeable<C: HasStub> {
     pub address: Option<ComponentAddress>,
 }
 
-impl<C: HasStub> Deref for Globalizeable<C> {
+impl<C: HasStub> Deref for Globalizing<C> {
     type Target = C::Stub;
 
     fn deref(&self) -> &Self::Target {
@@ -64,7 +156,7 @@ impl<C: HasStub> Deref for Globalizeable<C> {
     }
 }
 
-impl<C: HasStub> Globalizeable<C> {
+impl<C: HasStub> Globalizing<C> {
     fn new(stub: C::Stub) -> Self {
         Self {
             stub,
@@ -73,13 +165,6 @@ impl<C: HasStub> Globalizeable<C> {
             access_rules: None,
             address: None,
         }
-    }
-
-    pub fn own(self) -> C::Stub {
-        if self.metadata.is_some() || self.royalty.is_some() || self.access_rules.is_some() {
-            panic!("Cannot own with already attached objects.");
-        }
-        self.stub
     }
 
     fn handle(&self) -> &ObjectStubHandle {

@@ -20,9 +20,9 @@ mod mini_proof {
             .unwrap()
         }
 
-        pub fn drop(proof: MiniProofComponent) {
+        pub fn drop(proof: Owned<MiniProof>) {
             ScryptoEnv
-                .drop_object(proof.component.as_node_id())
+                .drop_object(proof.0.handle().as_node_id())
                 .unwrap();
         }
     }
@@ -30,33 +30,32 @@ mod mini_proof {
 
 #[blueprint]
 mod mini_bucket {
-    use crate::mini_proof::MiniProofComponent;
+    use crate::mini_proof::*;
 
     struct MiniBucket {
         amount: u32,
     }
 
     impl MiniBucket {
-        pub fn new(amount: u32) -> MiniBucketComponent {
-            Self { amount }.instantiate().own()
+        pub fn new(amount: u32) -> Owned<MiniBucket> {
+            Self { amount }.instantiate()
         }
 
         pub fn amount(&self) -> u32 {
             self.amount
         }
 
-        pub fn create_proof(&self) -> MiniProofComponent {
+        pub fn create_proof(&self) -> Owned<MiniProof> {
             let node_id = Runtime::node_id();
             crate::mini_proof::MiniProof {
                 bucket: InternalAddress::new_or_panic(node_id.into()),
             }
             .instantiate()
-            .own()
         }
 
-        pub fn drop(bucket: MiniBucketComponent) {
+        pub fn drop(bucket: Owned<MiniBucket>) {
             ScryptoEnv
-                .drop_object(bucket.component.as_node_id())
+                .drop_object(bucket.0.handle().as_node_id())
                 .unwrap();
         }
     }
@@ -64,8 +63,8 @@ mod mini_bucket {
 
 #[blueprint]
 mod mini_user {
-    use crate::mini_bucket::MiniBucketComponent;
-    use crate::mini_proof::MiniProofComponent;
+    use crate::mini_bucket::*;
+    use crate::mini_proof::*;
 
     struct MiniUser {}
 
@@ -108,7 +107,7 @@ mod mini_user {
             MiniBucketComponent::drop(bucket);
         }
 
-        pub fn create_bucket_and_proof() -> (MiniBucketComponent, MiniProofComponent) {
+        pub fn create_bucket_and_proof() -> (Owned<MiniBucket>, Owned<MiniProof>) {
             let bucket = MiniBucketComponent::new(5);
             let proof = bucket.create_proof();
             (bucket, proof)
@@ -122,7 +121,7 @@ mod mini_user {
             MiniProofComponent::drop(proof);
         }
 
-        pub fn drop_bucket(bucket: MiniBucketComponent) {
+        pub fn drop_bucket(bucket: Owned<MiniBucket>) {
             MiniBucketComponent::drop(bucket);
         }
 
@@ -134,7 +133,7 @@ mod mini_user {
             MiniBucketComponent::drop(bucket);
         }
 
-        pub fn drop_proof(proof: MiniProofComponent) {
+        pub fn drop_proof(proof: Owned<MiniProof>) {
             MiniProofComponent::drop(proof);
         }
     }

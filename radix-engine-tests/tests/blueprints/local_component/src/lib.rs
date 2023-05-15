@@ -15,8 +15,8 @@ mod secret {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> SecretComponent {
-            Self { secret }.instantiate().own()
+        pub fn new(secret: u32) -> Owned<Secret> {
+            Self { secret }.instantiate()
         }
 
         pub fn read_local_component() -> Global<Secret> {
@@ -59,7 +59,7 @@ mod stored_kv_local {
     use secret::*;
 
     struct StoredKVLocal {
-        components: KeyValueStore<u32, SecretComponent>,
+        components: KeyValueStore<u32, Owned<Secret>>,
     }
 
     impl StoredKVLocal {
@@ -71,7 +71,7 @@ mod stored_kv_local {
             self.components.get(&0u32).unwrap().set_secret(next)
         }
 
-        fn new_internal(secret: u32) -> Globalizeable<StoredKVLocal> {
+        fn new_internal(secret: u32) -> Owned<StoredKVLocal> {
             let component = SecretComponent::new(secret);
             let components = KeyValueStore::new();
             components.insert(0u32, component);
@@ -79,8 +79,8 @@ mod stored_kv_local {
             Self { components }.instantiate()
         }
 
-        pub fn new(secret: u32) -> StoredKVLocalComponent {
-            Self::new_internal(secret).own()
+        pub fn new(secret: u32) -> Owned<StoredKVLocal> {
+            Self::new_internal(secret)
         }
 
         pub fn new_global(secret: u32) -> Global<StoredKVLocal> {
@@ -115,7 +115,7 @@ mod stored_secret {
     use secret::*;
 
     struct StoredSecret {
-        component: SecretComponent,
+        component: Owned<Secret>,
     }
 
     impl StoredSecret {
@@ -127,9 +127,9 @@ mod stored_secret {
             self.component.set_secret(next)
         }
 
-        pub fn new(secret: u32) -> StoredSecretComponent {
+        pub fn new(secret: u32) -> Owned<StoredSecret> {
             let component = SecretComponent::new(secret);
-            Self { component }.instantiate().own()
+            Self { component }.instantiate()
         }
 
         pub fn new_global(secret: u32) -> Global<StoredSecret> {
