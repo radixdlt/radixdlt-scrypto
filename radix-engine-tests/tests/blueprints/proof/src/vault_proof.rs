@@ -7,7 +7,7 @@ mod vault_proof {
     }
 
     impl VaultProof {
-        pub fn new(bucket: Bucket) -> Global<VaultProofComponent> {
+        pub fn new(bucket: Bucket) -> Global<VaultProof> {
             Self {
                 vault: Vault::with_bucket(bucket),
             }

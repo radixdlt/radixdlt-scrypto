@@ -3,11 +3,11 @@ use scrypto::prelude::*;
 #[blueprint]
 mod external_component {
     struct ExternalComponent {
-        external_component: Option<Global<ExternalComponentComponent>>,
+        external_component: Option<Global<ExternalComponent>>,
     }
 
     impl ExternalComponent {
-        pub fn create() -> Global<ExternalComponentComponent> {
+        pub fn create() -> Global<ExternalComponent> {
             let external_component = Self {
                 external_component: Option::None,
             }
@@ -21,7 +21,7 @@ mod external_component {
             .globalize()
         }
 
-        pub fn create_and_call() -> Global<ExternalComponentComponent> {
+        pub fn create_and_call() -> Global<ExternalComponent> {
             let external_component = Self {
                 external_component: Option::None,
             }

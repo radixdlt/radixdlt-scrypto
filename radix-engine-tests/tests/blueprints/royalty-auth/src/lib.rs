@@ -34,7 +34,7 @@ mod royalty_test {
 
         pub fn create_component_with_royalty_enabled(
             badge: NonFungibleGlobalId,
-        ) -> Global<RoyaltyTestComponent> {
+        ) -> Global<RoyaltyTest> {
             let local_component = Self {}.instantiate();
             let royalty = {
                 let royalty_config = RoyaltyConfigBuilder::new()

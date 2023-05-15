@@ -10,7 +10,7 @@ mod basic_flash_loan {
     struct BasicFlashLoan {
         loan_vault: Vault,
         auth_vault: Vault,
-        transient_resource_address: ResourceAddress,
+        transient_resource_manager: ResourceManager,
     }
 
     impl BasicFlashLoan {
@@ -22,14 +22,14 @@ mod basic_flash_loan {
         /// https://github.com/radixdlt/scrypto-examples/tree/main/defi/radiswap
         pub fn instantiate_default(
             initial_liquidity: Bucket,
-        ) -> (Global<BasicFlashLoanComponent>, ResourceAddress) {
+        ) -> (Global<BasicFlashLoan>, ResourceManager) {
             let auth_token = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "Admin authority for BasicFlashLoan")
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let transient_resource_address = ResourceBuilder::new_uuid_non_fungible::<LoanDue>()
+            let transient_resource_manager = ResourceBuilder::new_uuid_non_fungible::<LoanDue>()
                 .metadata(
                     "name",
                     "Promise token for BasicFlashLoan - must be returned to be burned!",
@@ -42,12 +42,12 @@ mod basic_flash_loan {
             let global_component = Self {
                 loan_vault: Vault::with_bucket(initial_liquidity),
                 auth_vault: Vault::with_bucket(auth_token),
-                transient_resource_address,
+                transient_resource_manager: transient_resource_manager.clone(),
             }
             .instantiate()
             .globalize();
 
-            (global_component, transient_resource_address)
+            (global_component, transient_resource_manager)
         }
 
         pub fn available_liquidity(&self) -> Decimal {
@@ -75,7 +75,7 @@ mod basic_flash_loan {
             // a loan must call our repay_loan() method with an appropriate reimbursement, at which point we will
             // burn the NFT and allow the TX to complete.
             let loan_terms = self.auth_vault.authorize(|| {
-                borrow_resource_manager!(self.transient_resource_address).mint_uuid_non_fungible(
+                self.transient_resource_manager.mint_uuid_non_fungible(
                     LoanDue {
                         amount_due: amount_due,
                     },
@@ -86,7 +86,7 @@ mod basic_flash_loan {
 
         pub fn repay_loan(&mut self, loan_repayment: Bucket, loan_terms: Bucket) {
             assert!(
-                loan_terms.resource_address() == self.transient_resource_address,
+                loan_terms.resource_address() == self.transient_resource_manager.resource_address(),
                 "Incorrect resource passed in for loan terms"
             );
 

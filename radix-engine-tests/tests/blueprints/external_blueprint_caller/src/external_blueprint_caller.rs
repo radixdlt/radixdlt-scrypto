@@ -30,7 +30,7 @@ mod external_blueprint_caller {
     struct ExternalBlueprintCaller {}
 
     impl ExternalBlueprintCaller {
-        pub fn create() -> Global<ExternalBlueprintCallerComponent> {
+        pub fn create() -> Global<ExternalBlueprintCaller> {
             Self {}.instantiate().globalize()
         }
 

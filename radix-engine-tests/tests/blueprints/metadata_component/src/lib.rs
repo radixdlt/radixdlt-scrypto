@@ -37,7 +37,7 @@ mod metadata_component {
             assert_eq!(metadata.get_string(key).unwrap(), value);
         }
 
-        pub fn remove_metadata(global: Global<MetadataComponentComponent>, key: String) {
+        pub fn remove_metadata(global: Global<MetadataComponent>, key: String) {
             let metadata = global.metadata();
             metadata.remove(key);
         }

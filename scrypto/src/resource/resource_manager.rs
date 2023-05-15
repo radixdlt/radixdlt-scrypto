@@ -10,6 +10,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use std::ops::Deref;
+use scrypto::component::HasStub;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 #[sbor(transparent)]
@@ -128,6 +129,10 @@ impl ResourceManager {
         let access_rules = self.0.access_rules();
         access_rules.set_authority_mutability(RECALL_AUTHORITY, AccessRule::DenyAll);
     }
+}
+
+impl HasStub for ResourceManagerStub {
+    type Stub = Self;
 }
 
 #[derive(Debug)]

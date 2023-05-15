@@ -18,20 +18,24 @@ use sbor::{
 };
 use scrypto::modules::{Attached, Metadata};
 
-pub trait ComponentState<C: ObjectStub>: ScryptoEncode + ScryptoDecode {
+pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
-    fn instantiate(self) -> Globalizeable<C> {
+    fn instantiate(self) -> Globalizeable<Self> {
         let node_id = ScryptoEnv
             .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
             .unwrap();
 
-        let stub = C::new(ObjectStubHandle::Own(Own(node_id)));
+        let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
         Globalizeable::new(stub)
     }
 }
 
 pub struct AnyComponent(ObjectStubHandle);
+
+impl HasStub for AnyComponent {
+    type Stub = Self;
+}
 
 impl ObjectStub for AnyComponent {
     fn new(handle: ObjectStubHandle) -> Self {
@@ -44,24 +48,24 @@ impl ObjectStub for AnyComponent {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Globalizeable<O: ObjectStub> {
-    pub stub: O,
+pub struct Globalizeable<C: HasStub> {
+    pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: Option<Royalty>,
     pub access_rules: Option<AccessRules>,
     pub address: Option<ComponentAddress>,
 }
 
-impl<O: ObjectStub> Deref for Globalizeable<O> {
-    type Target = O;
+impl<C: HasStub> Deref for Globalizeable<C> {
+    type Target = C::Stub;
 
     fn deref(&self) -> &Self::Target {
         &self.stub
     }
 }
 
-impl<O: ObjectStub> Globalizeable<O> {
-    fn new(stub: O) -> Self {
+impl<C: HasStub> Globalizeable<C> {
+    fn new(stub: C::Stub) -> Self {
         Self {
             stub,
             metadata: None,
@@ -71,7 +75,7 @@ impl<O: ObjectStub> Globalizeable<O> {
         }
     }
 
-    pub fn own(self) -> O {
+    pub fn own(self) -> C::Stub {
         if self.metadata.is_some() || self.royalty.is_some() || self.access_rules.is_some() {
             panic!("Cannot own with already attached objects.");
         }
@@ -102,7 +106,7 @@ impl<O: ObjectStub> Globalizeable<O> {
         self
     }
 
-    pub fn globalize(mut self) -> Global<O> {
+    pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
         let access_rules = self
@@ -125,28 +129,32 @@ impl<O: ObjectStub> Globalizeable<O> {
             ScryptoEnv.globalize(modules).unwrap()
         };
 
-        Global(O::new(ObjectStubHandle::Global(address)))
+        Global(C::Stub::new(ObjectStubHandle::Global(address)))
     }
 }
 
 #[derive(Debug, Copy, PartialEq, Eq, Hash)]
-pub struct Global<O: ObjectStub>(pub O);
+pub struct Global<O: HasStub>(pub O::Stub);
 
-impl<O: ObjectStub> Clone for Global<O> {
+impl<O: HasStub> Clone for Global<O> {
     fn clone(&self) -> Self {
-        Global(O::new(self.0.handle().clone()))
+        Global(O::Stub::new(self.0.handle().clone()))
     }
 }
 
-impl<O: ObjectStub> Deref for Global<O> {
-    type Target = O;
+pub trait HasStub {
+    type Stub: ObjectStub;
+}
+
+impl<O: HasStub> Deref for Global<O> {
+    type Target = O::Stub;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<O: ObjectStub> Global<O> {
+impl<O: HasStub> Global<O> {
     // TODO: Change to GlobalAddress?
     pub fn component_address(&self) -> ComponentAddress {
         ComponentAddress::new_or_panic(self.handle().as_node_id().0)
@@ -171,26 +179,26 @@ impl<O: ObjectStub> Global<O> {
     }
 }
 
-impl<O: ObjectStub> From<ComponentAddress> for Global<O> {
+impl<O: HasStub> From<ComponentAddress> for Global<O> {
     fn from(value: ComponentAddress) -> Self {
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
 
-impl<O: ObjectStub> From<PackageAddress> for Global<O> {
+impl<O: HasStub> From<PackageAddress> for Global<O> {
     fn from(value: PackageAddress) -> Self {
         Global(ObjectStub::new(ObjectStubHandle::Global(value.into())))
     }
 }
 
-impl<O: ObjectStub> Categorize<ScryptoCustomValueKind> for Global<O> {
+impl<O: HasStub> Categorize<ScryptoCustomValueKind> for Global<O> {
     #[inline]
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
         ValueKind::Custom(ScryptoCustomValueKind::Reference)
     }
 }
 
-impl<O: ObjectStub, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
+impl<O: HasStub, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
     for Global<O>
 {
     #[inline]
@@ -207,7 +215,7 @@ impl<O: ObjectStub, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValu
     }
 }
 
-impl<O: ObjectStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
+impl<O: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
     for Global<O>
 {
     fn decode_body_with_value_kind(
@@ -215,7 +223,7 @@ impl<O: ObjectStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValu
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         Reference::decode_body_with_value_kind(decoder, value_kind).map(|reference| {
-            let o = O::new(ObjectStubHandle::Global(GlobalAddress::new_or_panic(
+            let o = O::Stub::new(ObjectStubHandle::Global(GlobalAddress::new_or_panic(
                 reference.as_node_id().0,
             )));
             Self(o)
@@ -224,7 +232,7 @@ impl<O: ObjectStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValu
 }
 
 // TODO: generics support for Scrypto components?
-impl<O: ObjectStub> Describe<ScryptoCustomTypeKind> for Global<O> {
+impl<O: HasStub> Describe<ScryptoCustomTypeKind> for Global<O> {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(REFERENCE_ID);
 
     fn type_data() -> sbor::TypeData<ScryptoCustomTypeKind, GlobalTypeId> {

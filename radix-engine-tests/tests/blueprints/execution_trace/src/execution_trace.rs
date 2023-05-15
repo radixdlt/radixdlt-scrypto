@@ -11,8 +11,8 @@ mod execution_trace_test {
             amount: u8,
         ) -> (
             ResourceAddress,
-            Global<ExecutionTraceTestComponent>,
-            Global<ExecutionTraceTestComponent>,
+            Global<ExecutionTraceTest>,
+            Global<ExecutionTraceTest>,
         ) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -48,7 +48,7 @@ mod execution_trace_test {
 
         pub fn create_and_fund_a_component(
             xrd: Vec<Bucket>,
-        ) -> Global<ExecutionTraceTestComponent> {
+        ) -> Global<ExecutionTraceTest> {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
             ExecutionTraceTest { vault }.instantiate().globalize()
         }

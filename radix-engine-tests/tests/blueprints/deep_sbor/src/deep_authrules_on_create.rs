@@ -8,7 +8,7 @@ mod deep_auth_rules_on_create {
         pub fn new(
             resource_address: ResourceAddress,
             access_rules_depth: usize,
-        ) -> Global<DeepAuthRulesOnCreateComponent> {
+        ) -> Global<DeepAuthRulesOnCreate> {
             let component = Self {}.instantiate();
             let access_rules = AccessRules::new(
                 MethodAuthorities::new(),

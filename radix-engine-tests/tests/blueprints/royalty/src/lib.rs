@@ -17,7 +17,7 @@ mod royalty_test {
             1
         }
 
-        pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTestComponent> {
+        pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTest> {
             let mut local_component = Self {}.instantiate();
 
             let royalty = {

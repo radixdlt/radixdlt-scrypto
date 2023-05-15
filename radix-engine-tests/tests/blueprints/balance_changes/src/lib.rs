@@ -7,7 +7,7 @@ mod balance_changes_test {
     }
 
     impl BalanceChangesTest {
-        pub fn instantiate() -> Global<BalanceChangesTestComponent> {
+        pub fn instantiate() -> Global<BalanceChangesTest> {
             let mut local_component = Self {
                 vault: Vault::new(RADIX_TOKEN),
             }

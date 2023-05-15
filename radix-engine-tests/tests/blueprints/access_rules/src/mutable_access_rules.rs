@@ -8,7 +8,7 @@ mod mutable_access_rules_component {
         pub fn new(
             method_authorities: MethodAuthorities,
             authority_rules: AuthorityRules,
-        ) -> Global<MutableAccessRulesComponentComponent> {
+        ) -> Global<MutableAccessRulesComponent> {
             let component = Self {}.instantiate();
 
             let access_rules = AccessRules::new(method_authorities, authority_rules);

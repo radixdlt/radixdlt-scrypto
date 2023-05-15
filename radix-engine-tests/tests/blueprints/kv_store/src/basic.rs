@@ -7,18 +7,18 @@ mod basic {
     }
 
     impl Basic {
-        pub fn new() -> Global<BasicComponent> {
+        pub fn new() -> Global<Basic> {
             let map = KeyValueStore::new();
             Self { map }.instantiate().globalize()
         }
 
-        pub fn new_with_entry(key: String, value: String) -> Global<BasicComponent> {
+        pub fn new_with_entry(key: String, value: String) -> Global<Basic> {
             let map = KeyValueStore::new();
             map.insert(key, value);
             Self { map }.instantiate().globalize()
         }
 
-        pub fn multiple_reads() -> Global<BasicComponent> {
+        pub fn multiple_reads() -> Global<Basic> {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "hello".to_owned());
             map.insert("hello2".to_owned(), "hello2".to_owned());
@@ -31,7 +31,7 @@ mod basic {
             Self { map }.instantiate().globalize()
         }
 
-        pub fn remove_from_local() -> Global<BasicComponent> {
+        pub fn remove_from_local() -> Global<Basic> {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "hello".to_owned());
             let removed = map.remove(&"hello".to_owned());
@@ -68,7 +68,7 @@ mod kv_vault {
                 .mint_initial_supply(1)
         }
 
-        pub fn new() -> Global<KVVaultComponent> {
+        pub fn new() -> Global<KVVault> {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let map = KeyValueStore::new();

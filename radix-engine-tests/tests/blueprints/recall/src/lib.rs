@@ -9,7 +9,7 @@ mod recall {
     }
 
     impl RecallTest {
-        pub fn new() -> Global<RecallTestComponent> {
+        pub fn new() -> Global<RecallTest> {
             let bucket = ResourceBuilder::new_fungible()
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .burnable(rule!(allow_all), rule!(deny_all))

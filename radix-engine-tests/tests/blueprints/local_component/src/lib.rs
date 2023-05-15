@@ -19,7 +19,7 @@ mod secret {
             Self { secret }.instantiate().own()
         }
 
-        pub fn read_local_component() -> Global<SecretComponent> {
+        pub fn read_local_component() -> Global<Secret> {
             let local_component = Self { secret: 12345 }.instantiate();
 
             let rtn = local_component.get_secret();
@@ -28,7 +28,7 @@ mod secret {
             local_component.globalize()
         }
 
-        pub fn write_local_component() -> Global<SecretComponent> {
+        pub fn write_local_component() -> Global<Secret> {
             let local_component = Self { secret: 12345 }.instantiate();
 
             local_component.set_secret(99999u32);
@@ -41,7 +41,7 @@ mod secret {
         pub fn check_info_of_local_component(
             expected_package_address: PackageAddress,
             expected_blueprint_name: String,
-        ) -> Global<SecretComponent> {
+        ) -> Global<Secret> {
             let local_component = Self { secret: 12345 }.instantiate();
 
             let blueprint = local_component.blueprint();
@@ -71,7 +71,7 @@ mod stored_kv_local {
             self.components.get(&0u32).unwrap().set_secret(next)
         }
 
-        fn new_internal(secret: u32) -> Globalizeable<StoredKVLocalComponent> {
+        fn new_internal(secret: u32) -> Globalizeable<StoredKVLocal> {
             let component = SecretComponent::new(secret);
             let components = KeyValueStore::new();
             components.insert(0u32, component);
@@ -83,11 +83,11 @@ mod stored_kv_local {
             Self::new_internal(secret).own()
         }
 
-        pub fn new_global(secret: u32) -> Global<StoredKVLocalComponent> {
+        pub fn new_global(secret: u32) -> Global<StoredKVLocal> {
             Self::new_internal(secret).globalize()
         }
 
-        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredKVLocalComponent>
+        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredKVLocal>
         {
             let my_component = Self::new_internal(12345);
 
@@ -97,7 +97,7 @@ mod stored_kv_local {
             my_component.globalize()
         }
 
-        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredKVLocalComponent>
+        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredKVLocal>
         {
             let my_component = Self::new_internal(12345);
 
@@ -132,12 +132,12 @@ mod stored_secret {
             Self { component }.instantiate().own()
         }
 
-        pub fn new_global(secret: u32) -> Global<StoredSecretComponent> {
+        pub fn new_global(secret: u32) -> Global<StoredSecret> {
             let component = SecretComponent::new(secret);
             Self { component }.instantiate().globalize()
         }
 
-        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredSecretComponent> {
+        pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredSecret> {
             let component = SecretComponent::new(12345);
             let my_component = Self { component }.instantiate();
 
@@ -147,7 +147,7 @@ mod stored_secret {
             my_component.globalize()
         }
 
-        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredSecretComponent>
+        pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredSecret>
         {
             let component = SecretComponent::new(12345);
             let my_component = Self { component }.instantiate();

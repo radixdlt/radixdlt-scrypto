@@ -7,7 +7,7 @@ mod reentrant_component {
     struct ReentrantComponent {}
 
     impl ReentrantComponent {
-        pub fn new() -> Global<ReentrantComponentComponent> {
+        pub fn new() -> Global<ReentrantComponent> {
             Self {}.instantiate().globalize()
         }
 

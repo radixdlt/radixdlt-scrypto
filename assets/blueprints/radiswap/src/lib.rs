@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod radiswap {
     struct Radiswap {
         /// The resource address of LP token.
-        lp_resource_address: ResourceAddress,
+        lp_resource_manager: ResourceManager,
         /// LP tokens mint badge.
         lp_mint_badge: Vault,
         /// The reserve for token A.
@@ -29,7 +29,7 @@ mod radiswap {
             lp_name: String,
             lp_url: String,
             fee: Decimal,
-        ) -> (Global<RadiswapComponent>, Bucket) {
+        ) -> (Global<Radiswap>, Bucket) {
             // Check arguments
             assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
@@ -45,7 +45,7 @@ mod radiswap {
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "LP Token Mint Auth")
                 .mint_initial_supply(1);
-            let lp_resource_address = ResourceBuilder::new_fungible()
+            let lp_resource_manager = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
@@ -55,7 +55,7 @@ mod radiswap {
                 .create_with_no_initial_supply();
 
             let lp_tokens = lp_mint_badge.authorize(|| {
-                borrow_resource_manager!(lp_resource_address).mint(lp_initial_supply)
+                lp_resource_manager.mint(lp_initial_supply)
             });
 
             // ratio = initial supply / (x * y) = initial supply / k
@@ -63,7 +63,7 @@ mod radiswap {
 
             // Instantiate our Radiswap component
             let radiswap = Self {
-                lp_resource_address,
+                lp_resource_manager,
                 lp_mint_badge: Vault::with_bucket(lp_mint_badge),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
@@ -84,11 +84,8 @@ mod radiswap {
             mut a_tokens: Bucket,
             mut b_tokens: Bucket,
         ) -> (Bucket, Bucket) {
-            // Get the resource manager of the lp tokens
-            let lp_resource_manager = borrow_resource_manager!(self.lp_resource_address);
-
             // Differentiate LP calculation based on whether pool is empty or not.
-            let (supply_to_mint, remainder) = if lp_resource_manager.total_supply() == 0.into() {
+            let (supply_to_mint, remainder) = if self.lp_resource_manager.total_supply() == 0.into() {
                 // Set initial LP tokens based on previous LP per K ratio.
                 let supply_to_mint =
                     self.lp_per_asset_ratio * a_tokens.amount() * b_tokens.amount();
@@ -113,13 +110,13 @@ mod radiswap {
                         .put(a_tokens.take(self.a_pool.amount() * b_ratio));
                     (b_ratio, a_tokens)
                 };
-                (lp_resource_manager.total_supply() * actual_ratio, remainder)
+                (self.lp_resource_manager.total_supply() * actual_ratio, remainder)
             };
 
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self
                 .lp_mint_badge
-                .authorize(|| lp_resource_manager.mint(supply_to_mint));
+                .authorize(|| self.lp_resource_manager.mint(supply_to_mint));
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -128,15 +125,12 @@ mod radiswap {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_resource_address == lp_tokens.resource_address(),
+                self.lp_resource_manager.resource_address() == lp_tokens.resource_address(),
                 "Wrong token type passed in"
             );
 
-            // Get the resource manager of the lp tokens
-            let lp_resource_manager = borrow_resource_manager!(self.lp_resource_address);
-
             // Calculate the share based on the input LP tokens.
-            let share = lp_tokens.amount() / lp_resource_manager.total_supply();
+            let share = lp_tokens.amount() / self.lp_resource_manager.total_supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
             let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);
@@ -153,9 +147,6 @@ mod radiswap {
 
         /// Swaps token A for B, or vice versa.
         pub fn swap(&mut self, input_tokens: Bucket) -> Bucket {
-            // Get the resource manager of the lp tokens
-            let lp_resource_manager = borrow_resource_manager!(self.lp_resource_address);
-
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee;
 
@@ -186,7 +177,7 @@ mod radiswap {
 
             // Accrued fees change the ratio
             self.lp_per_asset_ratio =
-                lp_resource_manager.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
+                self.lp_resource_manager.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
 
             output_tokens
         }
