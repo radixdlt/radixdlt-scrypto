@@ -44,7 +44,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = bp.module_ident;
-    let component_ident = format_ident!("{}Component", bp_ident);
+    let stub_ident = format_ident!("{}ObjectStub", bp_ident);
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -83,7 +83,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl HasStub for #bp_ident {
-            type Stub = #component_ident;
+            type Stub = #stub_ident;
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_original_code });
@@ -180,7 +180,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(&component_ident, bp_ident, bp_items)?;
+    let output_stubs = generate_stubs(&stub_ident, bp_ident, bp_items)?;
 
     let output = quote! {
         pub mod #module_ident {
@@ -433,23 +433,17 @@ fn generate_stubs(
         #[allow(non_camel_case_types)]
         #[derive(::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
-            pub component: ::scrypto::component::ObjectStubHandle,
+            pub handle: ::scrypto::component::ObjectStubHandle,
         }
 
         impl ::scrypto::component::ObjectStub for #component_ident {
             fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
-                    component: handle
+                    handle
                 }
             }
             fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
-                &self.component
-            }
-        }
-
-        impl From<#component_ident> for ::scrypto::component::ObjectStubHandle {
-            fn from(value: #component_ident) -> Self {
-                value.component
+                &self.handle
             }
         }
 
@@ -609,7 +603,7 @@ mod tests {
                     }
 
                     impl HasStub for Test {
-                        type Stub = TestComponent;
+                        type Stub = TestObjectStub;
                     }
 
                     #[allow(non_camel_case_types)]
@@ -690,28 +684,22 @@ mod tests {
 
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
-                    pub struct TestComponent {
-                        pub component: ::scrypto::component::ObjectStubHandle,
+                    pub struct TestObjectStub {
+                        pub handle: ::scrypto::component::ObjectStubHandle,
                     }
 
-                    impl ::scrypto::component::ObjectStub for TestComponent {
+                    impl ::scrypto::component::ObjectStub for TestObjectStub {
                         fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                             Self {
-                                component: handle
+                                handle
                             }
                         }
                         fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
-                            &self.component
+                            &self.handle
                         }
                     }
 
-                    impl From<TestComponent> for ::scrypto::component::ObjectStubHandle {
-                        fn from(value: TestComponent) -> Self {
-                            value.component
-                        }
-                    }
-
-                    impl TestComponent {
+                    impl TestObjectStub {
                         pub fn y(arg0: u32) -> u32 {
                             ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(arg0))
                         }

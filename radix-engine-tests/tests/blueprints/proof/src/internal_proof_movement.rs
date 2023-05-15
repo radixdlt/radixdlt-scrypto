@@ -17,7 +17,7 @@ mod inner {
 
 #[blueprint]
 mod outer {
-    use super::inner::{Inner, InnerComponent};
+    use super::inner::Inner;
 
     struct Outer {
         inner: Owned<Inner>,

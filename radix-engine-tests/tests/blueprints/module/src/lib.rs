@@ -55,7 +55,7 @@ mod component_module {
 
             let address = ScryptoEnv
                 .globalize(btreemap!(
-                    ObjectModuleId::Main => *component.component.as_node_id(),
+                    ObjectModuleId::Main => *component.0.handle().as_node_id(),
                     ObjectModuleId::AccessRules => metadata.0,
                     ObjectModuleId::Metadata => royalty.0,
                     ObjectModuleId::Royalty => access_rules.0,

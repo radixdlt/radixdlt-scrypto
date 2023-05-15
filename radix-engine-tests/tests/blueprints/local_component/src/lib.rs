@@ -72,7 +72,7 @@ mod stored_kv_local {
         }
 
         fn new_internal(secret: u32) -> Owned<StoredKVLocal> {
-            let component = SecretComponent::new(secret);
+            let component = SecretObjectStub::new(secret);
             let components = KeyValueStore::new();
             components.insert(0u32, component);
 
@@ -128,17 +128,17 @@ mod stored_secret {
         }
 
         pub fn new(secret: u32) -> Owned<StoredSecret> {
-            let component = SecretComponent::new(secret);
+            let component = SecretObjectStub::new(secret);
             Self { component }.instantiate()
         }
 
         pub fn new_global(secret: u32) -> Global<StoredSecret> {
-            let component = SecretComponent::new(secret);
+            let component = SecretObjectStub::new(secret);
             Self { component }.instantiate().globalize()
         }
 
         pub fn call_read_on_stored_component_in_owned_component() -> Global<StoredSecret> {
-            let component = SecretComponent::new(12345);
+            let component = SecretObjectStub::new(12345);
             let my_component = Self { component }.instantiate();
 
             let rtn = my_component.parent_get_secret();
@@ -149,7 +149,7 @@ mod stored_secret {
 
         pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredSecret>
         {
-            let component = SecretComponent::new(12345);
+            let component = SecretObjectStub::new(12345);
             let my_component = Self { component }.instantiate();
 
             my_component.parent_set_secret(99999);
