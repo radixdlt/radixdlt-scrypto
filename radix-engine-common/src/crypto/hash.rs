@@ -21,6 +21,16 @@ impl Hash {
     }
 }
 
+pub trait IsHash: AsRef<[u8]> {
+    fn into_bytes(self) -> [u8; Hash::LENGTH];
+}
+
+impl IsHash for Hash {
+    fn into_bytes(self) -> [u8; Hash::LENGTH] {
+        self.0
+    }
+}
+
 impl AsRef<[u8]> for Hash {
     fn as_ref(&self) -> &[u8] {
         &self.0

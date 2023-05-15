@@ -11,6 +11,7 @@ pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 pub const TRANSACTION_VERSION_V1: u8 = 1;
 pub const MAX_NUMBER_OF_INTENT_SIGNATURES: usize = 16;
+pub const MAX_NUMBER_OF_BLOBS: usize = 64;
 
 /// The minimum value of cost unit limit
 pub const DEFAULT_MIN_COST_UNIT_LIMIT: u32 = 1_000_000;

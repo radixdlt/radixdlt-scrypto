@@ -1,15 +1,22 @@
 mod executable;
+mod hashes;
 mod instruction;
 mod manifest;
 mod notarized_transaction;
+mod preparation;
 mod preview_transaction;
 mod system_transaction;
 mod test_transaction;
+mod v1;
+mod versioned;
 
 pub use executable::*;
+pub use hashes::*;
 pub use instruction::*;
 pub use manifest::*;
 pub use notarized_transaction::*;
+pub use preparation::*;
 pub use preview_transaction::*;
 pub use system_transaction::*;
 pub use test_transaction::*;
+pub use versioned::*;

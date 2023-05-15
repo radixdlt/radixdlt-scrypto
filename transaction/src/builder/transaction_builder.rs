@@ -35,7 +35,7 @@ impl TransactionBuilder {
         let intent_payload = manifest_encode(&intent).unwrap();
         let intent_payload_hash = hash(intent_payload);
         self.intent_signatures
-            .push(signer.sign(&intent_payload_hash));
+            .push(signer.sign_with_public_key(&intent_payload_hash));
         self
     }
 
@@ -48,7 +48,11 @@ impl TransactionBuilder {
         let signed_intent = self.signed_transaction_intent();
         let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
         let signed_intent_payload_hash = hash(signed_intent_payload);
-        self.notary_signature = Some(signer.sign(&signed_intent_payload_hash).signature());
+        self.notary_signature = Some(
+            signer
+                .sign_with_public_key(&signed_intent_payload_hash)
+                .signature(),
+        );
         self
     }
 

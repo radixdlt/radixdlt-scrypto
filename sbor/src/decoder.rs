@@ -17,6 +17,8 @@ pub enum DecodeError {
 
     UnexpectedSize { expected: usize, actual: usize },
 
+    UnexpectedDiscriminator { expected: u8, actual: u8 },
+
     UnknownValueKind(u8),
 
     UnknownDiscriminator(u8),
@@ -133,6 +135,21 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         }
     }
 
+    fn read_expected_discriminator(
+        &mut self,
+        expected_discriminator: u8,
+    ) -> Result<(), DecodeError> {
+        let actual = self.read_discriminator()?;
+        if actual == expected_discriminator {
+            Ok(())
+        } else {
+            Err(DecodeError::UnexpectedDiscriminator {
+                actual,
+                expected: expected_discriminator,
+            })
+        }
+    }
+
     #[inline]
     fn read_and_check_payload_prefix(&mut self, expected_prefix: u8) -> Result<(), DecodeError> {
         let actual_payload_prefix = self.read_byte()?;
@@ -214,6 +231,10 @@ impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
         }
     }
 
+    pub fn get_input_slice(&self) -> &'de [u8] {
+        &self.input
+    }
+
     #[inline]
     fn require_remaining(&self, n: usize) -> Result<(), DecodeError> {
         if self.remaining_bytes() < n {
@@ -232,7 +253,7 @@ impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
     }
 
     #[inline]
-    fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
+    pub fn track_stack_depth_increase(&mut self) -> Result<(), DecodeError> {
         self.stack_depth += 1;
         if self.stack_depth > self.max_depth {
             return Err(DecodeError::MaxDepthExceeded(self.max_depth));
@@ -241,7 +262,7 @@ impl<'de, X: CustomValueKind> VecDecoder<'de, X> {
     }
 
     #[inline]
-    fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError> {
+    pub fn track_stack_depth_decrease(&mut self) -> Result<(), DecodeError> {
         self.stack_depth -= 1;
         Ok(())
     }

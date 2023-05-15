@@ -14,17 +14,25 @@ pub trait Categorize<X: CustomValueKind> {
     fn value_kind() -> ValueKind<X>;
 }
 
-/// Marker trait for encoding as an Sbor Tuple
-pub trait SborTuple {}
+//=========================
+// OTHER MARKER TRAITS
+//=========================
 
 /// Marker trait for encoding as an Sbor Tuple
-pub trait SborEnum {
-    fn get_discriminator(&self) -> u8;
+///
+/// Note - we add the X so that this can be safely implemented by different Custom macros without clashing
+/// Otherwise you couldn't implement ManifestSbor and ScryptoSbor on the same type
+pub trait SborTuple<X: CustomValueKind> {
+    fn get_length(&self) -> usize;
 }
 
-pub trait SborVariantFor<TInner, TEnum> {
-    const DISCRIMINATOR: u8;
-    const IS_FLATTENED: bool;
+/// Marker trait for encoding as an Sbor Enum
+///
+/// Note - we add the X so that this can be safely implemented by different Custom macros without clashing
+/// Otherwise you couldn't implement ManifestSbor and ScryptoSbor on the same type
+pub trait SborEnum<X: CustomValueKind> {
+    fn get_length(&self) -> usize;
+    fn get_discriminator(&self) -> u8;
 }
 
 // Macros for use within this crate
