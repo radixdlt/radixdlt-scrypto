@@ -188,6 +188,10 @@ impl EntityType {
         matches!(self, EntityType::InternalFungibleVault)
     }
 
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self, EntityType::InternalNonFungibleVault)
+    }
+
     pub const fn is_internal_vault(&self) -> bool {
         matches!(
             self,

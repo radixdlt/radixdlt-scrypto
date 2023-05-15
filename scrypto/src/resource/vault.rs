@@ -195,18 +195,12 @@ impl ScryptoVault for Vault {
     }
 
     fn as_fungible_vault(&self) -> FungibleVault {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_fungible_resource());
+        assert!(self.0.as_node_id().is_internal_fungible_vault());
         FungibleVault(Vault(self.0))
     }
 
     fn as_non_fungible_vault(&self) -> NonFungibleVault {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_non_fungible_resource());
+        assert!(self.0.as_node_id().is_internal_non_fungible_vault());
         NonFungibleVault(Vault(self.0))
     }
 }

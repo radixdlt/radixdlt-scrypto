@@ -87,6 +87,10 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_internal_fungible_vault())
     }
 
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_non_fungible_vault())
+    }
+
     pub const fn is_internal_vault(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_vault())
     }
