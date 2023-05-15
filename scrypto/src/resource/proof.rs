@@ -225,35 +225,35 @@ impl ScryptoProof for CheckedProof {
 
 impl ScryptoProof for CheckedFungibleProof {
     fn contains_amount(&self, amount: Decimal) -> bool {
-        todo!()
+        self.0.contains_amount(amount)
     }
 
     fn amount(&self) -> Decimal {
-        todo!()
+        self.0.amount()
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        todo!()
+        self.0.resource_address()
     }
 
     fn drop(self) {
-        todo!()
+        self.0.drop()
     }
 
     fn clone(&self) -> Self {
-        todo!()
+        Self(self.0.clone())
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        todo!()
+        self.0.authorize(f)
     }
 
     fn as_fungible_proof(&self) -> CheckedFungibleProof {
-        todo!()
+        self.0.as_fungible_proof()
     }
 
     fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
-        todo!()
+        self.0.as_no_fungible_proof()
     }
 }
 
@@ -265,35 +265,35 @@ impl ScryptoFungibleProof for CheckedFungibleProof {}
 
 impl ScryptoProof for CheckedNonFungibleProof {
     fn contains_amount(&self, amount: Decimal) -> bool {
-        todo!()
+        self.0.contains_amount(amount)
     }
 
     fn amount(&self) -> Decimal {
-        todo!()
+        self.0.amount()
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        todo!()
+        self.0.resource_address()
     }
 
     fn drop(self) {
-        todo!()
+        self.0.drop()
     }
 
     fn clone(&self) -> Self {
-        todo!()
+        Self(self.0.clone())
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        todo!()
+        self.0.authorize(f)
     }
 
     fn as_fungible_proof(&self) -> CheckedFungibleProof {
-        todo!()
+        self.0.as_fungible_proof()
     }
 
     fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
-        todo!()
+        self.0.as_no_fungible_proof()
     }
 }
 

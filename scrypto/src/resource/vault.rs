@@ -216,55 +216,56 @@ impl ScryptoVault for FungibleVault {
     type ProofType = FungibleProof;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
-        todo!()
+        Self(Vault::with_bucket(bucket.0))
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        todo!()
+        // TODO: only accept fungible resource address? or check fungibility at runtime
+        Self(Vault::new(resource_address))
     }
 
     fn put(&mut self, bucket: Self::BucketType) -> () {
-        todo!()
+        self.0.put(bucket.0)
     }
 
     fn amount(&self) -> Decimal {
-        todo!()
+        self.0.amount()
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        todo!()
+        self.0.resource_address()
     }
 
     fn is_empty(&self) -> bool {
-        todo!()
+        self.0.is_empty()
     }
 
     fn create_proof(&self) -> Self::ProofType {
-        todo!()
+        FungibleProof(self.0.create_proof())
     }
 
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        todo!()
+        FungibleProof(self.0.create_proof_of_amount(amount))
     }
 
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
-        todo!()
+        FungibleBucket(self.0.take(amount))
     }
 
     fn take_all(&mut self) -> Self::BucketType {
-        todo!()
+        FungibleBucket(self.0.take_all())
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        todo!()
+        self.0.authorize(f)
     }
 
     fn as_fungible_vault(&self) -> FungibleVault {
-        todo!()
+        self.0.as_fungible_vault()
     }
 
     fn as_no_fungible_vault(&self) -> NonFungibleVault {
-        todo!()
+        self.0.as_no_fungible_vault()
     }
 }
 
@@ -314,58 +315,58 @@ impl ScryptoFungibleVault for FungibleVault {
 impl ScryptoVault for NonFungibleVault {
     type BucketType = NonFungibleBucket;
 
-    type ProofType = NonFungibleVault;
+    type ProofType = NonFungibleProof;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
-        todo!()
+        Self(Vault::with_bucket(bucket.0))
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        todo!()
+        Self(Vault::new(resource_address))
     }
 
     fn put(&mut self, bucket: Self::BucketType) -> () {
-        todo!()
+        self.0.put(bucket.0)
     }
 
     fn amount(&self) -> Decimal {
-        todo!()
+        self.0.amount()
     }
 
     fn resource_address(&self) -> ResourceAddress {
-        todo!()
+        self.0.resource_address()
     }
 
     fn is_empty(&self) -> bool {
-        todo!()
+        self.0.is_empty()
     }
 
     fn create_proof(&self) -> Self::ProofType {
-        todo!()
+        NonFungibleProof(self.0.create_proof())
     }
 
     fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        todo!()
+        NonFungibleProof(self.0.create_proof_of_amount(amount))
     }
 
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
-        todo!()
+        NonFungibleBucket(self.0.take(amount))
     }
 
     fn take_all(&mut self) -> Self::BucketType {
-        todo!()
+        NonFungibleBucket(self.0.take_all())
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        todo!()
+        self.0.authorize(f)
     }
 
     fn as_fungible_vault(&self) -> FungibleVault {
-        todo!()
+        self.0.as_fungible_vault()
     }
 
     fn as_no_fungible_vault(&self) -> NonFungibleVault {
-        todo!()
+        self.0.as_no_fungible_vault()
     }
 }
 
