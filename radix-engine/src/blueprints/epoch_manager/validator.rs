@@ -405,6 +405,34 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
+    /// value of all its stake units.
+    pub fn apply_reward<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
+        stake_xrd_vault.sys_put(xrd_bucket, api)?;
+
+        let new_stake_xrd = stake_xrd_vault.sys_amount(api)?;
+        let new_index_key =
+            Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
+        substate.sorted_key = new_index_key;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+
+        // TODO(emissions): emit a "reward received" event here
+
+        Ok(())
+    }
+
     fn to_sorted_key(
         registered: bool,
         stake: Decimal,
@@ -438,7 +466,10 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    (address, Validator { key, stake }),
+                    EpochRegisteredValidatorByStakeEntry {
+                        component_address: address,
+                        validator: Validator { key, stake },
+                    },
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
@@ -454,7 +485,10 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
-                    (address, validator),
+                    EpochRegisteredValidatorByStakeEntry {
+                        component_address: address,
+                        validator,
+                    },
                 )?;
             }
             UpdateSecondaryIndex::UpdateStake {
@@ -474,7 +508,10 @@ impl ValidatorBlueprint {
                     OBJECT_HANDLE_OUTER_OBJECT,
                     EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
-                    (address, validator),
+                    EpochRegisteredValidatorByStakeEntry {
+                        component_address: address,
+                        validator,
+                    },
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
@@ -525,6 +562,13 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                     AccessRuleEntry::AccessRule(rule!(require(package_of_direct_caller(
                         EPOCH_MANAGER_PACKAGE
                     )))),
+                ),
+            ),
+            (
+                VALIDATOR_APPLY_REWARD_IDENT,
+                MethodType::Custom(
+                    AccessRuleEntry::AccessRule(rule!(require(global_caller(EPOCH_MANAGER)))),
+                    AccessRuleEntry::AccessRule(AccessRule::DenyAll),
                 ),
             ),
         ]

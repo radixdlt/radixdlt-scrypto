@@ -20,11 +20,40 @@ pub struct EpochManagerCreateInput {
     pub initial_configuration: EpochManagerInitialConfiguration,
 }
 
-#[derive(Debug, Eq, PartialEq, Sbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerInitialConfiguration {
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
+    pub total_emission_xrd_per_epoch: Decimal,
+    pub min_validator_reliability: Decimal,
+}
+
+impl EpochManagerInitialConfiguration {
+    pub fn with_max_validators(mut self, new_value: u32) -> Self {
+        self.max_validators = new_value;
+        self
+    }
+
+    pub fn with_rounds_per_epoch(mut self, new_value: u64) -> Self {
+        self.rounds_per_epoch = new_value;
+        self
+    }
+
+    pub fn with_num_unstake_epochs(mut self, new_value: u64) -> Self {
+        self.num_unstake_epochs = new_value;
+        self
+    }
+
+    pub fn with_total_emission_xrd_per_epoch(mut self, new_value: Decimal) -> Self {
+        self.total_emission_xrd_per_epoch = new_value;
+        self
+    }
+
+    pub fn with_min_validator_reliability(mut self, new_value: Decimal) -> Self {
+        self.min_validator_reliability = new_value;
+        self
+    }
 }
 
 pub type EpochManagerCreateOutput = ();
@@ -211,3 +240,12 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 }
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
+
+pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorApplyRewardInput {
+    pub xrd_bucket: Bucket,
+}
+
+pub type ValidatorApplyRewardOutput = ();

@@ -184,6 +184,15 @@ impl EpochManagerNativePackage {
                 export_name: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             },
         );
+        functions.insert(
+            VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(Receiver::SelfRefMut),
+                input: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                export_name: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -384,6 +393,15 @@ impl EpochManagerNativePackage {
                     input.accept_delegated_stake,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_APPLY_REWARD_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
