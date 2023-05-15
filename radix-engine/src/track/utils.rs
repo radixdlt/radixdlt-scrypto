@@ -22,11 +22,11 @@ where
     O: Iterator<Item = (K, Option<V>)>,
 {
     /// Creates an overlaying iterator.
-    /// The [`underlying`] iterator gives the "base values".
-    /// The [`overlaid`] one gives the "changes" to those values, represented as `Option<V>`:
+    /// The [`underlying`] iterator provides the "base values".
+    /// The [`overlaid`] one provides the "changes" to those values, represented as `Option<V>`:
     /// - A [`Some`] is an upsert, i.e. it may override an existing base value, or "insert" a
     ///   completely new one to the iterated results.
-    /// - A [`None`] is a delete, which cases the base value to be omitted in the iterated results.
+    /// - A [`None`] is a delete, which causes the base value to be omitted in the iterated results.
     pub fn new(underlying: U, overlaid: O) -> impl Iterator<Item = (K, V)> {
         Self {
             underlying: underlying.peekable(),
