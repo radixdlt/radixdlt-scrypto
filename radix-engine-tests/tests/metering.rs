@@ -278,7 +278,7 @@ fn test_flash_loan() {
             .lock_fee(account3, 10u32.into())
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
             .withdraw_from_account(account3, RADIX_TOKEN, dec!(10))
-            .take_from_worktop(repay_amount, RADIX_TOKEN, |builder, bucket1| {
+            .take_from_worktop(RADIX_TOKEN, repay_amount, |builder, bucket1| {
                 builder.take_all_from_worktop(promise_token_address, |builder, bucket2| {
                     builder.call_method(
                         component_address,
@@ -374,7 +374,7 @@ fn should_be_able_run_large_manifest() {
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..40 {
-        builder.take_from_worktop(1.into(), RADIX_TOKEN, |builder, bid| {
+        builder.take_from_worktop(RADIX_TOKEN, 1.into(), |builder, bid| {
             builder.return_to_worktop(bid)
         });
     }

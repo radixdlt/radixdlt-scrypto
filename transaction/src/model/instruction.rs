@@ -86,16 +86,19 @@ pub enum Instruction {
     /// Creates a proof from a bucket.
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
     CreateProofFromBucket { bucket_id: ManifestBucket },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromBucketOfAmount {
         bucket_id: ManifestBucket,
         amount: Decimal,
     },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR))]
     CreateProofFromBucketOfNonFungibles {
         bucket_id: ManifestBucket,
         ids: BTreeSet<NonFungibleLocalId>,
     },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR))]
     CreateProofFromBucketOfAll { bucket_id: ManifestBucket },
 
