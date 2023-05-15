@@ -212,8 +212,8 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::TakeFromWorktop {
-            amount,
             resource_address,
+            amount,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -227,8 +227,8 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::TakeNonFungiblesFromWorktop {
-            ids,
             resource_address,
+            ids,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -249,18 +249,18 @@ pub fn generate_instruction(
             Instruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains {
-            amount,
             resource_address,
+            amount,
         } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsNonFungibles {
-            ids,
             resource_address,
+            ids,
         } => Instruction::AssertWorktopContainsNonFungibles {
-            ids: generate_non_fungible_local_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            ids: generate_non_fungible_local_ids(ids)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
@@ -292,12 +292,12 @@ pub fn generate_instruction(
             Instruction::CreateProofFromAuthZone { resource_address }
         }
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
-            amount,
             resource_address,
+            amount,
             new_proof,
         } => {
-            let amount = generate_decimal(amount)?;
             let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -309,12 +309,12 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::CreateProofFromAuthZoneOfNonFungibles {
-            ids,
             resource_address,
+            ids,
             new_proof,
         } => {
-            let ids = generate_non_fungible_local_ids(ids)?;
             let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
