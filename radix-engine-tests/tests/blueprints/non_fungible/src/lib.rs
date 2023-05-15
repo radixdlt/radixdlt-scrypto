@@ -59,7 +59,7 @@ mod non_fungible_test {
         }
 
         pub fn update_nft(mint_badge: Bucket, proof: Proof) -> Bucket {
-            let proof = proof.no_check();
+            let proof = proof.skip_checking();
             mint_badge.authorize(|| {
                 borrow_resource_manager!(proof.resource_address()).update_non_fungible_data(
                     &proof.as_non_fungible_proof().non_fungible_local_id(),
@@ -399,7 +399,7 @@ mod non_fungible_test {
             let _: Sandwich = vault.as_non_fungible_vault().non_fungible().data();
 
             // read singleton proof
-            let proof = vault.create_proof().no_check();
+            let proof = vault.create_proof().skip_checking();
             assert_eq!(proof.resource_address(), vault.resource_address());
             let _: Sandwich = proof.as_non_fungible_proof().non_fungible().data();
             proof.drop();

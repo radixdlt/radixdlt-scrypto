@@ -32,7 +32,7 @@ pub trait ScryptoUncheckedProof {
     fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType;
 
     // Converts self into `CheckedProof` with no address check.
-    fn no_check(self) -> Self::CheckedProofType;
+    fn skip_checking(self) -> Self::CheckedProofType;
 
     fn resource_address(&self) -> ResourceAddress;
 
@@ -122,7 +122,7 @@ impl ScryptoUncheckedProof for Proof {
         CheckedProof(self)
     }
 
-    fn no_check(self) -> CheckedProof {
+    fn skip_checking(self) -> CheckedProof {
         CheckedProof(self)
     }
 
@@ -181,8 +181,8 @@ impl ScryptoUncheckedProof for FungibleProof {
         CheckedFungibleProof(Proof::check(self.0, resource_address))
     }
 
-    fn no_check(self) -> Self::CheckedProofType {
-        CheckedFungibleProof(Proof::no_check(self.0))
+    fn skip_checking(self) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::skip_checking(self.0))
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -209,8 +209,8 @@ impl ScryptoUncheckedProof for NonFungibleProof {
         CheckedNonFungibleProof(Proof::check(self.0, resource_address))
     }
 
-    fn no_check(self) -> Self::CheckedProofType {
-        CheckedNonFungibleProof(Proof::no_check(self.0))
+    fn skip_checking(self) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::skip_checking(self.0))
     }
 
     fn resource_address(&self) -> ResourceAddress {

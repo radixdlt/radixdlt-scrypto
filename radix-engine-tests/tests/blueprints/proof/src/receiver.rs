@@ -12,13 +12,13 @@ mod receiver {
             amount: Decimal,
             resource_address: ResourceAddress,
         ) {
-            let proof = proofs.remove(0).no_check();
+            let proof = proofs.remove(0).skip_checking();
             assert_eq!(proof.amount(), amount);
             assert_eq!(proof.resource_address(), resource_address);
         }
 
         pub fn assert_amount(proof: Proof, amount: Decimal, resource_address: ResourceAddress) {
-            let proof = proof.no_check();
+            let proof = proof.skip_checking();
             assert_eq!(proof.amount(), amount);
             assert_eq!(proof.resource_address(), resource_address);
         }
@@ -28,7 +28,7 @@ mod receiver {
             ids: BTreeSet<NonFungibleLocalId>,
             resource_address: ResourceAddress,
         ) {
-            let proof = proof.no_check();
+            let proof = proof.skip_checking();
             assert_eq!(proof.as_non_fungible_proof().non_fungible_local_ids(), ids);
             assert_eq!(proof.resource_address(), resource_address);
         }
