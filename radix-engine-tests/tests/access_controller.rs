@@ -492,6 +492,21 @@ pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
 }
 
 #[test]
+pub fn minting_of_recovery_badges_fails_for_confirmation_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Confirmation, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
+}
+
+#[test]
 pub fn post_instantiation_method_can_not_be_called_on_access_controller_publicly() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(100));
