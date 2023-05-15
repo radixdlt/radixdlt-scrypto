@@ -211,14 +211,19 @@ impl ScryptoBucket for Bucket {
         self.amount() == 0.into()
     }
 
-    // TODO: should we check fungibility here?
-    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
-
     fn as_fungible_bucket(&self) -> FungibleBucket {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_fungible_resource());
         FungibleBucket(Bucket(self.0))
     }
 
     fn as_no_fungible_bucket(&self) -> NonFungibleBucket {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_non_fungible_resource());
         NonFungibleBucket(Bucket(self.0))
     }
 }
@@ -231,7 +236,7 @@ impl ScryptoBucket for FungibleBucket {
     type ProofType = FungibleProof;
 
     fn new(resource_address: ResourceAddress) -> Self {
-        // TODO: only accept fungible resource address? or check fungibility at runtime
+        assert!(resource_address.as_node_id().is_global_fungible_resource());
         Self(Bucket::new(resource_address))
     }
 
@@ -298,6 +303,9 @@ impl ScryptoBucket for NonFungibleBucket {
     type ProofType = NonFungibleProof;
 
     fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_non_fungible_resource());
         Self(Bucket::new(resource_address))
     }
 

@@ -194,14 +194,19 @@ impl ScryptoVault for Vault {
         self.amount() == 0.into()
     }
 
-    // TODO: should we check fungibility here?
-    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
-
     fn as_fungible_vault(&self) -> FungibleVault {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_fungible_resource());
         FungibleVault(Vault(self.0))
     }
 
     fn as_no_fungible_vault(&self) -> NonFungibleVault {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_non_fungible_resource());
         NonFungibleVault(Vault(self.0))
     }
 }
@@ -220,7 +225,7 @@ impl ScryptoVault for FungibleVault {
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        // TODO: only accept fungible resource address? or check fungibility at runtime
+        assert!(resource_address.as_node_id().is_global_fungible_resource());
         Self(Vault::new(resource_address))
     }
 
@@ -322,6 +327,9 @@ impl ScryptoVault for NonFungibleVault {
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_non_fungible_resource());
         Self(Vault::new(resource_address))
     }
 

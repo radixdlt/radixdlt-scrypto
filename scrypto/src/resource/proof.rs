@@ -207,14 +207,19 @@ impl ScryptoProof for CheckedProof {
         self.0.authorize(f)
     }
 
-    // TODO: should we check fungibility here?
-    // Currently, it will fail at runtime when invoking fungible/non-fungible methods
-
     fn as_fungible_proof(&self) -> CheckedFungibleProof {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_fungible_resource());
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
     fn as_no_fungible_proof(&self) -> CheckedNonFungibleProof {
+        assert!(self
+            .resource_address()
+            .as_node_id()
+            .is_global_non_fungible_resource());
         CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 }
