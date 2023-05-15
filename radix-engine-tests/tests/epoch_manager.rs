@@ -533,9 +533,6 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         b_stake + epoch_emissions_xrd * b_stake / both_stake
     );
 
-    // TODO(emissions): we should also be able to verify the same information being returned in the
-    // `result.next_epoch()`'s validator set - however, a current bug in "list sorted after write"
-    // makes this information incorrect and has to be fixed first.
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
         .next_epoch()
@@ -548,11 +545,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         vec![
             Validator {
                 key: a_key,
-                stake: a_stake // exposing a bug: should be `a_new_stake`
+                stake: a_new_stake,
             },
             Validator {
                 key: b_key,
-                stake: b_stake // exposing a bug: should be `b_new_stake`
+                stake: b_new_stake,
             },
         ]
     );
@@ -607,9 +604,6 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         validator_stake + epoch_emissions_xrd * reliability_factor
     );
 
-    // TODO(emissions): we should also be able to verify the same information being returned in the
-    // `result.next_epoch()`'s validator set - however, a current bug in "list sorted after write"
-    // makes this information incorrect and has to be fixed first.
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
         .next_epoch()
@@ -621,7 +615,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         next_epoch_validators,
         vec![Validator {
             key: validator_pub_key,
-            stake: validator_stake // exposing a bug: should be `validator_new_stake`
+            stake: validator_new_stake,
         },]
     );
 }
