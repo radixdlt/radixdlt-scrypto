@@ -522,7 +522,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(account_address, "deposit", manifest_args!(bucket))
             })
             .build();
@@ -575,7 +575,12 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info(&mut self, address: ComponentAddress) -> ValidatorSubstate {
+    pub fn get_validator_info_by_key(&self, key: &EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
+        let address = self.get_validator_with_key(key);
+        self.get_validator_info(address)
+    }
+
+    pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
                 address.as_node_id(),
@@ -585,7 +590,7 @@ impl TestRunner {
             .unwrap()
     }
 
-    pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    pub fn get_validator_with_key(&self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(

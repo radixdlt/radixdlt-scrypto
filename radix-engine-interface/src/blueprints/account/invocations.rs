@@ -2,6 +2,8 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
@@ -30,6 +32,7 @@ pub type AccountCreateLocalOutput = Own;
 
 pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateAdvancedInput {
     pub config: AccessRulesConfig,
@@ -43,6 +46,7 @@ pub type AccountCreateAdvancedOutput = ComponentAddress;
 
 pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 
@@ -187,26 +191,26 @@ pub type AccountCreateProofOutput = Proof;
 // Account Create Proof By Amount
 //================================
 
-pub const ACCOUNT_CREATE_PROOF_BY_AMOUNT_IDENT: &str = "create_proof_by_amount";
+pub const ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateProofByAmountInput {
+pub struct AccountCreateProofOfAmountInput {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
 }
 
-pub type AccountCreateProofByAmountOutput = Proof;
+pub type AccountCreateProofOfAmountOutput = Proof;
 
 //=============================
 // Account Create Proof By Ids
 //=============================
 
-pub const ACCOUNT_CREATE_PROOF_BY_IDS_IDENT: &str = "create_proof_by_ids";
+pub const ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateProofByIdsInput {
+pub struct AccountCreateProofOfNonFungiblesInput {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleLocalId>,
 }
 
-pub type AccountCreateProofByIdsOutput = Proof;
+pub type AccountCreateProofOfNonFungiblesOutput = Proof;

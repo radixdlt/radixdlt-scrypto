@@ -70,7 +70,7 @@ fn test_basic_transfer() {
         + 5587 /* DropLock */
         + 1575 /* DropNode */
         + 1050432 /* Invoke */
-        + 526396 /* LockSubstate */
+        + 546195 /* LockSubstate */
         + 7840 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
@@ -121,8 +121,8 @@ fn test_radiswap() {
                 .lock_fee(account2, 10u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
-                .take_from_worktop(btc, |builder, bucket1| {
-                    builder.take_from_worktop(eth, |builder, bucket2| {
+                .take_all_from_worktop(btc, |builder, bucket1| {
+                    builder.take_all_from_worktop(eth, |builder, bucket2| {
                         builder.call_function(
                             package_address,
                             "Radiswap",
@@ -174,7 +174,7 @@ fn test_radiswap() {
         ManifestBuilder::new()
             .lock_fee(account3, 10u32.into())
             .withdraw_from_account(account3, btc, btc_to_swap)
-            .take_from_worktop(btc, |builder, bucket| {
+            .take_all_from_worktop(btc, |builder, bucket| {
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
             .call_method(
@@ -205,7 +205,7 @@ fn test_radiswap() {
         + 13912 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5641349 /* LockSubstate */
+        + 5660081 /* LockSubstate */
         + 19488 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
@@ -250,7 +250,7 @@ fn test_flash_loan() {
             ManifestBuilder::new()
                 .lock_fee(account2, 10u32.into())
                 .withdraw_from_account(account2, RADIX_TOKEN, xrd_init_amount)
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket1| {
+                .take_all_from_worktop(RADIX_TOKEN, |builder, bucket1| {
                     builder.call_function(
                         package_address,
                         "BasicFlashLoan",
@@ -278,8 +278,8 @@ fn test_flash_loan() {
             .lock_fee(account3, 10u32.into())
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
             .withdraw_from_account(account3, RADIX_TOKEN, dec!(10))
-            .take_from_worktop_by_amount(repay_amount, RADIX_TOKEN, |builder, bucket1| {
-                builder.take_from_worktop(promise_token_address, |builder, bucket2| {
+            .take_from_worktop(repay_amount, RADIX_TOKEN, |builder, bucket1| {
+                builder.take_all_from_worktop(promise_token_address, |builder, bucket2| {
                     builder.call_method(
                         component_address,
                         "repay_loan",
@@ -315,8 +315,8 @@ fn test_flash_loan() {
         + 6104 /* CreateNode */
         + 21978 /* DropLock */
         + 5880 /* DropNode */
-        + 4407857 /* Invoke */
-        + 6838988 /* LockSubstate */
+        + 4543955 /* Invoke */
+        + 6857926 /* LockSubstate */
         + 31192 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
@@ -374,7 +374,7 @@ fn should_be_able_run_large_manifest() {
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..40 {
-        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
+        builder.take_from_worktop(1.into(), RADIX_TOKEN, |builder, bid| {
             builder.return_to_worktop(bid)
         });
     }
@@ -405,7 +405,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Act
     let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
-        builder.create_proof_from_account_by_amount(account, resource_address, 1.into());
+        builder.create_proof_from_account_of_amount(account, resource_address, 1.into());
     }
     builder.lock_fee(account, 100u32.into());
     let manifest = builder.build();
@@ -431,7 +431,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
             })

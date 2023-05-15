@@ -141,6 +141,8 @@ where
                 max_validators: 10,
                 rounds_per_epoch: 1,
                 num_unstake_epochs: 1,
+                total_emission_xrd_per_epoch: Decimal::one(),
+                min_validator_reliability: Decimal::one(),
             },
         )
     }
@@ -377,6 +379,13 @@ pub fn create_system_bootstrap_transaction(
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            (
+                rule!(require(global_caller(EPOCH_MANAGER))),
+                rule!(deny_all),
+            ),
+        );
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.into();
         pre_allocated_ids.insert(RADIX_TOKEN.into());
@@ -803,7 +812,7 @@ pub fn create_system_bootstrap_transaction(
     {
         let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
         instructions.push(
-            Instruction::TakeFromWorktop {
+            Instruction::TakeAllFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
@@ -873,7 +882,7 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     });
 
     instructions.push(
-        Instruction::TakeFromWorktop {
+        Instruction::TakeAllFromWorktop {
             resource_address: RADIX_TOKEN,
         }
         .into(),

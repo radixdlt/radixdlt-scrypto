@@ -7,9 +7,13 @@ use crate::rust::fmt::Debug;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::value_kind::*;
+use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 
 /// Y is the CustomValue type. This is likely an enum, capturing all the custom values for the
 /// particular SBOR extension.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -337,16 +341,13 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
     }
 }
 
-pub use schema::*;
+impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
+    for Value<X, Y>
+{
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
 
-mod schema {
-    use super::*;
-    use crate::*;
-
-    impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
-        for Value<X, Y>
-    {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
+    fn type_data() -> TypeData<C, GlobalTypeId> {
+        basic_well_known_types::any_type_data()
     }
 }
 
@@ -450,13 +451,8 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
-    use crate::*;
-
     use super::*;
+    use crate::rust::prelude::*;
 
     #[derive(Categorize, Encode)]
     struct TestStruct {

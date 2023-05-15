@@ -1,7 +1,10 @@
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
-use crate::types::{EntityType, NodeId};
+use crate::types::EntityType;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {
     Address(ManifestAddress),
@@ -138,6 +141,7 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
 #[test]
 fn test_manifest_custom_address_encode_decode() {
     use crate::data::manifest::{manifest_decode, manifest_encode};
+    use crate::types::NodeId;
 
     // try address with invalid entity type
     let mut bytes = [0u8; NodeId::LENGTH];

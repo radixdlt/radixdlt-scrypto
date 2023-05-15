@@ -15,6 +15,8 @@ ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
 serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
+strum = { version = "0.24.1", default-features = false, features = ["derive"], optional = true }
+strum_macros = { version = "0.24.3", default-features = false, optional = true }
 
 [dev-dependencies]
 scrypto = { path = "../scrypto" }
@@ -28,6 +30,10 @@ alloc = ["sbor/alloc", "utils/alloc", "radix-engine-interface/alloc", "radix-eng
 serde = ["serde/derive"]
 
 dump_manifest_to_file = []
+
+# This flag is set by fuzz-tests framework and it controls some features required by fuzzer
+# eg. use 'strum' crate to get the number of enum variants
+radix_engine_fuzzing = ["strum", "strum_macros"]
 
 [lib]
 bench = false
