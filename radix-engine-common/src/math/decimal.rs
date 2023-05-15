@@ -455,7 +455,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Decimal,
     Type::Decimal,
     Decimal::BITS / 8,
-    DECIMAL_ID
+    DECIMAL_ID,
+    decimal_type_data
 );
 
 manifest_type!(Decimal, ManifestCustomValueKind::Decimal, Decimal::BITS / 8);

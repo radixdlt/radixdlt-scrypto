@@ -100,15 +100,17 @@ mod schema {
             _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
         };
 
-        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> TypeData<C, GlobalTypeId> {
             match T::TYPE_ID {
-                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => None,
-                _ => Some(TypeData::new(
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
+                    basic_well_known_types::bytes_type_data()
+                }
+                _ => TypeData::new(
                     TypeKind::Array {
                         element_type: T::TYPE_ID,
                     },
                     TypeMetadata::unnamed(),
-                )),
+                ),
             }
         }
 
@@ -124,28 +126,21 @@ mod schema {
             &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())],
         );
 
-        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> TypeData<C, GlobalTypeId> {
             let size = N
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");
-            let type_metadata = match T::TYPE_ID {
-                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
-                    TypeMetadata::no_child_names("Bytes")
-                }
-                _ => TypeMetadata::unnamed(),
-            };
-            Some(
-                TypeData::new(
-                    TypeKind::Array {
-                        element_type: T::TYPE_ID,
-                    },
-                    type_metadata,
-                )
-                .with_validation(TypeValidation::Array(LengthValidation {
-                    min: Some(size),
-                    max: Some(size),
-                })),
+
+            TypeData::new(
+                TypeKind::Array {
+                    element_type: T::TYPE_ID,
+                },
+                TypeMetadata::unnamed(),
             )
+            .with_validation(TypeValidation::Array(LengthValidation {
+                min: Some(size),
+                max: Some(size),
+            }))
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

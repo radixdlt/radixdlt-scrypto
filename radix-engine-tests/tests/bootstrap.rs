@@ -368,5 +368,7 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         max_validators: 100,
         rounds_per_epoch: 1,
         num_unstake_epochs: 1,
+        total_emission_xrd_per_epoch: Decimal::one(),
+        min_validator_reliability: Decimal::one(),
     }
 }

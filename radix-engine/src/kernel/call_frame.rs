@@ -1,6 +1,7 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, SubstateStore, TakeSubstateError,
+    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccessInfo, SubstateStore,
+    TakeSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -385,7 +386,7 @@ impl<L: Clone> CallFrame<L> {
             &TypeInfoField::TypeInfo.into(),
             LockFlags::read_only(),
         ) {
-            let type_info: TypeInfoSubstate = store.read_substate(handle).as_typed().unwrap();
+            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
             store.release_lock(handle);
             Some(type_info)
         } else {
@@ -403,7 +404,7 @@ impl<L: Clone> CallFrame<L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, bool), LockSubstateError> {
+    ) -> Result<(LockHandle, StoreAccessInfo), LockSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(LockSubstateError::NodeNotVisible(node_id.clone()));
@@ -411,7 +412,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Lock and read the substate
         let mut store_handle = None;
-        let mut first_time_lock = false;
+        let mut store_access = StoreAccessInfo::new();
         let substate_value = if heap.contains_node(node_id) {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -432,14 +433,16 @@ impl<L: Clone> CallFrame<L> {
                     })?
             }
         } else {
-            let (handle, first_time) = store
+            let (handle, store_access_info) = store
                 .acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
-            first_time_lock = first_time;
-            store.read_substate(handle)
+            store_access = store_access_info;
+            let (value, read_store_access_info) = store.read_substate(handle);
+            store_access.push(&read_store_access_info);
+            value
         };
 
         // Analyze owns and references in the substate
@@ -496,7 +499,7 @@ impl<L: Clone> CallFrame<L> {
             *counter += 1;
         }
 
-        Ok((lock_handle, first_time_lock))
+        Ok((lock_handle, store_access))
     }
 
     pub fn drop_lock<S: SubstateStore>(
@@ -504,7 +507,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
         lock_handle: LockHandle,
-    ) -> Result<(), UnlockSubstateError> {
+    ) -> Result<StoreAccessInfo, UnlockSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -513,10 +516,13 @@ impl<L: Clone> CallFrame<L> {
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;
         let substate_key = &substate_lock.substate_key;
+        let mut store_access = StoreAccessInfo::new();
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
-                store.read_substate(handle)
+                let (substate, read_store_access) = store.read_substate(handle);
+                store_access.push(&read_store_access);
+                substate
             } else {
                 heap.get_substate(node_id, partition_num, substate_key)
                     .expect("Substate locked but missing")
@@ -621,10 +627,10 @@ impl<L: Clone> CallFrame<L> {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            store.release_lock(handle);
+            store_access.push(&store.release_lock(handle));
         }
 
-        Ok(())
+        Ok(store_access)
     }
 
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
@@ -642,7 +648,7 @@ impl<L: Clone> CallFrame<L> {
         heap: &'f mut Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+    ) -> Result<(&'f IndexedScryptoValue, StoreAccessInfo), ReadSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -657,9 +663,11 @@ impl<L: Clone> CallFrame<L> {
         if let Some(store_handle) = store_handle {
             Ok(store.read_substate(*store_handle))
         } else {
-            Ok(heap
-                .get_substate(node_id, *partition_num, substate_key)
-                .expect("Substate missing in heap"))
+            Ok((
+                heap.get_substate(node_id, *partition_num, substate_key)
+                    .expect("Substate missing in heap"),
+                StoreAccessInfo::new(),
+            ))
         }
     }
 
@@ -669,7 +677,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
         lock_handle: LockHandle,
         substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
+    ) -> Result<StoreAccessInfo, WriteSubstateError> {
         let SubstateLock {
             node_id,
             partition_num,
@@ -687,11 +695,11 @@ impl<L: Clone> CallFrame<L> {
         }
 
         if let Some(store_handle) = store_handle {
-            store.update_substate(*store_handle, substate);
+            Ok(store.update_substate(*store_handle, substate))
         } else {
             heap.set_substate(*node_id, *partition_num, substate_key.clone(), substate);
+            Ok(StoreAccessInfo::new())
         }
-        Ok(())
     }
 
     pub fn create_node<'f, S: SubstateStore>(
@@ -700,7 +708,7 @@ impl<L: Clone> CallFrame<L> {
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
-    ) -> Result<(), CreateNodeError> {
+    ) -> Result<StoreAccessInfo, CreateNodeError> {
         let push_to_store = node_id.is_global();
 
         for (_partition_number, module) in &node_substates {
@@ -741,16 +749,17 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        if push_to_store {
-            store.create_node(node_id, node_substates);
+        let store_access = if push_to_store {
             self.stable_references
                 .insert(node_id, StableReferenceType::Global);
+            store.create_node(node_id, node_substates)
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0);
-        }
+            StoreAccessInfo::new()
+        };
 
-        Ok(())
+        Ok(store_access)
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
@@ -906,21 +915,22 @@ impl<L: Clone> CallFrame<L> {
         value: IndexedScryptoValue,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(), CallFrameSetSubstateError> {
+    ) -> Result<StoreAccessInfo, CallFrameSetSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()));
         }
 
-        if heap.contains_node(node_id) {
+        let store_access = if heap.contains_node(node_id) {
             heap.set_substate(*node_id, partition_num, key, value);
+            StoreAccessInfo::new()
         } else {
             store
                 .set_substate(*node_id, partition_num, key, value)
-                .map_err(|e| CallFrameSetSubstateError::StoreError(e))?;
+                .map_err(|e| CallFrameSetSubstateError::StoreError(e))?
         };
 
-        Ok(())
+        Ok(store_access)
     }
 
     pub fn remove_substate<'f, S: SubstateStore>(
@@ -930,7 +940,7 @@ impl<L: Clone> CallFrame<L> {
         key: &SubstateKey,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Option<IndexedScryptoValue>, CallFrameRemoveSubstateError> {
+    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), CallFrameRemoveSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameRemoveSubstateError::NodeNotVisible(
@@ -938,15 +948,18 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let removed = if heap.contains_node(node_id) {
-            heap.delete_substate(node_id, partition_num, key)
+        let (removed, store_access) = if heap.contains_node(node_id) {
+            (
+                heap.delete_substate(node_id, partition_num, key),
+                StoreAccessInfo::new(),
+            )
         } else {
             store
                 .take_substate(node_id, partition_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
-        Ok(removed)
+        Ok((removed, store_access))
     }
 
     pub fn scan_substates<'f, S: SubstateStore>(
@@ -956,14 +969,17 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSubstateError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
         }
 
-        let substates = if heap.contains_node(node_id) {
-            heap.scan_substates(node_id, partition_num, count)
+        let (substates, store_access) = if heap.contains_node(node_id) {
+            (
+                heap.scan_substates(node_id, partition_num, count),
+                StoreAccessInfo::new(),
+            )
         } else {
             store.scan_substates(node_id, partition_num, count)
         };
@@ -979,7 +995,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok(substates)
+        Ok((substates, store_access))
     }
 
     pub fn take_substates<'f, S: SubstateStore>(
@@ -989,7 +1005,8 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallFrameTakeSortedSubstatesError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
+    {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
@@ -997,8 +1014,11 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = if heap.contains_node(node_id) {
-            heap.take_substates(node_id, partition_num, count)
+        let (substates, store_access) = if heap.contains_node(node_id) {
+            (
+                heap.take_substates(node_id, partition_num, count),
+                StoreAccessInfo::new(),
+            )
         } else {
             store.take_substates(node_id, partition_num, count)
         };
@@ -1014,7 +1034,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok(substates)
+        Ok((substates, store_access))
     }
 
     // Substate Virtualization does not apply to this call
@@ -1026,7 +1046,8 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallFrameScanSortedSubstatesError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSortedSubstatesError>
+    {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
@@ -1034,7 +1055,7 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = if heap.contains_node(node_id) {
+        let (substates, store_access) = if heap.contains_node(node_id) {
             todo!()
         } else {
             store.scan_sorted_substates(node_id, partition_num, count)
@@ -1051,7 +1072,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok(substates)
+        Ok((substates, store_access))
     }
 
     pub fn drop_all_locks<S: SubstateStore>(

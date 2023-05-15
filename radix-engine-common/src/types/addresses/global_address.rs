@@ -170,7 +170,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
-    GLOBAL_ADDRESS_ID
+    GLOBAL_ADDRESS_ID,
+    global_address_type_data
 );
 
 manifest_type!(

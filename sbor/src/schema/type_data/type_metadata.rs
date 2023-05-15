@@ -55,6 +55,11 @@ impl TypeMetadata {
         }
     }
 
+    pub fn with_name(mut self, name: Option<Cow<'static, str>>) -> Self {
+        self.type_name = name;
+        self
+    }
+
     pub fn with_type_hash(self, type_hash: TypeHash) -> NovelTypeMetadata {
         NovelTypeMetadata {
             type_hash,

@@ -20,10 +20,10 @@ pub fn handle_describe(
     let code_hash = get_code_hash_const_array_token_stream(&input);
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs);
+    let is_transparent = is_transparent(&parsed.attrs)?;
 
     let output = if is_transparent {
-        handle_transparent_describe(parsed, context_custom_type_kind)?
+        handle_transparent_describe(parsed, code_hash, context_custom_type_kind)?
     } else {
         handle_normal_describe(parsed, code_hash, context_custom_type_kind)?
     };
@@ -37,6 +37,7 @@ pub fn handle_describe(
 
 fn handle_transparent_describe(
     parsed: DeriveInput,
+    code_hash: TokenStream,
     context_custom_type_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
     let DeriveInput {
@@ -54,7 +55,7 @@ fn handle_transparent_describe(
             let FieldsData {
                 unskipped_field_types,
                 ..
-            } = process_fields_for_describe(&s.fields);
+            } = process_fields_for_describe(&s.fields)?;
 
             if unskipped_field_types.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
@@ -62,12 +63,35 @@ fn handle_transparent_describe(
 
             let field_type = &unskipped_field_types[0];
 
+            let mut type_data_content = quote! {
+                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+            };
+            let mut type_id = quote! {
+                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
+            };
+
+            // Replace the type name, unless opted out using the "transparent_name" tag
+            if !get_sbor_bool_value(&attrs, "transparent_name")? {
+                type_data_content = quote! {
+                    use ::sbor::rust::prelude::*;
+                    #type_data_content
+                        .with_name(Some(Cow::Borrowed(stringify!(#ident))))
+                };
+                type_id = quote! {
+                    ::sbor::GlobalTypeId::novel_with_code(
+                        stringify!(#ident),
+                        &[#type_id],
+                        &#code_hash
+                    )
+                };
+            };
+
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::GlobalTypeId = <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID;
+                    const TYPE_ID: ::sbor::GlobalTypeId = #type_id;
 
-                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                        #type_data_content
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -103,21 +127,14 @@ fn handle_normal_describe(
         build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
     let output = match data {
-        Data::Struct(s) => match s.fields {
-            syn::Fields::Named(FieldsNamed { named, .. }) => {
-                let unskipped_fields: Vec<&Field> =
-                    named.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                let field_types: Vec<_> = unskipped_fields.iter().map(|f| &f.ty).collect();
-                let unique_field_types: Vec<_> = get_unique_types(&field_types);
-                let field_names: Vec<_> = unskipped_fields
-                    .iter()
-                    .map(|f| {
-                        f.ident
-                            .as_ref()
-                            .expect("All fields expected to be named")
-                            .to_string()
-                    })
-                    .collect();
+        Data::Struct(s) => match &s.fields {
+            syn::Fields::Named(FieldsNamed { .. }) => {
+                let FieldsData {
+                    unskipped_field_types,
+                    unskipped_field_name_strings,
+                    ..
+                } = process_fields_for_describe(&s.fields)?;
+                let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
@@ -136,13 +153,13 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_named_fields(
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_named_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                                    #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
-                            ))
+                            )
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -151,11 +168,12 @@ fn handle_normal_describe(
                     }
                 }
             }
-            syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let unskipped_fields: Vec<&Field> =
-                    unnamed.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                let field_types: Vec<_> = unskipped_fields.iter().map(|f| &f.ty).collect();
-                let unique_field_types: Vec<_> = get_unique_types(&field_types);
+            syn::Fields::Unnamed(FieldsUnnamed { .. }) => {
+                let FieldsData {
+                    unskipped_field_types,
+                    ..
+                } = process_fields_for_describe(&s.fields)?;
+                let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
 
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
@@ -175,13 +193,13 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_unnamed_fields(
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_unnamed_fields(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                                    #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
-                            ))
+                            )
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -199,19 +217,19 @@ fn handle_normal_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
-                            Some(::sbor::TypeData::struct_with_unit_fields(stringify!(#ident)))
+                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
+                            ::sbor::TypeData::struct_with_unit_fields(stringify!(#ident))
                         }
                     }
                 }
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let n: u8 = variants
-                .len()
-                .try_into()
-                .expect("Too many variants in enum");
-            let variant_indices: Vec<u8> = (0..n).into_iter().collect();
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
+            let variant_discriminators = (0..variants.len())
+                .into_iter()
+                .map(|i| &discriminator_mapping[&i])
+                .collect::<Vec<_>>();
             let mut all_field_types = Vec::new();
 
             let variant_type_data: Vec<_> = {
@@ -219,42 +237,29 @@ fn handle_normal_describe(
                     .iter()
                     .map(|v| {
                         let variant_name = v.ident.to_string();
-                        match &v.fields {
-                            Fields::Named(FieldsNamed { named, .. }) => {
-                                let unskipped_fields: Vec<&Field> =
-                                    named.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                                let field_types: Vec<_> =
-                                    unskipped_fields.iter().map(|f| &f.ty).collect();
-                                all_field_types.extend_from_slice(&field_types);
-                                let field_names: Vec<_> = unskipped_fields
-                                    .iter()
-                                    .map(|f| {
-                                        f.ident
-                                            .as_ref()
-                                            .expect("All fields expected to be named")
-                                            .to_string()
-                                    })
-                                    .collect();
+                        let FieldsData {
+                            unskipped_field_types,
+                            unskipped_field_name_strings,
+                            ..
+                        } = process_fields_for_describe(&v.fields)?;
+                        all_field_types.extend_from_slice(&unskipped_field_types);
+                        Ok(match &v.fields {
+                            Fields::Named(FieldsNamed { .. }) => {
                                 quote! {
                                     ::sbor::TypeData::struct_with_named_fields(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                                            #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                         ],
                                     )
                                 }
                             }
-                            Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                                let unskipped_fields: Vec<&Field> =
-                                    unnamed.iter().filter(|f| !is_encoding_skipped(f)).collect();
-                                let field_types: Vec<_> =
-                                    unskipped_fields.iter().map(|f| &f.ty).collect();
-                                all_field_types.extend_from_slice(&field_types);
+                            Fields::Unnamed(FieldsUnnamed { .. }) => {
                                 quote! {
                                     ::sbor::TypeData::struct_with_unnamed_fields(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                                            #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                         ],
                                     )
                                 }
@@ -264,12 +269,12 @@ fn handle_normal_describe(
                                     ::sbor::TypeData::struct_with_unit_fields(#variant_name)
                                 }
                             }
-                        }
+                        })
                     })
-                    .collect()
+                    .collect::<Result<_>>()?
             };
 
-            let unique_field_types: Vec<_> = get_unique_types(&all_field_types);
+            let unique_field_types = get_unique_types(&all_field_types);
 
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
@@ -279,14 +284,14 @@ fn handle_normal_describe(
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::enum_variants(
+                        ::sbor::TypeData::enum_variants(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                #(#variant_indices => #variant_type_data,)*
+                                #(#variant_discriminators => #variant_type_data,)*
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
@@ -330,15 +335,15 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_named_fields(
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                                 ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
                                 ("c", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
@@ -371,11 +376,11 @@ mod tests {
                         &[],
                         &#code_hash
                     );
-                    fn type_data() -> Option<
+                    fn type_data() ->
                         ::sbor::TypeData<
                             radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
-                            ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_named_fields(
+                            ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_named_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 (
@@ -397,7 +402,7 @@ mod tests {
                                     >>::TYPE_ID
                                 ),
                             ],
-                        ))
+                        )
                     }
                     fn add_all_dependencies(
                         aggregator: &mut ::sbor::TypeAggregator<
@@ -428,15 +433,15 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_unnamed_fields(
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_unnamed_fields(
                             stringify!(Test),
                             ::sbor::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                                 <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
@@ -464,8 +469,8 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
-                        Some(::sbor::TypeData::struct_with_unit_fields(stringify!(Test)))
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
+                        ::sbor::TypeData::struct_with_unit_fields(stringify!(Test))
                     }
                 }
             },
@@ -493,9 +498,9 @@ mod tests {
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> ::sbor::TypeData <C, ::sbor::GlobalTypeId> {
                         use ::sbor::rust::borrow::ToOwned;
-                        Some(::sbor::TypeData::enum_variants(
+                        ::sbor::TypeData::enum_variants(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
@@ -513,7 +518,7 @@ mod tests {
                                     ],
                                 ),
                             ],
-                        ))
+                        )
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {

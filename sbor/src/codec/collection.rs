@@ -328,13 +328,13 @@ mod schema {
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Set", &[T::TYPE_ID]);
 
-        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            Some(TypeData::new(
+        fn type_data() -> TypeData<C, GlobalTypeId> {
+            TypeData::new(
                 TypeKind::Array {
                     element_type: T::TYPE_ID,
                 },
                 TypeMetadata::unnamed(),
-            ))
+            )
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
@@ -350,14 +350,14 @@ mod schema {
     {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
 
-        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            Some(TypeData::new(
+        fn type_data() -> TypeData<C, GlobalTypeId> {
+            TypeData::new(
                 TypeKind::Map {
                     key_type: K::TYPE_ID,
                     value_type: V::TYPE_ID,
                 },
                 TypeMetadata::unnamed(),
-            ))
+            )
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

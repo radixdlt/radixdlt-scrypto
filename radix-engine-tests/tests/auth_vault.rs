@@ -46,7 +46,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             auth_resource_address,
             BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
-        .take_from_worktop_by_ids(
+        .take_non_fungibles_from_worktop(
             &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             auth_resource_address,
             |builder, bucket_id| {

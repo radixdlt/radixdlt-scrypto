@@ -34,6 +34,9 @@ for path in os.listdir(input_folder):
     input_file = os.path.join(input_folder, path)
     if not os.path.isfile(input_file):
         continue
+    if str(os.path.splitext(input_file)[1]).lower() != ".xml":
+        print("Skipping file: ", input_file, " (extenstion not xml)", file=sys.stderr)
+        continue
 
     # parse xml file
     tree = 0
@@ -51,7 +54,6 @@ for path in os.listdir(input_folder):
 
         key = child.tag
         cpu_instructions = int(child.attrib["ins"])
-        execute_cost = child.xpath(".//consume_cost_units")
 
         if cpu_instructions == 0 and "return" in child.attrib and child.attrib["return"] == "true":
             #print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
@@ -88,57 +90,50 @@ for path in os.listdir(input_folder):
         if param:
             key += "::" + param[0]
 
-        # handle kernel_get_node_visibility
-        param = child.xpath("./self::kernel_get_node_visibility/@arg0")
+        # handle kernel_get_node_info
+        param = child.xpath("./self::kernel_get_node_info/@arg0")
         if param:
             key += "::" + param[0]
 
         # handle kernel_lock_substate
-        param = child.xpath("./self::kernel_lock_substate[@partition_number | @arg0 | @arg2]")
+        param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")
         if param:
-            partition_number = param[0].attrib["partition_number"]
+            module_id = param[0].attrib["module_id"]
             node_id = param[0].attrib["arg0"]
-            key += "::" + partition_number + "::" + node_id
+            key += "::" + module_id + "::" + node_id
 
         # correcting parenthesis
         c1 = key.count('(')
         c2 = key.count(')')
         key += ')'*(c1-c2)
 
-#===========================================================================================================#
-#    Subtract nested kernel calls with separate consumed costs CPU instruction from current kernel call     #
-#===========================================================================================================#
-        kernel_nested_calls = child.xpath("./*[starts-with(local-name(), 'kernel') and .//consume_multiplied_execution]")
-        #print("kernel nested calls count: ", len(kernel_nested_calls))
-        for i in kernel_nested_calls:
-            #print(" call: ", tree.getpath(i))
-            cpu_instructions -= int(i.attrib["ins"])
-
-#=============================================================================================================================#
-#    Subtract nested kernel calls under execute tag with separate consumed costs CPU instruction from current kernel call     #
-#=============================================================================================================================#
-        kernel_nested_calls = child.xpath("./execute/*[starts-with(local-name(), 'kernel') and .//consume_multiplied_execution]")
-        #print("kernel nested calls count: ", len(kernel_nested_calls))
-        for i in kernel_nested_calls:
-            #print(" call: ", tree.getpath(i))
-            cpu_instructions -= int(i.attrib["ins"])
-
-#=====================================#
-#    Extract sum of all cost units    #
-#=====================================#
-        cost = 0
-        for i in execute_cost:
-            cost = cost + int(i.attrib["units"])
-        info_data = "(cost: " + str(cost) + ", ins: " + child.attrib["ins"]  + ", size: " + str(invoke_size) + ")"
-        api_functions_info_data[key] = info_data
+#======================================================================================#
+#    Subtract child nested calls, looking up to 5 childs, for example:                 #
+#     kernel_invoke/kernel_invoke                                                      #
+#     kernel_invoke/invoke_export/kernel_invoke                                        #
+#     kernel_invoke/other_tag1/other_tag2/kernel_invoke                                #
+#     kernel_invoke/t1/t2/t3/kernel_invoke                                             #
+#     kernel_invoke/t1/t2/t3/t4/kernel_invoke                                          #
+#======================================================================================#
+        nested_call_suffix = "/*[local-name() = '" + child.tag + "']"
+        nested_call_prefix = "."
+        nested_call_middle = ""
+        for i in range(5):
+            nested_call_xpath = nested_call_prefix + nested_call_middle + nested_call_suffix
+            kernel_nested_calls = child.xpath(nested_call_xpath)
+            #print("direct child nested calls count: ", len(kernel_nested_calls))
+            for i in kernel_nested_calls:
+                #print(" call: ", tree.getpath(i))
+                cpu_instructions -= int(i.attrib["ins"])
+            nested_call_middle += "/*[not(local-name() = '" + child.tag + "')]"
 
 #        if not child.tag in api_functions:
 #            continue
 
         if api_functions_ins.get(key):
-            api_functions_ins[key][1].append(cpu_instructions)
+            api_functions_ins[key].append(cpu_instructions)
         else:
-            api_functions_ins[key] = (info_data,[cpu_instructions]) # remove info_data?
+            api_functions_ins[key] = [cpu_instructions]
 
 # end of xml parsing loop
 
@@ -150,13 +145,13 @@ output_tab = []
 
 if detailed_output:
     for i in api_functions_ins.keys():
-        output_tab.append([i, len(api_functions_ins[i][1]), min(api_functions_ins[i][1]), max(api_functions_ins[i][1]), round(mean(api_functions_ins[i][1])), round(median(api_functions_ins[i][1])) ])
+        output_tab.append([i, len(api_functions_ins[i]), min(api_functions_ins[i]), max(api_functions_ins[i]), round(mean(api_functions_ins[i])), round(median(api_functions_ins[i])) ])
 else:
     for i in api_functions_ins.keys():
         if i.split(':')[0] in use_max_instead_of_median:
-            output_tab.append([i, max(api_functions_ins[i][1]), "max" ])
+            output_tab.append([i, max(api_functions_ins[i]), "max" ])
         else:
-            output_tab.append([i, round(median(api_functions_ins[i][1])), "median" ])
+            output_tab.append([i, round(median(api_functions_ins[i])), "median" ])
 
 #sorted(output_tab, key=lambda x: x[0])
 output_tab.sort()
@@ -194,4 +189,5 @@ else:
                 f.write(str(col))
                 f.write(";")
         f.write("\n")
+    f.close()
 

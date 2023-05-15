@@ -159,7 +159,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::PackageAddress,
     NodeId::LENGTH,
-    PACKAGE_ADDRESS_ID
+    PACKAGE_ADDRESS_ID,
+    package_address_type_data
 );
 
 manifest_type!(
