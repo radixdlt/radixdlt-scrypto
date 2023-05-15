@@ -59,6 +59,11 @@ required-features = ["cpu_ram_metrics"]
 name = "transaction_decompilation"
 harness = false
 
+[[bench]]
+name = "database"
+harness = false
+required-features = ["rocksdb"]
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]

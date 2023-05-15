@@ -13,19 +13,20 @@ use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
 use std::path::PathBuf;
-
-#[cfg(feature = "rocksdb")]
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 
-#[cfg(feature = "rocksdb")]
 fn db_rw_test(c: &mut Criterion) {
+    println!("starting");
     // Set up environment.
     let mut scrypto_interpreter = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
+
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
+    // clean database
+    std::fs::remove_dir_all(path.clone()).ok();
 
     let mut substate_db = RocksdbSubstateStore::standard(path);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
@@ -116,8 +117,5 @@ fn db_rw_test(c: &mut Criterion) {
     });
 }
 
-#[cfg(feature = "rocksdb")]
 criterion_group!(database, db_rw_test);
-
-#[cfg(feature = "rocksdb")]
 criterion_main!(database);
