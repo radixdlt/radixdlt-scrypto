@@ -17,7 +17,7 @@ mod vault_proof {
 
         pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {
             let proof = self.vault.create_proof().no_check();
-            assert!(proof.validate(ProofValidation::Contains(self.vault.resource_address())));
+            assert_eq!(proof.resource_address(), self.vault.resource_address());
             let clone = proof.clone();
 
             assert_eq!(self.vault.amount(), amount);
@@ -34,7 +34,7 @@ mod vault_proof {
             proof_amount: Decimal,
         ) {
             let proof = self.vault.create_proof_of_amount(proof_amount).no_check();
-            assert!(proof.validate(ProofValidation::Contains(self.vault.resource_address())));
+            assert_eq!(proof.resource_address(), self.vault.resource_address());
             let clone = proof.clone();
 
             assert_eq!(self.vault.amount(), amount);
@@ -52,16 +52,20 @@ mod vault_proof {
         ) {
             let proof = self
                 .vault
+                .as_non_fungible_vault()
                 .create_proof_of_non_fungibles(proof_non_fungible_local_ids.clone())
                 .no_check();
-            assert!(proof.validate(ProofValidation::Contains(self.vault.resource_address())));
+            assert_eq!(proof.resource_address(), self.vault.resource_address());
             let clone = proof.clone();
 
             assert_eq!(
                 self.vault.as_non_fungible_vault().non_fungible_local_ids(),
                 non_fungible_local_ids
             );
-            assert_eq!(proof.non_fungible_local_ids(), proof_non_fungible_local_ids);
+            assert_eq!(
+                proof.as_non_fungible_proof().non_fungible_local_ids(),
+                proof_non_fungible_local_ids
+            );
             assert_eq!(clone.non_fungible_local_ids(), proof_non_fungible_local_ids);
 
             clone.drop();
@@ -91,9 +95,7 @@ mod vault_proof {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = LocalAuthZone::create_proof(bucket.resource_address()).no_check();
-                    assert!(
-                        proof.validate(ProofValidation::Contains(self.vault.resource_address()))
-                    );
+                    assert_eq!(proof.resource_address(), self.vault.resource_address());
                     assert_eq!(proof.amount(), expected_amount);
                     proof.drop();
                 })
@@ -111,9 +113,7 @@ mod vault_proof {
                     let proof =
                         LocalAuthZone::create_proof_of_amount(amount, bucket.resource_address())
                             .no_check();
-                    assert!(
-                        proof.validate(ProofValidation::Contains(self.vault.resource_address()))
-                    );
+                    assert_eq!(proof.resource_address(), self.vault.resource_address());
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
                 })
@@ -133,10 +133,8 @@ mod vault_proof {
                         bucket.resource_address(),
                     )
                     .no_check();
-                    assert!(
-                        proof.validate(ProofValidation::Contains(self.vault.resource_address()))
-                    );
-                    assert_eq!(proof.non_fungible_local_ids(), ids);
+                    assert_eq!(proof.resource_address(), self.vault.resource_address());
+                    assert_eq!(proof.as_non_fungible_proof().non_fungible_local_ids(), ids);
                     proof.drop();
                 })
             });

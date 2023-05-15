@@ -29,7 +29,7 @@ mod receiver {
             resource_address: ResourceAddress,
         ) {
             let proof = proof.no_check();
-            assert_eq!(proof.non_fungible_local_ids(), ids);
+            assert_eq!(proof.as_non_fungible_proof().non_fungible_local_ids(), ids);
             assert_eq!(proof.resource_address(), resource_address);
         }
     }

@@ -107,6 +107,7 @@ mod pc {
         pub fn create_proof_from_fungible_vault_of_non_fungibles() {
             let vault = Self::create_fungible_vault();
             let proof = vault
+                .as_non_fungible_vault()
                 .create_proof_of_non_fungibles(btreeset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
@@ -134,6 +135,7 @@ mod pc {
         pub fn create_proof_from_non_fungible_vault_of_non_fungibles() {
             let vault = Self::create_non_fungible_vault();
             let proof = vault
+                .as_non_fungible_vault()
                 .create_proof_of_non_fungibles(btreeset!(
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)

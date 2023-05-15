@@ -26,11 +26,13 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 //========
 
 pub trait ScryptoUncheckedProof {
-    // Apply basic resource address check and converts self into `CheckedProof`.
-    fn check(self, resource_address: ResourceAddress) -> CheckedProof;
+    type CheckedProofType;
 
-    // Converts self into `CheckedProof` with no check.
-    fn no_check(self) -> CheckedProof;
+    // Apply basic resource address check and converts self into `CheckedProof`.
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType;
+
+    // Converts self into `CheckedProof` with no address check.
+    fn no_check(self) -> Self::CheckedProofType;
 
     fn resource_address(&self) -> ResourceAddress;
 
@@ -113,6 +115,8 @@ impl From<CheckedNonFungibleProof> for CheckedProof {
 //=================
 
 impl ScryptoUncheckedProof for Proof {
+    type CheckedProofType = CheckedProof;
+
     fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
         assert_eq!(self.resource_address(), expected_resource_address);
         CheckedProof(self)
@@ -167,6 +171,62 @@ impl ScryptoUncheckedProof for Proof {
         let output = f();
         LocalAuthZone::pop().drop();
         output
+    }
+}
+
+impl ScryptoUncheckedProof for FungibleProof {
+    type CheckedProofType = CheckedFungibleProof;
+
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::check(self.0, resource_address))
+    }
+
+    fn no_check(self) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::no_check(self.0))
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        FungibleProof(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
+    }
+}
+
+impl ScryptoUncheckedProof for NonFungibleProof {
+    type CheckedProofType = CheckedNonFungibleProof;
+
+    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::check(self.0, resource_address))
+    }
+
+    fn no_check(self) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::no_check(self.0))
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
+    fn drop(self) {
+        self.0.drop()
+    }
+
+    fn clone(&self) -> Self {
+        NonFungibleProof(self.0.clone())
+    }
+
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize(f)
     }
 }
 

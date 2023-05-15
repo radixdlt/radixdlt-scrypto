@@ -7,7 +7,7 @@ mod bucket_proof {
     impl BucketProof {
         pub fn create_clone_drop_bucket_proof(bucket: Bucket, amount: Decimal) -> Bucket {
             let proof = bucket.create_proof().no_check();
-            assert!(proof.validate(ProofValidation::Contains(bucket.resource_address())));
+            assert_eq!(proof.resource_address(), bucket.resource_address());
             let clone = proof.clone();
 
             assert_eq!(bucket.amount(), amount);
