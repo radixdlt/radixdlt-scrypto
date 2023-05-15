@@ -1,6 +1,6 @@
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
-use crate::types::EntityType;
+use crate::types::{EntityType, NodeId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {
@@ -133,4 +133,31 @@ impl<D: Decoder<ManifestCustomValueKind>> Decode<ManifestCustomValueKind, D>
             }),
         }
     }
+}
+
+#[test]
+fn test_manifest_custom_address_encode_decode() {
+    use crate::data::manifest::{manifest_decode, manifest_encode};
+
+    // try address with invalid entity type
+    let mut bytes = [0u8; NodeId::LENGTH];
+    let node = NodeId(bytes);
+    let address = ManifestValue::Custom {
+        value: ManifestCustomValue::Address(ManifestAddress(node)),
+    };
+    let encoded = manifest_encode(&address);
+
+    assert!(matches!(encoded, Err(EncodeError::CustomError(_))));
+
+    // try address with valid entity type
+    bytes[0] = EntityType::GlobalPackage as u8;
+    let node = NodeId(bytes);
+    let address = ManifestValue::Custom {
+        value: ManifestCustomValue::Address(ManifestAddress(node)),
+    };
+    let encoded = manifest_encode(&address);
+    assert!(matches!(encoded, Ok(_)));
+
+    let decoded = manifest_decode::<ManifestValue>(&encoded.unwrap());
+    assert_eq!(address, decoded.unwrap());
 }
