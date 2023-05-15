@@ -683,7 +683,15 @@ impl AccessControllerNativePackage {
         )?
         .0;
 
-        let metadata = Metadata::sys_create(api)?;
+        let metadata = {
+            let mut metadata = Metadata::new(api)?;
+            metadata.set(
+                api,
+                "recovery_badge",
+                GlobalAddress::from(recovery_badge_resource),
+            )?;
+            metadata.0
+        };
         let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
