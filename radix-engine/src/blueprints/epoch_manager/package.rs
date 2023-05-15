@@ -185,12 +185,12 @@ impl EpochManagerNativePackage {
             },
         );
         functions.insert(
-            VALIDATOR_PUT_INTO_STAKE_IDENT.to_string(),
+            VALIDATOR_APPLY_REWARD_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<ValidatorPutIntoStakeInput>(),
-                output: aggregator.add_child_type_and_descendents::<ValidatorPutIntoStakeOutput>(),
-                export_name: VALIDATOR_PUT_INTO_STAKE_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
+                export_name: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
             },
         );
 
@@ -395,13 +395,13 @@ impl EpochManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VALIDATOR_PUT_INTO_STAKE_IDENT => {
+            VALIDATOR_APPLY_REWARD_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: ValidatorPutIntoStakeInput = input.as_typed().map_err(|e| {
+                let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::put_into_stake(input.xrd_bucket, api)?;
+                let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(
