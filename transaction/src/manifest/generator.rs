@@ -1132,7 +1132,7 @@ pub fn generate_value(
             Ok(Value::Tuple {
                 fields: vec![
                     Value::Custom {
-                        value: ManifestCustomValue::Address(ManifestAddress(
+                        value: ManifestCustomValue::Address(ManifestAddress::new_or_panic(
                             global_id.resource_address().into(),
                         )),
                     },
@@ -1149,7 +1149,7 @@ pub fn generate_value(
         // ==============
         ast::Value::Address(_) => {
             generate_global_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ManifestCustomValue::Address(ManifestAddress(v.into())),
+                value: ManifestCustomValue::Address(ManifestAddress::new_or_panic(v.into())),
             })
         }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {

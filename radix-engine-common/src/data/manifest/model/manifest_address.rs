@@ -14,6 +14,12 @@ use utils::copy_u8_array;
 pub struct ManifestAddress(pub NodeId);
 
 impl ManifestAddress {
+    pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
+        let node_id = NodeId(raw);
+        assert!(node_id.entity_type().is_some());
+        Self(node_id)
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
