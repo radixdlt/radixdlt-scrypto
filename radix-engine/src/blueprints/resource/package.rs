@@ -1065,7 +1065,7 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
+            fields.push(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1124,7 +1124,7 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
+            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>());
 
             let mut functions = BTreeMap::new();
             functions.insert(

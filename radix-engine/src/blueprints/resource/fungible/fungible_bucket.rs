@@ -90,7 +90,7 @@ impl FungibleBucket {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<FungibleProof, RuntimeError>
+    ) -> Result<FungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -114,7 +114,7 @@ impl FungibleBucket {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(FungibleProof::new(
+        Ok(FungibleProofSubstate::new(
             amount,
             btreemap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => amount

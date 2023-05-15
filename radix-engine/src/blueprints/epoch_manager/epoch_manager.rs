@@ -6,7 +6,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -510,7 +510,7 @@ impl EpochManagerBlueprint {
             ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_reward in validator_rewards {
-            let emission_xrd_bucket = total_emission_xrd_bucket.sys_take(
+            let emission_xrd_bucket = total_emission_xrd_bucket.take(
                 validator_reward.effective_stake_xrd * emission_per_staked_xrd,
                 api,
             )?;
@@ -523,7 +523,7 @@ impl EpochManagerBlueprint {
                 .unwrap(),
             )?;
         }
-        total_emission_xrd_bucket.sys_drop_empty(api)?;
+        total_emission_xrd_bucket.drop_empty(api)?;
 
         Ok(())
     }

@@ -8,18 +8,18 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct NonFungibleProof {
+pub struct NonFungibleProofSubstate {
     /// The total locked amount or non-fungible ids.
     pub total_locked: BTreeSet<NonFungibleLocalId>,
     /// The supporting containers.
     pub evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
 }
 
-impl NonFungibleProof {
+impl NonFungibleProofSubstate {
     pub fn new(
         total_locked: BTreeSet<NonFungibleLocalId>,
         evidence: BTreeMap<LocalRef, BTreeSet<NonFungibleLocalId>>,
-    ) -> Result<NonFungibleProof, ProofError> {
+    ) -> Result<NonFungibleProofSubstate, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
@@ -96,7 +96,7 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
@@ -123,7 +123,7 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
         let amount = substate_ref.amount();
         api.field_lock_release(handle)?;
         Ok(amount)
@@ -140,7 +140,7 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProof = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
         api.field_lock_release(handle)?;
         Ok(ids)
@@ -170,7 +170,7 @@ impl NonFungibleProofBlueprint {
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
-        let proof_substate: NonFungibleProof =
+        let proof_substate: NonFungibleProofSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.drop_proof(api)?;
         api.kernel_drop_lock(handle)?;

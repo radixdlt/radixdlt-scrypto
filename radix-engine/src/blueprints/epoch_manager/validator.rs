@@ -419,9 +419,9 @@ impl ValidatorBlueprint {
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
-        stake_xrd_vault.sys_put(xrd_bucket, api)?;
+        stake_xrd_vault.put(xrd_bucket, api)?;
 
-        let new_stake_xrd = stake_xrd_vault.sys_amount(api)?;
+        let new_stake_xrd = stake_xrd_vault.amount(api)?;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
         substate.sorted_key = new_index_key;

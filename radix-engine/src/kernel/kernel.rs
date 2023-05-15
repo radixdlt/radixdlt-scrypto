@@ -500,7 +500,7 @@ where
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: FungibleProof = substate.as_typed().unwrap();
+            let proof: FungibleProofSubstate = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
@@ -527,7 +527,7 @@ where
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: NonFungibleProof = substate.as_typed().unwrap();
+            let proof: NonFungibleProofSubstate = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,
