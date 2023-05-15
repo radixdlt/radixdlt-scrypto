@@ -141,9 +141,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
-                amount,
+                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Decimal(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
+                amount,
                 name
             )?;
         }
@@ -159,12 +159,12 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_NON_FUNGIBLES_FROM_WORKTOP\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_NON_FUNGIBLES_FROM_WORKTOP\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({})\n    Bucket(\"{}\");",
+                resource_address.display(context.bech32_encoder),
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
-                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -185,9 +185,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS\n    Decimal(\"{}\")\n    Address(\"{}\");",
-                amount,
-                resource_address.display(context.bech32_encoder)
+                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\")\n    Decimal(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                amount
             )?;
         }
         Instruction::AssertWorktopContainsNonFungibles {
@@ -196,13 +196,13 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({});",
+                resource_address.display(context.bech32_encoder),
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
-                    .join(", "),
-                resource_address.display(context.bech32_encoder)
+                    .join(", ")
             )?;
         }
         Instruction::PopFromAuthZone => {
@@ -254,9 +254,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
-                amount,
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT\n    Address(\"{}\")\n    Decimal(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
+                amount,
                 name
             )?;
         }
@@ -272,11 +272,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({})\n    Proof(\"{}\");",
+                resource_address.display(context.bech32_encoder),ids.iter()
                 .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
-                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }

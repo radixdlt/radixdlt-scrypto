@@ -1466,7 +1466,7 @@ mod tests {
         .unwrap();
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
                 resource_address: resource,
@@ -1479,7 +1479,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1")  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez");"#,
+            r#"ASSERT_WORKTOP_CONTAINS  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1");"#,
             Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address: resource,
