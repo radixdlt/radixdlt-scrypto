@@ -241,11 +241,11 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
 
-pub const VALIDATOR_PUT_INTO_STAKE_IDENT: &str = "put_into_stake";
+pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct ValidatorPutIntoStakeInput {
+pub struct ValidatorApplyRewardInput {
     pub xrd_bucket: Bucket,
 }
 
-pub type ValidatorPutIntoStakeOutput = ();
+pub type ValidatorApplyRewardOutput = ();

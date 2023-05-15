@@ -498,6 +498,8 @@ impl EpochManagerBlueprint {
             .iter()
             .map(|validator_reward| validator_reward.stake_xrd)
             .sum::<Decimal>();
+        // calculate "how much XRD is earned by 1 XRD staked", and later apply it evenly among validators
+        // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
         let emission_per_staked_xrd = config.total_emission_xrd_per_epoch / stake_sum_xrd;
         let effective_total_emission_xrd = validator_rewards
             .iter()
@@ -514,8 +516,8 @@ impl EpochManagerBlueprint {
             )?;
             api.call_method(
                 validator_reward.address.as_node_id(),
-                VALIDATOR_PUT_INTO_STAKE_IDENT,
-                scrypto_encode(&ValidatorPutIntoStakeInput {
+                VALIDATOR_APPLY_REWARD_IDENT,
+                scrypto_encode(&ValidatorApplyRewardInput {
                     xrd_bucket: emission_xrd_bucket,
                 })
                 .unwrap(),

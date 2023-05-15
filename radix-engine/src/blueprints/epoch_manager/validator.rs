@@ -405,7 +405,7 @@ impl ValidatorBlueprint {
 
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
-    pub fn put_into_stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn apply_reward<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -563,10 +563,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 ),
             ),
             (
-                // TODO(resolve during review): we should probably rename it, but this is actually
-                // 100% precisely what this method does... Alternatively, we can make it public?
-                // (maybe there are cases where someone wants to simply boost the SU value?)
-                VALIDATOR_PUT_INTO_STAKE_IDENT,
+                VALIDATOR_APPLY_REWARD_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::AccessRule(rule!(require(global_caller(EPOCH_MANAGER)))),
                     AccessRuleEntry::AccessRule(AccessRule::DenyAll),
