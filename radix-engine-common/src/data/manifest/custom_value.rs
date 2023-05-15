@@ -69,7 +69,10 @@ impl<E: Encoder<ManifestCustomValueKind>> Encode<ManifestCustomValueKind, E>
             ManifestCustomValue::Address(v) => {
                 let id = v.to_vec()[0];
                 if EntityType::from_repr(id).is_none() {
-                    return Err(EncodeError::InvalidAddressEntityType { id });
+                    return Err(EncodeError::CustomError(format!(
+                        "Invalid address entity type {}",
+                        id
+                    )));
                 }
                 v.encode_body(encoder)
             }
