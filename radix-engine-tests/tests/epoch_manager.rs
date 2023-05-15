@@ -1,4 +1,4 @@
-use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
+use radix_engine::blueprints::epoch_manager::{RewardAppliedEvent, Validator, ValidatorError};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_modules::auth::AuthError;
@@ -519,19 +519,15 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let a_new_stake = test_runner
         .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
         .unwrap();
-    assert_eq!(
-        a_new_stake,
-        a_stake + epoch_emissions_xrd * a_stake / both_stake
-    );
+    let a_stake_added = epoch_emissions_xrd * a_stake / both_stake;
+    assert_eq!(a_new_stake, a_stake + a_stake_added);
 
     let b_substate = test_runner.get_validator_info_by_key(&b_key);
     let b_new_stake = test_runner
         .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
         .unwrap();
-    assert_eq!(
-        b_new_stake,
-        b_stake + epoch_emissions_xrd * b_stake / both_stake
-    );
+    let b_stake_added = epoch_emissions_xrd * b_stake / both_stake;
+    assert_eq!(b_new_stake, b_stake + b_stake_added);
 
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
@@ -550,6 +546,32 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
             Validator {
                 key: b_key,
                 stake: b_new_stake,
+            },
+        ]
+    );
+
+    let reward_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<RewardAppliedEvent>(id))
+        .map(|(_id, data)| scrypto_decode::<RewardAppliedEvent>(data).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        reward_applied_events,
+        vec![
+            RewardAppliedEvent {
+                stake_added_xrd: a_stake_added,
+                liquidity_token_supply: a_stake,
+                validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+                proposals_made: 1,
+                proposals_missed: 0,
+            },
+            RewardAppliedEvent {
+                stake_added_xrd: b_stake_added,
+                liquidity_token_supply: b_stake,
+                validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+                proposals_made: 0,
+                proposals_missed: 0,
             },
         ]
     );
@@ -599,10 +621,8 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let actual_reliability = Decimal::one() / Decimal::from(rounds_per_epoch);
     let tolerated_range = Decimal::one() - min_required_reliability;
     let reliability_factor = (actual_reliability - min_required_reliability) / tolerated_range;
-    assert_eq!(
-        validator_new_stake,
-        validator_stake + epoch_emissions_xrd * reliability_factor
-    );
+    let validator_stake_added = epoch_emissions_xrd * reliability_factor;
+    assert_eq!(validator_new_stake, validator_stake + validator_stake_added);
 
     let result = receipt.expect_commit_success();
     let next_epoch_validators = result
@@ -616,6 +636,23 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         vec![Validator {
             key: validator_pub_key,
             stake: validator_new_stake,
+        },]
+    );
+
+    let reward_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<RewardAppliedEvent>(id))
+        .map(|(_id, data)| scrypto_decode::<RewardAppliedEvent>(data).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        reward_applied_events,
+        vec![RewardAppliedEvent {
+            stake_added_xrd: validator_stake_added,
+            liquidity_token_supply: validator_stake,
+            validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+            proposals_made: 1,
+            proposals_missed: 3,
         },]
     );
 }
@@ -675,6 +712,23 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         vec![Validator {
             key: validator_pub_key,
             stake: validator_stake
+        },]
+    );
+
+    let reward_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<RewardAppliedEvent>(id))
+        .map(|(_id, data)| scrypto_decode::<RewardAppliedEvent>(data).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        reward_applied_events,
+        vec![RewardAppliedEvent {
+            stake_added_xrd: Decimal::zero(), // even though the emission gave 0 XRD to this validator...
+            liquidity_token_supply: validator_stake,
+            validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+            proposals_made: 1,
+            proposals_missed: 3, // ... we still want the event, e.g. to surface this information
         },]
     );
 }

@@ -245,7 +245,13 @@ pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorApplyRewardInput {
+    /// A bucket with the reward XRD.
+    /// Validator should subtract the configured fee from this amount.
     pub xrd_bucket: Bucket,
+    /// A number of proposals successfully made by this validator during the rewarded period.
+    pub proposals_made: u64,
+    /// A number of proposals missed by this validator during the rewarded period.
+    pub proposals_missed: u64,
 }
 
 pub type ValidatorApplyRewardOutput = ();

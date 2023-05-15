@@ -103,11 +103,10 @@ impl CommitResult {
                     || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
                 {
                     if let Ok(EpochChangeEvent {
-                        ref epoch,
-                        ref validators,
+                        epoch, validators, ..
                     }) = scrypto_decode(&event_data)
                     {
-                        return Some((validators.clone(), *epoch));
+                        return Some((validators, epoch));
                     }
                 }
             }

@@ -428,7 +428,8 @@ impl EpochManagerBlueprint {
         let previous_statistics = statistic_substate.validator_statistics;
 
         // apply emissions
-        Self::emit_validator_rewards(previous_validator_set, previous_statistics, config, api)?;
+        let emission_summary =
+            Self::emit_validator_rewards(previous_validator_set, previous_statistics, config, api)?;
 
         // select next validator set
         let registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
@@ -448,6 +449,7 @@ impl EpochManagerBlueprint {
             EpochChangeEvent {
                 epoch,
                 validators: next_validator_set.clone(),
+                validator_set_stake_xrd: emission_summary.stake_sum_xrd,
             },
         )?;
 
@@ -473,7 +475,7 @@ impl EpochManagerBlueprint {
         validator_statistics: Vec<ProposalStatistic>,
         config: &EpochManagerConfigSubstate,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    ) -> Result<EmissionSummary, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -484,14 +486,16 @@ impl EpochManagerBlueprint {
                 ValidatorReward::create_if_applicable(
                     address,
                     validator.stake,
-                    statistic.success_ratio(),
+                    statistic,
                     config.min_validator_reliability,
                 )
             })
             .collect::<Vec<_>>();
 
         if validator_rewards.is_empty() {
-            return Ok(());
+            return Ok(EmissionSummary {
+                stake_sum_xrd: Decimal::zero(),
+            });
         }
 
         let stake_sum_xrd = validator_rewards
@@ -519,14 +523,22 @@ impl EpochManagerBlueprint {
                 VALIDATOR_APPLY_REWARD_IDENT,
                 scrypto_encode(&ValidatorApplyRewardInput {
                     xrd_bucket: emission_xrd_bucket,
+                    proposals_made: validator_reward.proposal_statistic.made,
+                    proposals_missed: validator_reward.proposal_statistic.missed,
                 })
                 .unwrap(),
             )?;
         }
         total_emission_xrd_bucket.sys_drop_empty(api)?;
 
-        Ok(())
+        Ok(EmissionSummary { stake_sum_xrd })
     }
+}
+
+/// A summary of specific epoch's emissions.
+pub struct EmissionSummary {
+    /// A sum of staked XRD amounts of the entire validator set.
+    pub stake_sum_xrd: Decimal,
 }
 
 #[derive(Debug)]
@@ -534,21 +546,26 @@ struct ValidatorReward {
     pub address: ComponentAddress,
     pub stake_xrd: Decimal,
     pub effective_stake_xrd: Decimal,
+    pub proposal_statistic: ProposalStatistic, // needed only for passing the information to event
 }
 
 impl ValidatorReward {
     fn create_if_applicable(
         address: ComponentAddress,
         stake_xrd: Decimal,
-        reliability: Decimal,
+        proposal_statistic: ProposalStatistic,
         min_required_reliability: Decimal,
     ) -> Option<Self> {
         if stake_xrd.is_positive() {
-            let effective_stake_xrd =
-                stake_xrd * Self::to_reliability_factor(reliability, min_required_reliability);
+            let reliability_factor = Self::to_reliability_factor(
+                proposal_statistic.success_ratio(),
+                min_required_reliability,
+            );
+            let effective_stake_xrd = stake_xrd * reliability_factor;
             Some(Self {
                 address,
                 stake_xrd,
+                proposal_statistic,
                 effective_stake_xrd,
             })
         } else {

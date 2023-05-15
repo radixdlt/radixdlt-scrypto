@@ -405,7 +405,14 @@ impl ValidatorBlueprint {
 
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
-    pub fn apply_reward<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    /// Note: the validator's proposal statistics passed to this method are used only for creating
+    /// an event (i.e. they are only informational and do not drive any logic at this point).
+    pub fn apply_reward<Y>(
+        xrd_bucket: Bucket,
+        proposals_made: u64,
+        proposals_missed: u64,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -415,6 +422,9 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        let stake_added_xrd = xrd_bucket.sys_amount(api)?;
+        let liquidity_token_supply = ResourceManager(substate.liquidity_token).total_supply(api)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         stake_xrd_vault.sys_put(xrd_bucket, api)?;
@@ -426,7 +436,16 @@ impl ValidatorBlueprint {
         api.field_lock_write_typed(handle, &substate)?;
         api.field_lock_release(handle)?;
 
-        // TODO(emissions): emit a "reward received" event here
+        Runtime::emit_event(
+            api,
+            RewardAppliedEvent {
+                stake_added_xrd,
+                liquidity_token_supply,
+                validator_fee_xrd: Decimal::zero(), // TODO(emissions): update after implementing validator fees
+                proposals_made,
+                proposals_missed,
+            },
+        )?;
 
         Ok(())
     }

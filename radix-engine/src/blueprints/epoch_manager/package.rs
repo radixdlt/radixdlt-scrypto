@@ -202,7 +202,8 @@ impl EpochManagerNativePackage {
                 StakeEvent,
                 UnstakeEvent,
                 ClaimXrdEvent,
-                UpdateAcceptingStakeDelegationStateEvent
+                UpdateAcceptingStakeDelegationStateEvent,
+                RewardAppliedEvent
             ]
         };
 
@@ -401,7 +402,12 @@ impl EpochManagerNativePackage {
                 let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, api)?;
+                let rtn = ValidatorBlueprint::apply_reward(
+                    input.xrd_bucket,
+                    input.proposals_made,
+                    input.proposals_missed,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(

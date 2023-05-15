@@ -720,10 +720,9 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
             .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
-        assert_eq!(
-            epoch_change_events.first().unwrap().epoch,
-            initial_epoch + 1
-        );
+        let event = epoch_change_events.first().unwrap();
+        assert_eq!(event.epoch, initial_epoch + 1);
+        assert_eq!(event.validator_set_stake_xrd, Decimal::one());
     }
 }
 
