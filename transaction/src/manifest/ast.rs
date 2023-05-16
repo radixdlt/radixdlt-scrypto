@@ -157,7 +157,7 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    /* Call method aliases */
+    /* call non-main method aliases */
     SetMetadata {
         address: Value,
         args: Vec<Value>,
@@ -166,15 +166,7 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    SetPackageRoyaltyConfig {
-        address: Value,
-        args: Vec<Value>,
-    },
     SetComponentRoyaltyConfig {
-        address: Value,
-        args: Vec<Value>,
-    },
-    ClaimPackageRoyalty {
         address: Value,
         args: Vec<Value>,
     },
@@ -191,6 +183,16 @@ pub enum Instruction {
         args: Vec<Value>,
     },
     SetGroupMutability {
+        address: Value,
+        args: Vec<Value>,
+    },
+
+    /* call main method aliases */
+    SetPackageRoyaltyConfig {
+        address: Value,
+        args: Vec<Value>,
+    },
+    ClaimPackageRoyalty {
         address: Value,
         args: Vec<Value>,
     },

@@ -63,8 +63,12 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_package())
     }
 
-    pub const fn is_global_resource(&self) -> bool {
-        matches!(self.entity_type(), Some(t) if t.is_global_resource())
+    pub const fn is_global_epoch_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_epoch_manager())
+    }
+
+    pub const fn is_global_resource_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_resource_manager())
     }
 
     pub const fn is_global_virtual(&self) -> bool {

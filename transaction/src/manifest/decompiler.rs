@@ -32,11 +32,13 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
@@ -532,20 +534,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
 
-                /* package royalty */
-                (ObjectModuleId::Main, address, PACKAGE_SET_ROYALTY_CONFIG_IDENT) => {
-                    f.write_str(&format!(
-                        "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-                (ObjectModuleId::Main, address, PACKAGE_CLAIM_ROYALTY_IDENT) => {
-                    f.write_str(&format!(
-                        "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-
                 /* component royalty */
                 (ObjectModuleId::Royalty, address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
                     f.write_str(&format!(
@@ -588,12 +576,60 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
 
+                // Nb - For Main method call, we also check the address type to avoid name clashing.
+
+                /* package */
+                (ObjectModuleId::Main, address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                    if address.as_node_id().is_global_package() =>
+                {
+                    f.write_str(&format!(
+                        "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (ObjectModuleId::Main, address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                    if address.as_node_id().is_global_package() =>
+                {
+                    f.write_str(&format!(
+                        "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* resource manager */
+                (ObjectModuleId::Main, address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                    if address.as_node_id().is_global_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                    if address.as_node_id().is_global_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_NON_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
+                    if address.as_node_id().is_global_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_UUID_NON_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
                 /* validator */
                 (ObjectModuleId::Main, address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
-                    if address.eq(&EPOCH_MANAGER.clone().into()) =>
+                    if address.as_node_id().is_global_epoch_manager() =>
                 {
                     write!(f, "CREATE_VALIDATOR")?;
                 }
+
+                /* Default */
                 _ => {
                     f.write_str(&format!(
                         "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",

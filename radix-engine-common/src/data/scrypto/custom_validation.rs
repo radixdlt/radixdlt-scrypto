@@ -57,7 +57,7 @@ fn apply_static_custom_validation_to_custom_value(
                 ReferenceValidation::IsGlobal => node_id.is_global(),
                 ReferenceValidation::IsGlobalPackage => node_id.is_global_package(),
                 ReferenceValidation::IsGlobalComponent => node_id.is_global_component(),
-                ReferenceValidation::IsGlobalResource => node_id.is_global_resource(),
+                ReferenceValidation::IsGlobalResource => node_id.is_global_resource_manager(),
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 // We can't check this statically without a type_info lookup, so assume valid
                 ReferenceValidation::IsTypedObject(_, _) => true,

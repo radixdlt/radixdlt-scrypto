@@ -119,16 +119,18 @@ pub enum TokenKind {
     CreateAccount,
     CreateAccountAdvanced,
 
-    /* Call method aliases */
+    /* Call non-main method aliases */
     SetMetadata,
     RemoveMetadata,
-    SetPackageRoyaltyConfig,
     SetComponentRoyaltyConfig,
-    ClaimPackageRoyalty,
     ClaimComponentRoyalty,
     SetMethodAccessRule,
     SetGroupAccessRule,
     SetGroupMutability,
+
+    /* Call main method aliases */
+    SetPackageRoyaltyConfig,
+    ClaimPackageRoyalty,
     MintFungible,
     MintNonFungible,
     MintUuidNonFungible,
@@ -462,7 +464,7 @@ impl Lexer {
 
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
 
-            /* call function alias */
+            /* call function aliases */
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
             "PUBLISH_PACKAGE_ADVANCED" => Ok(TokenKind::PublishPackageAdvanced),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
@@ -479,19 +481,21 @@ impl Lexer {
             "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
             "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
-            /* call method alias */
+            /* call non-main method aliases */
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
             "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
-            "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
-            "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
             "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
             "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
             "SET_GROUP_ACCESS_RULE" => Ok(TokenKind::SetGroupAccessRule),
             "SET_GROUP_MUTABILITY" => Ok(TokenKind::SetGroupMutability),
+
+            /* call main method aliases */
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
+            "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
+            "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

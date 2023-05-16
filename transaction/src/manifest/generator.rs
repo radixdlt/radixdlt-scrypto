@@ -41,7 +41,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
@@ -474,6 +474,7 @@ pub fn generate_instruction(
             Instruction::DropAllProofs
         }
 
+        /* call function aliases */
         ast::Instruction::PublishPackage { args } => Instruction::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -547,6 +548,7 @@ pub fn generate_instruction(
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
 
+        /* call non-main method aliases */
         ast::Instruction::SetMetadata { address, args } => Instruction::CallMethod {
             module_id: ObjectModuleId::Metadata,
             address: generate_global_address(address, bech32_decoder)?,
@@ -557,18 +559,6 @@ pub fn generate_instruction(
             module_id: ObjectModuleId::Metadata,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetPackageRoyaltyConfig { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::ClaimPackageRoyalty { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyaltyConfig { address, args } => Instruction::CallMethod {
@@ -601,6 +591,7 @@ pub fn generate_instruction(
             method_name: ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
+        /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => Instruction::CallMethod {
             module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
@@ -619,9 +610,21 @@ pub fn generate_instruction(
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::SetPackageRoyaltyConfig { address, args } => Instruction::CallMethod {
+            module_id: ObjectModuleId::Main,
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::ClaimPackageRoyalty { address, args } => Instruction::CallMethod {
+            module_id: ObjectModuleId::Main,
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
         ast::Instruction::CreateValidator { address, args } => Instruction::CallMethod {
             module_id: ObjectModuleId::Main,
-            address: EPOCH_MANAGER.into(),
+            address: generate_global_address(address, bech32_decoder)?,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
@@ -636,19 +639,6 @@ macro_rules! invalid_type {
             actual: $v.clone(),
         })
     };
-}
-
-fn generate_typed_value<T: ManifestDecode>(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<T, GeneratorError> {
-    let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
-    let encoded = manifest_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
-    let decoded: T =
-        manifest_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
-    Ok(decoded)
 }
 
 fn generate_args(
@@ -669,13 +659,6 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v => invalid_type!(v, ast::Type::String),
-    }
-}
-
-fn generate_u8(value: &ast::Value) -> Result<u8, GeneratorError> {
-    match value {
-        ast::Value::U8(inner) => Ok(*inner),
-        v => invalid_type!(v, ast::Type::U8),
     }
 }
 

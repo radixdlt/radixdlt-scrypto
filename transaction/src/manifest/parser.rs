@@ -188,7 +188,7 @@ impl Parser {
             },
             TokenKind::DropAllProofs => Instruction::DropAllProofs,
 
-            /* Call function alias */
+            /* Call function aliases */
             TokenKind::PublishPackage => Instruction::PublishPackage {
                 args: self.parse_values_till_semicolon()?,
             },
@@ -227,7 +227,7 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
 
-            /* Call method alias */
+            /* Call non-main method aliases */
             TokenKind::SetMetadata => Instruction::SetMetadata {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
@@ -236,15 +236,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
             TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
@@ -264,6 +256,8 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+
+            /* Call main method aliases */
             TokenKind::MintFungible => Instruction::MintFungible {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
@@ -273,6 +267,14 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

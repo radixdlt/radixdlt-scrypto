@@ -155,7 +155,11 @@ impl EntityType {
         matches!(self, EntityType::GlobalPackage)
     }
 
-    pub const fn is_global_resource(&self) -> bool {
+    pub const fn is_global_epoch_manager(&self) -> bool {
+        matches!(self, EntityType::GlobalEpochManager)
+    }
+
+    pub const fn is_global_resource_manager(&self) -> bool {
         matches!(
             self,
             EntityType::GlobalFungibleResource | EntityType::GlobalNonFungibleResource
