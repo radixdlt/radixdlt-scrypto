@@ -6,7 +6,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::ToOwned;
@@ -103,8 +103,7 @@ pub trait MetadataObject {
             )
             .unwrap();
 
-        let value: Option<ScryptoValue> = scrypto_decode(&rtn).unwrap();
-
+        let value: MetadataGetOutput = scrypto_decode(&rtn).unwrap();
         match value {
             None => Err(MetadataError::EmptyEntry),
             Some(value) => String::from_metadata_entry(value),

@@ -1150,6 +1150,7 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_common::manifest_args;
+    use radix_engine_common::native_addresses::EPOCH_MANAGER;
     use radix_engine_common::types::ComponentAddress;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
@@ -1378,7 +1379,7 @@ mod tests {
                 module_id: ObjectModuleId::Main,
                 address: resource_address.into(),
                 method_name: "refill".to_string(),
-                args: dec!("100")
+                args: manifest_args!(dec!("100"))
             },
         );
     }
