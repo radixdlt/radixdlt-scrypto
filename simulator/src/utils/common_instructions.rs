@@ -355,7 +355,7 @@ fn build_call_argument<'a>(
                     }
                     builder
                         .add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                            ids,
+                            ids: ids.into_iter().collect(),
                             resource_address,
                         })
                         .1

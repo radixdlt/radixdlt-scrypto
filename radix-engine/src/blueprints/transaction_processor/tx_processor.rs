@@ -104,7 +104,11 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    let bucket = worktop.take_non_fungibles(resource_address, ids, api)?;
+                    let bucket = worktop.take_non_fungibles(
+                        resource_address,
+                        ids.into_iter().collect(),
+                        api,
+                    )?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
@@ -124,7 +128,11 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    worktop.assert_contains_non_fungibles(resource_address, ids, api)?;
+                    worktop.assert_contains_non_fungibles(
+                        resource_address,
+                        ids.into_iter().collect(),
+                        api,
+                    )?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
@@ -163,8 +171,11 @@ impl TransactionProcessorBlueprint {
                     ids,
                     resource_address,
                 } => {
-                    let proof =
-                        LocalAuthZone::create_proof_of_non_fungibles(&ids, resource_address, api)?;
+                    let proof = LocalAuthZone::create_proof_of_non_fungibles(
+                        &ids.into_iter().collect(),
+                        resource_address,
+                        api,
+                    )?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -187,7 +198,8 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
-                    let proof = bucket.create_proof_of_non_fungibles(ids, api)?;
+                    let proof =
+                        bucket.create_proof_of_non_fungibles(ids.into_iter().collect(), api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }

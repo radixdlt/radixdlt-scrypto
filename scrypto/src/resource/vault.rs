@@ -218,7 +218,9 @@ impl ScryptoVault for FungibleVault {
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        assert!(resource_address.as_node_id().is_global_fungible_resource_manager());
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
         Self(Vault::new(resource_address))
     }
 

@@ -269,7 +269,10 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             _ => panic!("Unexpected"),
         };
 
-        if resource_address.as_node_id().is_global_fungible_resource_manager() {
+        if resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager()
+        {
             // If there is an update to the liquid resource
             if let Some(substate) = self
                 .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(

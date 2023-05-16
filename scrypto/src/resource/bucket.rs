@@ -235,7 +235,9 @@ impl ScryptoBucket for FungibleBucket {
     type ProofType = FungibleProof;
 
     fn new(resource_address: ResourceAddress) -> Self {
-        assert!(resource_address.as_node_id().is_global_fungible_resource_manager());
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
         Self(Bucket::new(resource_address))
     }
 
