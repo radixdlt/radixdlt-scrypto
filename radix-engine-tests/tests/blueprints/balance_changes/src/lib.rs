@@ -13,14 +13,6 @@ mod balance_changes_test {
             }
             .instantiate();
 
-            let royalty = {
-                let config = RoyaltyConfigBuilder::new()
-                    .add_rule("put", 1)
-                    .add_rule("boom", 1)
-                    .default(0);
-                Royalty::new(config)
-            };
-
             let access_rules = {
                 let mut authority_rules = AuthorityRules::new();
                 authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
@@ -28,7 +20,9 @@ mod balance_changes_test {
             };
 
             local_component
-                .attach_royalty(royalty)
+                .set_royalty("put", 1)
+                .set_royalty("boom", 1)
+                .set_royalty_default(0)
                 .attach_access_rules(access_rules)
                 .globalize()
         }

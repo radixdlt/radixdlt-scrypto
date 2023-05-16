@@ -121,15 +121,16 @@ impl<C: HasStub> Owned<C> {
         Globalizing::new_with_metadata(self.0, metadata_stub)
     }
 
-    pub fn set_royalty<K: AsRef<str>, V: MetadataVal>(self, royalty_config: RoyaltyConfig) -> Globalizing<C> {
-        let royalty_stub = Royalty::new(royalty_config);
-        Globalizing::new_with_royalty(self.0, royalty_stub)
+    pub fn set_royalty(self, method: &str, amount: u32) -> Globalizing<C> {
+        let mut royalty_config = RoyaltyConfig::default();
+        royalty_config.set_rule(method, amount);
+        Globalizing::new_with_royalty(self.0, royalty_config)
     }
 
-    pub fn attach_royalty(self, royalty: Royalty) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new_with_metadata(self.0, Metadata::new());
-        let _ = globalizing.royalty.insert(royalty);
-        globalizing
+    pub fn set_royalty_default(self, amount: u32) -> Globalizing<C> {
+        let mut royalty_config = RoyaltyConfig::default();
+        royalty_config.default_rule = amount;
+        Globalizing::new_with_royalty(self.0, royalty_config)
     }
 
     pub fn attach_access_rules(self, access_rules: AccessRules) -> Globalizing<C> {
@@ -154,7 +155,7 @@ impl<C: HasStub> Owned<C> {
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
-    pub royalty: Option<Royalty>,
+    pub royalty: RoyaltyConfig,
     pub access_rules: Option<AccessRules>,
     pub address: Option<ComponentAddress>,
 }
@@ -172,24 +173,20 @@ impl<C: HasStub> Globalizing<C> {
         Self {
             stub,
             metadata: Some(metadata),
-            royalty: None,
+            royalty: RoyaltyConfig::default(),
             access_rules: None,
             address: None,
         }
     }
 
-    fn new_with_royalty(stub: C::Stub, royalty: Royalty) -> Self {
+    fn new_with_royalty(stub: C::Stub, royalty: RoyaltyConfig) -> Self {
         Self {
             stub,
             metadata: None,
-            royalty: Some(royalty),
+            royalty,
             access_rules: None,
             address: None,
         }
-    }
-
-    fn handle(&self) -> &ObjectStubHandle {
-        self.stub.handle()
     }
 
     pub fn set_metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
@@ -198,12 +195,13 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn set_royalty_config(mut self, royalty_config: RoyaltyConfig) -> Self {
-        if let Some(royalty) = &self.royalty {
-            royalty.set_config(royalty_config);
-        } else {
-            let _ = self.royalty.insert(Royalty::new(royalty_config));
-        }
+    pub fn set_royalty(mut self, method: &str, amount: u32) -> Self {
+        self.royalty.set_rule(method, amount);
+        self
+    }
+
+    pub fn set_royalty_default(mut self, amount: u32) -> Self {
+        self.royalty.default_rule = amount;
         self
     }
 
@@ -219,14 +217,14 @@ impl<C: HasStub> Globalizing<C> {
 
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
-        let royalty = self.royalty.take().unwrap_or_else(|| Royalty::default());
+        let royalty = Royalty::new(self.royalty);
         let access_rules = self
             .access_rules
             .take()
             .unwrap_or_else(|| AccessRules::default());
 
         let modules = btreemap!(
-            ObjectModuleId::Main => self.handle().as_node_id().clone(),
+            ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),
             ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
             ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
             ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),

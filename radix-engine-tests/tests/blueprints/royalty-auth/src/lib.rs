@@ -36,13 +36,6 @@ mod royalty_test {
             badge: NonFungibleGlobalId,
         ) -> Global<RoyaltyTest> {
             let local_component = Self {}.instantiate();
-            let royalty = {
-                let royalty_config = RoyaltyConfigBuilder::new()
-                    .add_rule("paid_method", 1)
-                    .add_rule("paid_method_panic", 1)
-                    .default(0);
-                Royalty::new(royalty_config)
-            };
 
             let access_rules = {
                 let mut authority_rules = AuthorityRules::new();
@@ -55,7 +48,9 @@ mod royalty_test {
             };
 
             local_component
-                .attach_royalty(royalty)
+                .set_royalty("paid_method", 1)
+                .set_royalty("paid_method_panic", 1)
+                .set_royalty_default(0)
                 .attach_access_rules(access_rules)
                 .globalize()
         }
