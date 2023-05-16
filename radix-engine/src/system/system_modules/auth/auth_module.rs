@@ -94,14 +94,14 @@ impl AuthModule {
 
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
-        actor: &MethodActor,
+        callee: &MethodActor,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let node_id = actor.node_id;
-        let module_id = actor.module_id;
-        let ident = actor.ident.as_str();
-        let acting_location = if actor.object_info.global {
+        let node_id = callee.node_id;
+        let module_id = callee.module_id;
+        let ident = callee.ident.as_str();
+        let acting_location = if callee.object_info.global {
             ActingLocation::AtBarrier
         } else {
             ActingLocation::AtLocalBarrier
@@ -116,6 +116,7 @@ impl AuthModule {
                     acting_location,
                     *auth_zone_id,
                     &AccessRulesConfig::new(),
+                    module_id,
                     &access_rule,
                     api,
                 )?;
@@ -125,7 +126,7 @@ impl AuthModule {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
                                 access_rule_stack,
-                                fn_identifier: actor.fn_identifier(),
+                                fn_identifier: callee.fn_identifier(),
                             })),
                         )));
                     }
@@ -139,7 +140,7 @@ impl AuthModule {
                 if let Some(parent) = info.outer_object {
                     let method_key = MethodKey::new(module_id, ident);
                     Self::check_authorization_against_access_rules(
-                        actor.fn_identifier(),
+                        callee.fn_identifier(),
                         auth_zone_id,
                         acting_location,
                         parent.as_node_id(),
@@ -151,7 +152,7 @@ impl AuthModule {
 
                 if info.global {
                     Self::check_authorization_against_access_rules(
-                        actor.fn_identifier(),
+                        callee.fn_identifier(),
                         auth_zone_id,
                         acting_location,
                         &node_id,
@@ -235,6 +236,7 @@ impl AuthModule {
             acting_location,
             *auth_zone_id,
             access_rules,
+            key.module_id,
             &rule!(require(authority.to_string())),
             api,
         )?;
@@ -279,6 +281,7 @@ impl AuthModule {
                         acting_location,
                         auth_zone_id,
                         &AccessRulesConfig::new(),
+                        ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
                         &access_rule,
                         &mut system,
                     )?;

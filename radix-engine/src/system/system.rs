@@ -1697,6 +1697,7 @@ where
             ActingLocation::InCallFrame,
             auth_zone_id,
             &config,
+            ObjectModuleId::Main,
             &rule,
             self,
         )?;

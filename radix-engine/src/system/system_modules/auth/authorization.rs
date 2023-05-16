@@ -6,7 +6,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -287,6 +287,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
+        module_id: ObjectModuleId,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<String, ()>,
         api: &mut Y,
@@ -304,6 +305,7 @@ impl Authorization {
                             acting_location,
                             auth_zone_id,
                             access_rules,
+                            module_id,
                             access_rule,
                             already_verified_authorities,
                             api,
@@ -325,6 +327,7 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules,
+                        module_id,
                         r,
                         already_verified_authorities,
                         api,
@@ -341,6 +344,7 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules,
+                        module_id,
                         r,
                         already_verified_authorities,
                         api,
@@ -361,6 +365,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
+        module_id: ObjectModuleId,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<String, ()>,
         api: &mut Y,
@@ -371,6 +376,7 @@ impl Authorization {
                     acting_location,
                     auth_zone_id,
                     access_rules,
+                    module_id,
                     rule_node,
                     already_verified_authorities,
                     api,
@@ -394,6 +400,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &AccessRulesConfig,
+        module_id: ObjectModuleId,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -403,6 +410,7 @@ impl Authorization {
             acting_location,
             auth_zone_id,
             access_rules,
+            module_id,
             rule,
             &mut already_verified_authorities,
             api,
