@@ -2,7 +2,13 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::address::Bech32Encoder;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -17,6 +23,9 @@ use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALI
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
 use radix_engine_interface::blueprints::package::{
     PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -558,16 +567,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
                 ) => {
                     f.write_str(&format!(
-                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-                (
-                    ObjectModuleId::AccessRules,
-                    address,
-                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                ) => {
-                    f.write_str(&format!(
                         "SET_METHOD_ACCESS_RULE\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),
                     ))?;
@@ -575,7 +574,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 (
                     ObjectModuleId::AccessRules,
                     address,
-                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
                 ) => {
                     f.write_str(&format!(
                         "SET_GROUP_ACCESS_RULE\n    Address(\"{}\")",

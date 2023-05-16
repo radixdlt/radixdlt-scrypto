@@ -1,4 +1,12 @@
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
+    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+};
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataEntry, MetadataSetInput, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
@@ -18,7 +26,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
+    PackageClaimRoyaltyInput, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
     PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
@@ -602,7 +612,8 @@ impl ManifestBuilder {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallRoyaltyMethod {
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Royalty,
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
@@ -611,7 +622,8 @@ impl ManifestBuilder {
     }
 
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallRoyaltyMethod {
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Royalty,
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
@@ -621,60 +633,74 @@ impl ManifestBuilder {
 
     pub fn set_method_access_rule(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         key: MethodKey,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::AccessRules,
+            address,
+            method_name: ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetMethodAccessRuleInput {
+                object_key: ObjectKey::SELF,
+                method_key: key,
+                rule: AccessRuleEntry::AccessRule(rule),
+            }),
         })
         .0
     }
 
     pub fn set_group_access_rule(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         object_key: ObjectKey,
         group: String,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupAccessRule {
-            entity_address,
-            object_key,
-            group,
-            rule,
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::AccessRules,
+            address,
+            method_name: ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetGroupAccessRuleInput {
+                object_key,
+                name: group,
+                rule: rule,
+            }),
         })
         .0
     }
 
     pub fn set_group_mutability(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         object_key: ObjectKey,
         group: String,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupMutability {
-            entity_address,
-            object_key,
-            group,
-            mutability,
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::AccessRules,
+            address,
+            method_name: ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetGroupMutabilityInput {
+                object_key,
+                name: group,
+                mutability: mutability,
+            }),
         })
         .0
     }
 
     pub fn set_metadata(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         key: String,
         value: MetadataEntry,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetMetadata {
-            entity_address,
-            key,
-            value,
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Metadata,
+            address,
+            method_name: METADATA_SET_IDENT.to_string(),
+            args: to_manifest_value(&MetadataSetInput { key, value }),
         })
         .0
     }
@@ -691,12 +717,18 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackageAdvanced {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config,
-            metadata,
-            access_rules,
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config,
+                metadata,
+                package_address: None,
+                access_rules,
+            }),
         });
         self
     }
@@ -706,11 +738,16 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackage {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmManifestInput {
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+            }),
         });
         self
     }
@@ -725,12 +762,18 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackageAdvanced {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
-            access_rules: package_access_rules_from_owner_badge(&owner_badge),
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: None,
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: package_access_rules_from_owner_badge(&owner_badge),
+            }),
         });
         self
     }
@@ -844,9 +887,11 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        self.add_instruction(Instruction::MintFungible {
-            resource_address,
-            amount,
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Main,
+            address: resource_address.into(),
+            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: to_manifest_value(&FungibleResourceManagerMintInput { amount }),
         });
         self
     }
@@ -864,11 +909,12 @@ impl ManifestBuilder {
             .into_iter()
             .map(|(id, e)| (id, (to_manifest_value(&e),)))
             .collect();
-        let input = NonFungibleResourceManagerMintManifestInput { entries };
 
-        self.add_instruction(Instruction::MintNonFungible {
-            resource_address,
-            args: to_manifest_value(&input),
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Main,
+            address: resource_address.into(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput { entries }),
         });
         self
     }
@@ -886,11 +932,12 @@ impl ManifestBuilder {
             .into_iter()
             .map(|e| (to_manifest_value(&e),))
             .collect();
-        let input = NonFungibleResourceManagerMintUuidManifestInput { entries };
 
-        self.add_instruction(Instruction::MintUuidNonFungible {
-            resource_address,
-            args: to_manifest_value(&input),
+        self.add_instruction(Instruction::CallMethod {
+            module_id: ObjectModuleId::Main,
+            address: resource_address.into(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput { entries }),
         });
         self
     }

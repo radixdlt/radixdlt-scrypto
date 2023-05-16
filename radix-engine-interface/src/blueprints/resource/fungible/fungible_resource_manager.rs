@@ -46,7 +46,7 @@ pub type FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput = (Resou
 
 pub const FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerMintInput {
     pub amount: Decimal,
 }
