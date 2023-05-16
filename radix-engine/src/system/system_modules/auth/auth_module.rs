@@ -56,7 +56,7 @@ pub enum AuthorizationCheckResult {
 
 impl AuthModule {
     fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         ident: &str,
         api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
@@ -358,7 +358,7 @@ impl AuthModule {
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                     instance_schema: None,

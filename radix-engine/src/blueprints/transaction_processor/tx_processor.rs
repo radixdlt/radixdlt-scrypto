@@ -79,7 +79,7 @@ impl TransactionProcessorBlueprint {
                 ),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint: Blueprint::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                        blueprint: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         global: false,
                         outer_object: None,
                         instance_schema: None,

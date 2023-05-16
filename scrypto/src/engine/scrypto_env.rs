@@ -13,7 +13,7 @@ use radix_engine_interface::api::{ClientEventApi, ClientLoggerApi, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::{Blueprint, GlobalAddress};
+use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
@@ -304,7 +304,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, ClientApiError> {
+    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, ClientApiError> {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

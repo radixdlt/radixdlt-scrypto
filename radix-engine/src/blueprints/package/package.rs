@@ -159,7 +159,7 @@ where
     node_modules.insert(
         TYPE_INFO_FIELD_PARTITION,
         ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-            blueprint: Blueprint::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+            blueprint: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             global: true,
             outer_object: None,
             instance_schema: None,

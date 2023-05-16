@@ -26,7 +26,7 @@ mod child_component {
             Runtime::assert_access_rule(rule!(require(package_of_direct_caller(package_address))));
         }
 
-        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint) {
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: BlueprintId) {
             Runtime::assert_access_rule(rule!(require(global_caller(blueprint))));
         }
     }
@@ -86,7 +86,7 @@ mod my_component {
             }
         }
 
-        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: Blueprint, child: bool) {
+        pub fn assert_check_on_global_blueprint_caller(&self, blueprint: BlueprintId, child: bool) {
             if child {
                 self.child
                     .assert_check_on_global_blueprint_caller(blueprint);

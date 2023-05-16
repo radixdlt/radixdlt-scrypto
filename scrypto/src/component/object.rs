@@ -55,7 +55,7 @@ pub trait ObjectStub {
         scrypto_decode(&output).unwrap()
     }
 
-    fn blueprint(&self) -> Blueprint {
+    fn blueprint(&self) -> BlueprintId {
         ScryptoEnv
             .get_object_info(self.handle().as_node_id())
             .unwrap()

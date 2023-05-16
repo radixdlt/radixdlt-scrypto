@@ -24,7 +24,7 @@ mod component_test {
             .globalize()
         }
 
-        pub fn get_component_info(component: Global<AnyComponent>) -> Blueprint {
+        pub fn get_component_info(component: Global<AnyComponent>) -> BlueprintId {
             component.blueprint()
         }
 

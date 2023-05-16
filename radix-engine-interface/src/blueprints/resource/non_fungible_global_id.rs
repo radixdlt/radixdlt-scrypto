@@ -2,7 +2,7 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
-use crate::types::Blueprint;
+use crate::types::BlueprintId;
 use crate::*;
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_common::types::*;
@@ -74,7 +74,7 @@ pub enum GlobalCaller {
     /// If the previous global frame started with an object's main module
     GlobalObject(GlobalAddress),
     /// If the previous global frame started with a function call
-    PackageBlueprint(Blueprint),
+    PackageBlueprint(BlueprintId),
 }
 
 impl From<ComponentAddress> for GlobalCaller {
@@ -89,8 +89,8 @@ impl From<GlobalAddress> for GlobalCaller {
     }
 }
 
-impl From<Blueprint> for GlobalCaller {
-    fn from(blueprint: Blueprint) -> Self {
+impl From<BlueprintId> for GlobalCaller {
+    fn from(blueprint: BlueprintId) -> Self {
         GlobalCaller::PackageBlueprint(blueprint)
     }
 }

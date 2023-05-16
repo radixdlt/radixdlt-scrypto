@@ -34,19 +34,19 @@ impl VirtualizationModule {
                 // Lazy create component if missing
                 let (blueprint, virtual_func_id) = match entity_type {
                     EntityType::GlobalVirtualSecp256k1Account => (
-                        Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Account => (
-                        Blueprint::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                         ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_ID,
                     ),
                     EntityType::GlobalVirtualSecp256k1Identity => (
-                        Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_ID,
                     ),
                     EntityType::GlobalVirtualEd25519Identity => (
-                        Blueprint::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                         IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_ID,
                     ),
                     _ => return Ok(false),
