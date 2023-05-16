@@ -20,13 +20,10 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let component = MetadataComponent {}.instantiate();
 
-            let access_rules = {
-                let mut authority_rules = AuthorityRules::new();
-                authority_rules.set_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll);
-                AccessRules::new(MethodAuthorities::new(), authority_rules)
-            };
+            let global = component
+                .set_authority_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll)
+                .globalize();
 
-            let global = component.attach_access_rules(access_rules).globalize();
             let metadata = global.metadata();
             metadata.set(key.clone(), value.clone());
 

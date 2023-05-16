@@ -13,17 +13,11 @@ mod balance_changes_test {
             }
             .instantiate();
 
-            let access_rules = {
-                let mut authority_rules = AuthorityRules::new();
-                authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
-                AccessRules::new(MethodAuthorities::new(), authority_rules)
-            };
-
             local_component
                 .set_royalty("put", 1)
                 .set_royalty("boom", 1)
                 .set_royalty_default(0)
-                .attach_access_rules(access_rules)
+                .set_authority_rule("owner", rule!(allow_all), rule!(allow_all))
                 .globalize()
         }
 

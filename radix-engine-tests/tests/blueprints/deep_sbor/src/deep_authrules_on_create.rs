@@ -10,11 +10,8 @@ mod deep_auth_rules_on_create {
             access_rules_depth: usize,
         ) -> Global<DeepAuthRulesOnCreate> {
             let component = Self {}.instantiate();
-            let access_rules = AccessRules::new(
-                MethodAuthorities::new(),
-                generate_deep_access_rules(resource_address, access_rules_depth),
-            );
-            component.attach_access_rules(access_rules).globalize()
+            let authority_rules = generate_deep_access_rules(resource_address, access_rules_depth);
+            component.set_authority_rules(authority_rules).globalize()
         }
     }
 }

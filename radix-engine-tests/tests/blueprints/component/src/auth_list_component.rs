@@ -15,9 +15,7 @@ mod auth_list_component {
         ) -> Global<AuthListComponent> {
             let component = Self { count, auth }.instantiate();
 
-            let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
-
-            component.attach_access_rules(access_rules).globalize()
+            component.set_authority_rules(authority_rules).globalize()
         }
 
         pub fn update_count(&mut self, count: u8) {
