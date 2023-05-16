@@ -71,70 +71,70 @@ mod mini_user {
     impl MiniUser {
         // Case 1
         pub fn create_bucket_proof_and_do_nothing() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let _proof = bucket.create_proof();
         }
 
         // Case 2
         pub fn create_bucket_proof_and_query_amount() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
             assert_eq!(proof.amount(), 5);
-            MiniProofObjectStub::drop(proof);
-            MiniBucketObjectStub::drop(bucket);
+            BlueprintFunctions::<MiniProof>::drop(proof);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
         }
 
         // Case 3
         pub fn create_bucket_proof_and_drop_proof_and_drop_bucket() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
-            MiniProofObjectStub::drop(proof);
-            MiniBucketObjectStub::drop(bucket);
+            BlueprintFunctions::<MiniProof>::drop(proof);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
         }
 
         // Case 4
         pub fn create_bucket_proof_and_drop_bucket_and_drop_proof() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
-            MiniBucketObjectStub::drop(bucket);
-            MiniProofObjectStub::drop(proof);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
+            BlueprintFunctions::<MiniProof>::drop(proof);
         }
 
         // Case 5
         pub fn create_bucket_proof_and_return_both() {
-            let (bucket, proof) = MiniUserObjectStub::create_bucket_and_proof();
-            MiniProofObjectStub::drop(proof);
-            MiniBucketObjectStub::drop(bucket);
+            let (bucket, proof) = BlueprintFunctions::<MiniUser>::create_bucket_and_proof();
+            BlueprintFunctions::<MiniProof>::drop(proof);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
         }
 
         pub fn create_bucket_and_proof() -> (Owned<MiniBucket>, Owned<MiniProof>) {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
             (bucket, proof)
         }
 
         // Case 6
         pub fn create_proof_and_drop_the_bucket_in_another_frame() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
-            MiniUserObjectStub::drop_bucket(bucket);
-            MiniProofObjectStub::drop(proof);
+            BlueprintFunctions::<MiniUser>::drop_bucket(bucket);
+            BlueprintFunctions::<MiniProof>::drop(proof);
         }
 
         pub fn drop_bucket(bucket: Owned<MiniBucket>) {
-            MiniBucketObjectStub::drop(bucket);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
         }
 
         // Case 7
         pub fn create_proof_and_drop_the_proof_in_another_frame() {
-            let bucket = MiniBucketObjectStub::new(5);
+            let bucket = BlueprintFunctions::<MiniBucket>::new(5);
             let proof = bucket.create_proof();
-            MiniUserObjectStub::drop_proof(proof);
-            MiniBucketObjectStub::drop(bucket);
+            BlueprintFunctions::<MiniUser>::drop_proof(proof);
+            BlueprintFunctions::<MiniBucket>::drop(bucket);
         }
 
         pub fn drop_proof(proof: Owned<MiniProof>) {
-            MiniProofObjectStub::drop(proof);
+            BlueprintFunctions::<MiniProof>::drop(proof);
         }
     }
 }

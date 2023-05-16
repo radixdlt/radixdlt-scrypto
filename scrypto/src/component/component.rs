@@ -20,6 +20,12 @@ use sbor::{
 use scrypto::modules::{Attached, Metadata};
 use scrypto::prelude::well_known_scrypto_custom_types::OWN_ID;
 
+pub struct BlueprintFunctions<C>(PhantomData<C>);
+
+pub trait HasStub {
+    type Stub: ObjectStub;
+}
+
 pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
@@ -227,9 +233,6 @@ impl<O: HasStub> Clone for Global<O> {
     }
 }
 
-pub trait HasStub {
-    type Stub: ObjectStub;
-}
 
 impl<O: HasStub> Deref for Global<O> {
     type Target = O::Stub;
