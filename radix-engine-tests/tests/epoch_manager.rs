@@ -561,14 +561,14 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         vec![
             RewardAppliedEvent {
                 stake_added_xrd: a_stake_added,
-                liquidity_token_supply: a_stake,
+                total_su_supply: a_stake,
                 validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
                 proposals_made: 1,
                 proposals_missed: 0,
             },
             RewardAppliedEvent {
                 stake_added_xrd: b_stake_added,
-                liquidity_token_supply: b_stake,
+                total_su_supply: b_stake,
                 validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
                 proposals_made: 0,
                 proposals_missed: 0,
@@ -649,7 +649,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         reward_applied_events,
         vec![RewardAppliedEvent {
             stake_added_xrd: validator_stake_added,
-            liquidity_token_supply: validator_stake,
+            total_su_supply: validator_stake,
             validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
             proposals_made: 1,
             proposals_missed: 3,
@@ -725,7 +725,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         reward_applied_events,
         vec![RewardAppliedEvent {
             stake_added_xrd: Decimal::zero(), // even though the emission gave 0 XRD to this validator...
-            liquidity_token_supply: validator_stake,
+            total_su_supply: validator_stake,
             validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
             proposals_made: 1,
             proposals_missed: 3, // ... we still want the event, e.g. to surface this information
@@ -1248,11 +1248,11 @@ fn cannot_claim_unstake_immediately() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
         dummy_epoch_manager_configuration(),
     );
@@ -1263,19 +1263,15 @@ fn cannot_claim_unstake_immediately() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
-            1.into(),
-        )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.su_token, 1.into())
+        .take_all_from_worktop(validator_substate.su_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1306,11 +1302,11 @@ fn can_claim_unstake_after_epochs() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
         dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
@@ -1319,16 +1315,12 @@ fn can_claim_unstake_after_epochs() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
-            1.into(),
-        )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.su_token, 1.into())
+        .take_all_from_worktop(validator_substate.su_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1343,12 +1335,12 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
+        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1.into())
         .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1373,12 +1365,12 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
 
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
         dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
@@ -1387,16 +1379,12 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
-            Decimal::one(),
-        )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.su_token, Decimal::one())
+        .take_all_from_worktop(validator_substate.su_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1527,5 +1515,6 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         num_unstake_epochs: 1,
         total_emission_xrd_per_epoch: Decimal::one(),
         min_validator_reliability: Decimal::one(),
+        num_owner_su_unlock_epochs: 2,
     }
 }

@@ -27,6 +27,7 @@ pub struct EpochManagerInitialConfiguration {
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
+    pub num_owner_su_unlock_epochs: u64,
 }
 
 impl EpochManagerInitialConfiguration {
@@ -209,7 +210,7 @@ pub const VALIDATOR_UNSTAKE_IDENT: &str = "unstake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorUnstakeInput {
-    pub lp_tokens: Bucket,
+    pub su_bucket: Bucket,
 }
 
 pub type ValidatorUnstakeOutput = Bucket;

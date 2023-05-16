@@ -34,10 +34,10 @@ pub struct RewardAppliedEvent {
     /// means that any applicable reliability penalty and validator fee were already subtracted.
     pub stake_added_xrd: Decimal,
     /// A total supply of stake units of the validator at the moment of applying this reward.
-    /// Note: calculating `stake_added_xrd / liquidity_token_supply` gives a convenient "XRD reward
-    /// per stake unit" factor, which may be used to easily calculate individual staker's gains.
+    /// Note: calculating `stake_added_xrd / total_su_supply` gives a convenient "XRD reward per
+    /// stake unit" factor, which may be used to easily calculate individual staker's gains.
     /// Note: this number is captured *before* auto-staking of the validator fee described below.
-    pub liquidity_token_supply: Decimal,
+    pub total_su_supply: Decimal,
     /// An amount of XRD received by the validator's owner (according to the configured fee
     /// percentage).
     /// Note: this fee is automatically staked and placed inside the owner's stake vault (internal

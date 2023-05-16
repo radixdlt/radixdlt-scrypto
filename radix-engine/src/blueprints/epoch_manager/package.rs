@@ -358,7 +358,7 @@ impl EpochManagerNativePackage {
                 let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::unstake(input.lp_tokens, api)?;
+                let rtn = ValidatorBlueprint::unstake(input.su_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
