@@ -135,12 +135,13 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     ///
     /// If the type is well known or already in the aggregator, this returns early with the existing index.
     ///
-    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
-    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    /// Typically you should use [`add_schema_and_descendents`], unless you're replacing/mutating
+    /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
+    /// [`add_schema_descendents`] separately.
     ///
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
-    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_child_type(
         &mut self,
         type_index: GlobalTypeId,
@@ -164,12 +165,13 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
 
     /// Adds the type's descendent types to the `TypeAggregator`, if they've not already been added.
     ///
-    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
-    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    /// Typically you should use [`add_child_type_and_descendents`], unless you're replacing/mutating
+    /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
+    /// [`add_schema_descendents`] separately.
     ///
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
-    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
         let GlobalTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
             return false;
