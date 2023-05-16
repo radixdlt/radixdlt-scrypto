@@ -8,13 +8,9 @@ mod metadata_component {
         pub fn new(key: String, value: String) {
             let component = Self {}.instantiate();
 
-            let metadata = {
-                let metadata = Metadata::new();
-                metadata.set(key.clone(), value.clone());
-                metadata
-            };
-
-            let global = component.attach_metadata(metadata).globalize();
+            let global = component
+                .set_metadata(key.clone(), value.clone())
+                .globalize();
 
             let metadata = global.metadata();
 

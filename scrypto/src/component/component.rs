@@ -6,6 +6,7 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -114,32 +115,37 @@ impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
 }
 
 impl<C: HasStub> Owned<C> {
-    pub fn attach_metadata(self, metadata: Metadata) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new(self.0);
-        let _ = globalizing.metadata.insert(metadata);
-        globalizing
+    pub fn set_metadata<K: AsRef<str>, V: MetadataVal>(self, name: K, value: V) -> Globalizing<C> {
+        let metadata_stub = Metadata::new();
+        metadata_stub.set(name, value);
+        Globalizing::new_with_metadata(self.0, metadata_stub)
+    }
+
+    pub fn set_royalty<K: AsRef<str>, V: MetadataVal>(self, royalty_config: RoyaltyConfig) -> Globalizing<C> {
+        let royalty_stub = Royalty::new(royalty_config);
+        Globalizing::new_with_royalty(self.0, royalty_stub)
     }
 
     pub fn attach_royalty(self, royalty: Royalty) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new(self.0);
+        let mut globalizing = Globalizing::new_with_metadata(self.0, Metadata::new());
         let _ = globalizing.royalty.insert(royalty);
         globalizing
     }
 
     pub fn attach_access_rules(self, access_rules: AccessRules) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new(self.0);
+        let mut globalizing = Globalizing::new_with_metadata(self.0, Metadata::new());
         let _ = globalizing.access_rules.insert(access_rules);
         globalizing
     }
 
     pub fn attach_address(self, address: ComponentAddress) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new(self.0);
+        let mut globalizing = Globalizing::new_with_metadata(self.0, Metadata::new());
         let _ = globalizing.address.insert(address);
         globalizing
     }
 
     pub fn globalize(self) -> Global<C> {
-        let globalizing: Globalizing<C> = Globalizing::new(self.0);
+        let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
         globalizing.globalize()
     }
 }
@@ -162,11 +168,21 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub> Globalizing<C> {
-    fn new(stub: C::Stub) -> Self {
+    fn new_with_metadata(stub: C::Stub, metadata: Metadata) -> Self {
+        Self {
+            stub,
+            metadata: Some(metadata),
+            royalty: None,
+            access_rules: None,
+            address: None,
+        }
+    }
+
+    fn new_with_royalty(stub: C::Stub, royalty: Royalty) -> Self {
         Self {
             stub,
             metadata: None,
-            royalty: None,
+            royalty: Some(royalty),
             access_rules: None,
             address: None,
         }
@@ -176,13 +192,18 @@ impl<C: HasStub> Globalizing<C> {
         self.stub.handle()
     }
 
-    pub fn attach_metadata(mut self, metadata: Metadata) -> Self {
-        let _ = self.metadata.insert(metadata);
+    pub fn set_metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
+        let metadata = self.metadata.get_or_insert(Metadata::new());
+        metadata.set(name, value);
         self
     }
 
-    pub fn attach_royalty(mut self, royalty: Royalty) -> Self {
-        let _ = self.royalty.insert(royalty);
+    pub fn set_royalty_config(mut self, royalty_config: RoyaltyConfig) -> Self {
+        if let Some(royalty) = &self.royalty {
+            royalty.set_config(royalty_config);
+        } else {
+            let _ = self.royalty.insert(Royalty::new(royalty_config));
+        }
         self
     }
 
