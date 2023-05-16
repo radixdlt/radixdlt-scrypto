@@ -461,6 +461,63 @@ pub fn recovery_can_cancel_their_badge_withdraw_attempt() {
     }
 }
 
+#[test]
+pub fn minting_of_recovery_badges_succeeds_for_primary_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Primary, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Recovery, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn minting_of_recovery_badges_fails_for_confirmation_role() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    let mut non_fungible_local_ids = index_set_new();
+    non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
+
+    // Act
+    let receipt = test_runner.mint_recovery_badges(Role::Confirmation, non_fungible_local_ids);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
+}
+
+#[test]
+pub fn post_instantiation_method_can_not_be_called_on_access_controller_publicly() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+
+    // Act
+    let receipt = test_runner.post_instantiation(Role::Primary);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error);
+}
+
 //=============
 // State Tests
 //=============
@@ -1906,6 +1963,41 @@ impl AccessControllerTestRunner {
                     },
                     timed_recovery_delay_in_minutes,
                 }),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn mint_recovery_badges(
+        &mut self,
+        as_role: Role,
+        non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
+    ) -> TransactionReceipt {
+        let manifest = self
+            .manifest_builder(as_role)
+            .call_method(
+                self.access_controller_address,
+                ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
+                to_manifest_value(&AccessControllerMintRecoveryBadgesInput {
+                    non_fungible_local_ids,
+                }),
+            )
+            .call_method(
+                self.account.0,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn post_instantiation(&mut self, as_role: Role) -> TransactionReceipt {
+        let manifest = self
+            .manifest_builder(as_role)
+            .call_method(
+                self.access_controller_address,
+                ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
+                to_manifest_value(&AccessControllerPostInstantiationInput),
             )
             .build();
         self.execute_manifest(manifest)

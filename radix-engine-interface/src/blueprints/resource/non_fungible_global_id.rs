@@ -77,15 +77,12 @@ pub enum GlobalCaller {
     PackageBlueprint(Blueprint),
 }
 
-impl From<ComponentAddress> for GlobalCaller {
-    fn from(value: ComponentAddress) -> Self {
+impl<T> From<T> for GlobalCaller
+where
+    T: Into<GlobalAddress>,
+{
+    fn from(value: T) -> Self {
         GlobalCaller::GlobalObject(value.into())
-    }
-}
-
-impl From<GlobalAddress> for GlobalCaller {
-    fn from(value: GlobalAddress) -> Self {
-        GlobalCaller::GlobalObject(value)
     }
 }
 

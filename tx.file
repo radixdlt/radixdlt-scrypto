@@ -1,0 +1,2813 @@
+A new account has been created!
+Account component address: account_sim1cxfw3z4mpd3facrkqmmnews6dp8rp67km89c63gxjuls9l54c77ss9
+Public key: 03a5578322fe300171a012804ce100cf0a2cadfd6e5b56e4dd7c5ffa2392743e4f
+Private key: 097618365b2f7d3fdb07268a3b2257605820d1438c62c76bbb47fdddda47913d
+Owner badge: resource_sim1n2ugu94u8p9xmue09lhj58ungn2zpatzf7ua8sf9452z5we3w02vyv:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5x34dnzjvm7uqszfrg9p9c9r0kru5kvltntmc0qhp2a6ptyyx2ntc, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58461507b3123bd465b6db23dd12d159f945e0ede79533b9e6aaa3d98d49")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tprp2panzgaagedkmv3a6yk3t8u5tc8du72n8w0x423anr2f7ajes9, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5x34dnzjvm7uqszfrg9p9c9r0kru5kvltntmc0qhp2a6ptyyx2ntc"),
+     Own("internal_component_sim1lpe4r9uufvn2dx2l8f7ul36662s5p39ngmc5934h7rdp5xvvewpxvn"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5x34dnzjvm7uqszfrg9p9c9r0kru5kvltntmc0qhp2a6ptyyx2ntc
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5x34dnzjvm7uqszfrg9p9c9r0kru5kvltntmc0qhp2a6ptyyx2ntc
+A new account has been created!
+Account component address: account_sim1cy643500teys9umpx3yxc3zv755vue9y75xt32c0w7k5pq2gvau5a3
+Public key: 03579857a8831aa661dc3cf64d9b4d06c1ebaf6def9cefb98a0f1c99999deb73f0
+Private key: 6471ef155894bcbaad2e0144bb48c5460f65591a7115f2975324a25b244d5b86
+Owner badge: resource_sim1ngcd8xqahlqxghgv0yezmw8a8aqy5qz54d5ev3vv5dgay6d9fpk0vy:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4nzrrwzek6dsss5dgjk2v9wdrnq7qp6pfjcx6aqzfumeu97em4tq9, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5847a489f76365fb6a2542c1a3fc85cb055937159b42d5f84059037f328d")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpr6fz0hvdjlk639gtq68ly9evz4jdc4ndpdt7zqtyph7v5dxfc048, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4nzrrwzek6dsss5dgjk2v9wdrnq7qp6pfjcx6aqzfumeu97em4tq9"),
+     Own("internal_component_sim1lqxjnya76uk35p7lngjldzfdh5yp3f3gpwz5g9la5nwqn4empvlghy"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4nzrrwzek6dsss5dgjk2v9wdrnq7qp6pfjcx6aqzfumeu97em4tq9
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4nzrrwzek6dsss5dgjk2v9wdrnq7qp6pfjcx6aqzfumeu97em4tq9
+A new account has been created!
+Account component address: account_sim1cxmq5mlnz4ep5h3t0gd4xnxnx6axvrxqzdjav3ruxhdkdef8309z4j
+Public key: 02d202a07323648b9bb019a8378b2ec117b8d6756ecf85a1ae1a70d009bfdce61e
+Private key: db402f740f024ca5d4d8d395f2545fc2a910d8bc6e922957b0764914a5fb8fe0
+Owner badge: resource_sim1nf5dzckcrvgn6ef9ggcfqmfa50g5qh5p2wtr7f0hhkvug3la233024:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkjgrrpg037v94vachttjg33rprnnfj37k0mfldh4jg3dxw6xg4akx, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5846d1c1ad77dbf465447481f979df781b5ba4415b668028771a3894764c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tprdrsddwldlge2ywjqlj7wl0qd4hfzptdngq2rhrgufgajvrj8yx3, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkjgrrpg037v94vachttjg33rprnnfj37k0mfldh4jg3dxw6xg4akx"),
+     Own("internal_component_sim1lz63u5jaf2e7eg4fes939t37kk44rftp3m23sp9rqkq5uj8vwdha75"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkjgrrpg037v94vachttjg33rprnnfj37k0mfldh4jg3dxw6xg4akx
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkjgrrpg037v94vachttjg33rprnnfj37k0mfldh4jg3dxw6xg4akx
+A new account has been created!
+Account component address: account_sim1c9k236wrya0634lmu5l6v63pt5svw3lr2scfed8ylgynm32wwl087k
+Public key: 03735ef64d1de50645fe3c5c9f2bb0006eea87a4dca3b5365797d16dee531b8362
+Private key: 79c3aa407c068da18858b2e8ff51558adbd23aa108ca9df8a31cd4f4993b1234
+Owner badge: resource_sim1nggrf68erydc5jy4cmk4w3glhzxty743mtynxgyz3pj3tw628m7mlj:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thjxu3hr732zcfj73z5nltmrhgek3j0umkvrw70eae3uglkyq5ldju, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5847a09c1d1c92994f38e73bea1cef08ad8cd1e570e86e2488e57c93a113")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpr6p8qarjffjnecuua75880pzkce509wr5xufygu47f8ggn2x6dr8, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thjxu3hr732zcfj73z5nltmrhgek3j0umkvrw70eae3uglkyq5ldju"),
+     Own("internal_component_sim1lzeae8c0sxlnmkp7vgjq6jvpafh2hjn26f3fnct7fw4c2zl3l95dwl"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thjxu3hr732zcfj73z5nltmrhgek3j0umkvrw70eae3uglkyq5ldju
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thjxu3hr732zcfj73z5nltmrhgek3j0umkvrw70eae3uglkyq5ldju
+A new account has been created!
+Account component address: account_sim1c9jd83re90frgs35fz9uu4stjfqku3z8cpt4nhgseqqmpzeae62ewk
+Public key: 0301243e24039362b84a459d060c4569edf0c2ea2fefa96d84dcfdc6c42c46d1a1
+Private key: 2da5bd5adc593686ec58fcec74b231cd07f13b9b75cbc9ee8cffd4cce32eb387
+Owner badge: resource_sim1n25unnpz6ne8ag9fzj9zpqz2vheup2afm2s2mjwkxmnknaqdcj7f2g:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkyjjhkmzg9ggufvlk9umrj46q3k9ud3v8zucf2hvs89m06alex08r, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58bfc3f260fc03422a193888ce8622e2bc3245fa1adfe4bebb586084d897")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzlu8unqlsp5y2se8zyvap3zu27ry306rt07f04mtpsgfkyhzmsymq, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkyjjhkmzg9ggufvlk9umrj46q3k9ud3v8zucf2hvs89m06alex08r"),
+     Own("internal_component_sim1lputlvt5cyxfc9p3j06cp6emsfwr59rfc7v24cnaew6h2csn0lm86s"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkyjjhkmzg9ggufvlk9umrj46q3k9ud3v8zucf2hvs89m06alex08r
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkyjjhkmzg9ggufvlk9umrj46q3k9ud3v8zucf2hvs89m06alex08r
+A new account has been created!
+Account component address: account_sim1cyafwj5a79jeaghmcu8ullfvtf00h36s4pzh6arjta6vtjecehfd0h
+Public key: 0201ad0fe6ad96b88f8493c26fafc78099f8e2873c4c255d48d37736539b0c64ae
+Private key: 99141752617d7ea7ed686d8884f558a687a1d765380828902b34e350cfc1102f
+Owner badge: resource_sim1ngzmpfwmp50hdg22wf5eqg32q0hfhslddfz6442dpdeh259rjqtalc:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4nyuxjnl8lu9ua3edqsc3r9g0zdn02dv73acursvxwlaqq7rckd5k, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58c32e4385e5f54b5db5bc6daea53952b7eda8a184860f714be4d5d0e2bb")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trpjusu9uh65khd4h3k6affe22m7m29psjrq7u2tun2apc4m4dkghz, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4nyuxjnl8lu9ua3edqsc3r9g0zdn02dv73acursvxwlaqq7rckd5k"),
+     Own("internal_component_sim1lzw7uc8pp3w3stf3sufvg6m9r9uyde4q0mefjwl3p6xq54c05f24k9"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4nyuxjnl8lu9ua3edqsc3r9g0zdn02dv73acursvxwlaqq7rckd5k
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4nyuxjnl8lu9ua3edqsc3r9g0zdn02dv73acursvxwlaqq7rckd5k
+A new account has been created!
+Account component address: account_sim1cx6xrvkxxe3yehrvg4z9sfa4h2hpxta4e6x62wutqde07zckn4wyx6
+Public key: 020388b6eeaa2a280e06aa14fef872634f2b8aa4f6de1650d52531915f29b21a7c
+Private key: 898a11c33aba17e33ef137c9b0b9b31637811eababa7564ce00bcd0311377298
+Owner badge: resource_sim1n2vgcf7l27u0wj0zyq489w4nujxy9ma49mr7l6dzkp5gwac9knqphg:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thztmflx4rtssp3uzm4dd622fy40u9em05xjylvjwne67jlmzk0kc6, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58a7b811d0cf85e1847fc38ecdb3b40ef17cf4212fc22e87e4262a0c8627")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tznmsywse7z7rprlcw8vmva5pmcheapp9lpzaplyyc4qep38x8gjrn, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thztmflx4rtssp3uzm4dd622fy40u9em05xjylvjwne67jlmzk0kc6"),
+     Own("internal_component_sim1lp846ys539vh4dcqx654nrpgmwrme8587q9zasmz49xv39uhhxx9f5"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thztmflx4rtssp3uzm4dd622fy40u9em05xjylvjwne67jlmzk0kc6
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thztmflx4rtssp3uzm4dd622fy40u9em05xjylvjwne67jlmzk0kc6
+A new account has been created!
+Account component address: account_sim1c8lpsualtpvlcly5flgj3296llpkac95phhu36tu4rk2sw6ulwp9r8
+Public key: 0362eb1a3186af7db50887b17ebaf8e65ee0b718e42b283961816204725dd512d9
+Private key: 512f4fafc717e025193dbab69bba556857ef4b68850cd283f6d8299d032cf6cf
+Owner badge: resource_sim1n2mk893lwz74dysugsldnv256285n0fec86wuff49f0mjeqj8v0463:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t47npfcnf0wufq3r2aprskg3xfldvglxf3vhpg92e7x5f4trqrs6mg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("580cf7f6e0bb941e15b1354e037ec42d9a562d0276e5360986f17b95e6cb")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqx00ahqhw2pu9d3x48qxlky9kd9vtgzwmjnvzvx79aetekts8yvfa, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t47npfcnf0wufq3r2aprskg3xfldvglxf3vhpg92e7x5f4trqrs6mg"),
+     Own("internal_component_sim1lrwh70x3e0emhmuvajry0uk88xfhwjzyz5tes9yga6w470xh23d5my"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t47npfcnf0wufq3r2aprskg3xfldvglxf3vhpg92e7x5f4trqrs6mg
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t47npfcnf0wufq3r2aprskg3xfldvglxf3vhpg92e7x5f4trqrs6mg
+A new account has been created!
+Account component address: account_sim1c93mj983pgx4cveymfm2kdjjdv8jw7aglsrkuj0xwzj90q78wqenlv
+Public key: 022a2232986af070f3b904c00a4aee0122758ec1bed8a9942fcae178e42bd654eb
+Private key: 2ad2d844f5201ef36747980d21b0c1ae9e2f67842b7c702068983ed6d27d34c4
+Owner badge: resource_sim1ng72w7dlaqv45l92uwhaxk0ekz9dualnapgchkee5ywclnd69um74g:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t47v8wz7u6dmm2fh4advh9ek0dk2yzl3rzvxhsn2ddwz836zul5gyx, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5878648ae3c172a10d0948108e94e445ad23d0b43f21a5412c1c08281dde")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpuxfzhrc9e2zrgffqgga98ygkkj85958us62sfvrsyzs8w7vnxxrh, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t47v8wz7u6dmm2fh4advh9ek0dk2yzl3rzvxhsn2ddwz836zul5gyx"),
+     Own("internal_component_sim1lzd2jsqjlvvxnv7hyfc0790tc23vye08zckcw8yhq94ldwx8yqa904"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t47v8wz7u6dmm2fh4advh9ek0dk2yzl3rzvxhsn2ddwz836zul5gyx
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t47v8wz7u6dmm2fh4advh9ek0dk2yzl3rzvxhsn2ddwz836zul5gyx
+A new account has been created!
+Account component address: account_sim1cy3gv0f5mu09670ah3wgfnrfgyp47fqk8fkfcel4sjhj20qqattc57
+Public key: 0326c802ebc6e4dce08ae8089dea0ee274ea16fa1c319d76b0b4861c2bf0bad210
+Private key: 3cf2e0532b31a5bff3a9131ec6c20eb99e675f11d04eefbb78aede973234d3b4
+Owner badge: resource_sim1ntr77lfckmug5azs39nrfyk5t5guxgs3pv7ngllj57ln2m7jlnnj5w:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thcvng8m76j0dm892kkkpuu73z9ghnr74ndzk89dr9e43dykhv0kvk, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("589092e9a27e5df93024d23618efcf880175620c59f43935ee59f3f93153")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzgf96dz0ewljvpy6gmp3m703qqh2csvt86rjd0wt8eljv2n55jx0q, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thcvng8m76j0dm892kkkpuu73z9ghnr74ndzk89dr9e43dykhv0kvk"),
+     Own("internal_component_sim1lprmudvh43wuczsrlfcclmsdmkpmfx7jswldwe54jpk9glfgdx5jtp"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thcvng8m76j0dm892kkkpuu73z9ghnr74ndzk89dr9e43dykhv0kvk
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thcvng8m76j0dm892kkkpuu73z9ghnr74ndzk89dr9e43dykhv0kvk
+A new account has been created!
+Account component address: account_sim1c8cmnhh8skx6p6eemt4x8w3xv9sdgs2dq2c5kf3e0dv9vjhez8wsdp
+Public key: 03105f8a0ceb8fc213a33a7c7cd7f12e6f1d68d1be7fd68abad35ac680402dc315
+Private key: c9dce68b8ebaab8730df543532835f4becbcac376549c95dfda22ba909e77a68
+Owner badge: resource_sim1n24wjwe7xnr5wqva6wy00jz0fnm7a3tvax2vhsak0ght4c84vmwhm2:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1the3h633qlea3ltrjr5pfgqe9dwnm0whyayev2fc40nvunuw2uwynu, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("581060957710f0205226df63ed6ae928106d3ab5a59dc3fab50499765639")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqgxp9thzrczq53xma3766hf9qgx6w445kwu8744qjvhv43el577ul, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1the3h633qlea3ltrjr5pfgqe9dwnm0whyayev2fc40nvunuw2uwynu"),
+     Own("internal_component_sim1lq6ksvtz589xnyjrtz6dj4zknav0tq4z2ld2hfqhz5cksccjx3lflt"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1the3h633qlea3ltrjr5pfgqe9dwnm0whyayev2fc40nvunuw2uwynu
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1the3h633qlea3ltrjr5pfgqe9dwnm0whyayev2fc40nvunuw2uwynu
+A new account has been created!
+Account component address: account_sim1c8s7u7uw6ppyexmqh4z095cpr6v3wlhf0ag5eqmd7pq4h2s08fphjn
+Public key: 032130cc3963eb128be9da9b93ab5f1768720d709fe4d4eae30d4b5c1114574424
+Private key: 36257ca4b128d51c374a45c2093e6125ad95f4cdb8a3085f4b35ad98357c247f
+Owner badge: resource_sim1ngngccy9h4r3q00t5758yya8x8n9tfy5kzppwgu0y8n7g98ptca7wt:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thta403uwk9zwf6c04ttajw97p8hplcv8ys8sgst3l9r7jqn5davjq, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58a487f8bc8da2994ee3adac29f9e17fb8935c90a1277f30c1c83456b721")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzjg079u3k3fjnhr4kkzn70p07ufxhys5ynh7vxpeq69ddep0dthvy, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thta403uwk9zwf6c04ttajw97p8hplcv8ys8sgst3l9r7jqn5davjq"),
+     Own("internal_component_sim1lz5kj9hqxza3xzkquvu2mmmct3u9tgg30wq8wvgzdz3n400yn74kyz"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thta403uwk9zwf6c04ttajw97p8hplcv8ys8sgst3l9r7jqn5davjq
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thta403uwk9zwf6c04ttajw97p8hplcv8ys8sgst3l9r7jqn5davjq
+A new account has been created!
+Account component address: account_sim1c9ypxdwywx8xfudukc6wwavkjqsvw68gy9d53k0ysd9q6t8dshm9kf
+Public key: 02f2d739e222943a838dd739919067a20436192311eda6a8faf44508b36be25421
+Private key: 3477b4e1ce9b1688e6892b92db54e7d2c614220d7b46315ed0612b81a7028b68
+Owner badge: resource_sim1ngxsx6yt0eupcytrgxlta9lzck8k4u2gk60zytulfmxmhyvqvahv7y:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkkyuf0ew494tjmj5agqczq62fmwlqaeh8ftx3l2s6gawjt5p79ad7, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58779fe2105f7cc776407a075764cb38bf0af72fd295ba5713b1c0cb4ced")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpmelcssta7vwajq0gr4wext8zls4ae0622m54cnk8qvkn8dvh2ard, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkkyuf0ew494tjmj5agqczq62fmwlqaeh8ftx3l2s6gawjt5p79ad7"),
+     Own("internal_component_sim1lz4cavztnqfvt5jjtfwnln5s48xtjq7jfwc959v9yc0gxs7xr8qfgt"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkkyuf0ew494tjmj5agqczq62fmwlqaeh8ftx3l2s6gawjt5p79ad7
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkkyuf0ew494tjmj5agqczq62fmwlqaeh8ftx3l2s6gawjt5p79ad7
+A new account has been created!
+Account component address: account_sim1cy25hlsmanh2a4d3kc92wuup5dtf80kqquf0n0sxt4yat9sc32nkfp
+Public key: 029117f72865eb4fab168f239f3d700529c83700b0f561f4d1ec9854746b61d008
+Private key: 00f797a4faec471536261e951c3ce948a4befd30529a79b4d9d4744f94f58dd7
+Owner badge: resource_sim1n2safrfuq95x2ua2m0exsk4v06yvm928vaj6ed8fgyuvst8khlp62l:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t520xp9mr80vxycv9ckh3th0sfnzarthvpsnnr6c3kdccl89xzgurw, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5863bd8fde560571675869cc97ef6147beb09dad25e89fcc1c35cdb8f51f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tp3mmr772czhze6cd8xf0mmpg7ltp8ddyh5flnquxhxm3agl9cf6r2, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t520xp9mr80vxycv9ckh3th0sfnzarthvpsnnr6c3kdccl89xzgurw"),
+     Own("internal_component_sim1lzv0zlzty67l26sgemlefes9pgnr04y0ry5r8sky58lnhujmq20f5j"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t520xp9mr80vxycv9ckh3th0sfnzarthvpsnnr6c3kdccl89xzgurw
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t520xp9mr80vxycv9ckh3th0sfnzarthvpsnnr6c3kdccl89xzgurw
+A new account has been created!
+Account component address: account_sim1c85q7nasvg2ep48j2elf8eaq55qsxryeyegdfgy0rp0xn35dquq0r2
+Public key: 03e26509a6ed8f53bc40bd293820da17696de62564bddad19c4c0b1dd0ec6a7cea
+Private key: 6a20b874056d1c327f577608c515c14abc9087f891cc381f2fc5e8ca5b97b7c0
+Owner badge: resource_sim1nf88s6ug95u6g7qu9rwa7qtrun7x9fp6nh4ka0lcd248tusw7jjh3a:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4hmpk6t6qyfzy8ad8wzdlfnhsk5nwpdvckqxc56dxzt64gvgz5ddh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58e559af5349845e5d04e522551b3f6c3ed3bc1ff56a3f0c5ce954db6a74")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trj4nt6nfxz9uhgyu5392xeldsld80ql744r7rzua92dk6n5j57yj0, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4hmpk6t6qyfzy8ad8wzdlfnhsk5nwpdvckqxc56dxzt64gvgz5ddh"),
+     Own("internal_component_sim1lp0uwrzxk67tryplcxrc4n4sf0gtnt7ep6dgsuas84kcfunnw24j4n"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4hmpk6t6qyfzy8ad8wzdlfnhsk5nwpdvckqxc56dxzt64gvgz5ddh
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4hmpk6t6qyfzy8ad8wzdlfnhsk5nwpdvckqxc56dxzt64gvgz5ddh
+A new account has been created!
+Account component address: account_sim1cy2veg5krfdc0sccj02u892dpdpvsz9hjk8ffmcwawsnksrwftr8y4
+Public key: 0341523158c911e51a5927de12e2bfe530e00e57162075f5f7f7bf7964669f945c
+Private key: b4e0e6a998d1ff2459e80f26728bb1092b48b7391a5431bc860ec160417e187f
+Owner badge: resource_sim1n2nvj6lsqp8d00r8ckd64cqyh8ggv6pkpp3yjx8nnf2m9p9z2x64mk:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t45ayelm0yem4fyg93cmpagqqqqjwx3ycgt4pdfwz0ccn2rlmyuzl7, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58fd81b9764f634249e201001936f493c009e63cab46c1a2b20c5a989bda")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tr7crwtkfa35yj0zqyqpjdh5j0qqne3u4drvrg4jp3df3x767emtn2, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t45ayelm0yem4fyg93cmpagqqqqjwx3ycgt4pdfwz0ccn2rlmyuzl7"),
+     Own("internal_component_sim1lqrhzesf7afx8jznx5lyht669shzdr22uz0cwnq60sy7wqaufjcqay"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t45ayelm0yem4fyg93cmpagqqqqjwx3ycgt4pdfwz0ccn2rlmyuzl7
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t45ayelm0yem4fyg93cmpagqqqqjwx3ycgt4pdfwz0ccn2rlmyuzl7
+A new account has been created!
+Account component address: account_sim1cxkdawspfjtenzeza6jl32gk05czsyp6xd3jmpeaehycv0cm95yvss
+Public key: 02daa81f9f0c2e4c8b9cb6dd9c181d82ecb724005c4d91f79273e1949ec2138848
+Private key: 7d2e813d8536c24fb01f409e134b252c3193260253be925179407f405bffaa11
+Owner badge: resource_sim1nta0pxqd04v9epv2m7hvr6lcxj0a3anhl44j0g2649y7s07wp9zvsn:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk40u2n3pncmw7tgx8jvy9vkgnyc8cw0q6q4jk5y5t57u280ef75p5, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("584ad193686106c65d0fe8fb6f0b8cc577228586add380d1e89ac3410300")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tp9drymgvyrvvhg0arak7zuvc4mj9pvx4hfcp50gntp5zqcq09fu2k, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk40u2n3pncmw7tgx8jvy9vkgnyc8cw0q6q4jk5y5t57u280ef75p5"),
+     Own("internal_component_sim1lzwvhxrhyewcfysrnpujxvwp5pkf8m2k9ry90sry600fyhvgedca59"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk40u2n3pncmw7tgx8jvy9vkgnyc8cw0q6q4jk5y5t57u280ef75p5
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk40u2n3pncmw7tgx8jvy9vkgnyc8cw0q6q4jk5y5t57u280ef75p5
+A new account has been created!
+Account component address: account_sim1cxnrvf53cya2gql0halze40hw4gtmye6dk3m92fkv4ajeevpdm2xth
+Public key: 03bbd8602f7a81f3644e96d702742ec5077131e4ae6f0dd31b779cdcd952808a7a
+Private key: 56ed795ce2a4be2b87ad0ae4319740c65f3d99ce6244804729e37bf2a6b93094
+Owner badge: resource_sim1nt6awcwnf0xw3tyx3u6g4uelwun8vmufn5vkj7cmlh39hs9hgnt9rk:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thyakddvnky9aauk92m6lgaeelwmdwzfps6f20jeyn7yhc7ej9yrwg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58336428eae703f5738fe189e57d140902f06bc41cd6f7d13bd995f9720f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqekg282uupl2uu0uxy72lg5pyp0q67yrnt005fmmx2ljus03l6g0r, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thyakddvnky9aauk92m6lgaeelwmdwzfps6f20jeyn7yhc7ej9yrwg"),
+     Own("internal_component_sim1lz7ch7lrurjdcvv3jw99d7lh4h3n3tnz9de6crp09tvqstaeqn252e"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thyakddvnky9aauk92m6lgaeelwmdwzfps6f20jeyn7yhc7ej9yrwg
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thyakddvnky9aauk92m6lgaeelwmdwzfps6f20jeyn7yhc7ej9yrwg
+A new account has been created!
+Account component address: account_sim1c8k9p0pq4zefgyush97s2nmgcneddhyef5w8jv849ucmtxy2cmsyvr
+Public key: 02077dd19f65b20629e7df0c2802dac46bd257e4442ebc16b41946e8bde381dd97
+Private key: 82dd30d797d031e0d20f5cd09654de1fa4016d3a3cd71f462a38da448b42f059
+Owner badge: resource_sim1nttpnwqy0xu8lspj9nw6r4jw7ghc4a5gda4ph7ya2wctgv66vryfxr:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t45kl54jnauepszxpalf8vxma905pmsqqvz969m7a2en3tr3t08v0f, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58d826b54796c76c2545bb97f5bcf734f9b12a011ff784c00f68f2d973c1")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trvzdd28jmrkcf29hwtlt08hxnumz2sprlmcfsq0dredju7py7uvdu, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t45kl54jnauepszxpalf8vxma905pmsqqvz969m7a2en3tr3t08v0f"),
+     Own("internal_component_sim1lry88scl49y8trvjwwnwmuqnap054tqsy4lh6x267mettvf3e78f9h"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t45kl54jnauepszxpalf8vxma905pmsqqvz969m7a2en3tr3t08v0f
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t45kl54jnauepszxpalf8vxma905pmsqqvz969m7a2en3tr3t08v0f
+A new account has been created!
+Account component address: account_sim1c9pemk3cw4m4zggk79xx5kxjt8unhs7nsx4ax92ak2qhq24eglq77z
+Public key: 02da85b23c31185b50ee744bfb7dd7cc46b5d520ac722b3809be576d0a8c2eb8c1
+Private key: 3770c24bf23b3c234ee4af09733b402fa6cf3085021047fa0a0191d907ac4805
+Owner badge: resource_sim1nt632q7p50yj40gt6f5sm7jcwat2a77ck5sup0zkx3n83es4vr4ueq:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t40usjsvganj6rlr7n0nh6fgzqrwwfk88szd3l48hf7caeumjfsfd9, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("587bc8ce916e88d151867628140a60ae8a712dd06565c985afede96bc83e")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpau3n53d6ydz5vxwc5pgznq4698ztwsv4junpd0ah5khjp7t9kex7, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t40usjsvganj6rlr7n0nh6fgzqrwwfk88szd3l48hf7caeumjfsfd9"),
+     Own("internal_component_sim1lpygz0lyf27tt0kz47rfsuryy3mjkr0p88na5e4pceetnlnpe3nm5q"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t40usjsvganj6rlr7n0nh6fgzqrwwfk88szd3l48hf7caeumjfsfd9
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t40usjsvganj6rlr7n0nh6fgzqrwwfk88szd3l48hf7caeumjfsfd9
+A new account has been created!
+Account component address: account_sim1c8vv3w3wtftr8j7xea6rp8qx7p0yk45qvwv0u2x3lp9f7u02c2c58e
+Public key: 0247ba9a956b50796acac69dd995d26dd12dd6ab19cbbb5818b6afa820acf6df92
+Private key: f12054f2e5aa901749606095ef71dac7721d1515a2281bb9c034efbbefdbd60a
+Owner badge: resource_sim1nf9rffuay3c56pcnavr9lz2599vzdj3mxpdh7eqmmh8srn7065hmwr:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thyxnxezh64yalerrsr83dn7mcr5gmrd2zz8wukh3vap2ksmgh7mmc, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58113fc27e2ea764df37de874ca47e96937007a3631b65f914b51645d501")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqgnlsn796nkfhehm6r5efr7j6fhqparvvdkt7g5k5tyt4gp32r9v3, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thyxnxezh64yalerrsr83dn7mcr5gmrd2zz8wukh3vap2ksmgh7mmc"),
+     Own("internal_component_sim1lrzuey4dxrmew5mjr3a05pem7cuhnchyz3gece40ksue3hrmqf6aa4"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thyxnxezh64yalerrsr83dn7mcr5gmrd2zz8wukh3vap2ksmgh7mmc
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thyxnxezh64yalerrsr83dn7mcr5gmrd2zz8wukh3vap2ksmgh7mmc
+A new account has been created!
+Account component address: account_sim1c8zz90tfrrqgw85pkspt39flrjn9kmfvygqz663rus5766ayflsx6w
+Public key: 03b12ca5c6c5cea32fd3837d6ce72f60784b8342e48ecfa6ebc7a69f87c5ada6a6
+Private key: 7df1d51fac65a277565b4372cc7dcd4c96c3cae9c103e93657eed7fbc974cbff
+Owner badge: resource_sim1ng3gexn0ntqwm4t279nmxf0jhxydwff4rrfgxf046va2jsrajrr6dg:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t52fnxjxuzqkuh9hudcuu6rzuukpwftjdly5ljrqsaasrpjc526ydu, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5845141297946958f9a21e4fe2c7b7860ff5f05c62880262fab70d712552")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpz3gy5hj35437dzre8793ahsc8ltuzuv2yqych6kuxhzf2juxatnc, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t52fnxjxuzqkuh9hudcuu6rzuukpwftjdly5ljrqsaasrpjc526ydu"),
+     Own("internal_component_sim1lqt5pjlkr6hsqrapjfrprz74f4k9pachjt2gevg099rr79p2wjktn3"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t52fnxjxuzqkuh9hudcuu6rzuukpwftjdly5ljrqsaasrpjc526ydu
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t52fnxjxuzqkuh9hudcuu6rzuukpwftjdly5ljrqsaasrpjc526ydu
+A new account has been created!
+Account component address: account_sim1c8dnsclxt0cs0m82cc8j0nqtcmp2j97zwx5fckw794sntcjtcglq0m
+Public key: 028a0deace2f6e136a3b3d29b00c100e1c95923134c45e7109dc7fbb9a09cfa043
+Private key: 8e607ab9c3311671c334a74281156d46391e6706c6e71db71aa8fafbe33ffaa7
+Owner badge: resource_sim1n23dlm3dfjemwwrk5sqhahmetmv3q2lgxm487yaka8jq0ga967mshh:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thw4zd4sf86z90xzn4u95jrrfkkwx0j2updm2pyeqwnzxe2xfm9hqw, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58ce7c4a8547bea94ea0ee18f6a8f5a959b964f1d04767c083d46087e538")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tr88cj59g7l2jn4qacv0d28449vmje836prk0syr63sg0efcjgc4sj, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thw4zd4sf86z90xzn4u95jrrfkkwx0j2updm2pyeqwnzxe2xfm9hqw"),
+     Own("internal_component_sim1lqejqz2p3z72hftzuj6tzkkdhx8n93wcmsq69lpuysnm3xjr2j0mup"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thw4zd4sf86z90xzn4u95jrrfkkwx0j2updm2pyeqwnzxe2xfm9hqw
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thw4zd4sf86z90xzn4u95jrrfkkwx0j2updm2pyeqwnzxe2xfm9hqw
+A new account has been created!
+Account component address: account_sim1cxf458gvk2z8qtrpd9phr8rsduh4lcryu0jhdv20dfrvan87eqfe2v
+Public key: 028ae57d5eb436a95c5114d551af4c76e2ceac6fd4a8788ca2727c90cd64032337
+Private key: bcf0721fa18dd02989836437886bbcd70de414fa67efe7edb4255000b04b4318
+Owner badge: resource_sim1n2zp8v000lvlyx0a58xyjnfuf79j4q3wkazm5prwrnp9mcg9c30d2a:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tktcgedd2nchpvz47k2qcvlwfrqdgft4sg6ndexm5jvzr8cndjf45m, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58f8f64eb4363b50288aa9dae18287067a6daee127f9c4b802b55328998c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tru0vn45xca4q2y248dwrq58qeaxmthpyluufwqzk4fj3xvvfrxs99, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tktcgedd2nchpvz47k2qcvlwfrqdgft4sg6ndexm5jvzr8cndjf45m"),
+     Own("internal_component_sim1lrs3tzvz2saahzevq2rnssfx6trvw5t54ae6sjvvul5lmdnh0x9jhm"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tktcgedd2nchpvz47k2qcvlwfrqdgft4sg6ndexm5jvzr8cndjf45m
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tktcgedd2nchpvz47k2qcvlwfrqdgft4sg6ndexm5jvzr8cndjf45m
+A new account has been created!
+Account component address: account_sim1cxj5vvl9nwmehngz5pz7kf5825k5u7fdlzxzvgx9dvv8cxn9nuqc7c
+Public key: 03995bfe662a9587bf5fe2affe30798f44a972e5f3a04928feebaa272b952f75ab
+Private key: 716a50bb1ed50c7b3505c2ba0add38eec537cd0ad7eb250f53f0d1da161ccddb
+Owner badge: resource_sim1nfdx24p2pqw69ymzjarr8mjjrjwpeccxy6r5ahwrwscvqjhwds0fp9:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thnxy9svt8y4wlkgfd986a2deentz0hkydlcmsrlcl8pyq7etxtkpc, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("584892c2379d09a74c7016cf4d6b0d292514b7dcacb959a38f31eaeb76ba")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpyf9s3hn5y6wnrszm8566cd9yj3fd7u4ju4ngu0x84wka46kg7zuv, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thnxy9svt8y4wlkgfd986a2deentz0hkydlcmsrlcl8pyq7etxtkpc"),
+     Own("internal_component_sim1lzjrtxrz3z6ve4me6q0l4gumnre20hdlegzxkwvlcqfrgsnaf6stc8"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thnxy9svt8y4wlkgfd986a2deentz0hkydlcmsrlcl8pyq7etxtkpc
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thnxy9svt8y4wlkgfd986a2deentz0hkydlcmsrlcl8pyq7etxtkpc
+A new account has been created!
+Account component address: account_sim1cy65qxtusmhlsr5xseghf3wy3lf3h2077vwyz7qjy2ggmzkdhz6nsw
+Public key: 03931d306dcab11a69d09b2aad124b6e36c82056e562547ac2171e27deb379599a
+Private key: e7a98833cce0feccb91f833d2bbcc5d01fd61afcdeeacefb6c45f479f35d1734
+Owner badge: resource_sim1n2y0nrf053ezm3kf2ex8gls7x8yxtszkxld9eyxhdkukzm233d2d83:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4jqwyxfmteeveypg6z53z5lcx3q4u9w4a2pgfkea7eycp2ergxdls, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("580d0f4a966281e7bccff7e9b19463bf1d144257332577239218073335b7")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqxs7j5kv2q700x07l5mr9rrhuw3gsjhxvjhwgujrqrnxddhuafj3f, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4jqwyxfmteeveypg6z53z5lcx3q4u9w4a2pgfkea7eycp2ergxdls"),
+     Own("internal_component_sim1lzu8jlajj47u6elu6q37pmp68da0dvqhdueyac6tx8a65yy0n2lymd"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4jqwyxfmteeveypg6z53z5lcx3q4u9w4a2pgfkea7eycp2ergxdls
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4jqwyxfmteeveypg6z53z5lcx3q4u9w4a2pgfkea7eycp2ergxdls
+A new account has been created!
+Account component address: account_sim1cxqncs2ut3fuzpkd4vc3reu5zcedy2qmgx6mrxv8raug95uwxsngck
+Public key: 031f394bcd3b28b7c179390c784e00b2e487f454f705e5658873bf974cc8c9461d
+Private key: edfddbc27a73ae4419c784c1e5680048654b5aaad0e9b1c54e62de9a49486124
+Owner badge: resource_sim1ngpalrgyddvechdn3r6yh96uz9a4lcxk0vn5tlxvzxz6axp58rd7qm:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t44w3h7y3tqj44h4nvquzkv2qa4qdkpa9qa0jv9745stjet406cgjn, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58af0bc1fcba228f0afd4e2cbfc6a065c2255ee442091f715695f6f55b78")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzhshs0uhg3g7zhafcktl34qvhpz2hhyggy37u2kjhm02kmcnazj68, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t44w3h7y3tqj44h4nvquzkv2qa4qdkpa9qa0jv9745stjet406cgjn"),
+     Own("internal_component_sim1lpfgx0c7twyl8hpzrdg2h4nxz6zkhp35wd7hq9lqdm3qfzklawpmcp"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t44w3h7y3tqj44h4nvquzkv2qa4qdkpa9qa0jv9745stjet406cgjn
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t44w3h7y3tqj44h4nvquzkv2qa4qdkpa9qa0jv9745stjet406cgjn
+A new account has been created!
+Account component address: account_sim1cy6jnedv0s83p09d298gay5jc9de5s5akx7hgpv307m7mse8hw3zlc
+Public key: 03d91334192d209e156d8f5a637f37b9bd648ad227fed0c9bc4fd198929d3523d6
+Private key: 68eecbbbb3929cff4f43f836cc1d8007f82e18547d50b421f777558f01e838c4
+Owner badge: resource_sim1n2xwkust7uua92k83yjwx8j2sxnvy59f25jv9urqpcwa376lts9rse:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkungxahztn7ejpvcmcf33ylfx5du2uuxt5s0cwtqawrhpwzg66ak8, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("589ebd2f967fdebefe7bc4d845ff469d5a0f103e3314a2ab7cd94647030f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tz0t6tuk0l0talnmcnvytl6xn4dq7yp7xv2292mum9rywqc06c546z, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkungxahztn7ejpvcmcf33ylfx5du2uuxt5s0cwtqawrhpwzg66ak8"),
+     Own("internal_component_sim1lpaugelaltxf4gy7hxf2z42uyyj597wm4wzwkz2zk9gfet2dthu94s"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkungxahztn7ejpvcmcf33ylfx5du2uuxt5s0cwtqawrhpwzg66ak8
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkungxahztn7ejpvcmcf33ylfx5du2uuxt5s0cwtqawrhpwzg66ak8
+A new account has been created!
+Account component address: account_sim1cy8can0qadl024updgr0jjutfl2crkahvhxmwlv8aalwefmkrz7az8
+Public key: 03f7ade211e880eab114f273a291c32baa14223e33fae80e5a65afb6faf3e9cfc0
+Private key: d8e3a70f71b27c666266011685d970241276d456863fe60ab0bfb5252e5cd14e
+Owner badge: resource_sim1ngyc2w24pxj0nvaw0yaduxj3flqjqkm7dtumvxvyv3lrgy5srx7z4d:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk4s0vwwqx5lmf45vxcd6gnqe5ek03lq8shxl8u848nqvjwwumm7uq, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58551fcd3ea41ad39fcd9e84a37a68338633ea14893aabb64c548ac6cd5a")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tp23lnf75sdd887dn6z2x7ngxwrr86s53ya2hdjv2j9vdn267ece2d, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk4s0vwwqx5lmf45vxcd6gnqe5ek03lq8shxl8u848nqvjwwumm7uq"),
+     Own("internal_component_sim1lp7dyuv5wuu8xveyhwe2ekhsjcr70a9ttmeedgj739aw4lqx94jsry"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk4s0vwwqx5lmf45vxcd6gnqe5ek03lq8shxl8u848nqvjwwumm7uq
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk4s0vwwqx5lmf45vxcd6gnqe5ek03lq8shxl8u848nqvjwwumm7uq
+A new account has been created!
+Account component address: account_sim1cycmpcl0ytrjvsg935ycs3qgzz7ln67n3yp8h4tctxu8x2jjg60rns
+Public key: 022e5a0f8d00b23ed5906f7908b945ff8c3cd6d473bba6686b963a5a73efedbe32
+Private key: aeb491af3f5e33fb28f836f2c141c3801d03767b1489caf8f30ce63865f61423
+Owner badge: resource_sim1ntaj7lyxwdqkrk4qpmqnwx2vlwp36e3eaufl23sukp5s62q3u5mgxm:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thrpalvznvw2vqszzfu4pl75amnzzcdvyqxmljeswuhyksv2yn3geu, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58aa2ff2c743b9f7d9edbd620faa737398d687a8710a1027ca59844200ee")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tz4zluk8gwul0k0dh43ql2nnwwvddpagwy9pqf72txzyyq8wp4qgg7, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thrpalvznvw2vqszzfu4pl75amnzzcdvyqxmljeswuhyksv2yn3geu"),
+     Own("internal_component_sim1lpelhc5xtp7rfg6ncxce24et0p6j6upkekcql4dz9l0umu29q3rvth"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thrpalvznvw2vqszzfu4pl75amnzzcdvyqxmljeswuhyksv2yn3geu
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thrpalvznvw2vqszzfu4pl75amnzzcdvyqxmljeswuhyksv2yn3geu
+A new account has been created!
+Account component address: account_sim1cx2qts3lrp5h9e82x7hx4fqr39ewn83ug20rt0n4nj489ejj2j9fzn
+Public key: 02843da52571c554f176d76278a22cce2cd160d409360ed6e9b788bf1d0613da50
+Private key: 6ab821f2c054959bf743d21c027d771d042242822097fdc4f8697705e58e0bc4
+Owner badge: resource_sim1n298ruax2yqe37g05srpvqafrezywzrtyxcrk8v0mfgh7z5qa6a8vp:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1th6zjkhxxj0tz3wacataecq63yp7m8lzaa4jp5emyuy93zjhf5s2w5, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58877a9dbeefe3ae66672d9396e2c201dbac2c9a474d5cc040fd9eaf47ed")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzrh48d7al36uen89kfedckzq8d6cty6gax4eszqlk0273ldsxlkpf, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1th6zjkhxxj0tz3wacataecq63yp7m8lzaa4jp5emyuy93zjhf5s2w5"),
+     Own("internal_component_sim1lzemkfxwj5ta008dx4vp74hnv233cdgh0h4mgjmyl08n5dyv5alfpd"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1th6zjkhxxj0tz3wacataecq63yp7m8lzaa4jp5emyuy93zjhf5s2w5
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1th6zjkhxxj0tz3wacataecq63yp7m8lzaa4jp5emyuy93zjhf5s2w5
+A new account has been created!
+Account component address: account_sim1c8t6l84f46n9el9hfsqln5ffc88ynucz8s5evudfktguctax8h8nee
+Public key: 03a95345876dc1b938678c4e698c35d757f55ec73cdc58740a9513eb3389894145
+Private key: a9040a854bedf8f7cc2ca0785ca49c8fd6f3764e867b65c9767125ffc5998a02
+Owner badge: resource_sim1ngvfen23cy0ghexvwcycwrw655mt5qh35zzwt5njwu99a3d9dslca7:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5mukz0wq65rpeck6tkjnp8ynxt8vayag8vnsm0mvrujhmq4h4rw7v, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58a6b5107c26a25068291d9c094b68ceb47214e6fd585792f840f15ab72b")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tznt2yruy639q6pfrkwqjjmge668y98xl4v90yhcgrc44detnw5633, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5mukz0wq65rpeck6tkjnp8ynxt8vayag8vnsm0mvrujhmq4h4rw7v"),
+     Own("internal_component_sim1lryf9lv2s703r43wgw8gnvxjswa3g3v2mllp8j5dr992rtq93g3src"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5mukz0wq65rpeck6tkjnp8ynxt8vayag8vnsm0mvrujhmq4h4rw7v
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5mukz0wq65rpeck6tkjnp8ynxt8vayag8vnsm0mvrujhmq4h4rw7v
+A new account has been created!
+Account component address: account_sim1cxu9jmu4nawxgt03a7w9h42h4xalrry3wq9j32grg48mvnx3zk4d5n
+Public key: 023229d37bf338c05a5a5b5e4e4dd1ab06c08314841c5b635d31bbbc269fb771b4
+Private key: 65de0b1fa3b1f7564d850eec9424b9536339cf6a5e638546cbc54a5934fd23bd
+Owner badge: resource_sim1n2daq6zr2hwk4e3l6fkfmz5jgrktlluuxvnpsz3rdjg0d2z5n4y5uv:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5g8zjz6kyqw2t7fymd4d3yly0thfufppvhy3szknwzvdyzucazc36, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58f13cef2fa961c7d98077cc0769f4024025deacfa4cc1c3447f2ab5dcdb")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trcneme049su0kvqwlxqw605qfqzth4vlfxvrs6y0u4tthxms3e3ye, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5g8zjz6kyqw2t7fymd4d3yly0thfufppvhy3szknwzvdyzucazc36"),
+     Own("internal_component_sim1lq4fj5sz5c3ttw0ffnkx3kp9yfd7hqpa4qyyk3w7q9fhvg0chg0s62"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5g8zjz6kyqw2t7fymd4d3yly0thfufppvhy3szknwzvdyzucazc36
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5g8zjz6kyqw2t7fymd4d3yly0thfufppvhy3szknwzvdyzucazc36
+A new account has been created!
+Account component address: account_sim1cx0h0apj64l74hw7x32fgp7pvyv23y77tc8708drlzwyx92xjagg3s
+Public key: 023b3555fe0798b11686fb930859862f781025bf65ad6e2d99f7e550615905eec3
+Private key: 3d9104e26e2cd0818013b4e787adfac02910070d1c03242b3715c74853fc4227
+Owner badge: resource_sim1ngrc0jxlcvje4afnqf578q59aq4kppys3eqmqjlxs3lf0uw0s5zkf5:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thnq492w06l8u3esfvecldnlkzm8v4zq4q3n9k600e2tds42a6cpwu, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("585203b04f154bb2638aad956942c232c71b2826a889c389fb97a33a4872")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpfq8vz0z49mycu24k2kjskzxtr3k2px4zyu8z0mj73n5jrjlgru9g, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thnq492w06l8u3esfvecldnlkzm8v4zq4q3n9k600e2tds42a6cpwu"),
+     Own("internal_component_sim1lr8pswzc3tn7cc8v2mhsvx2tmfn0d0dpv8q5zncthm4flna7f7vk6g"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thnq492w06l8u3esfvecldnlkzm8v4zq4q3n9k600e2tds42a6cpwu
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thnq492w06l8u3esfvecldnlkzm8v4zq4q3n9k600e2tds42a6cpwu
+A new account has been created!
+Account component address: account_sim1cy7528jxurcl88t0v2z430mvku4tejanf9l0lq90n0q8fchzh9qsrp
+Public key: 0304bb04d0173ef2faaf242c5ea4e7a09d7b3364597cc6ba16bc301c4c5002cd1f
+Private key: f9b963c875c669259f55b8fafd9c59378794a841f4803e56289b5b8ef694ba1a
+Owner badge: resource_sim1ng2ur03d9jpmy2ql8e88r23w68tnkj292uvlfswmk0m882679tay72:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4dzn65wyfqus393w0wa5qlw08vdgakm7a977cg7gcxhxdfxjmpxtv, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("580126d164e23b9325b43035d3fb9c4048b20fa3219416bba25b53a75c7f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqqjd5tyugaexfd5xq6a87uugpytyraryx2pdwaztdf6whrlja5lfj, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4dzn65wyfqus393w0wa5qlw08vdgakm7a977cg7gcxhxdfxjmpxtv"),
+     Own("internal_component_sim1lq49fv9s83mznd542fc6eme3dmyauzzcgjyghwxjr0lqyjezggats7"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4dzn65wyfqus393w0wa5qlw08vdgakm7a977cg7gcxhxdfxjmpxtv
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4dzn65wyfqus393w0wa5qlw08vdgakm7a977cg7gcxhxdfxjmpxtv
+A new account has been created!
+Account component address: account_sim1cxj7tseq2q645f9v3n5jrn6pjrlddjhczkdwqvf77e2ypnrl42gufa
+Public key: 02328cca9133ff452a384df1d255f96bb15203d8fc09972364f9e58db8b6372acd
+Private key: add2b1d8b2bf2f934b95a14e7f937bb9dc1a275804d7a07fb97392cd5ac576d3
+Owner badge: resource_sim1nt02zdzqkeduv6pykq3snk0v7kt42fwjhpyfjqga6rad0qejc4vcz2:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkdjnkl50q8n2yxyya98t6kt4p4630r44wnlg4zeasavkj9hxptw0w, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5888f2427c364c03dc8d2716fac6bb936e8882a38e704d171f37ac0cc90e")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzy0ysnuxexq8hydyut0434mjdhg3q4r3ecy69clx7kqejgwhyy09k, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkdjnkl50q8n2yxyya98t6kt4p4630r44wnlg4zeasavkj9hxptw0w"),
+     Own("internal_component_sim1lr8gm6a509k97gga389ll0q9qn2f9ca03mrgwvjeq2c04q5aklyqhc"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkdjnkl50q8n2yxyya98t6kt4p4630r44wnlg4zeasavkj9hxptw0w
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkdjnkl50q8n2yxyya98t6kt4p4630r44wnlg4zeasavkj9hxptw0w
+A new account has been created!
+Account component address: account_sim1c9tk259224qahyf60g2ld872z9vy2t3fgmznhdh4wg0d3qwehsk6sz
+Public key: 03362757d2afda88f9cca80d92d00b9d443f9b6e2216a9a56280f074c6b43e5b6d
+Private key: de18d8fec869b974f8f9cf6c965a0d395ec38284e796db297b992b697be67ef7
+Owner badge: resource_sim1n2m5uvrfz5pj75wd4dh7jgkk2gpj4823j5gypkfweyawqf3w0qj842:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkyagvyvjd06fr58avd6s5c78qvcmf2g6xufq39wkc5ccq0smvcw45, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58d02b70c43f74cd5df2bcf84ff8fe4d6beb87c8f5ef5eb432c8bb40ad73")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trgzkuxy8a6v6h0jhnuyl787f447hp7g7hh4adpjeza5pttn4ytpcf, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkyagvyvjd06fr58avd6s5c78qvcmf2g6xufq39wkc5ccq0smvcw45"),
+     Own("internal_component_sim1lp9wxupj5agy7ugxj87yhnfusmy52sh6y77yt4avlftr5w2s78ptdd"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkyagvyvjd06fr58avd6s5c78qvcmf2g6xufq39wkc5ccq0smvcw45
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkyagvyvjd06fr58avd6s5c78qvcmf2g6xufq39wkc5ccq0smvcw45
+A new account has been created!
+Account component address: account_sim1c93q7kjnxuxs27xum4axzy8tnp8zrmxrweqy0dxqt6ght6r4jgvse0
+Public key: 03f4bf06aa789dce04a471401168be4ce4e3a0236c67e6bd92bf2ffcdbf11a22d6
+Private key: 4b361abdbd0332a5b26a5d775fdfca98df1eba920a6b366f11fd12395d2412d4
+Owner badge: resource_sim1n2gqlju49pem2hk4nt28ppashfl469qvx6cpczaaeuyg4z9ceuvm96:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4l6u7ljmhhcdgsfe8hpecd2knt8effs493vcc0fg2mvlmt9rff52w, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("581aaed6cc3f8b7e97bf964bebf45e743c4fb0ac609ca66fd73b91b010bc")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqd2a4kv879ha9alje97haz7ws7ylv9vvzw2vm7h8wgmqy9umzwkm0, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4l6u7ljmhhcdgsfe8hpecd2knt8effs493vcc0fg2mvlmt9rff52w"),
+     Own("internal_component_sim1lzc7aut0j9wc733xvwvvvtaed0w6llzthkflwpk2wxntpqn0et3s3z"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4l6u7ljmhhcdgsfe8hpecd2knt8effs493vcc0fg2mvlmt9rff52w
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4l6u7ljmhhcdgsfe8hpecd2knt8effs493vcc0fg2mvlmt9rff52w
+A new account has been created!
+Account component address: account_sim1cxuefkyl2gu2ztkrymtrym6gnvdghu5py7nqvsmdymh6kr7zqt674g
+Public key: 025936432d44c373bd78b92adaa5700c87c5eb40c32d8916c39730ce960551b3d0
+Private key: 03af4ef570065833fc03bce218a581f3e9db98701315fe33976a5455343f989a
+Owner badge: resource_sim1n28sa54auejp6tgvegkcnnaz5d9v0ts7jjgz55vdqyny3qz7lugu9x:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1th9q3c7x6v3mwwgqnq0wwamy23cevgmckhwfu84yzwvk2lffnu0grc, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58e9e734a29e3bc9ba0a64d9de92f8c874957f53a0cd9d173ec2a9ea0b2c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tr57wd9zncaunws2vnvaayhcep6f2l6n5rxe69e7c2575zevfw7tgk, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1th9q3c7x6v3mwwgqnq0wwamy23cevgmckhwfu84yzwvk2lffnu0grc"),
+     Own("internal_component_sim1lpf2cs37k7ww7w4dfsfg2kpkaxe9nav80239uzyksaavnkpfcspcdl"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1th9q3c7x6v3mwwgqnq0wwamy23cevgmckhwfu84yzwvk2lffnu0grc
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1th9q3c7x6v3mwwgqnq0wwamy23cevgmckhwfu84yzwvk2lffnu0grc
+A new account has been created!
+Account component address: account_sim1cyxer0e0l0lf8mte034tadtdyancr2m9qll9pml4c70zy9f8ka38pc
+Public key: 03b6ae5a91d32f7d70e9a3a3a0817491a2c1d1307907e6478d6f105cf70285bb52
+Private key: c59e4f740cb64a8d8f88190c418b4f5ab46c9bbb87046ce059d533390106ca25
+Owner badge: resource_sim1nf6r4daukrlujmresgklh3svd725wvu8p8x3mgjy50hn9ae4vykjfs:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkpzkcqt7vp3r6dh6g076duhc92dreun498ndvh6aprgzs6anchu8f, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("585a52981b1d6f8d25995e0e582cda1777ba8524329067df1da2916e1b1c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpd99xqmr4hc6fvetc89stx6zamm4pfyx2gx0hca52gkuxcu8am6ng, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkpzkcqt7vp3r6dh6g076duhc92dreun498ndvh6aprgzs6anchu8f"),
+     Own("internal_component_sim1lz3zy3nw7cp67g6pph2t3umhspd8wwmdxv33q7g50etknextulzmc6"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkpzkcqt7vp3r6dh6g076duhc92dreun498ndvh6aprgzs6anchu8f
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkpzkcqt7vp3r6dh6g076duhc92dreun498ndvh6aprgzs6anchu8f
+A new account has been created!
+Account component address: account_sim1c9upp3d9cf8hx9mny9klxyvejtkqrkshgw02xmjt372ve66m4y7w8j
+Public key: 03f42749cf82c3e795bba2a0294ec93a2e1aa23e365ff64f98ae4b6ebb6b07a914
+Private key: 09e9955cbba80547ac363f4f5cc0e7d912707f126fcf48295323b8bc51078534
+Owner badge: resource_sim1nfrhal6lhs8jdkateeds2p5wkfr0e0p0hac2dmvf04gargw46g0vyu:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk9ndkysxksrnhuwvmhgu6erz08s7n3za0spqw20v8encfzfwtwtgh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58dc5b16252e23a19e08dc6242346d3aaf48e8790e226fe7233918196a3d")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trw9k9399c36r8sgm33yydrd82h536repc3xleer8yvpj63aa6v70c, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk9ndkysxksrnhuwvmhgu6erz08s7n3za0spqw20v8encfzfwtwtgh"),
+     Own("internal_component_sim1lzys5a5tsf589gqzl58ytrwet0h6h3p7d2hvjnye8reaka3xlurnf7"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk9ndkysxksrnhuwvmhgu6erz08s7n3za0spqw20v8encfzfwtwtgh
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk9ndkysxksrnhuwvmhgu6erz08s7n3za0spqw20v8encfzfwtwtgh
+A new account has been created!
+Account component address: account_sim1c9tppd7c8exea3sklm6jnm9g6rlaxzke9m2lgksk5g08hekzyjvx04
+Public key: 024e6e97595f7dae352d28946bfa7c71d29d601ef3112b95691cb6a24ccd9b7ce8
+Private key: b719ca389adc9c7892df880ea5d25e35f75dea02711caa46e0f468ebf4d5fd78
+Owner badge: resource_sim1ntlhk0tg0hn3k9ry7mjjrdndkg8phgzq34p8cztrh5axvjuusm5z47:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thdas88tn20j75mq7pup26yrfajmhlfn9lfpfcte7ckwyqh4rzfqpz, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("589635e26a288efeadad36f09e76b5c3c24662f53b9a587ab11e36e30d8f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tztrtcn29z80atddxmcfua44c0pyvch48wd9s743rcmwxrv0gyxmf6, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thdas88tn20j75mq7pup26yrfajmhlfn9lfpfcte7ckwyqh4rzfqpz"),
+     Own("internal_component_sim1lqnk0zrhg27ugvcg5ffey2ftn40k6p5xsp0dkcjhl5rpghyuch4xvc"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thdas88tn20j75mq7pup26yrfajmhlfn9lfpfcte7ckwyqh4rzfqpz
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thdas88tn20j75mq7pup26yrfajmhlfn9lfpfcte7ckwyqh4rzfqpz
+A new account has been created!
+Account component address: account_sim1cyhfvkfztrgqjfq69vy8remda8ddvrrug4tqczlg0p2jm7kmpd685g
+Public key: 039713a9362435cf655d04fc9216eca0ab5c76f353a8ce1e05b6d26e0e61b0d1c1
+Private key: 1e1cd36e68e19ea52d418395d7d99b86c3c699ee5ba7ac16cde7fc585111cd94
+Owner badge: resource_sim1nffcmmywladqjw2tuz643hjej9g8t0cxnyfyyhnp5u5ckcc7xrq0me:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4gsmrmh6q582av8kfazy7dmt6j6wwdm545843ure406c45gv6rcje, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("585546d7e725bac5be2cb8fb3d8c2fa11723b979729751b2b2666968c34b")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tp25d4l8ykavt03vhranmrp05ytj8wtew2t4rv4jve5k3s6tv5l3cr, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4gsmrmh6q582av8kfazy7dmt6j6wwdm545843ure406c45gv6rcje"),
+     Own("internal_component_sim1lrl7q8yjvsy300pk56j69m8vhu25fre8k6tqkkrau9y2n5j5ufxs9d"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4gsmrmh6q582av8kfazy7dmt6j6wwdm545843ure406c45gv6rcje
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4gsmrmh6q582av8kfazy7dmt6j6wwdm545843ure406c45gv6rcje
+A new account has been created!
+Account component address: account_sim1c8apv59mxhwkt2qrq7zzrwrp7u23t2ej0x2w59uxj63dj24mqt0w4u
+Public key: 023cbe9117d45e4a1fe68e4e26e2ce60ddc8b62b7a1bc655891deb5fe73b73ceec
+Private key: e85afa74882762afcec06f7d328b03365e6565196f9604e90a5272d1c3548dd5
+Owner badge: resource_sim1ngds2qkc8gsagyhduknkhf93smjqv9aa67mhhxc3pmtg7q6g6p5cln:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4fk4zm7hh9zfct9k0m27490p6qx8p8pgnpxxsjwsepret6768zr5v, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("583e89450806eee6fbf9e6710b5db788e71c462d1661b85002b9445d9849")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqlgj3ggqmhwd7leuecskhdh3rn3c33dzesms5qzh9z9mxzf98em46, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4fk4zm7hh9zfct9k0m27490p6qx8p8pgnpxxsjwsepret6768zr5v"),
+     Own("internal_component_sim1lzd43sfudq6rwwameedayk8fwynh8jdtty898hl4wnffuq3k7cm869"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4fk4zm7hh9zfct9k0m27490p6qx8p8pgnpxxsjwsepret6768zr5v
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4fk4zm7hh9zfct9k0m27490p6qx8p8pgnpxxsjwsepret6768zr5v
+A new account has been created!
+Account component address: account_sim1cxggqnv64z4lvufyqzj0wyf9kj9y9k6qmtfhhv2m46s9muze30y3du
+Public key: 02d04b1162672ac130735a6bb01bb9667985dd1d0d4c476530e77d05b8a1bc5ec8
+Private key: ed17663cd4bad8ab2ba235987719c63ddfd68d9d10905507a543cf1a327d56e5
+Owner badge: resource_sim1nflsxrqdzrcmxhdyz3nvdwgqfjka09h5jjy86wqwj26wv0p64wqdy9:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thv2zypxe0l79kmhuxc6n94gaaz9pf8cda7frnpqyfd8jd4xt6y3ck, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58298138c6515326c417d577ce7995e7d3e50aa84a22672ddf9a77d9a87c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tq5czwxx29fjd3qh64muu7v4ulf72z4gfg3xwtwlnfman2ru0p8xdc, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thv2zypxe0l79kmhuxc6n94gaaz9pf8cda7frnpqyfd8jd4xt6y3ck"),
+     Own("internal_component_sim1lppq7dm4chaqzx9xcuzjulp46yf53shp3wknw48qx9l3j3qz48udnw"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thv2zypxe0l79kmhuxc6n94gaaz9pf8cda7frnpqyfd8jd4xt6y3ck
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thv2zypxe0l79kmhuxc6n94gaaz9pf8cda7frnpqyfd8jd4xt6y3ck
+A new account has been created!
+Account component address: account_sim1c950sqp3ezph6utayp9g9l3396qqdv7pd4xs6kf8y8yaqrwsw5lrxw
+Public key: 0323393cdfe1d783d8d332f461ebc5f0196829cdead2ac7641c53bb9372922b811
+Private key: bb4f0a5e4c5fa54f19a7d9b5aa1cbf2640ada9c8e465467bc58a76f94e4c821b
+Owner badge: resource_sim1nguah42ae378wk83eaq8u84k4aarmkdu85jkxn8z4p62ekgvv93d6f:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk83k9savqxu9unx38jvxwemng9a2a9c33xfteqm0p7xx5m4fxwf36, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5887827ac86888ff4e10ceea8fdba9db7f9d85f669a9145624b447ecbb2c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzrcy7kgdzy07nssem4glkafmdlemp0kdx53g43yk3r7ewevf9gnmy, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk83k9savqxu9unx38jvxwemng9a2a9c33xfteqm0p7xx5m4fxwf36"),
+     Own("internal_component_sim1lpeev0s33l9yp6pv4fr9w7fwekm6zqgqg5jwmd9n8lkstltgecwgwh"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk83k9savqxu9unx38jvxwemng9a2a9c33xfteqm0p7xx5m4fxwf36
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk83k9savqxu9unx38jvxwemng9a2a9c33xfteqm0p7xx5m4fxwf36
+A new account has been created!
+Account component address: account_sim1c8t0x9mqgzkhcmem5kds244ggk4nr5hl2dcqnyw8dg0gwy6rpgg7tj
+Public key: 022425b9a0232e04fdc455b11d20a33b5702c38196340fc696d8a1e651e3325b4b
+Private key: 45cd1d68f39fc82643c6abdf44e409f87f6b1ad820b2ea7edf7fa49b408fc1d7
+Owner badge: resource_sim1nfl77s4uff2kzuxkt4kfa0vreyju9gg7x6j5a9pdtt2fqe2qwv3u2g:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t48hk4yutc8jzu55uxjd5aflpnyrk87dm6jpgu4q3z5avqdj857gv3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58f2d1e6c21a533ff0816a8d6b34c1d93062dddbe9eb03e15660d6514524")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tredrekzrffnluypd2xkkdxpmycx9hwma84s8c2kvrt9z3fyhqmcx8, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t48hk4yutc8jzu55uxjd5aflpnyrk87dm6jpgu4q3z5avqdj857gv3"),
+     Own("internal_component_sim1lpe0qh78t8qhv4rq4ncvsal7sfzedeanakud9rtzfqrxg476nljn29"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t48hk4yutc8jzu55uxjd5aflpnyrk87dm6jpgu4q3z5avqdj857gv3
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t48hk4yutc8jzu55uxjd5aflpnyrk87dm6jpgu4q3z5avqdj857gv3
+A new account has been created!
+Account component address: account_sim1cy8f4a0h8tgzfs4mr0gd7gp6gfxecg7fe2raux8ear9dmfkypqmr8v
+Public key: 029ffcdfceb34e19adc3f703522bfe578fded138afa830d9f5272166ca62fcc8b5
+Private key: 4c6a50cb780a304559bea3e588556fd4e8b2a90dd1005c3ba47020488f0fef4a
+Owner badge: resource_sim1nfd5nn4sgdzajehne3yjqrlha7s7qu0sg5z2922rl3wpanpaewep6d:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4j6clzgkq25p7xygr84w6kl2h5v2kznm4kl72zhf6awhq4jze9rns, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58fa2652e69f6a1af9b468d6c20e491f9cd650d36182dbd0e2673a2091b4")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trazv5hxna4p47d5drtvyrjfr7wdv5xnvxpdh58zvuazpyd55ua4pu, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4j6clzgkq25p7xygr84w6kl2h5v2kznm4kl72zhf6awhq4jze9rns"),
+     Own("internal_component_sim1lr7shgtj4huv6cr49wpj8ar795fashv47fkyw0xl80qnhesyc8nteg"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4j6clzgkq25p7xygr84w6kl2h5v2kznm4kl72zhf6awhq4jze9rns
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4j6clzgkq25p7xygr84w6kl2h5v2kznm4kl72zhf6awhq4jze9rns
+A new account has been created!
+Account component address: account_sim1cxhklnh8fz2faehum6nmep0ac9wuzsjffa03jqra56d0hql3r3ydxh
+Public key: 021c9c9f2629f4976fe6120d57b83739fe7d37e74252af0f69730819e684ccd571
+Private key: 3d5e0cefae2afce004e2e9af6d918bb9c3ff5da9d4c1b97431c63d9afd7f7888
+Owner badge: resource_sim1nfmtx8h7cvj760k8n3zzswefg0dx3n2sg60h67kdkqs0hpfhpprrqg:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thc802gkak7ktpzhkmmhezh86y4m5asd8maseg6uvj7eq24392w9dh, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("585bdb5c50954e9cd76b1a52ce88224345865ff0678da80b99dba6bb1f64")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpdakhzsj48fe4mtrffvazpzgdzcvhlsv7x6szuemwntk8my0y46lc, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thc802gkak7ktpzhkmmhezh86y4m5asd8maseg6uvj7eq24392w9dh"),
+     Own("internal_component_sim1lpk03atvt0pv76ac9vxsnr7vme67cepw089yt72c75fzlhk7sqyylf"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thc802gkak7ktpzhkmmhezh86y4m5asd8maseg6uvj7eq24392w9dh
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thc802gkak7ktpzhkmmhezh86y4m5asd8maseg6uvj7eq24392w9dh
+A new account has been created!
+Account component address: account_sim1cyn3nxhzdpe5zny8njwagw3wqn5kfns0ge5lxg4zsqrp4993vxy09s
+Public key: 0244d93efba0afff41b6c4c7193672c80253ec830df06ab95189feeaf44c89f77d
+Private key: 7fa59bd6709c648fba8ccf618a225d05f6ef226c7c8daf45bd5cb8ad346404b9
+Owner badge: resource_sim1n25j9uz6m3fevhqrxggkk6y4fxjlr4rdmzw2u5gw69t6wwnu53zzt0:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4695eww0ekzksetcafm56qn5hyam4s3a0ew6clae3pxwrhu8veyxt, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5810e301b41bd1eff144ef03d1152aaf948803426e37847eff488db53132")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqgwxqd5r0g7lu2yaupaz9f2472gsq6zdcmcglhlfzxm2vfj5quxsq, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4695eww0ekzksetcafm56qn5hyam4s3a0ew6clae3pxwrhu8veyxt"),
+     Own("internal_component_sim1lrx3xcurva70xsvh3704een33u6qcemsfdqalgshkhrdj3rhgetskk"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4695eww0ekzksetcafm56qn5hyam4s3a0ew6clae3pxwrhu8veyxt
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4695eww0ekzksetcafm56qn5hyam4s3a0ew6clae3pxwrhu8veyxt
+A new account has been created!
+Account component address: account_sim1cx0rej2tgmt5ncwj5ttaaulr3e7w0e4sa48s5fyseef7y88svj9p0n
+Public key: 0295375f70c5718a8b2d3d3e2ddf1dcff261fe3a14674bb631b461ea8d7c2a1d04
+Private key: 89a56a61beade0e33a3a12500f708ab11703c6c0e8fba979651ecd862c68035e
+Owner badge: resource_sim1ntc80zqtzc94ey2dw2v7y0t0ynp2k53r0gqrjpl0u25y997ze9s44y:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5fq82ea549wnhkasdqezuxa65wulr4qz29368weu5mh6hku8ruluq, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58f71719e06ed00929c7472fe83392cae19127269b31f6a98c902bfa8d3d")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trm3wx0qdmgqj2w8guh7svujetsezfexnvcld2vvjq4l4rfaz3l2t5, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5fq82ea549wnhkasdqezuxa65wulr4qz29368weu5mh6hku8ruluq"),
+     Own("internal_component_sim1lz89yrm0uxamt9ftdrr2k6a7zwxufjrxxstcqcuju34sw43x5lltd9"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5fq82ea549wnhkasdqezuxa65wulr4qz29368weu5mh6hku8ruluq
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5fq82ea549wnhkasdqezuxa65wulr4qz29368weu5mh6hku8ruluq
+A new account has been created!
+Account component address: account_sim1c83ps6ux0epd4zvqf3psfj96udz42hy0vxtk2zqzehxz33lutrnzys
+Public key: 03b8c8b4d40f1cafe5c0bd87d69d750ffc9892494f56233393a569d1c60407c2ef
+Private key: 3d54ea951319e41319fb3d03414c58df10c8b497385f9364597776f44f2094d1
+Owner badge: resource_sim1ntev9xps92q5xxra74ss2f80fcr390eued8nw3qw5krq57yxz07meh:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thz5xv6sd4zjcp5ejf46fqzn3ku49mn2ruthytn6qhkylm8gz5hsj9, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("587b38f235421417dc0806a0250f87b98e78244fc1d526ffff591fafd1eb")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpan3u34gg2p0hqgq6sz2ru8hx88sfz0c82jdlllty06l50t0e58mf, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thz5xv6sd4zjcp5ejf46fqzn3ku49mn2ruthytn6qhkylm8gz5hsj9"),
+     Own("internal_component_sim1lrg9p99tv47p2fkecksvls3d6n4nde96ez9fe7s0zluxwlsedswepd"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thz5xv6sd4zjcp5ejf46fqzn3ku49mn2ruthytn6qhkylm8gz5hsj9
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thz5xv6sd4zjcp5ejf46fqzn3ku49mn2ruthytn6qhkylm8gz5hsj9
+A new account has been created!
+Account component address: account_sim1cyk5zfmxl2dz80q0yz27nrqzuzqjw0cgmylcqme8r9urwghceanle6
+Public key: 03dfe413be2aeef871e688786e1e8296fdb476d36104147c4e8fa2329b6ca81918
+Private key: 1f875c88344f6b98fe919506cde9cc3a61652a957a7173e48fb1d284e90ff627
+Owner badge: resource_sim1nf39f5zjz03hqxrggj2ld4qjlmz6fnyj06zg0en5k93hk77dfxwhfg:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk68z034e057xynwgcl5j0sy7s6x8e02gz0gs0esxuf9me5karuk06, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58be7c4fec1e9b66d9b3550522cf5c1862f0616f15853aed6f433af8b00a")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzl8cnlvr6dkdkdn25zj9n6urp30qct0zkzn4mt0gva03vq2esetzj, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk68z034e057xynwgcl5j0sy7s6x8e02gz0gs0esxuf9me5karuk06"),
+     Own("internal_component_sim1lq626x45ykzhr7unu3ufywue3atf4y6yu68ktwdhmpd2s797w85zwr"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk68z034e057xynwgcl5j0sy7s6x8e02gz0gs0esxuf9me5karuk06
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk68z034e057xynwgcl5j0sy7s6x8e02gz0gs0esxuf9me5karuk06
+A new account has been created!
+Account component address: account_sim1c9aem4pv7n2kq6lrcr0hrkcy4vxedyp4myzfwst7zy7y2a49u2jtg8
+Public key: 02220f7a36d834f90b2748fd057a7cc18ea26323fb72600759aa2866270d992a43
+Private key: d265647ba8e29977c5fef6d2e15552176a445ba09c4acd605bba06c425855c9b
+Owner badge: resource_sim1nthpyw2nqzft6guzu3vpxlk3q4t40gzd77udj2pfl743w8d8r90a23:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4atvfm8h665grs2fhzhh57njja05w2nfy0ceddp6wazd47lhltrta, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58cc0925914e3cb3a96d3fdcf252cea8524d357e25882dad710d7f51f0a7")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trxqjfv3fc7t82td8lw0y5kw4pfy6dt7ykyzmtt3p4l4ru98eul3rr, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4atvfm8h665grs2fhzhh57njja05w2nfy0ceddp6wazd47lhltrta"),
+     Own("internal_component_sim1lr22pwu3qhjrzu8uyk6a8m5vmvr4ll8tf0j5n08dp556d8tntqmt35"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4atvfm8h665grs2fhzhh57njja05w2nfy0ceddp6wazd47lhltrta
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4atvfm8h665grs2fhzhh57njja05w2nfy0ceddp6wazd47lhltrta
+A new account has been created!
+Account component address: account_sim1cys5t86rvx3wa06vveg3wrspvvh639vj9jjfrpd02cvuvjy4d4jmv6
+Public key: 02d1e03887a5d027d79f80cb428040378d9c36579e0e20e242bdcdd02330b7f99d
+Private key: 2351ad3132845c977ee323a5d9ae1046d1277a8030f8df9346064fa3e878a32f
+Owner badge: resource_sim1ngslssayx2klet2mm0ynw4h2ax8e7kc3cegadjze4g8j3qtrsgr5dr:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1th0z9q5xlz00p98p2lkqlqszzagnpx5sa2ck4k6trdxgefjrg5c03j, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58cdc6fa151172633d0bd18e7a1ace3c14f8b986d6783e875d895ac9d73e")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trxud7s4z9exx0gt6x885xkw8s203wvx6eurap6a39dvn4e7vgcuza, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1th0z9q5xlz00p98p2lkqlqszzagnpx5sa2ck4k6trdxgefjrg5c03j"),
+     Own("internal_component_sim1lq3ywjn2x06artcf6hsznugxmvaat0cln804mnsc5pjfl8vg3lwvn5"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1th0z9q5xlz00p98p2lkqlqszzagnpx5sa2ck4k6trdxgefjrg5c03j
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1th0z9q5xlz00p98p2lkqlqszzagnpx5sa2ck4k6trdxgefjrg5c03j
+A new account has been created!
+Account component address: account_sim1cyuc59zt348adr889tfjg539n8lx7cxp2mygn6e39af20tyweyg8m4
+Public key: 033c33998862e7a34927a90c69b3ae20c85eb0241742cbdf1e68e4e8a17e79e192
+Private key: f06e64bc8034f28a604dc9daf0e0ee72876b30d0ddc8e9b57c8aa73f6f2a5057
+Owner badge: resource_sim1nfhl3ndsrjwjqqr4aqxnjy44sacqdn96c2ld75mfj7cmvt3qx3p6m5:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk3ardh3h6zuhr3zf65dcuec3stfazf24tskzd3xzg4pqqc2drjvhx, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58ae0d085c512726fd8134cf69e78fb45f001b83361f14c865defa66a6c5")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzhq6zzu2ynjdlvpxn8kneu0k30sqxurxc03fjr9mmaxdfk99snflx, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk3ardh3h6zuhr3zf65dcuec3stfazf24tskzd3xzg4pqqc2drjvhx"),
+     Own("internal_component_sim1lpwx09ds9h4jlyruaupaaph7mux2lx7nm0h6mkh0k8t2h7kqpqylg7"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk3ardh3h6zuhr3zf65dcuec3stfazf24tskzd3xzg4pqqc2drjvhx
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk3ardh3h6zuhr3zf65dcuec3stfazf24tskzd3xzg4pqqc2drjvhx
+A new account has been created!
+Account component address: account_sim1c8tn4my096d247srepwrz5k2vpvt86n3mcfsgr8jaqmajktkc5vn2y
+Public key: 0248e96fdf1abc4c4cfedb7c868a3456d5af9995168e8a72013070f33a30381e2c
+Private key: 7dcceafd72ec42d8e53f8b30c4613752e821990d725897b65a39f6127fe214b9
+Owner badge: resource_sim1n20gr6wtdyzsjwgfx9p4dd97hwgpkm7rm52gp6e9zl2lpcskvdpxgq:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t449y9y72g0qku5g2hgp9jslg4hndppdmlggg8f2yvgw5sfecllr5v, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("583eb53c829e8c06166d28a3d7d5a3fdcad1f4140d2c61f7e26d6e801390")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqlt20yzn6xqv9nd9z3a04drlh9draq5p5kxralzd4hgqyus5xux70, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t449y9y72g0qku5g2hgp9jslg4hndppdmlggg8f2yvgw5sfecllr5v"),
+     Own("internal_component_sim1lqcy2llgj6n25gnf4ut0vk3l4lxjucxy78xzkdat8x6ec865e8csa4"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t449y9y72g0qku5g2hgp9jslg4hndppdmlggg8f2yvgw5sfecllr5v
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t449y9y72g0qku5g2hgp9jslg4hndppdmlggg8f2yvgw5sfecllr5v
+A new account has been created!
+Account component address: account_sim1cxne8hs3jx59txf7pcvtgynuj03mc8x3l2usu8phvsvyrfvgmxjul9
+Public key: 035666ac97edcc00092e51aef533ebbe60ce8ce69ee37769688644b18305ec8f66
+Private key: a13a38bbf1db285c973aa0340c0d76b7153a0a573e23839421f0e9b9663c0540
+Owner badge: resource_sim1n2a35nk7rfv55ewtygz847e6fcy8ut900f0g2gwqkgwlrfuv9ep9th:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkdewer6t66uxea7q68lmsng96a6wgjfgt3l3ah46whsjd6k06ju8t, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("584a1792ab1d92710040eb3a77299087aaa7a94e1be3cc6818706634433c")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tp9p0y4trkf8zqzqava8w2vss742022wr03uc6qcwpnrgseujhhptk, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkdewer6t66uxea7q68lmsng96a6wgjfgt3l3ah46whsjd6k06ju8t"),
+     Own("internal_component_sim1lruvg0m5n6gq82wgr4ztmfrgnd5w84aec4dkztmue950luqdrsy0k6"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkdewer6t66uxea7q68lmsng96a6wgjfgt3l3ah46whsjd6k06ju8t
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkdewer6t66uxea7q68lmsng96a6wgjfgt3l3ah46whsjd6k06ju8t
+A new account has been created!
+Account component address: account_sim1c8pwxxnd5pgwktg49c2a2ujzhksunklmmhezs3sts580rnmyq0tfq2
+Public key: 037bf2ba5fef004cf91eca138c268e3ffc0ae3e095cfaabe64460b89972b008e16
+Private key: 9d19f96c027d79b5be3c0f3ae5b4c16f799b16b1816549dbfbc7bec329f4ff93
+Owner badge: resource_sim1nf7yegvgk8rx36kz92exgx280tfv0690q0a00glzau26ac6y0j5age:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tkw5yhfxhggwpkaltutr49xywl36twrq7jm44zpe7pdkmn3kejsvfq, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("583635e4fc2e19771c1b7a0290ddef625c131873ab077efba431c797dcb1")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqmrte8u9cvhw8qm0gpfph00vfwpxxrn4vrha7ayx8re0h93upufks, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tkw5yhfxhggwpkaltutr49xywl36twrq7jm44zpe7pdkmn3kejsvfq"),
+     Own("internal_component_sim1lpw0twmshn2akarjsrpvu0683ls7t0clud6x7g5gct3mfv2aecr3p8"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tkw5yhfxhggwpkaltutr49xywl36twrq7jm44zpe7pdkmn3kejsvfq
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tkw5yhfxhggwpkaltutr49xywl36twrq7jm44zpe7pdkmn3kejsvfq
+A new account has been created!
+Account component address: account_sim1c8drvgjw4rekjtav50kdjaq8077ysr6c2ay3xljyvflw3yhczvy0ej
+Public key: 039f82ca62827981307f3e87ce29b99f90c9dbb286ee2888e61348c9d06af55773
+Private key: 10241d4b1609eab0045dabcd46b8c11fe5a62b59643f460f574ac8ac4b9c8ada
+Owner badge: resource_sim1ng5q49f6xdadskganhdzkm89hs52ejgpdpx2ulfxmwjjh058qukx29:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thrscup746d5uz0q7tuns34apgk27vzq0a03p9pc726lej7eh4zjlp, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5850cb98cb45fbe221b8907955b54171048f438d4764b027888101a05a1f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpgvhxxtgha7ygdcjpu4td2pwyzg7sudgajtqfugsyq6qksl3l54tu, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thrscup746d5uz0q7tuns34apgk27vzq0a03p9pc726lej7eh4zjlp"),
+     Own("internal_component_sim1lqrw8x25aaxqe9d4eu8y6pwwkuzqxep5pe8hg2xm6whvhq6eglqssw"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thrscup746d5uz0q7tuns34apgk27vzq0a03p9pc726lej7eh4zjlp
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thrscup746d5uz0q7tuns34apgk27vzq0a03p9pc726lej7eh4zjlp
+A new account has been created!
+Account component address: account_sim1c9fxlvvjm9kdnmkgj2ehmx4jd0f8fy4kaqv3yucpaxxy34n0xmw9y6
+Public key: 0395d9fe7722fede0a74c6c74a4a26532808429e3c28fd51e1ccc3138f0c47b7c3
+Private key: 64894ab2e68e3ad95779c04e554b2d97e1f5f2c4acf24b5e95b8f39ed2b5e00a
+Owner badge: resource_sim1nfmt37hr4ha05hff7e69x0m3rgrg5dxmdk5l5qdq227sxksf78wvnd:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4z5r84jz2gejg0yu2vh4alppas2mfc7wh0u8n8e2u2kt3uct7eekv, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58a691c0499c96c4549af274a17cd227515e80113c388174ba37dace46b8")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tznfrszfnjtvg4y67f62zlxjyag4aqq38sugza96xldvu34c8cxkdh, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4z5r84jz2gejg0yu2vh4alppas2mfc7wh0u8n8e2u2kt3uct7eekv"),
+     Own("internal_component_sim1lpcdddj3agda82xkgzgp6stk3hvdrh2x9c368da0uxyksqdjmqsp3s"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4z5r84jz2gejg0yu2vh4alppas2mfc7wh0u8n8e2u2kt3uct7eekv
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4z5r84jz2gejg0yu2vh4alppas2mfc7wh0u8n8e2u2kt3uct7eekv
+A new account has been created!
+Account component address: account_sim1cx0vg6rr7vctf34gyd0aarjcgcwr9gccawzwhua73sq089qfcmcjqn
+Public key: 0321bdf06dc82b663f2665031623b8ff7da9460d88d1cf05541287a167516f51c7
+Private key: a9ec6a057ba4aa6c6c5f55e910691d4220c7ad9d259b04342c8759c6f9c35c73
+Owner badge: resource_sim1ntqdnyl5leaqf3s7gw977vxwrp70jygeaxxcc3gymsw0h57navv3n3:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4x4j5fu7fxqp8pgymrt94nturduf5h28en0dvnvps774ph2kplhh0, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5892f17bc5b1bdc8bd69c7cff5e0fbf4378fdb39381ae02f287fa3920bda")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzf0z779kx7u30tfcl8ltc8m7smclkee8qdwqteg073eyz76uzq2q3, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4x4j5fu7fxqp8pgymrt94nturduf5h28en0dvnvps774ph2kplhh0"),
+     Own("internal_component_sim1lqwxxnuv2mz4pw3t6fy0mqccr9jy46dtzue7qc6k6s0xsggws3nrhy"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4x4j5fu7fxqp8pgymrt94nturduf5h28en0dvnvps774ph2kplhh0
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4x4j5fu7fxqp8pgymrt94nturduf5h28en0dvnvps774ph2kplhh0
+A new account has been created!
+Account component address: account_sim1cxknucc9a493grzr5sve9c3d97944wmamdgpes9hdgae8t82drhnjf
+Public key: 03744a66443cebe6dd3f73239785de3fb17c664ce6fcc3a9052099b6b153728dd8
+Private key: 936fa44b5afc25833739c01d5a5aff00a5158bc104f8fc3663c79151fe93edd6
+Owner badge: resource_sim1n25uzhww62ah634km6fzvjfx8l6n7kpf8d7x2jfxnll3j6scrr6ezz:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t42tnxrkw552ndvyn9vfufrualjvyf74dll2zh0nvpj9a5ezr002mg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58440629d60b0571b3344379e9d0822568a62d68767909a88baeae5069c3")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpzqv2wkpvzhrve5gdu7n5yzy452vttgweusn2yt46h9q6wra6ndru, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t42tnxrkw552ndvyn9vfufrualjvyf74dll2zh0nvpj9a5ezr002mg"),
+     Own("internal_component_sim1lqzs2ak98dfr3udh5tp2jrh00nc8q9xnaxn20syvf5u7ktrs2zpwk3"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t42tnxrkw552ndvyn9vfufrualjvyf74dll2zh0nvpj9a5ezr002mg
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t42tnxrkw552ndvyn9vfufrualjvyf74dll2zh0nvpj9a5ezr002mg
+A new account has been created!
+Account component address: account_sim1c89ec5jshugakg0y0taqjcm4e2j76g59wrtye0se8hz0daajlg7y7n
+Public key: 022bf66e871e4c108945d7055bd0a8ecd1adb52053416437dfad92f3f6b2cceee0
+Private key: a2843e4cd6bb6683911ed1df5ef9c67f5088461939847de8d1237277b23f7bff
+Owner badge: resource_sim1nt9rsgq2tphn8dvure7t72xnp6nmpf2plqn6vf0c7v7tuhp9clac9z:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thf2hvkts8z0wmrsdlf6pu0xvf02auc0e24y6gvwrr5whe0eyjs425, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("5877c07cab6394477e5ddb8f4ab8924031c6c08138999a66fc0aa1445e42")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tpmuql9tvw2ywljamw854wyjgqcudsyp8zve5ehup2s5ghjzxw7rs7, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thf2hvkts8z0wmrsdlf6pu0xvf02auc0e24y6gvwrr5whe0eyjs425"),
+     Own("internal_component_sim1lzn6gcg92t5jd046vgpwgvntamcc6hytnm7224g879yct6tlv40ll4"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thf2hvkts8z0wmrsdlf6pu0xvf02auc0e24y6gvwrr5whe0eyjs425
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thf2hvkts8z0wmrsdlf6pu0xvf02auc0e24y6gvwrr5whe0eyjs425
+A new account has been created!
+Account component address: account_sim1cx5lvxpd7kya9emu2zgl7kxvm29300la6af0czjhykpl4h7ndd92zv
+Public key: 02fd94f563be5c537825c5576147b14be15305a98a794ca612c64b467a6df0fb41
+Private key: fb8e658fbbda5b8338a73caa10b569080403c50a80382dbc85487e7bf67ffce7
+Owner badge: resource_sim1n2zpqvxjv8aa6zv4s8zt4qce4y4qwfcgr8p8l88f6d633ltr2ezmae:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5d4vpz6sndv4a8nplmjjqhswk635wmkx0h0zsmued37j7dp33vrss, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("588ab680faf5e9d61a793cde0bd96121844ef32c20b7d5d971b6ef80aad8")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tz9tdq867h5avxne8n0qhktpyxzyauevyzmatkt3kmhcp2kchngjzh, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5d4vpz6sndv4a8nplmjjqhswk635wmkx0h0zsmued37j7dp33vrss"),
+     Own("internal_component_sim1lrh5zt3ht2gh6p9gs73qpn45q8sad0656schvxcu4wrrqj2nx8y4cu"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5d4vpz6sndv4a8nplmjjqhswk635wmkx0h0zsmued37j7dp33vrss
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5d4vpz6sndv4a8nplmjjqhswk635wmkx0h0zsmued37j7dp33vrss
+A new account has been created!
+Account component address: account_sim1cyp0l52guqxh42k9nr0s6eaufp98h5pp34ah6yxjrwne7s793d0qx5
+Public key: 0386a76622e1aa3d067fcf2d5f685146d93a284774fc55f094f474a1c3a3c9a36e
+Private key: e50e349a2e541dd34edc6e33e877ebb93938f3539c2cdf1308278ac29fa220d8
+Owner badge: resource_sim1ngdmpxahrgwe78rqwp0flm2vlgaa6q6naewywalqnc4ms0zw3j8rue:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thgkd39932vryh5yrr230ny7hgeltvgl648zy2j5ph7dp9zglg8hjs, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58e1e8f4f4b641381b31a7df7928bb2904b688f0da26b38bb15aea222fd0")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trs73a85keqnsxe35l0hj29m9yztdz8smgnt8za3tt4zyt7s5qlkcd, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thgkd39932vryh5yrr230ny7hgeltvgl648zy2j5ph7dp9zglg8hjs"),
+     Own("internal_component_sim1lzdcfzv3zftem5qtcmjszew0pptpjsk8tcumjj6jrh9rc5wgxmme4g"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thgkd39932vryh5yrr230ny7hgeltvgl648zy2j5ph7dp9zglg8hjs
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thgkd39932vryh5yrr230ny7hgeltvgl648zy2j5ph7dp9zglg8hjs
+A new account has been created!
+Account component address: account_sim1cxfz888c3qnqnsmxkppfydu335045pjsq8qtx5pv0hzpph874hhpj5
+Public key: 03ea952c8ea6b46e8e7e65f91dfed4abf8224c951a47e88f5c3f22ab1889f8df5b
+Private key: e1bf35b4db42ab260172841d7cbe8b269f5ac7fd72d513404a3fdb6434fdf6f5
+Owner badge: resource_sim1ngh2ksrvdn30kydg0up2wz3q6a3ke8yn3p7qq2jajh23dv886xvgw3:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1tk98se7u2rn60tglk7rfa770dsyc8qvdatr3nsfnz2q858g7scc5qw, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("583e23bd5cab1f283ab8e525b6f91d7ba778690a48c61dedb1e8f1f55372")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqlz802u4v0jsw4cu5jmd7ga0wnhs6g2frrpmmd3arcl25mjvyp0kp, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1tk98se7u2rn60tglk7rfa770dsyc8qvdatr3nsfnz2q858g7scc5qw"),
+     Own("internal_component_sim1lqcuevx2ame4vn2s8hucduluxnlefc5t4qeyqvacj9czunmjjvy5m3"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1tk98se7u2rn60tglk7rfa770dsyc8qvdatr3nsfnz2q858g7scc5qw
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1tk98se7u2rn60tglk7rfa770dsyc8qvdatr3nsfnz2q858g7scc5qw
+A new account has been created!
+Account component address: account_sim1cy57d9nmtfrne4fu6tlf0mj83aa7zymchv9557gkmlg03phj36zxhd
+Public key: 030973aa06d64ad42484a5af9d074defa43e1b05128f24aca80cd350d913817175
+Private key: 0b1216eaeafe7d3e14556e149b801a290b9400d8c4b9bcba9f0d2786dc9332c6
+Owner badge: resource_sim1nfwl97shsdykwlfs72ry6dzu6gxl75tcdcj3y3dzhzjk6swevnhuer:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5qs50gzzq527h43v5cek6esdf5q0rc7t2hfkv2exlnggx8ul079mk, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58268b10a1fa87d9d5cd563d96bf3f160ca015a20aeefa6624864fea53e8")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqngky9pl2ran4wd2c7ed0elzcx2q9dzpth05e3yse8755lg6p9xxx, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5qs50gzzq527h43v5cek6esdf5q0rc7t2hfkv2exlnggx8ul079mk"),
+     Own("internal_component_sim1lzvzqpu4s8fy53mkj3up2tjh3kxz0yz3aeqwdagkrgxemwuemh88jt"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5qs50gzzq527h43v5cek6esdf5q0rc7t2hfkv2exlnggx8ul079mk
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5qs50gzzq527h43v5cek6esdf5q0rc7t2hfkv2exlnggx8ul079mk
+A new account has been created!
+Account component address: account_sim1cyte2n3lpv84sqzrez0wkj5pg6l30czd7k92sn2k0luwfwg6y98hc6
+Public key: 02c10d58574bca1205189486d7a8b46f977fedf85f713503a6b8c06d6d1dbaea59
+Private key: a75933b500dba4a5dd5b56ebb451050750fc17739a337637fe7fdd1b225be96c
+Owner badge: resource_sim1n2e9qftwf04r60g2cz655wm4p029lgxpmnd4pkpr4ng0jsrnuseuur:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1thegs060ph9lp2mr8qg0krkrfsnvarydjgy0tkf7x2t2uc388v2542, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("580a3295556520ceebe7150e49a094f2d3e894281efcaa8f591621c6852a")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tq9r9924v5sva6l8z58yngy57tf739pgrm724r6ezcsudpf24sfhpr, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1thegs060ph9lp2mr8qg0krkrfsnvarydjgy0tkf7x2t2uc388v2542"),
+     Own("internal_component_sim1lqzyclvfqxzjpmh7wvzhpx26qzwxww2fzpk764308hxln5964klvwv"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1thegs060ph9lp2mr8qg0krkrfsnvarydjgy0tkf7x2t2uc388v2542
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1thegs060ph9lp2mr8qg0krkrfsnvarydjgy0tkf7x2t2uc388v2542
+A new account has been created!
+Account component address: account_sim1c9w6cqckmnqamepazafad70wpz0vlwng62n3p2rca9ujrwc69lhazh
+Public key: 02a9e955019d896f67f86b235f961552c0751a12f8f8f90e5d55034554f8c6b4fd
+Private key: eeba6fd941cbd1e7795dff082765db66e60ff73b031992ea1c1f689c7609ff2c
+Owner badge: resource_sim1nguueewc0lqsf46tnqgf0evm7v2x7q9h5zkffjwpmzjlt6harcx4pm:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5ufalepap0tjsvkvu8uqv6y8ypty93k9zjy5v4fetpvwf33lk488k, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("58ec50f6f0847a7e06f17fa6bf3ce060a0de37e2a9500f77d5b999229463")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1trk9pahss3a8uph307nt708qvzsdudlz49gq7a74hxvj99rr3vkxep, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5ufalepap0tjsvkvu8uqv6y8ypty93k9zjy5v4fetpvwf33lk488k"),
+     Own("internal_component_sim1lq8gt6mjaf666qf9wg3smx8pj2u67ujr89wg2f55pte6vsczsxjlkw"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5ufalepap0tjsvkvu8uqv6y8ypty93k9zjy5v4fetpvwf33lk488k
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5ufalepap0tjsvkvu8uqv6y8ypty93k9zjy5v4fetpvwf33lk488k
+A new account has been created!
+Account component address: account_sim1cy8x8qtka5nacaw9eavejsmthmwqxealcauf5ksf3f59dyumgqzy05
+Public key: 03284055c438165ce25271fc1eeed02a59106685b2d150321d2bf9328354d8fefc
+Private key: 887e5aae56406c584936c2e76380a8a301150a0b53946ceeb92a9c5fef5fb410
+Owner badge: resource_sim1ngjpagdh5akul4kan7eeahuqeerexx2d0qmuwa5kdumy0w6erv2tfd:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t4tagf4xyqa58yczvgutehfuaxa96hjrp0m0s5twawg5zseydv6hjv, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("583f9382cc2812e82b976356391dacb1334c62a076b9c54962445e5cff3f")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tqle8qkv9qfws2uhvdtrj8dvkye5cc4qw6uu2jtzg309elelcnxy5g, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t4tagf4xyqa58yczvgutehfuaxa96hjrp0m0s5twawg5zseydv6hjv"),
+     Own("internal_component_sim1lqsad2v3rtdaxc74kzqy2g0jwv53dx96mrklsypcxgtgm6pd48240c"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t4tagf4xyqa58yczvgutehfuaxa96hjrp0m0s5twawg5zseydv6hjv
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t4tagf4xyqa58yczvgutehfuaxa96hjrp0m0s5twawg5zseydv6hjv
+A new account has been created!
+Account component address: account_sim1cxvsfu4hykcnphu8r602dp8apns7rqydrw2te3hcnzmk0dsuf086s0
+Public key: 023a24f8b15d6cd14c925b5c1c81fd471f6694f5c58c41c371693499d900ae3299
+Private key: 8fe1dbf9c44f67e7c2cdc28bb3f4f920267ed0519c4923d88d3b019e870fa288
+Owner badge: resource_sim1ntx3vr9w7udhzzzxc6usqaws0trs426jz6efac027lemwdgq9wvkfk:#1#
+Transaction Status: COMMITTED SUCCESS
+Transaction Fee: 0.2169225 XRD used for execution, 0 XRD used for royalty, 0 XRD in bad debt
+Cost Units: 100000000 limit, 2169225 consumed, 0.0000001 XRD per cost unit, 0% tip
+Logs: 0
+Events: 3
+├─ Emitter: Method { node: internal_vault_sim1tz2n4dajl9h6r0ul9au5hxjwn8t6uz4lcp9rsel870jp3v9c2hmt0t, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("100"),
+   }
+├─ Emitter: Method { node: resource_sim1t5352z7xl9s4k0yzqwuqnmux54vd2sa59r2hsu4475x83tcnt2zshg, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: Bytes(hex("589b0cf9ae9361bb05f1547669ba53f71bf230c2f849d5db6995f9889ac9")),
+   }
+└─ Emitter: Method { node: internal_vault_sim1tzdse7dwjdsmkp0323mxnwjn7udlyvxzlpyatkmfjhuc3xkf7gws3x, module_id: Main }
+   Event: DepositResourceEvent::Amount(
+     Decimal("1"),
+   )
+Outputs: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1t5352z7xl9s4k0yzqwuqnmux54vd2sa59r2hsu4475x83tcnt2zshg"),
+     Own("internal_component_sim1lpeg6339nqetrww9pt498q57wtrp2q8key5z269ggjqwj9ve8tr2ur"),
+   )
+└─ Unit
+Balance Changes: 2
+├─ Entity: component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.2169225
+└─ Entity: account_sim1c95lpadykhzwy6tv7ncwprda04v58yaxnafglv63dl6j797ky0g57v
+   ResAddr: resource_sim1t5352z7xl9s4k0yzqwuqnmux54vd2sa59r2hsu4475x83tcnt2zshg
+   Change: 1
+Direct Vault Updates: 0
+New Entities: 1
+└─ Resource: resource_sim1t5352z7xl9s4k0yzqwuqnmux54vd2sa59r2hsu4475x83tcnt2zshg
+A new account has been created!
+Account component address: account_sim1c9wxzx9wffu245symwlrde5yadfnnlunheyleg9mlxgptue5ganx04
+Public key: 0386f2b804c063632ad2ac41e9c35f0067c78743d77663202960c2f350de772337
+Private key: 88c49a76ad44e311b6fffc02448c805fc6debb6af349434367c504e9cb22e837
+Owner badge: resource_sim1nfgvrga735nu3mdjkrgz3sqygchka9z7u7m9epldcemwsnfhaxxh88:#1#
