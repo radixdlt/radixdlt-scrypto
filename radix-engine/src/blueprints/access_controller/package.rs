@@ -598,7 +598,7 @@ impl AccessControllerNativePackage {
             // but the interfaces for setting metadata allow for any `MetadataEntry`. So we will
             // set the metadata to be updatable by the component caller badge and then switch it
             // back to only be immutable.
-            // TODO: When metadata initialization allows MetadataEntry stop making update metadata
+            // FIXME: When metadata initialization allows MetadataEntry stop making update metadata
             // rule be transient
             let access_rules = [
                 (
