@@ -1,9 +1,12 @@
-use radix_engine_common::native_addresses::EPOCH_MANAGER_PACKAGE;
 use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::native_addresses::EPOCH_MANAGER_PACKAGE;
 use radix_engine_interface::address::Bech32Encoder;
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -13,6 +16,9 @@ use radix_engine_interface::blueprints::account::{
 use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::package::{
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -27,8 +33,6 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -441,7 +445,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallAccessRulesMethod {
-            address ,
+            address,
             method_name,
             args,
         } => {
@@ -531,24 +535,27 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
-            address ,
+            address,
             method_name,
             args,
         } => {
             match (address, method_name.as_str()) {
                 (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
-                    if address.eq(&EPOCH_MANAGER.clone().into())=> {
+                    if address.eq(&EPOCH_MANAGER.clone().into()) =>
+                {
                     write!(f, "CREATE_VALIDATOR")?;
                 }
                 (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
-                if address.as_node_id().is_global_package() => {
+                    if address.as_node_id().is_global_package() =>
+                {
                     f.write_str(&format!(
                         "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),
                     ))?;
                 }
                 (address, PACKAGE_CLAIM_ROYALTY_IDENT)
-                if address.as_node_id().is_global_package() => {
+                    if address.as_node_id().is_global_package() =>
+                {
                     f.write_str(&format!(
                         "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),

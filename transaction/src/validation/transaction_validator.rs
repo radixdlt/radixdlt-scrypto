@@ -291,8 +291,10 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::ClearSignatureProofs => {}
-                Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. }
-                | Instruction::CallRoyaltyMethod { args, .. } | Instruction::CallAccessRulesMethod { args, .. }=> {
+                Instruction::CallFunction { args, .. }
+                | Instruction::CallMethod { args, .. }
+                | Instruction::CallRoyaltyMethod { args, .. }
+                | Instruction::CallAccessRulesMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;

@@ -1,4 +1,8 @@
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -11,6 +15,10 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::package::{
+    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
+    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -28,8 +36,6 @@ use radix_engine_interface::math::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput};
-use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -567,9 +573,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&PackageSetRoyaltyConfigInput {
-                royalty_config
-            })
+            args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
         })
         .0
     }
@@ -580,7 +584,7 @@ impl ManifestBuilder {
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&PackageClaimRoyaltyInput {}),
         })
-            .0
+        .0
     }
 
     pub fn set_component_royalty_config(
@@ -591,9 +595,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
-                royalty_config,
-            }),
+            args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
         })
         .0
     }
@@ -602,10 +604,9 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value(&ComponentClaimRoyaltyInput {
-            }),
+            args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
         })
-            .0
+        .0
     }
 
     pub fn set_method_access_rule(

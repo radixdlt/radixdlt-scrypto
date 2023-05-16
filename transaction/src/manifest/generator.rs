@@ -4,7 +4,10 @@ use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::RuleSet;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -20,7 +23,10 @@ use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT, PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput};
+use radix_engine_interface::blueprints::package::{
+    PackageClaimRoyaltyInput, PackageSetRoyaltyConfigInput, PACKAGE_CLAIM_ROYALTY_IDENT,
+    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     AccessRulesConfig, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
@@ -511,17 +517,19 @@ pub fn generate_instruction(
             address: generate_global_address(package_address, bech32_decoder)?,
             method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&PackageSetRoyaltyConfigInput {
-                royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-            })
+                royalty_config: generate_typed_value(
+                    royalty_config,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            }),
         },
-        ast::Instruction::ClaimPackageRoyalty { package_address } => {
-            Instruction::CallMethod {
-                address: generate_global_address(package_address, bech32_decoder)?,
-                method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
-                args: to_manifest_value(&PackageClaimRoyaltyInput {
-                })
-            }
-        }
+        ast::Instruction::ClaimPackageRoyalty { package_address } => Instruction::CallMethod {
+            address: generate_global_address(package_address, bech32_decoder)?,
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
+        },
         ast::Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
@@ -529,15 +537,19 @@ pub fn generate_instruction(
             address: generate_global_address(component_address, bech32_decoder)?,
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput {
-                royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-            })
+                royalty_config: generate_typed_value(
+                    royalty_config,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            }),
         },
         ast::Instruction::ClaimComponentRoyalty { component_address } => {
             Instruction::CallRoyaltyMethod {
                 address: generate_global_address(component_address, bech32_decoder)?,
                 method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-                args: to_manifest_value(&ComponentClaimRoyaltyInput {
-                })
+                args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
             }
         }
         ast::Instruction::SetMethodAccessRule {
