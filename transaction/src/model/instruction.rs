@@ -141,6 +141,8 @@ pub enum Instruction {
         args: ManifestValue,
     },
 
+    // TODO: Generify?
+    // TODO: Dedicated bucket for this?
     #[sbor(discriminator(INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR))]
     RecallResource {
         vault_id: InternalAddress,

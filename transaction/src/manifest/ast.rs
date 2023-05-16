@@ -2,11 +2,6 @@ use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestVa
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    TakeAllFromWorktop {
-        resource_address: Value,
-        new_bucket: Value,
-    },
-
     TakeFromWorktop {
         resource_address: Value,
         amount: Value,
@@ -15,6 +10,11 @@ pub enum Instruction {
 
     TakeNonFungiblesFromWorktop {
         ids: Value,
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
+    TakeAllFromWorktop {
         resource_address: Value,
         new_bucket: Value,
     },
@@ -65,6 +65,8 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    ClearSignatureProofs,
+
     CreateProofFromBucket {
         bucket: Value,
         new_proof: Value,
@@ -87,6 +89,10 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    BurnResource {
+        bucket: Value,
+    },
+
     CloneProof {
         proof: Value,
         new_proof: Value,
@@ -95,10 +101,6 @@ pub enum Instruction {
     DropProof {
         proof: Value,
     },
-
-    DropAllProofs,
-
-    ClearSignatureProofs,
 
     CallFunction {
         package_address: Value,
@@ -113,141 +115,87 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    PublishPackage {
-        code: Value,
-        schema: Value,
-        royalty_config: Value,
-        metadata: Value,
-    },
-    PublishPackageAdvanced {
-        code: Value,
-        schema: Value,
-        royalty_config: Value,
-        metadata: Value,
-        access_rules: Value,
-    },
-
-    BurnResource {
-        bucket: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
     RecallResource {
         vault_id: Value,
         amount: Value,
     },
 
-    SetMetadata {
-        entity_address: Value,
-        key: Value,
-        value: Value,
-    },
+    DropAllProofs,
 
-    RemoveMetadata {
-        entity_address: Value,
-        key: Value,
+    /* Call function aliases */
+    PublishPackage {
+        args: Vec<Value>,
     },
-
-    SetPackageRoyaltyConfig {
-        package_address: Value,
-        royalty_config: Value,
+    PublishPackageAdvanced {
+        args: Vec<Value>,
     },
-
-    SetComponentRoyaltyConfig {
-        component_address: Value,
-        royalty_config: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
-    ClaimPackageRoyalty {
-        package_address: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
-    ClaimComponentRoyalty {
-        component_address: Value,
-    },
-
-    SetMethodAccessRule {
-        entity_address: Value,
-        key: Value,
-        rule: Value,
-    },
-
-    SetGroupAccessRule {
-        entity_address: Value,
-        object_key: Value,
-        group: Value,
-        rule: Value,
-    },
-
-    SetGroupMutability {
-        entity_address: Value,
-        object_key: Value,
-        group: Value,
-        mutability: Value,
-    },
-
-    MintFungible {
-        resource_address: Value,
-        amount: Value,
-    },
-
-    MintNonFungible {
-        resource_address: Value,
-        args: Value,
-    },
-
-    MintUuidNonFungible {
-        resource_address: Value,
-        args: Value,
-    },
-
     CreateFungibleResource {
-        divisibility: Value,
-        metadata: Value,
-        access_rules: Value,
+        args: Vec<Value>,
     },
-
     CreateFungibleResourceWithInitialSupply {
-        divisibility: Value,
-        metadata: Value,
-        access_rules: Value,
-        initial_supply: Value,
+        args: Vec<Value>,
     },
-
     CreateNonFungibleResource {
-        id_type: Value,
-        schema: Value,
-        metadata: Value,
-        access_rules: Value,
+        args: Vec<Value>,
     },
-
     CreateNonFungibleResourceWithInitialSupply {
-        id_type: Value,
-        schema: Value,
-        metadata: Value,
-        access_rules: Value,
-        initial_supply: Value,
+        args: Vec<Value>,
     },
-
     CreateValidator {
-        key: Value,
+        args: Vec<Value>,
     },
     CreateAccessController {
-        controlled_asset: Value,
-        rule_set: Value,
-        timed_recovery_delay_in_minutes: Value,
+        args: Vec<Value>,
     },
-
-    CreateIdentity {},
+    CreateIdentity {
+        args: Vec<Value>,
+    },
     CreateIdentityAdvanced {
-        config: Value,
+        args: Vec<Value>,
+    },
+    CreateAccount {
+        args: Vec<Value>,
+    },
+    CreateAccountAdvanced {
+        args: Vec<Value>,
     },
 
-    CreateAccount {},
-    CreateAccountAdvanced {
-        config: Value,
+    /* Call method aliases */
+    SetMetadata {
+        args: Vec<Value>,
+    },
+    RemoveMetadata {
+        args: Vec<Value>,
+    },
+    SetPackageRoyaltyConfig {
+        args: Vec<Value>,
+    },
+    SetComponentRoyaltyConfig {
+        args: Vec<Value>,
+    },
+    ClaimPackageRoyalty {
+        args: Vec<Value>,
+    },
+    ClaimComponentRoyalty {
+        args: Vec<Value>,
+    },
+    SetMethodAccessRule {
+        args: Vec<Value>,
+    },
+    SetGroupAccessRule {
+        args: Vec<Value>,
+    },
+    SetGroupMutability {
+        args: Vec<Value>,
+    },
+    MintFungible {
+        args: Vec<Value>,
+    },
+    MintNonFungible {
+        args: Vec<Value>,
+    },
+    MintUuidNonFungible {
+        args: Vec<Value>,
     },
 }
 

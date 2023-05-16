@@ -291,10 +291,7 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 Instruction::ClearSignatureProofs => {}
-                Instruction::CallFunction { args, .. }
-                | Instruction::CallMethod { args, .. }
-                | Instruction::CallRoyaltyMethod { args, .. }
-                | Instruction::CallAccessRulesMethod { args, .. } => {
+                Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
@@ -304,17 +301,7 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::PublishPackage { .. }
-                | Instruction::PublishPackageAdvanced { .. }
-                | Instruction::RecallResource { .. }
-                | Instruction::SetMetadata { .. }
-                | Instruction::RemoveMetadata { .. }
-                | Instruction::SetMethodAccessRule { .. }
-                | Instruction::SetGroupAccessRule { .. }
-                | Instruction::SetGroupMutability { .. }
-                | Instruction::MintFungible { .. }
-                | Instruction::MintNonFungible { .. }
-                | Instruction::MintUuidNonFungible { .. } => {}
+                Instruction::RecallResource { .. } => {}
             }
         }
 

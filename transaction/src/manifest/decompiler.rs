@@ -2,7 +2,6 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::native_addresses::EPOCH_MANAGER_PACKAGE;
 use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
