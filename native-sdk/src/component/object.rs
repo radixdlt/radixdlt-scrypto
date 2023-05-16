@@ -11,7 +11,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{AccessRuleEntry, MethodKey, ObjectKey};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::{Debug, ToOwned};
 
 #[derive(Debug)]
 pub struct BorrowedObject(pub NodeId);
