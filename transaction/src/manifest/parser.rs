@@ -211,9 +211,6 @@ impl Parser {
                     args: self.parse_values_till_semicolon()?,
                 }
             }
-            TokenKind::CreateValidator => Instruction::CreateValidator {
-                args: self.parse_values_till_semicolon()?,
-            },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
                 args: self.parse_values_till_semicolon()?,
             },
@@ -232,39 +229,55 @@ impl Parser {
 
             /* Call method alias */
             TokenKind::SetMetadata => Instruction::SetMetadata {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::MintFungible => Instruction::MintFungible {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::MintNonFungible => Instruction::MintNonFungible {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::CreateValidator => Instruction::CreateValidator {
+                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
 

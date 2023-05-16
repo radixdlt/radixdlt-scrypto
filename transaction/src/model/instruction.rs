@@ -1,4 +1,5 @@
 use radix_engine_common::data::scrypto::model::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
@@ -136,6 +137,7 @@ pub enum Instruction {
 
     #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
     CallMethod {
+        module_id: ObjectModuleId,
         address: GlobalAddress,
         method_name: String,
         args: ManifestValue,

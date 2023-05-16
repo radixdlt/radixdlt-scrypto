@@ -141,9 +141,6 @@ pub enum Instruction {
     CreateNonFungibleResourceWithInitialSupply {
         args: Vec<Value>,
     },
-    CreateValidator {
-        args: Vec<Value>,
-    },
     CreateAccessController {
         args: Vec<Value>,
     },
@@ -162,39 +159,55 @@ pub enum Instruction {
 
     /* Call method aliases */
     SetMetadata {
+        address: Value,
         args: Vec<Value>,
     },
     RemoveMetadata {
+        address: Value,
         args: Vec<Value>,
     },
     SetPackageRoyaltyConfig {
+        address: Value,
         args: Vec<Value>,
     },
     SetComponentRoyaltyConfig {
+        address: Value,
         args: Vec<Value>,
     },
     ClaimPackageRoyalty {
+        address: Value,
         args: Vec<Value>,
     },
     ClaimComponentRoyalty {
+        address: Value,
         args: Vec<Value>,
     },
     SetMethodAccessRule {
+        address: Value,
         args: Vec<Value>,
     },
     SetGroupAccessRule {
+        address: Value,
         args: Vec<Value>,
     },
     SetGroupMutability {
+        address: Value,
         args: Vec<Value>,
     },
     MintFungible {
+        address: Value,
         args: Vec<Value>,
     },
     MintNonFungible {
+        address: Value,
         args: Vec<Value>,
     },
     MintUuidNonFungible {
+        address: Value,
+        args: Vec<Value>,
+    },
+    CreateValidator {
+        address: Value,
         args: Vec<Value>,
     },
 }

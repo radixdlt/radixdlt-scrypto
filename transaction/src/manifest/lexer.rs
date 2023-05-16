@@ -113,7 +113,6 @@ pub enum TokenKind {
     CreateFungibleResourceWithInitialSupply,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithInitialSupply,
-    CreateValidator,
     CreateAccessController,
     CreateIdentity,
     CreateIdentityAdvanced,
@@ -133,6 +132,7 @@ pub enum TokenKind {
     MintFungible,
     MintNonFungible,
     MintUuidNonFungible,
+    CreateValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -423,14 +423,15 @@ impl Lexer {
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleLocalId" => Ok(TokenKind::NonFungibleLocalId),
 
-            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
+            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
             "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
                 Ok(TokenKind::AssertWorktopContainsNonFungibles)
             }
+
             "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
             "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
             "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
@@ -442,22 +443,43 @@ impl Lexer {
                 Ok(TokenKind::CreateProofFromAuthZoneOfNonFungibles)
             }
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => Ok(TokenKind::CreateProofFromAuthZoneOfAll),
+            "CLEAR_SIGNATURE_PROOFS" => Ok(TokenKind::ClearSignatureProofs),
+
             "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
             "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => Ok(TokenKind::CreateProofFromBucketOfAmount),
             "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
                 Ok(TokenKind::CreateProofFromBucketOfNonFungibles)
             }
             "CREATE_PROOF_FROM_BUCKET_OF_ALL" => Ok(TokenKind::CreateProofFromBucketOfAll),
+            "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
+
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),
-            "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
-            "CLEAR_SIGNATURE_PROOFS" => Ok(TokenKind::ClearSignatureProofs),
+
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
+            "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
+
+            "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
+
+            /* call function alias */
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
             "PUBLISH_PACKAGE_ADVANCED" => Ok(TokenKind::PublishPackageAdvanced),
-            "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
-            "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
+            "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
+            "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
+            }
+            "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
+            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
+                Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
+            }
+            "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
+            "CREATE_IDENTITY_ADVANCED" => Ok(TokenKind::CreateIdentityAdvanced),
+            "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
+            "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
+            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
+
+            /* call method alias */
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
             "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
@@ -470,20 +492,7 @@ impl Lexer {
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
-            "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
-                Ok(TokenKind::CreateFungibleResourceWithInitialSupply)
-            }
-            "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithInitialSupply)
-            }
             "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
-            "CREATE_IDENTITY" => Ok(TokenKind::CreateIdentity),
-            "CREATE_IDENTITY_ADVANCED" => Ok(TokenKind::CreateIdentityAdvanced),
-            "CREATE_ACCOUNT" => Ok(TokenKind::CreateAccount),
-            "CREATE_ACCOUNT_ADVANCED" => Ok(TokenKind::CreateAccountAdvanced),
-            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
