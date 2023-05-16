@@ -5,19 +5,13 @@ use crate::event_schema;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::{SysBucket, Vault};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleAndMutabilityInput;
-use radix_engine_interface::api::node_modules::auth::AccessRulesSetMethodAccessRuleInput;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT;
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::api::node_modules::metadata::MetadataSetInput;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -743,7 +737,7 @@ impl AccessControllerNativePackage {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?;
 
-        let global_address = api.actor_get_global_address()?;
+        let access_controller = api.actor_get_global_address()?;
         let resource_address = {
             let substate_key = AccessControllerField::AccessController.into();
             let handle =
@@ -757,77 +751,26 @@ impl AccessControllerNativePackage {
             access_controller.recovery_badge
         };
 
-        api.call_module_method(
-            resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
-            METADATA_SET_IDENT,
-            scrypto_encode(&MetadataSetInput {
-                key: "name".to_owned(),
-                value: scrypto_decode(
-                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::String(
-                        "Recovery Badge".into(),
-                    )))
-                    .unwrap(),
-                )
-                .unwrap(),
-            })
-            .unwrap(),
+        let mut resource_manager = BorrowedObject(resource_address.into_node_id());
+        resource_manager.sys_set_metadata("name", "Recovery Badge".to_owned(), api)?;
+        resource_manager.sys_set_metadata(
+            "icon_url",
+            Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()),
+            api,
         )?;
-        api.call_module_method(
-            resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
-            METADATA_SET_IDENT,
-            scrypto_encode(&MetadataSetInput {
-                key: "icon_url".to_owned(),
-                value: scrypto_decode(
-                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::Url(Url(
-                        "https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned(),
-                    ))))
-                    .unwrap(),
-                )
-                .unwrap(),
-            })
-            .unwrap(),
-        )?;
-        api.call_module_method(
-            resource_address.as_node_id(),
-            ObjectModuleId::Metadata,
-            METADATA_SET_IDENT,
-            scrypto_encode(&MetadataSetInput {
-                key: "access_controller".to_owned(),
-                value: scrypto_decode(
-                    &scrypto_encode(&MetadataEntry::Value(MetadataValue::Address(
-                        global_address,
-                    )))
-                    .unwrap(),
-                )
-                .unwrap(),
-            })
-            .unwrap(),
-        )?;
+        resource_manager.sys_set_metadata("access_controller", access_controller, api)?;
 
-        api.call_module_method(
-            resource_address.as_node_id(),
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            })
-            .unwrap(),
+        let mut component = BorrowedObject(access_controller.into_node_id());
+        component.sys_set_method_access_rule(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            api,
         )?;
-        api.call_module_method(
-            resource_address.as_node_id(),
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
-                object_key: ObjectKey::SELF,
-                method_key: MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-                rule: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            })
-            .unwrap(),
+        component.sys_set_method_access_rule_and_mutability(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+            api,
         )?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
