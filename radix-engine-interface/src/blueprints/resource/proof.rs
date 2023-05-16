@@ -6,7 +6,7 @@ use crate::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::native_addresses::RESOURCE_PACKAGE;
 use radix_engine_common::types::*;
-use sbor::rust::fmt::Debug;
+use sbor::rust::prelude::*;
 use sbor::*;
 
 pub const PROOF_DROP_IDENT: &str = "Proof_drop";
