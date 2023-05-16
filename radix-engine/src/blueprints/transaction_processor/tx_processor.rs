@@ -17,10 +17,6 @@ use radix_engine_interface::api::node_modules::auth::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
@@ -260,7 +256,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
-                    component_address,
+                    address: component_address,
                     method_name,
                     args,
                 } => {
@@ -274,6 +270,58 @@ impl TransactionProcessorBlueprint {
 
                     let rtn = api.call_method(
                         component_address.as_node_id(),
+                        &method_name,
+                        scrypto_encode(&scrypto_value).unwrap(),
+                    )?;
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, &worktop, api,
+                    )?;
+                    InstructionOutput::CallReturn(result.into())
+                }
+                Instruction::CallRoyaltyMethod {
+                    address: entity_address,
+                    method_name,
+                    args,
+                } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
+                    let rtn = api.call_method_advanced(
+                        entity_address.as_node_id(),
+                        false,
+                        ObjectModuleId::Royalty,
+                        &method_name,
+                        scrypto_encode(&scrypto_value).unwrap(),
+                    )?;
+                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, &worktop, api,
+                    )?;
+                    InstructionOutput::CallReturn(result.into())
+                }
+                Instruction::CallAccessRulesMethod {
+                    address,
+                    method_name,
+                    args,
+                } => {
+                    let mut processor_with_api = TransactionProcessorWithApi {
+                        worktop,
+                        processor,
+                        api,
+                    };
+                    let scrypto_value = transform(args, &mut processor_with_api)?;
+                    processor = processor_with_api.processor;
+
+                    let rtn = api.call_method_advanced(
+                        address.as_node_id(),
+                        false,
+                        ObjectModuleId::AccessRules,
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -473,90 +521,6 @@ impl TransactionProcessorBlueprint {
                         ObjectModuleId::Metadata,
                         METADATA_REMOVE_IDENT,
                         scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetPackageRoyaltyConfig {
-                    package_address,
-                    royalty_config,
-                } => {
-                    let result = api.call_method_advanced(
-                        package_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Main,
-                        PACKAGE_SET_ROYALTY_CONFIG_IDENT,
-                        scrypto_encode(&PackageSetRoyaltyConfigInput {
-                            royalty_config: royalty_config.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetComponentRoyaltyConfig {
-                    component_address,
-                    royalty_config,
-                } => {
-                    let result = api.call_method_advanced(
-                        component_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Royalty,
-                        COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-                        scrypto_encode(&ComponentSetRoyaltyConfigInput {
-                            royalty_config: royalty_config.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::ClaimPackageRoyalty { package_address } => {
-                    let result = api.call_method_advanced(
-                        package_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Main,
-                        PACKAGE_CLAIM_ROYALTY_IDENT,
-                        scrypto_encode(&PackageClaimRoyaltyInput {}).unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::ClaimComponentRoyalty { component_address } => {
-                    let result = api.call_method_advanced(
-                        component_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Royalty,
-                        COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-                        scrypto_encode(&ComponentClaimRoyaltyInput {}).unwrap(),
                     )?;
 
                     let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();

@@ -1,3 +1,4 @@
+use radix_engine_common::native_addresses::EPOCH_MANAGER_PACKAGE;
 use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
@@ -26,6 +27,8 @@ use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
+use radix_engine_interface::blueprints::package::{PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::ContextualDisplay;
@@ -407,6 +410,54 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::ClearSignatureProofs => {
             f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
         }
+        Instruction::CallRoyaltyMethod {
+            address: entity_address,
+            method_name,
+            args,
+        } => {
+            match method_name.as_str() {
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        entity_address.display(context.bech32_encoder),
+                    ))?;
+                }
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT => {
+                    f.write_str(&format!(
+                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
+                        entity_address.display(context.bech32_encoder),
+                    ))?;
+                }
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        entity_address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
+        Instruction::CallAccessRulesMethod {
+            address ,
+            method_name,
+            args,
+        } => {
+            match method_name.as_str() {
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ACCESS_RULES_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
         Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -480,18 +531,33 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
-            component_address,
+            address ,
             method_name,
             args,
         } => {
-            match (component_address, method_name.as_str()) {
-                (&EPOCH_MANAGER, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => {
+            match (address, method_name.as_str()) {
+                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
+                    if address.eq(&EPOCH_MANAGER.clone().into())=> {
                     write!(f, "CREATE_VALIDATOR")?;
+                }
+                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                if address.as_node_id().is_global_package() => {
+                    f.write_str(&format!(
+                        "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                if address.as_node_id().is_global_package() => {
+                    f.write_str(&format!(
+                        "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
                 }
                 _ => {
                     f.write_str(&format!(
                         "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                        component_address.display(context.bech32_encoder),
+                        address.display(context.bech32_encoder),
                         method_name
                     ))?;
                 }
@@ -563,34 +629,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("REMOVE_METADATA")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_PACKAGE_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, package_address)?;
-            format_typed_value(f, context, royalty_config)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_COMPONENT_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, component_address)?;
-            format_typed_value(f, context, royalty_config)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimPackageRoyalty { package_address } => {
-            f.write_str("CLAIM_PACKAGE_ROYALTY")?;
-            format_typed_value(f, context, package_address)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimComponentRoyalty { component_address } => {
-            f.write_str("CLAIM_COMPONENT_ROYALTY")?;
-            format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
         Instruction::SetMethodAccessRule {

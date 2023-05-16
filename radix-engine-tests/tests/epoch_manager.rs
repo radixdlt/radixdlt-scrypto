@@ -147,7 +147,7 @@ fn next_round_with_validator_auth_succeeds() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch - 1)),
     }];
@@ -179,7 +179,7 @@ fn next_epoch_with_validator_auth_succeeds() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -430,7 +430,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -781,7 +781,7 @@ impl RegisterAndStakeTransactionType {
         stake_amount: Decimal,
         account_address: ComponentAddress,
         validator_address: ComponentAddress,
-        faucet: ComponentAddress,
+        faucet: GlobalAddress,
     ) -> Vec<TransactionManifest> {
         match self {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
@@ -928,7 +928,7 @@ fn registered_validator_test(
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -1054,7 +1054,7 @@ fn test_registering_and_staking_many_validators() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -1106,7 +1106,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -1166,7 +1166,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
@@ -1361,7 +1361,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];

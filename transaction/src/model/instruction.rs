@@ -158,24 +158,6 @@ pub enum Instruction {
         key: String,
     },
 
-    #[sbor(discriminator(INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR))]
-    SetPackageRoyaltyConfig {
-        package_address: PackageAddress,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_COMPONENT_ROYALTY_DISCRIMINATOR))]
-    SetComponentRoyaltyConfig {
-        component_address: ComponentAddress,
-        royalty_config: RoyaltyConfig,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR))]
-    ClaimPackageRoyalty { package_address: PackageAddress },
-
-    #[sbor(discriminator(INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR))]
-    ClaimComponentRoyalty { component_address: ComponentAddress },
-
     #[sbor(discriminator(INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR))]
     SetMethodAccessRule {
         entity_address: GlobalAddress,
@@ -227,7 +209,21 @@ pub enum Instruction {
 
     #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
     CallMethod {
-        component_address: ComponentAddress,
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
+    CallRoyaltyMethod {
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
+    CallAccessRulesMethod {
+        address: GlobalAddress,
         method_name: String,
         args: ManifestValue,
     },
@@ -275,10 +271,6 @@ pub const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 24;
 pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 25;
 pub const INSTRUCTION_SET_METADATA_DISCRIMINATOR: u8 = 26;
 pub const INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR: u8 = 27;
-pub const INSTRUCTION_SET_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 28;
-pub const INSTRUCTION_SET_COMPONENT_ROYALTY_DISCRIMINATOR: u8 = 29;
-pub const INSTRUCTION_CLAIM_PACKAGE_ROYALTY_DISCRIMINATOR: u8 = 30;
-pub const INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR: u8 = 31;
 pub const INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR: u8 = 32;
 pub const INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR: u8 = 33;
 pub const INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR: u8 = 34;
@@ -287,3 +279,5 @@ pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 36;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 37;
 pub const INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR: u8 = 38;
 pub const INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR: u8 = 39;
+pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 40;
+pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 41;
