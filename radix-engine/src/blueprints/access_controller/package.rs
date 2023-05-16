@@ -761,11 +761,6 @@ impl AccessControllerNativePackage {
         resource_manager.sys_set_metadata("access_controller", access_controller, api)?;
 
         let mut component = BorrowedObject(access_controller.into_node_id());
-        component.sys_set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            api,
-        )?;
         component.sys_set_method_access_rule_and_mutability(
             MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
             AccessRuleEntry::AccessRule(AccessRule::DenyAll),
