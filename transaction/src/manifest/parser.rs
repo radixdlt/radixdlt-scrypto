@@ -1,11 +1,6 @@
-use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
-use radix_engine_common::types::PackageAddress;
-use radix_engine_interface::blueprints::package::{PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT};
-
 use crate::manifest::ast::{Instruction, Type, Value};
 use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
-use radix_engine_common::data::manifest::ManifestValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
@@ -235,6 +230,7 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
 
+            /* Call method alias */
             TokenKind::SetMetadata => Instruction::SetMetadata {
                 args: self.parse_values_till_semicolon()?,
             },
