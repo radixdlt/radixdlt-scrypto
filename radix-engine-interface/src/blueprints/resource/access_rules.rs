@@ -108,6 +108,7 @@ impl MethodAuthorities {
     }
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AuthorityRules {
