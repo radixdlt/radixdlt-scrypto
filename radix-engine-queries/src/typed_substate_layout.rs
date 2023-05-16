@@ -194,10 +194,12 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalPackage => {
             TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
         }
-        EntityType::GlobalFungibleResource => TypedMainModuleSubstateKey::FungibleResourceField(
-            FungibleResourceManagerField::try_from(substate_key)?,
-        ),
-        EntityType::GlobalNonFungibleResource => {
+        EntityType::GlobalFungibleResourceManager => {
+            TypedMainModuleSubstateKey::FungibleResourceField(
+                FungibleResourceManagerField::try_from(substate_key)?,
+            )
+        }
+        EntityType::GlobalNonFungibleResourceManager => {
             let partition_offset =
                 NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {

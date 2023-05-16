@@ -309,7 +309,7 @@ fn build_call_argument<'a>(
             if matches!(
                 type_validation,
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalResource
+                    ReferenceValidation::IsGlobalResourceManager
                 ))
             ) =>
         {
@@ -622,14 +622,14 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = resource_address(EntityType::GlobalFungibleResource, 5);
+        let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 5);
 
         let arg = Bech32Encoder::for_simulator()
             .encode(resource_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
         let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-            ReferenceValidation::IsGlobalResource,
+            ReferenceValidation::IsGlobalResourceManager,
         ));
 
         // Act

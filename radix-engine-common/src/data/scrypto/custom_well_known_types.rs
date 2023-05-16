@@ -51,7 +51,7 @@ pub mod well_known_scrypto_custom_types {
         unnamed_type_kind(
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
-                ReferenceValidation::IsGlobalResource,
+                ReferenceValidation::IsGlobalResourceManager,
             )),
         )
     }

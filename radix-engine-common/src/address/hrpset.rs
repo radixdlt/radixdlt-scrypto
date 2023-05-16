@@ -24,8 +24,8 @@ impl HrpSet {
     pub fn get_entity_hrp(&self, entity: &EntityType) -> &str {
         match entity {
             EntityType::GlobalPackage => &self.package,
-            EntityType::GlobalFungibleResource => &self.resource,
-            EntityType::GlobalNonFungibleResource => &self.resource,
+            EntityType::GlobalFungibleResourceManager => &self.resource,
+            EntityType::GlobalNonFungibleResourceManager => &self.resource,
             EntityType::GlobalEpochManager => &self.epoch_manager,
             EntityType::GlobalValidator => &self.validator,
             EntityType::GlobalClock => &self.clock,
