@@ -25,6 +25,7 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE_ADVANCED
+    Enum(0u8)
     Blob("${code_blob_hash}")
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()

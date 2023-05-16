@@ -194,7 +194,7 @@ fn can_set_address_metadata_through_manifest() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let entry = MetadataEntry::Value(MetadataValue::Address(address.into()));
+    let entry = MetadataEntry::Value(MetadataValue::GlobalAddress(address.into()));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .set_metadata(component_address.into(), "key".to_string(), entry.clone())
@@ -208,7 +208,7 @@ fn can_set_address_metadata_through_manifest() {
         .expect("Should exist");
     assert_eq!(stored_entry, entry);
 
-    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::Address(
+    can_set_metadata_through_manifest(MetadataEntry::Value(MetadataValue::GlobalAddress(
         RADIX_TOKEN.into(),
     )));
 }
@@ -255,7 +255,7 @@ fn can_set_public_key_hash_metadata_through_manifest() {
 fn can_set_list_metadata_through_manifest() {
     can_set_metadata_through_manifest(MetadataEntry::List(vec![
         MetadataValue::Bool(true),
-        MetadataValue::Address(RADIX_TOKEN.into()),
+        MetadataValue::GlobalAddress(RADIX_TOKEN.into()),
         MetadataValue::PublicKey(
             EcdsaSecp256k1PrivateKey::from_u64(1u64)
                 .unwrap()
