@@ -153,7 +153,7 @@ impl ManifestBuilder {
     {
         let (builder, bucket_id, _) =
             self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                ids: ids.clone(),
+                ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
         then(builder, bucket_id.unwrap())
@@ -185,7 +185,7 @@ impl ManifestBuilder {
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
-            ids: ids.clone(),
+            ids: ids.clone().into_iter().collect(),
             resource_address,
         })
         .0
@@ -255,7 +255,7 @@ impl ManifestBuilder {
     {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromAuthZoneOfNonFungibles {
-                ids: ids.clone(),
+                ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
         then(builder, proof_id.unwrap())
@@ -315,7 +315,7 @@ impl ManifestBuilder {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromBucketOfNonFungibles {
                 bucket_id: bucket_id.clone(),
-                ids,
+                ids: ids.into_iter().collect(),
             });
         then(builder, proof_id.unwrap())
     }

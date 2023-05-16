@@ -54,7 +54,6 @@ use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::ResourceAddress;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use sbor::*;
@@ -890,7 +889,7 @@ fn generate_blob(
 
 fn generate_non_fungible_local_ids(
     value: &ast::Value,
-) -> Result<BTreeSet<NonFungibleLocalId>, GeneratorError> {
+) -> Result<Vec<NonFungibleLocalId>, GeneratorError> {
     match value {
         ast::Value::Array(kind, values) => {
             if kind != &ast::Type::NonFungibleLocalId {

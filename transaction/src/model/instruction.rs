@@ -4,7 +4,6 @@ use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
@@ -26,7 +25,7 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR))]
     TakeNonFungiblesFromWorktop {
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: Vec<NonFungibleLocalId>,
     },
 
     /// Returns a bucket of resource to worktop.
@@ -44,7 +43,7 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
     AssertWorktopContainsNonFungibles {
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: Vec<NonFungibleLocalId>,
     },
 
     //==============
@@ -78,7 +77,7 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfNonFungibles {
         resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: Vec<NonFungibleLocalId>,
     },
 
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR))]
@@ -104,7 +103,7 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR))]
     CreateProofFromBucketOfNonFungibles {
         bucket_id: ManifestBucket,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: Vec<NonFungibleLocalId>,
     },
 
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR))]
