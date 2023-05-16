@@ -1033,8 +1033,12 @@ fn validator_unstake_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_su, validator_substate.stake_unit_token, 1.into())
-        .take_all_from_worktop(validator_substate.stake_unit_token, |builder, bucket| {
+        .withdraw_from_account(
+            account_with_su,
+            validator_substate.stake_unit_resource,
+            1.into(),
+        )
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1183,8 +1187,12 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_su, validator_substate.stake_unit_token, 1.into())
-        .take_all_from_worktop(validator_substate.stake_unit_token, |builder, bucket| {
+        .withdraw_from_account(
+            account_with_su,
+            validator_substate.stake_unit_resource,
+            1.into(),
+        )
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(

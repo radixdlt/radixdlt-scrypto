@@ -25,7 +25,7 @@ use super::{
 };
 
 /// A performance-driven limit on the number of simultaneously pending "delayed withdrawal"
-/// operations on any validator's owner's SU vault.
+/// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -44,9 +44,10 @@ pub struct ValidatorSubstate {
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
 
-    /// A type of fungible token representing stake units specific to this validator.
-    /// Conceptually, "staking to validator A" means "exchanging XRDs for SUs of A".
-    pub stake_unit_token: ResourceAddress,
+    /// A type of fungible resource representing stake units specific to this validator.
+    /// Conceptually, "staking to validator A" means "contributing to the validator's staking pool,
+    /// and receiving the validator's stake units which act as the pool units for the staking pool".
+    pub stake_unit_resource: ResourceAddress,
 
     /// A vault holding the XRDs currently staked to this validator.
     pub stake_xrd_vault_id: Own,
@@ -73,9 +74,9 @@ pub struct ValidatorSubstate {
     /// the mandatory delay (see [`pending_owner_stake_unit_withdrawals`]).
     pub pending_owner_stake_unit_unlock_vault_id: Own,
 
-    /// All currently pending "delayed withdrawal" operations of the owner's SU vault (see
+    /// All currently pending "delayed withdrawal" operations of the owner's stake units vault (see
     /// [`locked_owner_stake_unit_vault_id`]).
-    /// This maps an epoch number to an amount of SU that becomes unlocked at that epoch.
+    /// This maps an epoch number to an amount of stake units that become unlocked at that epoch.
     /// Note: because of performance considerations, a maximum size of this map is limited to
     /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
     /// attempt to automatically claim any withdrawals that have finished their wait, and only then
@@ -136,7 +137,7 @@ impl ValidatorBlueprint {
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
-            let mut stake_unit_resman = ResourceManager(validator.stake_unit_token);
+            let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
             let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
@@ -188,17 +189,17 @@ impl ValidatorBlueprint {
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
             let nft_resman = ResourceManager(validator.unstake_nft);
-            let mut su_resman = ResourceManager(validator.stake_unit_token);
+            let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
 
             let active_stake_amount = stake_vault.sys_amount(api)?;
-            let total_su_supply = su_resman.total_supply(api)?;
-            let xrd_amount = if total_su_supply.is_zero() {
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+            let xrd_amount = if total_stake_unit_supply.is_zero() {
                 Decimal::zero()
             } else {
-                stake_unit_bucket_amount * active_stake_amount / total_su_supply
+                stake_unit_bucket_amount * active_stake_amount / total_stake_unit_supply
             };
 
-            su_resman.burn(stake_unit_bucket, api)?;
+            stake_unit_resman.burn(stake_unit_bucket, api)?;
 
             let manager_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
@@ -476,7 +477,8 @@ impl ValidatorBlueprint {
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         let stake_pool_added_xrd = xrd_bucket.sys_amount(api)?;
-        let total_stake_unit_supply = ResourceManager(substate.stake_unit_token).total_supply(api)?;
+        let total_stake_unit_supply =
+            ResourceManager(substate.stake_unit_resource).total_supply(api)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         let starting_stake_pool_xrd = stake_xrd_vault.sys_amount(api)?;
@@ -650,29 +652,29 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_stake_unit_token<Y>(
+    fn create_stake_unit_resource<Y>(
         address: GlobalAddress,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut su_token_auth = BTreeMap::new();
-        su_token_auth.insert(
+        let mut stake_unit_resource_auth = BTreeMap::new();
+        stake_unit_resource_auth.insert(
             Mint,
             (rule!(require(global_caller(address))), rule!(deny_all)),
         );
-        su_token_auth.insert(
+        stake_unit_resource_auth.insert(
             Burn,
             (rule!(require(global_caller(address))), rule!(deny_all)),
         );
-        su_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        su_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
+        stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let su_token_resource_manager =
-            ResourceManager::new_fungible(18, BTreeMap::new(), su_token_auth, api)?;
+        let stake_unit_resman =
+            ResourceManager::new_fungible(18, BTreeMap::new(), stake_unit_resource_auth, api)?;
 
-        Ok(su_token_resource_manager.0)
+        Ok(stake_unit_resman.0)
     }
 
     fn create_unstake_nft<Y>(
@@ -682,28 +684,27 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut unstake_token_auth = BTreeMap::new();
+        let mut unstake_nft_auth = BTreeMap::new();
 
-        unstake_token_auth.insert(
+        unstake_nft_auth.insert(
             Mint,
             (rule!(require(global_caller(address))), rule!(deny_all)),
         );
-        unstake_token_auth.insert(
+        unstake_nft_auth.insert(
             Burn,
             (rule!(require(global_caller(address))), rule!(deny_all)),
         );
-        unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
+        unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resource_manager =
-            ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
-                NonFungibleIdType::UUID,
-                BTreeMap::new(),
-                unstake_token_auth,
-                api,
-            )?;
+        let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+            NonFungibleIdType::UUID,
+            BTreeMap::new(),
+            unstake_nft_auth,
+            api,
+        )?;
 
-        Ok(unstake_resource_manager.0)
+        Ok(unstake_resman.0)
     }
 
     pub fn create<Y>(
@@ -721,23 +722,23 @@ impl ValidatorCreator {
         let stake_xrd_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let pending_xrd_withdraw_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(address, api)?;
-        let su_token = Self::create_stake_unit_token(address, api)?;
-        let locked_owner_su_vault = Vault::sys_new(su_token, api)?;
-        let pending_owner_su_unlock_vault = Vault::sys_new(su_token, api)?;
-        let pending_owner_su_withdrawals = BTreeMap::new();
+        let stake_unit_resource = Self::create_stake_unit_resource(address, api)?;
+        let locked_owner_stake_unit_vault = Vault::sys_new(stake_unit_resource, api)?;
+        let pending_owner_stake_unit_unlock_vault = Vault::sys_new(stake_unit_resource, api)?;
+        let pending_owner_stake_unit_withdrawals = BTreeMap::new();
         // TODO(emissions): add `lock(), withdraw(), unlock()` owner-only methods for the 3 above
 
         let substate = ValidatorSubstate {
             sorted_key: None,
             key,
             is_registered,
-            stake_unit_token: su_token,
+            stake_unit_resource,
             unstake_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
             pending_xrd_withdraw_vault_id: pending_xrd_withdraw_vault.0,
-            locked_owner_stake_unit_vault_id: locked_owner_su_vault.0,
-            pending_owner_stake_unit_unlock_vault_id: pending_owner_su_unlock_vault.0,
-            pending_owner_stake_unit_withdrawals: pending_owner_su_withdrawals,
+            locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
+            pending_owner_stake_unit_unlock_vault_id: pending_owner_stake_unit_unlock_vault.0,
+            pending_owner_stake_unit_withdrawals,
         };
 
         let validator_id = api.new_simple_object(

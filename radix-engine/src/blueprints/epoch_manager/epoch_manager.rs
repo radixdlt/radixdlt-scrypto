@@ -159,7 +159,8 @@ impl EpochManagerBlueprint {
                 num_unstake_epochs: initial_configuration.num_unstake_epochs,
                 total_emission_xrd_per_epoch: initial_configuration.total_emission_xrd_per_epoch,
                 min_validator_reliability: initial_configuration.min_validator_reliability,
-                num_owner_stake_units_unlock_epochs: initial_configuration.num_owner_stake_units_unlock_epochs,
+                num_owner_stake_units_unlock_epochs: initial_configuration
+                    .num_owner_stake_units_unlock_epochs,
             };
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,

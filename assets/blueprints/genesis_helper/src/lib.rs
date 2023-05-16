@@ -145,11 +145,11 @@ mod genesis_helper {
                 {
                     let staker_account_address = accounts[account_index as usize].clone();
                     let stake_xrd_bucket = self.xrd_vault.take(xrd_amount);
-                    let su_bucket = Validator(validator_address.clone())
+                    let stake_unit_bucket = Validator(validator_address.clone())
                         .stake(stake_xrd_bucket, &mut ScryptoEnv)
                         .unwrap();
                     let _: () = Account(staker_account_address)
-                        .deposit(su_bucket, &mut ScryptoEnv)
+                        .deposit(stake_unit_bucket, &mut ScryptoEnv)
                         .unwrap();
                 }
             }
