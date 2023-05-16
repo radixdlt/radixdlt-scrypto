@@ -4,6 +4,7 @@ use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
+use radix_engine_common::native_addresses::RESOURCE_PACKAGE;
 use radix_engine_common::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::*;
@@ -47,11 +48,11 @@ pub type ProofCloneOutput = Proof;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub Own);
 
-#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct FungibleProof(pub Proof);
 
-#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct NonFungibleProof(pub Proof);
 
@@ -100,11 +101,50 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for P
 }
 
 impl Describe<ScryptoCustomTypeKind> for Proof {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
-        crate::data::scrypto::well_known_scrypto_custom_types::OWN_PROOF_ID,
-    );
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_PROOF_ID);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_proof_type_data()
     }
+}
+
+impl Describe<ScryptoCustomTypeKind> for FungibleProof {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::Novel(const_sha1::sha1("FungibleProof".as_bytes()).as_bytes());
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
+            metadata: TypeMetadata::no_child_names("FungibleProof"),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    RESOURCE_PACKAGE,
+                    FUNGIBLE_PROOF_BLUEPRINT.to_string(),
+                ),
+            )),
+        }
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
+}
+
+impl Describe<ScryptoCustomTypeKind> for NonFungibleProof {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::Novel(const_sha1::sha1("NonFungibleProof".as_bytes()).as_bytes());
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
+            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
+            metadata: TypeMetadata::no_child_names("NonFungibleProof"),
+            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_PROOF_BLUEPRINT.to_string(),
+                ),
+            )),
+        }
+    }
+
+    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
