@@ -23,7 +23,7 @@ pub struct EpochManagerConfigSubstate {
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
-    pub num_owner_su_unlock_epochs: u64,
+    pub num_owner_stake_units_unlock_epochs: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -159,7 +159,7 @@ impl EpochManagerBlueprint {
                 num_unstake_epochs: initial_configuration.num_unstake_epochs,
                 total_emission_xrd_per_epoch: initial_configuration.total_emission_xrd_per_epoch,
                 min_validator_reliability: initial_configuration.min_validator_reliability,
-                num_owner_su_unlock_epochs: initial_configuration.num_owner_su_unlock_epochs,
+                num_owner_stake_units_unlock_epochs: initial_configuration.num_owner_stake_units_unlock_epochs,
             };
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
@@ -402,7 +402,7 @@ impl EpochManagerBlueprint {
     }
 
     fn epoch_change<Y>(
-        epoch: u64,
+        next_epoch: u64,
         config: &EpochManagerConfigSubstate,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -430,8 +430,13 @@ impl EpochManagerBlueprint {
         let previous_statistics = statistic_substate.validator_statistics;
 
         // apply emissions
-        let emission_summary =
-            Self::emit_validator_rewards(previous_validator_set, previous_statistics, config, api)?;
+        Self::apply_validator_emissions(
+            previous_validator_set,
+            previous_statistics,
+            config,
+            next_epoch - 1,
+            api,
+        )?;
 
         // select next validator set
         let registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
@@ -449,9 +454,8 @@ impl EpochManagerBlueprint {
         Runtime::emit_event(
             api,
             EpochChangeEvent {
-                epoch,
+                epoch: next_epoch,
                 validators: next_validator_set.clone(),
-                validator_set_stake_xrd: emission_summary.stake_sum_xrd,
             },
         )?;
 
@@ -472,20 +476,21 @@ impl EpochManagerBlueprint {
 
     /// Emits a configured XRD amount ([`EpochManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
-    fn emit_validator_rewards<Y>(
+    fn apply_validator_emissions<Y>(
         validator_set: BTreeMap<ComponentAddress, Validator>,
         validator_statistics: Vec<ProposalStatistic>,
         config: &EpochManagerConfigSubstate,
+        epoch: u64, // the concluded epoch, for event creation
         api: &mut Y,
-    ) -> Result<EmissionSummary, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let validator_rewards = validator_set
+        let validator_emissions = validator_set
             .into_iter()
             .zip(validator_statistics)
             .filter_map(|((address, validator), statistic)| {
-                ValidatorReward::create_if_applicable(
+                ValidatorEmission::create_if_applicable(
                     address,
                     validator.stake,
                     statistic,
@@ -494,64 +499,59 @@ impl EpochManagerBlueprint {
             })
             .collect::<Vec<_>>();
 
-        if validator_rewards.is_empty() {
-            return Ok(EmissionSummary {
-                stake_sum_xrd: Decimal::zero(),
-            });
+        if validator_emissions.is_empty() {
+            return Ok(());
         }
 
-        let stake_sum_xrd = validator_rewards
+        let stake_sum_xrd = validator_emissions
             .iter()
-            .map(|validator_reward| validator_reward.stake_xrd)
+            .map(|validator_emission| validator_emission.stake_xrd)
             .sum::<Decimal>();
-        // calculate "how much XRD is earned by 1 XRD staked", and later apply it evenly among validators
+        // calculate "how much XRD is emitted by 1 XRD staked", and later apply it evenly among validators
         // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
         let emission_per_staked_xrd = config.total_emission_xrd_per_epoch / stake_sum_xrd;
-        let effective_total_emission_xrd = validator_rewards
+        let effective_total_emission_xrd = validator_emissions
             .iter()
-            .map(|validator_reward| validator_reward.effective_stake_xrd * emission_per_staked_xrd)
+            .map(|validator_emission| {
+                validator_emission.effective_stake_xrd * emission_per_staked_xrd
+            })
             .sum::<Decimal>();
 
         let total_emission_xrd_bucket =
             ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
 
-        for validator_reward in validator_rewards {
+        for validator_emission in validator_emissions {
             let emission_xrd_bucket = total_emission_xrd_bucket.sys_take(
-                validator_reward.effective_stake_xrd * emission_per_staked_xrd,
+                validator_emission.effective_stake_xrd * emission_per_staked_xrd,
                 api,
             )?;
             api.call_method(
-                validator_reward.address.as_node_id(),
-                VALIDATOR_APPLY_REWARD_IDENT,
-                scrypto_encode(&ValidatorApplyRewardInput {
+                validator_emission.address.as_node_id(),
+                VALIDATOR_APPLY_EMISSION_IDENT,
+                scrypto_encode(&ValidatorApplyEmissionInput {
                     xrd_bucket: emission_xrd_bucket,
-                    proposals_made: validator_reward.proposal_statistic.made,
-                    proposals_missed: validator_reward.proposal_statistic.missed,
+                    epoch,
+                    proposals_made: validator_emission.proposal_statistic.made,
+                    proposals_missed: validator_emission.proposal_statistic.missed,
                 })
                 .unwrap(),
             )?;
         }
         total_emission_xrd_bucket.sys_drop_empty(api)?;
 
-        Ok(EmissionSummary { stake_sum_xrd })
+        Ok(())
     }
 }
 
-/// A summary of specific epoch's emissions.
-pub struct EmissionSummary {
-    /// A sum of staked XRD amounts of the entire validator set.
-    pub stake_sum_xrd: Decimal,
-}
-
 #[derive(Debug)]
-struct ValidatorReward {
+struct ValidatorEmission {
     pub address: ComponentAddress,
     pub stake_xrd: Decimal,
     pub effective_stake_xrd: Decimal,
     pub proposal_statistic: ProposalStatistic, // needed only for passing the information to event
 }
 
-impl ValidatorReward {
+impl ValidatorEmission {
     fn create_if_applicable(
         address: ComponentAddress,
         stake_xrd: Decimal,
@@ -576,7 +576,7 @@ impl ValidatorReward {
     }
 
     /// Converts the absolute reliability measure (e.g. "0.97 uptime") into a reliability factor
-    /// which directly drives the fraction of received reward (e.g. "0.25 of base reward"), by
+    /// which directly drives the fraction of received emission (e.g. "0.25 of base emission"), by
     /// rescaling it into the allowed reliability range (e.g. "required >0.96 uptime").
     fn to_reliability_factor(reliability: Decimal, min_required_reliability: Decimal) -> Decimal {
         let reliability_reserve = reliability - min_required_reliability;

@@ -26,7 +26,7 @@ use super::{
 
 /// A performance-driven limit on the number of simultaneously pending "delayed withdrawal"
 /// operations on any validator's owner's SU vault.
-pub const OWNER_SU_PENDING_WITHDRAWALS_LIMIT: usize = 100;
+pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
@@ -46,7 +46,7 @@ pub struct ValidatorSubstate {
 
     /// A type of fungible token representing stake units specific to this validator.
     /// Conceptually, "staking to validator A" means "exchanging XRDs for SUs of A".
-    pub su_token: ResourceAddress,
+    pub stake_unit_token: ResourceAddress,
 
     /// A vault holding the XRDs currently staked to this validator.
     pub stake_xrd_vault_id: Own,
@@ -63,24 +63,24 @@ pub struct ValidatorSubstate {
     /// A vault holding the SUs that this validator's owner voluntarily decided to temporarily lock
     /// here, as a public display of their confidence in this validator's future reliability.
     /// Withdrawing SUs from this vault is subject to a delay (which is configured separately from
-    /// the regular unstaking delay, see [`EpochManagerConfigSubstate.num_owner_su_unlock_epochs`]).
+    /// the regular unstaking delay, see [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`]).
     /// This vault is private to the owner (i.e. the owner's badge is required for any interaction
     /// with this vault).
-    pub locked_owner_su_vault_id: Own,
+    pub locked_owner_stake_unit_vault_id: Own,
 
     /// A vault holding the SUs which the owner has decided to withdraw from their "public display"
-    /// vault (see [`locked_owner_su_vault_id`]) but which have not yet been unlocked after the
-    /// mandatory delay (see [`pending_owner_su_withdrawals`]).
-    pub pending_owner_su_unlock_vault_id: Own,
+    /// vault (see [`locked_owner_stake_unit_vault_id`]) but which have not yet been unlocked after
+    /// the mandatory delay (see [`pending_owner_stake_unit_withdrawals`]).
+    pub pending_owner_stake_unit_unlock_vault_id: Own,
 
     /// All currently pending "delayed withdrawal" operations of the owner's SU vault (see
-    /// [`locked_owner_su_vault_id`).
+    /// [`locked_owner_stake_unit_vault_id`]).
     /// This maps an epoch number to an amount of SU that becomes unlocked at that epoch.
     /// Note: because of performance considerations, a maximum size of this map is limited to
-    /// [`OWNER_SU_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first attempt to
-    /// automatically claim any withdrawals that have finished their wait, and only then will fail
-    /// if the limit is exceeded.
-    pub pending_owner_su_withdrawals: BTreeMap<u64, Decimal>,
+    /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
+    /// attempt to automatically claim any withdrawals that have finished their wait, and only then
+    /// will fail if the limit is exceeded.
+    pub pending_owner_stake_unit_withdrawals: BTreeMap<u64, Decimal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -135,22 +135,22 @@ impl ValidatorBlueprint {
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // Stake
-        let (su_bucket, new_stake_amount) = {
-            let mut su_resman = ResourceManager(validator.su_token);
+        let (stake_unit_bucket, new_stake_amount) = {
+            let mut stake_unit_resman = ResourceManager(validator.stake_unit_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
-            let total_su_supply = su_resman.total_supply(api)?;
+            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
             let active_stake_amount = xrd_vault.sys_amount(api)?;
-            let su_mint_amount = if active_stake_amount.is_zero() {
+            let stake_unit_mint_amount = if active_stake_amount.is_zero() {
                 xrd_bucket_amount
             } else {
-                xrd_bucket_amount * total_su_supply / active_stake_amount
+                xrd_bucket_amount * total_stake_unit_supply / active_stake_amount
             };
 
-            let su_bucket = su_resman.mint_fungible(su_mint_amount, api)?;
+            let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
             xrd_vault.sys_put(xrd_bucket, api)?;
             let new_stake_amount = xrd_vault.sys_amount(api)?;
-            (su_bucket, new_stake_amount)
+            (stake_unit_bucket, new_stake_amount)
         };
 
         // Update EpochManager
@@ -167,14 +167,14 @@ impl ValidatorBlueprint {
             },
         )?;
 
-        Ok(su_bucket)
+        Ok(stake_unit_bucket)
     }
 
-    pub fn unstake<Y>(su_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    pub fn unstake<Y>(stake_unit_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let su_bucket_amount = su_bucket.sys_amount(api)?;
+        let stake_unit_bucket_amount = stake_unit_bucket.sys_amount(api)?;
 
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -188,17 +188,17 @@ impl ValidatorBlueprint {
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
             let nft_resman = ResourceManager(validator.unstake_nft);
-            let mut su_resman = ResourceManager(validator.su_token);
+            let mut su_resman = ResourceManager(validator.stake_unit_token);
 
             let active_stake_amount = stake_vault.sys_amount(api)?;
             let total_su_supply = su_resman.total_supply(api)?;
             let xrd_amount = if total_su_supply.is_zero() {
                 Decimal::zero()
             } else {
-                su_bucket_amount * active_stake_amount / total_su_supply
+                stake_unit_bucket_amount * active_stake_amount / total_su_supply
             };
 
-            su_resman.burn(su_bucket, api)?;
+            su_resman.burn(stake_unit_bucket, api)?;
 
             let manager_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
@@ -242,7 +242,7 @@ impl ValidatorBlueprint {
         Runtime::emit_event(
             api,
             UnstakeEvent {
-                stake_units: su_bucket_amount,
+                stake_units: stake_unit_bucket_amount,
             },
         )?;
 
@@ -455,10 +455,12 @@ impl ValidatorBlueprint {
 
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
-    /// Note: the validator's proposal statistics passed to this method are used only for creating
-    /// an event (i.e. they are only informational and do not drive any logic at this point).
-    pub fn apply_reward<Y>(
+    /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
+    /// ethod are used only for creating an event (i.e. they are only informational and do not drive
+    /// any logic at this point).
+    pub fn apply_emission<Y>(
         xrd_bucket: Bucket,
+        epoch: u64,
         proposals_made: u64,
         proposals_missed: u64,
         api: &mut Y,
@@ -473,13 +475,14 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let stake_added_xrd = xrd_bucket.sys_amount(api)?;
-        let total_su_supply = ResourceManager(substate.su_token).total_supply(api)?;
+        let stake_pool_added_xrd = xrd_bucket.sys_amount(api)?;
+        let total_stake_unit_supply = ResourceManager(substate.stake_unit_token).total_supply(api)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
+        let starting_stake_pool_xrd = stake_xrd_vault.sys_amount(api)?;
         stake_xrd_vault.sys_put(xrd_bucket, api)?;
 
-        let new_stake_xrd = stake_xrd_vault.sys_amount(api)?;
+        let new_stake_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
         substate.sorted_key = new_index_key;
@@ -488,9 +491,11 @@ impl ValidatorBlueprint {
 
         Runtime::emit_event(
             api,
-            RewardAppliedEvent {
-                stake_added_xrd,
-                total_su_supply,
+            ValidatorEmissionAppliedEvent {
+                epoch,
+                starting_stake_pool_xrd,
+                stake_pool_added_xrd,
+                total_stake_unit_supply,
                 validator_fee_xrd: Decimal::zero(), // TODO(emissions): update after implementing validator fees
                 proposals_made,
                 proposals_missed,
@@ -632,7 +637,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 ),
             ),
             (
-                VALIDATOR_APPLY_REWARD_IDENT,
+                VALIDATOR_APPLY_EMISSION_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::AccessRule(rule!(require(global_caller(EPOCH_MANAGER)))),
                     AccessRuleEntry::AccessRule(AccessRule::DenyAll),
@@ -726,13 +731,13 @@ impl ValidatorCreator {
             sorted_key: None,
             key,
             is_registered,
-            su_token,
+            stake_unit_token: su_token,
             unstake_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
             pending_xrd_withdraw_vault_id: pending_xrd_withdraw_vault.0,
-            locked_owner_su_vault_id: locked_owner_su_vault.0,
-            pending_owner_su_unlock_vault_id: pending_owner_su_unlock_vault.0,
-            pending_owner_su_withdrawals,
+            locked_owner_stake_unit_vault_id: locked_owner_su_vault.0,
+            pending_owner_stake_unit_unlock_vault_id: pending_owner_su_unlock_vault.0,
+            pending_owner_stake_unit_withdrawals: pending_owner_su_withdrawals,
         };
 
         let validator_id = api.new_simple_object(

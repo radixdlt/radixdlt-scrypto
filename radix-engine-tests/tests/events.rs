@@ -722,7 +722,6 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
         assert_eq!(epoch_change_events.len(), 1);
         let event = epoch_change_events.first().unwrap();
         assert_eq!(event.epoch, initial_epoch + 1);
-        assert_eq!(event.validator_set_stake_xrd, Decimal::one());
     }
 }
 
@@ -1034,8 +1033,8 @@ fn validator_unstake_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_su, validator_substate.su_token, 1.into())
-        .take_all_from_worktop(validator_substate.su_token, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_token, 1.into())
+        .take_all_from_worktop(validator_substate.stake_unit_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1184,8 +1183,8 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_su, validator_substate.su_token, 1.into())
-        .take_all_from_worktop(validator_substate.su_token, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_token, 1.into())
+        .take_all_from_worktop(validator_substate.stake_unit_token, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
@@ -1515,6 +1514,6 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         num_unstake_epochs: 1,
         total_emission_xrd_per_epoch: Decimal::one(),
         min_validator_reliability: Decimal::one(),
-        num_owner_su_unlock_epochs: 2,
+        num_owner_stake_units_unlock_epochs: 2,
     }
 }

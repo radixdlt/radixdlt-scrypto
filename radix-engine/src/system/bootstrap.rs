@@ -143,7 +143,7 @@ where
                 num_unstake_epochs: 1,
                 total_emission_xrd_per_epoch: Decimal::one(),
                 min_validator_reliability: Decimal::one(),
-                num_owner_su_unlock_epochs: 2,
+                num_owner_stake_units_unlock_epochs: 2,
             },
         )
     }
