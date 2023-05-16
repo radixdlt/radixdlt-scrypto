@@ -6,6 +6,7 @@ use radix_engine_interface::address::Bech32Encoder;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -121,20 +122,6 @@ pub fn decompile_instruction<F: fmt::Write>(
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        Instruction::TakeAllFromWorktop { resource_address } => {
-            let bucket_id = context
-                .id_allocator
-                .new_bucket_id()
-                .map_err(DecompileError::IdAllocationError)?;
-            let name = format!("bucket{}", context.bucket_names.len() + 1);
-            write!(
-                f,
-                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
-                resource_address.display(context.bech32_encoder),
-                name
-            )?;
-            context.bucket_names.insert(bucket_id, name);
-        }
         Instruction::TakeFromWorktop {
             amount,
             resource_address,
@@ -173,6 +160,20 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .join(", "),
                 name
             )?;
+        }
+        Instruction::TakeAllFromWorktop { resource_address } => {
+            let bucket_id = context
+                .id_allocator
+                .new_bucket_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("bucket{}", context.bucket_names.len() + 1);
+            write!(
+                f,
+                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+            context.bucket_names.insert(bucket_id, name);
         }
         Instruction::ReturnToWorktop { bucket_id } => {
             write!(
@@ -300,6 +301,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+
+        Instruction::ClearSignatureProofs => {
+            f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
+        }
+
         Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
@@ -378,6 +384,17 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+        Instruction::BurnResource { bucket_id } => {
+            write!(
+                f,
+                "BURN_RESOURCE\n    Bucket({});",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+            )?;
+        }
         Instruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
@@ -407,60 +424,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
         }
-        Instruction::DropAllProofs => {
-            f.write_str("DROP_ALL_PROOFS;")?;
-        }
-        Instruction::ClearSignatureProofs => {
-            f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
-        }
-        Instruction::CallRoyaltyMethod {
-            address: entity_address,
-            method_name,
-            args,
-        } => {
-            match method_name.as_str() {
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT => {
-                    f.write_str(&format!(
-                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
-                        entity_address.display(context.bech32_encoder),
-                    ))?;
-                }
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT => {
-                    f.write_str(&format!(
-                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
-                        entity_address.display(context.bech32_encoder),
-                    ))?;
-                }
-                _ => {
-                    f.write_str(&format!(
-                        "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                        entity_address.display(context.bech32_encoder),
-                        method_name
-                    ))?;
-                }
-            }
-
-            format_encoded_args(f, context, args)?;
-            f.write_str(";")?;
-        }
-        Instruction::CallAccessRulesMethod {
-            address,
-            method_name,
-            args,
-        } => {
-            match method_name.as_str() {
-                _ => {
-                    f.write_str(&format!(
-                        "CALL_ACCESS_RULES_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                        address.display(context.bech32_encoder),
-                        method_name
-                    ))?;
-                }
-            }
-
-            format_encoded_args(f, context, args)?;
-            f.write_str(";")?;
-        }
         Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -472,6 +435,12 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
+                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT) => {
+                    write!(f, "PUBLISH_PACKAGE")?;
+                }
+                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT) => {
+                    write!(f, "PUBLISH_PACKAGE_ADVANCED")?;
+                }
                 (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
                     write!(f, "CREATE_ACCOUNT_ADVANCED")?;
                 }
@@ -534,31 +503,97 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
+            module_id,
             address,
             method_name,
             args,
         } => {
-            match (address, method_name.as_str()) {
-                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
-                    if address.eq(&EPOCH_MANAGER.clone().into()) =>
-                {
-                    write!(f, "CREATE_VALIDATOR")?;
+            match (module_id, address, method_name.as_str()) {
+                /* metadata */
+                (ObjectModuleId::Metadata, address, METADATA_SET_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
                 }
-                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
-                    if address.as_node_id().is_global_package() =>
-                {
+                (ObjectModuleId::Metadata, address, METADATA_REMOVE_IDENT) => {
+                    f.write_str(&format!(
+                        "REMOVE_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* package royalty */
+                (ObjectModuleId::Main, address, PACKAGE_SET_ROYALTY_CONFIG_IDENT) => {
                     f.write_str(&format!(
                         "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),
                     ))?;
                 }
-                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
-                    if address.as_node_id().is_global_package() =>
-                {
+                (ObjectModuleId::Main, address, PACKAGE_CLAIM_ROYALTY_IDENT) => {
                     f.write_str(&format!(
                         "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
                         address.display(context.bech32_encoder),
                     ))?;
+                }
+
+                /* component royalty */
+                (ObjectModuleId::Royalty, address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (ObjectModuleId::Royalty, address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                    f.write_str(&format!(
+                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* access rules */
+                (
+                    ObjectModuleId::AccessRules,
+                    address,
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                ) => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (
+                    ObjectModuleId::AccessRules,
+                    address,
+                    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
+                ) => {
+                    f.write_str(&format!(
+                        "SET_METHOD_ACCESS_RULE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (
+                    ObjectModuleId::AccessRules,
+                    address,
+                    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+                ) => {
+                    f.write_str(&format!(
+                        "SET_GROUP_ACCESS_RULE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (ObjectModuleId::AccessRules, address, ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_GROUP_MUTABILITY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* validator */
+                (ObjectModuleId::Main, address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
+                    if address.eq(&EPOCH_MANAGER.clone().into()) =>
+                {
+                    write!(f, "CREATE_VALIDATOR")?;
                 }
                 _ => {
                     f.write_str(&format!(
@@ -572,138 +607,18 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::PublishPackage {
-            code,
-            schema,
-            royalty_config,
-            metadata,
-        } => {
-            f.write_str("PUBLISH_PACKAGE")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, schema)?;
-            format_typed_value(f, context, royalty_config)?;
-            format_typed_value(f, context, metadata)?;
-            f.write_str(";")?;
-        }
-        Instruction::PublishPackageAdvanced {
-            code,
-            schema,
-            royalty_config,
-            metadata,
-            access_rules,
-        } => {
-            f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, schema)?;
-            format_typed_value(f, context, royalty_config)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            f.write_str(";")?;
-        }
-        Instruction::BurnResource { bucket_id } => {
-            write!(
-                f,
-                "BURN_RESOURCE\n    Bucket({});",
-                context
-                    .bucket_names
-                    .get(bucket_id)
-                    .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id.0)),
-            )?;
-        }
         Instruction::RecallResource { vault_id, amount } => {
             f.write_str("RECALL_RESOURCE")?;
             format_typed_value(f, context, vault_id)?;
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
-        Instruction::SetMetadata {
-            entity_address,
-            key,
-            value,
-        } => {
-            f.write_str("SET_METADATA")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, value)?;
-            f.write_str(";")?;
-        }
-        Instruction::RemoveMetadata {
-            entity_address,
-            key,
-        } => {
-            f.write_str("REMOVE_METADATA")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        } => {
-            f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetGroupAccessRule {
-            entity_address,
-            object_key,
-            group,
-            rule,
-        } => {
-            f.write_str("SET_GROUP_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, object_key)?;
-            format_typed_value(f, context, group)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetGroupMutability {
-            entity_address,
-            object_key,
-            group,
-            mutability,
-        } => {
-            f.write_str("SET_GROUP_MUTABILITY")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, object_key)?;
-            format_typed_value(f, context, group)?;
-            format_typed_value(f, context, mutability)?;
-            f.write_str(";")?;
-        }
-        Instruction::MintFungible {
-            resource_address,
-            amount,
-        } => {
-            f.write_str("MINT_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, amount)?;
-            f.write_str(";")?;
-        }
-        Instruction::MintNonFungible {
-            resource_address,
-            args,
-        } => {
-            f.write_str("MINT_NON_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            f.write_str("\n    ")?;
-            format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
-        }
-        Instruction::MintUuidNonFungible {
-            resource_address,
-            args,
-        } => {
-            f.write_str("MINT_UUID_NON_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            f.write_str("\n    ")?;
-            format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
+
+        Instruction::DropAllProofs => {
+            f.write_str("DROP_ALL_PROOFS;")?;
         }
     }
+
     Ok(())
 }
 
