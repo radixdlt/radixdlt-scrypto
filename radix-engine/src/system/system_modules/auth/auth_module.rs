@@ -6,10 +6,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{
-    AccessRulesConfig, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate,
-};
+use crate::system::node_modules::access_rules::{NodeAuthorityRules, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate, MethodAccessRulesSubstate, AuthorityKey};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -28,7 +25,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    CycleCheckError(CycleCheckError<String>),
+    CycleCheckError(CycleCheckError<AuthorityKey>),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -115,7 +112,7 @@ impl AuthModule {
                 let auth_result = Authorization::check_authorization_against_access_rule(
                     acting_location,
                     *auth_zone_id,
-                    &AccessRulesConfig::new(),
+                    &NodeAuthorityRules::new(),
                     module_id,
                     &access_rule,
                     api,
@@ -223,7 +220,7 @@ impl AuthModule {
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules: &AccessRulesConfig,
+        access_rules: &NodeAuthorityRules,
         key: &MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -280,7 +277,7 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &AccessRulesConfig::new(),
+                        &NodeAuthorityRules::new(),
                         ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
                         &access_rule,
                         &mut system,

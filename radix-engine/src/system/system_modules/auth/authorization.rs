@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::access_rules::AccessRulesConfig;
+use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
@@ -286,7 +286,7 @@ impl Authorization {
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &AccessRulesConfig,
+        access_rules: &NodeAuthorityRules,
         module_id: ObjectModuleId,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<String, ()>,
@@ -364,7 +364,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &AccessRulesConfig,
+        access_rules: &NodeAuthorityRules,
         module_id: ObjectModuleId,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<String, ()>,
@@ -399,7 +399,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &AccessRulesConfig,
+        access_rules: &NodeAuthorityRules,
         module_id: ObjectModuleId,
         rule: &AccessRule,
         api: &mut Y,
