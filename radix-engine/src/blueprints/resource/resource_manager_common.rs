@@ -337,7 +337,7 @@ where
         build_access_rules(access_rules);
     let proof_access_rules = AccessRulesConfig::new().default(AllowAll, DenyAll);
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
-        if resource_address.as_node_id().is_global_fungible_resource() {
+        if resource_address.as_node_id().is_global_fungible_resource_manager() {
             (
                 FUNGIBLE_VAULT_BLUEPRINT,
                 FUNGIBLE_BUCKET_BLUEPRINT,

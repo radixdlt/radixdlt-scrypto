@@ -214,7 +214,7 @@ impl ScryptoBucket for Bucket {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_fungible_resource());
+            .is_global_fungible_resource_manager());
         FungibleBucket(Bucket(self.0))
     }
 
@@ -222,7 +222,7 @@ impl ScryptoBucket for Bucket {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         NonFungibleBucket(Bucket(self.0))
     }
 }
@@ -235,7 +235,7 @@ impl ScryptoBucket for FungibleBucket {
     type ProofType = FungibleProof;
 
     fn new(resource_address: ResourceAddress) -> Self {
-        assert!(resource_address.as_node_id().is_global_fungible_resource());
+        assert!(resource_address.as_node_id().is_global_fungible_resource_manager());
         Self(Bucket::new(resource_address))
     }
 
@@ -304,7 +304,7 @@ impl ScryptoBucket for NonFungibleBucket {
     fn new(resource_address: ResourceAddress) -> Self {
         assert!(resource_address
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         Self(Bucket::new(resource_address))
     }
 

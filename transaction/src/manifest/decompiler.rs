@@ -598,7 +598,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                 /* resource manager */
                 (ObjectModuleId::Main, address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.as_node_id().is_global_resource_manager() =>
+                    if address.as_node_id().is_global_fungible_resource_manager() =>
                 {
                     f.write_str(&format!(
                         "MINT_FUNGIBLE\n    Address(\"{}\")",
@@ -606,7 +606,9 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
                 (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.as_node_id().is_global_resource_manager() =>
+                    if address
+                        .as_node_id()
+                        .is_global_non_fungible_resource_manager() =>
                 {
                     f.write_str(&format!(
                         "MINT_NON_FUNGIBLE\n    Address(\"{}\")",
@@ -614,7 +616,9 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
                 (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
-                    if address.as_node_id().is_global_resource_manager() =>
+                    if address
+                        .as_node_id()
+                        .is_global_non_fungible_resource_manager() =>
                 {
                     f.write_str(&format!(
                         "MINT_UUID_NON_FUNGIBLE\n    Address(\"{}\")",

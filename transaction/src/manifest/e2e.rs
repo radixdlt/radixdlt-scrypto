@@ -29,7 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("resource_sim1n24hvnrgmhj6j8dpjuu85vfsagdjafcl5x4ewc9yh436jh2hpu4qdj:#1#"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
 "##,
             ),
         );
@@ -437,7 +437,7 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
+    Map<String, String>("name", "MyResource", "symbol", "RSRC", "description", "A very innovative and important resource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
     Decimal("12");
 CALL_METHOD
@@ -467,7 +467,7 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE
     18u8
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
+    Map<String, String>("name", "MyResource", "symbol", "RSRC", "description", "A very innovative and important resource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
             ),
@@ -498,7 +498,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum(1u8)
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8))
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
+    Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
     Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
@@ -531,7 +531,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum(1u8)
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8), Array<String>())
-    Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
+    Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
     Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
 "##,
             ),
@@ -559,7 +559,7 @@ CALL_METHOD
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_FUNGIBLE
-    Address("${mintable_resource_address}")
+    Address("${mintable_fungible_resource_address}")
     Decimal("12");
 CALL_METHOD
     Address("${account_address}")
@@ -591,8 +591,8 @@ CALL_METHOD
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_NON_FUNGIBLE
-    Address("${mintable_resource_address}")
-    Tuple(Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("${non_fungible_local_id}"), Tuple(Tuple())));
+    Address("${mintable_non_fungible_resource_address}")
+    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("${non_fungible_local_id}"), Tuple(Tuple()));
 CALL_METHOD
     Address("${account_address}")
     "deposit_batch"
@@ -803,7 +803,11 @@ CREATE_ACCESS_CONTROLLER
                 "resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha",
             ),
             (
-                "${mintable_resource_address}",
+                "${mintable_fungible_resource_address}",
+                "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
+            ),
+            (
+                "${mintable_non_fungible_resource_address}",
                 "resource_sim1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3wvlhj6",
             ),
             (

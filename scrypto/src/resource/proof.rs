@@ -269,7 +269,7 @@ impl ScryptoProof for CheckedProof {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_fungible_resource());
+            .is_global_fungible_resource_manager());
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
@@ -277,7 +277,7 @@ impl ScryptoProof for CheckedProof {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 }

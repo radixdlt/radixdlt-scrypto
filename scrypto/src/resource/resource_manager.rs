@@ -63,7 +63,7 @@ impl ResourceManager {
     }
 
     fn vault_blueprint_name(&self) -> &str {
-        if self.0.as_node_id().is_global_fungible_resource() {
+        if self.0.as_node_id().is_global_fungible_resource_manager() {
             FUNGIBLE_VAULT_BLUEPRINT
         } else {
             NON_FUNGIBLE_VAULT_BLUEPRINT

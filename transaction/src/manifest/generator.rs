@@ -1378,7 +1378,7 @@ mod tests {
             Instruction::CallMethod {
                 module_id: ObjectModuleId::Main,
                 address: resource_address.into(),
-                method_name: "refill".to_string(),
+                method_name: "mint".to_string(),
                 args: manifest_args!(dec!("100"))
             },
         );
@@ -1581,9 +1581,7 @@ mod tests {
             r##"
             MINT_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Tuple(
-                    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))))
-                );
+                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
             Instruction::CallMethod {
                 module_id: ObjectModuleId::Main,
@@ -1615,10 +1613,8 @@ mod tests {
             r#"
             MINT_UUID_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Tuple(
-                    Array<Tuple>(
-                        Tuple(Tuple("Hello World", Decimal("12")))
-                    )
+                Array<Tuple>(
+                    Tuple(Tuple("Hello World", Decimal("12")))
                 );
             "#,
             Instruction::CallMethod {
@@ -1639,7 +1635,7 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
                 module_id: ObjectModuleId::Main,

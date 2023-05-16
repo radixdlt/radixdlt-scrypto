@@ -71,11 +71,11 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_resource_manager())
     }
 
-    pub const fn is_global_fungible_resource(&self) -> bool {
+    pub const fn is_global_fungible_resource_manager(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource_manager())
     }
 
-    pub const fn is_global_non_fungible_resource(&self) -> bool {
+    pub const fn is_global_non_fungible_resource_manager(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global_non_fungible_resource_manager())
     }
 
