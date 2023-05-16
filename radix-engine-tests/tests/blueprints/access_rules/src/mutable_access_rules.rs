@@ -12,8 +12,8 @@ mod mutable_access_rules_component {
             let component = Self {}.instantiate();
 
             component
-                .set_method_authorities(method_authorities)
-                .set_authority_rules(authority_rules)
+                .method_authorities(method_authorities)
+                .authority_rules(authority_rules)
                 .globalize()
         }
 

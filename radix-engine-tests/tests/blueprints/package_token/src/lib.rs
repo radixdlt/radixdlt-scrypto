@@ -8,11 +8,14 @@ mod factory {
 
     impl Factory {
         pub fn create_raw() -> Global<Factory> {
-            let component = Self { my_component: None }.instantiate();
-
-            component
-                .set_method_authority("set_address", "set_address")
-                .set_authority_rule("set_address", rule!(require(Runtime::package_token())), AccessRule::DenyAll)
+            Self { my_component: None }
+                .instantiate()
+                .method_authority("set_address", "set_address")
+                .authority_rule(
+                    "set_address",
+                    rule!(require(Runtime::package_token())),
+                    AccessRule::DenyAll,
+                )
                 .globalize()
         }
 
@@ -20,16 +23,14 @@ mod factory {
             let component = Self {
                 my_component: Option::None,
             }
-            .instantiate();
-
-            let component = component
-                .set_method_authority("set_address", "set_address")
-                .set_authority_rule(
-                    "set_address",
-                    rule!(require(Runtime::package_token())),
-                    AccessRule::DenyAll,
-                )
-                .globalize();
+            .instantiate()
+            .method_authority("set_address", "set_address")
+            .authority_rule(
+                "set_address",
+                rule!(require(Runtime::package_token())),
+                AccessRule::DenyAll,
+            )
+            .globalize();
 
             component.set_address(component.clone());
 

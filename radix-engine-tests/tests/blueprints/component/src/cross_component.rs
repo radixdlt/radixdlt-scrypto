@@ -16,8 +16,8 @@ mod cross_component {
                 auth_vault: None,
             }
             .instantiate()
-            .set_method_authority("get_component_state", "auth")
-            .set_authority_rules(authority_rules)
+            .method_authority("get_component_state", "auth")
+            .authority_rules(authority_rules)
             .globalize()
         }
 

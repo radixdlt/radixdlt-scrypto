@@ -37,21 +37,15 @@ mod royalty_test {
         ) -> Global<RoyaltyTest> {
             let local_component = Self {}.instantiate();
 
-            let access_rules = {
-                let mut authority_rules = AuthorityRules::new();
-                authority_rules.set_rule(
-                    "owner".clone(),
-                    rule!(require(badge.clone())),
-                    rule!(require(badge.clone())),
-                );
-                AccessRules::new(MethodAuthorities::new(), authority_rules)
-            };
-
             local_component
-                .set_royalty("paid_method", 1)
-                .set_royalty("paid_method_panic", 1)
-                .set_royalty_default(0)
-                .attach_access_rules(access_rules)
+                .royalty("paid_method", 1)
+                .royalty("paid_method_panic", 1)
+                .royalty_default(0)
+                .authority_rule(
+                    "owner",
+                    rule!(require(badge.clone())),
+                    rule!(require(badge.clone())),
+                )
                 .globalize()
         }
 

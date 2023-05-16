@@ -6,10 +6,9 @@ mod metadata_component {
 
     impl MetadataComponent {
         pub fn new(key: String, value: String) {
-            let component = Self {}.instantiate();
-
-            let global = component
-                .set_metadata(key.clone(), value.clone())
+            let global = Self {}
+                .instantiate()
+                .metadata(key.clone(), value.clone())
                 .globalize();
 
             let metadata = global.metadata();
@@ -18,10 +17,9 @@ mod metadata_component {
         }
 
         pub fn new2(key: String, value: String) {
-            let component = MetadataComponent {}.instantiate();
-
-            let global = component
-                .set_authority_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll)
+            let global = MetadataComponent {}
+                .instantiate()
+                .authority_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll)
                 .globalize();
 
             let metadata = global.metadata();
