@@ -2,6 +2,8 @@ use crate::address::{AddressDisplayContext, EncodeBech32AddressError};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
 
@@ -10,6 +12,7 @@ use utils::ContextualDisplay;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);

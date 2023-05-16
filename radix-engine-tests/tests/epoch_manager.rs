@@ -1,4 +1,6 @@
-use radix_engine::blueprints::epoch_manager::{Validator, ValidatorError};
+use radix_engine::blueprints::epoch_manager::{
+    Validator, ValidatorEmissionAppliedEvent, ValidatorError,
+};
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_modules::auth::AuthError;
@@ -61,11 +63,8 @@ fn genesis_epoch_has_correct_initial_validators() {
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: EpochManagerInitialConfiguration {
-            rounds_per_epoch: 5,
-            num_unstake_epochs: 1,
-            max_validators,
-        },
+        initial_configuration: dummy_epoch_manager_configuration()
+            .with_max_validators(max_validators),
     };
 
     // Act
@@ -144,11 +143,7 @@ fn next_round_with_validator_auth_succeeds() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -180,11 +175,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -417,17 +408,13 @@ fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
 }
 
 #[test]
-fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch_change() {
+fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
@@ -464,6 +451,313 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
+}
+
+#[test]
+fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 2;
+    let epoch_emissions_xrd = dec!("0.1");
+    let a_initial_stake = dec!("2.5");
+    let b_initial_stake = dec!("7.5");
+    let both_initial_stake = a_initial_stake + b_initial_stake;
+
+    let a_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let b_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key();
+    let validators = vec![GenesisValidator::from(a_key), GenesisValidator::from(b_key)];
+    let allocations = vec![
+        (
+            a_key,
+            vec![GenesisStakeAllocation {
+                account_index: 0,
+                xrd_amount: a_initial_stake,
+            }],
+        ),
+        (
+            b_key,
+            vec![GenesisStakeAllocation {
+                account_index: 1,
+                xrd_amount: b_initial_stake,
+            }],
+        ),
+    ];
+    let accounts = validators
+        .iter()
+        .map(|validator| validator.owner)
+        .collect::<Vec<_>>();
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(validators),
+        GenesisDataChunk::Stakes {
+            accounts,
+            allocations,
+        },
+    ];
+    let genesis = CustomGenesis {
+        genesis_data_chunks,
+        initial_epoch,
+        initial_configuration: dummy_epoch_manager_configuration()
+            .with_rounds_per_epoch(1)
+            .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
+    };
+
+    // Act
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    let a_substate = test_runner.get_validator_info_by_key(&a_key);
+    let a_new_stake = test_runner
+        .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
+        .unwrap();
+    let a_stake_added = epoch_emissions_xrd * a_initial_stake / both_initial_stake;
+    assert_eq!(a_new_stake, a_initial_stake + a_stake_added);
+
+    let b_substate = test_runner.get_validator_info_by_key(&b_key);
+    let b_new_stake = test_runner
+        .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
+        .unwrap();
+    let b_stake_added = epoch_emissions_xrd * b_initial_stake / both_initial_stake;
+    assert_eq!(b_new_stake, b_initial_stake + b_stake_added);
+
+    let result = receipt.expect_commit_success();
+    let next_epoch_validators = result
+        .next_epoch()
+        .expect("Should have next epoch")
+        .0
+        .into_values()
+        .collect::<Vec<_>>();
+    assert_eq!(
+        next_epoch_validators,
+        vec![
+            Validator {
+                key: a_key,
+                stake: a_new_stake,
+            },
+            Validator {
+                key: b_key,
+                stake: b_new_stake,
+            },
+        ]
+    );
+
+    let emission_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<ValidatorEmissionAppliedEvent>(id))
+        .map(|(id, data)| {
+            (
+                extract_emitter_node_id(id),
+                scrypto_decode::<ValidatorEmissionAppliedEvent>(data).unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        emission_applied_events,
+        vec![
+            (
+                test_runner.get_validator_with_key(&a_key).into_node_id(),
+                ValidatorEmissionAppliedEvent {
+                    epoch: initial_epoch,
+                    starting_stake_pool_xrd: a_initial_stake,
+                    stake_pool_added_xrd: a_stake_added,
+                    total_stake_unit_supply: a_initial_stake, // stays at the level captured before any emissions
+                    validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+                    proposals_made: 1,
+                    proposals_missed: 0,
+                }
+            ),
+            (
+                test_runner.get_validator_with_key(&b_key).into_node_id(),
+                ValidatorEmissionAppliedEvent {
+                    epoch: initial_epoch,
+                    starting_stake_pool_xrd: b_initial_stake,
+                    stake_pool_added_xrd: b_stake_added,
+                    total_stake_unit_supply: b_initial_stake, // stays at the level captured before any emissions
+                    validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+                    proposals_made: 0,
+                    proposals_missed: 0,
+                }
+            ),
+        ]
+    );
+}
+
+#[test]
+fn validator_receives_emission_penalty_when_some_proposals_missed() {
+    // Arrange
+    let initial_epoch = 5;
+    let epoch_emissions_xrd = dec!("10");
+    let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
+    let min_required_reliability = dec!("0.2"); // ...which barely meets the threshold
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let validator_initial_stake = dec!("500.0");
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        validator_initial_stake,
+        ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch)
+            .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
+            .with_min_validator_reliability(min_required_reliability),
+    );
+
+    // Act
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
+    let validator_new_stake = test_runner
+        .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
+        .unwrap();
+    let actual_reliability = Decimal::one() / Decimal::from(rounds_per_epoch);
+    let tolerated_range = Decimal::one() - min_required_reliability;
+    let reliability_factor = (actual_reliability - min_required_reliability) / tolerated_range;
+    let validator_stake_added = epoch_emissions_xrd * reliability_factor;
+    assert_eq!(
+        validator_new_stake,
+        validator_initial_stake + validator_stake_added
+    );
+
+    let result = receipt.expect_commit_success();
+    let next_epoch_validators = result
+        .next_epoch()
+        .expect("Should have next epoch")
+        .0
+        .into_values()
+        .collect::<Vec<_>>();
+    assert_eq!(
+        next_epoch_validators,
+        vec![Validator {
+            key: validator_pub_key,
+            stake: validator_new_stake,
+        },]
+    );
+
+    let emission_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<ValidatorEmissionAppliedEvent>(id))
+        .map(|(_id, data)| scrypto_decode::<ValidatorEmissionAppliedEvent>(data).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        emission_applied_events,
+        vec![ValidatorEmissionAppliedEvent {
+            epoch: initial_epoch,
+            starting_stake_pool_xrd: validator_initial_stake,
+            stake_pool_added_xrd: validator_stake_added,
+            total_stake_unit_supply: validator_initial_stake, // stays at the level captured before any emissions
+            validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+            proposals_made: 1,
+            proposals_missed: 3,
+        },]
+    );
+}
+
+#[test]
+fn validator_receives_no_emission_when_too_many_proposals_missed() {
+    // Arrange
+    let initial_epoch = 7;
+    let epoch_emissions_xrd = dec!("10");
+    let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
+    let min_required_reliability = dec!("0.3"); // ...which does NOT meet the threshold
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+    let validator_stake = dec!("500.0");
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_pub_key,
+        validator_stake,
+        ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_rounds_per_epoch(rounds_per_epoch)
+            .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
+            .with_min_validator_reliability(min_required_reliability),
+    );
+
+    // Act
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
+    let validator_new_stake = test_runner
+        .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
+        .unwrap();
+    assert_eq!(validator_new_stake, validator_stake);
+
+    let result = receipt.expect_commit_success();
+    let next_epoch_validators = result
+        .next_epoch()
+        .expect("Should have next epoch")
+        .0
+        .into_values()
+        .collect::<Vec<_>>();
+    assert_eq!(
+        next_epoch_validators,
+        vec![Validator {
+            key: validator_pub_key,
+            stake: validator_stake
+        },]
+    );
+
+    let emission_applied_events = result
+        .application_events
+        .iter()
+        .filter(|(id, _data)| test_runner.is_event_name_equal::<ValidatorEmissionAppliedEvent>(id))
+        .map(|(_id, data)| scrypto_decode::<ValidatorEmissionAppliedEvent>(data).unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        emission_applied_events,
+        vec![ValidatorEmissionAppliedEvent {
+            epoch: initial_epoch,
+            starting_stake_pool_xrd: validator_stake,
+            stake_pool_added_xrd: Decimal::zero(), // even though the emission gave 0 XRD to this validator...
+            total_stake_unit_supply: validator_stake,
+            validator_fee_xrd: Decimal::zero(), // TODO(emissions): adjust after fee implementation
+            proposals_made: 1,
+            proposals_missed: 3, // ... we still want the event, e.g. to surface this information
+        },]
+    );
 }
 
 fn create_custom_genesis(
@@ -533,11 +827,9 @@ fn create_custom_genesis(
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: EpochManagerInitialConfiguration {
-            max_validators: max_validators as u32,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        initial_configuration: dummy_epoch_manager_configuration()
+            .with_max_validators(max_validators as u32)
+            .with_rounds_per_epoch(rounds_per_epoch),
     };
 
     (genesis, pub_key_accounts)
@@ -872,11 +1164,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -929,11 +1217,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -991,11 +1275,11 @@ fn cannot_claim_unstake_immediately() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
         dummy_epoch_manager_configuration(),
     );
@@ -1007,18 +1291,18 @@ fn cannot_claim_unstake_immediately() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
+            account_with_su,
+            validator_substate.stake_unit_resource,
             1.into(),
         )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1049,17 +1333,13 @@ fn can_claim_unstake_after_epochs() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch: 2,
-            num_unstake_epochs,
-        },
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1067,15 +1347,15 @@ fn can_claim_unstake_after_epochs() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
+            account_with_su,
+            validator_substate.stake_unit_resource,
             1.into(),
         )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1090,12 +1370,12 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
+        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1.into())
         .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1120,18 +1400,14 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
 
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1139,15 +1415,15 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
+            account_with_su,
+            validator_substate.stake_unit_resource,
             Decimal::one(),
         )
-        .take_all_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             "deposit_batch",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1242,11 +1518,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
             Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             1u64,
-            EpochManagerInitialConfiguration {
-                max_validators: 10,
-                rounds_per_epoch: 1,
-                num_unstake_epochs: 1,
-            }
+            dummy_epoch_manager_configuration()
         ),
     }];
     let blobs = vec![];
@@ -1280,5 +1552,16 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         max_validators: 10,
         rounds_per_epoch: 5,
         num_unstake_epochs: 1,
+        total_emission_xrd_per_epoch: Decimal::one(),
+        min_validator_reliability: Decimal::one(),
+        num_owner_stake_units_unlock_epochs: 2,
     }
+}
+
+fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
+    match &event_type_id.0 {
+        Emitter::Function(node_id, _, _) => node_id,
+        Emitter::Method(node_id, _) => node_id,
+    }
+    .clone()
 }

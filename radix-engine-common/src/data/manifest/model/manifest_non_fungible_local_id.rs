@@ -1,3 +1,5 @@
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::prelude::*;
@@ -66,6 +68,46 @@ impl ManifestNonFungibleLocalId {
             return Err(ContentValidationError::NotUuidV4Variant1);
         }
         Ok(Self::UUID(s))
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for ManifestNonFungibleLocalId {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        let val = match u.int_in_range(0..=3).unwrap() {
+            0 => {
+                let charset: Vec<char> =
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ012345678989_"
+                        .chars()
+                        .collect();
+                let len: u8 = u
+                    .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+                    .unwrap();
+                let s = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
+                Self::String(s)
+            }
+            1 => {
+                let int = u64::arbitrary(u).unwrap();
+                Self::Integer(int)
+            }
+            2 => {
+                let len: u8 = u
+                    .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+                    .unwrap();
+                let bytes = (0..len).map(|_| u8::arbitrary(u).unwrap()).collect();
+                Self::Bytes(bytes)
+            }
+            3 => {
+                let mut uuid = u128::arbitrary(u).unwrap();
+                // make sure this is v4 and variant 1
+                uuid &= !0x00000000_0000_f000_c000_000000000000u128;
+                uuid |= 0x00000000_0000_4000_8000_000000000000u128;
+                Self::UUID(uuid)
+            }
+            _ => unreachable!(),
+        };
+
+        Ok(val)
     }
 }
 

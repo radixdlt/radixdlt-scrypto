@@ -2,6 +2,8 @@ use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::blueprints::resource::*;
 use crate::math::Decimal;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -9,6 +11,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use utils::rust::prelude::IndexSet;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ResourceOrNonFungible {
     NonFungible(NonFungibleGlobalId),
@@ -43,6 +46,7 @@ where
 }
 
 /// Resource Proof Rules
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum ProofRule {
     Require(ResourceOrNonFungible),
@@ -82,6 +86,7 @@ impl From<&str> for AccessRuleNode {
     }
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
     Authority(String),
@@ -180,6 +185,7 @@ where
     AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRule {
     AllowAll,

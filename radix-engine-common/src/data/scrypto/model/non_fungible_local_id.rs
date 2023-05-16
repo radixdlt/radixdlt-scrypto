@@ -2,6 +2,8 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
@@ -72,6 +74,7 @@ impl TryFrom<u128> for NonFungibleLocalId {
 }
 
 /// Represents the local id of a non-fungible.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleLocalId {
     /// String matching `[_0-9a-zA-Z]{1,64}`.
@@ -169,6 +172,22 @@ impl StringNonFungibleLocalId {
     }
 }
 
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for StringNonFungibleLocalId {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        let charset: Vec<char> =
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ012345678989_"
+                .chars()
+                .collect();
+        let len: u8 = u
+            .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+            .unwrap();
+        let s = (0..len).map(|_| *u.choose(&charset[..]).unwrap()).collect();
+
+        Ok(Self(s))
+    }
+}
+
 impl TryFrom<String> for StringNonFungibleLocalId {
     type Error = ContentValidationError;
 
@@ -186,6 +205,7 @@ impl TryFrom<&str> for StringNonFungibleLocalId {
 }
 
 /// Unsigned integers, up to u64.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IntegerNonFungibleLocalId(u64);
 
@@ -231,6 +251,18 @@ impl BytesNonFungibleLocalId {
     }
 }
 
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for BytesNonFungibleLocalId {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        let len: u8 = u
+            .int_in_range(1..=NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH as u8)
+            .unwrap();
+        let s = (0..len).map(|_| u8::arbitrary(u).unwrap()).collect();
+
+        Ok(Self(s))
+    }
+}
+
 impl TryFrom<Vec<u8>> for BytesNonFungibleLocalId {
     type Error = ContentValidationError;
 
@@ -264,6 +296,18 @@ impl UUIDNonFungibleLocalId {
 
     pub fn value(&self) -> u128 {
         self.0
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for UUIDNonFungibleLocalId {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        let mut id = u128::arbitrary(u).unwrap();
+        // make sure this is v4 and variant 1
+        id &= !0x00000000_0000_f000_c000_000000000000u128;
+        id |= 0x00000000_0000_4000_8000_000000000000u128;
+
+        Ok(Self(id))
     }
 }
 

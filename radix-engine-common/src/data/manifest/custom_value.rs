@@ -1,6 +1,9 @@
 use crate::data::manifest::model::*;
 use crate::data::manifest::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestCustomValue {
     Address(ManifestAddress),

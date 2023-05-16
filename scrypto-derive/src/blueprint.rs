@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
@@ -24,8 +24,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let bp_semi_token = &bp_strut.semi_token;
     let bp_impl = &bp.implementation;
     let bp_ident = &bp_strut.ident;
+    validate_type_ident(&bp_ident)?;
     let bp_items = &bp_impl.items;
     let bp_name = bp_ident.to_string();
+
     trace!("Blueprint name: {}", bp_name);
 
     let impl_ident_matches = match &*bp_impl.self_ty {
@@ -45,7 +47,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let module_ident = bp.module_ident;
     let component_ident = format_ident!("{}Component", bp_ident);
+    validate_type_ident(&component_ident)?;
     let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
+    validate_type_ident(&component_ref_ident)?;
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -92,7 +96,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_original_code });
-    let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
 
     let functions = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = quote! {
@@ -208,7 +212,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
-fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<ItemStruct> {
+fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<ItemStruct>> {
     let mut method_input_structs = Vec::new();
 
     for item in items {
@@ -219,13 +223,14 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let mut args = Vec::new();
             let mut index: usize = 0;
-            for input in (&method.sig.inputs).into_iter() {
+            for input in method.sig.inputs.iter() {
                 match input {
                     FnArg::Receiver(_) => {}
-                    FnArg::Typed(ref t) => {
-                        let arg_ident = format_ident!("arg{}", index);
+                    FnArg::Typed(argument_and_type) => {
+                        let arg_ident =
+                            create_argument_ident(argument_and_type.pat.as_ref(), index)?;
                         index += 1;
-                        let arg_type = t.ty.as_ref();
+                        let arg_type = argument_and_type.ty.as_ref();
                         let arg: Field = Field::parse_named
                             .parse2(quote! {
                                 #arg_ident : #arg_type
@@ -237,6 +242,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
             }
 
             let input_struct_ident = format_ident!("{}_{}_Input", bp_ident, method.sig.ident);
+            validate_type_ident(&input_struct_ident)?;
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
@@ -248,7 +254,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
             method_input_structs.push(method_input_struct);
         }
     }
-    method_input_structs
+    Ok(method_input_structs)
 }
 
 fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
@@ -265,7 +271,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 let mut dispatch_args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
-                for (i, input) in (&m.sig.inputs).into_iter().enumerate() {
+                for (i, input) in m.sig.inputs.iter().enumerate() {
                     match input {
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
@@ -289,18 +295,20 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                                 });
                             }
                         }
-                        FnArg::Typed(_) => {
+                        FnArg::Typed(argument_and_type) => {
                             let arg_index = if get_state.is_some() { i - 1 } else { i };
-                            let arg = format_ident!("arg{}", arg_index);
+                            let arg_ident =
+                                create_argument_ident(argument_and_type.pat.as_ref(), arg_index)?;
 
-                            match_args.push(parse_quote! { #arg });
-                            dispatch_args.push(parse_quote! { input.#arg });
+                            match_args.push(parse_quote! { #arg_ident });
+                            dispatch_args.push(parse_quote! { input.#arg_ident });
                         }
                     }
                 }
 
                 // parse args
                 let input_struct_ident = format_ident!("{}_{}_Input", bp_ident, ident);
+                validate_type_ident(&input_struct_ident)?;
                 stmts.push(parse_quote! {
                     let input: #input_struct_ident = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                 });
@@ -350,6 +358,54 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
     Ok(functions)
 }
 
+fn create_argument_ident(argument: &Pat, index: usize) -> Result<Ident> {
+    Ok(match argument {
+        // If we have a standard parameter name - use that
+        Pat::Ident(ident_pattern) => {
+            let ident = if ident_pattern.ident.to_string().starts_with("_") {
+                // Handle parameters starting with `_` - strip them to pass validation
+                Ident::new(
+                    ident_pattern.ident.to_string().trim_start_matches('_'),
+                    ident_pattern.ident.span(),
+                )
+            } else {
+                // Otherwise, just use the parameter as-is
+                ident_pattern.ident.clone()
+            };
+            validate_field_ident(&ident)?;
+            ident
+        }
+        // If it's not an ident, it's something more complicated (such as a destructuring), just use `argX`
+        _ => format_ident!("arg{}", index, span = argument.span()),
+    })
+}
+
+fn validate_type_ident(ident: &Ident) -> Result<()> {
+    validate_type_name(&ident.to_string(), ident.span())
+}
+
+fn validate_type_name(name: &str, span: Span) -> Result<()> {
+    sbor::validate_schema_type_name(name).map_err(|err| {
+        Error::new(
+            span,
+            format!("Resultant identifier {} is invalid: {:?}", name, err),
+        )
+    })
+}
+
+fn validate_field_ident(ident: &Ident) -> Result<()> {
+    validate_field_name(&ident.to_string(), ident.span())
+}
+
+fn validate_field_name(name: &str, span: Span) -> Result<()> {
+    sbor::validate_schema_field_name(name).map_err(|err| {
+        Error::new(
+            span,
+            format!("Resultant identifier {} is invalid: {:?}", name, err),
+        )
+    })
+}
+
 fn generate_stubs(
     component_ident: &Ident,
     component_ref_ident: &Ident,
@@ -373,7 +429,7 @@ fn generate_stubs(
                     let mut input_len = 0;
                     for input in &m.sig.inputs {
                         match input {
-                            FnArg::Receiver(ref r) => {
+                            FnArg::Receiver(r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
                                     return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with &self."));
@@ -385,11 +441,14 @@ fn generate_stubs(
                                     mutable = Some(false);
                                 }
                             }
-                            FnArg::Typed(ref t) => {
-                                let arg = format_ident!("arg{}", input_len.to_string());
+                            FnArg::Typed(argument_and_type) => {
+                                let arg = create_argument_ident(
+                                    argument_and_type.pat.as_ref(),
+                                    input_len,
+                                )?;
                                 input_args.push(arg);
 
-                                let ty = replace_self_with(&t.ty, &bp_ident.to_string());
+                                let ty = replace_self_with(&argument_and_type.ty, bp_ident);
                                 input_types.push(ty);
 
                                 input_len += 1;
@@ -399,7 +458,7 @@ fn generate_stubs(
 
                     let output = match &m.sig.output {
                         ReturnType::Default => parse_quote! { () },
-                        ReturnType::Type(_, t) => replace_self_with(t, &bp_ident.to_string()),
+                        ReturnType::Type(_, t) => replace_self_with(t, bp_ident),
                     };
 
                     if mutable.is_none() {
@@ -546,13 +605,15 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
                     }
 
                     let input_struct_ident = format_ident!("{}_{}_Input", bp_ident, m.sig.ident);
+                    validate_type_ident(&input_struct_ident)?;
                     let output_type: Type = match &m.sig.output {
                         ReturnType::Default => parse_quote! {
                             ()
                         },
-                        ReturnType::Type(_, t) => replace_self_with(t, &bp_ident.to_string()),
+                        ReturnType::Type(_, t) => replace_self_with(t, bp_ident),
                     };
                     let export_name = format!("{}_{}", bp_ident, m.sig.ident);
+                    validate_type_name(&export_name, bp_ident.span())?;
 
                     if receiver.is_none() {
                         function_names.push(function_name);
@@ -589,13 +650,13 @@ fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>,
     Ok((function_names, function_schemas))
 }
 
-fn replace_self_with(t: &Type, name: &str) -> Type {
+fn replace_self_with(t: &Type, name: &Ident) -> Type {
     match t {
         Type::Path(tp) => {
             let mut tp2 = tp.clone();
             tp2.path.segments.iter_mut().for_each(|s| {
                 if s.ident == "Self" {
-                    s.ident = format_ident!("{}", name)
+                    s.ident = name.clone()
                 }
             });
             Type::Path(tp2)
@@ -615,10 +676,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_inconsistent_names_should_fail() {
         let input = TokenStream::from_str("struct A {} impl B { }").unwrap();
-        handle_blueprint(input).unwrap();
+        assert!(matches!(handle_blueprint(input), Err(_)));
     }
 
     #[test]
@@ -666,11 +726,11 @@ mod tests {
 
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
-                    pub struct Test_x_Input { arg0 : u32 }
+                    pub struct Test_x_Input { i : u32 }
 
                     #[allow(non_camel_case_types)]
                     #[derive(::scrypto::prelude::ScryptoSbor)]
-                    pub struct Test_y_Input { arg0 : u32 }
+                    pub struct Test_y_Input { i : u32 }
 
                     #[no_mangle]
                     pub extern "C" fn Test_x(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
@@ -682,7 +742,7 @@ mod tests {
                         let input: Test_x_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
                         let mut component_data = ::scrypto::runtime::ComponentStatePointer::new();
                         let state: DataRef<Test> = component_data.get();
-                        let return_data = Test::x(state.deref(), input.arg0);
+                        let return_data = Test::x(state.deref(), input.i);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
@@ -694,7 +754,7 @@ mod tests {
                         ::scrypto::set_up_panic_hook();
 
                         let input: Test_y_Input = ::scrypto::data::scrypto::scrypto_decode(&::scrypto::engine::wasm_api::copy_buffer(args)).unwrap();
-                        let return_data = Test::y(input.arg0);
+                        let return_data = Test::y(input.i);
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
 
@@ -765,12 +825,12 @@ mod tests {
                     }
 
                     impl TestComponent {
-                        pub fn y(arg0: u32) -> u32 {
-                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(arg0))
+                        pub fn y(i: u32) -> u32 {
+                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(i))
                         }
 
-                        pub fn x(&self, arg0: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(arg0))
+                        pub fn x(&self, i: u32) -> u32 {
+                            self.component.call("x", scrypto_args!(i))
                         }
                     }
 
@@ -812,8 +872,8 @@ mod tests {
                             self.component.royalty()
                         }
 
-                        pub fn x(&self, arg0: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(arg0))
+                        pub fn x(&self, i: u32) -> u32 {
+                            self.component.call("x", scrypto_args!(i))
                         }
                     }
                 }

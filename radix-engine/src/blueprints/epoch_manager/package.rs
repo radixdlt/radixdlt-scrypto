@@ -184,6 +184,15 @@ impl EpochManagerNativePackage {
                 export_name: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             },
         );
+        functions.insert(
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                export_name: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -193,7 +202,8 @@ impl EpochManagerNativePackage {
                 StakeEvent,
                 UnstakeEvent,
                 ClaimXrdEvent,
-                UpdateAcceptingStakeDelegationStateEvent
+                UpdateAcceptingStakeDelegationStateEvent,
+                ValidatorEmissionAppliedEvent
             ]
         };
 
@@ -348,7 +358,7 @@ impl EpochManagerNativePackage {
                 let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::unstake(input.lp_tokens, api)?;
+                let rtn = ValidatorBlueprint::unstake(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
@@ -382,6 +392,21 @@ impl EpochManagerNativePackage {
                 let rtn = ValidatorBlueprint::update_accept_delegated_stake(
                     receiver,
                     input.accept_delegated_stake,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_APPLY_EMISSION_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorApplyEmissionInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::apply_emission(
+                    input.xrd_bucket,
+                    input.epoch,
+                    input.proposals_made,
+                    input.proposals_missed,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

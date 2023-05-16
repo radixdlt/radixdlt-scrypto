@@ -1,3 +1,5 @@
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
@@ -7,6 +9,7 @@ use sbor::*;
 use crate::*;
 
 /// Royalty rules
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct RoyaltyConfig {
     pub rules: BTreeMap<String, u32>,
