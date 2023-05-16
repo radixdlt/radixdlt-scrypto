@@ -182,7 +182,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
-            EntityType::GlobalFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
             &address_bytes_without_entity_id,
         )
         .0,

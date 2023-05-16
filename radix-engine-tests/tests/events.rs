@@ -632,6 +632,7 @@ fn epoch_manager_round_update_emits_correct_event() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
+        module_id: ObjectModuleId::Main,
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
@@ -677,6 +678,7 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
     test_runner.execute_transaction(
         SystemTransaction {
             instructions: vec![Instruction::CallMethod {
+                module_id: ObjectModuleId::Main,
                 address: EPOCH_MANAGER.into(),
                 method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
                 args: to_manifest_value(&EpochManagerNextRoundInput {
@@ -697,6 +699,7 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
 
     // Act: perform the most usual successful next round
     let instructions = vec![Instruction::CallMethod {
+        module_id: ObjectModuleId::Main,
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
@@ -747,7 +750,8 @@ fn epoch_manager_epoch_update_emits_xrd_minting_event() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        module_id: ObjectModuleId::Main,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];

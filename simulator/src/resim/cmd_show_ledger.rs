@@ -43,7 +43,8 @@ impl ShowLedger {
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<u64, Error> {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER,
+            module_id: ObjectModuleId::Main,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
@@ -59,7 +60,8 @@ impl ShowLedger {
         precision: TimePrecision,
     ) -> Result<Instant, Error> {
         let instructions = vec![Instruction::CallMethod {
-            address: CLOCK,
+            module_id: ObjectModuleId::Main,
+            address: CLOCK.into(),
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];

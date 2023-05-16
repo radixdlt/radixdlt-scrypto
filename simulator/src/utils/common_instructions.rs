@@ -4,6 +4,7 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::schema::IndexedBlueprintSchema;
 use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
@@ -135,7 +136,8 @@ pub fn add_call_method_instruction_with_schema<'a>(
     )?;
 
     builder.add_instruction(Instruction::CallMethod {
-        address: component_address,
+        module_id: ObjectModuleId::Main,
+        address: component_address.into(),
         method_name: method_name.to_owned(),
         args: built_args,
     });

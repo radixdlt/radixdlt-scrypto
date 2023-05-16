@@ -41,7 +41,7 @@ impl StateUpdateSummary {
                 if node_id.is_global_component() {
                     new_components.insert(ComponentAddress::new_or_panic(node_id.0));
                 }
-                if node_id.is_global_resource() {
+                if node_id.is_global_resource_manager() {
                     new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
                 }
             }

@@ -3,6 +3,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::{
     AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
 };
@@ -228,6 +229,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
                     address: account.into(),
                     method_name: "deposit".to_string(),
                     args: manifest_args!(bucket_id),
+                    module_id: ObjectModuleId::Main,
                 })
                 .0
         })

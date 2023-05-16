@@ -9,18 +9,9 @@ use crate::types::*;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::{LocalAuthZone, Runtime};
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-};
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use sbor::rust::prelude::*;
@@ -256,56 +247,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
-                    address: component_address,
-                    method_name,
-                    args,
-                } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
-                        worktop,
-                        processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-
-                    let rtn = api.call_method(
-                        component_address.as_node_id(),
-                        &method_name,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::CallRoyaltyMethod {
-                    address: entity_address,
-                    method_name,
-                    args,
-                } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
-                        worktop,
-                        processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-
-                    let rtn = api.call_method_advanced(
-                        entity_address.as_node_id(),
-                        false,
-                        ObjectModuleId::Royalty,
-                        &method_name,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::CallAccessRulesMethod {
+                    module_id,
                     address,
                     method_name,
                     args,
@@ -321,7 +263,7 @@ impl TransactionProcessorBlueprint {
                     let rtn = api.call_method_advanced(
                         address.as_node_id(),
                         false,
-                        ObjectModuleId::AccessRules,
+                        module_id,
                         &method_name,
                         scrypto_encode(&scrypto_value).unwrap(),
                     )?;
@@ -331,138 +273,11 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                Instruction::PublishPackage {
-                    code,
-                    schema,
-                    royalty_config,
-                    metadata,
-                } => {
-                    let code = processor.get_blob(&code)?;
-
-                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let result = api.call_function(
-                        PACKAGE_PACKAGE,
-                        PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_WASM_IDENT,
-                        scrypto_encode(&PackagePublishWasmInput {
-                            code: code.to_vec(), // TODO: cow?
-                            schema: schema.clone(),
-                            royalty_config: royalty_config.clone(),
-                            metadata: metadata.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::PublishPackageAdvanced {
-                    code,
-                    schema,
-                    royalty_config,
-                    metadata,
-                    access_rules,
-                } => {
-                    let code = processor.get_blob(&code)?;
-
-                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
-                    let result = api.call_function(
-                        PACKAGE_PACKAGE,
-                        PACKAGE_BLUEPRINT,
-                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-                        scrypto_encode(&PackagePublishWasmAdvancedInput {
-                            package_address: None,
-                            code: code.to_vec(), // TODO: cow?
-                            schema: schema.clone(),
-                            access_rules: access_rules.clone(),
-                            royalty_config: royalty_config.clone(),
-                            metadata: metadata.clone(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = bucket.burn(api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::MintFungible {
-                    resource_address,
-                    amount,
-                } => {
-                    let rtn = api.call_method(
-                        resource_address.as_node_id(),
-                        FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        scrypto_encode(&FungibleResourceManagerMintInput { amount }).unwrap(),
-                    )?;
-
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::MintNonFungible {
-                    resource_address,
-                    args,
-                } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
-                        worktop,
-                        processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-
-                    let rtn = api.call_method(
-                        resource_address.as_node_id(),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::MintUuidNonFungible {
-                    resource_address,
-                    args,
-                } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
-                        worktop,
-                        processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-                    let rtn = api.call_method(
-                        resource_address.as_node_id(),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, &worktop, api,
                     )?;
@@ -482,141 +297,6 @@ impl TransactionProcessorBlueprint {
                         &result, &worktop, api,
                     )?;
                     InstructionOutput::CallReturn(result.into())
-                }
-                Instruction::SetMetadata {
-                    entity_address,
-                    key,
-                    value,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::Metadata,
-                        METADATA_SET_IDENT,
-                        scrypto_encode(&MetadataSetInput {
-                            key: key.clone(),
-                            value: scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::RemoveMetadata {
-                    entity_address,
-                    key,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::Metadata,
-                        METADATA_REMOVE_IDENT,
-                        scrypto_encode(&MetadataRemoveInput { key: key.clone() }).unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetMethodAccessRule {
-                    entity_address,
-                    key,
-                    rule,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            object_key: ObjectKey::SELF,
-                            method_key: key.clone(),
-                            rule: AccessRuleEntry::AccessRule(rule.clone()),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetGroupAccessRule {
-                    entity_address,
-                    object_key,
-                    group,
-                    rule,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                            object_key,
-                            name: group,
-                            rule,
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetGroupMutability {
-                    entity_address,
-                    object_key,
-                    group,
-                    mutability,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                            object_key,
-                            name: group,
-                            mutability,
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
                 }
             };
             outputs.push(result);
