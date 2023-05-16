@@ -54,9 +54,7 @@ mod radiswap {
                 .burnable(rule!(require(lp_mint_badge.resource_address())), LOCKED)
                 .create_with_no_initial_supply();
 
-            let lp_tokens = lp_mint_badge.authorize(|| {
-                lp_resource_manager.mint(lp_initial_supply)
-            });
+            let lp_tokens = lp_mint_badge.authorize(|| lp_resource_manager.mint(lp_initial_supply));
 
             // ratio = initial supply / (x * y) = initial supply / k
             let lp_per_asset_ratio = lp_initial_supply / (a_tokens.amount() * b_tokens.amount());
@@ -85,7 +83,8 @@ mod radiswap {
             mut b_tokens: Bucket,
         ) -> (Bucket, Bucket) {
             // Differentiate LP calculation based on whether pool is empty or not.
-            let (supply_to_mint, remainder) = if self.lp_resource_manager.total_supply() == 0.into() {
+            let (supply_to_mint, remainder) = if self.lp_resource_manager.total_supply() == 0.into()
+            {
                 // Set initial LP tokens based on previous LP per K ratio.
                 let supply_to_mint =
                     self.lp_per_asset_ratio * a_tokens.amount() * b_tokens.amount();
@@ -110,7 +109,10 @@ mod radiswap {
                         .put(a_tokens.take(self.a_pool.amount() * b_ratio));
                     (b_ratio, a_tokens)
                 };
-                (self.lp_resource_manager.total_supply() * actual_ratio, remainder)
+                (
+                    self.lp_resource_manager.total_supply() * actual_ratio,
+                    remainder,
+                )
             };
 
             // Mint LP tokens according to the share the provider is contributing
@@ -176,8 +178,8 @@ mod radiswap {
             };
 
             // Accrued fees change the ratio
-            self.lp_per_asset_ratio =
-                self.lp_resource_manager.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
+            self.lp_per_asset_ratio = self.lp_resource_manager.total_supply()
+                / (self.a_pool.amount() * self.b_pool.amount());
 
             output_tokens
         }

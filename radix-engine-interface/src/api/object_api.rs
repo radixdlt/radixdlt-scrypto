@@ -46,9 +46,10 @@ impl ObjectModuleId {
 
     pub fn static_blueprint(&self) -> Option<BlueprintId> {
         match self {
-            ObjectModuleId::Metadata => {
-                Some(BlueprintId::new(&METADATA_MODULE_PACKAGE, METADATA_BLUEPRINT))
-            }
+            ObjectModuleId::Metadata => Some(BlueprintId::new(
+                &METADATA_MODULE_PACKAGE,
+                METADATA_BLUEPRINT,
+            )),
             ObjectModuleId::Royalty => Some(BlueprintId::new(
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,

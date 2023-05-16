@@ -9,8 +9,8 @@ use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use std::ops::Deref;
 use scrypto::component::HasStub;
+use std::ops::Deref;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 #[sbor(transparent)]

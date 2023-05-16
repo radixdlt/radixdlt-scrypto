@@ -457,7 +457,7 @@ fn generate_stubs(
             #(#functions)*
         }
 
-        impl #functions_ident for ::scrypto::component::BlueprintFunctions<#bp_ident> {
+        impl #functions_ident for ::scrypto::component::Blueprint<#bp_ident> {
         }
     };
 
@@ -718,7 +718,7 @@ mod tests {
                         }
                     }
 
-                    impl TestFunctions for ::scrypto::component::BlueprintFunctions<Test> {}
+                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {}
                 }
             },
         );

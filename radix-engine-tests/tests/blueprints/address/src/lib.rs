@@ -56,9 +56,7 @@ mod my_component {
             self.child.get_global_address()
         }
 
-        pub fn get_global_address_in_local(
-            to_call: Global<CalledComponent>,
-        ) -> ComponentAddress {
+        pub fn get_global_address_in_local(to_call: Global<CalledComponent>) -> ComponentAddress {
             let child = ChildComponent::create(to_call.clone());
             let address = child.get_global_address();
             Self { child, to_call }.instantiate().globalize();
@@ -161,8 +159,7 @@ mod preallocation_component {
                 .globalize()
         }
 
-        pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponent>
-        {
+        pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponent> {
             let component_address = Runtime::preallocate_global_component_address();
             Runtime::preallocate_global_component_address();
             Self {}
@@ -171,8 +168,7 @@ mod preallocation_component {
                 .globalize()
         }
 
-        pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent>
-        {
+        pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent> {
             Runtime::preallocate_global_component_address();
             Self {}.instantiate().globalize()
         }
@@ -272,9 +268,7 @@ mod preallocation_smuggler_component {
                 Some(Runtime::preallocate_global_component_address().into());
         }
 
-        pub fn instantiate_with_smuggled_address(
-            &self,
-        ) -> Global<PreallocationSmugglerComponent> {
+        pub fn instantiate_with_smuggled_address(&self) -> Global<PreallocationSmugglerComponent> {
             let component_address = unsafe {
                 ComponentAddress::new_unchecked(self.preallocated_address.unwrap().as_node_id().0)
             };

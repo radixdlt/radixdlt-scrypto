@@ -190,7 +190,8 @@ mod genesis_helper {
                     )
                     .mint_initial_supply(1);
 
-                owner_badge.resource_manager()
+                owner_badge
+                    .resource_manager()
                     .metadata()
                     .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
 

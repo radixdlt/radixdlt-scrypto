@@ -6,10 +6,10 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
-use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::types::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::prelude::*;
@@ -20,7 +20,7 @@ use sbor::{
 use scrypto::modules::{Attached, Metadata};
 use scrypto::prelude::well_known_scrypto_custom_types::OWN_ID;
 
-pub struct BlueprintFunctions<C>(PhantomData<C>);
+pub struct Blueprint<C>(PhantomData<C>);
 
 pub trait HasStub {
     type Stub: ObjectStub;
@@ -74,7 +74,7 @@ impl<C: HasStub> Categorize<ScryptoCustomValueKind> for Owned<C> {
 }
 
 impl<C: HasStub, E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E>
-for Owned<C>
+    for Owned<C>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -91,7 +91,7 @@ for Owned<C>
 }
 
 impl<C: HasStub, D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
-for Owned<C>
+    for Owned<C>
 {
     fn decode_body_with_value_kind(
         decoder: &mut D,
@@ -112,7 +112,6 @@ impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
         own_type_data()
     }
 }
-
 
 impl<C: HasStub> Owned<C> {
     pub fn attach_metadata(self, metadata: Metadata) -> Globalizing<C> {
@@ -232,7 +231,6 @@ impl<O: HasStub> Clone for Global<O> {
         Global(O::Stub::new(self.0.handle().clone()))
     }
 }
-
 
 impl<O: HasStub> Deref for Global<O> {
     type Target = O::Stub;

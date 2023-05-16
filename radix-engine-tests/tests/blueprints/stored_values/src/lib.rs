@@ -30,8 +30,7 @@ mod invalid_stored_bucket_in_owned_component {
             self.bucket = Option::Some(bucket);
         }
 
-        pub fn create_bucket_in_owned_component(
-        ) -> Global<InvalidStoredBucketInOwnedComponent> {
+        pub fn create_bucket_in_owned_component() -> Global<InvalidStoredBucketInOwnedComponent> {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))

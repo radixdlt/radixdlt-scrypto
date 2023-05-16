@@ -29,8 +29,7 @@ mod ref_check {
             .globalize()
         }
 
-        pub fn cannot_directly_reference_vault_after_container_moved() -> Global<RefCheck>
-        {
+        pub fn cannot_directly_reference_vault_after_container_moved() -> Global<RefCheck> {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)

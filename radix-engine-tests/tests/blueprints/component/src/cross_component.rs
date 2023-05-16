@@ -39,10 +39,7 @@ mod cross_component {
             self.auth_vault = Some(Vault::with_bucket(auth_bucket.remove(0)));
         }
 
-        pub fn cross_component_call(
-            &mut self,
-            other_component: Global<CrossComponent>,
-        ) -> String {
+        pub fn cross_component_call(&mut self, other_component: Global<CrossComponent>) -> String {
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();

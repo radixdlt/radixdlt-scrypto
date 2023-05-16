@@ -46,9 +46,7 @@ mod execution_trace_test {
             self.vault.put(b)
         }
 
-        pub fn create_and_fund_a_component(
-            xrd: Vec<Bucket>,
-        ) -> Global<ExecutionTraceTest> {
+        pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> Global<ExecutionTraceTest> {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
             ExecutionTraceTest { vault }.instantiate().globalize()
         }

@@ -60,8 +60,7 @@ mod vault_test {
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_non_fungible_vault_with_take_non_fungible() -> Global<NonFungibleVault>
-        {
+        pub fn new_non_fungible_vault_with_take_non_fungible() -> Global<NonFungibleVault> {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleLocalId::integer(1));
             vault.put(bucket);

@@ -34,8 +34,14 @@ impl MethodActor {
 pub enum Actor {
     Root,
     Method(MethodActor),
-    Function { blueprint: BlueprintId, ident: String },
-    VirtualLazyLoad { blueprint: BlueprintId, ident: u8 },
+    Function {
+        blueprint: BlueprintId,
+        ident: String,
+    },
+    VirtualLazyLoad {
+        blueprint: BlueprintId,
+        ident: u8,
+    },
 }
 
 impl Actor {

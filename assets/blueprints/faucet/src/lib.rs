@@ -9,10 +9,7 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(
-            preallocated_address_bytes: [u8; 30],
-            bucket: Bucket,
-        ) -> Global<Faucet> {
+        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> Global<Faucet> {
             let access_rules = AccessRules::new(MethodAuthorities::new(), AuthorityRules::new());
 
             Self {

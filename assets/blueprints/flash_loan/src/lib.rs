@@ -75,11 +75,10 @@ mod basic_flash_loan {
             // a loan must call our repay_loan() method with an appropriate reimbursement, at which point we will
             // burn the NFT and allow the TX to complete.
             let loan_terms = self.auth_vault.authorize(|| {
-                self.transient_resource_manager.mint_uuid_non_fungible(
-                    LoanDue {
+                self.transient_resource_manager
+                    .mint_uuid_non_fungible(LoanDue {
                         amount_due: amount_due,
-                    },
-                )
+                    })
             });
             (self.loan_vault.take(loan_amount), loan_terms)
         }
