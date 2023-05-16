@@ -185,12 +185,12 @@ impl EpochManagerNativePackage {
             },
         );
         functions.insert(
-            VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardInput>(),
-                output: aggregator.add_child_type_and_descendents::<ValidatorApplyRewardOutput>(),
-                export_name: VALIDATOR_APPLY_REWARD_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
+                export_name: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
             },
         );
 
@@ -203,7 +203,7 @@ impl EpochManagerNativePackage {
                 UnstakeEvent,
                 ClaimXrdEvent,
                 UpdateAcceptingStakeDelegationStateEvent,
-                RewardAppliedEvent
+                ValidatorEmissionAppliedEvent
             ]
         };
 
@@ -396,14 +396,15 @@ impl EpochManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            VALIDATOR_APPLY_REWARD_IDENT => {
+            VALIDATOR_APPLY_EMISSION_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
+                let input: ValidatorApplyEmissionInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = ValidatorBlueprint::apply_reward(
+                let rtn = ValidatorBlueprint::apply_emission(
                     input.xrd_bucket,
+                    input.epoch,
                     input.proposals_made,
                     input.proposals_missed,
                     api,

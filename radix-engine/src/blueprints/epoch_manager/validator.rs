@@ -405,10 +405,12 @@ impl ValidatorBlueprint {
 
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
-    /// Note: the validator's proposal statistics passed to this method are used only for creating
-    /// an event (i.e. they are only informational and do not drive any logic at this point).
-    pub fn apply_reward<Y>(
+    /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
+    /// ethod are used only for creating an event (i.e. they are only informational and do not drive
+    /// any logic at this point).
+    pub fn apply_emission<Y>(
         xrd_bucket: Bucket,
+        epoch: u64,
         proposals_made: u64,
         proposals_missed: u64,
         api: &mut Y,
@@ -423,13 +425,14 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let stake_added_xrd = xrd_bucket.sys_amount(api)?;
+        let stake_pool_added_xrd = xrd_bucket.sys_amount(api)?;
         let liquidity_token_supply = ResourceManager(substate.liquidity_token).total_supply(api)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
+        let starting_stake_pool_xrd = stake_xrd_vault.sys_amount(api)?;
         stake_xrd_vault.sys_put(xrd_bucket, api)?;
 
-        let new_stake_xrd = stake_xrd_vault.sys_amount(api)?;
+        let new_stake_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
         substate.sorted_key = new_index_key;
@@ -438,8 +441,10 @@ impl ValidatorBlueprint {
 
         Runtime::emit_event(
             api,
-            RewardAppliedEvent {
-                stake_added_xrd,
+            ValidatorEmissionAppliedEvent {
+                epoch,
+                starting_stake_pool_xrd,
+                stake_pool_added_xrd,
                 liquidity_token_supply,
                 validator_fee_xrd: Decimal::zero(), // TODO(emissions): update after implementing validator fees
                 proposals_made,
@@ -582,7 +587,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
                 ),
             ),
             (
-                VALIDATOR_APPLY_REWARD_IDENT,
+                VALIDATOR_APPLY_EMISSION_IDENT,
                 MethodType::Custom(
                     AccessRuleEntry::AccessRule(rule!(require(global_caller(EPOCH_MANAGER)))),
                     AccessRuleEntry::AccessRule(AccessRule::DenyAll),

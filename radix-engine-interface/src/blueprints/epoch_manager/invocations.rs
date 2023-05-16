@@ -241,17 +241,19 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
 
-pub const VALIDATOR_APPLY_REWARD_IDENT: &str = "apply_reward";
+pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct ValidatorApplyRewardInput {
-    /// A bucket with the reward XRD.
-    /// Validator should subtract the configured fee from this amount.
+pub struct ValidatorApplyEmissionInput {
+    /// A bucket with the emitted XRDs for this validator.
+    /// The validator should subtract the configured fee from this amount.
     pub xrd_bucket: Bucket,
-    /// A number of proposals successfully made by this validator during the rewarded period.
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: u64,
+    /// A number of proposals successfully made by this validator during the emission period.
     pub proposals_made: u64,
-    /// A number of proposals missed by this validator during the rewarded period.
+    /// A number of proposals missed by this validator during the emission period.
     pub proposals_missed: u64,
 }
 
-pub type ValidatorApplyRewardOutput = ();
+pub type ValidatorApplyEmissionOutput = ();
