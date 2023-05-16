@@ -60,9 +60,9 @@ dependencies = [
 
 [[package]]
 name = "bnum"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1476379af3b7c37c15d168c6afe72742de86f2f1cb82549bfc9ff5ffb9580d9"
+checksum = "6a66412baacf51dfc30a1e220bc7cc947001e8c47e3716468a3857f98887a7f3"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -950,6 +950,7 @@ version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "sbor",
  "scrypto-schema",
  "serde",
  "serde_json",

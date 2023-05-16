@@ -20,11 +20,41 @@ pub struct EpochManagerCreateInput {
     pub initial_configuration: EpochManagerInitialConfiguration,
 }
 
-#[derive(Debug, Eq, PartialEq, Sbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct EpochManagerInitialConfiguration {
     pub max_validators: u32,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
+    pub total_emission_xrd_per_epoch: Decimal,
+    pub min_validator_reliability: Decimal,
+    pub num_owner_stake_units_unlock_epochs: u64,
+}
+
+impl EpochManagerInitialConfiguration {
+    pub fn with_max_validators(mut self, new_value: u32) -> Self {
+        self.max_validators = new_value;
+        self
+    }
+
+    pub fn with_rounds_per_epoch(mut self, new_value: u64) -> Self {
+        self.rounds_per_epoch = new_value;
+        self
+    }
+
+    pub fn with_num_unstake_epochs(mut self, new_value: u64) -> Self {
+        self.num_unstake_epochs = new_value;
+        self
+    }
+
+    pub fn with_total_emission_xrd_per_epoch(mut self, new_value: Decimal) -> Self {
+        self.total_emission_xrd_per_epoch = new_value;
+        self
+    }
+
+    pub fn with_min_validator_reliability(mut self, new_value: Decimal) -> Self {
+        self.min_validator_reliability = new_value;
+        self
+    }
 }
 
 pub type EpochManagerCreateOutput = ();
@@ -180,7 +210,7 @@ pub const VALIDATOR_UNSTAKE_IDENT: &str = "unstake";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorUnstakeInput {
-    pub lp_tokens: Bucket,
+    pub stake_unit_bucket: Bucket,
 }
 
 pub type ValidatorUnstakeOutput = Bucket;
@@ -211,3 +241,20 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 }
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
+
+pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorApplyEmissionInput {
+    /// A bucket with the emitted XRDs for this validator.
+    /// The validator should subtract the configured fee from this amount.
+    pub xrd_bucket: Bucket,
+    /// The *concluded* epoch's number. Informational-only.
+    pub epoch: u64,
+    /// A number of proposals successfully made by this validator during the emission period.
+    pub proposals_made: u64,
+    /// A number of proposals missed by this validator during the emission period.
+    pub proposals_missed: u64,
+}
+
+pub type ValidatorApplyEmissionOutput = ();
