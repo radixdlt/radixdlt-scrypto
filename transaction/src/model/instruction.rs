@@ -1,18 +1,15 @@
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, MethodKey, ObjectKey,
-};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
 pub enum Instruction {
+    //==============
+    // Worktop
+    //==============
     /// Takes resource from worktop.
     #[sbor(discriminator(INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR))]
     TakeAllFromWorktop { resource_address: ResourceAddress },
@@ -49,6 +46,9 @@ pub enum Instruction {
         ids: BTreeSet<NonFungibleLocalId>,
     },
 
+    //==============
+    // Auth zone
+    //==============
     /// Takes the last proof from the auth zone.
     #[sbor(discriminator(INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR))]
     PopFromAuthZone,
@@ -83,6 +83,13 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAll { resource_address: ResourceAddress },
 
+    /// Drop all virtual proofs (can only be auth zone proofs).
+    #[sbor(discriminator(INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR))]
+    ClearSignatureProofs,
+
+    //==============
+    // Named bucket
+    //==============
     /// Creates a proof from a bucket.
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
     CreateProofFromBucket { bucket_id: ManifestBucket },
@@ -102,6 +109,12 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR))]
     CreateProofFromBucketOfAll { bucket_id: ManifestBucket },
 
+    #[sbor(discriminator(INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR))]
+    BurnResource { bucket_id: ManifestBucket },
+
+    //==============
+    // Named proof
+    //==============
     /// Clones a proof.
     #[sbor(discriminator(INSTRUCTION_CLONE_PROOF_DISCRIMINATOR))]
     CloneProof { proof_id: ManifestProof },
@@ -110,95 +123,9 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_DROP_PROOF_DISCRIMINATOR))]
     DropProof { proof_id: ManifestProof },
 
-    /// Drops all proofs, both named proofs and auth zone proofs.
-    #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
-    DropAllProofs,
-
-    /// Drop all virtual proofs (can only be auth zone proofs).
-    #[sbor(discriminator(INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR))]
-    ClearSignatureProofs,
-
-    /// Publish a package.
-    #[sbor(discriminator(INSTRUCTION_PUBLISH_PACKAGE_DISCRIMINATOR))]
-    PublishPackage {
-        code: ManifestBlobRef,
-        schema: PackageSchema,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_PUBLISH_PACKAGE_ADVANCED_DISCRIMINATOR))]
-    PublishPackageAdvanced {
-        code: ManifestBlobRef,
-        schema: PackageSchema,
-        royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR))]
-    BurnResource { bucket_id: ManifestBucket },
-
-    #[sbor(discriminator(INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR))]
-    RecallResource {
-        vault_id: InternalAddress,
-        amount: Decimal,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_METADATA_DISCRIMINATOR))]
-    SetMetadata {
-        entity_address: GlobalAddress,
-        key: String,
-        value: MetadataEntry,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR))]
-    RemoveMetadata {
-        entity_address: GlobalAddress,
-        key: String,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR))]
-    SetMethodAccessRule {
-        entity_address: GlobalAddress,
-        key: MethodKey,
-        rule: AccessRule,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR))]
-    SetGroupAccessRule {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        rule: AccessRule,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR))]
-    SetGroupMutability {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        mutability: AccessRule,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR))]
-    MintFungible {
-        resource_address: ResourceAddress,
-        amount: Decimal,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR))]
-    MintNonFungible {
-        resource_address: ResourceAddress,
-        args: ManifestValue,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_MINT_UUID_NON_FUNGIBLE_DISCRIMINATOR))]
-    MintUuidNonFungible {
-        resource_address: ResourceAddress,
-        args: ManifestValue,
-    },
-
+    //==============
+    // Invocation
+    //==============
     #[sbor(discriminator(INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR))]
     CallFunction {
         package_address: PackageAddress,
@@ -214,19 +141,18 @@ pub enum Instruction {
         args: ManifestValue,
     },
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
-    CallRoyaltyMethod {
-        address: GlobalAddress,
-        method_name: String,
-        args: ManifestValue,
+    #[sbor(discriminator(INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR))]
+    RecallResource {
+        vault_id: InternalAddress,
+        amount: Decimal,
     },
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
-    CallAccessRulesMethod {
-        address: GlobalAddress,
-        method_name: String,
-        args: ManifestValue,
-    },
+    //==============
+    // Complex
+    //==============
+    /// Drops all proofs, both named proofs and auth zone proofs.
+    #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
+    DropAllProofs,
 }
 
 //===============================================================
@@ -280,7 +206,7 @@ pub const INSTRUCTION_CLONE_PROOF_DISCRIMINATOR: u8 = 0x30;
 pub const INSTRUCTION_DROP_PROOF_DISCRIMINATOR: u8 = 0x31;
 
 //==============
-// Call
+// Invocation
 //==============
 pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
@@ -290,18 +216,3 @@ pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 0x42;
 // Complex
 //==============
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
-
-// TODO: remove following
-
-pub const INSTRUCTION_PUBLISH_PACKAGE_DISCRIMINATOR: u8 = 22;
-pub const INSTRUCTION_PUBLISH_PACKAGE_ADVANCED_DISCRIMINATOR: u8 = 23;
-pub const INSTRUCTION_SET_METADATA_DISCRIMINATOR: u8 = 26;
-pub const INSTRUCTION_REMOVE_METADATA_DISCRIMINATOR: u8 = 27;
-pub const INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR: u8 = 32;
-pub const INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR: u8 = 33;
-pub const INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR: u8 = 34;
-pub const INSTRUCTION_MINT_UUID_NON_FUNGIBLE_DISCRIMINATOR: u8 = 35;
-pub const INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR: u8 = 38;
-pub const INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR: u8 = 39;
-pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 40;
-pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 41;
