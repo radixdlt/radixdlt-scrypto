@@ -5,9 +5,8 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -572,22 +571,16 @@ pub fn generate_instruction(
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::SetMethodAccessRule { address, args } => Instruction::CallMethod {
+        ast::Instruction::SetAuthorityAccessRule { address, args } => Instruction::CallMethod {
             module_id: ObjectModuleId::AccessRules,
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT.to_string(),
+            method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::SetGroupAccessRule { address, args } => Instruction::CallMethod {
+        ast::Instruction::SetAuthorityMutability { address, args } => Instruction::CallMethod {
             module_id: ObjectModuleId::AccessRules,
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetGroupMutability { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::AccessRules,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT.to_string(),
+            method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         /* call main method aliases */
@@ -1154,7 +1147,7 @@ mod tests {
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AccessRulesConfig, NonFungibleDataSchema,
+        AccessRule, AuthorityRules, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
@@ -1386,7 +1379,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")), Map<Tuple, Enum>(), Map<String, Enum>(), Enum("AccessRuleEntry::AccessRule", Enum("AccessRule::DenyAll")));"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<Enum, Tuple>();"#,
             Instruction::CallFunction {
                 package_address: PACKAGE_PACKAGE,
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1405,7 +1398,7 @@ mod tests {
                     },
                     BTreeMap::<String, RoyaltyConfig>::new(),
                     BTreeMap::<String, String>::new(),
-                    AccessRulesConfig::new()
+                    AuthorityRules::new()
                 ),
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",

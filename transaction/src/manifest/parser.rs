@@ -244,15 +244,11 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
+            TokenKind::SetAuthorityAccessRule => Instruction::SetAuthorityAccessRule {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+            TokenKind::SetAuthorityMutability => Instruction::SetAuthorityMutability {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

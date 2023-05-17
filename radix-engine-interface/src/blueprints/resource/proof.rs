@@ -4,7 +4,6 @@ use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
 use crate::*;
 use radix_engine_common::data::scrypto::*;
-use radix_engine_common::native_addresses::RESOURCE_PACKAGE;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -111,40 +110,18 @@ impl Describe<ScryptoCustomTypeKind> for Proof {
 
 impl Describe<ScryptoCustomTypeKind> for FungibleProof {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1("FungibleProof".as_bytes()).as_bytes());
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_PROOF_ID);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
-        TypeData {
-            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
-            metadata: TypeMetadata::no_child_names("FungibleProof"),
-            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(
-                    RESOURCE_PACKAGE,
-                    FUNGIBLE_PROOF_BLUEPRINT.to_string(),
-                ),
-            )),
-        }
+        well_known_scrypto_custom_types::own_fungible_proof_type_data()
     }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
 impl Describe<ScryptoCustomTypeKind> for NonFungibleProof {
     const TYPE_ID: GlobalTypeId =
-        GlobalTypeId::Novel(const_sha1::sha1("NonFungibleProof".as_bytes()).as_bytes());
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_PROOF_ID);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
-        TypeData {
-            kind: TypeKind::Custom(ScryptoCustomTypeKind::Own),
-            metadata: TypeMetadata::no_child_names("NonFungibleProof"),
-            validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Own(
-                OwnValidation::IsTypedObject(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_PROOF_BLUEPRINT.to_string(),
-                ),
-            )),
-        }
+        well_known_scrypto_custom_types::own_non_fungible_proof_type_data()
     }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }

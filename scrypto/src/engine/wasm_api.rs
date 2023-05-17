@@ -125,6 +125,15 @@ extern "C" {
     // Locks a field
     pub fn actor_lock_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
+    pub fn actor_call_module_method(
+        _object_handle: u32,
+        _module_id: u32,
+        _ident_ptr: *const u8,
+        _ident_len: usize,
+        _args_ptr: *const u8,
+        _args_len: usize,
+    ) -> Buffer;
+
     //===============
     // Field Lock API
     //===============
@@ -327,6 +336,18 @@ pub unsafe fn get_node_id() -> Buffer {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_blueprint() -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn actor_call_module_method(
+    _object_handle: u32,
+    _module_id: u32,
+    _ident_ptr: *const u8,
+    _ident_len: usize,
+    _args_ptr: *const u8,
+    _args_len: usize,
+) -> Buffer {
     unreachable!()
 }
 

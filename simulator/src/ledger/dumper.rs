@@ -131,7 +131,9 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-    if resource_address.as_node_id().entity_type() == Some(EntityType::GlobalNonFungibleResourceManager) {
+    if resource_address.as_node_id().entity_type()
+        == Some(EntityType::GlobalNonFungibleResourceManager)
+    {
         let id_type = substate_db
             .get_mapped::<SpreadPrefixKeyMapper, NonFungibleIdType>(
                 resource_address.as_node_id(),

@@ -1,9 +1,12 @@
 use crate::time::constants::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::*;
 
 /// Represents a Unix timestamp, capturing the seconds since the unix epoch.
 ///
 /// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
 #[sbor(transparent)]
 pub struct Instant {

@@ -4,14 +4,10 @@ use crate::modules::{
 };
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    require, AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, NonFungibleGlobalId,
+    require, AuthorityRules, MethodAuthorities, NonFungibleGlobalId,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_type_data, OWN_ID,
@@ -59,76 +55,37 @@ pub trait LocalComponent: Sized {
     ) -> ComponentAddress;
 
     fn globalize(self) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-        );
-        let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
-
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_at_address(self, preallocated_address: ComponentAddress) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-        );
-        let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
-
         self.globalize_at_address_with_modules(
             preallocated_address,
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
     fn globalize_with_metadata(self, metadata: Metadata) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-        );
-        let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
-
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(MethodAuthorities::new(), AuthorityRules::new()),
             metadata,
             Royalty::new(RoyaltyConfig::default()),
         )
     }
 
-    fn globalize_with_royalty_config(self, royalty_config: RoyaltyConfig) -> ComponentAddress {
-        let mut access_rules_config = AccessRulesConfig::new();
-        access_rules_config.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-        );
-        let access_rules_config =
-            access_rules_config.default(AccessRule::AllowAll, AccessRule::DenyAll);
-
-        self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
-            Metadata::new(),
-            Royalty::new(royalty_config),
-        )
-    }
-
     fn globalize_with_access_rules(
         self,
-        access_rules_config: AccessRulesConfig,
+        method_authorities: MethodAuthorities,
+        authority_rules: AuthorityRules,
     ) -> ComponentAddress {
         self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
+            AccessRules::new(method_authorities, authority_rules),
             Metadata::new(),
             Royalty::new(RoyaltyConfig::default()),
         )
@@ -139,40 +96,15 @@ pub trait LocalComponent: Sized {
         owner_badge: NonFungibleGlobalId,
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
-        let mut access_rules_config =
-            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_GET_IDENT),
-            AccessRule::AllowAll,
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Royalty,
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
-            ),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules_config.set_method_access_rule_and_mutability(
-            MethodKey::new(
-                ObjectModuleId::Royalty,
-                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
-            ),
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_rule(
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
 
-        self.globalize_with_modules(
-            AccessRules::new(access_rules_config),
-            Metadata::new(),
-            Royalty::new(royalty_config),
-        )
+        let access_rules = AccessRules::new(MethodAuthorities::new(), authority_rules);
+
+        self.globalize_with_modules(access_rules, Metadata::new(), Royalty::new(royalty_config))
     }
 }
 

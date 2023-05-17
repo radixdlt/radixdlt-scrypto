@@ -6,6 +6,8 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use sbor::rust::prelude::*;
 use utils::{copy_u8_array, ContextualDisplay};
 
@@ -52,6 +54,28 @@ impl ResourceAddress {
 
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+// Implementing arbitrary by hand to make sure that resource entity type marker is present.
+// Otherwise 'InvalidCustomValue' error is returned
+impl<'a> Arbitrary<'a> for ResourceAddress {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        use core::cmp::min;
+        let resource_entities: [u8; 2] = [
+            EntityType::GlobalFungibleResource as u8,
+            EntityType::GlobalNonFungibleResource as u8,
+        ];
+
+        let mut node_id = [0u8; NodeId::LENGTH];
+        node_id[0] = *u.choose(&resource_entities[..]).unwrap();
+        // fill NodeId with available random bytes (fill the rest with zeros if data exhausted)
+        let len = min(NodeId::LENGTH - 1, u.len());
+        let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
+        let b = u.bytes(len).unwrap();
+        right.copy_from_slice(&b);
+        Ok(Self::new_or_panic(node_id))
     }
 }
 

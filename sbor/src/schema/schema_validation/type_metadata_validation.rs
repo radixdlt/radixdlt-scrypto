@@ -47,7 +47,7 @@ pub fn validate_childless_metadata(
     type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {
     if let Some(type_name) = &type_metadata.type_name {
-        validate_type_name(type_name.as_ref())?;
+        validate_schema_type_name(type_name.as_ref())?;
     }
 
     if !matches!(type_metadata.child_names, None) {
@@ -61,7 +61,7 @@ pub fn validate_tuple_metadata(
     field_count: usize,
 ) -> Result<(), SchemaValidationError> {
     if let Some(type_name) = &type_metadata.type_name {
-        validate_type_name(type_name.as_ref())?;
+        validate_schema_type_name(type_name.as_ref())?;
     }
     validate_field_names(&type_metadata.child_names, field_count)?;
     Ok(())
@@ -81,7 +81,7 @@ pub fn validate_field_names(
             }
             let mut unique_field_names = index_set::new();
             for field_name in field_names.iter() {
-                validate_field_name(field_name)?;
+                validate_schema_field_name(field_name)?;
                 let is_not_duplicate = unique_field_names.insert(field_name.as_ref());
                 if !is_not_duplicate {
                     return Err(SchemaValidationError::TypeMetadataContainedDuplicateFieldNames);
@@ -104,7 +104,7 @@ pub fn validate_enum_metadata(
         child_names,
     } = type_metadata;
     if let Some(type_name) = type_name {
-        validate_type_name(type_name.as_ref())?;
+        validate_schema_type_name(type_name.as_ref())?;
     } else {
         return Err(SchemaValidationError::TypeMetadataEnumNameIsRequired);
     }
@@ -124,7 +124,7 @@ pub fn validate_enum_metadata(
                 };
 
                 if let Some(variant_name) = &variant_metadata.type_name {
-                    validate_enum_variant_name(variant_name.as_ref())?;
+                    validate_schema_enum_variant_name(variant_name.as_ref())?;
                     let is_not_duplicate = unique_variant_names.insert(variant_name.as_ref());
                     if !is_not_duplicate {
                         return Err(
@@ -142,19 +142,19 @@ pub fn validate_enum_metadata(
     }
 }
 
-fn validate_type_name(name: &str) -> Result<(), SchemaValidationError> {
-    validate_ident("type name", name)
+pub fn validate_schema_type_name(name: &str) -> Result<(), SchemaValidationError> {
+    validate_schema_ident("type name", name)
 }
 
-fn validate_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
-    validate_ident("enum variant name", name)
+pub fn validate_schema_enum_variant_name(name: &str) -> Result<(), SchemaValidationError> {
+    validate_schema_ident("enum variant name", name)
 }
 
-fn validate_field_name(name: &str) -> Result<(), SchemaValidationError> {
-    validate_ident("field name", name)
+pub fn validate_schema_field_name(name: &str) -> Result<(), SchemaValidationError> {
+    validate_schema_ident("field name", name)
 }
 
-fn validate_ident(ident_name: &str, name: &str) -> Result<(), SchemaValidationError> {
+fn validate_schema_ident(ident_name: &str, name: &str) -> Result<(), SchemaValidationError> {
     if name.len() == 0 {
         return Err(SchemaValidationError::InvalidIdentName {
             message: format!("Ident {} cannot be empty", ident_name),

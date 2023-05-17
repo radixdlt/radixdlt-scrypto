@@ -1,5 +1,7 @@
 //! Definitions of safe integers and uints.
 
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use bnum::{BInt, BUint};
 use num_bigint::BigInt;
 use num_integer::Roots;
@@ -42,6 +44,7 @@ macro_rules! types {
                 ///
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
+                #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
                 #[derive(Clone , Copy , Eq , Hash)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);
