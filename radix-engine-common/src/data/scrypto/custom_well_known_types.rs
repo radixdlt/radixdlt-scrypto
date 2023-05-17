@@ -1,11 +1,11 @@
 use super::*;
+use crate::native_addresses::RESOURCE_PACKAGE;
+use sbor::rust::prelude::*;
 use sbor::*;
-
 use well_known_scrypto_custom_types::*;
 
 pub mod well_known_scrypto_custom_types {
     use super::*;
-    use crate::native_addresses::RESOURCE_PACKAGE;
 
     pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
     pub fn reference_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
