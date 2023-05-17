@@ -8,7 +8,6 @@ use radix_engine_interface::blueprints::resource::*;
 pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
-    const OWNER_AUTHORITY: &'static str;
 
     fn method_authorities() -> MethodAuthorities;
 
@@ -65,7 +64,7 @@ pub trait SecurifiedAccessRules {
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                securify,
+                AuthorityKey::module(securify),
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
                 api,
@@ -74,7 +73,7 @@ pub trait SecurifiedAccessRules {
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
 
         access_rules.set_authority_rule_and_mutability(
-            Self::OWNER_AUTHORITY,
+            AuthorityKey::Owner,
             rule!(require(global_id.clone())),
             rule!(require(global_id.clone())),
             api,
@@ -98,7 +97,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                securify,
+                AuthorityKey::module(securify),
                 access_rule.clone(),
                 this_package_rule.clone(),
                 api,
@@ -106,7 +105,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         }
 
         access_rules.set_authority_rule_and_mutability(
-            Self::OWNER_AUTHORITY,
+            AuthorityKey::Owner,
             access_rule.clone(),
             this_package_rule.clone(),
             api,

@@ -572,7 +572,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::SetAuthorityAccessRule {
                     entity_address,
                     object_key,
-                    authority: group,
+                    authority_key,
                     rule,
                 } => {
                     let receiver = entity_address.into();
@@ -583,7 +583,7 @@ impl TransactionProcessorBlueprint {
                         ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                             object_key,
-                            authority_key: AuthorityKey::module(group.as_str()),
+                            authority_key,
                             rule: rule.into(),
                         })
                         .unwrap(),
@@ -601,7 +601,7 @@ impl TransactionProcessorBlueprint {
                 Instruction::SetAuthorityMutability {
                     entity_address,
                     object_key,
-                    authority: group,
+                    authority_key,
                     mutability,
                 } => {
                     let receiver = entity_address.into();
@@ -612,7 +612,7 @@ impl TransactionProcessorBlueprint {
                         ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                         scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                             object_key,
-                            authority_key: AuthorityKey::module(group.as_str()),
+                            authority_key,
                             mutability,
                         })
                         .unwrap(),

@@ -1,6 +1,6 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, ObjectKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, ObjectKey};
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::PackageSchema;
@@ -208,14 +208,14 @@ pub enum Instruction {
     SetAuthorityAccessRule {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        authority: String,
+        authority_key: AuthorityKey,
         rule: AccessRule,
     },
     #[sbor(discriminator(INSTRUCTION_SET_AUTHORITY_MUTABILITY_DISCRIMINATOR))]
     SetAuthorityMutability {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        authority: String,
+        authority_key: AuthorityKey,
         mutability: AccessRule,
     },
 }

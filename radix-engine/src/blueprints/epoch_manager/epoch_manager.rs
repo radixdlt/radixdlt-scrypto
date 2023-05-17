@@ -269,7 +269,7 @@ impl EpochManagerBlueprint {
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_authority_rule_and_mutability(
-            "start",
+            AuthorityKey::module("start"),
             AccessRule::DenyAll,
             AccessRule::DenyAll,
             api,

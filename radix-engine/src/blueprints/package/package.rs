@@ -109,7 +109,6 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
-    const OWNER_AUTHORITY: &'static str = "owner";
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
@@ -122,8 +121,8 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
-        authority_rules.set_main_rule("package_royalty", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_main_rule(METADATA_AUTHORITY, rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_main_rule("package_royalty", rule!(require_owner()), rule!(deny_all));
         authority_rules
     }
 }

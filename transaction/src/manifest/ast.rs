@@ -174,14 +174,14 @@ pub enum Instruction {
     SetGroupAccessRule {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         rule: Value,
     },
 
     SetGroupMutability {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         mutability: Value,
     },
 

@@ -145,6 +145,10 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ))
 }
 
+pub fn require_owner() -> AccessRuleNode {
+    AccessRuleNode::Authority("owner".to_string())
+}
+
 pub fn require<T>(required: T) -> AccessRuleNode
 where
     T: Into<AccessRuleNode>,

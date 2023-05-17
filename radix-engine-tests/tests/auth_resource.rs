@@ -58,7 +58,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .set_authority_access_rule(
                 token_address.into(),
                 object_key,
-                authority.to_string(),
+                AuthorityKey::module(authority),
                 rule!(require(updated_auth)),
             )
             .build();

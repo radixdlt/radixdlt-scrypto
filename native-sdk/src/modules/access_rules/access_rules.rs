@@ -91,7 +91,7 @@ pub trait AccessRulesObject {
         R: Into<AccessRule>,
     >(
         &self,
-        name: &str,
+        authority_key: AuthorityKey,
         rule: R,
         mutability: AccessRule,
         api: &mut Y,
@@ -104,7 +104,7 @@ pub trait AccessRulesObject {
             ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::module(name),
+                authority_key,
                 rule: rule.into(),
                 mutability,
             })

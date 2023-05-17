@@ -51,7 +51,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             .set_authority_mutability(
                 token_address.into(),
                 object_key,
-                authority.to_string(),
+                AuthorityKey::module(authority),
                 DenyAll,
             )
             .build();
@@ -69,7 +69,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .lock_fee(test_runner.faucet_component(), 100u32.into())
         .create_proof_from_account(account, admin_auth);
 
-    let (object_key, group) = match action {
+    let (object_key, authority) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
         ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
         ResourceAuth::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
@@ -91,14 +91,14 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         builder.set_authority_mutability(
             token_address.into(),
             object_key,
-            group.to_string(),
+            AuthorityKey::module(authority),
             DenyAll,
         )
     } else {
         builder.set_authority_access_rule(
             token_address.into(),
             object_key,
-            group.to_string(),
+            AuthorityKey::module(authority),
             rule!(require(updated_auth)),
         )
     };

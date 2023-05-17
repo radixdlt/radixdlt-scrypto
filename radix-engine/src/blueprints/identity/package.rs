@@ -185,7 +185,6 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const OWNER_AUTHORITY: &'static str = "owner";
     const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
 
     fn method_authorities() -> MethodAuthorities {
@@ -196,8 +195,8 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
-        authority_rules.set_main_rule(ROYALTY_AUTHORITY, rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_main_rule(METADATA_AUTHORITY, rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_main_rule(ROYALTY_AUTHORITY, rule!(require_owner()), rule!(deny_all));
         authority_rules
     }
 }

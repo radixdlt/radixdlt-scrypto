@@ -229,13 +229,13 @@ impl Parser {
             TokenKind::SetAuthorityAccessRule => Instruction::SetGroupAccessRule {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
             TokenKind::SetAuthorityMutability => Instruction::SetGroupMutability {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 mutability: self.parse_value()?,
             },
             TokenKind::MintFungible => Instruction::MintFungible {

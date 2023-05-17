@@ -529,23 +529,23 @@ pub fn generate_instruction(
         ast::Instruction::SetGroupAccessRule {
             entity_address,
             object_key,
-            group,
+            authority_key,
             rule,
         } => Instruction::SetAuthorityAccessRule {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority: generate_string(group)?,
+            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetGroupMutability {
             entity_address,
             object_key,
-            group,
+            authority_key,
             mutability,
         } => Instruction::SetAuthorityMutability {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority: generate_string(group)?,
+            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
             mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintFungible {

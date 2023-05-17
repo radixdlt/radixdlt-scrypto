@@ -116,6 +116,14 @@ pub enum AuthorityKey {
 
 
 impl AuthorityKey {
+    pub fn from_access_rule(key: &str) -> Self {
+        match key {
+            "owner" => AuthorityKey::Owner,
+            _ => AuthorityKey::Module(key.to_string()),
+        }
+    }
+
+
     pub fn module(key: &str) -> Self {
         AuthorityKey::Module(key.to_string())
     }
@@ -152,10 +160,17 @@ impl AuthorityRules {
         self.rules.insert(AuthorityKey::module(name.as_str()), (rule, mutability));
     }
 
+    pub fn set_owner_rule(
+        &mut self,
+        rule: AccessRule,
+        mutability: AccessRule,
+    ) {
+        self.rules.insert(AuthorityKey::Owner, (rule, mutability));
+    }
+
     pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_rule(
-            "owner",
+        authority_rules.set_owner_rule(
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
