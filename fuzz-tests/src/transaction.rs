@@ -95,15 +95,9 @@ impl Fuzzer {
     fn smart_mutate_manifest(&mut self, manifest: &mut TransactionManifest) {
         for i in &mut manifest.instructions {
             match i {
-                Instruction::CallMethod {
-                    component_address, ..
-                }
-                | Instruction::SetComponentRoyaltyConfig {
-                    component_address, ..
-                }
-                | Instruction::ClaimComponentRoyalty { component_address } => {
-                    if let Some(address) = self.get_account(component_address.as_ref()) {
-                        *component_address = address;
+                Instruction::CallMethod { address, .. } => {
+                    if let Some(account) = self.get_account(address.as_ref()) {
+                        *address = account.into();
                     }
                 }
                 Instruction::TakeAllFromWorktop { resource_address }
@@ -127,15 +121,6 @@ impl Fuzzer {
                     resource_address, ..
                 }
                 | Instruction::CreateProofFromAuthZoneOfAll {
-                    resource_address, ..
-                }
-                | Instruction::MintFungible {
-                    resource_address, ..
-                }
-                | Instruction::MintNonFungible {
-                    resource_address, ..
-                }
-                | Instruction::MintUuidNonFungible {
                     resource_address, ..
                 } => {
                     if let Some(address) = self.get_resource(resource_address.as_ref()) {
