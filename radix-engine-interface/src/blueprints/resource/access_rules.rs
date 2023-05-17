@@ -56,13 +56,6 @@ impl MethodKey {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
-pub struct MethodEntry {
-    pub authority: String,
-}
-
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
         AccessRule::Protected(AccessRuleNode::Authority(AuthorityRule::Custom(name)))
