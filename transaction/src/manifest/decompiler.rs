@@ -11,7 +11,6 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -513,62 +512,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
-            module_id,
             address,
             method_name,
             args,
         } => {
-            match (module_id, address, method_name.as_str()) {
-                /* metadata */
-                (ObjectModuleId::Metadata, address, METADATA_SET_IDENT) => {
-                    f.write_str(&format!(
-                        "SET_METADATA\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-                (ObjectModuleId::Metadata, address, METADATA_REMOVE_IDENT) => {
-                    f.write_str(&format!(
-                        "REMOVE_METADATA\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-
-                /* component royalty */
-                (ObjectModuleId::Royalty, address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
-                    f.write_str(&format!(
-                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-                (ObjectModuleId::Royalty, address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
-                    f.write_str(&format!(
-                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-
-                /* access rules */
-                (ObjectModuleId::AccessRules, address, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT) => {
-                    f.write_str(&format!(
-                        "SET_AUTHORITY_ACCESS_RULE\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-                (
-                    ObjectModuleId::AccessRules,
-                    address,
-                    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-                ) => {
-                    f.write_str(&format!(
-                        "SET_AUTHORITY_MUTABILITY\n    Address(\"{}\")",
-                        address.display(context.bech32_encoder),
-                    ))?;
-                }
-
+            match (address, method_name.as_str()) {
                 // Nb - For Main method call, we also check the address type to avoid name clashing.
 
-                /* package */
-                (ObjectModuleId::Main, address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                /* Package */
+                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     f.write_str(&format!(
@@ -576,7 +528,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         address.display(context.bech32_encoder),
                     ))?;
                 }
-                (ObjectModuleId::Main, address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
                     if address.as_node_id().is_global_package() =>
                 {
                     f.write_str(&format!(
@@ -585,8 +537,8 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
 
-                /* resource manager */
-                (ObjectModuleId::Main, address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                /* Resource manager */
+                (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
                     if address.as_node_id().is_global_fungible_resource_manager() =>
                 {
                     f.write_str(&format!(
@@ -594,7 +546,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         address.display(context.bech32_encoder),
                     ))?;
                 }
-                (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
                     if address
                         .as_node_id()
                         .is_global_non_fungible_resource_manager() =>
@@ -604,7 +556,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         address.display(context.bech32_encoder),
                     ))?;
                 }
-                (ObjectModuleId::Main, address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
                     if address
                         .as_node_id()
                         .is_global_non_fungible_resource_manager() =>
@@ -615,24 +567,117 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ))?;
                 }
 
-                /* validator */
-                (ObjectModuleId::Main, address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
+                /* Validator */
+                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
                     if address.as_node_id().is_global_epoch_manager() =>
                 {
                     write!(f, "CREATE_VALIDATOR")?;
                 }
 
                 /* Default */
-                (module_id, _, _) => {
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
+        Instruction::CallRoyaltyMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            match (address, method_name.as_str()) {
+                /* Component royalty */
+                (address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                    f.write_str(&format!(
+                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
+        Instruction::CallMetadataMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            match (address, method_name.as_str()) {
+                /* Metadata */
+                (address, METADATA_SET_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, METADATA_REMOVE_IDENT) => {
+                    f.write_str(&format!(
+                        "REMOVE_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_METADATA_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
+        }
+        Instruction::CallAccessRulesMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            match (address, method_name.as_str()) {
+                /* Access rules */
+                (address, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_AUTHORITY_ACCESS_RULE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_AUTHORITY_MUTABILITY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
                     // TODO: add compiler support
                     f.write_str(&format!(
-                        "{}\n    Address(\"{}\")\n    \"{}\"",
-                        match module_id {
-                            ObjectModuleId::Main => "CALL_METHOD",
-                            ObjectModuleId::Metadata => "CALL_METADATA_METHOD",
-                            ObjectModuleId::Royalty => "CALL_ROYALTY_METHOD",
-                            ObjectModuleId::AccessRules => "CALL_ACCESS_RULES_METHOD",
-                        },
+                        "CALL_ACCESS_RULES_METHOD\n    Address(\"{}\")\n    \"{}\"",
                         address.display(context.bech32_encoder),
                         method_name
                     ))?;

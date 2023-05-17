@@ -182,6 +182,21 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+            TokenKind::CallRoyaltyMethod => Instruction::CallRoyaltyMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::CallMetadataMethod => Instruction::CallMetadataMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::CallAccessRulesMethod => Instruction::CallAccessRulesMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
             TokenKind::RecallResource => Instruction::RecallResource {
                 vault_id: self.parse_value()?,
                 amount: self.parse_value()?,

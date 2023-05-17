@@ -7,7 +7,6 @@ use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -476,7 +475,6 @@ impl ManifestBuilder {
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
@@ -486,7 +484,6 @@ impl ManifestBuilder {
 
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: validator_address.into(),
             method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: manifest_args!(),
@@ -496,7 +493,6 @@ impl ManifestBuilder {
 
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
@@ -510,7 +506,6 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: validator_address.into(),
             method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -524,7 +519,6 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: validator_address.into(),
             method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -538,7 +532,6 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: validator_address.into(),
             method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: manifest_args!(bucket),
@@ -571,7 +564,6 @@ impl ManifestBuilder {
         args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: address.into(),
             method_name: method_name.to_owned(),
             args: args,
@@ -585,7 +577,6 @@ impl ManifestBuilder {
         royalty_config: BTreeMap<String, RoyaltyConfig>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: package_address.into(),
             method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
@@ -595,7 +586,6 @@ impl ManifestBuilder {
 
     pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: package_address.into(),
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&PackageClaimRoyaltyInput {}),
@@ -608,8 +598,7 @@ impl ManifestBuilder {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Royalty,
+        self.add_instruction(Instruction::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
@@ -618,8 +607,7 @@ impl ManifestBuilder {
     }
 
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Royalty,
+        self.add_instruction(Instruction::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
@@ -634,8 +622,7 @@ impl ManifestBuilder {
         authority_key: AuthorityKey,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::AccessRules,
+        self.add_instruction(Instruction::CallAccessRulesMethod {
             address,
             method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesSetAuthorityRuleInput {
@@ -654,8 +641,7 @@ impl ManifestBuilder {
         authority_key: AuthorityKey,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::AccessRules,
+        self.add_instruction(Instruction::CallAccessRulesMethod {
             address,
             method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
             args: to_manifest_value(&AccessRulesSetAuthorityMutabilityInput {
@@ -673,8 +659,7 @@ impl ManifestBuilder {
         key: String,
         value: MetadataValue,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Metadata,
+        self.add_instruction(Instruction::CallMetadataMethod {
             address,
             method_name: METADATA_SET_IDENT.to_string(),
             args: to_manifest_value(&MetadataSetInput { key, value }),
@@ -865,7 +850,6 @@ impl ManifestBuilder {
         amount: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: resource_address.into(),
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: to_manifest_value(&FungibleResourceManagerMintInput { amount }),
@@ -888,7 +872,6 @@ impl ManifestBuilder {
             .collect();
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput { entries }),
@@ -911,7 +894,6 @@ impl ManifestBuilder {
             .collect();
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: resource_address.into(),
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput { entries }),
@@ -963,7 +945,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args,
@@ -985,7 +966,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
@@ -998,7 +978,6 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountLockFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
@@ -1010,7 +989,6 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
@@ -1031,7 +1009,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
             args,
@@ -1052,7 +1029,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
@@ -1069,7 +1045,6 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountCreateProofInput { resource_address });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             args,
@@ -1090,7 +1065,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
@@ -1111,7 +1085,6 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             args,

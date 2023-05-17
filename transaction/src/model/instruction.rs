@@ -1,5 +1,4 @@
 use radix_engine_common::data::scrypto::model::*;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
@@ -136,7 +135,27 @@ pub enum Instruction {
 
     #[sbor(discriminator(INSTRUCTION_CALL_METHOD_DISCRIMINATOR))]
     CallMethod {
-        module_id: ObjectModuleId,
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR))]
+    CallRoyaltyMethod {
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR))]
+    CallMetadataMethod {
+        address: GlobalAddress,
+        method_name: String,
+        args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
+    CallAccessRulesMethod {
         address: GlobalAddress,
         method_name: String,
         args: ManifestValue,
@@ -213,7 +232,10 @@ pub const INSTRUCTION_DROP_PROOF_DISCRIMINATOR: u8 = 0x31;
 //==============
 pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
-pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 0x42;
+pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
+pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
+pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
+pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 0x45;
 
 //==============
 // Complex

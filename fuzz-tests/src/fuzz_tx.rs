@@ -9,7 +9,6 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -273,8 +272,7 @@ impl TxFuzzer {
                     None
                 }
                 // ClaimComponentRoyalty
-                5 => Some(Instruction::CallMethod {
-                    module_id: ObjectModuleId::Royalty,
+                5 => Some(Instruction::CallRoyaltyMethod { 
                     address: component_address.into(),
                     method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
                     args: manifest_args!()
@@ -285,8 +283,7 @@ impl TxFuzzer {
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: package_address.into(),
                         method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
                         args: manifest_args!()
@@ -493,8 +490,7 @@ impl TxFuzzer {
                 27 => {
                     let input = EpochManagerCreateValidatorInput { key: public_key };
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: component_address.into(),
                         method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -512,8 +508,7 @@ impl TxFuzzer {
                 30 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: resource_address.into(),
                         method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                         args: manifest_args!(amount)
@@ -525,8 +520,7 @@ impl TxFuzzer {
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: resource_address.into(),
                         method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -539,8 +533,7 @@ impl TxFuzzer {
                     )
                     .unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: resource_address.into(),
                         method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                         args: to_manifest_value(&input),
@@ -589,8 +582,7 @@ impl TxFuzzer {
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Metadata,
+                    Some(Instruction::CallMetadataMethod { 
                         address: entity_address.into(),
                         method_name: METADATA_REMOVE_IDENT.to_string(),
                         args: manifest_args!(key)
@@ -606,8 +598,7 @@ impl TxFuzzer {
                 40 => {
                     let royalty_config = RoyaltyConfig::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Royalty,
+                    Some(Instruction::CallRoyaltyMethod { 
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
                         args: manifest_args!(royalty_config)
@@ -626,8 +617,7 @@ impl TxFuzzer {
                     let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::AccessRules,
+                    Some(Instruction::CallAccessRulesMethod { 
                         address: entity_address.into(),
                         method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
                         args: manifest_args!(object_key, authority_key, rule)
@@ -646,8 +636,7 @@ impl TxFuzzer {
                     let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::AccessRules,
+                    Some(Instruction::CallAccessRulesMethod { 
                         address: entity_address.into(),
                         method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
                         args: manifest_args!(object_key, authority_key, mutability)
@@ -661,8 +650,7 @@ impl TxFuzzer {
                     let key = String::arbitrary(&mut unstructured).unwrap();
                     let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Metadata,
+                    Some(Instruction::CallMetadataMethod { 
                         address: entity_address.into(),
                         method_name: METADATA_SET_IDENT.to_string(),
                         args: manifest_args!(key, value)
@@ -675,8 +663,7 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let royalty_config = BTreeMap::<String, RoyaltyConfig>::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::CallMethod {
-                        module_id: ObjectModuleId::Main,
+                    Some(Instruction::CallMethod { 
                         address: package_address.into(),
                         method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
                         args: manifest_args!(royalty_config),

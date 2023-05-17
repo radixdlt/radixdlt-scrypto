@@ -12,7 +12,6 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -457,7 +456,57 @@ pub fn generate_instruction(
                 address,
                 method_name,
                 args,
-                module_id: ObjectModuleId::Main,
+            }
+        }
+        ast::Instruction::CallRoyaltyMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::CallRoyaltyMethod {
+                address,
+                method_name,
+                args,
+            }
+        }
+        ast::Instruction::CallMetadataMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::CallMetadataMethod {
+                address,
+                method_name,
+                args,
+            }
+        }
+        ast::Instruction::CallAccessRulesMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::CallAccessRulesMethod {
+                address,
+                method_name,
+                args,
             }
         }
         ast::Instruction::RecallResource { vault_id, amount } => Instruction::RecallResource {
@@ -547,75 +596,71 @@ pub fn generate_instruction(
         },
 
         /* call non-main method aliases */
-        ast::Instruction::SetMetadata { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Metadata,
+        ast::Instruction::SetMetadata { address, args } => Instruction::CallMetadataMethod {
             address: generate_global_address(address, bech32_decoder)?,
             method_name: METADATA_SET_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::RemoveMetadata { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Metadata,
+        ast::Instruction::RemoveMetadata { address, args } => Instruction::CallMetadataMethod {
             address: generate_global_address(address, bech32_decoder)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::SetComponentRoyaltyConfig { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Royalty,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::ClaimComponentRoyalty { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Royalty,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetAuthorityAccessRule { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::AccessRules,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetAuthorityMutability { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::AccessRules,
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
-        },
+        ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
+            Instruction::CallRoyaltyMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::ClaimComponentRoyalty { address, args } => {
+            Instruction::CallRoyaltyMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetAuthorityAccessRule { address, args } => {
+            Instruction::CallAccessRulesMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetAuthorityMutability { address, args } => {
+            Instruction::CallAccessRulesMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintNonFungible { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintUuidNonFungible { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetPackageRoyaltyConfig { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { address, args } => Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: generate_global_address(address, bech32_decoder)?,
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
@@ -1357,7 +1402,6 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")  "refill";"#,
             Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: component.into(),
                 method_name: "refill".to_string(),
                 args: manifest_args!()
@@ -1366,7 +1410,6 @@ mod tests {
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez") Decimal("100");"#,
             Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: resource_address.into(),
                 method_name: "mint".to_string(),
                 args: manifest_args!(dec!("100"))
@@ -1574,7 +1617,6 @@ mod tests {
                 Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
             Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
@@ -1608,7 +1650,6 @@ mod tests {
                 );
             "#,
             Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
@@ -1628,7 +1669,6 @@ mod tests {
             CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: EPOCH_MANAGER.into(),
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&EpochManagerCreateValidatorInput {

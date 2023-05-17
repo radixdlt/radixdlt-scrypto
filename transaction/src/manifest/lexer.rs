@@ -103,6 +103,9 @@ pub enum TokenKind {
     DropProof,
     CallFunction,
     CallMethod,
+    CallRoyaltyMethod,
+    CallMetadataMethod,
+    CallAccessRulesMethod,
     RecallResource,
     DropAllProofs,
 
@@ -459,6 +462,9 @@ impl Lexer {
 
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
+            "CALL_ROYALTY_METHOD" => Ok(TokenKind::CallRoyaltyMethod),
+            "CALL_METADATA_METHOD" => Ok(TokenKind::CallMetadataMethod),
+            "CALL_ACCESS_RULES_METHOD" => Ok(TokenKind::CallAccessRulesMethod),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
 
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),

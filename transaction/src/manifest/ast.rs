@@ -118,6 +118,24 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
+    CallRoyaltyMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallMetadataMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallAccessRulesMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
+    },
+
     RecallResource {
         vault_id: Value,
         amount: Value,

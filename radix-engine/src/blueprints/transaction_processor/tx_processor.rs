@@ -41,6 +41,31 @@ pub enum TransactionProcessorError {
 
 pub struct TransactionProcessorBlueprint;
 
+macro_rules! handle_call_module_method {
+    ($module_id:expr, $address:expr, $method_name:expr, $args:expr, $worktop:expr, $processor:expr, $api:expr) => {{
+        let mut processor_with_api = TransactionProcessorWithApi {
+            worktop: $worktop,
+            processor: $processor,
+            api: $api,
+        };
+        let scrypto_value = transform($args, &mut processor_with_api)?;
+        $processor = processor_with_api.processor;
+
+        let rtn = $api.call_method_advanced(
+            $address.as_node_id(),
+            false,
+            $module_id,
+            &$method_name,
+            scrypto_encode(&scrypto_value).unwrap(),
+        )?;
+        let result = IndexedScryptoValue::from_vec(rtn).unwrap();
+        TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+            &result, &$worktop, $api,
+        )?;
+        InstructionOutput::CallReturn(result.into())
+    }};
+}
+
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y>(
         input: &IndexedScryptoValue,
@@ -259,32 +284,66 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::CallReturn(result.into())
                 }
                 Instruction::CallMethod {
-                    module_id,
                     address,
                     method_name,
                     args,
                 } => {
-                    let mut processor_with_api = TransactionProcessorWithApi {
+                    handle_call_module_method!(
+                        ObjectModuleId::Main,
+                        address,
+                        method_name,
+                        args,
                         worktop,
                         processor,
-                        api,
-                    };
-                    let scrypto_value = transform(args, &mut processor_with_api)?;
-                    processor = processor_with_api.processor;
-
-                    let rtn = api.call_method_advanced(
-                        address.as_node_id(),
-                        false,
-                        module_id,
-                        &method_name,
-                        scrypto_encode(&scrypto_value).unwrap(),
-                    )?;
-                    let result = IndexedScryptoValue::from_vec(rtn).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, &worktop, api,
-                    )?;
-                    InstructionOutput::CallReturn(result.into())
+                        api
+                    )
                 }
+                Instruction::CallRoyaltyMethod {
+                    address,
+                    method_name,
+                    args,
+                } => {
+                    handle_call_module_method!(
+                        ObjectModuleId::Royalty,
+                        address,
+                        method_name,
+                        args,
+                        worktop,
+                        processor,
+                        api
+                    )
+                }
+                Instruction::CallMetadataMethod {
+                    address,
+                    method_name,
+                    args,
+                } => {
+                    handle_call_module_method!(
+                        ObjectModuleId::Main,
+                        address,
+                        method_name,
+                        args,
+                        worktop,
+                        processor,
+                        api
+                    )
+                }
+                Instruction::CallAccessRulesMethod {
+                    address,
+                    method_name,
+                    args,
+                } => {
+                    handle_call_module_method!(
+                        ObjectModuleId::AccessRules,
+                        address,
+                        method_name,
+                        args,
+                        worktop,
+                        processor,
+                        api
+                    )
+                }
+
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = bucket.burn(api)?;

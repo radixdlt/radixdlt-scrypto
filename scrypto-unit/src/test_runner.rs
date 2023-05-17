@@ -752,7 +752,6 @@ impl TestRunner {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                module_id: ObjectModuleId::Main,
                 address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
@@ -1149,7 +1148,6 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
@@ -1171,7 +1169,6 @@ impl TestRunner {
 
     pub fn get_current_epoch(&mut self) -> u64 {
         let instructions = vec![Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
@@ -1220,7 +1217,6 @@ impl TestRunner {
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: CLOCK.into(),
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
@@ -1242,7 +1238,6 @@ impl TestRunner {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
-            module_id: ObjectModuleId::Main,
             address: CLOCK.into(),
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
