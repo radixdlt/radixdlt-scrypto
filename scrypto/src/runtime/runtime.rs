@@ -1,3 +1,4 @@
+use crate::modules::ActorAccessRules;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -31,6 +32,10 @@ impl Runtime {
             .unwrap();
 
         scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn get_access_rules() -> ActorAccessRules {
+        ActorAccessRules
     }
 
     /// Returns the running entity.

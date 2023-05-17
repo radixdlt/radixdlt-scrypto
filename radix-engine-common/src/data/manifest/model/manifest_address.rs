@@ -2,6 +2,8 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::types::EntityType;
 use crate::types::NodeId;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -10,6 +12,7 @@ use utils::copy_u8_array;
 /// Any address supported by manifest, both global and local.
 ///
 /// Must start with a supported entity type byte.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ManifestAddress(pub NodeId);
 

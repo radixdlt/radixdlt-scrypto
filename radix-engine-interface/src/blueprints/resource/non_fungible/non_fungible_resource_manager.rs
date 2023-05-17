@@ -1,6 +1,8 @@
 use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::types::*;
@@ -15,6 +17,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceMa
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
@@ -28,6 +31,7 @@ pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
@@ -37,6 +41,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
@@ -51,6 +56,7 @@ pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddr
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
     "create_non_fungible_with_address";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub id_type: NonFungibleIdType,
@@ -65,6 +71,7 @@ pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_uuid_non_fungible_with_initial_supply";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -106,6 +113,7 @@ pub type NonFungibleResourceManagerGetNonFungibleOutput = ScryptoValue;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintManifestInput {
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
@@ -120,6 +128,7 @@ pub type NonFungibleResourceManagerMintOutput = Bucket;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT: &str = "mint_uuid";
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerMintUuidManifestInput {
     pub entries: Vec<(ManifestValue,)>,
@@ -161,5 +170,15 @@ impl NonFungibleDataSchema {
             non_fungible: non_fungible_type,
             mutable_fields: N::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect(),
         }
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+impl<'a> Arbitrary<'a> for NonFungibleDataSchema {
+    // At the moment I see no smart method to derive Arbitrary for type Schema, which is part of
+    // ScryptoSchema, therefore implementing arbitrary by hand.
+    // TODO: Introduce a method that genearates NonFungibleDataSchema in a truly random manner
+    fn arbitrary(_u: &mut Unstructured<'a>) -> Result<Self> {
+        Ok(Self::new_schema::<()>())
     }
 }

@@ -41,9 +41,9 @@ pub trait ScryptoVault {
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 
-    fn as_fungible_vault(&self) -> FungibleVault;
+    fn as_fungible(&self) -> FungibleVault;
 
-    fn as_non_fungible_vault(&self) -> NonFungibleVault;
+    fn as_non_fungible(&self) -> NonFungibleVault;
 }
 
 pub trait ScryptoFungibleVault {
@@ -193,12 +193,12 @@ impl ScryptoVault for Vault {
         self.amount() == 0.into()
     }
 
-    fn as_fungible_vault(&self) -> FungibleVault {
+    fn as_fungible(&self) -> FungibleVault {
         assert!(self.0.as_node_id().is_internal_fungible_vault());
         FungibleVault(Vault(self.0))
     }
 
-    fn as_non_fungible_vault(&self) -> NonFungibleVault {
+    fn as_non_fungible(&self) -> NonFungibleVault {
         assert!(self.0.as_node_id().is_internal_non_fungible_vault());
         NonFungibleVault(Vault(self.0))
     }
@@ -258,12 +258,12 @@ impl ScryptoVault for FungibleVault {
         self.0.authorize(f)
     }
 
-    fn as_fungible_vault(&self) -> FungibleVault {
-        self.0.as_fungible_vault()
+    fn as_fungible(&self) -> FungibleVault {
+        self.0.as_fungible()
     }
 
-    fn as_non_fungible_vault(&self) -> NonFungibleVault {
-        self.0.as_non_fungible_vault()
+    fn as_non_fungible(&self) -> NonFungibleVault {
+        self.0.as_non_fungible()
     }
 }
 
@@ -362,12 +362,12 @@ impl ScryptoVault for NonFungibleVault {
         self.0.authorize(f)
     }
 
-    fn as_fungible_vault(&self) -> FungibleVault {
-        self.0.as_fungible_vault()
+    fn as_fungible(&self) -> FungibleVault {
+        self.0.as_fungible()
     }
 
-    fn as_non_fungible_vault(&self) -> NonFungibleVault {
-        self.0.as_non_fungible_vault()
+    fn as_non_fungible(&self) -> NonFungibleVault {
+        self.0.as_non_fungible()
     }
 }
 

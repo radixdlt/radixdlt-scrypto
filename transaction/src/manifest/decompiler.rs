@@ -518,14 +518,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             schema,
             royalty_config,
             metadata,
-            access_rules,
+            authority_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;
             format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, authority_rules)?;
             f.write_str(";")?;
         }
         Instruction::BurnResource { bucket_id } => {
@@ -593,37 +593,26 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
-        Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        } => {
-            f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetGroupAccessRule {
+        Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            group,
+            authority_key: group,
             rule,
         } => {
-            f.write_str("SET_GROUP_ACCESS_RULE")?;
+            f.write_str("SET_AUTHORITY_ACCESS_RULE")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
-        Instruction::SetGroupMutability {
+        Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            group,
+            authority_key: group,
             mutability,
         } => {
-            f.write_str("SET_GROUP_MUTABILITY")?;
+            f.write_str("SET_AUTHORITY_MUTABILITY")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;

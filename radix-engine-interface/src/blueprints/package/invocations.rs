@@ -29,7 +29,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: AccessRulesConfig,
+    pub authority_rules: AuthorityRules,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;
