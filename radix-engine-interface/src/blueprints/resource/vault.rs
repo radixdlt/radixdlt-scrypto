@@ -74,11 +74,11 @@ pub type VaultCreateProofOfAmountOutput = Proof;
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub Own);
 
-#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct FungibleVault(pub Vault);
 
-#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct NonFungibleVault(pub Vault);
 
@@ -127,11 +127,28 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for V
 }
 
 impl Describe<ScryptoCustomTypeKind> for Vault {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
-        crate::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID,
-    );
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_VAULT_ID);
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_vault_type_data()
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for FungibleVault {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_VAULT_ID);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_fungible_vault_type_data()
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for NonFungibleVault {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_VAULT_ID);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_non_fungible_vault_type_data()
     }
 }
