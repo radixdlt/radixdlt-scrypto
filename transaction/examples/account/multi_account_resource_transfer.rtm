@@ -25,8 +25,8 @@ CALL_METHOD
 
 # Taking 150 XRD from the worktop and depositing them into Account A
 TAKE_FROM_WORKTOP
-    Decimal("150")
     Address("${xrd_resource_address}")
+    Decimal("150")
     Bucket("account_a_bucket");
 CALL_METHOD
     Address("${account_a_component_address}")
@@ -35,8 +35,8 @@ CALL_METHOD
 
 # Taking 130 XRD from the worktop and depositing them into Account B
 TAKE_FROM_WORKTOP
-    Decimal("130")
     Address("${xrd_resource_address}")
+    Decimal("130")
     Bucket("account_b_bucket");
 CALL_METHOD
     Address("${account_b_component_address}")
@@ -45,8 +45,8 @@ CALL_METHOD
 
 # Taking 50 XRD from the worktop and depositing them into Account C
 TAKE_FROM_WORKTOP
-    Decimal("50")
     Address("${xrd_resource_address}")
+    Decimal("50")
     Bucket("account_c_bucket");
 CALL_METHOD
     Address("${account_c_component_address}")

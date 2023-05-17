@@ -5,7 +5,7 @@ use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use native_sdk::resource::SysProof;
+use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
@@ -216,7 +216,7 @@ impl AuthZoneBlueprint {
         api.field_lock_release(handle)?;
 
         for proof in proofs {
-            proof.sys_drop(api)?;
+            proof.drop(api)?;
         }
 
         Ok(())
@@ -287,7 +287,7 @@ impl AuthZoneBlueprint {
         // Destroy all proofs
         // Note: the current auth zone will be used for authentication; It's just empty.
         for proof in proofs {
-            proof.sys_drop(api)?;
+            proof.drop(api)?;
         }
 
         // Drop self

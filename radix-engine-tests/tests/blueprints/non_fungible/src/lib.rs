@@ -59,11 +59,11 @@ mod non_fungible_test {
         }
 
         pub fn update_nft(mint_badge: Bucket, proof: Proof) -> Bucket {
-            let proof = proof.unsafe_skip_proof_validation();
+            let proof = proof.skip_checking();
             mint_badge.authorize(|| {
                 let resource_manager = proof.resource_manager();
                 resource_manager.update_non_fungible_data(
-                    &proof.non_fungible_local_id(),
+                    &proof.as_non_fungible().non_fungible_local_id(),
                     "available",
                     true,
                 )
@@ -267,7 +267,7 @@ mod non_fungible_test {
         }
 
         pub fn take_non_fungible_and_put_bucket() -> Bucket {
-            let mut bucket = Self::create_non_fungible_fixed();
+            let mut bucket = Self::create_non_fungible_fixed().as_non_fungible();
             assert_eq!(bucket.amount(), 3.into());
 
             let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::integer(1));
@@ -275,7 +275,7 @@ mod non_fungible_test {
             assert_eq!(non_fungible.amount(), 1.into());
 
             bucket.put(non_fungible);
-            bucket
+            bucket.into()
         }
 
         pub fn take_non_fungibles_and_put_bucket() -> Bucket {
@@ -285,11 +285,11 @@ mod non_fungible_test {
             let mut non_fungibles = BTreeSet::new();
             non_fungibles.insert(NonFungibleLocalId::integer(1));
 
-            let non_fungible = bucket.take_non_fungibles(&non_fungibles);
+            let non_fungible = bucket.as_non_fungible().take_non_fungibles(&non_fungibles);
             assert_eq!(bucket.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
-            bucket.put(non_fungible);
+            bucket.put(non_fungible.into());
             bucket
         }
 
@@ -310,11 +310,13 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_ids(),
+                non_fungible_bucket
+                    .as_non_fungible()
+                    .non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                bucket.non_fungible_local_ids(),
+                bucket.as_non_fungible().non_fungible_local_ids(),
                 BTreeSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -327,11 +329,13 @@ mod non_fungible_test {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_id(),
+                non_fungible_bucket
+                    .as_non_fungible()
+                    .non_fungible_local_id(),
                 NonFungibleLocalId::integer(1)
             );
             assert_eq!(
-                bucket.non_fungible_local_id(),
+                bucket.as_non_fungible().non_fungible_local_id(),
                 NonFungibleLocalId::integer(2)
             );
             (bucket, non_fungible_bucket)
@@ -341,11 +345,13 @@ mod non_fungible_test {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_ids(),
+                non_fungible_bucket
+                    .as_non_fungible()
+                    .non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                vault.non_fungible_local_ids(),
+                vault.as_non_fungible().non_fungible_local_ids(),
                 BTreeSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -361,11 +367,13 @@ mod non_fungible_test {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_local_id(),
+                non_fungible_bucket
+                    .as_non_fungible()
+                    .non_fungible_local_id(),
                 NonFungibleLocalId::integer(1)
             );
             assert_eq!(
-                vault.non_fungible_local_id(),
+                vault.as_non_fungible().non_fungible_local_id(),
                 NonFungibleLocalId::integer(2)
             );
 
@@ -380,17 +388,17 @@ mod non_fungible_test {
 
             // read singleton bucket
             let singleton = bucket.take(1);
-            let _: Sandwich = singleton.non_fungible().data();
+            let _: Sandwich = singleton.as_non_fungible().non_fungible().data();
 
             // read singleton vault
             let mut vault = Vault::with_bucket(singleton);
-            let _: Sandwich = vault.non_fungible().data();
+            let _: Sandwich = vault.as_non_fungible().non_fungible().data();
 
             // read singleton proof
-            let proof = vault.create_proof();
-            let validated_proof = proof.validate_proof(vault.resource_address()).unwrap();
-            let _: Sandwich = validated_proof.non_fungible().data();
-            validated_proof.drop();
+            let proof = vault.create_proof().skip_checking();
+            assert_eq!(proof.resource_address(), vault.resource_address());
+            let _: Sandwich = proof.as_non_fungible().non_fungible().data();
+            proof.drop();
 
             // clean up
             vault.put(bucket);

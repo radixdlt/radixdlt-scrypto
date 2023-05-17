@@ -11,7 +11,8 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
-use native_sdk::resource::{ResourceManager, Vault};
+use native_sdk::resource::NativeVault;
+use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
@@ -677,7 +678,7 @@ impl PackageNativePackage {
 
         let substate: PackageRoyaltySubstate = api.field_lock_read_typed(handle)?;
         let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault).sys_take_all(api)?,
+            Some(vault) => Vault(vault).take_all(api)?,
             None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
         };
 

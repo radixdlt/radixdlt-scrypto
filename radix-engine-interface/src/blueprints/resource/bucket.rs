@@ -1,3 +1,4 @@
+use super::Proof;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
@@ -7,8 +8,6 @@ use radix_engine_common::data::scrypto::*;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
-
-use super::Proof;
 
 pub const BUCKET_TAKE_IDENT: &str = "take";
 
@@ -77,8 +76,30 @@ pub type BucketCreateProofOfAllOutput = Proof;
 // Stub
 //========
 
+// TODO: update schema type
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub Own);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
+pub struct FungibleBucket(pub Bucket);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
+pub struct NonFungibleBucket(pub Bucket);
+
+impl From<FungibleBucket> for Bucket {
+    fn from(value: FungibleBucket) -> Self {
+        value.0
+    }
+}
+
+impl From<NonFungibleBucket> for Bucket {
+    fn from(value: NonFungibleBucket) -> Self {
+        value.0
+    }
+}
 
 //========
 // binary
@@ -118,5 +139,23 @@ impl Describe<ScryptoCustomTypeKind> for Bucket {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
         well_known_scrypto_custom_types::own_bucket_type_data()
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for FungibleBucket {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_FUNGIBLE_BUCKET_ID);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_fungible_bucket_type_data()
+    }
+}
+
+impl Describe<ScryptoCustomTypeKind> for NonFungibleBucket {
+    const TYPE_ID: GlobalTypeId =
+        GlobalTypeId::well_known(well_known_scrypto_custom_types::OWN_NON_FUNGIBLE_BUCKET_ID);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_non_fungible_bucket_type_data()
     }
 }

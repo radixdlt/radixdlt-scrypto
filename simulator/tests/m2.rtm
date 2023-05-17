@@ -4,18 +4,18 @@ CALL_METHOD Address("${account}") "lock_fee" Decimal("10");
 CALL_METHOD Address("${component}") "free_token";
 
 # Test - assertions
-ASSERT_WORKTOP_CONTAINS Decimal("1.0") Address("${resource}");
+ASSERT_WORKTOP_CONTAINS Address("${resource}") Decimal("1.0");
 
 # Test - worktop
 TAKE_ALL_FROM_WORKTOP Address("${resource}") Bucket("bucket1");
 RETURN_TO_WORKTOP Bucket("bucket1");
-TAKE_FROM_WORKTOP Decimal("1.0") Address("${resource}") Bucket("bucket2");
+TAKE_FROM_WORKTOP Address("${resource}") Decimal("1.0") Bucket("bucket2");
 RETURN_TO_WORKTOP Bucket("bucket2");
 
 # Test - auth zone
 CALL_METHOD Address("${account}") "create_proof_of_amount" Address("${xrd}") Decimal("5.0");
 CREATE_PROOF_FROM_AUTH_ZONE Address("${xrd}") Proof("proof1");
-CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Decimal("2.0") Address("${xrd}") Proof("proof2");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Address("${xrd}") Decimal("2.0") Proof("proof2");
 CLONE_PROOF Proof("proof2") Proof("proof3");
 DROP_PROOF Proof("proof1");
 DROP_PROOF Proof("proof2");

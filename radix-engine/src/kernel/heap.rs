@@ -273,19 +273,19 @@ impl Into<DroppedNonFungibleBucket> for Vec<Vec<u8>> {
 
 pub struct DroppedFungibleProof {
     pub moveable: ProofMoveableSubstate,
-    pub fungible_proof: FungibleProof,
+    pub fungible_proof: FungibleProofSubstate,
 }
 
 pub struct DroppedNonFungibleProof {
     pub moveable: ProofMoveableSubstate,
-    pub non_fungible_proof: NonFungibleProof,
+    pub non_fungible_proof: NonFungibleProofSubstate,
 }
 
 impl Into<DroppedFungibleProof> for Vec<Vec<u8>> {
     fn into(self) -> DroppedFungibleProof {
         let moveable: ProofMoveableSubstate =
             scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let fungible_proof: FungibleProof =
+        let fungible_proof: FungibleProofSubstate =
             scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
 
         DroppedFungibleProof {
@@ -299,7 +299,7 @@ impl Into<DroppedNonFungibleProof> for Vec<Vec<u8>> {
     fn into(self) -> DroppedNonFungibleProof {
         let moveable: ProofMoveableSubstate =
             scrypto_decode(&self[FungibleProofField::Moveable as usize]).unwrap();
-        let non_fungible_proof: NonFungibleProof =
+        let non_fungible_proof: NonFungibleProofSubstate =
             scrypto_decode(&self[FungibleProofField::ProofRefs as usize]).unwrap();
 
         DroppedNonFungibleProof {

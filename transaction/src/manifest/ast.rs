@@ -11,8 +11,8 @@ pub enum Instruction {
     },
 
     TakeFromWorktop {
-        amount: Value,
         resource_address: Value,
+        amount: Value,
         new_bucket: Value,
     },
 
@@ -27,13 +27,13 @@ pub enum Instruction {
     },
 
     AssertWorktopContains {
-        amount: Value,
         resource_address: Value,
+        amount: Value,
     },
 
     AssertWorktopContainsNonFungibles {
-        ids: Value,
         resource_address: Value,
+        ids: Value,
     },
 
     PopFromAuthZone {
@@ -52,14 +52,14 @@ pub enum Instruction {
     },
 
     CreateProofFromAuthZoneOfAmount {
-        amount: Value,
         resource_address: Value,
+        amount: Value,
         new_proof: Value,
     },
 
     CreateProofFromAuthZoneOfNonFungibles {
-        ids: Value,
         resource_address: Value,
+        ids: Value,
         new_proof: Value,
     },
 

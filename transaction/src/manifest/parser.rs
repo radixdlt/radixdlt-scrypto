@@ -77,26 +77,26 @@ impl Parser {
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
-                amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
-                ids: self.parse_value()?,
                 resource_address: self.parse_value()?,
+                ids: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
-                amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
             },
             TokenKind::AssertWorktopContainsNonFungibles => {
                 Instruction::AssertWorktopContainsNonFungibles {
-                    ids: self.parse_value()?,
                     resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
                 }
             }
             TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
@@ -112,15 +112,15 @@ impl Parser {
             },
             TokenKind::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
-                    amount: self.parse_value()?,
                     resource_address: self.parse_value()?,
+                    amount: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }
             TokenKind::CreateProofFromAuthZoneOfNonFungibles => {
                 Instruction::CreateProofFromAuthZoneOfNonFungibles {
-                    ids: self.parse_value()?,
                     resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }

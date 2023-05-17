@@ -6,7 +6,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{ResourceManager, SysBucket};
+use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -207,7 +207,7 @@ impl EpochManagerBlueprint {
             DenyAll,
         );
 
-        let access_rules = AccessRules::sys_new(
+        let access_rules = AccessRules::create(
             method_authorities,
             authority_rules,
             btreemap!(
@@ -216,8 +216,8 @@ impl EpochManagerBlueprint {
             api,
         )?
         .0;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             btreemap!(
@@ -517,7 +517,7 @@ impl EpochManagerBlueprint {
             ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_emission in validator_emissions {
-            let emission_xrd_bucket = total_emission_xrd_bucket.sys_take(
+            let emission_xrd_bucket = total_emission_xrd_bucket.take(
                 validator_emission.effective_stake_xrd * emission_per_staked_xrd,
                 api,
             )?;
@@ -533,7 +533,7 @@ impl EpochManagerBlueprint {
                 .unwrap(),
             )?;
         }
-        total_emission_xrd_bucket.sys_drop_empty(api)?;
+        total_emission_xrd_bucket.drop_empty(api)?;
 
         Ok(())
     }

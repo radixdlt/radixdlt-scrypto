@@ -50,24 +50,24 @@ CALL_METHOD
     Address("${xrd_resource_address}")
     Decimal("5");
 TAKE_FROM_WORKTOP
-    Decimal("2")
     Address("${xrd_resource_address}")
+    Decimal("2")
     Bucket("bucket1");
 CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
     Bucket("bucket1");
 ASSERT_WORKTOP_CONTAINS
-    Decimal("3")
-    Address("${gumball_resource_address}");
+    Address("${gumball_resource_address}")
+    Decimal("3");
 TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Bucket("bucket2");
 RETURN_TO_WORKTOP
     Bucket("bucket2");
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
     Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
     Bucket("bucket3");
 CALL_METHOD
     Address("${account_address}")
@@ -135,12 +135,12 @@ CREATE_PROOF_FROM_AUTH_ZONE
     Address("${resource_address}")
     Proof("proof7");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
-    Decimal("1")
     Address("${resource_address}")
+    Decimal("1")
     Proof("proof8");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
     Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
     Proof("proof9");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${non_fungible_resource_address}")
