@@ -65,10 +65,19 @@ mod genesis_helper {
             epoch_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
         ) -> ComponentAddress {
-            let access_rules = AccessRules::new(AccessRulesConfig::new().default(
+            let mut method_authorities = MethodAuthorities::new();
+            method_authorities.set_main_method_authority("ingest_data_chunk", "system");
+            method_authorities.set_main_method_authority("wrap_up", "system");
+
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_main_authority_rule(
+                "system",
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
-            ));
+            );
+
+            let access_rules = AccessRules::new(method_authorities, authority_rules);
+
             let metadata = Metadata::new();
 
             Self {

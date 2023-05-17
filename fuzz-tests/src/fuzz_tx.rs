@@ -594,13 +594,13 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let group = unstructured.choose(&groups[..]).unwrap().to_string();
+                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetGroupAccessRule {
+                    Some(Instruction::SetAuthorityAccessRule {
                         entity_address,
                         object_key,
-                        group,
+                        authority_key,
                         rule,
                     })
                 }
@@ -614,13 +614,13 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let group = unstructured.choose(&groups[..]).unwrap().to_string();
+                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetGroupMutability {
+                    Some(Instruction::SetAuthorityMutability {
                         entity_address,
                         object_key,
-                        group,
+                        authority_key,
                         mutability,
                     })
                 }
@@ -638,22 +638,8 @@ impl TxFuzzer {
                         value,
                     })
                 }
-                // SetMethodAccessRule
-                44 => {
-                    global_addresses.push(
-                        GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let key = MethodKey::arbitrary(&mut unstructured).unwrap();
-                    let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
-
-                    Some(Instruction::SetMethodAccessRule {
-                        entity_address,
-                        key,
-                        rule,
-                    })
-                }
                 // SetPackageRoyaltyConfig
-                45 => {
+                46 => {
                     package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
@@ -665,9 +651,9 @@ impl TxFuzzer {
                     })
                 }
                 // TakeFromWorktop
-                46 => Some(Instruction::TakeAllFromWorktop { resource_address }),
+                47 => Some(Instruction::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktopByAmount
-                47 => {
+                48 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::TakeFromWorktop {
@@ -676,7 +662,7 @@ impl TxFuzzer {
                     })
                 }
                 // TakeFromWorktopByIds
-                48 => Some(Instruction::TakeNonFungiblesFromWorktop {
+                49 => Some(Instruction::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),

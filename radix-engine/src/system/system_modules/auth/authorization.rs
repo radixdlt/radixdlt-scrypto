@@ -1,10 +1,12 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::system_callback::SystemLockData;
+use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
 use native_sdk::resource::SysProof;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -16,9 +18,9 @@ pub enum ActingLocation {
     InCallFrame,
 }
 
-pub struct Authentication;
+pub struct Authorization;
 
-impl Authentication {
+impl Authorization {
     fn proof_matches<Y: KernelSubstateApi<SystemLockData> + ClientObjectApi<RuntimeError>>(
         resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
@@ -284,45 +286,140 @@ impl Authentication {
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
+        access_rules: &NodeAuthorityRules,
+        module_id: ObjectModuleId,
         auth_rule: &AccessRuleNode,
+        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
+            AccessRuleNode::Authority(authority) => {
+                if already_verified_authorities.contains_key(authority) {
+                    return Ok(AuthorizationCheckResult::Authorized);
+                }
+
+                match access_rules.get_rule(&AuthorityKey::from_access_rule(
+                    module_id,
+                    authority.clone(),
+                )) {
+                    Some(access_rule) => {
+                        // TODO: Add costing for every access rule hop
+                        Self::check_authorization_against_access_rule_internal(
+                            acting_location,
+                            auth_zone_id,
+                            access_rules,
+                            module_id,
+                            access_rule,
+                            already_verified_authorities,
+                            api,
+                        )
+                    }
+                    None => Ok(AuthorizationCheckResult::Failed(module_id, vec![])),
+                }
+            }
             AccessRuleNode::ProofRule(rule) => {
-                Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)
+                if Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)? {
+                    Ok(AuthorizationCheckResult::Authorized)
+                } else {
+                    Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
+                }
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    if Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
-                        return Ok(true);
+                    let rtn = Self::verify_auth_rule(
+                        acting_location,
+                        auth_zone_id,
+                        access_rules,
+                        module_id,
+                        r,
+                        already_verified_authorities,
+                        api,
+                    )?;
+                    if matches!(rtn, AuthorizationCheckResult::Authorized) {
+                        return Ok(rtn);
                     }
                 }
-                Ok(false)
+                Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    if !Self::verify_auth_rule(acting_location, auth_zone_id, r, api)? {
-                        return Ok(false);
+                    let rtn = Self::verify_auth_rule(
+                        acting_location,
+                        auth_zone_id,
+                        access_rules,
+                        module_id,
+                        r,
+                        already_verified_authorities,
+                        api,
+                    )?;
+                    if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
+                        return Ok(rtn);
                     }
                 }
 
-                Ok(true)
+                return Ok(AuthorizationCheckResult::Authorized);
             }
         }
     }
 
-    pub fn verify_method_auth<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+    fn check_authorization_against_access_rule_internal<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        method_auth: &AccessRule,
+        access_rules: &NodeAuthorityRules,
+        module_id: ObjectModuleId,
+        rule: &AccessRule,
+        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError> {
-        match method_auth {
-            AccessRule::Protected(rule) => {
-                Self::verify_auth_rule(acting_location, auth_zone_id, rule, api)
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+        match rule {
+            AccessRule::Protected(rule_node) => {
+                let mut rtn = Self::verify_auth_rule(
+                    acting_location,
+                    auth_zone_id,
+                    access_rules,
+                    module_id,
+                    rule_node,
+                    already_verified_authorities,
+                    api,
+                )?;
+                match &mut rtn {
+                    AuthorizationCheckResult::Authorized => {}
+                    AuthorizationCheckResult::Failed(_, stack) => {
+                        stack.push(rule.clone());
+                    }
+                }
+                Ok(rtn)
             }
-            AccessRule::AllowAll => Ok(true),
-            AccessRule::DenyAll => Ok(false),
+            AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(
+                module_id,
+                vec![rule.clone()],
+            )),
         }
+    }
+
+    pub fn check_authorization_against_access_rule<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
+        acting_location: ActingLocation,
+        auth_zone_id: NodeId,
+        access_rules: &NodeAuthorityRules,
+        module_id: ObjectModuleId,
+        rule: &AccessRule,
+        api: &mut Y,
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+        let mut already_verified_authorities = NonIterMap::new();
+
+        Self::check_authorization_against_access_rule_internal(
+            acting_location,
+            auth_zone_id,
+            access_rules,
+            module_id,
+            rule,
+            &mut already_verified_authorities,
+            api,
+        )
     }
 }

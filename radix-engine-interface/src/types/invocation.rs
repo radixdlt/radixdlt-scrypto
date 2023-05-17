@@ -2,9 +2,12 @@ use crate::api::ObjectModuleId;
 use crate::blueprints::resource::MethodKey;
 use crate::types::*;
 use crate::*;
+use core::fmt::Formatter;
+use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
+use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct MethodIdentifier(pub NodeId, pub ObjectModuleId, pub String);
@@ -28,7 +31,7 @@ impl FunctionIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum FnIdent {
     Application(String),
     System(u8),
@@ -50,8 +53,39 @@ impl FnIdent {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+impl Debug for FnIdent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            FnIdent::Application(method) => {
+                write!(f, "<{}>", method)
+            }
+            FnIdent::System(i) => {
+                write!(f, "#{}#", i)
+            }
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
     pub blueprint: Blueprint,
     pub ident: FnIdent,
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for FnIdentifier {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        write!(f, "{}:{:?}", self.blueprint.display(*context), self.ident,)
+    }
+}
+
+impl Debug for FnIdentifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.display(NO_NETWORK))
+    }
 }

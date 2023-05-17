@@ -439,12 +439,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput { config }),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { authority_rules }),
         });
         self
     }
@@ -591,47 +591,33 @@ impl ManifestBuilder {
             .0
     }
 
-    pub fn set_method_access_rule(
-        &mut self,
-        entity_address: GlobalAddress,
-        key: MethodKey,
-        rule: AccessRule,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        })
-        .0
-    }
-
-    pub fn set_group_access_rule(
+    pub fn set_authority_access_rule(
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority_key: AuthorityKey,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupAccessRule {
+        self.add_instruction(Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            group,
+            authority_key,
             rule,
         })
         .0
     }
 
-    pub fn set_group_mutability(
+    pub fn set_authority_mutability(
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority_key: AuthorityKey,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetGroupMutability {
+        self.add_instruction(Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            group,
+            authority_key,
             mutability,
         })
         .0
@@ -658,7 +644,7 @@ impl ManifestBuilder {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        authority_rules: AuthorityRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -668,7 +654,7 @@ impl ManifestBuilder {
             schema,
             royalty_config,
             metadata,
-            access_rules,
+            authority_rules,
         });
         self
     }
@@ -702,7 +688,7 @@ impl ManifestBuilder {
             schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: package_access_rules_from_owner_badge(&owner_badge),
+            authority_rules: AuthorityRules::owner_authority(&owner_badge),
         });
         self
     }
@@ -887,12 +873,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, config: AccessRulesConfig) -> &mut Self {
+    pub fn new_account_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput { config }),
+            args: to_manifest_value(&AccountCreateAdvancedInput { authority_rules }),
         })
         .0
     }

@@ -127,7 +127,7 @@ pub enum Instruction {
         schema: Value,
         royalty_config: Value,
         metadata: Value,
-        access_rules: Value,
+        authority_rules: Value,
     },
 
     BurnResource {
@@ -171,23 +171,17 @@ pub enum Instruction {
         component_address: Value,
     },
 
-    SetMethodAccessRule {
-        entity_address: Value,
-        key: Value,
-        rule: Value,
-    },
-
     SetGroupAccessRule {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         rule: Value,
     },
 
     SetGroupMutability {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         mutability: Value,
     },
 
@@ -245,7 +239,7 @@ pub enum Instruction {
 
     CreateIdentity {},
     CreateIdentityAdvanced {
-        config: Value,
+        authority_rules: Value,
     },
 
     CreateAccount {},

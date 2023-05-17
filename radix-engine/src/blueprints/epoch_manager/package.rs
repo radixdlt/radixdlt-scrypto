@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, Receiver,
+    PackageSchema, ReceiverInfo,
 };
 use resources_tracker_macro::trace_resources;
 
@@ -47,7 +47,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<EpochManagerGetCurrentEpochInput>(),
                 output: aggregator
@@ -58,7 +58,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<EpochManagerSetEpochInput>(),
                 output: aggregator.add_child_type_and_descendents::<EpochManagerSetEpochOutput>(),
                 export_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
@@ -67,7 +67,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             EPOCH_MANAGER_START_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<EpochManagerStartInput>(),
                 output: aggregator.add_child_type_and_descendents::<EpochManagerStartOutput>(),
                 export_name: EPOCH_MANAGER_START_IDENT.to_string(),
@@ -76,7 +76,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<EpochManagerNextRoundInput>(),
                 output: aggregator.add_child_type_and_descendents::<EpochManagerNextRoundOutput>(),
                 export_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
@@ -85,7 +85,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<EpochManagerCreateValidatorInput>(),
                 output: aggregator
@@ -122,7 +122,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_REGISTER_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorRegisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorRegisterOutput>(),
                 export_name: VALIDATOR_REGISTER_IDENT.to_string(),
@@ -131,7 +131,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_UNREGISTER_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnregisterInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnregisterOutput>(),
                 export_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
@@ -140,7 +140,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_STAKE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorStakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorStakeOutput>(),
                 export_name: VALIDATOR_STAKE_IDENT.to_string(),
@@ -149,7 +149,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_UNSTAKE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUnstakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUnstakeOutput>(),
                 export_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
@@ -158,7 +158,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorClaimXrdOutput>(),
                 export_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
@@ -167,7 +167,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_UPDATE_KEY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorUpdateKeyOutput>(),
                 export_name: VALIDATOR_UPDATE_KEY_IDENT.to_string(),
@@ -176,7 +176,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeInput>(),
                 output: aggregator
@@ -187,7 +187,7 @@ impl EpochManagerNativePackage {
         functions.insert(
             VALIDATOR_APPLY_EMISSION_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionInput>(),
                 output: aggregator.add_child_type_and_descendents::<ValidatorApplyEmissionOutput>(),
                 export_name: VALIDATOR_APPLY_EMISSION_IDENT.to_string(),

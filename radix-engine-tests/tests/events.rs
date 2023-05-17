@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
-use scrypto::prelude::{AccessRule, AccessRulesConfig, FromPublicKey, ResourceMethodAuthKey};
+use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -127,7 +127,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 
@@ -168,7 +168,7 @@ fn local_type_index_with_misleading_name_fails() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 
@@ -1461,7 +1461,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(AccessRulesConfig::new())
+        .new_account_advanced(AuthorityRules::new())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 

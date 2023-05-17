@@ -747,8 +747,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&faucet_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new()
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                authority_rules: AuthorityRules::new(),
             }),
         });
     }
@@ -771,8 +770,7 @@ pub fn create_system_bootstrap_transaction(
                 schema: manifest_decode(&genesis_helper_abi).unwrap(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: AccessRulesConfig::new()
-                    .default(AccessRule::DenyAll, AccessRule::DenyAll),
+                authority_rules: AuthorityRules::new(),
             }),
         });
     }

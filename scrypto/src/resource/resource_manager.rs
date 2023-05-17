@@ -1,8 +1,6 @@
 use crate::*;
+use radix_engine_interface::api::node_modules::auth::AccessRulesSetAuthorityRuleInput;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleInput,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::*;
@@ -34,10 +32,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: "mint".to_string(),
+                    authority_key: AuthorityKey::main(MINT_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -51,10 +49,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: "burn".to_string(),
+                    authority_key: AuthorityKey::main(BURN_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -76,10 +74,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    name: "withdraw".to_string(),
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                    authority_key: AuthorityKey::main(WITHDRAW_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -93,10 +91,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    name: "deposit".to_string(),
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                    authority_key: AuthorityKey::main(DEPOSIT_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -110,10 +108,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
-                    object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                    name: "recall".to_string(),
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                    object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                    authority_key: AuthorityKey::main(RECALL_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -127,10 +125,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: "update_metadata".to_string(),
+                    authority_key: AuthorityKey::metadata("metadata"),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -144,14 +142,11 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::Main,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-                    ),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
+                    authority_key: AuthorityKey::main(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY),
+                    rule: access_rule,
                 })
                 .unwrap(),
             )
@@ -164,10 +159,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: "mint".to_string(),
+                    authority_key: AuthorityKey::main(MINT_AUTHORITY),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -181,10 +176,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: "burn".to_string(),
+                    authority_key: AuthorityKey::main(BURN_AUTHORITY),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -198,10 +193,10 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: "update_metadata".to_string(),
+                    authority_key: AuthorityKey::metadata("metadata"),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -215,14 +210,11 @@ impl ResourceManager {
                 self.0.as_node_id(),
                 false,
                 ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
+                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(
-                        ObjectModuleId::Main,
-                        NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-                    ),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+                    authority_key: AuthorityKey::main(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY),
+                    mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
             )
@@ -234,10 +226,10 @@ impl ResourceManager {
             self.0.as_node_id(),
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                name: "withdraw".to_string(),
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                authority_key: AuthorityKey::main(WITHDRAW_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -249,10 +241,10 @@ impl ResourceManager {
             self.0.as_node_id(),
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                name: "deposit".to_string(),
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                authority_key: AuthorityKey::main(DEPOSIT_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -264,10 +256,10 @@ impl ResourceManager {
             self.0.as_node_id(),
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupMutabilityInput {
-                object_key: ObjectKey::child_blueprint(self.vault_blueprint_name()),
-                name: "recall".to_string(),
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
+                authority_key: AuthorityKey::main(RECALL_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),

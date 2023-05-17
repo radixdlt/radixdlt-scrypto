@@ -21,6 +21,15 @@ pub struct MethodActor {
     pub is_direct_access: bool,
 }
 
+impl MethodActor {
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier {
+            blueprint: self.object_info.blueprint.clone(),
+            ident: FnIdent::Application(self.ident.to_string()),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
@@ -71,14 +80,7 @@ impl Actor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         match self {
             Actor::Root => panic!("Should never be called"),
-            Actor::Method(MethodActor {
-                object_info: ObjectInfo { blueprint, .. },
-                ident,
-                ..
-            }) => FnIdentifier {
-                blueprint: blueprint.clone(),
-                ident: FnIdent::Application(ident.to_string()),
-            },
+            Actor::Method(method_actor) => method_actor.fn_identifier(),
             Actor::Function { blueprint, ident } => FnIdentifier {
                 blueprint: blueprint.clone(),
                 ident: FnIdent::Application(ident.to_string()),

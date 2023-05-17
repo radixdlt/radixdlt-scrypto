@@ -1,5 +1,5 @@
 use super::payload_validation::*;
-use super::system_modules::auth::Authentication;
+use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
@@ -10,12 +10,13 @@ use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
+use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::ActingLocation;
+use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::system::system_modules::events::EventError;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -723,9 +724,11 @@ where
         Ok(())
     }
 
-    pub fn actor_get_receiver_node_id(&mut self) -> Option<NodeId> {
+    pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
         let actor = self.api.kernel_get_system_state().current;
-        actor.try_as_method().map(|a| a.node_id)
+        actor
+            .try_as_method()
+            .map(|a| (a.node_id, a.is_direct_access))
     }
 
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
@@ -1559,6 +1562,33 @@ where
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.blueprint().clone())
     }
+
+    #[trace_resources]
+    fn actor_call_module_method(
+        &mut self,
+        object_handle: ObjectHandle,
+        module_id: ObjectModuleId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let node_id = match actor_object_type {
+            ActorObjectType::SELF => {
+                self.actor_get_receiver_node_id()
+                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
+                    .0
+            }
+            ActorObjectType::OuterObject => self
+                .actor_get_info()?
+                .outer_object
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::OuterObjectDoesNotExist,
+                ))?
+                .into_node_id(),
+        };
+
+        self.call_method_advanced(&node_id, false, module_id, method_name, args)
+    }
 }
 
 impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1659,19 +1689,24 @@ where
             .last_auth_zone()
             .expect("Missing auth zone");
 
-        // Authenticate
-        if !Authentication::verify_method_auth(
+        // TODO: Use real access rules of this method/function
+        let config = NodeAuthorityRules::new();
+
+        // Authorize
+        let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
             auth_zone_id,
+            &config,
+            ObjectModuleId::Main,
             &rule,
             self,
-        )? {
-            return Err(RuntimeError::SystemError(
+        )?;
+        match auth_result {
+            AuthorizationCheckResult::Authorized => Ok(()),
+            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
                 SystemError::AssertAccessRuleFailed,
-            ));
+            )),
         }
-
-        Ok(())
     }
 }
 

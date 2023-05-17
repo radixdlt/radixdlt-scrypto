@@ -194,7 +194,7 @@ impl Parser {
                 schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,
                 metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
@@ -226,21 +226,16 @@ impl Parser {
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
             },
-            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
-                entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-                rule: self.parse_value()?,
-            },
-            TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
+            TokenKind::SetAuthorityAccessRule => Instruction::SetGroupAccessRule {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
-            TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+            TokenKind::SetAuthorityMutability => Instruction::SetGroupMutability {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 mutability: self.parse_value()?,
             },
             TokenKind::MintFungible => Instruction::MintFungible {
@@ -293,7 +288,7 @@ impl Parser {
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {},
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                config: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {

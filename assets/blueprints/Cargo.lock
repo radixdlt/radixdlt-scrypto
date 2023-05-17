@@ -949,6 +949,7 @@ version = "0.10.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "sbor",
  "scrypto-schema",
  "serde",
  "serde_json",
@@ -959,6 +960,7 @@ dependencies = [
 name = "scrypto-schema"
 version = "0.10.0"
 dependencies = [
+ "bitflags",
  "radix-engine-common",
  "sbor",
  "serde",

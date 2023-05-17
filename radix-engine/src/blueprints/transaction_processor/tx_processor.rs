@@ -9,9 +9,8 @@ use crate::types::*;
 use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    AccessRulesSetAuthorityMutabilityInput, AccessRulesSetAuthorityRuleInput,
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -321,7 +320,7 @@ impl TransactionProcessorBlueprint {
                     schema,
                     royalty_config,
                     metadata,
-                    access_rules,
+                    authority_rules,
                 } => {
                     let code = processor.get_blob(&code)?;
 
@@ -334,7 +333,7 @@ impl TransactionProcessorBlueprint {
                             package_address: None,
                             code: code.to_vec(), // TODO: cow?
                             schema: schema.clone(),
-                            access_rules: access_rules.clone(),
+                            authority_rules: authority_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
                         })
@@ -570,38 +569,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetMethodAccessRule {
-                    entity_address,
-                    key,
-                    rule,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            object_key: ObjectKey::SELF,
-                            method_key: key.clone(),
-                            rule: AccessRuleEntry::AccessRule(rule.clone()),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetGroupAccessRule {
+                Instruction::SetAuthorityAccessRule {
                     entity_address,
                     object_key,
-                    group,
+                    authority_key,
                     rule,
                 } => {
                     let receiver = entity_address.into();
@@ -609,11 +580,11 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                        ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                             object_key,
-                            name: group,
-                            rule,
+                            authority_key,
+                            rule: rule.into(),
                         })
                         .unwrap(),
                     )?;
@@ -627,10 +598,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetGroupMutability {
+                Instruction::SetAuthorityMutability {
                     entity_address,
                     object_key,
-                    group,
+                    authority_key,
                     mutability,
                 } => {
                     let receiver = entity_address.into();
@@ -638,10 +609,10 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                        ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                             object_key,
-                            name: group,
+                            authority_key,
                             mutability,
                         })
                         .unwrap(),
