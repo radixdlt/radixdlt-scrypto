@@ -1331,20 +1331,18 @@ mod tests {
             r#"TAKE_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
-                resource_address: resource_address,
+                resource_address,
             },
         );
         generate_instruction_ok!(
             r#"TAKE_ALL_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromWorktop {
-                resource_address: resource_address
-            },
+            Instruction::TakeAllFromWorktop { resource_address },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1");"#,
             Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
-                resource_address: resource_address,
+                resource_address,
             },
         );
         generate_instruction_ok!(
