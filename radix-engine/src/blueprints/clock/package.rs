@@ -166,7 +166,7 @@ impl ClockNativePackage {
         method_authorities.set_main_method_authority(CLOCK_SET_CURRENT_TIME_IDENT, "validator");
 
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(
             "validator",
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,

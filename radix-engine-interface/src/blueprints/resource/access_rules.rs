@@ -109,17 +109,15 @@ impl MethodAuthorities {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
-pub struct AuthorityKey {
-    pub authority: String,
+pub enum AuthorityKey {
+    Owner,
+    Module(String),
 }
 
 
 impl AuthorityKey {
-    pub fn new(key: &str) -> Self {
-        AuthorityKey {
-            authority: key.to_string(),
-        }
+    pub fn module(key: &str) -> Self {
+        AuthorityKey::Module(key.to_string())
     }
 }
 
@@ -135,19 +133,28 @@ impl AuthorityRules {
         Self { rules: btreemap!() }
     }
 
-    pub fn set_rule<S: Into<String>>(
+    pub fn set_rule(
+        &mut self,
+        authority_key: AuthorityKey,
+        rule: AccessRule,
+        mutability: AccessRule,
+    ) {
+        self.rules.insert(authority_key, (rule, mutability));
+    }
+
+    pub fn set_main_rule<S: Into<String>>(
         &mut self,
         authority: S,
         rule: AccessRule,
         mutability: AccessRule,
     ) {
         let name = authority.into();
-        self.rules.insert(AuthorityKey::new(name.as_str()), (rule, mutability));
+        self.rules.insert(AuthorityKey::module(name.as_str()), (rule, mutability));
     }
 
     pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(
             "owner",
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),

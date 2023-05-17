@@ -97,7 +97,7 @@ pub trait LocalComponent: Sized {
         royalty_config: RoyaltyConfig,
     ) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(
             "owner".clone(),
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),

@@ -583,7 +583,7 @@ impl TransactionProcessorBlueprint {
                         ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                         scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                             object_key,
-                            authority_key: AuthorityKey::new(group.as_str()),
+                            authority_key: AuthorityKey::module(group.as_str()),
                             rule: rule.into(),
                         })
                         .unwrap(),
@@ -612,7 +612,7 @@ impl TransactionProcessorBlueprint {
                         ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                         scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                             object_key,
-                            authority_key: AuthorityKey::new(group.as_str()),
+                            authority_key: AuthorityKey::module(group.as_str()),
                             mutability,
                         })
                         .unwrap(),

@@ -18,7 +18,7 @@ pub trait SecurifiedAccessRules {
         let method_authorities = Self::method_authorities();
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
-            authority_rules_to_use.set_rule(authority.authority, access_rule, mutability);
+            authority_rules_to_use.set_rule(authority, access_rule, mutability);
         }
 
         (method_authorities, authority_rules_to_use)
@@ -40,7 +40,7 @@ pub trait SecurifiedAccessRules {
         let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
-            authority_rules.set_rule(securify, AccessRule::DenyAll, AccessRule::DenyAll);
+            authority_rules.set_main_rule(securify, AccessRule::DenyAll, AccessRule::DenyAll);
         }
 
         let access_rules =

@@ -1067,37 +1067,37 @@ fn init_access_rules_from_rule_set(
     let mut authority_rules = AuthorityRules::new();
 
     let primary = "primary";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         primary,
         rule_set.primary_role.clone(),
         rule!(require(global_caller(address))),
     );
     let recovery = "recovery";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         recovery,
         rule_set.recovery_role.clone(),
         rule!(require(global_caller(address))),
     );
     let confirmation = "confirmation";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         confirmation,
         rule_set.confirmation_role.clone(),
         rule!(require(global_caller(address))),
     );
     let recovery_or_confirmation = "recovery_or_confirmation";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         recovery_or_confirmation,
         rule!(require("recovery") || require("confirmation")),
         rule!(require(global_caller(address))),
     );
     let primary_or_confirmation = "primary_or_confirmation";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         primary_or_confirmation,
         rule!(require("primary") || require("confirmation")),
         rule!(require(global_caller(address))),
     );
     let any_role = "any_role";
-    authority_rules.set_rule(
+    authority_rules.set_main_rule(
         any_role,
         rule!(require("primary") || require("confirmation") || require("recovery")),
         rule!(require(global_caller(address))),

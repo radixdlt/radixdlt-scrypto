@@ -441,7 +441,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::new("stake"),
+                authority_key: AuthorityKey::module("stake"),
                 rule,
             })
             .unwrap(),
@@ -644,18 +644,18 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(
             METADATA_AUTHORITY,
             rule!(require(OWNER_AUTHORITY)),
             rule!(deny_all),
         );
-        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
+        authority_rules.set_main_rule(
             "stake",
             rule!(require("owner")),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_rule(
+        authority_rules.set_main_rule(
             "epoch_manager",
             rule!(require(global_caller(EPOCH_MANAGER))),
             rule!(deny_all),

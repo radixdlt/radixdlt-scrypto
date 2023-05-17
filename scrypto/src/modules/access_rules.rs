@@ -68,7 +68,7 @@ impl ActorAccessRules {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    authority_key: AuthorityKey::new(name),
+                    authority_key: AuthorityKey::module(name),
                     rule: entry.into(),
                 })
                 .unwrap(),
@@ -84,7 +84,7 @@ impl ActorAccessRules {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    authority_key: AuthorityKey::new(name),
+                    authority_key: AuthorityKey::module(name),
                     mutability,
                 })
                 .unwrap(),

@@ -298,7 +298,7 @@ impl Authorization {
                     return Ok(AuthorizationCheckResult::Authorized);
                 }
 
-                match access_rules.get_rule(&AuthorityKey::new(authority.as_str())) {
+                match access_rules.get_rule(&AuthorityKey::module(authority.as_str())) {
                     Some(access_rule) => {
                         // TODO: Add costing for every access rule hop
                         Self::check_authorization_against_access_rule_internal(

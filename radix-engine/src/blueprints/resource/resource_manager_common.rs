@@ -56,15 +56,15 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut resman_authority_rules = AuthorityRules::new();
-        resman_authority_rules.set_rule(
+        resman_authority_rules.set_main_rule(
             METADATA_AUTHORITY,
             update_metadata_access_rule,
             update_metadata_mutability,
         );
-        resman_authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
-        resman_authority_rules.set_rule(MINT_AUTHORITY, mint_access_rule, mint_mutability);
-        resman_authority_rules.set_rule(BURN_AUTHORITY, burn_access_rule, burn_mutability);
-        resman_authority_rules.set_rule(
+        resman_authority_rules.set_main_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
+        resman_authority_rules.set_main_rule(MINT_AUTHORITY, mint_access_rule, mint_mutability);
+        resman_authority_rules.set_main_rule(BURN_AUTHORITY, burn_access_rule, burn_mutability);
+        resman_authority_rules.set_main_rule(
             UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
             update_non_fungible_data_access_rule,
             update_non_fungible_data_mutability,
@@ -115,16 +115,16 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut vault_authority_rules = AuthorityRules::new();
-        vault_authority_rules.set_rule(
+        vault_authority_rules.set_main_rule(
             WITHDRAW_AUTHORITY,
             withdraw_access_rule,
             withdraw_mutability,
         );
-        vault_authority_rules.set_rule(RECALL_AUTHORITY, recall_access_rule, recall_mutability);
+        vault_authority_rules.set_main_rule(RECALL_AUTHORITY, recall_access_rule, recall_mutability);
 
-        vault_authority_rules.set_rule(DEPOSIT_AUTHORITY, deposit_access_rule, deposit_mutability);
+        vault_authority_rules.set_main_rule(DEPOSIT_AUTHORITY, deposit_access_rule, deposit_mutability);
 
-        vault_authority_rules.set_rule(
+        vault_authority_rules.set_main_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
             DenyAll,
@@ -156,7 +156,7 @@ fn build_access_rules(
 
     let bucket_authority_rules = {
         let mut bucket_authority_rules = AuthorityRules::new();
-        bucket_authority_rules.set_rule(
+        bucket_authority_rules.set_main_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
             DenyAll,
