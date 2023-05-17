@@ -176,7 +176,7 @@ mod genesis_helper {
             let metadata: BTreeMap<String, String> = resource.metadata.into_iter().collect();
 
             let address_bytes = NodeId::new(
-                EntityType::GlobalFungibleResource as u8,
+                EntityType::GlobalFungibleResourceManager as u8,
                 &resource.address_bytes_without_entity_id,
             )
             .0;
