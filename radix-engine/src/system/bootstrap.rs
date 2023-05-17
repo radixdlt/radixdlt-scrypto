@@ -22,8 +22,7 @@ use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, ClockSetCurrentTimeInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
-    CLOCK_SET_CURRENT_TIME_IDENT,
+    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerInitialConfiguration, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
@@ -163,8 +162,11 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt =
-                self.execute_system_bootstrap(initial_epoch, initial_configuration);
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                initial_configuration,
+                initial_time_ms,
+            );
 
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
@@ -174,7 +176,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce, initial_time_ms);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -190,8 +192,13 @@ where
         &mut self,
         initial_epoch: u64,
         initial_configuration: EpochManagerInitialConfiguration,
+        initial_time_ms: i64,
     ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(initial_epoch, initial_configuration);
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            initial_configuration,
+            initial_time_ms,
+        );
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -230,8 +237,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, nonce: u64, initial_time_ms: i64) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(nonce, initial_time_ms);
+    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction(nonce);
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -252,6 +259,7 @@ where
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
     initial_configuration: EpochManagerInitialConfiguration,
+    initial_time_ms: i64,
 ) -> SystemTransaction {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -778,7 +786,10 @@ pub fn create_system_bootstrap_transaction(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput { component_address }),
+            args: to_manifest_value(&ClockCreateInput {
+                component_address,
+                initial_time_ms,
+            }),
         });
     }
 
@@ -865,7 +876,7 @@ pub fn create_genesis_data_ingestion_transaction(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(nonce: u64, initial_time_ms: i64) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -890,18 +901,6 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64, initial_time_ms: i64) -> S
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
         args: manifest_args!(address_bytes, bucket),
-    });
-
-    instructions.push(Instruction::CallMethod {
-        component_address: CLOCK,
-        method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-        args: manifest_decode::<ManifestValue>(
-            &manifest_encode(&ClockSetCurrentTimeInput {
-                current_time_ms: initial_time_ms,
-            })
-            .unwrap(),
-        )
-        .unwrap(),
     });
 
     SystemTransaction {
