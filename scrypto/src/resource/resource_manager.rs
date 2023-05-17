@@ -7,10 +7,10 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
+use sbor::rust::ops::Deref;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::component::HasStub;
-use std::ops::Deref;
 
 #[derive(Debug, Clone, ScryptoSbor)]
 #[sbor(transparent)]

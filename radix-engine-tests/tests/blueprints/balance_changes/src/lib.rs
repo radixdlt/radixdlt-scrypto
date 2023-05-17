@@ -15,7 +15,7 @@ mod balance_changes_test {
             .royalty("put", 1)
             .royalty("boom", 1)
             .royalty_default(0)
-            .authority_rule("owner", rule!(allow_all), rule!(allow_all))
+            .owner_authority(rule!(allow_all), rule!(allow_all))
             .globalize()
         }
 
