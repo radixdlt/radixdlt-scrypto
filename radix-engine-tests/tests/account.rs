@@ -2,7 +2,7 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::{
     AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
@@ -201,9 +201,7 @@ fn virtual_account_is_created_with_public_key_hash_metadata() {
     let public_key_hash = public_key.get_hash().into_enum();
     assert_eq!(
         entry,
-        Some(MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
-            public_key_hash
-        )]))
+        Some(MetadataValue::PublicKeyHashArray(vec![public_key_hash])),
     );
 }
 

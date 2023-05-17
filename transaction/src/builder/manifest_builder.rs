@@ -1,7 +1,7 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataEntry, MetadataSetInput, METADATA_SET_IDENT,
+    MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
@@ -671,7 +671,7 @@ impl ManifestBuilder {
         &mut self,
         address: GlobalAddress,
         key: String,
-        value: MetadataEntry,
+        value: MetadataValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             module_id: ObjectModuleId::Metadata,

@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::identity::{
@@ -161,7 +161,7 @@ fn can_set_metadata_after_securify() {
         .set_metadata(
             identity_address.into(),
             "name".to_string(),
-            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt =
@@ -174,7 +174,7 @@ fn can_set_metadata_after_securify() {
         .expect("Should exist");
     assert_eq!(
         value,
-        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+        MetadataValue::String("best package ever!".to_string())
     );
 }
 
@@ -192,7 +192,7 @@ fn can_set_metadata_on_securified_identity() {
         .set_metadata(
             identity_address.into(),
             "name".to_string(),
-            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt =
@@ -205,6 +205,6 @@ fn can_set_metadata_on_securified_identity() {
         .expect("Should exist");
     assert_eq!(
         value,
-        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+        MetadataValue::String("best package ever!".to_string())
     );
 }

@@ -355,7 +355,7 @@ impl TestRunner {
             .set_metadata(
                 address,
                 key.to_string(),
-                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+                MetadataValue::String(value.to_string()),
             )
             .build();
 
@@ -363,28 +363,19 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
 
-        let metadata_entry = self
+        let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
-        let metadata_entry = match metadata_entry {
-            Option::Some(value) => {
-                let value: MetadataEntry =
-                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(value)
-            }
-            Option::None => None,
-        };
-
-        metadata_entry
+        metadata_value
     }
 
     pub fn inspect_component_royalty(

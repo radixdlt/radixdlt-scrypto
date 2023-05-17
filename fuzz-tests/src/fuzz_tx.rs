@@ -659,7 +659,7 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
-                    let value = MetadataEntry::arbitrary(&mut unstructured).unwrap();
+                    let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::CallMethod {
                         module_id: ObjectModuleId::Metadata,

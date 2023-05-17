@@ -165,13 +165,7 @@ impl AccountBlueprint {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
                     key: "owner_keys".to_string(),
-                    value: scrypto_decode(
-                        &scrypto_encode(&MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
-                            public_key_hash,
-                        )]))
-                        .unwrap(),
-                    )
-                    .unwrap(),
+                    value: MetadataValue::PublicKeyHashArray(vec![public_key_hash]),
                 })
                 .unwrap(),
             )?;

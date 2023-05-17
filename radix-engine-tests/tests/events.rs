@@ -10,7 +10,7 @@ use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -1412,11 +1412,7 @@ fn setting_metadata_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .set_metadata(
-            resource_address.into(),
-            "key".into(),
-            MetadataEntry::Value(MetadataValue::I32(1)),
-        )
+        .set_metadata(resource_address.into(), "key".into(), MetadataValue::I32(1))
         .build();
 
     // Act

@@ -59,7 +59,7 @@ pub trait MetadataObject {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
                     key: name.as_ref().to_owned(),
-                    value: value.to_metadata_entry(),
+                    value: value.to_metadata_value(),
                 })
                 .unwrap(),
             )
@@ -85,7 +85,7 @@ pub trait MetadataObject {
         let value: MetadataGetOutput = scrypto_decode(&rtn).unwrap();
         match value {
             None => Err(MetadataError::EmptyEntry),
-            Some(value) => V::from_metadata_entry(value),
+            Some(value) => V::from_metadata_value(value),
         }
     }
 
