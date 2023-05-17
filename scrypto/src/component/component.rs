@@ -182,15 +182,15 @@ impl<C: HasStub> Owned<C> {
         Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
-    pub fn address(self, address: ComponentAddress) -> Globalizing<C> {
-        let mut globalizing = Globalizing::new_with_metadata(self.0, Metadata::new());
-        let _ = globalizing.address.insert(address);
-        globalizing
-    }
 
     pub fn globalize(self) -> Global<C> {
         let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
         globalizing.globalize()
+    }
+
+    pub fn globalize_at_address(self, address: ComponentAddress) -> Global<C> {
+        let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
+        globalizing.globalize_at_address(address)
     }
 }
 
@@ -307,9 +307,9 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn address(mut self, address: ComponentAddress) -> Self {
+    pub fn globalize_at_address(mut self, address: ComponentAddress) -> Global<C> {
         let _ = self.address.insert(address);
-        self
+        self.globalize()
     }
 
     pub fn globalize(mut self) -> Global<C> {

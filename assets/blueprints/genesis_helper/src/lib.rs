@@ -79,8 +79,7 @@ mod genesis_helper {
                 rule!(require(system_role.clone())),
                 rule!(require(system_role)),
             )
-            .address(ComponentAddress::new_or_panic(preallocated_address_bytes))
-            .globalize()
+            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
