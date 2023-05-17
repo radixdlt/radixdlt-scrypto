@@ -55,6 +55,11 @@ impl EpochManagerInitialConfiguration {
         self.min_validator_reliability = new_value;
         self
     }
+
+    pub fn with_num_owner_stake_units_unlock_epochs(mut self, new_value: u64) -> Self {
+        self.num_owner_stake_units_unlock_epochs = new_value;
+        self
+    }
 }
 
 pub type EpochManagerCreateOutput = ();
@@ -258,3 +263,28 @@ pub struct ValidatorApplyEmissionInput {
 }
 
 pub type ValidatorApplyEmissionOutput = ();
+
+pub const VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT: &str = "lock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorLockOwnerStakeUnitsInput {
+    pub stake_unit_bucket: Bucket,
+}
+
+pub type ValidatorLockOwnerStakeUnitsOutput = ();
+
+pub const VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "start_unlock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorStartUnlockOwnerStakeUnitsInput {
+    pub requested_stake_unit_amount: Decimal,
+}
+
+pub type ValidatorStartUnlockOwnerStakeUnitsOutput = Bucket;
+
+pub const VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "finish_unlock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorFinishUnlockOwnerStakeUnitsInput {}
+
+pub type ValidatorFinishUnlockOwnerStakeUnitsOutput = Bucket;
