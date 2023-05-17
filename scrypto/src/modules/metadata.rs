@@ -60,6 +60,8 @@ pub trait MetadataObject {
     fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         let (node_id, module_id) = self.self_id();
 
+        // Manual encoding to avoid large code size
+        // TODO: to replace with EnumVariant when it's ready
         let mut buffer = Vec::new();
         let mut encoder =
             VecEncoder::<ScryptoCustomValueKind>::new(&mut buffer, SCRYPTO_SBOR_V1_MAX_DEPTH);
@@ -70,7 +72,7 @@ pub trait MetadataObject {
         encoder.write_size(2).unwrap();
         encoder.encode(name.as_ref()).unwrap();
         encoder.write_value_kind(ValueKind::Enum).unwrap();
-        encoder.write_discriminator(V::TYPE_ID).unwrap();
+        encoder.write_discriminator(V::DISCRIMINATOR).unwrap();
         encoder.write_size(1).unwrap();
         encoder.encode(&value).unwrap();
 
@@ -95,7 +97,8 @@ pub trait MetadataObject {
             )
             .unwrap();
 
-        // Option<MetadataValue>
+        // Manual decoding of Option<MetadataValue> to avoid large code size
+        // TODO: to replace with EnumVariant when it's ready
         let mut decoder =
             VecDecoder::<ScryptoCustomValueKind>::new(&rtn, SCRYPTO_SBOR_V1_MAX_DEPTH);
         decoder
@@ -110,13 +113,13 @@ pub trait MetadataObject {
                 decoder.read_and_check_size(1).unwrap();
                 decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
                 let id = decoder.read_discriminator().unwrap();
-                if id == V::TYPE_ID {
+                if id == V::DISCRIMINATOR {
                     decoder.read_and_check_size(1).unwrap();
                     let v: V = decoder.decode().unwrap();
                     return Ok(v);
                 } else {
                     return Err(MetadataError::UnexpectedType {
-                        expected_type_id: V::TYPE_ID,
+                        expected_type_id: V::DISCRIMINATOR,
                         actual_type_id: id,
                     });
                 }

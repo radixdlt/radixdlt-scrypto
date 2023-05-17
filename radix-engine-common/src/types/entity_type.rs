@@ -68,7 +68,7 @@ pub enum EntityType {
     /// A global fungible resource entity (93 in decimal). Gives Bech32 prefix: `t` followed by one of `5`, `4`, `k` or `h`.
     GlobalFungibleResourceManager = 0b01011101, //---------- 01011 => t, 101xx => 54kh [tkn vanity prefix]
     /// An internal fungible vault entity (88 in decimal). Gives Bech32 prefix: `t` followed by one of `q`, `p`, `z` or `r`.
-    InternalFungibleVault = 0b01011000, //----------- 01011 => t, 000xx => qpzr (000 = vault under t/f prefix)
+    InternalFungibleVault = 0b01011000, //------------------ 01011 => t, 000xx => qpzr (000 = vault under t/f prefix)
 
     //=========================================================================
     // Non-fungible-related (start with letter n for non-fungible)
