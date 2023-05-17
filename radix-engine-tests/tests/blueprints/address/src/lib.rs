@@ -153,13 +153,17 @@ mod preallocation_component {
     impl PreallocationComponent {
         pub fn create_with_preallocated_address() -> Global<PreallocationComponent> {
             let component_address = Runtime::preallocate_global_component_address();
-            Self {}.instantiate().globalize_at_address(component_address)
+            Self {}
+                .instantiate()
+                .globalize_at_address(component_address)
         }
 
         pub fn create_with_unused_preallocated_address_1() -> Global<PreallocationComponent> {
             let component_address = Runtime::preallocate_global_component_address();
             Runtime::preallocate_global_component_address();
-            Self {}.instantiate().globalize_at_address(component_address)
+            Self {}
+                .instantiate()
+                .globalize_at_address(component_address)
         }
 
         pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent> {
@@ -172,8 +176,12 @@ mod preallocation_component {
             Global<PreallocationComponent>,
         ) {
             let component_address = Runtime::preallocate_global_component_address();
-            let one = Self {}.instantiate().globalize_at_address(component_address);
-            let two = Self {}.instantiate().globalize_at_address(component_address);
+            let one = Self {}
+                .instantiate()
+                .globalize_at_address(component_address);
+            let two = Self {}
+                .instantiate()
+                .globalize_at_address(component_address);
             (one, two)
         }
     }

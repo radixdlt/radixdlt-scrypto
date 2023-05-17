@@ -38,10 +38,15 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, rule!(require(ACCOUNT_WITHDRAW_IDENT)));
+        authority_rules
+            .set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
+            rule!(require(ACCOUNT_WITHDRAW_IDENT)),
+        );
 
-        authority_rules.set_fixed_main_authority_rule(ACCOUNT_LOCK_FEE_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(ACCOUNT_LOCK_FEE_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
             rule!(require(ACCOUNT_LOCK_FEE_IDENT)),
@@ -54,10 +59,8 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
             rule!(require(ACCOUNT_LOCK_FEE_IDENT) && require(ACCOUNT_WITHDRAW_IDENT)),
         );
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_IDENT,
-            rule!(require_owner()),
-        );
+        authority_rules
+            .set_fixed_main_authority_rule(ACCOUNT_CREATE_PROOF_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
             rule!(require(ACCOUNT_CREATE_PROOF_IDENT)),

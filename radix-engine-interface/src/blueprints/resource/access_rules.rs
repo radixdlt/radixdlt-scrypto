@@ -115,10 +115,8 @@ impl AuthorityRules {
 
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_authority(
-            rule!(require(owner_badge.clone())),
-            rule!(require_owner()),
-        );
+        authority_rules
+            .set_owner_authority(rule!(require(owner_badge.clone())), rule!(require_owner()));
         authority_rules
     }
 
@@ -131,11 +129,7 @@ impl AuthorityRules {
         self.rules.insert(authority_key, (rule, mutability));
     }
 
-    pub fn redirect_to_fixed<S: Into<String>>(
-        &mut self,
-        authority: S,
-        redirect_to: &str,
-    ) {
+    pub fn redirect_to_fixed<S: Into<String>>(&mut self, authority: S, redirect_to: &str) {
         let name = authority.into();
         self.rules.insert(
             AuthorityKey::module(ObjectModuleId::Main, name.as_str()),

@@ -7,9 +7,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, AuthorityRules,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -182,7 +180,6 @@ impl<C: HasStub> Owned<C> {
         Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
-
     pub fn globalize(self) -> Global<C> {
         let globalizing: Globalizing<C> = Globalizing::new_with_metadata(self.0, Metadata::new());
         globalizing.globalize()
@@ -232,10 +229,7 @@ impl<C: HasStub> Globalizing<C> {
         }
     }
 
-    fn new_with_authorities(
-        stub: C::Stub,
-        authority_rules: AuthorityRules,
-    ) -> Self {
+    fn new_with_authorities(stub: C::Stub, authority_rules: AuthorityRules) -> Self {
         Self {
             stub,
             metadata: None,

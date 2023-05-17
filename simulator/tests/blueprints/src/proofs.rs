@@ -24,9 +24,11 @@ mod proofs {
 
             let component = Self {}
                 .instantiate()
-                .authority_rule("organizational_authenticated_method",
-                                organizational_access_rule,
-                                AccessRule::DenyAll)
+                .authority_rule(
+                    "organizational_authenticated_method",
+                    organizational_access_rule,
+                    AccessRule::DenyAll,
+                )
                 .globalize();
             (
                 component,

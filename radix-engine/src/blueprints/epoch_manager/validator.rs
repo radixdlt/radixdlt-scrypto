@@ -630,16 +630,25 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
         authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
 
-        authority_rules.set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+            rule!(require_owner()),
+        );
         authority_rules.set_main_authority_rule(
             VALIDATOR_STAKE_IDENT,
             rule!(require_owner()),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_fixed_main_authority_rule(VALIDATOR_APPLY_EMISSION_IDENT, rule!(require(global_caller(EPOCH_MANAGER))));
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_APPLY_EMISSION_IDENT,
+            rule!(require(global_caller(EPOCH_MANAGER))),
+        );
         authority_rules
     }
 }

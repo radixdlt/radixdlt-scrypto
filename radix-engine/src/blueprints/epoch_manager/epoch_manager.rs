@@ -184,7 +184,6 @@ impl EpochManagerBlueprint {
             )?
         };
 
-
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
             EPOCH_MANAGER_START_IDENT,

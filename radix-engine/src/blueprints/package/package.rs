@@ -116,10 +116,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
         authority_rules.redirect_to_fixed(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
         authority_rules.redirect_to_fixed(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
-        authority_rules.set_fixed_main_authority_rule(
-            "package_royalty",
-            rule!(require_owner()),
-        );
+        authority_rules.set_fixed_main_authority_rule("package_royalty", rule!(require_owner()));
         authority_rules
     }
 }

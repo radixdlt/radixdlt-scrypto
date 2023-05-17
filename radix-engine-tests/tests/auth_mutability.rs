@@ -28,7 +28,10 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
 
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
         ResourceAuth::UpdateMetadata => {
             (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
         }
@@ -67,7 +70,10 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
 
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
         ResourceAuth::UpdateMetadata => {
             (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
         }

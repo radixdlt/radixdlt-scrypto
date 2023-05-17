@@ -11,11 +11,7 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (
-    AuthorityRules,
-    AuthorityRules,
-    AuthorityRules,
-) {
+) -> (AuthorityRules, AuthorityRules, AuthorityRules) {
     let resman_authority_rules = {
         let (mint_access_rule, mint_mutability) = access_rules_map
             .remove(&Mint)
@@ -43,10 +39,18 @@ fn build_access_rules(
                 mint_access_rule,
                 mint_mutability,
             );
-            resman_authority_rules.redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
-            resman_authority_rules.redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT, MINT_AUTHORITY);
-            resman_authority_rules.redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT, MINT_AUTHORITY);
-            resman_authority_rules.redirect_to_fixed(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+            resman_authority_rules
+                .redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+            resman_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules
+                .redirect_to_fixed(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
         }
 
         resman_authority_rules.set_main_authority_rule(
@@ -147,14 +151,11 @@ fn build_access_rules(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
-        bucket_authority_rules
-            .redirect_to_fixed(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
+        bucket_authority_rules.redirect_to_fixed(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
         bucket_authority_rules
             .redirect_to_fixed(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT, "this_package");
-        bucket_authority_rules.redirect_to_fixed(
-            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
-            "this_package",
-        );
+        bucket_authority_rules
+            .redirect_to_fixed(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT, "this_package");
         bucket_authority_rules.redirect_to_fixed(
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
             "this_package",
