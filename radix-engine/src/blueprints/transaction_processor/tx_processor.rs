@@ -319,7 +319,7 @@ impl TransactionProcessorBlueprint {
                     args,
                 } => {
                     handle_call_module_method!(
-                        ObjectModuleId::Main,
+                        ObjectModuleId::Metadata,
                         address,
                         method_name,
                         args,
