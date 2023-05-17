@@ -5,6 +5,7 @@ use well_known_scrypto_custom_types::*;
 
 pub mod well_known_scrypto_custom_types {
     use super::*;
+    use crate::native_addresses::RESOURCE_PACKAGE;
 
     pub const REFERENCE_ID: u8 = VALUE_KIND_REFERENCE;
     pub fn reference_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
@@ -69,7 +70,31 @@ pub mod well_known_scrypto_custom_types {
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket)),
         )
     }
-    pub const OWN_PROOF_ID: u8 = VALUE_KIND_OWN + 2;
+    pub const OWN_FUNGIBLE_BUCKET_ID: u8 = VALUE_KIND_OWN + 2;
+    pub fn own_fungible_bucket_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L>
+    {
+        // Bucket is not clear from the address in the value, so add it as a type name
+        named_type_kind(
+            "FungibleBucket",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "FungibleBucket".to_string()),
+            )),
+        )
+    }
+    pub const OWN_NON_FUNGIBLE_BUCKET_ID: u8 = VALUE_KIND_OWN + 3;
+    pub fn own_non_fungible_bucket_type_data<L: SchemaTypeLink>(
+    ) -> TypeData<ScryptoCustomTypeKind, L> {
+        // Bucket is not clear from the address in the value, so add it as a type name
+        named_type_kind(
+            "NonFungibleBucket",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "NonFungibleBucket".to_string()),
+            )),
+        )
+    }
+    pub const OWN_PROOF_ID: u8 = VALUE_KIND_OWN + 4;
     pub fn own_proof_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
         // Proof is not clear from the address in the value, so add it as a type name
         named_type_kind(
@@ -78,14 +103,59 @@ pub mod well_known_scrypto_custom_types {
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsProof)),
         )
     }
-    pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 3;
+    pub const OWN_FUNGIBLE_PROOF_ID: u8 = VALUE_KIND_OWN + 5;
+    pub fn own_fungible_proof_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
+        // Proof is not clear from the address in the value, so add it as a type name
+        named_type_kind(
+            "FungibleProof",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "FungibleProof".to_string()),
+            )),
+        )
+    }
+    pub const OWN_NON_FUNGIBLE_PROOF_ID: u8 = VALUE_KIND_OWN + 6;
+    pub fn own_non_fungible_proof_type_data<L: SchemaTypeLink>(
+    ) -> TypeData<ScryptoCustomTypeKind, L> {
+        // Proof is not clear from the address in the value, so add it as a type name
+        named_type_kind(
+            "NonFungibleProof",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "NonFungibleProof".to_string()),
+            )),
+        )
+    }
+    pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 7;
     pub fn own_vault_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        named_type_kind(
+            "Vault",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(OwnValidation::IsVault)),
         )
     }
-    pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 4;
+    pub const OWN_FUNGIBLE_VAULT_ID: u8 = VALUE_KIND_OWN + 8;
+    pub fn own_fungible_vault_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
+        named_type_kind(
+            "FungibleVault",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "FungibleVault".to_string()),
+            )),
+        )
+    }
+    pub const OWN_NON_FUNGIBLE_VAULT_ID: u8 = VALUE_KIND_OWN + 9;
+    pub fn own_non_fungible_vault_type_data<L: SchemaTypeLink>(
+    ) -> TypeData<ScryptoCustomTypeKind, L> {
+        named_type_kind(
+            "NonFungibleVault",
+            ScryptoCustomTypeKind::Own,
+            Some(ScryptoCustomTypeValidation::Own(
+                OwnValidation::IsTypedObject(RESOURCE_PACKAGE, "NonFungibleVault".to_string()),
+            )),
+        )
+    }
+    pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 10;
     pub fn own_key_value_store_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L>
     {
         unnamed_type_kind(
