@@ -298,7 +298,10 @@ impl Authorization {
                     return Ok(AuthorizationCheckResult::Authorized);
                 }
 
-                match access_rules.get_rule(&AuthorityKey::from_access_rule(authority.clone())) {
+                match access_rules.get_rule(&AuthorityKey::from_access_rule(
+                    module_id,
+                    authority.clone(),
+                )) {
                     Some(access_rule) => {
                         // TODO: Add costing for every access rule hop
                         Self::check_authorization_against_access_rule_internal(
@@ -311,14 +314,14 @@ impl Authorization {
                             api,
                         )
                     }
-                    None => Ok(AuthorizationCheckResult::Failed(vec![])),
+                    None => Ok(AuthorizationCheckResult::Failed(module_id, vec![])),
                 }
             }
             AccessRuleNode::ProofRule(rule) => {
                 if Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
                 } else {
-                    Ok(AuthorizationCheckResult::Failed(vec![]))
+                    Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
                 }
             }
             AccessRuleNode::AnyOf(rules) => {
@@ -336,7 +339,7 @@ impl Authorization {
                         return Ok(rtn);
                     }
                 }
-                Ok(AuthorizationCheckResult::Failed(vec![]))
+                Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
@@ -383,14 +386,17 @@ impl Authorization {
                 )?;
                 match &mut rtn {
                     AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(stack) => {
+                    AuthorizationCheckResult::Failed(_, stack) => {
                         stack.push(rule.clone());
                     }
                 }
                 Ok(rtn)
             }
             AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
-            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(
+                module_id,
+                vec![rule.clone()],
+            )),
         }
     }
 

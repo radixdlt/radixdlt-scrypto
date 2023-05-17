@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::errors::{ModuleError, RuntimeError};
-use radix_engine::system::node_modules::access_rules::METADATA_AUTHORITY;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
@@ -27,33 +26,30 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
-    let (object_key, authority) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
-        ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
+    let (object_key, authority_key) = match action {
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main("mint")),
+        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main("burn")),
+        ResourceAuth::UpdateMetadata => {
+            (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
+        }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "withdraw",
+            AuthorityKey::main("withdraw"),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "deposit",
+            AuthorityKey::main("deposit"),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "recall",
+            AuthorityKey::main("recall"),
         ),
     };
     {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_mutability(
-                token_address.into(),
-                object_key,
-                AuthorityKey::module(authority),
-                DenyAll,
-            )
+            .set_authority_mutability(token_address.into(), object_key, authority_key, DenyAll)
             .build();
         test_runner
             .execute_manifest(
@@ -69,21 +65,23 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .lock_fee(test_runner.faucet_component(), 100u32.into())
         .create_proof_from_account(account, admin_auth);
 
-    let (object_key, authority) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, "mint"),
-        ResourceAuth::Burn => (ObjectKey::SELF, "burn"),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
+    let (object_key, authority_key) = match action {
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main("mint")),
+        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main("burn")),
+        ResourceAuth::UpdateMetadata => {
+            (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
+        }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "withdraw",
+            AuthorityKey::main("withdraw"),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "deposit",
+            AuthorityKey::main("deposit"),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            "recall",
+            AuthorityKey::main("recall"),
         ),
     };
 
@@ -91,14 +89,14 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         builder.set_authority_mutability(
             token_address.into(),
             object_key,
-            AuthorityKey::module(authority),
+            authority_key.clone(),
             DenyAll,
         )
     } else {
         builder.set_authority_access_rule(
             token_address.into(),
             object_key,
-            AuthorityKey::module(authority),
+            authority_key,
             rule!(require(updated_auth)),
         )
     };

@@ -5,7 +5,9 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -64,7 +66,7 @@ pub trait AccessRulesObject {
 
     fn set_authority_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
-        name: &str,
+        authority_key: AuthorityKey,
         entry: A,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -76,7 +78,7 @@ pub trait AccessRulesObject {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::module(name),
+                authority_key,
                 rule: entry.into(),
             })
             .unwrap(),

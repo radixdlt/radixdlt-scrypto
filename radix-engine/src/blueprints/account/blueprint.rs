@@ -60,10 +60,22 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_rule("lock_fee", rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_main_rule("withdraw", rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_main_rule("create_proof", rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_main_rule(
+        authority_rules.set_main_authority_rule(
+            "lock_fee",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            "withdraw",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            "create_proof",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
             "lock_fee_and_withdraw",
             rule!(require("lock_fee") && require("withdraw")),
             rule!(deny_all),

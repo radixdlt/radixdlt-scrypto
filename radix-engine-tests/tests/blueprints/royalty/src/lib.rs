@@ -26,7 +26,7 @@ mod royalty_test {
                 .default(0);
 
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule("owner", rule!(allow_all), rule!(allow_all));
+            authority_rules.set_owner_rule(rule!(allow_all), rule!(allow_all));
 
             local_component.globalize_with_modules(
                 AccessRules::new(MethodAuthorities::new(), authority_rules),

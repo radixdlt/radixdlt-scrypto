@@ -39,7 +39,11 @@ pub trait SecurifiedAccessRules {
         let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
-            authority_rules.set_main_rule(securify, AccessRule::DenyAll, AccessRule::DenyAll);
+            authority_rules.set_main_authority_rule(
+                securify,
+                AccessRule::DenyAll,
+                AccessRule::DenyAll,
+            );
         }
 
         let access_rules =
@@ -64,7 +68,7 @@ pub trait SecurifiedAccessRules {
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                AuthorityKey::module(securify),
+                AuthorityKey::main(securify),
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
                 api,
@@ -97,7 +101,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                AuthorityKey::module(securify),
+                AuthorityKey::main(securify),
                 access_rule.clone(),
                 this_package_rule.clone(),
                 api,

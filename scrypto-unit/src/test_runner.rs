@@ -648,11 +648,8 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_main_rule(
-                "owner",
-                rule!(require(owner_id.clone())),
-                rule!(require(owner_id)),
-            );
+            authority_rules
+                .set_owner_rule(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
                 .create_identity_advanced(authority_rules)

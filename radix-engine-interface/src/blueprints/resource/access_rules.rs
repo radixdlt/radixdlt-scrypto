@@ -12,6 +12,9 @@ use utils::btreemap;
 
 use super::AccessRule;
 
+pub const METADATA_AUTHORITY: &str = "metadata";
+pub const ROYALTY_AUTHORITY: &str = "royalty";
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FnKey {
     pub blueprint: String,
@@ -108,24 +111,35 @@ impl MethodAuthorities {
     }
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityKey {
     Owner,
-    Module(String),
+    Module(ObjectModuleId, String),
 }
 
-
 impl AuthorityKey {
-    pub fn from_access_rule(rule: AuthorityRule) -> Self {
+    pub fn from_access_rule(module_id: ObjectModuleId, rule: AuthorityRule) -> Self {
         match rule {
             AuthorityRule::Owner => AuthorityKey::Owner,
-            AuthorityRule::Custom(key) => AuthorityKey::Module(key),
+            AuthorityRule::Custom(key) => AuthorityKey::Module(module_id, key),
         }
     }
 
+    pub fn module(module_id: ObjectModuleId, key: &str) -> Self {
+        AuthorityKey::Module(module_id, key.to_string())
+    }
 
-    pub fn module(key: &str) -> Self {
-        AuthorityKey::Module(key.to_string())
+    pub fn main(key: &str) -> Self {
+        AuthorityKey::Module(ObjectModuleId::Main, key.to_string())
+    }
+
+    pub fn metadata(key: &str) -> Self {
+        AuthorityKey::Module(ObjectModuleId::Metadata, key.to_string())
+    }
+
+    pub fn royalty(key: &str) -> Self {
+        AuthorityKey::Module(ObjectModuleId::Royalty, key.to_string())
     }
 }
 
@@ -150,21 +164,34 @@ impl AuthorityRules {
         self.rules.insert(authority_key, (rule, mutability));
     }
 
-    pub fn set_main_rule<S: Into<String>>(
+    pub fn set_main_authority_rule<S: Into<String>>(
         &mut self,
         authority: S,
         rule: AccessRule,
         mutability: AccessRule,
     ) {
         let name = authority.into();
-        self.rules.insert(AuthorityKey::module(name.as_str()), (rule, mutability));
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            (rule, mutability),
+        );
     }
 
-    pub fn set_owner_rule(
-        &mut self,
-        rule: AccessRule,
-        mutability: AccessRule,
-    ) {
+    pub fn set_metadata_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Metadata, METADATA_AUTHORITY),
+            (rule, mutability),
+        );
+    }
+
+    pub fn set_royalty_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Royalty, ROYALTY_AUTHORITY),
+            (rule, mutability),
+        );
+    }
+
+    pub fn set_owner_rule(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules.insert(AuthorityKey::Owner, (rule, mutability));
     }
 

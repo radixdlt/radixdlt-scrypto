@@ -7,7 +7,9 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -68,7 +70,7 @@ impl ActorAccessRules {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    authority_key: AuthorityKey::module(name),
+                    authority_key: AuthorityKey::main(name),
                     rule: entry.into(),
                 })
                 .unwrap(),
@@ -84,7 +86,7 @@ impl ActorAccessRules {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    authority_key: AuthorityKey::module(name),
+                    authority_key: AuthorityKey::main(name),
                     mutability,
                 })
                 .unwrap(),

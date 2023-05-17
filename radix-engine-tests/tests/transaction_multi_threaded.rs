@@ -38,8 +38,7 @@ mod multi_threaded_test {
         let public_key = private_key.public_key();
 
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_rule(
-            "owner",
+        authority_rules.set_owner_rule(
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             AccessRule::DenyAll,
         );

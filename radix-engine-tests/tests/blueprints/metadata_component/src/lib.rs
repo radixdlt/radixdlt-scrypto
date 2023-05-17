@@ -20,7 +20,7 @@ mod metadata_component {
             let component = MetadataComponent {}.instantiate();
 
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll);
+            authority_rules.set_metadata_authority(AccessRule::AllowAll, AccessRule::DenyAll);
 
             let component_address =
                 component.globalize_with_access_rules(MethodAuthorities::new(), authority_rules);

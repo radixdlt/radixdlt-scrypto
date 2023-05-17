@@ -29,7 +29,7 @@ mod proofs {
                 "organizational_authenticated_method",
             );
             let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_rule(
+            authority_rules.set_main_authority_rule(
                 "organizational_authenticated_method",
                 organizational_access_rule,
                 AccessRule::DenyAll,

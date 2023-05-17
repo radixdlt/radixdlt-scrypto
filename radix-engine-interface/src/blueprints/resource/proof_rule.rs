@@ -90,7 +90,7 @@ impl From<&str> for AccessRuleNode {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityRule {
     Owner,
-    Custom(String)
+    Custom(String),
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

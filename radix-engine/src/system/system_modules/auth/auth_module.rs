@@ -6,7 +6,10 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{NodeAuthorityRules, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
+use crate::system::node_modules::access_rules::{
+    AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
+    MethodAccessRulesSubstate, NodeAuthorityRules,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
@@ -32,6 +35,7 @@ pub enum AuthError {
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
+    pub module_id: ObjectModuleId,
     pub access_rule_stack: Vec<AccessRule>,
     pub fn_identifier: FnIdentifier,
 }
@@ -48,7 +52,7 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(Vec<AccessRule>),
+    Failed(ObjectModuleId, Vec<AccessRule>),
 }
 
 impl AuthModule {
@@ -119,9 +123,10 @@ impl AuthModule {
                 )?;
                 match auth_result {
                     AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(access_rule_stack) => {
+                    AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
+                                module_id,
                                 access_rule_stack,
                                 fn_identifier: callee.fn_identifier(),
                             })),
@@ -239,12 +244,15 @@ impl AuthModule {
         )?;
         match result {
             AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(access_rule_stack) => Err(RuntimeError::ModuleError(
-                ModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                    access_rule_stack,
-                    fn_identifier,
-                }))),
-            )),
+            AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        module_id,
+                        access_rule_stack,
+                        fn_identifier,
+                    })),
+                )))
+            }
         }
     }
 
@@ -284,9 +292,10 @@ impl AuthModule {
                     )?;
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
-                        AuthorizationCheckResult::Failed(access_rule_stack) => {
+                        AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
+                                    module_id,
                                     access_rule_stack,
                                     fn_identifier: callee.fn_identifier(),
                                 })),
