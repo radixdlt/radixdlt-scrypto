@@ -55,3 +55,16 @@ cp \
   ../genesis_helper.schema
 
 echo "Done!"
+
+echo "Building metadata..."
+(cd metadata; $scrypto build)
+npx wasm-opt@1.3 \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ../metadata.wasm \
+  ./target/wasm32-unknown-unknown/release/metadata.wasm
+cp \
+  ./target/wasm32-unknown-unknown/release/metadata.schema \
+  ../metadata.schema
+
+echo "Done!"

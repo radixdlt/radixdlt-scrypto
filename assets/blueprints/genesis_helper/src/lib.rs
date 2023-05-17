@@ -1,6 +1,5 @@
 use native_sdk::account::*;
 use native_sdk::epoch_manager::*;
-use scrypto::api::node_modules::metadata::MetadataValue;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -197,7 +196,7 @@ mod genesis_helper {
 
                 borrow_resource_manager!(owner_badge.resource_address())
                     .metadata()
-                    .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
+                    .set("tags", vec!["badge".to_string()]);
 
                 access_rules.insert(
                     Mint,

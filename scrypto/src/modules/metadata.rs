@@ -11,7 +11,6 @@ use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub Own);
@@ -49,26 +48,6 @@ impl MetadataObject for AttachedMetadata {
 pub trait MetadataObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
-        let (node_id, module_id) = self.self_id();
-
-        let entry = MetadataEntry::List(list);
-
-        let _rtn = ScryptoEnv
-            .call_method_advanced(
-                node_id,
-                false,
-                module_id,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: entry,
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
     fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         let (node_id, module_id) = self.self_id();
 
@@ -87,7 +66,7 @@ pub trait MetadataObject {
             .unwrap();
     }
 
-    fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
+    fn get<K: AsRef<str>, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
         let (node_id, module_id) = self.self_id();
 
         let rtn = ScryptoEnv
@@ -106,8 +85,12 @@ pub trait MetadataObject {
         let value: MetadataGetOutput = scrypto_decode(&rtn).unwrap();
         match value {
             None => Err(MetadataError::EmptyEntry),
-            Some(value) => String::from_metadata_entry(value),
+            Some(value) => V::from_metadata_entry(value),
         }
+    }
+
+    fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
+        self.get(name)
     }
 
     fn remove<K: AsRef<str>>(&self, name: K) -> bool {
