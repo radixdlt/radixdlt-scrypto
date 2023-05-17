@@ -35,7 +35,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: MINT_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(MINT_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -52,7 +52,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: BURN_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(BURN_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -77,7 +77,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                    name: WITHDRAW_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(WITHDRAW_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -94,7 +94,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                    name: DEPOSIT_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(DEPOSIT_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -111,7 +111,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                    name: RECALL_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(RECALL_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -128,7 +128,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: "metadata".to_string(),
+                    authority_key: AuthorityKey::new("metadata"),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -145,7 +145,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                     object_key: ObjectKey::SELF,
-                    name: UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY),
                     rule: access_rule,
                 })
                 .unwrap(),
@@ -162,7 +162,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: MINT_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(MINT_AUTHORITY),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -179,7 +179,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: BURN_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(BURN_AUTHORITY),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -196,7 +196,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: "metadata".to_string(),
+                    authority_key: AuthorityKey::new("metadata"),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -213,7 +213,7 @@ impl ResourceManager {
                 ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
                 scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                     object_key: ObjectKey::SELF,
-                    name: UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string(),
+                    authority_key: AuthorityKey::new(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY),
                     mutability: AccessRule::DenyAll,
                 })
                 .unwrap(),
@@ -229,7 +229,7 @@ impl ResourceManager {
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                name: WITHDRAW_AUTHORITY.to_string(),
+                authority_key: AuthorityKey::new(WITHDRAW_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -244,7 +244,7 @@ impl ResourceManager {
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                name: DEPOSIT_AUTHORITY.to_string(),
+                authority_key: AuthorityKey::new(DEPOSIT_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),
@@ -259,7 +259,7 @@ impl ResourceManager {
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::inner_blueprint(self.vault_blueprint_name()),
-                name: RECALL_AUTHORITY.to_string(),
+                authority_key: AuthorityKey::new(RECALL_AUTHORITY),
                 mutability: AccessRule::DenyAll,
             })
             .unwrap(),

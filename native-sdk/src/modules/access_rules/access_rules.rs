@@ -5,9 +5,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityRules, MethodAuthorities, ObjectKey,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -16,7 +14,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 
 pub struct AccessRules(pub Own);
 
@@ -79,7 +76,7 @@ pub trait AccessRulesObject {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                name: name.into(),
+                authority_key: AuthorityKey::new(name),
                 rule: entry.into(),
             })
             .unwrap(),
@@ -107,7 +104,7 @@ pub trait AccessRulesObject {
             ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                name: name.to_string(),
+                authority_key: AuthorityKey::new(name),
                 rule: rule.into(),
                 mutability,
             })
