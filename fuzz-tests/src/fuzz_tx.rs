@@ -594,7 +594,7 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let authority_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
+                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
 
                     Some(Instruction::SetAuthorityAccessRule {
@@ -614,10 +614,10 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let object_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
-                    let authority_key = ObjectKey::arbitrary(&mut unstructured).unwrap();
+                    let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetGroupMutability {
+                    Some(Instruction::SetAuthorityMutability {
                         entity_address,
                         object_key,
                         authority_key,

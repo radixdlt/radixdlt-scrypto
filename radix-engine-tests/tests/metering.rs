@@ -106,7 +106,7 @@ fn test_radiswap() {
                 .default(0),
         ),
         btreemap!(),
-        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::create_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -205,11 +205,11 @@ fn test_radiswap() {
         + 13875 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5650219 /* LockSubstate */
+        + 5624281 /* LockSubstate */
         + 19432 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1520555 /* RunWasm */
+        + 1523945 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -240,7 +240,7 @@ fn test_flash_loan() {
                 .default(0),
         ),
         btreemap!(),
-        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::create_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate flash_loan
@@ -316,11 +316,11 @@ fn test_flash_loan() {
         + 21904 /* DropLock */
         + 5880 /* DropNode */
         + 4543955 /* Invoke */
-        + 6940865 /* LockSubstate */
+        + 6917091 /* LockSubstate */
         + 31080 /* ReadSubstate */
         + 200000 /* RunNative */
         + 40000 /* RunSystem */
-        + 1298290 /* RunWasm */
+        + 1293335 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

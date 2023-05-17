@@ -41,11 +41,7 @@ mod royalty_test {
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)
-                .authority_rule(
-                    "owner",
-                    rule!(require(badge.clone())),
-                    rule!(require(badge.clone())),
-                )
+                .owner_authority(rule!(require(badge.clone())), rule!(require(badge.clone())))
                 .globalize()
         }
 

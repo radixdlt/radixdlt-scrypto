@@ -7,7 +7,9 @@ use crate::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodAuthorities};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities,
+};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -155,7 +157,37 @@ impl<C: HasStub> Owned<C> {
         mutability: B,
     ) -> Globalizing<C> {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(name, entry.into(), mutability.into());
+        authority_rules.set_rule(AuthorityKey::main(name), entry.into(), mutability.into());
+        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+    }
+
+    pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        self,
+        entry: A,
+        mutability: B,
+    ) -> Globalizing<C> {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_metadata_authority(entry.into(), mutability.into());
+        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+    }
+
+    pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        self,
+        entry: A,
+        mutability: B,
+    ) -> Globalizing<C> {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_royalty_authority(entry.into(), mutability.into());
+        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+    }
+
+    pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        self,
+        entry: A,
+        mutability: B,
+    ) -> Globalizing<C> {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_authority(entry.into(), mutability.into());
         Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
     }
 
@@ -266,7 +298,37 @@ impl<C: HasStub> Globalizing<C> {
         mutability: B,
     ) -> Self {
         self.authority_rules
-            .set_rule(name, entry.into(), mutability.into());
+            .set_main_authority_rule(name, entry.into(), mutability.into());
+        self
+    }
+
+    pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        mut self,
+        entry: A,
+        mutability: B,
+    ) -> Self {
+        self.authority_rules
+            .set_metadata_authority(entry.into(), mutability.into());
+        self
+    }
+
+    pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        mut self,
+        entry: A,
+        mutability: B,
+    ) -> Self {
+        self.authority_rules
+            .set_royalty_authority(entry.into(), mutability.into());
+        self
+    }
+
+    pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+        mut self,
+        entry: A,
+        mutability: B,
+    ) -> Self {
+        self.authority_rules
+            .set_owner_authority(entry.into(), mutability.into());
         self
     }
 

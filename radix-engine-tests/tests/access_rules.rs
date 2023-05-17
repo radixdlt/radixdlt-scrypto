@@ -302,7 +302,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         rule!(require_owner()),
         rule!(require_owner()),
     );
-    authority_rules.set_owner_rule(
+    authority_rules.set_owner_authority(
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );

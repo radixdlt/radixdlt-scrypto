@@ -144,7 +144,7 @@ impl AuthorityKey {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AuthorityRules {
     pub rules: BTreeMap<AuthorityKey, (AccessRule, AccessRule)>,
@@ -191,13 +191,13 @@ impl AuthorityRules {
         );
     }
 
-    pub fn set_owner_rule(&mut self, rule: AccessRule, mutability: AccessRule) {
+    pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules.insert(AuthorityKey::Owner, (rule, mutability));
     }
 
-    pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
+    pub fn create_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_rule(
+        authority_rules.set_owner_authority(
             rule!(require(owner_badge.clone())),
             rule!(require(owner_badge.clone())),
         );
