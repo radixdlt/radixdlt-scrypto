@@ -240,35 +240,19 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = RADIX_TOKEN;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            ACCOUNT_VAULT_INDEX,
-            &encoded_key,
-            LockFlags::read_only(),
+        Self::get_vault(
+            resource_address,
+            |vault, api| {
+                if contingent {
+                    vault.lock_contingent_fee(api, amount)
+                } else {
+                    vault.lock_fee(api, amount)
+                }
+            },
+            false,
+            api,
         )?;
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
-        let mut vault = {
-            let entry: AccountVaultIndexEntry =
-                api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
-
-            match entry {
-                Option::Some(own) => Ok(Vault(own)),
-                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
-            }
-        }?;
-
-        // Lock fee against the vault
-        if !contingent {
-            vault.lock_fee(api, amount)?;
-        } else {
-            vault.lock_contingent_fee(api, amount)?;
-        }
-
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -294,40 +278,13 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let resource_address = bucket.resource_address(api)?;
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        // Getting an RW lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            0u8,
-            &encoded_key,
-            LockFlags::MUTABLE,
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.put(bucket, api),
+            true,
+            api,
         )?;
-
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it and
-        // insert it's entry into the KVStore
-        let mut vault = {
-            let entry: Option<Own> = api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
-
-            match entry {
-                Option::Some(own) => Vault(own),
-                Option::None => {
-                    let vault = Vault::create(resource_address, api)?;
-                    let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
-
-                    api.key_value_entry_set_typed(
-                        kv_store_entry_lock_handle,
-                        &encoded_value.to_scrypto_value(),
-                    )?;
-                    vault
-                }
-            }
-        };
-
-        // Put the bucket in the vault
-        vault.put(bucket, api)?;
-
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -336,47 +293,8 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // TODO: We should optimize this a bit more so that we're not locking and unlocking the same
-        // KV-store entries again and again because of buckets that have the same resource address.
-        // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
-        // resolved.
         for bucket in buckets {
-            let resource_address = bucket.resource_address(api)?;
-            let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-            // Getting an RW lock handle on the KVStore ENTRY
-            let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
-                OBJECT_HANDLE_SELF,
-                ACCOUNT_VAULT_INDEX,
-                &encoded_key,
-                LockFlags::MUTABLE,
-            )?;
-
-            // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it
-            // and insert it's entry into the KVStore
-            let mut vault = {
-                let entry: AccountVaultIndexEntry =
-                    api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
-
-                match entry {
-                    Option::Some(own) => Vault(own),
-                    Option::None => {
-                        let vault = Vault::create(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
-
-                        api.key_value_entry_set_typed(
-                            kv_store_entry_lock_handle,
-                            &encoded_value.to_scrypto_value(),
-                        )?;
-                        vault
-                    }
-                }
-            };
-
-            // Put the bucket in the vault
-            vault.put(bucket, api)?;
-
-            api.key_value_entry_release(kv_store_entry_lock_handle)?;
+            Self::deposit(bucket, api)?;
         }
 
         Ok(())
@@ -385,6 +303,7 @@ impl AccountBlueprint {
     fn get_vault<F, Y, R>(
         resource_address: ResourceAddress,
         vault_fn: F,
+        create: bool,
         api: &mut Y,
     ) -> Result<R, RuntimeError>
     where
@@ -399,19 +318,37 @@ impl AccountBlueprint {
                 OBJECT_HANDLE_SELF,
                 ACCOUNT_VAULT_INDEX,
                 &encoded_key,
-                LockFlags::read_only(),
+                if create {
+                    LockFlags::MUTABLE
+                } else {
+                    LockFlags::read_only()
+                },
             )?;
             handle
         };
 
-        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then error out.
+        // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
+        // instructed to.
         let mut vault = {
             let entry: AccountVaultIndexEntry =
                 api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
 
             match entry {
                 Option::Some(own) => Ok(Vault(own)),
-                Option::None => Err(AccountError::VaultDoesNotExist { resource_address }),
+                Option::None => {
+                    if create {
+                        let vault = Vault::create(resource_address, api)?;
+                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
+
+                        api.key_value_entry_set_typed(
+                            kv_store_entry_lock_handle,
+                            &encoded_value.to_scrypto_value(),
+                        )?;
+                        Ok(vault)
+                    } else {
+                        Err(AccountError::VaultDoesNotExist { resource_address })
+                    }
+                }
             }
         }?;
 
@@ -431,7 +368,12 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
+        let bucket = Self::get_vault(
+            resource_address,
+            |vault, api| vault.take(amount, api),
+            true,
+            api,
+        )?;
 
         Ok(bucket)
     }
@@ -447,6 +389,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take_non_fungibles(ids, api),
+            true,
             api,
         )?;
 
@@ -464,7 +407,12 @@ impl AccountBlueprint {
     {
         Self::lock_fee_internal(amount_to_lock, false, api)?;
 
-        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
+        let bucket = Self::get_vault(
+            resource_address,
+            |vault, api| vault.take(amount, api),
+            true,
+            api,
+        )?;
 
         Ok(bucket)
     }
@@ -483,6 +431,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take_non_fungibles(ids, api),
+            true,
             api,
         )?;
 
@@ -496,7 +445,12 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proof = Self::get_vault(resource_address, |vault, api| vault.create_proof(api), api)?;
+        let proof = Self::get_vault(
+            resource_address,
+            |vault, api| vault.create_proof(api),
+            true,
+            api,
+        )?;
 
         Ok(proof)
     }
@@ -512,6 +466,7 @@ impl AccountBlueprint {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_amount(amount, api),
+            true,
             api,
         )?;
 
@@ -529,6 +484,7 @@ impl AccountBlueprint {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_non_fungibles(ids, api),
+            true,
             api,
         )?;
 
