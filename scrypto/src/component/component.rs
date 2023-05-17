@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities,
+    AccessRule, AuthorityKey, AuthorityRules,
 };
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
@@ -136,12 +136,8 @@ impl<C: HasStub> Owned<C> {
         Globalizing::new_with_royalty(self.0, royalty_config)
     }
 
-    pub fn method_authorities(self, method_authorities: MethodAuthorities) -> Globalizing<C> {
-        Globalizing::new_with_authorities(self.0, method_authorities, AuthorityRules::new())
-    }
-
     pub fn authority_rules(self, authority_rules: AuthorityRules) -> Globalizing<C> {
-        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+        Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
     pub fn authority_rule<A: Into<AccessRule>, B: Into<AccessRule>>(
@@ -152,7 +148,7 @@ impl<C: HasStub> Owned<C> {
     ) -> Globalizing<C> {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_rule(AuthorityKey::main(name), entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+        Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
     pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
@@ -162,7 +158,7 @@ impl<C: HasStub> Owned<C> {
     ) -> Globalizing<C> {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+        Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
     pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
@@ -172,7 +168,7 @@ impl<C: HasStub> Owned<C> {
     ) -> Globalizing<C> {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_royalty_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+        Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
     pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
@@ -182,7 +178,7 @@ impl<C: HasStub> Owned<C> {
     ) -> Globalizing<C> {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_owner_authority(entry.into(), mutability.into());
-        Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
+        Globalizing::new_with_authorities(self.0, authority_rules)
     }
 
     pub fn address(self, address: ComponentAddress) -> Globalizing<C> {
@@ -202,7 +198,6 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
-    pub method_authorities: MethodAuthorities,
     pub authority_rules: AuthorityRules,
     pub address: Option<ComponentAddress>,
 }
@@ -221,7 +216,6 @@ impl<C: HasStub> Globalizing<C> {
             stub,
             metadata: Some(metadata),
             royalty: RoyaltyConfig::default(),
-            method_authorities: MethodAuthorities::new(),
             authority_rules: AuthorityRules::new(),
             address: None,
         }
@@ -232,7 +226,6 @@ impl<C: HasStub> Globalizing<C> {
             stub,
             metadata: None,
             royalty,
-            method_authorities: MethodAuthorities::new(),
             authority_rules: AuthorityRules::new(),
             address: None,
         }
@@ -240,14 +233,12 @@ impl<C: HasStub> Globalizing<C> {
 
     fn new_with_authorities(
         stub: C::Stub,
-        method_authorities: MethodAuthorities,
         authority_rules: AuthorityRules,
     ) -> Self {
         Self {
             stub,
             metadata: None,
             royalty: RoyaltyConfig::default(),
-            method_authorities,
             authority_rules,
             address: None,
         }
@@ -266,11 +257,6 @@ impl<C: HasStub> Globalizing<C> {
 
     pub fn royalty_default(mut self, amount: u32) -> Self {
         self.royalty.default_rule = amount;
-        self
-    }
-
-    pub fn method_authorities(mut self, method_authorities: MethodAuthorities) -> Self {
-        self.method_authorities = method_authorities;
         self
     }
 
@@ -328,7 +314,7 @@ impl<C: HasStub> Globalizing<C> {
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = Royalty::new(self.royalty);
-        let access_rules = AccessRules::new(self.method_authorities, self.authority_rules);
+        let access_rules = AccessRules::new(self.authority_rules);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

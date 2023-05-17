@@ -72,8 +72,8 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .method_authority("ingest_data_chunk", "system")
-            .method_authority("wrap_up", "system")
+            .authority_rule("ingest_data_chunk", rule!(require("system")), rule!(deny_all))
+            .authority_rule("wrap_up", rule!(require("system")), rule!(deny_all))
             .authority_rule(
                 "system",
                 rule!(require(system_role.clone())),

@@ -13,7 +13,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
@@ -185,7 +184,6 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let mut method_authorities = MethodAuthorities::new();
 
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
@@ -203,10 +201,9 @@ impl EpochManagerBlueprint {
         );
 
         let access_rules = AccessRules::create(
-            method_authorities,
             authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => (MethodAuthorities::new(), AuthorityRules::new())
+                VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()
             ),
             api,
         )?

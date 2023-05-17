@@ -544,10 +544,10 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-        let (method_authorities, authority_rules) =
+        let authority_rules =
             init_access_rules_from_rule_set(address, input.rule_set);
         let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
+            AccessRules::create(authority_rules, btreemap!(), api)?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
@@ -1064,7 +1064,7 @@ fn locked_access_rules() -> RuleSet {
 fn init_access_rules_from_rule_set(
     address: GlobalAddress,
     rule_set: RuleSet,
-) -> (MethodAuthorities, AuthorityRules) {
+) -> AuthorityRules {
     let mut authority_rules = AuthorityRules::new();
 
     let primary = "primary";
@@ -1130,7 +1130,6 @@ fn init_access_rules_from_rule_set(
     authority_rules
         .redirect_to_fixed(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery);
 
-    let mut method_authorities = MethodAuthorities::new();
     // Recovery || Confirmation Role Rules
     authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
@@ -1158,7 +1157,7 @@ fn init_access_rules_from_rule_set(
            rule!(require("primary") || require("confirmation") || require("recovery")),
         );
 
-    (method_authorities, authority_rules)
+    authority_rules
 }
 
 fn transition<Y, I>(

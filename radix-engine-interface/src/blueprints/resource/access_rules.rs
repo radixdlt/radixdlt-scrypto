@@ -69,21 +69,6 @@ impl From<String> for AccessRule {
     }
 }
 
-/// Method authorization rules for a component
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
-pub struct MethodAuthorities {
-    pub methods: BTreeMap<MethodKey, MethodEntry>,
-}
-
-impl MethodAuthorities {
-    pub fn new() -> Self {
-        Self {
-            methods: btreemap!(),
-        }
-    }
-}
-
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityKey {

@@ -12,12 +12,10 @@ use radix_engine_interface::*;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    (MethodAuthorities, AuthorityRules),
-    (MethodAuthorities, AuthorityRules),
-    (MethodAuthorities, AuthorityRules),
+    AuthorityRules,
+    AuthorityRules,
+    AuthorityRules,
 ) {
-    let resman_method_authorities = MethodAuthorities::new();
-
     let resman_authority_rules = {
         let (mint_access_rule, mint_mutability) = access_rules_map
             .remove(&Mint)
@@ -64,8 +62,6 @@ fn build_access_rules(
 
         resman_authority_rules
     };
-
-    let vault_method_authorities = MethodAuthorities::new();
 
     let vault_authority_rules = {
         let (deposit_access_rule, deposit_mutability) = access_rules_map
@@ -145,8 +141,6 @@ fn build_access_rules(
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
 
-    let bucket_method_authorities = MethodAuthorities::new();
-
     let bucket_authority_rules = {
         let mut bucket_authority_rules = AuthorityRules::new();
         bucket_authority_rules.set_fixed_main_authority_rule(
@@ -170,9 +164,9 @@ fn build_access_rules(
     };
 
     (
-        (resman_method_authorities, resman_authority_rules),
-        (vault_method_authorities, vault_authority_rules),
-        (bucket_method_authorities, bucket_authority_rules),
+        resman_authority_rules,
+        vault_authority_rules,
+        bucket_authority_rules,
     )
 }
 
@@ -186,9 +180,9 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_config = AuthorityRules::new();
 
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
@@ -206,12 +200,11 @@ where
         };
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            vault_blueprint_name.to_string() => vault_config,
+            vault_blueprint_name.to_string() => vault_authorities,
             bucket_blueprint_name.to_string() => proof_config,
-            proof_blueprint_name.to_string() => bucket_config,
+            proof_blueprint_name.to_string() => bucket_authorities,
         ),
         api,
     )?
@@ -244,17 +237,16 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_config,
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_config,
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_config
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_authorities,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?
@@ -292,17 +284,16 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_config,
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_config,
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_config
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_authorities,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?

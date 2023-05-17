@@ -445,8 +445,6 @@ impl MutableAccessRulesTestRunner {
         authority_rules: AuthorityRules,
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
-        let mut method_authorities = MethodAuthorities::new();
-
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -454,7 +452,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new",
-                manifest_args!(method_authorities, authority_rules),
+                manifest_args!(authority_rules),
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])

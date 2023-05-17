@@ -186,10 +186,6 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
-    fn method_authorities() -> MethodAuthorities {
-        MethodAuthorities::new()
-    }
-
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));

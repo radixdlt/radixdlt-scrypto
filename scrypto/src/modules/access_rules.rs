@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey, METADATA_AUTHORITY,
+    AccessRule, AuthorityKey, AuthorityRules, ObjectKey, METADATA_AUTHORITY,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -22,14 +22,13 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> Self {
+    pub fn new(authority_rules: AuthorityRules) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
                 scrypto_encode(&AccessRulesCreateInput {
-                    method_authorities,
                     authority_rules,
                     inner_blueprint_rules: btreemap!(),
                 })
@@ -115,7 +114,7 @@ impl Attachable for AccessRules {
 
 impl Default for AccessRules {
     fn default() -> Self {
-        AccessRules::new(MethodAuthorities::new(), AuthorityRules::new())
+        AccessRules::new(AuthorityRules::new())
     }
 }
 

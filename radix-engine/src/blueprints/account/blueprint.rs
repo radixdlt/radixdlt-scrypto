@@ -36,10 +36,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
 
-    fn method_authorities() -> MethodAuthorities {
-        MethodAuthorities::new()
-    }
-
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_IDENT, rule!(require_owner()));

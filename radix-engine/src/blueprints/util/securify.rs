@@ -9,26 +9,23 @@ pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn method_authorities() -> MethodAuthorities;
-
     fn authority_rules() -> AuthorityRules;
 
-    fn create_config(authority_rules: AuthorityRules) -> (MethodAuthorities, AuthorityRules) {
-        let method_authorities = Self::method_authorities();
+    fn create_config(authority_rules: AuthorityRules) -> AuthorityRules {
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
             authority_rules_to_use.set_rule(authority, access_rule, mutability);
         }
 
-        (method_authorities, authority_rules_to_use)
+        authority_rules_to_use
     }
 
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let (method_authorities, authority_rules) = Self::create_config(AuthorityRules::new());
+        let authority_rules = Self::create_config(AuthorityRules::new());
         let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?;
+            AccessRules::create(authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
@@ -36,7 +33,7 @@ pub trait SecurifiedAccessRules {
         authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let (method_authorities, mut authority_rules) = Self::create_config(authority_rules);
+        let mut authority_rules = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             authority_rules.set_main_authority_rule(
@@ -47,7 +44,7 @@ pub trait SecurifiedAccessRules {
         }
 
         let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?;
+            AccessRules::create(authority_rules, btreemap!(), api)?;
 
         Ok(access_rules)
     }

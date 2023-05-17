@@ -625,10 +625,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn method_authorities() -> MethodAuthorities {
-        MethodAuthorities::new()
-    }
-
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));

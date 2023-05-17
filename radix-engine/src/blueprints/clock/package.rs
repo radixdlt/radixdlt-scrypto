@@ -162,8 +162,6 @@ impl ClockNativePackage {
             .unwrap()],
         )?;
 
-        let mut method_authorities = MethodAuthorities::new();
-
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
             CLOCK_SET_CURRENT_TIME_IDENT,
@@ -172,7 +170,7 @@ impl ClockNativePackage {
         );
 
         let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
+            AccessRules::create(authority_rules, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 

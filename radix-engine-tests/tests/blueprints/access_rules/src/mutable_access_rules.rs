@@ -6,13 +6,11 @@ mod mutable_access_rules_component {
 
     impl MutableAccessRulesComponent {
         pub fn new(
-            method_authorities: MethodAuthorities,
             authority_rules: AuthorityRules,
         ) -> Global<MutableAccessRulesComponent> {
             let component = Self {}.instantiate();
 
             component
-                .method_authorities(method_authorities)
                 .authority_rules(authority_rules)
                 .globalize()
         }
