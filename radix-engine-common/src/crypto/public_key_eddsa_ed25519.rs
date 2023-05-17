@@ -1,11 +1,14 @@
 use super::*;
 use crate::types::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::copy_u8_array;
 
 /// Represents an ED25519 public key.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
@@ -41,6 +44,7 @@ impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
 // hash
 //======
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
 #[sbor(transparent)]
 pub struct EddsaEd25519PublicKeyHash(pub [u8; NodeId::UUID_LENGTH]);

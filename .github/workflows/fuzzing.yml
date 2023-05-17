@@ -90,12 +90,22 @@ jobs:
       run: |
         ./afl.sh quit
 
-    - name: Process AFL results
-      if: success() || failure() || cancelled()
+    - name: Process AFL results (if success)
+      if: success()
       working-directory: fuzz-tests
       run: |
         # it is expected to generate afl/crash_summary.txt
         ./process_fuzz_results.sh afl/transaction
+
+    - name: Process AFL results (if not success)
+      if: failure() || cancelled()
+      working-directory: fuzz-tests
+      run: |
+        # it is expected to generate afl/crash_summary.txt
+        # Specify crash inspection timeout to workaround following issue:
+        #   "Runner fuzzing-runner did not respond to a cancelation request with 00:05:00"
+        # Setting timeout to 270s, remaining 30s is a safety margin
+        ./process_fuzz_results.sh afl/transaction 270
 
     - name: Generate summary
       if: success() || failure() || cancelled()
@@ -107,6 +117,10 @@ jobs:
         ${{ toJSON(github.event.inputs) }}\n \
         ## Repo:\n \
         revision: [${{ github.repository }} - $COMMIT](${{ github.server_url }}/${{ github.repository }}/commit/$COMMIT)\n \
+        ## Summary:\n \
+        \n\`\`\`\n\
+        $(cargo afl whatsup -s -d afl/transaction | awk '/Fuzzers alive/ {seen=1} seen {print}') \
+        \n\`\`\`\n \
         ## Status:\n \
         \n\`\`\`\n\
         $(cat afl/sessions_info) \
@@ -126,8 +140,51 @@ jobs:
         $(cat afl/crash_summary.txt) \
         \n\`\`\`\n" >> $GITHUB_STEP_SUMMARY
 
+        # Archive all fuzzing results except 'queue' folder files (which might be huge),
+        # but include 'queue' subfolders ('.state/...'), which keeps links to 'queue' files that causes some
+        # problematic behaviour, eg. non-deterministic behaviour.
+        # (therefore following symbolic links with "-h" when using tar command below")
+        #
+        # AFL folder structure
+        #  ├── transaction_0_fast
+        #  │   ├── .cur_input
+        #  │   ├── .synced
+        #  │   │   ├── transaction_1_explore
+        #  │   │   ├── transaction_1_explore.last
+        #  │   │   ├── transaction_3_line
+        #  │   │   └── transaction_3_line.last
+        #  │   ├── cmdline
+        #  │   ├── crashes
+        #  │   │   ├── README.txt
+        #  │   │   ├── id:000000,sig:06,src:000001,time:22669,execs:2552,op:havoc,rep:8
+        #  │   │   ├── id:000001,sig:06,src:000001,time:24383,execs:2759,op:havoc,rep:16
+        #  │   │   └── id:000712,sig:06,src:001455+000563,time:1794800,execs:790180,op:splice,rep:2
+        #  │   ├── fuzz_bitmap
+        #  │   ├── fuzzer_setup
+        #  │   ├── fuzzer_stats
+        #  │   ├── hangs
+        #  │   ├── plot_data
+        #  │   └── queue
+        #  │       ├── .state
+        #  │       │   ├── auto_extras
+        #  │       │   ├── deterministic_done
+        #  │       │   ├── redundant_edges
+        #  │       │   │   ├── id:000000,time:0,execs:0,orig:manifest_fa614507e3f2d2ee67046d7d27e3c9503a8b63889b9ef1bdccea6e871ed7b6b6.raw
+        #  │       │   │   └── id:001686,src:001448,time:1779901,execs:780173,op:havoc,rep:16
+        #  │       │   └── variable_behavior
+        #  │       │       ├── id:000000,time:0,execs:0,orig:manifest_fa614507e3f2d2ee67046d7d27e3c9503a8b63889b9ef1bdccea6e871ed7b6b6.raw -> ../../id:000000,time:0,execs:0,orig:manifest_fa614507e3f2d2ee67046d7d27e3c9503a8b63889b9ef1bdccea6e871ed7b6b6.raw
+        #  │       │       └── id:001687,src:001448,time:1784621,execs:783702,op:havoc,rep:8,+cov -> ../../id:001687,src:001448,time:1784621,execs:783702,op:havoc,rep:8,+cov
+        #  │       ├── id:000000,time:0,execs:0,orig:manifest_fa614507e3f2d2ee67046d7d27e3c9503a8b63889b9ef1bdccea6e871ed7b6b6.raw
+        #  │       ├── id:000001,time:0,execs:0,orig:manifest_e5fb198d9f343da6e6f5c2dbef319913c713bc4cffd712ec97cb3da0c29b5f4c.raw
+        #  │       └── id:001687,src:001448,time:1784621,execs:783702,op:havoc,rep:8,+cov
+        #  ├── transaction_1_explore
         find afl -type f ! -path "*/queue/*" | tee list
-        tar -cvzf fuzz_transaction.tgz -T list
+        find afl -path "*/.state/*" | tee -a list
+
+        # Archive panic summary files (useful when grouping crashes by panic type)
+        find local_* -type f -name "*.panic" | tee -a list
+        echo "archive results"
+        tar -hczf fuzz_transaction.tgz -T list
 
     - name: Upload artifacts
       if: success() || failure() || cancelled()

@@ -4,6 +4,8 @@ use crate::constants::{
     ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
 use crate::types::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -13,6 +15,7 @@ use sbor::rust::vec::Vec;
 use scrypto_schema::InstanceSchema;
 
 #[repr(u8)]
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(
     Debug,
     Clone,

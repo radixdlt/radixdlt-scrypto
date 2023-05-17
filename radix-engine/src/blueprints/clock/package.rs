@@ -11,9 +11,12 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, Receiver};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo,
+};
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
 
@@ -47,7 +50,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockGetCurrentTimeOutput>(),
                 export_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
@@ -56,7 +59,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeInput>(),
                 output: aggregator.add_child_type_and_descendents::<ClockSetCurrentTimeOutput>(),
                 export_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
@@ -65,7 +68,7 @@ impl ClockNativePackage {
         functions.insert(
             CLOCK_COMPARE_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<ClockCompareCurrentTimeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<ClockCompareCurrentTimeOutput>(),
@@ -159,20 +162,18 @@ impl ClockNativePackage {
             .unwrap()],
         )?;
 
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, CLOCK_SET_CURRENT_TIME_IDENT),
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(CLOCK_SET_CURRENT_TIME_IDENT, "validator");
+
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_main_authority_rule(
+            "validator",
             rule!(require(AuthAddresses::validator_role())),
+            DenyAll,
         );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, CLOCK_GET_CURRENT_TIME_IDENT),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, CLOCK_COMPARE_CURRENT_TIME_IDENT),
-            rule!(allow_all),
-        );
-        let access_rules = AccessRules::create(access_rules, btreemap!(), api)?.0;
+
+        let access_rules =
+            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 

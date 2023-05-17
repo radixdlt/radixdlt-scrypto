@@ -13,6 +13,7 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
@@ -23,6 +24,7 @@ pub struct EpochManagerConfigSubstate {
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
+    pub num_owner_stake_units_unlock_epochs: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -158,6 +160,8 @@ impl EpochManagerBlueprint {
                 num_unstake_epochs: initial_configuration.num_unstake_epochs,
                 total_emission_xrd_per_epoch: initial_configuration.total_emission_xrd_per_epoch,
                 min_validator_reliability: initial_configuration.min_validator_reliability,
+                num_owner_stake_units_unlock_epochs: initial_configuration
+                    .num_owner_stake_units_unlock_epochs,
             };
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
@@ -181,39 +185,33 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let this_package_token =
-            NonFungibleGlobalId::package_of_direct_caller_badge(EPOCH_MANAGER_PACKAGE);
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(EPOCH_MANAGER_START_IDENT, "start");
+        method_authorities.set_main_method_authority(EPOCH_MANAGER_NEXT_ROUND_IDENT, "validator");
+        method_authorities.set_main_method_authority(EPOCH_MANAGER_SET_EPOCH_IDENT, "system");
 
-        let mut access_rules = AccessRulesConfig::new();
-        access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
-            rule!(require(this_package_token.clone())),
-            rule!(require(this_package_token.clone())),
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_main_authority_rule(
+            "start",
+            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_NEXT_ROUND_IDENT),
+        authority_rules.set_main_authority_rule(
+            "validator",
             rule!(require(AuthAddresses::validator_role())),
+            DenyAll,
         );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT),
-            rule!(allow_all),
-        );
-        access_rules.set_method_access_rule(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_SET_EPOCH_IDENT),
+        authority_rules.set_main_authority_rule(
+            "system",
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
+            DenyAll,
         );
-
-        let validator_access_rules =
-            AccessRulesConfig::new().default(AccessRule::AllowAll, AccessRule::DenyAll);
 
         let access_rules = AccessRules::create(
-            access_rules,
+            method_authorities,
+            authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => validator_access_rules
+                VALIDATOR_BLUEPRINT.to_string() => (MethodAuthorities::new(), AuthorityRules::new())
             ),
             api,
         )?
@@ -270,10 +268,10 @@ impl EpochManagerBlueprint {
         Self::epoch_change(mgr.epoch, &config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_method_access_rule_and_mutability(
-            MethodKey::new(ObjectModuleId::Main, EPOCH_MANAGER_START_IDENT),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            AccessRuleEntry::AccessRule(AccessRule::DenyAll),
+        access_rules.set_authority_rule_and_mutability(
+            AuthorityKey::main("start"),
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
             api,
         )?;
 
@@ -400,7 +398,7 @@ impl EpochManagerBlueprint {
     }
 
     fn epoch_change<Y>(
-        epoch: u64,
+        next_epoch: u64,
         config: &EpochManagerConfigSubstate,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -428,7 +426,13 @@ impl EpochManagerBlueprint {
         let previous_statistics = statistic_substate.validator_statistics;
 
         // apply emissions
-        Self::emit_validator_rewards(previous_validator_set, previous_statistics, config, api)?;
+        Self::apply_validator_emissions(
+            previous_validator_set,
+            previous_statistics,
+            config,
+            next_epoch - 1,
+            api,
+        )?;
 
         // select next validator set
         let registered_validators: Vec<EpochRegisteredValidatorByStakeEntry> = api
@@ -446,7 +450,7 @@ impl EpochManagerBlueprint {
         Runtime::emit_event(
             api,
             EpochChangeEvent {
-                epoch,
+                epoch: next_epoch,
                 validators: next_validator_set.clone(),
             },
         )?;
@@ -468,57 +472,63 @@ impl EpochManagerBlueprint {
 
     /// Emits a configured XRD amount ([`EpochManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
-    fn emit_validator_rewards<Y>(
+    fn apply_validator_emissions<Y>(
         validator_set: BTreeMap<ComponentAddress, Validator>,
         validator_statistics: Vec<ProposalStatistic>,
         config: &EpochManagerConfigSubstate,
+        epoch: u64, // the concluded epoch, for event creation
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let validator_rewards = validator_set
+        let validator_emissions = validator_set
             .into_iter()
             .zip(validator_statistics)
             .filter_map(|((address, validator), statistic)| {
-                ValidatorReward::create_if_applicable(
+                ValidatorEmission::create_if_applicable(
                     address,
                     validator.stake,
-                    statistic.success_ratio(),
+                    statistic,
                     config.min_validator_reliability,
                 )
             })
             .collect::<Vec<_>>();
 
-        if validator_rewards.is_empty() {
+        if validator_emissions.is_empty() {
             return Ok(());
         }
 
-        let stake_sum_xrd = validator_rewards
+        let stake_sum_xrd = validator_emissions
             .iter()
-            .map(|validator_reward| validator_reward.stake_xrd)
+            .map(|validator_emission| validator_emission.stake_xrd)
             .sum::<Decimal>();
-        // calculate "how much XRD is earned by 1 XRD staked", and later apply it evenly among validators
+        // calculate "how much XRD is emitted by 1 XRD staked", and later apply it evenly among validators
         // (the gains are slightly rounded down, but more fairly distributed - not affected by different rounding errors for different validators)
         let emission_per_staked_xrd = config.total_emission_xrd_per_epoch / stake_sum_xrd;
-        let effective_total_emission_xrd = validator_rewards
+        let effective_total_emission_xrd = validator_emissions
             .iter()
-            .map(|validator_reward| validator_reward.effective_stake_xrd * emission_per_staked_xrd)
+            .map(|validator_emission| {
+                validator_emission.effective_stake_xrd * emission_per_staked_xrd
+            })
             .sum::<Decimal>();
 
         let total_emission_xrd_bucket =
             ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
 
-        for validator_reward in validator_rewards {
+        for validator_emission in validator_emissions {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(
-                validator_reward.effective_stake_xrd * emission_per_staked_xrd,
+                validator_emission.effective_stake_xrd * emission_per_staked_xrd,
                 api,
             )?;
             api.call_method(
-                validator_reward.address.as_node_id(),
-                VALIDATOR_APPLY_REWARD_IDENT,
-                scrypto_encode(&ValidatorApplyRewardInput {
+                validator_emission.address.as_node_id(),
+                VALIDATOR_APPLY_EMISSION_IDENT,
+                scrypto_encode(&ValidatorApplyEmissionInput {
                     xrd_bucket: emission_xrd_bucket,
+                    epoch,
+                    proposals_made: validator_emission.proposal_statistic.made,
+                    proposals_missed: validator_emission.proposal_statistic.missed,
                 })
                 .unwrap(),
             )?;
@@ -530,25 +540,30 @@ impl EpochManagerBlueprint {
 }
 
 #[derive(Debug)]
-struct ValidatorReward {
+struct ValidatorEmission {
     pub address: ComponentAddress,
     pub stake_xrd: Decimal,
     pub effective_stake_xrd: Decimal,
+    pub proposal_statistic: ProposalStatistic, // needed only for passing the information to event
 }
 
-impl ValidatorReward {
+impl ValidatorEmission {
     fn create_if_applicable(
         address: ComponentAddress,
         stake_xrd: Decimal,
-        reliability: Decimal,
+        proposal_statistic: ProposalStatistic,
         min_required_reliability: Decimal,
     ) -> Option<Self> {
         if stake_xrd.is_positive() {
-            let effective_stake_xrd =
-                stake_xrd * Self::to_reliability_factor(reliability, min_required_reliability);
+            let reliability_factor = Self::to_reliability_factor(
+                proposal_statistic.success_ratio(),
+                min_required_reliability,
+            );
+            let effective_stake_xrd = stake_xrd * reliability_factor;
             Some(Self {
                 address,
                 stake_xrd,
+                proposal_statistic,
                 effective_stake_xrd,
             })
         } else {
@@ -557,7 +572,7 @@ impl ValidatorReward {
     }
 
     /// Converts the absolute reliability measure (e.g. "0.97 uptime") into a reliability factor
-    /// which directly drives the fraction of received reward (e.g. "0.25 of base reward"), by
+    /// which directly drives the fraction of received emission (e.g. "0.25 of base emission"), by
     /// rescaling it into the allowed reliability range (e.g. "required >0.96 uptime").
     fn to_reliability_factor(reliability: Decimal, min_required_reliability: Decimal) -> Decimal {
         let reliability_reserve = reliability - min_required_reliability;

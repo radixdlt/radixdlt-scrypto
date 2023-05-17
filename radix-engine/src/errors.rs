@@ -200,6 +200,7 @@ pub enum SystemError {
     NoParent,
     NotAnObject,
     NotAMethod,
+    OuterObjectDoesNotExist,
     NotAFieldLock,
     NotAFieldWriteLock,
     FieldDoesNotExist(Blueprint, u8),

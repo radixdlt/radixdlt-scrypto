@@ -8,6 +8,8 @@ pub struct RoundChangeEvent {
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
 pub struct EpochChangeEvent {
+    /// The *new* epoch's number.
     pub epoch: u64,
+    /// The *new* epoch's validator set.
     pub validators: BTreeMap<ComponentAddress, Validator>,
 }

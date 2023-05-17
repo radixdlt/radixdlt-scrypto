@@ -1,7 +1,7 @@
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AuthorityKey, AuthorityRules, ObjectKey,
 };
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
@@ -133,7 +133,7 @@ pub enum Instruction {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRulesConfig,
+        authority_rules: AuthorityRules,
     },
 
     #[sbor(discriminator(INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR))]
@@ -176,29 +176,6 @@ pub enum Instruction {
     #[sbor(discriminator(INSTRUCTION_CLAIM_COMPONENT_ROYALTY_DISCRIMINATOR))]
     ClaimComponentRoyalty { component_address: ComponentAddress },
 
-    #[sbor(discriminator(INSTRUCTION_SET_METHOD_ACCESS_RULE_DISCRIMINATOR))]
-    SetMethodAccessRule {
-        entity_address: GlobalAddress,
-        key: MethodKey,
-        rule: AccessRule,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR))]
-    SetGroupAccessRule {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        rule: AccessRule,
-    },
-
-    #[sbor(discriminator(INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR))]
-    SetGroupMutability {
-        entity_address: GlobalAddress,
-        object_key: ObjectKey,
-        group: String,
-        mutability: AccessRule,
-    },
-
     #[sbor(discriminator(INSTRUCTION_MINT_FUNGIBLE_DISCRIMINATOR))]
     MintFungible {
         resource_address: ResourceAddress,
@@ -230,6 +207,21 @@ pub enum Instruction {
         component_address: ComponentAddress,
         method_name: String,
         args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_SET_AUTHORITY_ACCESS_RULE_DISCRIMINATOR))]
+    SetAuthorityAccessRule {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        authority_key: AuthorityKey,
+        rule: AccessRule,
+    },
+    #[sbor(discriminator(INSTRUCTION_SET_AUTHORITY_MUTABILITY_DISCRIMINATOR))]
+    SetAuthorityMutability {
+        entity_address: GlobalAddress,
+        object_key: ObjectKey,
+        authority_key: AuthorityKey,
+        mutability: AccessRule,
     },
 }
 
@@ -285,5 +277,5 @@ pub const INSTRUCTION_MINT_NON_FUNGIBLE_DISCRIMINATOR: u8 = 34;
 pub const INSTRUCTION_MINT_UUID_NON_FUNGIBLE_DISCRIMINATOR: u8 = 35;
 pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 36;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 37;
-pub const INSTRUCTION_SET_GROUP_ACCESS_RULE_DISCRIMINATOR: u8 = 38;
-pub const INSTRUCTION_SET_GROUP_MUTABILITY_DISCRIMINATOR: u8 = 39;
+pub const INSTRUCTION_SET_AUTHORITY_ACCESS_RULE_DISCRIMINATOR: u8 = 38;
+pub const INSTRUCTION_SET_AUTHORITY_MUTABILITY_DISCRIMINATOR: u8 = 39;
