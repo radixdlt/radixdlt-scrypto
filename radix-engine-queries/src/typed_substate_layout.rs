@@ -103,6 +103,7 @@ pub enum TypedMainModuleSubstateKey {
     ValidatorField(ValidatorField),
     AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
+    AccountField(AccountField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -243,8 +244,19 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let key = substate_key.for_map().ok_or(())?;
-            TypedMainModuleSubstateKey::AccountVaultIndexKey(scrypto_decode(&key).map_err(|_| ())?)
+            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
+
+            match partition_offset {
+                AccountPartitionOffset::AccountVaultsByResourceAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountVaultIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                AccountPartitionOffset::Account => {
+                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
+                }
+            }
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -318,6 +330,7 @@ pub enum TypedMainModuleSubstateValue {
     EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
     Clock(TypedClockFieldValue),
     Validator(TypedValidatorFieldValue),
+    Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
     // Generic Scrypto Components and KV Stores
@@ -383,6 +396,11 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug, Clone)]
 pub enum GenericScryptoComponentFieldValue {
     State(GenericScryptoSborPayload),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedAccountFieldValue {
+    Account(AccountSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -539,6 +557,11 @@ fn to_typed_object_substate_value(
                 ValidatorField::Validator => {
                     TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
                 }
+            })
+        }
+        TypedMainModuleSubstateKey::AccountField(offset) => {
+            TypedMainModuleSubstateValue::Account(match offset {
+                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
             })
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {

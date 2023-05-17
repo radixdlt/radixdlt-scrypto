@@ -188,6 +188,27 @@ pub enum AuthZoneField {
     AuthZone,
 }
 
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum AccountPartitionOffset {
+    Account,
+    AccountVaultsByResourceAddress,
+}
+
+impl TryFrom<u8> for AccountPartitionOffset {
+    type Error = ();
+
+    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+        Self::from_repr(offset).ok_or(())
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum AccountField {
+    Account,
+}
+
 macro_rules! substate_key {
     ($t:ty) => {
         impl From<$t> for SubstateKey {
@@ -230,9 +251,10 @@ substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
 substate_key!(EpochManagerField);
 substate_key!(ValidatorField);
+substate_key!(AccessControllerField);
+substate_key!(AccountField);
 
 // Transient
 substate_key!(WorktopField);
 substate_key!(ClockField);
-substate_key!(AccessControllerField);
 substate_key!(AuthZoneField);

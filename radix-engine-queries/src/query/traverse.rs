@@ -190,7 +190,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     if blueprint.package_address.eq(&ACCOUNT_PACKAGE)
                         && blueprint.blueprint_name.eq(ACCOUNT_BLUEPRINT)
                     {
-                        self.traverse_substates::<MapKey>(node_id, OBJECT_BASE_PARTITION, depth)
+                        self.traverse_substates::<MapKey>(
+                            node_id,
+                            OBJECT_BASE_PARTITION.at_offset(PartitionOffset(1)).unwrap(),
+                            depth,
+                        )
                     } else {
                         self.traverse_substates::<TupleKey>(node_id, OBJECT_BASE_PARTITION, depth)
                     }

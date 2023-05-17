@@ -19,6 +19,11 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
 
+#[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
+pub struct AccountSubstate {
+    deposits_mode: AccountDepositsMode,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
     VaultDoesNotExist { resource_address: ResourceAddress },
@@ -226,7 +231,15 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let account_id = api.new_object(ACCOUNT_BLUEPRINT, None, vec![], btreemap!())?;
+        let account_id = api.new_object(
+            ACCOUNT_BLUEPRINT,
+            None,
+            vec![scrypto_encode(&AccountSubstate {
+                deposits_mode: AccountDepositsMode::AllowAll,
+            })
+            .unwrap()],
+            btreemap!(),
+        )?;
 
         Ok(Own(account_id))
     }

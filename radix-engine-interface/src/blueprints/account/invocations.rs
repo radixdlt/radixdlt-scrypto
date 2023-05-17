@@ -10,6 +10,21 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
+pub enum AccountDepositsMode {
+    /// Allows the deposit of all resources. Equivalent to a DisallowList of an empty set.
+    AllowAll,
+
+    /// Only allows deposits of resources that the account has a vault for (i.e., existing).
+    AllowExisting,
+
+    /// Only allows deposits of resources specified by the owner of the account.
+    AllowList(IndexSet<ResourceAddress>),
+
+    /// Disallows deposits of resources specified by the owner of the account.
+    DisallowList(IndexSet<ResourceAddress>),
+}
+
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID: u8 = 0u8;
