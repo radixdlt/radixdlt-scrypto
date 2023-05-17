@@ -7,8 +7,8 @@ use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesConfig, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate,
+    AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
+    MethodAccessRulesSubstate, NodeAuthorityRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -28,13 +28,14 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    CycleCheckError(CycleCheckError<String>),
+    CycleCheckError(CycleCheckError<AuthorityKey>),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
+    pub module_id: ObjectModuleId,
     pub access_rule_stack: Vec<AccessRule>,
     pub fn_identifier: FnIdentifier,
 }
@@ -51,7 +52,7 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(Vec<AccessRule>),
+    Failed(ObjectModuleId, Vec<AccessRule>),
 }
 
 impl AuthModule {
@@ -94,14 +95,14 @@ impl AuthModule {
 
     fn check_method_authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_zone_id: &NodeId,
-        actor: &MethodActor,
+        callee: &MethodActor,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let node_id = actor.node_id;
-        let module_id = actor.module_id;
-        let ident = actor.ident.as_str();
-        let acting_location = if actor.object_info.global {
+        let node_id = callee.node_id;
+        let module_id = callee.module_id;
+        let ident = callee.ident.as_str();
+        let acting_location = if callee.object_info.global {
             ActingLocation::AtBarrier
         } else {
             ActingLocation::AtLocalBarrier
@@ -115,17 +116,19 @@ impl AuthModule {
                 let auth_result = Authorization::check_authorization_against_access_rule(
                     acting_location,
                     *auth_zone_id,
-                    &AccessRulesConfig::new(),
+                    &NodeAuthorityRules::new(),
+                    module_id,
                     &access_rule,
                     api,
                 )?;
                 match auth_result {
                     AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(access_rule_stack) => {
+                    AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
+                                module_id,
                                 access_rule_stack,
-                                fn_identifier: actor.fn_identifier(),
+                                fn_identifier: callee.fn_identifier(),
                             })),
                         )));
                     }
@@ -139,7 +142,7 @@ impl AuthModule {
                 if let Some(parent) = info.outer_object {
                     let method_key = MethodKey::new(module_id, ident);
                     Self::check_authorization_against_access_rules(
-                        actor.fn_identifier(),
+                        callee.fn_identifier(),
                         auth_zone_id,
                         acting_location,
                         parent.as_node_id(),
@@ -151,7 +154,7 @@ impl AuthModule {
 
                 if info.global {
                     Self::check_authorization_against_access_rules(
-                        actor.fn_identifier(),
+                        callee.fn_identifier(),
                         auth_zone_id,
                         acting_location,
                         &node_id,
@@ -222,7 +225,7 @@ impl AuthModule {
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules: &AccessRulesConfig,
+        access_rules: &NodeAuthorityRules,
         key: &MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -235,17 +238,21 @@ impl AuthModule {
             acting_location,
             *auth_zone_id,
             access_rules,
+            key.module_id,
             &rule!(require(authority.to_string())),
             api,
         )?;
         match result {
             AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(access_rule_stack) => Err(RuntimeError::ModuleError(
-                ModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                    access_rule_stack,
-                    fn_identifier,
-                }))),
-            )),
+            AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        module_id,
+                        access_rule_stack,
+                        fn_identifier,
+                    })),
+                )))
+            }
         }
     }
 
@@ -278,15 +285,17 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &AccessRulesConfig::new(),
+                        &NodeAuthorityRules::new(),
+                        ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
                         &access_rule,
                         &mut system,
                     )?;
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
-                        AuthorizationCheckResult::Failed(access_rule_stack) => {
+                        AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
+                                    module_id,
                                     access_rule_stack,
                                     fn_identifier: callee.fn_identifier(),
                                 })),

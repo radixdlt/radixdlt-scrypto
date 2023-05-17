@@ -19,7 +19,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let global = MetadataComponent {}
                 .instantiate()
-                .authority_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll)
+                .metadata_authority(AccessRule::AllowAll, AccessRule::DenyAll)
                 .globalize();
 
             let metadata = global.metadata();

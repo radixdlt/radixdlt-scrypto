@@ -529,23 +529,23 @@ pub fn generate_instruction(
         ast::Instruction::SetGroupAccessRule {
             entity_address,
             object_key,
-            group,
+            authority_key,
             rule,
         } => Instruction::SetAuthorityAccessRule {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority: generate_string(group)?,
+            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetGroupMutability {
             entity_address,
             object_key,
-            group,
+            authority_key,
             mutability,
         } => Instruction::SetAuthorityMutability {
             entity_address: generate_global_address(entity_address, bech32_decoder)?,
             object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority: generate_string(group)?,
+            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
             mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::MintFungible {
@@ -1504,7 +1504,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<Enum, Tuple>();"#,
             Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")

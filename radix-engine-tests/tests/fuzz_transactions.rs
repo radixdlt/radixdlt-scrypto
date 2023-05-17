@@ -72,18 +72,30 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_rule("owner", AccessRule::AllowAll, AccessRule::AllowAll);
+                    authority_rules.set_main_authority_rule(
+                        "owner",
+                        AccessRule::AllowAll,
+                        AccessRule::AllowAll,
+                    );
 
                     builder.new_account_advanced(authority_rules);
                 }
                 1 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_rule("owner", AccessRule::AllowAll, AccessRule::AllowAll);
+                    authority_rules.set_main_authority_rule(
+                        "owner",
+                        AccessRule::AllowAll,
+                        AccessRule::AllowAll,
+                    );
                     builder.new_account_advanced(authority_rules);
                 }
                 2 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_rule("owner", AccessRule::AllowAll, AccessRule::AllowAll);
+                    authority_rules.set_main_authority_rule(
+                        "owner",
+                        AccessRule::AllowAll,
+                        AccessRule::AllowAll,
+                    );
                     builder.new_account_advanced(authority_rules);
                 }
                 3 => {

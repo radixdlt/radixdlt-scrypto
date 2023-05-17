@@ -1,6 +1,5 @@
 extern crate core;
 
-use radix_engine::system::node_modules::access_rules::METADATA_AUTHORITY;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::resource::{
@@ -34,21 +33,21 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let (object_key, authority) = match action {
-            Action::Mint => (ObjectKey::SELF, MINT_AUTHORITY),
-            Action::Burn => (ObjectKey::SELF, BURN_AUTHORITY),
-            Action::UpdateMetadata => (ObjectKey::SELF, METADATA_AUTHORITY),
+        let (object_key, authority_key) = match action {
+            Action::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+            Action::Burn => (ObjectKey::SELF, AuthorityKey::main(BURN_AUTHORITY)),
+            Action::UpdateMetadata => (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY)),
             Action::Withdraw => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                WITHDRAW_AUTHORITY,
+                AuthorityKey::main(WITHDRAW_AUTHORITY),
             ),
             Action::Deposit => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                DEPOSIT_AUTHORITY,
+                AuthorityKey::main(DEPOSIT_AUTHORITY),
             ),
             Action::Recall => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                RECALL_AUTHORITY,
+                AuthorityKey::main(RECALL_AUTHORITY),
             ),
         };
 
@@ -58,7 +57,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .set_authority_access_rule(
                 token_address.into(),
                 object_key,
-                authority.to_string(),
+                authority_key,
                 rule!(require(updated_auth)),
             )
             .build();

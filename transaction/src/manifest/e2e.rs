@@ -29,7 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
-    Map<String, Tuple>();
+    Map<Enum, Tuple>();
 "##,
             ),
         );
@@ -413,7 +413,7 @@ REMOVE_METADATA
 SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
     Enum(0u8)
-    "Group"
+    Enum(0u8)
     Enum(0u8);
 "##,
             ),
@@ -613,7 +613,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Map<String, Tuple>();
+    Map<Enum, Tuple>();
 CREATE_ACCOUNT;
 "##,
             ),
@@ -630,7 +630,7 @@ CREATE_ACCOUNT;
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Map<String, Tuple>();
+    Map<Enum, Tuple>();
 CREATE_IDENTITY;
 "##,
             ),

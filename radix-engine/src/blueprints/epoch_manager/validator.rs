@@ -3,9 +3,6 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::node_modules::access_rules::{
-    METADATA_AUTHORITY, OWNER_AUTHORITY, ROYALTY_AUTHORITY,
-};
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -431,7 +428,7 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AccessRule::AllowAll
         } else {
-            rule!(require("owner"))
+            rule!(require_owner())
         };
 
         api.call_method_advanced(
@@ -441,7 +438,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                name: "stake".to_string(),
+                authority_key: AuthorityKey::main("stake"),
                 rule,
             })
             .unwrap(),
@@ -624,18 +621,20 @@ struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
-    const OWNER_AUTHORITY: &'static str = "owner";
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
         method_authorities.set_main_method_authority(VALIDATOR_STAKE_IDENT, "stake");
-        method_authorities.set_main_method_authority(VALIDATOR_REGISTER_IDENT, OWNER_AUTHORITY);
-        method_authorities.set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, OWNER_AUTHORITY);
-        method_authorities.set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, OWNER_AUTHORITY);
+        method_authorities
+            .set_main_method_authority(VALIDATOR_REGISTER_IDENT, VALIDATOR_REGISTER_IDENT);
+        method_authorities
+            .set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNREGISTER_IDENT);
+        method_authorities
+            .set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, VALIDATOR_UPDATE_KEY_IDENT);
         method_authorities.set_main_method_authority(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            OWNER_AUTHORITY,
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
         );
         method_authorities
             .set_main_method_authority(VALIDATOR_APPLY_EMISSION_IDENT, "epoch_manager");
@@ -644,18 +643,36 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(
-            METADATA_AUTHORITY,
-            rule!(require(OWNER_AUTHORITY)),
+        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
+
+        authority_rules.set_main_authority_rule(
+            VALIDATOR_REGISTER_IDENT,
+            rule!(require_owner()),
             rule!(deny_all),
         );
-        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(deny_all), rule!(deny_all));
-        authority_rules.set_rule(
+        authority_rules.set_main_authority_rule(
+            VALIDATOR_UNREGISTER_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            VALIDATOR_UPDATE_KEY_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+
+        authority_rules.set_main_authority_rule(
             "stake",
-            rule!(require("owner")),
+            rule!(require_owner()),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_rule(
+        authority_rules.set_main_authority_rule(
             "epoch_manager",
             rule!(require(global_caller(EPOCH_MANAGER))),
             rule!(deny_all),

@@ -9,9 +9,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityRules, MethodAuthorities, ObjectKey,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, METADATA_AUTHORITY, MethodAuthorities, ObjectKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -45,7 +43,18 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                name: name.into(),
+                authority_key: AuthorityKey::main(name),
+                rule: entry.into(),
+            },
+        );
+    }
+
+    pub fn set_metadata_authority_rule<A: Into<AccessRule>>(&self, entry: A) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            &AccessRulesSetAuthorityRuleInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
                 rule: entry.into(),
             },
         );
@@ -61,7 +70,7 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                name: name.into(),
+                authority_key: AuthorityKey::main(name),
                 rule: entry.into(),
             },
         );
@@ -72,7 +81,18 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             &AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::SELF,
-                name: name.to_string(),
+                authority_key: AuthorityKey::main(name),
+                mutability,
+            },
+        );
+    }
+
+    pub fn set_metadata_mutability(&self, mutability: AccessRule) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+            &AccessRulesSetAuthorityMutabilityInput {
+                object_key: ObjectKey::SELF,
+                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
                 mutability,
             },
         );

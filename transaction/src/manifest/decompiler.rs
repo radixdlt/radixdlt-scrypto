@@ -596,7 +596,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            authority: group,
+            authority_key: group,
             rule,
         } => {
             f.write_str("SET_AUTHORITY_ACCESS_RULE")?;
@@ -609,7 +609,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            authority: group,
+            authority_key: group,
             mutability,
         } => {
             f.write_str("SET_AUTHORITY_MUTABILITY")?;

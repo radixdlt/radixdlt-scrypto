@@ -17,6 +17,7 @@ mod balance_changes_test {
             .royalty_default(0)
             .authority_rule("owner", rule!(allow_all), rule!(allow_all))
             .globalize()
+            .instantiate();
         }
 
         pub fn put(&mut self, bucket: Bucket) {

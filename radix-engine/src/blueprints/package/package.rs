@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesConfig, FunctionAccessRulesSubstate, MethodAccessRulesSubstate, METADATA_AUTHORITY,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorityRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -109,7 +109,6 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
-    const OWNER_AUTHORITY: &'static str = "owner";
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
@@ -122,8 +121,12 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
-        authority_rules.set_rule("package_royalty", rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_main_authority_rule(
+            "package_royalty",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
         authority_rules
     }
 }
@@ -204,7 +207,7 @@ where
         node_modules.insert(
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
-                access_rules: AccessRulesConfig::new(),
+                access_rules: NodeAuthorityRules::new(),
                 inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );

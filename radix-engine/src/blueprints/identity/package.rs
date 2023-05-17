@@ -1,7 +1,6 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
-use crate::system::node_modules::access_rules::{METADATA_AUTHORITY, ROYALTY_AUTHORITY};
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -185,7 +184,6 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const OWNER_AUTHORITY: &'static str = "owner";
     const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
 
     fn method_authorities() -> MethodAuthorities {
@@ -196,8 +194,8 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_rule(METADATA_AUTHORITY, rule!(require("owner")), rule!(deny_all));
-        authority_rules.set_rule(ROYALTY_AUTHORITY, rule!(require("owner")), rule!(deny_all));
+        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_royalty_authority(rule!(require_owner()), rule!(deny_all));
         authority_rules
     }
 }

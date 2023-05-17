@@ -595,13 +595,13 @@ impl ManifestBuilder {
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        authority: String,
+        authority_key: AuthorityKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            authority,
+            authority_key,
             rule,
         })
         .0
@@ -611,13 +611,13 @@ impl ManifestBuilder {
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        group: String,
+        authority_key: AuthorityKey,
         mutability: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            authority: group,
+            authority_key,
             mutability,
         })
         .0
