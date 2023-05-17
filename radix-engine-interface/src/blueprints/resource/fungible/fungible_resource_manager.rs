@@ -3,6 +3,7 @@ use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 
@@ -14,7 +15,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub divisibility: u8,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataEntry>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
@@ -27,7 +28,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub divisibility: u8,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataEntry>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }

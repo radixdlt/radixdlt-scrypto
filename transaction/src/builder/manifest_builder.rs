@@ -360,7 +360,7 @@ impl ManifestBuilder {
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
         divisibility: u8,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
@@ -401,7 +401,7 @@ impl ManifestBuilder {
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
         id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -761,7 +761,7 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -779,7 +779,7 @@ impl ManifestBuilder {
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -794,7 +794,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -812,7 +812,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();

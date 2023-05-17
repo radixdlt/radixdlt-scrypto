@@ -7,6 +7,7 @@ use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::types::*;
 use radix_engine_interface::types::NonFungibleData;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -22,7 +23,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataEntry>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
@@ -36,7 +37,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataEntry>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
