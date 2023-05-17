@@ -623,9 +623,16 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
 
                 /* Default */
-                _ => {
+                (module_id, _, _) => {
+                    // TODO: add compiler support
                     f.write_str(&format!(
-                        "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        "{}\n    Address(\"{}\")\n    \"{}\"",
+                        match module_id {
+                            ObjectModuleId::Main => "CALL_METHOD",
+                            ObjectModuleId::Metadata => "CALL_METADATA_METHOD",
+                            ObjectModuleId::Royalty => "CALL_ROYALTY_METHOD",
+                            ObjectModuleId::AccessRules => "CALL_ACCESS_RULES_METHOD",
+                        },
                         address.display(context.bech32_encoder),
                         method_name
                     ))?;
