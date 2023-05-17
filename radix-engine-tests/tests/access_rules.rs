@@ -26,15 +26,6 @@ fn initial_cyclic_authority_should_not_be_allowed() {
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_main_authority_rule(
                 "deposit_funds",
-                rule!(deny_all),
-                rule!(require("deposit_funds")),
-            );
-            authority_rules
-        },
-        {
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_main_authority_rule(
-                "deposit_funds",
                 rule!(require("test")),
                 rule!(deny_all),
             );
@@ -77,78 +68,6 @@ fn setting_circular_authority_rule_should_fail() {
         AuthorityKey::main("deposit_funds"),
         rule!(require("deposit_funds")),
     );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_rule_should_fail_2() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule(
-        "deposit_funds",
-        rule!(allow_all),
-        rule!(require("test")),
-    );
-    authority_rules.set_main_authority_rule("test", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("test"), rule!(require("deposit_funds")));
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_mutability_should_fail() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule("deposit_funds", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt = test_runner.set_authority_mutability(
-        AuthorityKey::main("deposit_funds"),
-        rule!(require("deposit_funds")),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_mutability_should_fail2() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule(
-        "deposit_funds",
-        rule!(allow_all),
-        rule!(require("test")),
-    );
-    authority_rules.set_main_authority_rule("test", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt = test_runner
-        .set_authority_mutability(AuthorityKey::main("test"), rule!(require("deposit_funds")));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -485,22 +404,6 @@ impl MutableAccessRulesTestRunner {
                 ObjectKey::SELF,
                 authority_key,
                 access_rule,
-            )
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn set_authority_mutability(
-        &mut self,
-        authority_key: AuthorityKey,
-        mutability: AccessRule,
-    ) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .set_authority_mutability(
-                self.component_address.into(),
-                ObjectKey::SELF,
-                authority_key,
-                mutability,
             )
             .build();
         self.execute_manifest(manifest)
