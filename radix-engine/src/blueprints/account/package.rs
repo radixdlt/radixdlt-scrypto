@@ -203,6 +203,18 @@ impl AccountNativePackage {
             },
         );
 
+        functions.insert(
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeOutput>(),
+                export_name: ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE.to_string(),
+            },
+        );
+
         let virtual_lazy_load_functions = btreemap!(
             ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
                 export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
@@ -461,6 +473,16 @@ impl AccountNativePackage {
                     input.ids,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let AccountChangeAllowedDepositsModeInput { deposit_mode } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::change_allowed_deposits_mode(deposit_mode, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::SystemUpstreamError(

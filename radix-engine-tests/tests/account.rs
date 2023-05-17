@@ -4,7 +4,8 @@ use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::{
-    AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
+    AccountChangeAllowedDepositsModeInput, AccountDepositsMode, AccountSecurifyInput,
+    ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -290,4 +291,67 @@ fn assert_resource_changes_for_transfer(
         .any(|r| r.resource_address == resource_address
             && r.node_id == target_account.into()
             && r.amount == Decimal::from(transfer_amount)));
+}
+
+fn account_deposit_mode_change_test(
+    sign: bool,
+    is_virtual: bool,
+    failure: Option<&dyn Fn(&RuntimeError) -> bool>,
+) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(is_virtual);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE,
+            to_manifest_value(&AccountChangeAllowedDepositsModeInput {
+                deposit_mode: AccountDepositsMode::AllowExisting,
+            }),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        if sign {
+            vec![NonFungibleGlobalId::from_public_key(&public_key)]
+        } else {
+            vec![]
+        },
+    );
+
+    // Assert
+    if let Some(failure_function) = failure {
+        receipt.expect_specific_failure(failure_function);
+    } else {
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn virtual_account_deposits_mode_can_not_be_changed_without_owner_auth() {
+    account_deposit_mode_change_test(false, true, Some(&is_auth_unauthorized_error))
+}
+
+#[test]
+fn virtual_account_deposits_mode_can_be_changed_with_owner_auth() {
+    account_deposit_mode_change_test(true, true, None)
+}
+
+#[test]
+fn allocated_account_deposits_mode_can_not_be_changed_without_owner_auth() {
+    account_deposit_mode_change_test(false, false, Some(&is_auth_unauthorized_error))
+}
+
+#[test]
+fn allocated_account_deposits_mode_can_be_changed_with_owner_auth() {
+    account_deposit_mode_change_test(true, false, None)
+}
+
+fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {
+    matches!(
+        runtime_error,
+        RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_)))
+    )
 }

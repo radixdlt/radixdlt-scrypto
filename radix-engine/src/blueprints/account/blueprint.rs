@@ -35,6 +35,13 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
+const ACCOUNT_SECURIFY_AUTHORITY: &str = "securify";
+const ACCOUNT_LOCK_FEE_AUTHORITY: &str = "lock_fee";
+const ACCOUNT_WITHDRAW_AUTHORITY: &str = "withdraw";
+const ACCOUNT_CREATE_PROOF_AUTHORITY: &str = "create_proof";
+const ACCOUNT_LOCK_FEE_AND_WITHDRAW_AUTHORITY: &str = "lock_fee_and_withdraw";
+const ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY: &str = "deposit_modes_management";
+
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
@@ -43,9 +50,14 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn method_authorities() -> MethodAuthorities {
         let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_SECURIFY_IDENT, ACCOUNT_SECURIFY_AUTHORITY);
+        method_authorities
+            .set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, ACCOUNT_LOCK_FEE_AUTHORITY);
+        method_authorities.set_main_method_authority(
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
+            ACCOUNT_LOCK_FEE_AUTHORITY,
+        );
         method_authorities.set_main_method_authority(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
             "lock_fee_and_withdraw",
@@ -54,37 +66,54 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
             "lock_fee_and_withdraw",
         );
-        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, "withdraw");
         method_authorities
-            .set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
-        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
+            .set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, ACCOUNT_WITHDRAW_AUTHORITY);
+        method_authorities.set_main_method_authority(
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
+            ACCOUNT_WITHDRAW_AUTHORITY,
+        );
         method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT, "create_proof");
-        method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT, "create_proof");
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, ACCOUNT_CREATE_PROOF_AUTHORITY);
+        method_authorities.set_main_method_authority(
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            ACCOUNT_CREATE_PROOF_AUTHORITY,
+        );
+        method_authorities.set_main_method_authority(
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            ACCOUNT_CREATE_PROOF_AUTHORITY,
+        );
+        method_authorities.set_main_method_authority(
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE,
+            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
+        );
         method_authorities
     }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            "lock_fee",
+            ACCOUNT_LOCK_FEE_AUTHORITY,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            "withdraw",
+            ACCOUNT_WITHDRAW_AUTHORITY,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            "create_proof",
+            ACCOUNT_CREATE_PROOF_AUTHORITY,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            "lock_fee_and_withdraw",
-            rule!(require("lock_fee") && require("withdraw")),
+            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_AUTHORITY,
+            rule!(require(ACCOUNT_LOCK_FEE_AUTHORITY) && require(ACCOUNT_WITHDRAW_AUTHORITY)),
             rule!(deny_all),
         );
         authority_rules
@@ -502,5 +531,24 @@ impl AccountBlueprint {
         )?;
 
         Ok(proof)
+    }
+
+    pub fn change_allowed_deposits_mode<Y>(
+        deposits_mode: AccountDepositsMode,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let substate_key = AccountField::Account.into();
+        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+
+        account.deposits_mode = deposits_mode;
+
+        api.field_lock_write_typed(handle, account)?;
+        api.field_lock_release(handle)?;
+
+        Ok(())
     }
 }

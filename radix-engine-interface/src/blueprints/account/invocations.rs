@@ -229,3 +229,16 @@ pub struct AccountCreateProofOfNonFungiblesInput {
 }
 
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
+
+//=================================
+// Account Transition Deposit Mode
+//=================================
+
+pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE: &str = "change_allowed_deposits_mode";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountChangeAllowedDepositsModeInput {
+    pub deposit_mode: AccountDepositsMode,
+}
+
+pub type AccountChangeAllowedDepositsModeOutput = ();
