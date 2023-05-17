@@ -446,8 +446,6 @@ impl MutableAccessRulesTestRunner {
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
         let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority("deposit_funds", "deposit_funds");
-        method_authorities.set_main_method_authority("borrow_funds", "borrow_funds");
 
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 

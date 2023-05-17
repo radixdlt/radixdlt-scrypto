@@ -43,7 +43,7 @@ impl ResourceManager {
 
     pub fn set_burnable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule(BURN_AUTHORITY, access_rule);
+        access_rules.set_authority_rule(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
     fn vault_blueprint_name(&self) -> &str {
@@ -59,7 +59,7 @@ impl ResourceManager {
         let access_rules = self.0.access_rules();
         access_rules.set_authority_rule_on_inner_blueprint(
             blueprint_name,
-            WITHDRAW_AUTHORITY,
+            VAULT_TAKE_IDENT,
             access_rule,
         );
     }
@@ -69,7 +69,7 @@ impl ResourceManager {
         let access_rules = self.0.access_rules();
         access_rules.set_authority_rule_on_inner_blueprint(
             blueprint_name,
-            DEPOSIT_AUTHORITY,
+            VAULT_PUT_IDENT,
             access_rule,
         );
     }
@@ -79,7 +79,7 @@ impl ResourceManager {
         let access_rules = self.0.access_rules();
         access_rules.set_authority_rule_on_inner_blueprint(
             blueprint_name,
-            RECALL_AUTHORITY,
+            VAULT_RECALL_IDENT,
             access_rule,
         );
     }
@@ -91,7 +91,7 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_rule(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, access_rule);
+        access_rules.set_authority_rule(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT, access_rule);
     }
 
     pub fn lock_mintable(&self) {
@@ -101,7 +101,7 @@ impl ResourceManager {
 
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(BURN_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(RESOURCE_MANAGER_BURN_IDENT, AccessRule::DenyAll);
     }
 
     pub fn lock_updateable_metadata(&self) {
@@ -112,22 +112,22 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
         access_rules
-            .set_authority_mutability(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, AccessRule::DenyAll);
+            .set_authority_mutability(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT, AccessRule::DenyAll);
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(WITHDRAW_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(VAULT_TAKE_IDENT, AccessRule::DenyAll);
     }
 
     pub fn lock_depositable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(DEPOSIT_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(VAULT_PUT_IDENT, AccessRule::DenyAll);
     }
 
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(RECALL_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(VAULT_RECALL_IDENT, AccessRule::DenyAll);
     }
 }
 

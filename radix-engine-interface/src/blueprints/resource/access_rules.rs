@@ -63,14 +63,6 @@ pub struct MethodEntry {
     pub authority: String,
 }
 
-impl MethodEntry {
-    fn authority(authority: &str) -> Self {
-        MethodEntry {
-            authority: authority.to_string(),
-        }
-    }
-}
-
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
         AccessRule::Protected(AccessRuleNode::Authority(AuthorityRule::Custom(name)))
@@ -89,25 +81,6 @@ impl MethodAuthorities {
         Self {
             methods: btreemap!(),
         }
-    }
-
-    pub fn set_module_method_authority(
-        &mut self,
-        module_id: ObjectModuleId,
-        method: &str,
-        authority: &str,
-    ) {
-        self.methods.insert(
-            MethodKey::new(module_id, method),
-            MethodEntry::authority(authority),
-        );
-    }
-
-    pub fn set_main_method_authority(&mut self, method: &str, authority: &str) {
-        self.methods.insert(
-            MethodKey::new(ObjectModuleId::Main, method),
-            MethodEntry::authority(authority),
-        );
     }
 }
 
@@ -162,6 +135,30 @@ impl AuthorityRules {
         mutability: AccessRule,
     ) {
         self.rules.insert(authority_key, (rule, mutability));
+    }
+
+    pub fn redirect_to_fixed<S: Into<String>>(
+        &mut self,
+        authority: S,
+        redirect_to: &str,
+    ) {
+        let name = authority.into();
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            (rule!(require(redirect_to)), AccessRule::DenyAll),
+        );
+    }
+
+    pub fn set_fixed_main_authority_rule<S: Into<String>, R: Into<AccessRule>>(
+        &mut self,
+        authority: S,
+        rule: R,
+    ) {
+        let name = authority.into();
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            (rule.into(), AccessRule::DenyAll),
+        );
     }
 
     pub fn set_main_authority_rule<S: Into<String>>(

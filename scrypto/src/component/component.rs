@@ -140,12 +140,6 @@ impl<C: HasStub> Owned<C> {
         Globalizing::new_with_authorities(self.0, method_authorities, AuthorityRules::new())
     }
 
-    pub fn method_authority(self, method: &str, authority: &str) -> Globalizing<C> {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(method, authority);
-        Globalizing::new_with_authorities(self.0, method_authorities, AuthorityRules::new())
-    }
-
     pub fn authority_rules(self, authority_rules: AuthorityRules) -> Globalizing<C> {
         Globalizing::new_with_authorities(self.0, MethodAuthorities::new(), authority_rules)
     }
@@ -277,12 +271,6 @@ impl<C: HasStub> Globalizing<C> {
 
     pub fn method_authorities(mut self, method_authorities: MethodAuthorities) -> Self {
         self.method_authorities = method_authorities;
-        self
-    }
-
-    pub fn method_authority(mut self, method: &str, authority: &str) -> Self {
-        self.method_authorities
-            .set_main_method_authority(method, authority);
         self
     }
 

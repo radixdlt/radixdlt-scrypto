@@ -314,7 +314,7 @@ impl Authorization {
                             api,
                         )
                     }
-                    None => Ok(AuthorizationCheckResult::Failed(module_id, vec![])),
+                    None => Ok(AuthorizationCheckResult::Authorized),
                 }
             }
             AccessRuleNode::ProofRule(rule) => {

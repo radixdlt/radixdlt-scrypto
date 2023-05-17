@@ -34,54 +34,39 @@ struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
 
     fn method_authorities() -> MethodAuthorities {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
-        method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
-        method_authorities.set_main_method_authority(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-            "lock_fee_and_withdraw",
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-            "lock_fee_and_withdraw",
-        );
-        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, "withdraw");
-        method_authorities
-            .set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
-        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
-        method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT, "create_proof");
-        method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT, "create_proof");
-        method_authorities
+        MethodAuthorities::new()
     }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
-            "lock_fee",
+        authority_rules.set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, rule!(require(ACCOUNT_WITHDRAW_IDENT)));
+
+        authority_rules.set_fixed_main_authority_rule(ACCOUNT_LOCK_FEE_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
+            rule!(require(ACCOUNT_LOCK_FEE_IDENT)),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
+            rule!(require(ACCOUNT_LOCK_FEE_IDENT) && require(ACCOUNT_WITHDRAW_IDENT)),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
+            rule!(require(ACCOUNT_LOCK_FEE_IDENT) && require(ACCOUNT_WITHDRAW_IDENT)),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_CREATE_PROOF_IDENT,
             rule!(require_owner()),
-            rule!(deny_all),
         );
-        authority_rules.set_main_authority_rule(
-            "withdraw",
-            rule!(require_owner()),
-            rule!(deny_all),
+        authority_rules.set_fixed_main_authority_rule(
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            rule!(require(ACCOUNT_CREATE_PROOF_IDENT)),
         );
-        authority_rules.set_main_authority_rule(
-            "create_proof",
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            "lock_fee_and_withdraw",
-            rule!(require("lock_fee") && require("withdraw")),
-            rule!(deny_all),
-        );
+
         authority_rules
     }
 }

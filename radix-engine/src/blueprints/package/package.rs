@@ -112,21 +112,17 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn method_authorities() -> MethodAuthorities {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities
-            .set_main_method_authority(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
-        method_authorities
-            .set_main_method_authority(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
-        method_authorities
+        MethodAuthorities::new()
     }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules.set_main_authority_rule(
+        authority_rules.redirect_to_fixed(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
+        authority_rules.redirect_to_fixed(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
+        authority_rules.set_fixed_main_authority_rule(
             "package_royalty",
             rule!(require_owner()),
-            rule!(deny_all),
         );
         authority_rules
     }

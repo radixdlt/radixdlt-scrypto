@@ -1085,95 +1085,78 @@ fn init_access_rules_from_rule_set(
         rule_set.confirmation_role.clone(),
         rule!(require(global_caller(address))),
     );
-    let recovery_or_confirmation = "recovery_or_confirmation";
-    authority_rules.set_main_authority_rule(
-        recovery_or_confirmation,
-        rule!(require("recovery") || require("confirmation")),
-        rule!(require(global_caller(address))),
-    );
-    let primary_or_confirmation = "primary_or_confirmation";
-    authority_rules.set_main_authority_rule(
-        primary_or_confirmation,
-        rule!(require("primary") || require("confirmation")),
-        rule!(require(global_caller(address))),
-    );
-    let any_role = "any_role";
-    authority_rules.set_main_authority_rule(
-        any_role,
-        rule!(require("primary") || require("confirmation") || require("recovery")),
-        rule!(require(global_caller(address))),
-    );
 
-    let mut method_authorities = MethodAuthorities::new();
-
-    method_authorities
-        .set_main_method_authority(ACCESS_CONTROLLER_CREATE_PROOF_IDENT, primary.into());
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_CREATE_PROOF_IDENT, primary);
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
-        primary.into(),
+        primary,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        primary.into(),
+        primary,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
-        primary.into(),
+        primary,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        primary.into(),
+        primary,
     );
 
     // Recovery Role Rules
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
-        recovery.into(),
+        recovery,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
-        recovery.into(),
+        recovery,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-        recovery.into(),
+        recovery,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        recovery.into(),
+        recovery,
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.redirect_to_fixed(
         ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        recovery.into(),
+        recovery,
     );
-    method_authorities
-        .set_main_method_authority(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT, recovery.into());
-    method_authorities
-        .set_main_method_authority(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery.into());
+    authority_rules
+        .redirect_to_fixed(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT, recovery);
+    authority_rules
+        .redirect_to_fixed(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery);
 
+    let mut method_authorities = MethodAuthorities::new();
     // Recovery || Confirmation Role Rules
-    method_authorities.set_main_method_authority(
+    authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        recovery_or_confirmation,
+        rule!(require("recovery") || require("confirmation")),
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        recovery_or_confirmation,
+        rule!(require("recovery") || require("confirmation")),
     );
 
     // Primary || Confirmation Role Rules
-    method_authorities.set_main_method_authority(
+    authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        primary_or_confirmation,
+        rule!(require("primary") || require("confirmation")),
     );
-    method_authorities.set_main_method_authority(
+    authority_rules.set_fixed_main_authority_rule(
         ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        primary_or_confirmation,
+        rule!(require("primary") || require("confirmation")),
     );
 
     // Other methods
-    method_authorities
-        .set_main_method_authority(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT, any_role);
+    authority_rules
+        .set_fixed_main_authority_rule(
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
+           rule!(require("primary") || require("confirmation") || require("recovery")),
+        );
 
     (method_authorities, authority_rules)
 }
