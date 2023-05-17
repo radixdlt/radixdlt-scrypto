@@ -211,12 +211,12 @@ fn create_empty_bucket() {
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
+        .take_from_worktop(RADIX_TOKEN, Decimal::zero(), |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
         .take_non_fungibles_from_worktop(
-            &BTreeSet::new(),
             non_fungible_resource,
+            &BTreeSet::new(),
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();

@@ -20,15 +20,15 @@ pub enum Instruction {
     /// Takes resource from worktop by the given amount.
     #[sbor(discriminator(INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR))]
     TakeFromWorktop {
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
     },
 
     /// Takes resource from worktop by the given non-fungible IDs.
     #[sbor(discriminator(INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR))]
     TakeNonFungiblesFromWorktop {
-        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
     },
 
     /// Returns a bucket of resource to worktop.
@@ -38,15 +38,15 @@ pub enum Instruction {
     /// Asserts worktop contains resource by at least the given amount.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR))]
     AssertWorktopContains {
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
     },
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
     AssertWorktopContainsNonFungibles {
-        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
     },
 
     /// Takes the last proof from the auth zone.
@@ -69,15 +69,15 @@ pub enum Instruction {
     /// Creates a proof from the auth zone, by the given amount
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAmount {
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
     },
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfNonFungibles {
-        ids: BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
     },
 
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR))]
@@ -86,16 +86,19 @@ pub enum Instruction {
     /// Creates a proof from a bucket.
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
     CreateProofFromBucket { bucket_id: ManifestBucket },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromBucketOfAmount {
         bucket_id: ManifestBucket,
         amount: Decimal,
     },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR))]
     CreateProofFromBucketOfNonFungibles {
         bucket_id: ManifestBucket,
         ids: BTreeSet<NonFungibleLocalId>,
     },
+
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR))]
     CreateProofFromBucketOfAll { bucket_id: ManifestBucket },
 

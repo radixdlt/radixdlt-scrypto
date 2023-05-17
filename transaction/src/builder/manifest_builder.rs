@@ -108,8 +108,8 @@ impl ManifestBuilder {
     /// Takes resource from worktop, by amount.
     pub fn take_from_worktop<F>(
         &mut self,
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
         then: F,
     ) -> &mut Self
     where
@@ -125,8 +125,8 @@ impl ManifestBuilder {
     /// Takes resource from worktop, by non-fungible ids.
     pub fn take_non_fungibles_from_worktop<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: &BTreeSet<NonFungibleLocalId>,
         then: F,
     ) -> &mut Self
     where
@@ -149,8 +149,8 @@ impl ManifestBuilder {
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains(
         &mut self,
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContains {
             amount,
@@ -162,8 +162,8 @@ impl ManifestBuilder {
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_non_fungibles(
         &mut self,
-        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
             ids: ids.clone(),
@@ -209,8 +209,8 @@ impl ManifestBuilder {
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount<F>(
         &mut self,
-        amount: Decimal,
         resource_address: ResourceAddress,
+        amount: Decimal,
         then: F,
     ) -> &mut Self
     where
@@ -227,8 +227,8 @@ impl ManifestBuilder {
     /// Creates proof from the auth zone by non-fungible ids.
     pub fn create_proof_from_auth_zone_of_non_fungibles<F>(
         &mut self,
-        ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
+        ids: &BTreeSet<NonFungibleLocalId>,
         then: F,
     ) -> &mut Self
     where
@@ -782,7 +782,7 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop(amount, resource_address, |builder, bucket_id| {
+        self.take_from_worktop(resource_address, amount, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::BurnResource { bucket_id })
                 .0
@@ -862,8 +862,8 @@ impl ManifestBuilder {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_global_id.local_id().clone());
         self.take_non_fungibles_from_worktop(
-            &ids,
             non_fungible_global_id.resource_address().clone(),
+            &ids,
             |builder, bucket_id| {
                 builder
                     .add_instruction(Instruction::BurnResource { bucket_id })
@@ -899,7 +899,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
-            args: args,
+            args,
         })
         .0
     }
