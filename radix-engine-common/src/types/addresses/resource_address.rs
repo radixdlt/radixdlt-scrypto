@@ -64,8 +64,8 @@ impl<'a> Arbitrary<'a> for ResourceAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
         let resource_entities: [u8; 2] = [
-            EntityType::GlobalFungibleResource as u8,
-            EntityType::GlobalNonFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
+            EntityType::GlobalNonFungibleResourceManager as u8,
         ];
 
         let mut node_id = [0u8; NodeId::LENGTH];
