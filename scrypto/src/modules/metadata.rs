@@ -8,6 +8,7 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::ScryptoCustomValueKind;
 use radix_engine_interface::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH;
+use radix_engine_interface::data::scrypto::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
@@ -62,11 +63,15 @@ pub trait MetadataObject {
         let mut buffer = Vec::new();
         let mut encoder =
             VecEncoder::<ScryptoCustomValueKind>::new(&mut buffer, SCRYPTO_SBOR_V1_MAX_DEPTH);
+        encoder
+            .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap();
         encoder.write_value_kind(ValueKind::Tuple).unwrap();
         encoder.write_size(2).unwrap();
         encoder.encode(name.as_ref()).unwrap();
         encoder.write_value_kind(ValueKind::Enum).unwrap();
         encoder.write_discriminator(V::TYPE_ID).unwrap();
+        encoder.write_size(1).unwrap();
         encoder.encode(&value).unwrap();
 
         ScryptoEnv
@@ -93,16 +98,20 @@ pub trait MetadataObject {
         // Option<MetadataValue>
         let mut decoder =
             VecDecoder::<ScryptoCustomValueKind>::new(&rtn, SCRYPTO_SBOR_V1_MAX_DEPTH);
+        decoder
+            .read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap();
         decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
         match decoder.read_discriminator().unwrap() {
             OPTION_VARIANT_NONE => {
                 return Err(MetadataError::NotFound);
             }
             OPTION_VARIANT_SOME => {
+                decoder.read_and_check_size(1).unwrap();
                 decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
                 let id = decoder.read_discriminator().unwrap();
-
                 if id == V::TYPE_ID {
+                    decoder.read_and_check_size(1).unwrap();
                     let v: V = decoder.decode().unwrap();
                     return Ok(v);
                 } else {
