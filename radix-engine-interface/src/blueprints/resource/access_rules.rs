@@ -113,6 +113,15 @@ impl AuthorityRules {
         Self { rules: btreemap!() }
     }
 
+    pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_owner_authority(
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        authority_rules
+    }
+
     pub fn set_rule(
         &mut self,
         authority_key: AuthorityKey,
@@ -175,15 +184,6 @@ impl AuthorityRules {
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules.insert(AuthorityKey::Owner, (rule, mutability));
-    }
-
-    pub fn create_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_authority(
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        authority_rules
     }
 }
 

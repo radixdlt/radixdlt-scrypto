@@ -10,6 +10,7 @@ use sbor::rust::string::String;
 
 pub type Package = Global<PackageStub>;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PackageStub(ObjectStubHandle);
 
 impl HasStub for PackageStub {

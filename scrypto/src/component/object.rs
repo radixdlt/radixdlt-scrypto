@@ -7,7 +7,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ObjectStubHandle {
     Own(Own),
     Global(GlobalAddress),
@@ -22,7 +22,7 @@ impl ObjectStubHandle {
     }
 }
 
-pub trait ObjectStub {
+pub trait ObjectStub: Copy {
     fn new(handle: ObjectStubHandle) -> Self;
 
     fn handle(&self) -> &ObjectStubHandle;

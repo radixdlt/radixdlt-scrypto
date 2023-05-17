@@ -492,7 +492,7 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::scrypto::prelude::ScryptoSbor)]
+        #[derive(Clone, Copy, ::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
             pub handle: ::scrypto::component::ObjectStubHandle,
         }
@@ -750,7 +750,7 @@ mod tests {
                     }
 
                     #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::prelude::ScryptoSbor)]
+                    #[derive(Clone, Copy, ::scrypto::prelude::ScryptoSbor)]
                     pub struct TestObjectStub {
                         pub handle: ::scrypto::component::ObjectStubHandle,
                     }

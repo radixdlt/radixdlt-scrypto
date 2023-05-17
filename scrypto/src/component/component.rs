@@ -43,6 +43,7 @@ pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct AnyComponent(ObjectStubHandle);
 
 impl HasStub for AnyComponent {
@@ -335,8 +336,10 @@ impl<C: HasStub> Globalizing<C> {
     }
 }
 
-#[derive(Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Global<O: HasStub>(pub O::Stub);
+
+impl<O: HasStub> Copy for Global<O> {}
 
 impl<O: HasStub> Clone for Global<O> {
     fn clone(&self) -> Self {
