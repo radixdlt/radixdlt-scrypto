@@ -6,7 +6,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, Receiver, TypeSchema, VirtualLazyLoadSchema,
+    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::AccountBlueprint;
@@ -71,7 +71,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_SECURIFY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountSecurifyInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountSecurifyOutput>(),
                 export_name: ACCOUNT_SECURIFY_IDENT.to_string(),
@@ -81,7 +81,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockFeeInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountLockFeeOutput>(),
                 export_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
@@ -91,7 +91,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountLockContingentFeeInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountLockContingentFeeOutput>(),
@@ -102,7 +102,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_DEPOSIT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositOutput>(),
                 export_name: ACCOUNT_DEPOSIT_IDENT.to_string(),
@@ -112,7 +112,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountDepositBatchInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountDepositBatchOutput>(),
                 export_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
@@ -122,7 +122,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AccountWithdrawInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountWithdrawOutput>(),
                 export_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
@@ -132,7 +132,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountWithdrawNonFungiblesInput>(),
                 output: aggregator
@@ -144,7 +144,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawInput>(),
                 output: aggregator
@@ -156,7 +156,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountLockFeeAndWithdrawNonFungiblesInput>(),
                 output: aggregator
@@ -169,7 +169,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
                 export_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
@@ -179,7 +179,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfAmountInput>(),
                 output: aggregator
@@ -191,7 +191,7 @@ impl AccountNativePackage {
         functions.insert(
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRef),
+                receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
                     .add_child_type_and_descendents::<AccountCreateProofOfNonFungiblesInput>(),
                 output: aggregator
@@ -282,7 +282,7 @@ impl AccountNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_advanced(input.config, api)?;
+                let rtn = AccountBlueprint::create_advanced(input.authority_rules, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

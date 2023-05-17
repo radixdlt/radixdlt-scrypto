@@ -5,6 +5,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+use bitflags::bitflags;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoDescribe, ScryptoSchema};
 use radix_engine_common::types::PartitionOffset;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
@@ -95,7 +96,7 @@ pub enum BlueprintCollectionSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct FunctionSchema {
-    pub receiver: Option<Receiver>,
+    pub receiver: Option<ReceiverInfo>,
     pub input: LocalTypeIndex,
     pub output: LocalTypeIndex,
     pub export_name: String,
@@ -104,6 +105,36 @@ pub struct FunctionSchema {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub struct VirtualLazyLoadSchema {
     pub export_name: String,
+}
+
+bitflags! {
+    #[derive(Sbor)]
+    pub struct RefTypes: u32 {
+        const NORMAL = 0b00000001;
+        const DIRECT_ACCESS = 0b00000010;
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct ReceiverInfo {
+    pub receiver: Receiver,
+    pub ref_types: RefTypes,
+}
+
+impl ReceiverInfo {
+    pub fn normal_ref() -> Self {
+        Self {
+            receiver: Receiver::SelfRef,
+            ref_types: RefTypes::NORMAL,
+        }
+    }
+
+    pub fn normal_ref_mut() -> Self {
+        Self {
+            receiver: Receiver::SelfRefMut,
+            ref_types: RefTypes::NORMAL,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

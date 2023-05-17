@@ -25,7 +25,14 @@ mod royalty_test {
                 .add_rule("paid_method_panic", 1)
                 .default(0);
 
-            local_component.globalize_with_royalty_config(config)
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_owner_rule(rule!(allow_all), rule!(allow_all));
+
+            local_component.globalize_with_modules(
+                AccessRules::new(MethodAuthorities::new(), authority_rules),
+                Metadata::new(),
+                Royalty::new(config),
+            )
         }
     }
 }

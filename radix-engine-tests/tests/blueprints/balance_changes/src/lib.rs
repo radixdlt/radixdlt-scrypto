@@ -18,7 +18,14 @@ mod balance_changes_test {
                 .add_rule("boom", 1)
                 .default(0);
 
-            local_component.globalize_with_royalty_config(config)
+            let mut authority_rules = AuthorityRules::new();
+            authority_rules.set_main_authority_rule("owner", rule!(allow_all), rule!(allow_all));
+
+            local_component.globalize_with_modules(
+                AccessRules::new(MethodAuthorities::new(), authority_rules),
+                Metadata::new(),
+                Royalty::new(config),
+            )
         }
 
         pub fn put(&mut self, bucket: Bucket) {

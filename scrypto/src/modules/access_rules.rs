@@ -2,14 +2,13 @@ use crate::engine::scrypto_env::ScryptoEnv;
 
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetMethodAccessRuleInput,
-    AccessRulesSetMethodMutabilityInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT, ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
+    AccessRulesCreateInput, AccessRulesSetAuthorityMutabilityInput,
+    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -22,15 +21,16 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn new(access_rules: AccessRulesConfig) -> Self {
+    pub fn new(method_authorities: MethodAuthorities, authority_rules: AuthorityRules) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
                 ACCESS_RULES_BLUEPRINT,
                 ACCESS_RULES_CREATE_IDENT,
                 scrypto_encode(&AccessRulesCreateInput {
-                    access_rules,
-                    child_blueprint_rules: btreemap!(),
+                    method_authorities,
+                    authority_rules,
+                    inner_blueprint_rules: btreemap!(),
                 })
                 .unwrap(),
             )
@@ -42,44 +42,6 @@ impl AccessRules {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AttachedAccessRules(pub GlobalAddress);
-
-impl AttachedAccessRules {
-    pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
-        // TODO: allow setting method auth on other modules besides self
-        ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    rule: AccessRuleEntry::AccessRule(access_rule),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-
-    pub fn lock_method_auth(&mut self, method_name: &str) {
-        // TODO: allow locking method auth on other modules besides self
-        ScryptoEnv
-            .call_method_advanced(
-                self.0.as_node_id(),
-                false,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_SET_METHOD_MUTABILITY_IDENT,
-                scrypto_encode(&AccessRulesSetMethodMutabilityInput {
-                    object_key: ObjectKey::SELF,
-                    method_key: MethodKey::new(ObjectModuleId::Main, method_name),
-                    mutability: AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum Mutability {
@@ -96,11 +58,39 @@ impl From<Mutability> for AccessRule {
     }
 }
 
-impl From<Mutability> for AccessRuleEntry {
-    fn from(val: Mutability) -> Self {
-        match val {
-            Mutability::LOCKED => AccessRuleEntry::AccessRule(AccessRule::DenyAll),
-            Mutability::MUTABLE(rule) => AccessRuleEntry::AccessRule(rule),
-        }
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ActorAccessRules;
+
+impl ActorAccessRules {
+    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+        let _rtn = ScryptoEnv
+            .actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+                    object_key: ObjectKey::SELF,
+                    authority_key: AuthorityKey::main(name),
+                    rule: entry.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+    }
+
+    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
+        let _rtn = ScryptoEnv
+            .actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
+                    object_key: ObjectKey::SELF,
+                    authority_key: AuthorityKey::main(name),
+                    mutability,
+                })
+                .unwrap(),
+            )
+            .unwrap();
     }
 }
