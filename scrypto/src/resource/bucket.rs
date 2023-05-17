@@ -45,9 +45,9 @@ pub trait ScryptoBucket {
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 
-    fn as_fungible_bucket(&self) -> FungibleBucket;
+    fn as_fungible(&self) -> FungibleBucket;
 
-    fn as_non_fungible_bucket(&self) -> NonFungibleBucket;
+    fn as_non_fungible(&self) -> NonFungibleBucket;
 }
 
 pub trait ScryptoFungibleBucket {}
@@ -211,7 +211,7 @@ impl ScryptoBucket for Bucket {
         self.amount() == 0.into()
     }
 
-    fn as_fungible_bucket(&self) -> FungibleBucket {
+    fn as_fungible(&self) -> FungibleBucket {
         assert!(self
             .resource_address()
             .as_node_id()
@@ -219,7 +219,7 @@ impl ScryptoBucket for Bucket {
         FungibleBucket(Bucket(self.0))
     }
 
-    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
+    fn as_non_fungible(&self) -> NonFungibleBucket {
         assert!(self
             .resource_address()
             .as_node_id()
@@ -284,12 +284,12 @@ impl ScryptoBucket for FungibleBucket {
         self.0.authorize(f)
     }
 
-    fn as_fungible_bucket(&self) -> FungibleBucket {
-        self.0.as_fungible_bucket()
+    fn as_fungible(&self) -> FungibleBucket {
+        self.0.as_fungible()
     }
 
-    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
-        self.0.as_non_fungible_bucket()
+    fn as_non_fungible(&self) -> NonFungibleBucket {
+        self.0.as_non_fungible()
     }
 }
 
@@ -353,12 +353,12 @@ impl ScryptoBucket for NonFungibleBucket {
         self.0.authorize(f)
     }
 
-    fn as_fungible_bucket(&self) -> FungibleBucket {
-        self.0.as_fungible_bucket()
+    fn as_fungible(&self) -> FungibleBucket {
+        self.0.as_fungible()
     }
 
-    fn as_non_fungible_bucket(&self) -> NonFungibleBucket {
-        self.0.as_non_fungible_bucket()
+    fn as_non_fungible(&self) -> NonFungibleBucket {
+        self.0.as_non_fungible()
     }
 }
 

@@ -63,7 +63,7 @@ mod vault_test {
         pub fn new_non_fungible_vault_with_take_non_fungible() -> ComponentAddress {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault
-                .as_non_fungible_vault()
+                .as_non_fungible()
                 .take_non_fungible(&NonFungibleLocalId::integer(1));
             vault.put(bucket.into());
             Self { vault }.instantiate().globalize()
@@ -71,13 +71,13 @@ mod vault_test {
 
         pub fn new_vault_with_get_non_fungible_local_ids() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _ids = vault.as_non_fungible_vault().non_fungible_local_ids();
+            let _ids = vault.as_non_fungible().non_fungible_local_ids();
             Self { vault }.instantiate().globalize()
         }
 
         pub fn new_vault_with_get_non_fungible_local_id() -> ComponentAddress {
             let vault = Self::create_singleton_non_fungible_vault();
-            let _id = vault.as_non_fungible_vault().non_fungible_local_id();
+            let _id = vault.as_non_fungible().non_fungible_local_id();
             Self { vault }.instantiate().globalize()
         }
 

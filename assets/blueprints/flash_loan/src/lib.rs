@@ -91,7 +91,7 @@ mod basic_flash_loan {
             );
 
             // Verify we are being sent at least the amount due
-            let terms: LoanDue = loan_terms.as_non_fungible_bucket().non_fungible().data();
+            let terms: LoanDue = loan_terms.as_non_fungible().non_fungible().data();
             assert!(
                 loan_repayment.amount() >= terms.amount_due,
                 "Insufficient repayment given for your loan!"
