@@ -76,7 +76,7 @@ pub trait SecurifiedAccessRules {
         access_rules.set_authority_rule_and_mutability(
             AuthorityKey::Owner,
             rule!(require(global_id.clone())),
-            rule!(require(global_id.clone())),
+            rule!(require_owner()),
             api,
         )?;
 

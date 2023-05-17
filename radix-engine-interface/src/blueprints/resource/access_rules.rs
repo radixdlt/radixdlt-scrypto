@@ -117,7 +117,7 @@ impl AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_owner_authority(
             rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
+            rule!(require_owner()),
         );
         authority_rules
     }

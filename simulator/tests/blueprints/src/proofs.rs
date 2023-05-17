@@ -5,7 +5,7 @@ mod proofs {
     struct Proofs {}
 
     impl Proofs {
-        pub fn new() -> (ComponentAddress, Vec<Bucket>) {
+        pub fn new() -> (Global<Proofs>, Vec<Bucket>) {
             // Creating three badges: admin badge, supervisor badge, super admin badge
             let supervisor_badge = Self::new_badge("supervisor badge");
             let admin_badge = Self::new_badge("admin badge");
