@@ -76,30 +76,37 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
 
 impl From<String> for AccessRuleNode {
     fn from(authority: String) -> Self {
-        AccessRuleNode::Authority(authority)
+        AccessRuleNode::Authority(AuthorityRule::Custom(authority))
     }
 }
 
 impl From<&str> for AccessRuleNode {
     fn from(authority: &str) -> Self {
-        AccessRuleNode::Authority(authority.to_string())
+        AccessRuleNode::Authority(AuthorityRule::Custom(authority.to_string()))
     }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum AuthorityRule {
+    Owner,
+    Custom(String)
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
-    Authority(String),
+    Authority(AuthorityRule),
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
 }
 
 impl AccessRuleNode {
-    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<String>) {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityRule>) {
         match self {
             AccessRuleNode::Authority(authority) => {
-                authorities.insert(authority.to_string());
+                authorities.insert(authority.clone());
             }
             AccessRuleNode::ProofRule(..) => {}
             AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
@@ -146,7 +153,7 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
 }
 
 pub fn require_owner() -> AccessRuleNode {
-    AccessRuleNode::Authority("owner".to_string())
+    AccessRuleNode::Authority(AuthorityRule::Owner)
 }
 
 pub fn require<T>(required: T) -> AccessRuleNode
@@ -198,7 +205,7 @@ pub enum AccessRule {
 }
 
 impl AccessRule {
-    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<String>) {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityRule>) {
         match self {
             AccessRule::AllowAll | AccessRule::DenyAll => {}
             AccessRule::Protected(node) => node.get_referenced_authorities(authorities),

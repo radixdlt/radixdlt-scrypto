@@ -289,7 +289,7 @@ impl Authorization {
         access_rules: &NodeAuthorityRules,
         module_id: ObjectModuleId,
         auth_rule: &AccessRuleNode,
-        already_verified_authorities: &mut NonIterMap<String, ()>,
+        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
@@ -298,7 +298,7 @@ impl Authorization {
                     return Ok(AuthorizationCheckResult::Authorized);
                 }
 
-                match access_rules.get_rule(&AuthorityKey::from_access_rule(authority.as_str())) {
+                match access_rules.get_rule(&AuthorityKey::from_access_rule(authority.clone())) {
                     Some(access_rule) => {
                         // TODO: Add costing for every access rule hop
                         Self::check_authorization_against_access_rule_internal(
@@ -367,7 +367,7 @@ impl Authorization {
         access_rules: &NodeAuthorityRules,
         module_id: ObjectModuleId,
         rule: &AccessRule,
-        already_verified_authorities: &mut NonIterMap<String, ()>,
+        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {

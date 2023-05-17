@@ -70,7 +70,7 @@ impl MethodEntry {
 
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
-        AccessRule::Protected(AccessRuleNode::Authority(name))
+        AccessRule::Protected(AccessRuleNode::Authority(AuthorityRule::Custom(name)))
     }
 }
 
@@ -116,10 +116,10 @@ pub enum AuthorityKey {
 
 
 impl AuthorityKey {
-    pub fn from_access_rule(key: &str) -> Self {
-        match key {
-            "owner" => AuthorityKey::Owner,
-            _ => AuthorityKey::Module(key.to_string()),
+    pub fn from_access_rule(rule: AuthorityRule) -> Self {
+        match rule {
+            AuthorityRule::Owner => AuthorityKey::Owner,
+            AuthorityRule::Custom(key) => AuthorityKey::Module(key),
         }
     }
 
