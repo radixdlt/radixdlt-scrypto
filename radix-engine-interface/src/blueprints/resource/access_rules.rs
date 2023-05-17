@@ -108,11 +108,26 @@ impl MethodAuthorities {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct AuthorityKey {
+    pub authority: String,
+}
+
+
+impl AuthorityKey {
+    pub fn new(key: &str) -> Self {
+        AuthorityKey {
+            authority: key.to_string(),
+        }
+    }
+}
+
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AuthorityRules {
-    pub rules: BTreeMap<String, (AccessRule, AccessRule)>,
+    pub rules: BTreeMap<AuthorityKey, (AccessRule, AccessRule)>,
 }
 
 impl AuthorityRules {
@@ -126,7 +141,8 @@ impl AuthorityRules {
         rule: AccessRule,
         mutability: AccessRule,
     ) {
-        self.rules.insert(authority.into(), (rule, mutability));
+        let name = authority.into();
+        self.rules.insert(AuthorityKey::new(name.as_str()), (rule, mutability));
     }
 
     pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {

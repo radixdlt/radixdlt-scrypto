@@ -6,7 +6,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::{NodeAuthorityRules, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate, MethodAccessRulesSubstate, AuthorityKey};
+use crate::system::node_modules::access_rules::{NodeAuthorityRules, AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};

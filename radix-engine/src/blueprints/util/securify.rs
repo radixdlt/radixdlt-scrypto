@@ -18,7 +18,7 @@ pub trait SecurifiedAccessRules {
         let method_authorities = Self::method_authorities();
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
-            authority_rules_to_use.set_rule(authority.as_str(), access_rule, mutability);
+            authority_rules_to_use.set_rule(authority.authority, access_rule, mutability);
         }
 
         (method_authorities, authority_rules_to_use)
