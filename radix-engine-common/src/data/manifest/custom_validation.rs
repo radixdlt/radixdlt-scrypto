@@ -214,6 +214,10 @@ mod tests {
     impl Describe<ScryptoCustomTypeKind> for Bucket {
         const TYPE_ID: GlobalTypeId =
             GlobalTypeId::WellKnown([well_known_scrypto_custom_types::OWN_BUCKET_ID]);
+
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+            well_known_scrypto_custom_types::own_bucket_type_data()
+        }
     }
 
     pub struct Proof;
@@ -221,6 +225,10 @@ mod tests {
     impl Describe<ScryptoCustomTypeKind> for Proof {
         const TYPE_ID: GlobalTypeId =
             GlobalTypeId::WellKnown([well_known_scrypto_custom_types::OWN_PROOF_ID]);
+
+        fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+            well_known_scrypto_custom_types::own_proof_type_data()
+        }
     }
 
     type MyScryptoTuple = (

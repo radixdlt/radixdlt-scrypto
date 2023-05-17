@@ -8,10 +8,10 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::Receiver;
 use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
+use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 use resources_tracker_macro::trace_resources;
 
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
@@ -55,8 +55,8 @@ const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
 const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
-const FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_by_amount_FungibleVault";
+const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
+    "create_proof_of_amount_FungibleVault";
 const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
 const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVault";
 
@@ -65,8 +65,8 @@ const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
-const NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_by_amount_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
+    "create_proof_of_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleVault";
@@ -77,6 +77,9 @@ const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket"
 const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_FungibleBucket";
 const FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleBucket";
+const FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
+    "create_proof_of_amount_FungibleBucket";
+const FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "create_proof_of_all_FungibleBucket";
 const FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleBucket";
 const FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleBucket";
 
@@ -86,6 +89,12 @@ const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungible
 const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
+    "create_proof_of_amount_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "create_proof_of_non_fungibles_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str =
+    "create_proof_of_all_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
@@ -164,7 +173,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerMintInput>(),
                     output: aggregator
@@ -175,7 +184,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
@@ -186,7 +195,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
@@ -198,7 +207,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
@@ -211,7 +220,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
@@ -223,7 +232,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
@@ -234,7 +243,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
@@ -342,7 +351,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintInput>(),
                     output: aggregator
@@ -354,7 +363,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerGetNonFungibleInput>(),
                     output: aggregator
@@ -366,7 +375,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerUpdateDataInput>(),
                     output: aggregator
@@ -377,7 +386,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerExistsInput>(),
                     output: aggregator
@@ -389,7 +398,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintUuidInput>(
                         ),
@@ -402,7 +411,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerMintSingleUuidInput>(),
                     output: aggregator
@@ -414,7 +423,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_BURN_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ResourceManagerBurnInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<ResourceManagerBurnOutput>(),
@@ -424,7 +433,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyVaultInput>(),
                     output: aggregator
@@ -436,7 +445,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerCreateEmptyBucketInput>(),
                     output: aggregator
@@ -449,7 +458,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetResourceTypeInput>(),
                     output: aggregator
@@ -461,7 +470,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerGetTotalSupplyInput>(),
                     output: aggregator
@@ -473,7 +482,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ResourceManagerDropEmptyBucketInput>(),
                     output: aggregator
@@ -517,7 +526,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_TAKE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
                     export_name: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
@@ -526,7 +535,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_PUT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
                     export_name: FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
@@ -535,7 +544,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
                     export_name: FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -544,7 +553,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<FungibleVaultLockFeeInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFeeOutput>(),
@@ -554,38 +563,39 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_RECALL_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
                     export_name: FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+                VAULT_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAllInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAllOutput>(),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
                     export_name: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export_name: FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
+                    export_name: FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
                 FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleVaultLockFungibleAmountInput>(),
                     output: aggregator
@@ -596,7 +606,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleVaultUnlockFungibleAmountInput>(),
                     output: aggregator
@@ -646,7 +656,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_TAKE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
@@ -655,7 +665,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultTakeNonFungiblesInput>(),
                     output: aggregator
@@ -666,7 +676,10 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_RECALL_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
                     input: aggregator.add_child_type_and_descendents::<VaultRecallInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultRecallOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME.to_string(),
@@ -675,7 +688,10 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo {
+                        receiver: Receiver::SelfRefMut,
+                        ref_types: RefTypes::DIRECT_ACCESS,
+                    }),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultRecallNonFungiblesInput>(
                         ),
@@ -688,7 +704,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_PUT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<VaultPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultPutOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME.to_string(),
@@ -697,7 +713,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 VAULT_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<VaultGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<VaultGetAmountOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -706,7 +722,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultGetNonFungibleLocalIdsInput>(),
                     output: aggregator
@@ -715,31 +731,29 @@ impl ResourceManagerNativePackage {
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+                VAULT_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
-                    input: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAllInput>(),
-                    output: aggregator
-                        .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
+                    output: aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
                     export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
                 VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
                     output: aggregator
                         .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
+                    export_name: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultCreateProofOfNonFungiblesInput>(),
                     output: aggregator
@@ -750,7 +764,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultLockNonFungiblesInput>(),
                     output: aggregator
@@ -761,7 +775,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleVaultUnlockNonFungiblesInput>(
                         ),
@@ -808,7 +822,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
                     export_name: FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
@@ -817,7 +831,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_TAKE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
                     export_name: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
@@ -826,7 +840,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
                     export_name: FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -835,7 +849,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
@@ -846,16 +860,38 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
                     export_name: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
+                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    export_name: FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleBucketLockAmountInput>(),
                     output: aggregator
@@ -866,7 +902,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<FungibleBucketUnlockAmountInput>(),
                     output: aggregator
@@ -899,7 +935,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_PUT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketPutInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketPutOutput>(),
                     export_name: NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME.to_string(),
@@ -908,7 +944,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_TAKE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketTakeInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
                     export_name: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
@@ -918,7 +954,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<BucketGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketGetAmountOutput>(),
                     export_name: NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -927,7 +963,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetResourceAddressInput>(),
                     output: aggregator
@@ -938,16 +974,47 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 BUCKET_CREATE_PROOF_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
                     output: aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
                     export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
+                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesInput>(),
+                    output: aggregator.add_child_type_and_descendents::<NonFungibleBucketCreateProofOfNonFungiblesOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+                FunctionSchema {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAllInput>(),
+                    output: aggregator
+                        .add_child_type_and_descendents::<BucketCreateProofOfAllOutput>(),
+                    export_name: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
                     output: aggregator
@@ -958,7 +1025,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<BucketGetNonFungibleLocalIdsInput>(),
                     output: aggregator
@@ -970,7 +1037,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketLockNonFungiblesInput>(),
                     output: aggregator
@@ -982,7 +1049,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleBucketUnlockNonFungiblesInput>(),
                     output: aggregator
@@ -1007,7 +1074,7 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<FungibleProof>());
+            fields.push(aggregator.add_child_type_and_descendents::<FungibleProofSubstate>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1022,7 +1089,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_CLONE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
                     export_name: FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
@@ -1031,7 +1098,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
                     export_name: FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -1040,7 +1107,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
@@ -1066,7 +1133,7 @@ impl ResourceManagerNativePackage {
 
             let mut fields = Vec::new();
             fields.push(aggregator.add_child_type_and_descendents::<ProofMoveableSubstate>());
-            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProof>());
+            fields.push(aggregator.add_child_type_and_descendents::<NonFungibleProofSubstate>());
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -1081,7 +1148,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_CLONE_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRefMut),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofCloneInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofCloneOutput>(),
                     export_name: NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME.to_string(),
@@ -1090,7 +1157,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator.add_child_type_and_descendents::<ProofGetAmountInput>(),
                     output: aggregator.add_child_type_and_descendents::<ProofGetAmountOutput>(),
                     export_name: NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME.to_string(),
@@ -1099,7 +1166,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 PROOF_GET_RESOURCE_ADDRESS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<ProofGetResourceAddressInput>(),
                     output: aggregator
@@ -1111,7 +1178,7 @@ impl ResourceManagerNativePackage {
             functions.insert(
                 NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchema {
-                    receiver: Some(Receiver::SelfRef),
+                    receiver: Some(ReceiverInfo::normal_ref()),
                     input: aggregator
                         .add_child_type_and_descendents::<NonFungibleProofGetLocalIdsInput>(),
                     output: aggregator
@@ -1150,7 +1217,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_PUT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopPutInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopPutOutput>(),
                 export_name: WORKTOP_PUT_IDENT.to_string(),
@@ -1159,7 +1226,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_TAKE_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeOutput>(),
                 export_name: WORKTOP_TAKE_IDENT.to_string(),
@@ -1168,7 +1235,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeNonFungiblesInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<WorktopTakeNonFungiblesOutput>(),
@@ -1178,7 +1245,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_TAKE_ALL_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopTakeAllInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopTakeAllOutput>(),
                 export_name: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -1187,7 +1254,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopAssertContainsInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopAssertContainsOutput>(),
                 export_name: WORKTOP_ASSERT_CONTAINS_IDENT.to_string(),
@@ -1196,7 +1263,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsAmountInput>(),
                 output: aggregator
@@ -1207,7 +1274,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<WorktopAssertContainsNonFungiblesInput>(),
                 output: aggregator
@@ -1218,7 +1285,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             WORKTOP_DRAIN_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<WorktopDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<WorktopDrainOutput>(),
                 export_name: WORKTOP_DRAIN_IDENT.to_string(),
@@ -1244,7 +1311,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             AUTH_ZONE_POP_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePopInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePopOutput>(),
                 export_name: AUTH_ZONE_POP_EXPORT_NAME.to_string(),
@@ -1253,7 +1320,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             AUTH_ZONE_PUSH_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZonePushInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
                 export_name: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
@@ -1262,37 +1329,48 @@ impl ResourceManagerNativePackage {
         functions.insert(
             AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
                 export_name: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
-            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT.to_string(),
+            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountInput>(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByAmountOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME.to_string(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAmountOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT.to_string(),
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
-                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofByIdsInput>(),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AuthZoneCreateProofByIdsOutput>(),
-                export_name: AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME.to_string(),
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfNonFungiblesOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+            },
+        );
+        functions.insert(
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOfAllInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AuthZoneCreateProofOfAllOutput>(),
+                export_name: AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME.to_string(),
             },
         );
         functions.insert(
             AUTH_ZONE_CLEAR_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneClearInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
                 export_name: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
@@ -1301,7 +1379,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<AuthZoneClearVirtualProofsInput>(),
                 output: aggregator
@@ -1312,7 +1390,7 @@ impl ResourceManagerNativePackage {
         functions.insert(
             AUTH_ZONE_DRAIN_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator.add_child_type_and_descendents::<AuthZoneDrainInput>(),
                 output: aggregator.add_child_type_and_descendents::<AuthZoneDrainOutput>(),
                 export_name: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
@@ -1715,6 +1793,7 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(input.id, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
@@ -1735,28 +1814,6 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: VaultTakeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::take(&input.amount, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: NonFungibleVaultTakeNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
-                    input.non_fungible_local_ids,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
@@ -1764,28 +1821,6 @@ impl ResourceManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::recall(input.amount, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: VaultRecallInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: NonFungibleVaultRecallNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
-                    input.non_fungible_local_ids,
-                    api,
-                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
@@ -1797,15 +1832,6 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
-
-                let input: VaultPutInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::put(input.bucket, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -1815,50 +1841,19 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::get_amount(api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let _input: NonFungibleVaultGetNonFungibleLocalIdsInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::create_proof(receiver, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let _input: VaultCreateProofOfAllInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
+            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
@@ -1868,33 +1863,7 @@ impl ResourceManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn =
-                    FungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn =
-                    NonFungibleVaultBlueprint::create_proof_by_amount(receiver, input.amount, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
-                let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_by_ids(receiver, input.ids, api)?;
+                    FungibleVaultBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
@@ -1920,6 +1889,119 @@ impl ResourceManagerNativePackage {
                 let rtn = FungibleVaultBlueprint::unlock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+
+            NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultTakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::take(&input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: NonFungibleVaultTakeNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
+                    input.non_fungible_local_ids,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultRecallInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: NonFungibleVaultRecallNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
+                    input.non_fungible_local_ids,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
+
+                let input: VaultPutInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::put(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::get_amount(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: NonFungibleVaultGetNonFungibleLocalIdsInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::create_proof(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    NonFungibleVaultBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(
+                    receiver, input.ids, api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -1934,7 +2016,6 @@ impl ResourceManagerNativePackage {
                     NonFungibleVaultBlueprint::lock_non_fungibles(receiver, input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -1945,6 +2026,7 @@ impl ResourceManagerNativePackage {
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+
             FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
@@ -2038,7 +2120,13 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                FungibleBucketBlueprint::get_amount(input, api)
+                let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let amount = FungibleBucketBlueprint::get_amount(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&amount))
             }
             FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2050,7 +2138,34 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                FungibleBucketBlueprint::create_proof(receiver, input, api)
+                let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::create_proof(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    FungibleBucketBlueprint::create_proof_of_amount(receiver, input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::create_proof_of_all(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2079,7 +2194,13 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                NonFungibleBucketBlueprint::get_amount(input, api)
+                let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let amount = NonFungibleBucketBlueprint::get_amount(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&amount))
             }
             NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -2092,7 +2213,54 @@ impl ResourceManagerNativePackage {
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                NonFungibleBucketBlueprint::create_proof(receiver, input, api)
+                let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::create_proof(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::create_proof_of_amount(
+                    receiver,
+                    input.amount,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let input: NonFungibleBucketCreateProofOfNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleBucketBlueprint::create_proof_of_non_fungibles(
+                    receiver, input.ids, api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
+                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
+                ))?;
+                let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::create_proof_of_all(receiver, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
@@ -2173,42 +2341,110 @@ impl ResourceManagerNativePackage {
             AUTH_ZONE_POP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::pop(input, api)
+                let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::pop(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_PUSH_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::push(input, api)
+                let input: AuthZonePushInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::push(input.proof, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof(input, api)
+                let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof(input.resource_address, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
-            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_EXPORT_NAME => {
+            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof_by_amount(input, api)
+                let input: AuthZoneCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_amount(
+                    input.resource_address,
+                    input.amount,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_EXPORT_NAME => {
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::create_proof_by_ids(input, api)
+                let input: AuthZoneCreateProofOfNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_non_fungibles(
+                    input.resource_address,
+                    input.ids,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
+            }
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AuthZoneCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proof = AuthZoneBlueprint::create_proof_of_all(input.resource_address, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CLEAR_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::clear(input, api)
+                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::clear(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::clear_signature_proofs(input, api)
+                let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                AuthZoneBlueprint::clear_signature_proofs(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_DRAIN_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                AuthZoneBlueprint::drain(input, api)
+                let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let proofs = AuthZoneBlueprint::drain(api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&proofs))
             }
             AUTH_ZONE_DROP_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;

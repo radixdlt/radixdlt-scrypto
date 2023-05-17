@@ -26,9 +26,9 @@ mod outer {
     impl Outer {
         pub fn instantiate() -> ComponentAddress {
             let inner = Inner::instantiate();
-            Self { inner }.instantiate().globalize_with_access_rules(
-                AccessRulesConfig::new().default(rule!(allow_all), rule!(allow_all)),
-            )
+            Self { inner }
+                .instantiate()
+                .globalize_with_access_rules(MethodAuthorities::new(), AuthorityRules::new())
         }
 
         pub fn pass_fungible_proof(&self, proof: Proof) {

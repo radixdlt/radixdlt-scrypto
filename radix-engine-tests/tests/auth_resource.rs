@@ -33,31 +33,31 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
-        let (object_key, group) = match action {
-            Action::Mint => (ObjectKey::SELF, "mint"),
-            Action::Burn => (ObjectKey::SELF, "burn"),
-            Action::UpdateMetadata => (ObjectKey::SELF, "update_metadata"),
+        let (object_key, authority_key) = match action {
+            Action::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+            Action::Burn => (ObjectKey::SELF, AuthorityKey::main(BURN_AUTHORITY)),
+            Action::UpdateMetadata => (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY)),
             Action::Withdraw => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "withdraw",
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                AuthorityKey::main(WITHDRAW_AUTHORITY),
             ),
             Action::Deposit => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "deposit",
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                AuthorityKey::main(DEPOSIT_AUTHORITY),
             ),
             Action::Recall => (
-                ObjectKey::ChildBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-                "recall",
+                ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
+                AuthorityKey::main(RECALL_AUTHORITY),
             ),
         };
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_group_access_rule(
+            .set_authority_access_rule(
                 token_address.into(),
                 object_key,
-                group.to_string(),
+                authority_key,
                 rule!(require(updated_auth)),
             )
             .build();
@@ -85,7 +85,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     // Act
     let mut builder = ManifestBuilder::new();
     builder.lock_fee(test_runner.faucet_component(), 10u32.into());
-    builder.create_proof_from_account_by_amount(account, auth_to_use, Decimal::one());
+    builder.create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
 
     match action {
         Action::Mint => builder
@@ -114,7 +114,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account(account, token_address, dec!("1.0"))
-            .take_from_worktop(token_address, |builder, bucket_id| {
+            .take_all_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(account, "deposit", manifest_args!(bucket_id))
             })
             .call_method(

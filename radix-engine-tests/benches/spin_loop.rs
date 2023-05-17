@@ -13,7 +13,7 @@ fn bench_spin_loop(c: &mut Criterion) {
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 10u32.into())
                 .call_method(test_runner.faucet_component(), "free", manifest_args!())
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                     builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                     builder
                 })

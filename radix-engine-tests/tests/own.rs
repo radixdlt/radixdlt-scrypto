@@ -14,7 +14,7 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
-            .take_from_worktop_by_amount(Decimal::ZERO, RADIX_TOKEN, |builder, bucket| {
+            .take_from_worktop(RADIX_TOKEN, Decimal::ZERO, |builder, bucket| {
                 builder.call_function(
                     RESOURCE_PACKAGE,
                     WORKTOP_BLUEPRINT,

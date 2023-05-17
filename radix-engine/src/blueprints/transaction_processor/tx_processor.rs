@@ -6,12 +6,12 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
-use native_sdk::resource::{LocalAuthZone, SysBucket, SysProof, Worktop};
-use native_sdk::runtime::Runtime;
+use native_sdk::resource::NativeNonFungibleBucket;
+use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
+use native_sdk::runtime::{LocalAuthZone, Runtime};
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetGroupMutabilityInput,
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT, ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    AccessRulesSetAuthorityMutabilityInput, AccessRulesSetAuthorityRuleInput,
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataRemoveInput, MetadataSetInput, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
@@ -99,106 +99,125 @@ impl TransactionProcessorBlueprint {
             api.update_instruction_index(index)?;
 
             let result = match inst {
-                Instruction::TakeFromWorktop { resource_address } => {
-                    let bucket = worktop.sys_take_all(resource_address, api)?;
+                Instruction::TakeAllFromWorktop { resource_address } => {
+                    let bucket = worktop.take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByAmount {
+                Instruction::TakeFromWorktop {
                     amount,
                     resource_address,
                 } => {
-                    let bucket = worktop.sys_take(resource_address, amount, api)?;
+                    let bucket = worktop.take(resource_address, amount, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktopByIds {
+                Instruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_address,
                 } => {
-                    let bucket = worktop.sys_take_non_fungibles(resource_address, ids, api)?;
+                    let bucket = worktop.take_non_fungibles(resource_address, ids, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    worktop.sys_put(bucket, api)?;
+                    worktop.put(bucket, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    worktop.sys_assert_contains(resource_address, api)?;
-                    InstructionOutput::None
-                }
-                Instruction::AssertWorktopContainsByAmount {
+                Instruction::AssertWorktopContains {
                     amount,
                     resource_address,
                 } => {
-                    worktop.sys_assert_contains_amount(resource_address, amount, api)?;
+                    worktop.assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsByIds {
+                Instruction::AssertWorktopContainsNonFungibles {
                     ids,
                     resource_address,
                 } => {
-                    worktop.sys_assert_contains_non_fungibles(resource_address, ids, api)?;
+                    worktop.assert_contains_non_fungibles(resource_address, ids, api)?;
                     InstructionOutput::None
                 }
                 Instruction::PopFromAuthZone {} => {
-                    let proof = LocalAuthZone::sys_pop(api)?;
+                    let proof = LocalAuthZone::pop(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearAuthZone => {
-                    LocalAuthZone::sys_clear(api)?;
+                    LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::ClearSignatureProofs => {
-                    LocalAuthZone::sys_clear_signature_proofs(api)?;
+                    LocalAuthZone::clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    LocalAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::push(proof, api)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
-                    let proof = LocalAuthZone::sys_create_proof(resource_address, api)?;
+                    let proof = LocalAuthZone::create_proof(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByAmount {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     amount,
                     resource_address,
                 } => {
                     let proof =
-                        LocalAuthZone::sys_create_proof_by_amount(amount, resource_address, api)?;
+                        LocalAuthZone::create_proof_of_amount(amount, resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneByIds {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
                     ids,
                     resource_address,
                 } => {
                     let proof =
-                        LocalAuthZone::sys_create_proof_by_ids(&ids, resource_address, api)?;
+                        LocalAuthZone::create_proof_of_non_fungibles(&ids, resource_address, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+                    let proof = LocalAuthZone::create_proof_of_all(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
-                    let proof = bucket.sys_create_proof(api)?;
+                    let proof = bucket.create_proof(api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_amount(amount, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_non_fungibles(ids, api)?;
+                    processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+                    let bucket = processor.get_bucket(&bucket_id)?;
+                    let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
-                    let proof = proof.sys_clone(api)?;
+                    let proof = proof.clone(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
                 Instruction::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
-                    proof.sys_drop(api)?;
+                    proof.drop(api)?;
                     InstructionOutput::None
                 }
                 Instruction::DropAllProofs => {
@@ -207,9 +226,9 @@ impl TransactionProcessorBlueprint {
 
                     for (_, real_id) in processor.proof_id_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
-                        proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::sys_clear(api)?;
+                    LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
                 Instruction::CallFunction {
@@ -299,7 +318,7 @@ impl TransactionProcessorBlueprint {
                     schema,
                     royalty_config,
                     metadata,
-                    access_rules,
+                    authority_rules,
                 } => {
                     let code = processor.get_blob(&code)?;
 
@@ -312,7 +331,7 @@ impl TransactionProcessorBlueprint {
                             package_address: None,
                             code: code.to_vec(), // TODO: cow?
                             schema: schema.clone(),
-                            access_rules: access_rules.clone(),
+                            authority_rules: authority_rules.clone(),
                             royalty_config: royalty_config.clone(),
                             metadata: metadata.clone(),
                         })
@@ -330,7 +349,7 @@ impl TransactionProcessorBlueprint {
                 }
                 Instruction::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
-                    let rtn = bucket.sys_burn(api)?;
+                    let rtn = bucket.burn(api)?;
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
@@ -548,38 +567,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetMethodAccessRule {
-                    entity_address,
-                    key,
-                    rule,
-                } => {
-                    let receiver = entity_address.into();
-                    let result = api.call_method_advanced(
-                        &receiver,
-                        false,
-                        ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                            object_key: ObjectKey::SELF,
-                            method_key: key.clone(),
-                            rule: AccessRuleEntry::AccessRule(rule.clone()),
-                        })
-                        .unwrap(),
-                    )?;
-
-                    let result_indexed = IndexedScryptoValue::from_vec(result).unwrap();
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result_indexed,
-                        &worktop,
-                        api,
-                    )?;
-
-                    InstructionOutput::CallReturn(result_indexed.into())
-                }
-                Instruction::SetGroupAccessRule {
+                Instruction::SetAuthorityAccessRule {
                     entity_address,
                     object_key,
-                    group,
+                    authority_key,
                     rule,
                 } => {
                     let receiver = entity_address.into();
@@ -587,11 +578,11 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+                        ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                             object_key,
-                            name: group,
-                            rule,
+                            authority_key,
+                            rule: rule.into(),
                         })
                         .unwrap(),
                     )?;
@@ -605,10 +596,10 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::CallReturn(result_indexed.into())
                 }
-                Instruction::SetGroupMutability {
+                Instruction::SetAuthorityMutability {
                     entity_address,
                     object_key,
-                    group,
+                    authority_key,
                     mutability,
                 } => {
                     let receiver = entity_address.into();
@@ -616,10 +607,10 @@ impl TransactionProcessorBlueprint {
                         &receiver,
                         false,
                         ObjectModuleId::AccessRules,
-                        ACCESS_RULES_SET_GROUP_MUTABILITY_IDENT,
-                        scrypto_encode(&AccessRulesSetGroupMutabilityInput {
+                        ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
+                        scrypto_encode(&AccessRulesSetAuthorityMutabilityInput {
                             object_key,
-                            name: group,
+                            authority_key,
                             mutability,
                         })
                         .unwrap(),
@@ -638,7 +629,7 @@ impl TransactionProcessorBlueprint {
             outputs.push(result);
         }
 
-        worktop.sys_drop(api)?;
+        worktop.drop(api)?;
 
         Ok(IndexedScryptoValue::from_typed(&outputs))
     }
@@ -758,12 +749,12 @@ impl<'blob> TransactionProcessor<'blob> {
                 (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {
                     let bucket = Bucket(Own(owned_node.clone()));
-                    worktop.sys_put(bucket, api)?;
+                    worktop.put(bucket, api)?;
                 }
                 (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT)
                 | (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
                     let proof = Proof(Own(owned_node.clone()));
-                    LocalAuthZone::sys_push(proof, api)?;
+                    LocalAuthZone::push(proof, api)?;
                 }
                 _ => {}
             }
@@ -787,7 +778,7 @@ impl<'blob> TransactionProcessor<'blob> {
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
-                let current_epoch = Runtime::sys_current_epoch(env)?;
+                let current_epoch = Runtime::current_epoch(env)?;
 
                 if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
                     return Err(RuntimeError::ApplicationError(
@@ -841,11 +832,11 @@ impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
     fn replace_expression(&mut self, e: ManifestExpression) -> Result<Vec<Own>, RuntimeError> {
         match e {
             ManifestExpression::EntireWorktop => {
-                let buckets = self.worktop.sys_drain(self.api)?;
+                let buckets = self.worktop.drain(self.api)?;
                 Ok(buckets.into_iter().map(|b| b.0).collect())
             }
             ManifestExpression::EntireAuthZone => {
-                let proofs = LocalAuthZone::sys_drain(self.api)?;
+                let proofs = LocalAuthZone::drain(self.api)?;
                 Ok(proofs.into_iter().map(|p| p.0).collect())
             }
         }

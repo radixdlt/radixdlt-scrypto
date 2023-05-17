@@ -1,5 +1,4 @@
-use crate::rust::collections::BTreeMap;
-use crate::rust::vec::Vec;
+use crate::rust::prelude::*;
 use crate::*;
 
 mod type_kind;
@@ -96,5 +95,10 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink> TypeData<C, L> {
             metadata: self.metadata,
             validation: type_validation,
         }
+    }
+
+    pub fn with_name(mut self, name: Option<Cow<'static, str>>) -> Self {
+        self.metadata = self.metadata.with_name(name);
+        self
     }
 }

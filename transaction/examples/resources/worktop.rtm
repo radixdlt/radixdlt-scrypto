@@ -5,17 +5,16 @@
 CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_address}") Decimal("5.0");
 
 # Buy GUM with XRD
-TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") Address("${xrd_resource_address}") Bucket("xrd");
+TAKE_FROM_WORKTOP Address("${xrd_resource_address}") Decimal("2.0") Bucket("xrd");
 CALL_METHOD Address("${component_address}") "buy_gumball" Bucket("xrd");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") Address("${gumball_resource_address}");
-ASSERT_WORKTOP_CONTAINS Address("${gumball_resource_address}");
+ASSERT_WORKTOP_CONTAINS Address("${gumball_resource_address}") Decimal("3.0");
 
 # Create a proof from bucket, clone it and drop both
-TAKE_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
+TAKE_ALL_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
 
 # Return a bucket to worktop
 RETURN_TO_WORKTOP Bucket("some_xrd");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#1#")) Address("${non_fungible_resource_address}") Bucket("nfts");
+TAKE_NON_FUNGIBLES_FROM_WORKTOP Address("${non_fungible_resource_address}") Array<NonFungibleLocalId>(NonFungibleLocalId("#1#")) Bucket("nfts");
 
 # Move all resources in worktop to account
 CALL_METHOD Address("${account_address}") "deposit_batch" Expression("ENTIRE_WORKTOP");

@@ -14,12 +14,6 @@ pub use radix_engine_interface::blueprints::resource::LiquidFungibleResource as 
 pub struct FungibleVaultBlueprint;
 
 impl FungibleVaultBlueprint {
-    fn check_amount(amount: &Decimal, divisibility: u8) -> bool {
-        !amount.is_negative()
-            && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
-                == BnumI256::from(0)
-    }
-
     fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -41,7 +35,7 @@ impl FungibleVaultBlueprint {
         let divisibility = Self::get_divisibility(api)?;
 
         // Check amount
-        if !Self::check_amount(amount, divisibility) {
+        if !check_fungible_amount(amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -95,7 +89,7 @@ impl FungibleVaultBlueprint {
         }
 
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -139,7 +133,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -158,23 +152,10 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
-
-        let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = FungibleVault::lock_amount(receiver, amount, api)?;
-
-        let proof_id = api.new_simple_object(
-            FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
-            ],
-        )?;
-
-        Ok(Proof(Own(proof_id)))
+        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
     }
 
-    pub fn create_proof_by_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
@@ -183,7 +164,7 @@ impl FungibleVaultBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
-        if !Self::check_amount(&amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
@@ -318,7 +299,7 @@ impl FungibleVault {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<FungibleProof, RuntimeError>
+    ) -> Result<FungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -341,7 +322,7 @@ impl FungibleVault {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(FungibleProof::new(
+        Ok(FungibleProofSubstate::new(
             amount,
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into())) => amount

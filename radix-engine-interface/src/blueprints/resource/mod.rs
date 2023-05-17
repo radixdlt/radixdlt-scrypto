@@ -26,3 +26,15 @@ pub use resource_manager::*;
 pub use resource_type::*;
 pub use vault::*;
 pub use worktop::*;
+
+use radix_engine_common::math::*;
+
+pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
+    !amount.is_negative()
+        && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) == BnumI256::from(0)
+}
+
+pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
+    // TODO: consider checking the max
+    !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+}

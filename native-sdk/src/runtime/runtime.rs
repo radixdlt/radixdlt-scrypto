@@ -24,7 +24,7 @@ impl Runtime {
         api.emit_event(T::event_name().to_string(), scrypto_encode(&event).unwrap())
     }
 
-    pub fn sys_current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
+    pub fn current_epoch<Y, E>(api: &mut Y) -> Result<u64, E>
     where
         Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -38,7 +38,7 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
+    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
         Y: ClientObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
@@ -52,7 +52,7 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_compare_against_current_time<Y, E>(
+    pub fn compare_against_current_time<Y, E>(
         api: &mut Y,
         instant: Instant,
         precision: TimePrecision,

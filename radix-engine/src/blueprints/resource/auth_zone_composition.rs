@@ -18,8 +18,16 @@ pub enum ComposeProofError {
 }
 
 pub enum ComposedProof {
-    Fungible(ProofMoveableSubstate, FungibleProof, Vec<LockHandle>),
-    NonFungible(ProofMoveableSubstate, NonFungibleProof, Vec<LockHandle>),
+    Fungible(
+        ProofMoveableSubstate,
+        FungibleProofSubstate,
+        Vec<LockHandle>,
+    ),
+    NonFungible(
+        ProofMoveableSubstate,
+        NonFungibleProofSubstate,
+        Vec<LockHandle>,
+    ),
 }
 
 impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
@@ -157,7 +165,8 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
-                let proof: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
+                let proof: FungibleProofSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 for (container, locked_amount) in &proof.evidence {
                     if let Some(existing) = max.get_mut(container) {
                         *existing = Decimal::max(*existing, locked_amount.clone());
@@ -208,7 +217,8 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
-                let proof: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
+                let proof: NonFungibleProofSubstate =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
                 for (container, locked_ids) in &proof.evidence {
                     total.extend(locked_ids.clone());
                     if let Some(ids) = per_container.get_mut(container) {
@@ -228,7 +238,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
     api: &mut Y,
-) -> Result<(FungibleProof, Vec<LockHandle>), RuntimeError> {
+) -> Result<(FungibleProofSubstate, Vec<LockHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_amount_locked(proofs, resource_address, api)?;
     let amount = amount.unwrap_or(max_locked);
 
@@ -253,7 +263,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: FungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let substate: FungibleProofSubstate = api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
@@ -278,7 +288,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     }
 
     Ok((
-        FungibleProof::new(amount, evidence)
+        FungibleProofSubstate::new(amount, evidence)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))?,
         lock_handles,
     ))
@@ -295,7 +305,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     resource_address: ResourceAddress,
     ids: NonFungiblesSpecification,
     api: &mut Y,
-) -> Result<(NonFungibleProof, Vec<LockHandle>), RuntimeError> {
+) -> Result<(NonFungibleProofSubstate, Vec<LockHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_ids_locked(proofs, resource_address, api)?;
     let ids = match ids {
         NonFungiblesSpecification::All => max_locked.clone(),
@@ -342,7 +352,8 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: NonFungibleProof = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let substate: NonFungibleProofSubstate =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {
@@ -369,7 +380,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     }
 
     Ok((
-        NonFungibleProof::new(ids.clone(), evidence)
+        NonFungibleProofSubstate::new(ids.clone(), evidence)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))?,
         lock_handles,
     ))

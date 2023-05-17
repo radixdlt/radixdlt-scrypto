@@ -13,7 +13,7 @@ use sbor::rust::vec::Vec;
 pub struct LocalAuthZone {}
 
 impl LocalAuthZone {
-    pub fn sys_drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
@@ -28,7 +28,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
+    pub fn clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -41,7 +41,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_clear_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn clear_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<(), E>
     where
@@ -56,7 +56,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
+    pub fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<Proof, E>
     where
         Y: ClientApi<E>,
     {
@@ -70,7 +70,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Proof, E>
@@ -87,7 +87,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         amount: Decimal,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -98,8 +98,8 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CREATE_PROOF_BY_AMOUNT_IDENT,
-            scrypto_encode(&AuthZoneCreateProofByAmountInput {
+            AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfAmountInput {
                 resource_address,
                 amount,
             })
@@ -109,7 +109,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_create_proof_by_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         ids: &BTreeSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
@@ -120,8 +120,8 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone().unwrap();
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CREATE_PROOF_BY_IDS_IDENT,
-            scrypto_encode(&AuthZoneCreateProofByIdsInput {
+            AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfNonFungiblesInput {
                 resource_address,
                 ids: ids.clone(),
             })
@@ -131,7 +131,24 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn sys_push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        resource_address: ResourceAddress,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let auth_zone = api.get_auth_zone().unwrap();
+        let rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
+            scrypto_encode(&AuthZoneCreateProofOfAllInput { resource_address }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         proof: P,
         api: &mut Y,
     ) -> Result<(), E>

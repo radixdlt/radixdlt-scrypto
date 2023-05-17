@@ -2,6 +2,8 @@ use crate::address::{AddressDisplayContext, EncodeBech32AddressError};
 use crate::data::scrypto::model::*;
 use crate::types::*;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 use utils::ContextualDisplay;
 
@@ -10,6 +12,7 @@ use utils::ContextualDisplay;
 //=========================================================================
 
 /// The unique identifier of a (stored) node.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct NodeId(pub [u8; Self::LENGTH]);
@@ -75,12 +78,20 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource())
     }
 
+    pub const fn is_global_non_fungible_resource(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_non_fungible_resource())
+    }
+
     pub const fn is_internal_kv_store(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_kv_store())
     }
 
     pub const fn is_internal_fungible_vault(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_fungible_vault())
+    }
+
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_non_fungible_vault())
     }
 
     pub const fn is_internal_vault(&self) -> bool {

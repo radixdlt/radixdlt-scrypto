@@ -2,11 +2,14 @@ use crate::data::manifest::ManifestCustomValueKind;
 use crate::data::scrypto::*;
 use crate::types::NodeId;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use utils::copy_u8_array;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Reference(pub NodeId);
 
@@ -59,7 +62,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Reference,
     NodeId::LENGTH,
-    REFERENCE_ID
+    REFERENCE_ID,
+    reference_type_data
 );
 
 //==================

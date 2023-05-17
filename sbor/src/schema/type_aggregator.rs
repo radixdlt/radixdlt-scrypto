@@ -32,6 +32,12 @@ pub fn generate_full_schema<S: CustomSchema>(
     }
 }
 
+pub fn localize_well_known<S: CustomSchema>(
+    type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+) -> TypeKind<S::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
+    linearize::<S>(type_kind, &indexset!())
+}
+
 fn linearize<S: CustomSchema>(
     type_kind: TypeKind<S::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
     type_indices: &IndexSet<TypeHash>,
@@ -129,16 +135,17 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     ///
     /// If the type is well known or already in the aggregator, this returns early with the existing index.
     ///
-    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
-    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    /// Typically you should use [`add_schema_and_descendents`], unless you're replacing/mutating
+    /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
+    /// [`add_schema_descendents`] separately.
     ///
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
-    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_child_type(
         &mut self,
         type_index: GlobalTypeId,
-        get_type_data: impl FnOnce() -> Option<TypeData<C, GlobalTypeId>>,
+        get_type_data: impl FnOnce() -> TypeData<C, GlobalTypeId>,
     ) -> LocalTypeIndex {
         let complex_type_hash = match type_index {
             GlobalTypeId::WellKnown([well_known_type_index]) => {
@@ -152,20 +159,19 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
         }
 
         let new_index = self.types.len();
-        let local_type_data =
-            get_type_data().expect("Schema with a complex TypeRef did not have a TypeData");
-        self.types.insert(complex_type_hash, local_type_data);
+        self.types.insert(complex_type_hash, get_type_data());
         LocalTypeIndex::SchemaLocalIndex(new_index)
     }
 
     /// Adds the type's descendent types to the `TypeAggregator`, if they've not already been added.
     ///
-    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
-    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    /// Typically you should use [`add_child_type_and_descendents`], unless you're replacing/mutating
+    /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
+    /// [`add_schema_descendents`] separately.
     ///
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
-    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
     pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
         let GlobalTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
             return false;

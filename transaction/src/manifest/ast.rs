@@ -1,19 +1,22 @@
 use radix_engine_interface::data::manifest::{ManifestCustomValueKind, ManifestValueKind};
+#[cfg(feature = "radix_engine_fuzzing")]
+use strum_macros::EnumCount;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(EnumCount))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
+    TakeAllFromWorktop {
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
     TakeFromWorktop {
         resource_address: Value,
-        new_bucket: Value,
-    },
-
-    TakeFromWorktopByAmount {
         amount: Value,
-        resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeFromWorktopByIds {
+    TakeNonFungiblesFromWorktop {
         ids: Value,
         resource_address: Value,
         new_bucket: Value,
@@ -25,16 +28,12 @@ pub enum Instruction {
 
     AssertWorktopContains {
         resource_address: Value,
-    },
-
-    AssertWorktopContainsByAmount {
         amount: Value,
-        resource_address: Value,
     },
 
-    AssertWorktopContainsByIds {
-        ids: Value,
+    AssertWorktopContainsNonFungibles {
         resource_address: Value,
+        ids: Value,
     },
 
     PopFromAuthZone {
@@ -52,19 +51,41 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByAmount {
-        amount: Value,
+    CreateProofFromAuthZoneOfAmount {
         resource_address: Value,
+        amount: Value,
         new_proof: Value,
     },
 
-    CreateProofFromAuthZoneByIds {
+    CreateProofFromAuthZoneOfNonFungibles {
+        resource_address: Value,
         ids: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromAuthZoneOfAll {
         resource_address: Value,
         new_proof: Value,
     },
 
     CreateProofFromBucket {
+        bucket: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAmount {
+        bucket: Value,
+        amount: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfNonFungibles {
+        bucket: Value,
+        ids: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucketOfAll {
         bucket: Value,
         new_proof: Value,
     },
@@ -106,7 +127,7 @@ pub enum Instruction {
         schema: Value,
         royalty_config: Value,
         metadata: Value,
-        access_rules: Value,
+        authority_rules: Value,
     },
 
     BurnResource {
@@ -150,23 +171,17 @@ pub enum Instruction {
         component_address: Value,
     },
 
-    SetMethodAccessRule {
-        entity_address: Value,
-        key: Value,
-        rule: Value,
-    },
-
     SetGroupAccessRule {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         rule: Value,
     },
 
     SetGroupMutability {
         entity_address: Value,
         object_key: Value,
-        group: Value,
+        authority_key: Value,
         mutability: Value,
     },
 
@@ -224,7 +239,7 @@ pub enum Instruction {
 
     CreateIdentity {},
     CreateIdentityAdvanced {
-        config: Value,
+        authority_rules: Value,
     },
 
     CreateAccount {},

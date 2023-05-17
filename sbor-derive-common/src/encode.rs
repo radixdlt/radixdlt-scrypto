@@ -18,7 +18,7 @@ pub fn handle_encode(
     trace!("handle_encode() starts");
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs);
+    let is_transparent = is_transparent(&parsed.attrs)?;
 
     let output = if is_transparent {
         handle_transparent_encode(parsed, context_custom_value_kind)?
@@ -50,13 +50,13 @@ pub fn handle_transparent_encode(
     let output = match data {
         Data::Struct(s) => {
             let FieldsData {
-                unskipped_self_field_names,
+                unskipped_field_names,
                 ..
-            } = process_fields_for_encode(&s.fields);
-            if unskipped_self_field_names.len() != 1 {
+            } = process_fields_for_encode(&s.fields)?;
+            if unskipped_field_names.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }
-            let field_name = &unskipped_self_field_names[0];
+            let field_name = &unskipped_field_names[0];
             quote! {
                 impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -101,10 +101,10 @@ pub fn handle_normal_encode(
     let output = match data {
         Data::Struct(s) => {
             let FieldsData {
-                unskipped_self_field_names,
+                unskipped_field_names,
                 unskipped_field_count,
                 ..
-            } = process_fields_for_encode(&s.fields);
+            } = process_fields_for_encode(&s.fields)?;
             quote! {
                 impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -116,32 +116,36 @@ pub fn handle_normal_encode(
                     fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         encoder.write_size(#unskipped_field_count)?;
-                        #(encoder.encode(&self.#unskipped_self_field_names)?;)*
+                        #(encoder.encode(&self.#unskipped_field_names)?;)*
                         Ok(())
                     }
                 }
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
-                let v_id = &v.ident;
-                let i: u8 = i.try_into().expect("Too many variants found in enum");
-                let discriminator: Expr = parse_quote! { #i };
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
+            let match_arms = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let v_id = &v.ident;
+                    let discriminator = &discriminator_mapping[&i];
 
-                let FieldsData {
-                    unskipped_field_count,
-                    fields_unpacking,
-                    unskipped_unpacked_field_names,
-                    ..
-                } = process_fields_for_encode(&v.fields);
-                quote! {
-                    Self::#v_id #fields_unpacking => {
-                        encoder.write_discriminator(#discriminator)?;
-                        encoder.write_size(#unskipped_field_count)?;
-                        #(encoder.encode(#unskipped_unpacked_field_names)?;)*
-                    }
-                }
-            });
+                    let FieldsData {
+                        unskipped_field_count,
+                        fields_unpacking,
+                        unskipped_unpacked_field_names,
+                        ..
+                    } = process_fields_for_encode(&v.fields)?;
+                    Ok(quote! {
+                        Self::#v_id #fields_unpacking => {
+                            encoder.write_discriminator(#discriminator)?;
+                            encoder.write_size(#unskipped_field_count)?;
+                            #(encoder.encode(#unskipped_unpacked_field_names)?;)*
+                        }
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?;
 
             let encode_content = if match_arms.len() == 0 {
                 quote! {}

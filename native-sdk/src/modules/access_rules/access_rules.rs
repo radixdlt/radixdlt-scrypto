@@ -1,16 +1,12 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetGroupAccessRuleAndMutabilityInput,
-    AccessRulesSetGroupAccessRuleInput, AccessRulesSetMethodAccessRuleAndMutabilityInput,
-    AccessRulesSetMethodAccessRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-    ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
+    AccessRulesCreateInput, AccessRulesSetAuthorityRuleAndMutabilityInput,
+    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRulesConfig, MethodKey, ObjectKey,
+    AccessRule, AuthorityKey, AuthorityRules, MethodAuthorities, ObjectKey,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
@@ -20,14 +16,14 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
-        access_rules: AccessRulesConfig,
-        child_blueprint_rules: BTreeMap<String, AccessRulesConfig>,
+    pub fn create<Y, E: Debug + ScryptoDecode>(
+        method_authorities: MethodAuthorities,
+        authority_rules: AuthorityRules,
+        inner_blueprint_rules: BTreeMap<String, (MethodAuthorities, AuthorityRules)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -38,8 +34,9 @@ impl AccessRules {
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
             scrypto_encode(&AccessRulesCreateInput {
-                access_rules,
-                child_blueprint_rules,
+                method_authorities,
+                authority_rules,
+                inner_blueprint_rules,
             })
             .unwrap(),
         )?;
@@ -67,10 +64,10 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn set_group_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+    fn set_authority_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
-        name: &str,
-        rule: AccessRule,
+        authority_key: AuthorityKey,
+        entry: A,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -78,11 +75,11 @@ pub trait AccessRulesObject {
             node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleInput {
+            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                name: name.into(),
-                rule,
+                authority_key,
+                rule: entry.into(),
             })
             .unwrap(),
         )?;
@@ -90,58 +87,14 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_method_access_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+    fn set_authority_rule_and_mutability<
+        Y: ClientApi<E>,
+        E: Debug + ScryptoDecode,
+        R: Into<AccessRule>,
+    >(
         &self,
-        method_key: MethodKey,
-        rule: AccessRuleEntry,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleInput {
-                object_key: ObjectKey::SELF,
-                method_key,
-                rule,
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn set_method_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
-        &self,
-        method_key: MethodKey,
-        rule: AccessRuleEntry,
-        mutability: AccessRuleEntry,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            &node_id,
-            false,
-            module_id,
-            ACCESS_RULES_SET_METHOD_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodAccessRuleAndMutabilityInput {
-                object_key: ObjectKey::SELF,
-                method_key,
-                rule,
-                mutability,
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn set_group_access_rule_and_mutability<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
-        &self,
-        name: &str,
-        rule: AccessRule,
+        authority_key: AuthorityKey,
+        rule: R,
         mutability: AccessRule,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -150,11 +103,11 @@ pub trait AccessRulesObject {
             &node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_GROUP_ACCESS_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetGroupAccessRuleAndMutabilityInput {
+            ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                name: name.to_string(),
-                rule,
+                authority_key,
+                rule: rule.into(),
                 mutability,
             })
             .unwrap(),

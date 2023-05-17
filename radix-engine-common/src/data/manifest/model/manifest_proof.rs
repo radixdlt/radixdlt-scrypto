@@ -1,3 +1,5 @@
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -7,6 +9,7 @@ use sbor::*;
 use crate::data::manifest::*;
 use crate::*;
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ManifestProof(pub u32);
 

@@ -20,7 +20,7 @@ fn test_manifest_with_non_existent_resource() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
-        .take_from_worktop(non_existent_resource, |builder, bucket_id| {
+        .take_all_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(account, "deposit", manifest_args!(bucket_id))
         })
         .build();
@@ -94,10 +94,10 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -123,7 +123,7 @@ fn test_non_existent_blob_hash() {
             schema: PackageSchema::default(),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: AccessRulesConfig::new(),
+            authority_rules: AuthorityRules::new(),
         })
         .0
         .build();
@@ -154,7 +154,7 @@ fn test_entire_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .create_proof_from_account_by_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
         .call_function(
             package_address,
             "Receiver",

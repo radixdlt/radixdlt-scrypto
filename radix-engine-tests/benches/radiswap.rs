@@ -36,7 +36,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .default(0),
         ),
         btreemap!(),
-        package_access_rules_from_owner_badge(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -51,8 +51,8 @@ fn bench_radiswap(c: &mut Criterion) {
                 .lock_fee(account2, 10u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
-                .take_from_worktop(btc, |builder, bucket1| {
-                    builder.take_from_worktop(eth, |builder, bucket2| {
+                .take_all_from_worktop(btc, |builder, bucket1| {
+                    builder.take_all_from_worktop(eth, |builder, bucket2| {
                         builder.call_function(
                             package_address,
                             "Radiswap",
@@ -101,7 +101,7 @@ fn bench_radiswap(c: &mut Criterion) {
     let manifest = ManifestBuilder::new()
         .lock_fee(account3, 10u32.into())
         .withdraw_from_account(account3, btc, dec!(1))
-        .take_from_worktop(btc, |builder, bucket| {
+        .take_all_from_worktop(btc, |builder, bucket| {
             builder.call_method(component_address, "swap", manifest_args!(bucket))
         })
         .call_method(

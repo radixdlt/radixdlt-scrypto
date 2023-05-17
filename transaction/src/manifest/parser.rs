@@ -72,18 +72,18 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
+            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
+                resource_address: self.parse_value()?,
+                new_bucket: self.parse_value()?,
+            },
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 resource_address: self.parse_value()?,
-                new_bucket: self.parse_value()?,
-            },
-            TokenKind::TakeFromWorktopByAmount => Instruction::TakeFromWorktopByAmount {
                 amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::TakeFromWorktopByIds => Instruction::TakeFromWorktopByIds {
-                ids: self.parse_value()?,
+            TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
                 resource_address: self.parse_value()?,
+                ids: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
@@ -91,17 +91,14 @@ impl Parser {
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
                 resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
             },
-            TokenKind::AssertWorktopContainsByAmount => {
-                Instruction::AssertWorktopContainsByAmount {
-                    amount: self.parse_value()?,
+            TokenKind::AssertWorktopContainsNonFungibles => {
+                Instruction::AssertWorktopContainsNonFungibles {
                     resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
                 }
             }
-            TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
-                ids: self.parse_value()?,
-                resource_address: self.parse_value()?,
-            },
             TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
@@ -113,19 +110,43 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
-            TokenKind::CreateProofFromAuthZoneByAmount => {
-                Instruction::CreateProofFromAuthZoneByAmount {
-                    amount: self.parse_value()?,
+            TokenKind::CreateProofFromAuthZoneOfAmount => {
+                Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address: self.parse_value()?,
+                    amount: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }
-            TokenKind::CreateProofFromAuthZoneByIds => Instruction::CreateProofFromAuthZoneByIds {
-                ids: self.parse_value()?,
+            TokenKind::CreateProofFromAuthZoneOfNonFungibles => {
+                Instruction::CreateProofFromAuthZoneOfNonFungibles {
+                    resource_address: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromAuthZoneOfAll => Instruction::CreateProofFromAuthZoneOfAll {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
             TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
+                bucket: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
+            TokenKind::CreateProofFromBucketOfAmount => {
+                Instruction::CreateProofFromBucketOfAmount {
+                    bucket: self.parse_value()?,
+                    amount: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfNonFungibles => {
+                Instruction::CreateProofFromBucketOfNonFungibles {
+                    bucket: self.parse_value()?,
+                    ids: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromBucketOfAll => Instruction::CreateProofFromBucketOfAll {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
@@ -173,7 +194,7 @@ impl Parser {
                 schema: self.parse_value()?,
                 royalty_config: self.parse_value()?,
                 metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
@@ -205,21 +226,16 @@ impl Parser {
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
             },
-            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
-                entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-                rule: self.parse_value()?,
-            },
-            TokenKind::SetGroupAccessRule => Instruction::SetGroupAccessRule {
+            TokenKind::SetAuthorityAccessRule => Instruction::SetGroupAccessRule {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
-            TokenKind::SetGroupMutability => Instruction::SetGroupMutability {
+            TokenKind::SetAuthorityMutability => Instruction::SetGroupMutability {
                 entity_address: self.parse_value()?,
                 object_key: self.parse_value()?,
-                group: self.parse_value()?,
+                authority_key: self.parse_value()?,
                 mutability: self.parse_value()?,
             },
             TokenKind::MintFungible => Instruction::MintFungible {
@@ -272,7 +288,7 @@ impl Parser {
             },
             TokenKind::CreateIdentity => Instruction::CreateIdentity {},
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                config: self.parse_value()?,
+                authority_rules: self.parse_value()?,
             },
             TokenKind::CreateAccount => Instruction::CreateAccount {},
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {

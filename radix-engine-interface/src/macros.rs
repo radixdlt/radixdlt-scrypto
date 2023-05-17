@@ -64,7 +64,7 @@ macro_rules! access_and_or {
 macro_rules! access_rule_node {
     // Handle leaves
     ($rule:ident $args:tt) => {{
-        $crate::blueprints::resource::AccessRuleNode::ProofRule($rule $args)
+        $rule $args
     }};
 
     // Handle group

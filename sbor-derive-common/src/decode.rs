@@ -18,7 +18,7 @@ pub fn handle_decode(
     trace!("handle_decode() starts");
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs);
+    let is_transparent = is_transparent(&parsed.attrs)?;
 
     let output = if is_transparent {
         handle_transparent_decode(parsed, context_custom_value_kind)?
@@ -50,16 +50,16 @@ pub fn handle_transparent_decode(
     let output = match data {
         Data::Struct(s) => {
             let FieldsData {
-                unskipped_self_field_names,
+                unskipped_field_names,
                 unskipped_field_types,
-                skipped_self_field_names,
+                skipped_field_names,
                 skipped_field_types,
                 ..
-            } = process_fields_for_decode(&s.fields);
-            if unskipped_self_field_names.len() != 1 {
+            } = process_fields_for_decode(&s.fields)?;
+            if unskipped_field_names.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }
-            let field_name = &unskipped_self_field_names[0];
+            let field_name = &unskipped_field_names[0];
             let field_type = &unskipped_field_types[0];
 
             let decode_content = match &s.fields {
@@ -67,7 +67,7 @@ pub fn handle_transparent_decode(
                     quote! {
                         Ok(Self {
                             #field_name: inner,
-                            #(#skipped_self_field_names: <#skipped_field_types>::default(),)*
+                            #(#skipped_field_names: <#skipped_field_types>::default(),)*
                         })
                     }
                 }
@@ -75,7 +75,7 @@ pub fn handle_transparent_decode(
                     let mut fields = Vec::<Expr>::new();
                     for f in unnamed {
                         let ty = &f.ty;
-                        if is_decoding_skipped(f) {
+                        if is_decoding_skipped(f)? {
                             fields.push(parse_quote! {<#ty>::default()})
                         } else {
                             fields.push(parse_quote! {inner})
@@ -133,7 +133,7 @@ pub fn handle_normal_decode(
 
     let output = match data {
         Data::Struct(s) => {
-            let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields);
+            let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields)?;
 
             quote! {
                 impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
@@ -147,19 +147,25 @@ pub fn handle_normal_decode(
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
-                let v_id = &v.ident;
-                let i: u8 = i.try_into().expect("Too many variants found in enum");
-                let discriminator: Expr = parse_quote! { #i };
-                let decode_fields_content =
-                    decode_fields_content(quote! { Self::#v_id }, &v.fields);
-                quote! {
-                    #discriminator => {
-                        #decode_fields_content
-                    }
-                }
-            });
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
+            let match_arms = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let v_id = &v.ident;
+                    let discriminator = &discriminator_mapping[&i];
+                    let decode_fields_content =
+                        decode_fields_content(quote! { Self::#v_id }, &v.fields)?;
+                    Ok(quote! {
+                        #discriminator => {
+                            #decode_fields_content
+                        }
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?;
 
+            // Note: We use #[deny(unreachable_patterns)] to protect against users
+            // defining overlapping consts in their custom #[sbor(discriminator(X))] definitions
             quote! {
                 impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -167,6 +173,7 @@ pub fn handle_normal_decode(
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
+                        #[deny(unreachable_patterns)]
                         match discriminator {
                             #(#match_arms,)*
                             _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
@@ -183,23 +190,26 @@ pub fn handle_normal_decode(
     Ok(output)
 }
 
-pub fn decode_fields_content(self_constructor: TokenStream, fields: &syn::Fields) -> TokenStream {
+pub fn decode_fields_content(
+    self_constructor: TokenStream,
+    fields: &syn::Fields,
+) -> Result<TokenStream> {
     let FieldsData {
-        unskipped_self_field_names,
+        unskipped_field_names,
         unskipped_field_types,
-        skipped_self_field_names,
+        skipped_field_names,
         skipped_field_types,
         unskipped_field_count,
         ..
-    } = process_fields_for_decode(fields);
+    } = process_fields_for_decode(fields)?;
 
-    match fields {
+    Ok(match fields {
         syn::Fields::Named(_) => {
             quote! {
                 decoder.read_and_check_size(#unskipped_field_count)?;
                 Ok(#self_constructor {
-                    #(#unskipped_self_field_names: decoder.decode::<#unskipped_field_types>()?,)*
-                    #(#skipped_self_field_names: <#skipped_field_types>::default(),)*
+                    #(#unskipped_field_names: decoder.decode::<#unskipped_field_types>()?,)*
+                    #(#skipped_field_names: <#skipped_field_types>::default(),)*
                 })
             }
         }
@@ -207,7 +217,7 @@ pub fn decode_fields_content(self_constructor: TokenStream, fields: &syn::Fields
             let mut fields = Vec::<Expr>::new();
             for f in unnamed {
                 let ty = &f.ty;
-                if is_decoding_skipped(f) {
+                if is_decoding_skipped(f)? {
                     fields.push(parse_quote! {<#ty>::default()})
                 } else {
                     fields.push(parse_quote! {decoder.decode::<#ty>()?})
@@ -227,7 +237,7 @@ pub fn decode_fields_content(self_constructor: TokenStream, fields: &syn::Fields
                 Ok(#self_constructor)
             }
         }
-    }
+    })
 }
 
 #[cfg(test)]
@@ -367,6 +377,7 @@ mod tests {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
+                        #[deny(unreachable_patterns)]
                         match discriminator {
                             0u8 => {
                                 decoder.read_and_check_size(0)?;

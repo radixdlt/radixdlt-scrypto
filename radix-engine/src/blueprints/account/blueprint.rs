@@ -1,20 +1,23 @@
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use native_sdk::resource::NativeBucket;
+use native_sdk::resource::NativeFungibleVault;
+use native_sdk::resource::NativeNonFungibleVault;
+use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-
-use crate::blueprints::util::{MethodType, PresecurifiedAccessRules, SecurifiedAccessRules};
-use native_sdk::resource::{SysBucket, Vault};
-use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
-use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -30,15 +33,56 @@ impl From<AccountError> for RuntimeError {
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
-    const SECURIFY_IDENT: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
-    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
 
-    fn non_owner_methods() -> Vec<(&'static str, MethodType)> {
-        vec![
-            (ACCOUNT_DEPOSIT_IDENT, MethodType::Public),
-            (ACCOUNT_DEPOSIT_BATCH_IDENT, MethodType::Public),
-        ]
+    fn method_authorities() -> MethodAuthorities {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(ACCOUNT_SECURIFY_IDENT, "securify");
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, "lock_fee");
+        method_authorities.set_main_method_authority(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT, "lock_fee");
+        method_authorities.set_main_method_authority(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
+            "lock_fee_and_withdraw",
+        );
+        method_authorities.set_main_method_authority(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
+            "lock_fee_and_withdraw",
+        );
+        method_authorities.set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, "withdraw");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT, "withdraw");
+        method_authorities.set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, "create_proof");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT, "create_proof");
+        method_authorities
+            .set_main_method_authority(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT, "create_proof");
+        method_authorities
+    }
+
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_main_authority_rule(
+            "lock_fee",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            "withdraw",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            "create_proof",
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            "lock_fee_and_withdraw",
+            rule!(require("lock_fee") && require("withdraw")),
+            rule!(deny_all),
+        );
+        authority_rules
     }
 }
 
@@ -60,8 +104,8 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ObjectModuleId::AccessRules => access_rules.0,
@@ -146,14 +190,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(config, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(authority_rules, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
@@ -219,9 +263,9 @@ impl AccountBlueprint {
 
         // Lock fee against the vault
         if !contingent {
-            vault.sys_lock_fee(api, amount)?;
+            vault.lock_fee(api, amount)?;
         } else {
-            vault.sys_lock_contingent_fee(api, amount)?;
+            vault.lock_contingent_fee(api, amount)?;
         }
 
         api.key_value_entry_release(kv_store_entry_lock_handle)?;
@@ -249,7 +293,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = bucket.sys_resource_address(api)?;
+        let resource_address = bucket.resource_address(api)?;
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         // Getting an RW lock handle on the KVStore ENTRY
@@ -268,7 +312,7 @@ impl AccountBlueprint {
             match entry {
                 Option::Some(own) => Vault(own),
                 Option::None => {
-                    let vault = Vault::sys_new(resource_address, api)?;
+                    let vault = Vault::create(resource_address, api)?;
                     let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                     api.key_value_entry_set_typed(
@@ -281,7 +325,7 @@ impl AccountBlueprint {
         };
 
         // Put the bucket in the vault
-        vault.sys_put(bucket, api)?;
+        vault.put(bucket, api)?;
 
         api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
@@ -297,7 +341,7 @@ impl AccountBlueprint {
         // Perhaps these should be grouped into a HashMap<ResourceAddress, Vec<Bucket>> when being
         // resolved.
         for bucket in buckets {
-            let resource_address = bucket.sys_resource_address(api)?;
+            let resource_address = bucket.resource_address(api)?;
             let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
             // Getting an RW lock handle on the KVStore ENTRY
@@ -317,7 +361,7 @@ impl AccountBlueprint {
                 match entry {
                     Option::Some(own) => Vault(own),
                     Option::None => {
-                        let vault = Vault::sys_new(resource_address, api)?;
+                        let vault = Vault::create(resource_address, api)?;
                         let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
                         api.key_value_entry_set_typed(
@@ -330,7 +374,7 @@ impl AccountBlueprint {
             };
 
             // Put the bucket in the vault
-            vault.sys_put(bucket, api)?;
+            vault.put(bucket, api)?;
 
             api.key_value_entry_release(kv_store_entry_lock_handle)?;
         }
@@ -387,11 +431,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let bucket = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_take(amount, api),
-            api,
-        )?;
+        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
 
         Ok(bucket)
     }
@@ -406,7 +446,7 @@ impl AccountBlueprint {
     {
         let bucket = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_take_non_fungibles(ids, api),
+            |vault, api| vault.take_non_fungibles(ids, api),
             api,
         )?;
 
@@ -424,11 +464,7 @@ impl AccountBlueprint {
     {
         Self::lock_fee_internal(amount_to_lock, false, api)?;
 
-        let bucket = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_take(amount, api),
-            api,
-        )?;
+        let bucket = Self::get_vault(resource_address, |vault, api| vault.take(amount, api), api)?;
 
         Ok(bucket)
     }
@@ -446,7 +482,7 @@ impl AccountBlueprint {
 
         let bucket = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_take_non_fungibles(ids, api),
+            |vault, api| vault.take_non_fungibles(ids, api),
             api,
         )?;
 
@@ -460,16 +496,12 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proof = Self::get_vault(
-            resource_address,
-            |vault, api| vault.sys_create_proof(api),
-            api,
-        )?;
+        let proof = Self::get_vault(resource_address, |vault, api| vault.create_proof(api), api)?;
 
         Ok(proof)
     }
 
-    pub fn create_proof_by_amount<Y>(
+    pub fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
@@ -479,14 +511,14 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_by_amount(amount, api),
+            |vault, api| vault.create_proof_of_amount(amount, api),
             api,
         )?;
 
         Ok(proof)
     }
 
-    pub fn create_proof_by_ids<Y>(
+    pub fn create_proof_of_non_fungibles<Y>(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
@@ -496,7 +528,7 @@ impl AccountBlueprint {
     {
         let proof = Self::get_vault(
             resource_address,
-            |vault, api| vault.sys_create_proof_by_ids(ids, api),
+            |vault, api| vault.create_proof_of_non_fungibles(ids, api),
             api,
         )?;
 

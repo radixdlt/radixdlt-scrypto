@@ -115,7 +115,7 @@ pub fn decompile_instruction<F: fmt::Write>(
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        Instruction::TakeFromWorktop { resource_address } => {
+        Instruction::TakeAllFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -123,13 +123,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
         }
-        Instruction::TakeFromWorktopByAmount {
+        Instruction::TakeFromWorktop {
             amount,
             resource_address,
         } => {
@@ -141,13 +141,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Bucket(\"{}\");",
-                amount,
+                "TAKE_FROM_WORKTOP\n    Address(\"{}\")\n    Decimal(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
+                amount,
                 name
             )?;
         }
-        Instruction::TakeFromWorktopByIds {
+        Instruction::TakeNonFungiblesFromWorktop {
             ids,
             resource_address,
         } => {
@@ -159,12 +159,12 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                "TAKE_NON_FUNGIBLES_FROM_WORKTOP\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({})\n    Bucket(\"{}\");",
+                resource_address.display(context.bech32_encoder),
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
-                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -179,37 +179,30 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
-        Instruction::AssertWorktopContains { resource_address } => {
-            write!(
-                f,
-                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\");",
-                resource_address.display(context.bech32_encoder)
-            )?;
-        }
-        Instruction::AssertWorktopContainsByAmount {
+        Instruction::AssertWorktopContains {
             amount,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\");",
-                amount,
-                resource_address.display(context.bech32_encoder)
+                "ASSERT_WORKTOP_CONTAINS\n    Address(\"{}\")\n    Decimal(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                amount
             )?;
         }
-        Instruction::AssertWorktopContainsByIds {
+        Instruction::AssertWorktopContainsNonFungibles {
             ids,
             resource_address,
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({});",
+                resource_address.display(context.bech32_encoder),
                 ids.iter()
                     .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone()))
                         .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
-                    .join(", "),
-                resource_address.display(context.bech32_encoder)
+                    .join(", ")
             )?;
         }
         Instruction::PopFromAuthZone => {
@@ -249,7 +242,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneByAmount {
+        Instruction::CreateProofFromAuthZoneOfAmount {
             amount,
             resource_address,
         } => {
@@ -261,13 +254,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    Address(\"{}\")\n    Proof(\"{}\");",
-                amount,
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT\n    Address(\"{}\")\n    Decimal(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
+                amount,
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneByIds {
+        Instruction::CreateProofFromAuthZoneOfNonFungibles {
             ids,
             resource_address,
         } => {
@@ -279,10 +272,24 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleLocalId>({})\n    Address(\"{}\")\n    Proof(\"{}\");",ids.iter()
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES\n    Address(\"{}\")\n    Array<NonFungibleLocalId>({})\n    Proof(\"{}\");",
+                resource_address.display(context.bech32_encoder),ids.iter()
                 .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
+                name
+            )?;
+        }
+        Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL\n    Address(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
@@ -297,6 +304,66 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_BUCKET\n    Bucket({})\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+                name
+            )?;
+        }
+
+        Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT\n    Bucket({})\n    Decimal(\"{}\")\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)), 
+                amount,
+                name
+            )?;
+        }
+        Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES\n    Bucket({})\n    Array<NonFungibleLocalId>({})\n    Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+                ids.iter()
+                .map(|k| ManifestCustomValue::NonFungibleLocalId(from_non_fungible_local_id(k.clone())).to_string(context.for_value_display()))
+                .collect::<Vec<String>>()
+                .join(", "), 
+                name
+            )?;
+        }
+        Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+            let proof_id = context
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET_OF_ALL\n    Bucket({})\n    Proof(\"{}\");",
                 context
                     .bucket_names
                     .get(bucket_id)
@@ -451,14 +518,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             schema,
             royalty_config,
             metadata,
-            access_rules,
+            authority_rules,
         } => {
             f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
             format_typed_value(f, context, code)?;
             format_typed_value(f, context, schema)?;
             format_typed_value(f, context, royalty_config)?;
             format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, authority_rules)?;
             f.write_str(";")?;
         }
         Instruction::BurnResource { bucket_id } => {
@@ -526,37 +593,26 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
         }
-        Instruction::SetMethodAccessRule {
-            entity_address,
-            key,
-            rule,
-        } => {
-            f.write_str("SET_METHOD_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetGroupAccessRule {
+        Instruction::SetAuthorityAccessRule {
             entity_address,
             object_key,
-            group,
+            authority_key: group,
             rule,
         } => {
-            f.write_str("SET_GROUP_ACCESS_RULE")?;
+            f.write_str("SET_AUTHORITY_ACCESS_RULE")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
-        Instruction::SetGroupMutability {
+        Instruction::SetAuthorityMutability {
             entity_address,
             object_key,
-            group,
+            authority_key: group,
             mutability,
         } => {
-            f.write_str("SET_GROUP_MUTABILITY")?;
+            f.write_str("SET_AUTHORITY_MUTABILITY")?;
             format_typed_value(f, context, entity_address)?;
             format_typed_value(f, context, object_key)?;
             format_typed_value(f, context, group)?;

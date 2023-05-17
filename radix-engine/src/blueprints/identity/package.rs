@@ -12,9 +12,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::PackageSchema;
-use radix_engine_interface::schema::{BlueprintSchema, Receiver};
+use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
+use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
@@ -50,7 +50,7 @@ impl IdentityNativePackage {
         functions.insert(
             IDENTITY_SECURIFY_IDENT.to_string(),
             FunctionSchema {
-                receiver: Some(Receiver::SelfRefMut),
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
                     .add_child_type_and_descendents::<IdentitySecurifyToSingleBadgeInput>(),
                 output: aggregator
@@ -107,7 +107,7 @@ impl IdentityNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_advanced(input.config, api)?;
+                let rtn = IdentityBlueprint::create_advanced(input.authority_rules, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -183,9 +183,21 @@ impl IdentityNativePackage {
 struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
-    const SECURIFY_IDENT: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
-    const OWNER_GROUP_NAME: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
+
+    fn method_authorities() -> MethodAuthorities {
+        let mut method_authorities = MethodAuthorities::new();
+        method_authorities.set_main_method_authority(IDENTITY_SECURIFY_IDENT, "securify");
+        method_authorities
+    }
+
+    fn authority_rules() -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_royalty_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules
+    }
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {
@@ -196,13 +208,13 @@ pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        config: AccessRulesConfig,
+        authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(config, api)?;
+        let access_rules = SecurifiedIdentity::create_advanced(authority_rules, api)?;
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
@@ -300,8 +312,8 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 

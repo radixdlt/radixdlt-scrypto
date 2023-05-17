@@ -11,6 +11,7 @@ serde = { version = "1.0.137", default-features = false, optional = true, featur
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 lazy_static = "1.4.0"
 paste = { version = "1.0.7" }
+arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
@@ -26,6 +27,10 @@ serde = ["dep:serde", "utils/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
+
+# This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
+# to let fuzzing work
+radix_engine_fuzzing = ["arbitrary"]
 
 [lib]
 bench = false

@@ -11,7 +11,7 @@ use sbor::rust::prelude::*;
 pub struct Metadata;
 
 impl Metadata {
-    pub fn sys_create<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Own, E>
+    pub fn create<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Own, E>
     where
         Y: ClientApi<E>,
     {
@@ -26,7 +26,7 @@ impl Metadata {
         Ok(metadata)
     }
 
-    pub fn sys_create_with_data<Y, E: Debug + ScryptoDecode>(
+    pub fn create_with_data<Y, E: Debug + ScryptoDecode>(
         data: BTreeMap<String, String>,
         api: &mut Y,
     ) -> Result<Own, E>

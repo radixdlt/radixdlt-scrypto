@@ -29,7 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(Map<String, Tuple>())
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(0u8)), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(Tuple(Enum(1u8), "claim_royalty"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(1u8), "set_royalty_config"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "get"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}")))))), Tuple(Enum(2u8), "set"), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleGlobalId("${auth_badge_resource_address}:${auth_badge_non_fungible_local_id}"))))))), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Map<Enum, Tuple>();
 "##,
             ),
         );
@@ -49,27 +49,25 @@ CALL_METHOD
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("5");
-TAKE_FROM_WORKTOP_BY_AMOUNT
-    Decimal("2")
+TAKE_FROM_WORKTOP
     Address("${xrd_resource_address}")
+    Decimal("2")
     Bucket("bucket1");
 CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
     Bucket("bucket1");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT
-    Decimal("3")
-    Address("${gumball_resource_address}");
 ASSERT_WORKTOP_CONTAINS
-    Address("${gumball_resource_address}");
-TAKE_FROM_WORKTOP
+    Address("${gumball_resource_address}")
+    Decimal("3");
+TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Bucket("bucket2");
 RETURN_TO_WORKTOP
     Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
     Bucket("bucket3");
 CALL_METHOD
     Address("${account_address}")
@@ -94,44 +92,59 @@ CALL_METHOD
     "withdraw"
     Address("${xrd_resource_address}")
     Decimal("5");
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${xrd_resource_address}")
     Bucket("bucket1");
 CREATE_PROOF_FROM_BUCKET
     Bucket("bucket1")
     Proof("proof1");
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+    Bucket("bucket1")
+    Decimal("1")
+    Proof("proof2");
+CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES
+    Bucket("bucket1")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Proof("proof3");
+CREATE_PROOF_FROM_BUCKET_OF_ALL
+    Bucket("bucket1")
+    Proof("proof4");
 CLONE_PROOF
     Proof("proof1")
-    Proof("proof2");
+    Proof("proof5");
 DROP_PROOF
     Proof("proof1");
 DROP_PROOF
-    Proof("proof2");
+    Proof("proof5");
+CLEAR_AUTH_ZONE;
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${resource_address}")
     Decimal("5");
 POP_FROM_AUTH_ZONE
-    Proof("proof3");
+    Proof("proof6");
 DROP_PROOF
-    Proof("proof3");
+    Proof("proof6");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${resource_address}")
     Decimal("5");
 CREATE_PROOF_FROM_AUTH_ZONE
     Address("${resource_address}")
-    Proof("proof4");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT
-    Decimal("1")
+    Proof("proof7");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
     Address("${resource_address}")
-    Proof("proof5");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Decimal("1")
+    Proof("proof8");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
     Address("${non_fungible_resource_address}")
-    Proof("proof6");
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Proof("proof9");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
+    Address("${non_fungible_resource_address}")
+    Proof("proof10");
 CLEAR_AUTH_ZONE;
 CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;
@@ -208,7 +221,7 @@ CALL_METHOD
             vec![include_bytes!("../../examples/package/code.wasm").to_vec()],
             apply_address_replacements(
                 r##"
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
     Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE
@@ -397,9 +410,10 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-SET_METHOD_ACCESS_RULE
+SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
-    Tuple(Enum(1u8), "test")
+    Enum(0u8)
+    Enum(0u8)
     Enum(0u8);
 "##,
             ),
@@ -542,7 +556,7 @@ CALL_METHOD
     Decimal("10");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_FUNGIBLE
@@ -574,7 +588,7 @@ CALL_METHOD
     Decimal("10");
 CALL_METHOD
     Address("${account_address}")
-    "create_proof_by_amount"
+    "create_proof_of_amount"
     Address("${minter_badge_resource_address}")
     Decimal("1");
 MINT_NON_FUNGIBLE
@@ -599,7 +613,7 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CREATE_ACCOUNT_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Map<Enum, Tuple>();
 CREATE_ACCOUNT;
 "##,
             ),
@@ -616,7 +630,7 @@ CREATE_ACCOUNT;
             apply_address_replacements(
                 r##"
 CREATE_IDENTITY_ADVANCED
-    Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>(), Map<String, Enum>(), Enum(0u8, Enum(1u8)));
+    Map<Enum, Tuple>();
 CREATE_IDENTITY;
 "##,
             ),
@@ -632,7 +646,7 @@ CREATE_IDENTITY;
             vec![],
             apply_address_replacements(
                 r##"
-TAKE_FROM_WORKTOP
+TAKE_ALL_FROM_WORKTOP
     Address("${badge_resource_address}")
     Bucket("bucket1");
 CREATE_ACCESS_CONTROLLER

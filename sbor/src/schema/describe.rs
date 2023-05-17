@@ -29,15 +29,15 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// ```ignore
     /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
     ///     const TYPE_ID: GlobalTypeId = GlobalTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
-    /// #   fn type_data() -> Option<TypeData<C, GlobalTypeId>> { todo!() }
+    /// #   fn type_data() -> TypeData<C, GlobalTypeId> { todo!() }
     /// }
     /// ```
     const TYPE_ID: GlobalTypeId;
 
-    /// Returns the local schema for the given type. Should return `Some(_)` if `TYPE_ID` is Novel, else it should return `None`.
-    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-        None
-    }
+    /// Returns the local schema for the given type.
+    ///
+    /// If the `TYPE_ID` is well_known, then this type data must match the corresponding well known type data.
+    fn type_data() -> TypeData<C, GlobalTypeId>;
 
     /// For each type referenced in `get_local_type_data`, we need to ensure that the type and all of its own references
     /// get added to the aggregator.

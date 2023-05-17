@@ -75,8 +75,8 @@ pub struct CustomReference(Reference);
 impl Describe<ScryptoCustomTypeKind> for CustomReference {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::Novel([123u8; 20]);
 
-    fn type_data() -> Option<TypeData<ScryptoCustomTypeKind, GlobalTypeId>> {
-        Some(TypeData {
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        TypeData {
             kind: TypeKind::Custom(ScryptoCustomTypeKind::Reference),
             metadata: TypeMetadata::no_child_names("CustomReference"),
             validation: TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
@@ -85,8 +85,6 @@ impl Describe<ScryptoCustomTypeKind> for CustomReference {
                     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 ),
             )),
-        })
+        }
     }
-
-    fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }

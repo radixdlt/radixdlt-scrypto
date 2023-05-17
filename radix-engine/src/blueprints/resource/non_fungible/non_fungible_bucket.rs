@@ -145,7 +145,7 @@ impl NonFungibleBucket {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -181,7 +181,7 @@ impl NonFungibleBucket {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids_for_proof.clone(),
             btreemap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => ids_for_proof
@@ -199,7 +199,7 @@ impl NonFungibleBucket {
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -226,7 +226,7 @@ impl NonFungibleBucket {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids.clone(),
             btreemap!(
                 LocalRef::Bucket(Reference(receiver.clone())) => ids
@@ -288,7 +288,7 @@ impl NonFungibleBucketBlueprint {
         })?;
 
         // Check amount
-        if !check_amount(None, input.amount) {
+        if !check_non_fungible_amount(&input.amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::BucketError(BucketError::InvalidAmount),
             ));
@@ -359,21 +359,14 @@ impl NonFungibleBucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&ids))
     }
 
-    pub fn get_amount<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
         let amount =
             NonFungibleBucket::liquid_amount(api)? + NonFungibleBucket::locked_amount(api)?;
 
-        Ok(IndexedScryptoValue::from_typed(&amount))
+        Ok(amount)
     }
 
     pub fn get_resource_address<Y>(
@@ -393,20 +386,26 @@ impl NonFungibleBucketBlueprint {
         Ok(IndexedScryptoValue::from_typed(&resource_address))
     }
 
-    pub fn create_proof<Y>(
-        receiver: &NodeId,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
+        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
+    }
 
-        let amount =
-            NonFungibleBucket::locked_amount(api)? + NonFungibleBucket::liquid_amount(api)?;
+    pub fn create_proof_of_amount<Y>(
+        receiver: &NodeId,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        if !check_non_fungible_amount(&amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::InvalidAmount),
+            ));
+        }
 
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
@@ -418,7 +417,34 @@ impl NonFungibleBucketBlueprint {
             ],
         )?;
 
-        Ok(IndexedScryptoValue::from_typed(&Proof(Own(proof_id))))
+        Ok(Proof(Own(proof_id)))
+    }
+
+    pub fn create_proof_of_non_fungibles<Y>(
+        receiver: &NodeId,
+        ids: BTreeSet<NonFungibleLocalId>,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let proof_info = ProofMoveableSubstate { restricted: false };
+        let proof = NonFungibleBucket::lock_non_fungibles(receiver, ids, api)?;
+        let proof_id = api.new_simple_object(
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
+            vec![
+                scrypto_encode(&proof_info).unwrap(),
+                scrypto_encode(&proof).unwrap(),
+            ],
+        )?;
+        Ok(Proof(Own(proof_id)))
+    }
+
+    pub fn create_proof_of_all<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::create_proof_of_amount(receiver, Self::get_amount(api)?, api)
     }
 
     //===================

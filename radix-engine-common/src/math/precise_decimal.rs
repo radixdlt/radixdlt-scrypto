@@ -1,3 +1,5 @@
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use num_bigint::BigInt;
 use num_traits::{One, Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
@@ -25,6 +27,7 @@ use crate::*;
 /// an integer such that `-2^(512 - 1) <= m < 2^(512 - 1)`.
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PreciseDecimal(pub BnumI512);
 
@@ -467,7 +470,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::PreciseDecimal,
     Type::PreciseDecimal,
     PreciseDecimal::BITS / 8,
-    PRECISE_DECIMAL_ID
+    PRECISE_DECIMAL_ID,
+    precise_decimal_type_data
 );
 
 manifest_type!(

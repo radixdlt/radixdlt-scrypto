@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::epoch_manager::{
     VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
-use scrypto::prelude::{AccessRule, AccessRulesConfig, FromPublicKey, ResourceMethodAuthKey};
+use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -127,7 +127,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 
@@ -168,7 +168,7 @@ fn local_type_index_with_misleading_name_fails() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRulesConfig::new(),
+            AuthorityRules::new(),
         )
         .build();
 
@@ -664,15 +664,12 @@ fn epoch_manager_round_update_emits_correct_event() {
 }
 
 #[test]
-fn epoch_manager_epoch_update_emits_correct_event() {
+fn epoch_manager_epoch_update_emits_epoch_change_event() {
+    let initial_epoch = 3;
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
-        1u64,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch,
-            num_unstake_epochs: 1,
-        },
+        initial_epoch,
+        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -717,15 +714,61 @@ fn epoch_manager_epoch_update_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 1); // One event: epoch change event
-        assert!(match events.get(0) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ..,
-            )) if test_runner.is_event_name_equal::<EpochChangeEvent>(event_identifier) => true,
-            _ => false,
-        });
+        let epoch_change_events = events
+            .into_iter()
+            .filter(|(id, _data)| test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(epoch_change_events.len(), 1);
+        let event = epoch_change_events.first().unwrap();
+        assert_eq!(event.epoch, initial_epoch + 1);
+    }
+}
+
+#[test]
+fn epoch_manager_epoch_update_emits_xrd_minting_event() {
+    // Arrange: some validator, and a degenerate 1-round epoch config, to advance it easily
+    let emission_xrd = dec!("13.37");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        Decimal::one(),
+        ComponentAddress::virtual_account_from_public_key(&validator_key),
+        4,
+        dummy_epoch_manager_configuration()
+            .with_rounds_per_epoch(1)
+            .with_total_emission_xrd_per_epoch(emission_xrd),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Act
+    let instructions = vec![Instruction::CallMethod {
+        component_address: EPOCH_MANAGER,
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
+    }];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
+        }
+        .get_executable(btreeset![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    {
+        let events = receipt.expect_commit(true).clone().application_events;
+        let mint_events = events
+            .into_iter()
+            .filter(|(id, _data)| test_runner.is_event_name_equal::<MintFungibleResourceEvent>(id))
+            .map(|(_id, data)| scrypto_decode::<MintFungibleResourceEvent>(&data).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(mint_events.len(), 1);
+        assert_eq!(mint_events.first().unwrap().amount, emission_xrd)
     }
 }
 
@@ -870,7 +913,7 @@ fn validator_staking_emits_correct_event() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.stake_validator(validator_address, bucket)
         })
         .call_method(
@@ -975,17 +1018,13 @@ fn validator_unstake_emits_correct_events() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch: 5,
-            num_unstake_epochs,
-        },
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -995,15 +1034,15 @@ fn validator_unstake_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
+            account_with_su,
+            validator_substate.stake_unit_resource,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1135,17 +1174,13 @@ fn validator_claim_xrd_emits_correct_events() {
     let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
-        account_with_lp,
+        account_with_su,
         initial_epoch,
-        EpochManagerInitialConfiguration {
-            max_validators: 10,
-            rounds_per_epoch: 5,
-            num_unstake_epochs,
-        },
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1153,15 +1188,15 @@ fn validator_claim_xrd_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .withdraw_from_account(
-            account_with_lp,
-            validator_substate.liquidity_token,
+            account_with_su,
+            validator_substate.stake_unit_resource,
             1.into(),
         )
-        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
             builder.unstake_validator(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1176,12 +1211,12 @@ fn validator_claim_xrd_emits_correct_events() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft, 1.into())
-        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
+        .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1.into())
+        .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_with_lp,
+            account_with_su,
             ACCOUNT_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
@@ -1426,7 +1461,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(AccessRulesConfig::new())
+        .new_account_advanced(AuthorityRules::new())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -1485,5 +1520,8 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         max_validators: 10,
         rounds_per_epoch: 5,
         num_unstake_epochs: 1,
+        total_emission_xrd_per_epoch: Decimal::one(),
+        min_validator_reliability: Decimal::one(),
+        num_owner_stake_units_unlock_epochs: 2,
     }
 }

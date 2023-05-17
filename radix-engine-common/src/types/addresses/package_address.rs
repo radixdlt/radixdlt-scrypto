@@ -6,6 +6,8 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
@@ -53,6 +55,24 @@ impl PackageAddress {
 
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+// Implementing arbitrary by hand to make sure that EntityType::GlobalPackage marker is present.
+// Otherwise 'InvalidCustomValue' error is returned
+impl<'a> Arbitrary<'a> for PackageAddress {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        use core::cmp::min;
+
+        let mut node_id = [0u8; NodeId::LENGTH];
+        node_id[0] = EntityType::GlobalPackage as u8;
+        // fill NodeId with available random bytes (fill the rest with zeros if data exhausted)
+        let len = min(NodeId::LENGTH - 1, u.len());
+        let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
+        let b = u.bytes(len).unwrap();
+        right.copy_from_slice(&b);
+        Ok(Self::new_or_panic(node_id))
     }
 }
 
@@ -139,7 +159,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::PackageAddress,
     NodeId::LENGTH,
-    PACKAGE_ADDRESS_ID
+    PACKAGE_ADDRESS_ID,
+    package_address_type_data
 );
 
 manifest_type!(

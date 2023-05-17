@@ -2,8 +2,8 @@ use crate::blueprints::resource::*;
 use crate::data::scrypto::model::*;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
-use crate::math::*;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -49,12 +49,12 @@ pub struct VaultGetAmountInput {}
 
 pub type VaultGetAmountOutput = Decimal;
 
-pub const VAULT_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
+pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofOfAllInput {}
+pub struct VaultCreateProofInput {}
 
-pub type VaultCreateProofOfAllOutput = Proof;
+pub type VaultCreateProofOutput = Proof;
 
 pub const VAULT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
@@ -69,8 +69,30 @@ pub type VaultCreateProofOfAmountOutput = Proof;
 // Stub
 //========
 
+// TODO: update schema type
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub Own);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct FungibleVault(pub Vault);
+
+#[derive(Debug, PartialEq, Eq, Hash, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct NonFungibleVault(pub Vault);
+
+impl From<FungibleVault> for Vault {
+    fn from(value: FungibleVault) -> Self {
+        value.0
+    }
+}
+
+impl From<NonFungibleVault> for Vault {
+    fn from(value: NonFungibleVault) -> Self {
+        value.0
+    }
+}
 
 //========
 // binary
@@ -108,4 +130,8 @@ impl Describe<ScryptoCustomTypeKind> for Vault {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(
         crate::data::scrypto::well_known_scrypto_custom_types::OWN_VAULT_ID,
     );
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, GlobalTypeId> {
+        well_known_scrypto_custom_types::own_vault_type_data()
+    }
 }

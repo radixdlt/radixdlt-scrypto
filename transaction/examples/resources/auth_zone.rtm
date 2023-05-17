@@ -5,22 +5,27 @@
 CALL_METHOD Address("${account_address}") "withdraw" Address("${xrd_resource_address}") Decimal("5.0");
 
 # Create a proof from bucket, clone it and drop both
-TAKE_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
+TAKE_ALL_FROM_WORKTOP Address("${xrd_resource_address}") Bucket("some_xrd");
 CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd") Decimal("1") Proof("proof1a");
+CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES Bucket("some_xrd") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Proof("proof1b");
+CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1c");
 CLONE_PROOF Proof("proof1") Proof("proof2");
 DROP_PROOF Proof("proof1");
 DROP_PROOF Proof("proof2");
+CLEAR_AUTH_ZONE;
 
 # Create a proof from account and drop it
-CALL_METHOD Address("${account_address}") "create_proof_by_amount" Address("${resource_address}") Decimal("5.0");
+CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");
 POP_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF Proof("proof3");
 
 # Compose proofs
-CALL_METHOD Address("${account_address}") "create_proof_by_amount" Address("${resource_address}") Decimal("5.0");
+CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${resource_address}") Decimal("5.0");
 CREATE_PROOF_FROM_AUTH_ZONE Address("${resource_address}") Proof("Proof Name");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("1") Address("${resource_address}") Proof("proof4");
-CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Address("${non_fungible_resource_address}") Proof("proof5");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Address("${resource_address}") Decimal("1") Proof("proof4");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES Address("${non_fungible_resource_address}") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Proof("proof5");
+CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL Address("${non_fungible_resource_address}") Proof("proof6");
 CLEAR_AUTH_ZONE;
 
 # Drop all virtual proofs in the auth zone.

@@ -6,6 +6,8 @@ use crate::data::scrypto::*;
 use crate::types::*;
 use crate::well_known_scrypto_custom_type;
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::{Arbitrary, Result, Unstructured};
 use sbor::rust::prelude::*;
 use sbor::*;
 use utils::{copy_u8_array, ContextualDisplay};
@@ -53,6 +55,40 @@ impl GlobalAddress {
 
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
+    }
+}
+
+#[cfg(feature = "radix_engine_fuzzing")]
+// Implementing arbitrary by hand to make sure that EntityType::Global.. marker is present.
+// Otherwise 'InvalidCustomValue' error is returned
+impl<'a> Arbitrary<'a> for GlobalAddress {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+        use core::cmp::min;
+        let global_entities: [u8; 14] = [
+            EntityType::GlobalPackage as u8,
+            EntityType::GlobalFungibleResource as u8,
+            EntityType::GlobalNonFungibleResource as u8,
+            EntityType::GlobalEpochManager as u8,
+            EntityType::GlobalValidator as u8,
+            EntityType::GlobalClock as u8,
+            EntityType::GlobalAccessController as u8,
+            EntityType::GlobalAccount as u8,
+            EntityType::GlobalIdentity as u8,
+            EntityType::GlobalGenericComponent as u8,
+            EntityType::GlobalVirtualSecp256k1Account as u8,
+            EntityType::GlobalVirtualEd25519Account as u8,
+            EntityType::GlobalVirtualSecp256k1Identity as u8,
+            EntityType::GlobalVirtualEd25519Identity as u8,
+        ];
+
+        let mut node_id = [0u8; NodeId::LENGTH];
+        node_id[0] = *u.choose(&global_entities[..]).unwrap();
+        // fill NodeId with available random bytes (fill the rest with zeros if data exhausted)
+        let len = min(NodeId::LENGTH - 1, u.len());
+        let (_left, right) = node_id.split_at_mut(NodeId::LENGTH - len);
+        let b = u.bytes(len).unwrap();
+        right.copy_from_slice(&b);
+        Ok(Self::new_or_panic(node_id))
     }
 }
 
@@ -134,7 +170,8 @@ well_known_scrypto_custom_type!(
     ScryptoCustomValueKind::Reference,
     Type::Address,
     NodeId::LENGTH,
-    GLOBAL_ADDRESS_ID
+    GLOBAL_ADDRESS_ID,
+    global_address_type_data
 );
 
 manifest_type!(
