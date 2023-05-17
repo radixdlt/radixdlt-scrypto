@@ -78,12 +78,20 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource())
     }
 
+    pub const fn is_global_non_fungible_resource(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_non_fungible_resource())
+    }
+
     pub const fn is_internal_kv_store(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_kv_store())
     }
 
     pub const fn is_internal_fungible_vault(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_internal_fungible_vault())
+    }
+
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_internal_non_fungible_vault())
     }
 
     pub const fn is_internal_vault(&self) -> bool {

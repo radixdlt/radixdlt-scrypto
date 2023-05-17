@@ -28,7 +28,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let (method_authorities, authority_rules) = Self::create_config(AuthorityRules::new());
         let access_rules =
-            AccessRules::sys_new(method_authorities, authority_rules, btreemap!(), api)?;
+            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
@@ -47,7 +47,7 @@ pub trait SecurifiedAccessRules {
         }
 
         let access_rules =
-            AccessRules::sys_new(method_authorities, authority_rules, btreemap!(), api)?;
+            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?;
 
         Ok(access_rules)
     }

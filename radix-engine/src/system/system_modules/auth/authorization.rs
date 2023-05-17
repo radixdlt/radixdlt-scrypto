@@ -5,7 +5,7 @@ use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
-use native_sdk::resource::SysProof;
+use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
@@ -28,16 +28,16 @@ impl Authorization {
     ) -> Result<bool, RuntimeError> {
         match resource_rule {
             ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
-                let proof_resource_address = proof.sys_resource_address(api)?;
+                let proof_resource_address = proof.resource_address(api)?;
                 Ok(
                     proof_resource_address == non_fungible_global_id.resource_address()
                         && proof
-                            .sys_non_fungible_local_ids(api)?
+                            .non_fungible_local_ids(api)?
                             .contains(non_fungible_global_id.local_id()),
                 )
             }
             ResourceOrNonFungible::Resource(resource_address) => {
-                let proof_resource_address = proof.sys_resource_address(api)?;
+                let proof_resource_address = proof.resource_address(api)?;
                 Ok(proof_resource_address == *resource_address)
             }
         }
@@ -139,7 +139,7 @@ impl Authorization {
                 // FIXME: Need to check the composite max amount rather than just each proof individually
                 for p in auth_zone.proofs() {
                     if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
-                        && p.sys_amount(api)? >= amount
+                        && p.amount(api)? >= amount
                     {
                         return Ok(true);
                     }

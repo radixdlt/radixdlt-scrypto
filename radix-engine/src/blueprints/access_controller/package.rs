@@ -8,7 +8,8 @@ use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{SysBucket, Vault};
+use native_sdk::resource::NativeBucket;
+use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -526,9 +527,9 @@ impl AccessControllerNativePackage {
         let vault = {
             let mut vault = input
                 .controlled_asset
-                .sys_resource_address(api)
-                .and_then(|resource_address| Vault::sys_new(resource_address, api))?;
-            vault.sys_put(input.controlled_asset, api)?;
+                .resource_address(api)
+                .and_then(|resource_address| Vault::create(resource_address, api))?;
+            vault.put(input.controlled_asset, api)?;
 
             vault
         };
@@ -546,10 +547,10 @@ impl AccessControllerNativePackage {
         let (method_authorities, authority_rules) =
             init_access_rules_from_rule_set(address, input.rule_set);
         let access_rules =
-            AccessRules::sys_new(method_authorities, authority_rules, btreemap!(), api)?.0;
+            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
 
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         api.globalize_with_address(

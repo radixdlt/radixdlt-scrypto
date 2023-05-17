@@ -408,7 +408,7 @@ impl NonFungibleVault {
         receiver: &NodeId,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -444,7 +444,7 @@ impl NonFungibleVault {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids_for_proof.clone(),
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into())) => ids_for_proof
@@ -460,7 +460,7 @@ impl NonFungibleVault {
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<NonFungibleProof, RuntimeError>
+    ) -> Result<NonFungibleProofSubstate, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -487,7 +487,7 @@ impl NonFungibleVault {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProof::new(
+        Ok(NonFungibleProofSubstate::new(
             ids.clone(),
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into()))=> ids

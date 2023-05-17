@@ -38,7 +38,7 @@ fn can_create_proof_from_fungible_bucket() {
     create_proof_internal("create_proof_from_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_bucket_of_non_fungibles",
-        Some("FunctionNotFound"),
+        Some("UnreachableCodeReached"),
     );
     create_proof_internal("create_proof_from_fungible_bucket_of_all", None);
 }
@@ -60,7 +60,7 @@ fn can_create_proof_from_fungible_vault() {
     create_proof_internal("create_proof_from_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_vault_of_non_fungibles",
-        Some("FunctionNotFound"),
+        Some("UnreachableCodeReached"),
     );
 }
 

@@ -11,7 +11,7 @@ use sbor::rust::prelude::*;
 pub struct ComponentRoyalty;
 
 impl ComponentRoyalty {
-    pub fn sys_create<Y, E: Debug + ScryptoDecode>(
+    pub fn create<Y, E: Debug + ScryptoDecode>(
         royalty_config: RoyaltyConfig,
         api: &mut Y,
     ) -> Result<Own, E>

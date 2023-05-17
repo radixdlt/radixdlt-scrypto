@@ -6,7 +6,9 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use native_sdk::resource::{ResourceManager, SysBucket, Vault};
+use native_sdk::resource::NativeVault;
+use native_sdk::resource::ResourceManager;
+use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
@@ -125,7 +127,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let xrd_bucket_amount = xrd_bucket.sys_amount(api)?;
+        let xrd_bucket_amount = xrd_bucket.amount(api)?;
 
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -141,7 +143,7 @@ impl ValidatorBlueprint {
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
 
             let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
-            let active_stake_amount = xrd_vault.sys_amount(api)?;
+            let active_stake_amount = xrd_vault.amount(api)?;
             let stake_unit_mint_amount = if active_stake_amount.is_zero() {
                 xrd_bucket_amount
             } else {
@@ -149,8 +151,8 @@ impl ValidatorBlueprint {
             };
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
-            xrd_vault.sys_put(xrd_bucket, api)?;
-            let new_stake_amount = xrd_vault.sys_amount(api)?;
+            xrd_vault.put(xrd_bucket, api)?;
+            let new_stake_amount = xrd_vault.amount(api)?;
             (stake_unit_bucket, new_stake_amount)
         };
 
@@ -175,7 +177,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let stake_unit_bucket_amount = stake_unit_bucket.sys_amount(api)?;
+        let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -191,7 +193,7 @@ impl ValidatorBlueprint {
             let nft_resman = ResourceManager(validator.unstake_nft);
             let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
 
-            let active_stake_amount = stake_vault.sys_amount(api)?;
+            let active_stake_amount = stake_vault.amount(api)?;
             let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
             let xrd_amount = if total_stake_unit_supply.is_zero() {
                 Decimal::zero()
@@ -224,11 +226,11 @@ impl ValidatorBlueprint {
                 amount: xrd_amount,
             };
 
-            let bucket = stake_vault.sys_take(xrd_amount, api)?;
-            unstake_vault.sys_put(bucket, api)?;
+            let bucket = stake_vault.take(xrd_amount, api)?;
+            unstake_vault.put(bucket, api)?;
             let (unstake_bucket, _) = nft_resman.mint_non_fungible_single_uuid(data, api)?;
 
-            let new_stake_amount = stake_vault.sys_amount(api)?;
+            let new_stake_amount = stake_vault.amount(api)?;
 
             (unstake_bucket, new_stake_amount)
         };
@@ -265,7 +267,7 @@ impl ValidatorBlueprint {
 
         let stake_amount = {
             let stake_vault = Vault(validator.stake_xrd_vault_id);
-            stake_vault.sys_amount(api)?
+            stake_vault.amount(api)?
         };
 
         let index_key = Self::index_update(&validator, new_registered, stake_amount, api)?;
@@ -344,7 +346,7 @@ impl ValidatorBlueprint {
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
-        if !resource_address.eq(&bucket.sys_resource_address(api)?) {
+        if !resource_address.eq(&bucket.resource_address(api)?) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),
             ));
@@ -364,7 +366,7 @@ impl ValidatorBlueprint {
 
         let mut unstake_amount = Decimal::zero();
 
-        for id in bucket.sys_non_fungible_local_ids(api)? {
+        for id in bucket.non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
             if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
@@ -375,9 +377,9 @@ impl ValidatorBlueprint {
         }
         nft_resman.burn(bucket, api)?;
 
-        let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+        let claimed_bucket = unstake_vault.take(unstake_amount, api)?;
 
-        let amount = claimed_bucket.sys_amount(api)?;
+        let amount = claimed_bucket.amount(api)?;
         Runtime::emit_event(
             api,
             ClaimXrdEvent {
@@ -476,13 +478,13 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let stake_pool_added_xrd = xrd_bucket.sys_amount(api)?;
+        let stake_pool_added_xrd = xrd_bucket.amount(api)?;
         let total_stake_unit_supply =
             ResourceManager(substate.stake_unit_resource).total_supply(api)?;
 
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
-        let starting_stake_pool_xrd = stake_xrd_vault.sys_amount(api)?;
-        stake_xrd_vault.sys_put(xrd_bucket, api)?;
+        let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
+        stake_xrd_vault.put(xrd_bucket, api)?;
 
         let new_stake_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
         let new_index_key =
@@ -751,12 +753,12 @@ impl ValidatorCreator {
             api.kernel_allocate_node_id(EntityType::GlobalValidator)?.0,
         );
 
-        let stake_xrd_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        let pending_xrd_withdraw_vault = Vault::sys_new(RADIX_TOKEN, api)?;
+        let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
+        let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(address, api)?;
-        let locked_owner_stake_unit_vault = Vault::sys_new(stake_unit_resource, api)?;
-        let pending_owner_stake_unit_unlock_vault = Vault::sys_new(stake_unit_resource, api)?;
+        let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
+        let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_withdrawals = BTreeMap::new();
         // TODO(emissions): add `lock(), withdraw(), unlock()` owner-only methods for the 3 above
 
@@ -779,8 +781,8 @@ impl ValidatorCreator {
         )?;
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(
             btreemap!(

@@ -312,8 +312,8 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 

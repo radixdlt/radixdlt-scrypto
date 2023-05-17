@@ -20,7 +20,7 @@ use sbor::rust::string::String;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
+    pub fn create<Y, E: Debug + ScryptoDecode>(
         method_authorities: MethodAuthorities,
         authority_rules: AuthorityRules,
         inner_blueprint_rules: BTreeMap<String, (MethodAuthorities, AuthorityRules)>,

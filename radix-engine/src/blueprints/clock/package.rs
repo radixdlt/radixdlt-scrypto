@@ -173,9 +173,9 @@ impl ClockNativePackage {
         );
 
         let access_rules =
-            AccessRules::sys_new(method_authorities, authority_rules, btreemap!(), api)?.0;
-        let metadata = Metadata::sys_create(api)?;
-        let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
+        let metadata = Metadata::create(api)?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         let address = ComponentAddress::new_or_panic(input.component_address);
         api.globalize_with_address(

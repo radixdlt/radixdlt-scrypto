@@ -213,7 +213,7 @@ where
             )
         };
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_method_authorities,
         resman_authority_rules,
         btreemap!(
@@ -225,8 +225,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     api.globalize_with_address(
         btreemap!(
@@ -256,7 +256,7 @@ where
         build_access_rules(access_rules);
     let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_method_authorities,
         resman_authority_rules,
         btreemap!(
@@ -268,8 +268,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(
@@ -304,7 +304,7 @@ where
         build_access_rules(access_rules);
     let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
 
-    let resman_access_rules = AccessRules::sys_new(
+    let resman_access_rules = AccessRules::create(
         resman_method_authorities,
         resman_authority_rules,
         btreemap!(
@@ -316,8 +316,8 @@ where
     )?
     .0;
 
-    let metadata = Metadata::sys_create_with_data(metadata, api)?;
-    let royalty = ComponentRoyalty::sys_create(RoyaltyConfig::default(), api)?;
+    let metadata = Metadata::create_with_data(metadata, api)?;
+    let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
     let bucket_id = api.globalize_with_address_and_create_inner_object(
         btreemap!(

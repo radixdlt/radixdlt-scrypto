@@ -176,12 +176,20 @@ impl EntityType {
         matches!(self, EntityType::GlobalFungibleResource)
     }
 
+    pub const fn is_global_non_fungible_resource(&self) -> bool {
+        matches!(self, EntityType::GlobalNonFungibleResource)
+    }
+
     pub const fn is_internal_kv_store(&self) -> bool {
         matches!(self, EntityType::InternalKeyValueStore)
     }
 
     pub const fn is_internal_fungible_vault(&self) -> bool {
         matches!(self, EntityType::InternalFungibleVault)
+    }
+
+    pub const fn is_internal_non_fungible_vault(&self) -> bool {
+        matches!(self, EntityType::InternalNonFungibleVault)
     }
 
     pub const fn is_internal_vault(&self) -> bool {

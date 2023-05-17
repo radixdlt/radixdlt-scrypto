@@ -6,8 +6,8 @@ mod bucket_proof {
 
     impl BucketProof {
         pub fn create_clone_drop_bucket_proof(bucket: Bucket, amount: Decimal) -> Bucket {
-            let proof = bucket.create_proof();
-            let proof = proof.validate_proof(bucket.resource_address()).unwrap();
+            let proof = bucket.create_proof().skip_checking();
+            assert_eq!(proof.resource_address(), bucket.resource_address());
             let clone = proof.clone();
 
             assert_eq!(bucket.amount(), amount);
