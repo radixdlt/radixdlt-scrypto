@@ -13,7 +13,9 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const GLOBAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 1;
     pub fn global_address_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "GlobalAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobal,
@@ -22,7 +24,9 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const INTERNAL_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 2;
     pub fn internal_address_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "InternalAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsInternal,
@@ -31,7 +35,9 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 3;
     pub fn package_address_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "PackageAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobalPackage,
@@ -40,7 +46,9 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 4;
     pub fn component_address_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "ComponentAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobalComponent,
@@ -49,7 +57,9 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_REFERENCE + 5;
     pub fn resource_address_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "ResourceAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
                 ReferenceValidation::IsGlobalResource,
@@ -128,6 +138,7 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const OWN_VAULT_ID: u8 = VALUE_KIND_OWN + 7;
     pub fn own_vault_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
+        // Record the type name, despite information available from node id.
         named_type_kind(
             "Vault",
             ScryptoCustomTypeKind::Own,
@@ -136,6 +147,7 @@ pub mod well_known_scrypto_custom_types {
     }
     pub const OWN_FUNGIBLE_VAULT_ID: u8 = VALUE_KIND_OWN + 8;
     pub fn own_fungible_vault_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
+        // Record the type name, despite information available from node id.
         named_type_kind(
             "FungibleVault",
             ScryptoCustomTypeKind::Own,
@@ -147,6 +159,7 @@ pub mod well_known_scrypto_custom_types {
     pub const OWN_NON_FUNGIBLE_VAULT_ID: u8 = VALUE_KIND_OWN + 9;
     pub fn own_non_fungible_vault_type_data<L: SchemaTypeLink>(
     ) -> TypeData<ScryptoCustomTypeKind, L> {
+        // Record the type name, despite information available from node id.
         named_type_kind(
             "NonFungibleVault",
             ScryptoCustomTypeKind::Own,
@@ -158,7 +171,9 @@ pub mod well_known_scrypto_custom_types {
     pub const OWN_KEY_VALUE_STORE_ID: u8 = VALUE_KIND_OWN + 10;
     pub fn own_key_value_store_type_data<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L>
     {
-        unnamed_type_kind(
+        // Record the type name, despite information available from node id.
+        named_type_kind(
+            "KeyValueStore",
             ScryptoCustomTypeKind::Own,
             Some(ScryptoCustomTypeValidation::Own(
                 OwnValidation::IsKeyValueStore,
