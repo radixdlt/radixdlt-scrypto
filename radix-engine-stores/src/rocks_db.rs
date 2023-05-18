@@ -62,6 +62,22 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
     }
 }
 
+impl ListableSubstateDatabase for RocksdbSubstateStore {
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
+        let partition_keys: Vec<DbPartitionKey> = self
+            .db
+            .iterator(IteratorMode::Start)
+            .map(|kv| {
+                let (iter_key_bytes, _) = kv.as_ref().unwrap();
+                let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
+                iter_key
+            })
+            .collect();
+
+        Box::new(partition_keys.into_iter())
+    }
+}
+
 fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
     let mut buffer = Vec::new();
     buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
