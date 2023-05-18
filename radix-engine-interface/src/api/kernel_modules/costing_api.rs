@@ -17,7 +17,7 @@ pub trait ClientCostingApi<E> {
 
     fn cost_unit_price(&mut self) -> Result<Decimal, E>;
 
-    fn tip_percentage(&mut self) -> Result<u16, E>;
+    fn tip_percentage(&mut self) -> Result<u32, E>;
 
     fn fee_balance(&mut self) -> Result<Decimal, E>;
 }

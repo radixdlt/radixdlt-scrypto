@@ -235,8 +235,8 @@ impl SystemLoanFeeReserve {
         u128_to_decimal(self.cost_unit_price)
     }
 
-    pub fn tip_percentage(&self) -> u16 {
-        self.tip_percentage
+    pub fn tip_percentage(&self) -> u32 {
+        self.tip_percentage.into()
     }
 
     pub fn fee_balance(&self) -> Decimal {

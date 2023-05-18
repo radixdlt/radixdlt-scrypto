@@ -1493,7 +1493,7 @@ where
             .cost_unit_price())
     }
 
-    fn tip_percentage(&mut self) -> Result<u16, RuntimeError> {
+    fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
         Ok(self
             .api
             .kernel_get_system()

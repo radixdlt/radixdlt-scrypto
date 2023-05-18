@@ -422,6 +422,32 @@ where
 
         self.allocate_buffer(scrypto_encode(&uuid).expect("Failed to encode UUID"))
     }
+
+    fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let cost_unit_limit = self.api.cost_unit_limit()?;
+
+        Ok(cost_unit_limit)
+    }
+
+    fn cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let cost_unit_price = self.api.cost_unit_price()?;
+
+        self.allocate_buffer(
+            scrypto_encode(&cost_unit_price).expect("Failed to encode cost_unit_price"),
+        )
+    }
+
+    fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        let tip_percentage = self.api.tip_percentage()?;
+
+        Ok(tip_percentage.into())
+    }
+
+    fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let fee_balance = self.api.fee_balance()?;
+
+        self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
+    }
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -645,6 +671,22 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn cost_unit_price(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
+        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
+    }
+
+    fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 }
