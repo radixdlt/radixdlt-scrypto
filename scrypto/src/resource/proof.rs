@@ -34,6 +34,10 @@ pub trait ScryptoUncheckedProof {
 
     fn resource_address(&self) -> ResourceAddress;
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self);
 
     fn clone(&self) -> Self;
@@ -47,6 +51,10 @@ pub trait ScryptoProof {
     fn amount(&self) -> Decimal;
 
     fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
 
     fn drop(self);
 
@@ -134,6 +142,10 @@ impl ScryptoUncheckedProof for Proof {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn drop(self) {
@@ -253,6 +265,10 @@ impl ScryptoProof for CheckedProof {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self) {
         self.0.drop()
     }
@@ -295,6 +311,10 @@ impl ScryptoProof for CheckedFungibleProof {
         self.0.amount()
     }
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn resource_address(&self) -> ResourceAddress {
         self.0.resource_address()
     }
@@ -333,6 +353,10 @@ impl ScryptoProof for CheckedNonFungibleProof {
 
     fn amount(&self) -> Decimal {
         self.0.amount()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {

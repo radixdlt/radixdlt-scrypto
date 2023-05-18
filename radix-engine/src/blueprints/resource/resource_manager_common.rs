@@ -11,34 +11,7 @@ use radix_engine_interface::*;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-) -> (
-    (MethodAuthorities, AuthorityRules),
-    (MethodAuthorities, AuthorityRules),
-    (MethodAuthorities, AuthorityRules),
-) {
-    let resman_method_authorities = {
-        let mut resman_method_authorities = MethodAuthorities::new();
-        resman_method_authorities
-            .set_main_method_authority(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
-        resman_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-            MINT_AUTHORITY,
-        );
-        resman_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-            MINT_AUTHORITY,
-        );
-        resman_method_authorities
-            .set_main_method_authority(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
-        resman_method_authorities
-            .set_main_method_authority(RESOURCE_MANAGER_BURN_IDENT, BURN_AUTHORITY);
-        resman_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-            UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
-        );
-        resman_method_authorities
-    };
-
+) -> (AuthorityRules, AuthorityRules, AuthorityRules) {
     let resman_authority_rules = {
         let (mint_access_rule, mint_mutability) = access_rules_map
             .remove(&Mint)
@@ -59,53 +32,39 @@ fn build_access_rules(
             .set_metadata_authority(update_metadata_access_rule, update_metadata_mutability);
         resman_authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
 
+        // Mint
+        {
+            resman_authority_rules.set_main_authority_rule(
+                MINT_AUTHORITY,
+                mint_access_rule,
+                mint_mutability,
+            );
+            resman_authority_rules
+                .redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+            resman_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
+                MINT_AUTHORITY,
+            );
+            resman_authority_rules
+                .redirect_to_fixed(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
+        }
+
         resman_authority_rules.set_main_authority_rule(
-            MINT_AUTHORITY,
-            mint_access_rule,
-            mint_mutability,
-        );
-        resman_authority_rules.set_main_authority_rule(
-            BURN_AUTHORITY,
+            RESOURCE_MANAGER_BURN_IDENT,
             burn_access_rule,
             burn_mutability,
         );
         resman_authority_rules.set_main_authority_rule(
-            UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
             update_non_fungible_data_access_rule,
             update_non_fungible_data_mutability,
         );
 
         resman_authority_rules
-    };
-
-    let vault_method_authorities = {
-        let mut vault_method_authorities = MethodAuthorities::new();
-        vault_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-            WITHDRAW_AUTHORITY,
-        );
-        vault_method_authorities.set_main_method_authority(VAULT_TAKE_IDENT, WITHDRAW_AUTHORITY);
-        vault_method_authorities
-            .set_main_method_authority(FUNGIBLE_VAULT_LOCK_FEE_IDENT, WITHDRAW_AUTHORITY);
-        vault_method_authorities.set_main_method_authority(VAULT_RECALL_IDENT, RECALL_AUTHORITY);
-        vault_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
-            RECALL_AUTHORITY,
-        );
-        vault_method_authorities.set_main_method_authority(VAULT_PUT_IDENT, DEPOSIT_AUTHORITY);
-
-        vault_method_authorities
-            .set_main_method_authority(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
-        vault_method_authorities
-            .set_main_method_authority(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT, "this_package");
-        vault_method_authorities
-            .set_main_method_authority(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
-        vault_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
-            "this_package",
-        );
-
-        vault_method_authorities
     };
 
     let vault_authority_rules = {
@@ -120,28 +79,64 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut vault_authority_rules = AuthorityRules::new();
-        vault_authority_rules.set_main_authority_rule(
-            WITHDRAW_AUTHORITY,
-            withdraw_access_rule,
-            withdraw_mutability,
-        );
-        vault_authority_rules.set_main_authority_rule(
-            RECALL_AUTHORITY,
-            recall_access_rule,
-            recall_mutability,
-        );
 
-        vault_authority_rules.set_main_authority_rule(
-            DEPOSIT_AUTHORITY,
-            deposit_access_rule,
-            deposit_mutability,
-        );
+        // Withdraw
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_TAKE_IDENT,
+                withdraw_access_rule,
+                withdraw_mutability,
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
+                rule!(require(VAULT_TAKE_IDENT)),
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
+                rule!(require(VAULT_TAKE_IDENT)),
+            );
+        }
 
-        vault_authority_rules.set_main_authority_rule(
-            "this_package",
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-            DenyAll,
-        );
+        // Recall
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_RECALL_IDENT,
+                recall_access_rule,
+                recall_mutability,
+            );
+            vault_authority_rules.set_fixed_main_authority_rule(
+                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
+                rule!(require(VAULT_RECALL_IDENT)),
+            );
+        }
+
+        // Deposit
+        {
+            vault_authority_rules.set_main_authority_rule(
+                VAULT_PUT_IDENT,
+                deposit_access_rule,
+                deposit_mutability,
+            );
+        }
+
+        // Internal
+        {
+            vault_authority_rules
+                .redirect_to_fixed(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
+            vault_authority_rules
+                .redirect_to_fixed(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT, "this_package");
+            vault_authority_rules
+                .redirect_to_fixed(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
+            vault_authority_rules.redirect_to_fixed(
+                NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
+                "this_package",
+            );
+
+            vault_authority_rules.set_fixed_main_authority_rule(
+                "this_package",
+                rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+            );
+        }
 
         vault_authority_rules
     };
@@ -150,37 +145,29 @@ fn build_access_rules(
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
 
-    let bucket_method_authorities = {
-        let mut bucket_method_authorities = MethodAuthorities::new();
-        bucket_method_authorities
-            .set_main_method_authority(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
-        bucket_method_authorities
-            .set_main_method_authority(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT, "this_package");
-        bucket_method_authorities.set_main_method_authority(
-            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT,
+    let bucket_authority_rules = {
+        let mut bucket_authority_rules = AuthorityRules::new();
+        bucket_authority_rules.set_fixed_main_authority_rule(
             "this_package",
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
-        bucket_method_authorities.set_main_method_authority(
+        bucket_authority_rules.redirect_to_fixed(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
+        bucket_authority_rules
+            .redirect_to_fixed(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT, "this_package");
+        bucket_authority_rules
+            .redirect_to_fixed(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT, "this_package");
+        bucket_authority_rules.redirect_to_fixed(
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
             "this_package",
         );
-        bucket_method_authorities
-    };
 
-    let bucket_authority_rules = {
-        let mut bucket_authority_rules = AuthorityRules::new();
-        bucket_authority_rules.set_main_authority_rule(
-            "this_package",
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-            DenyAll,
-        );
         bucket_authority_rules
     };
 
     (
-        (resman_method_authorities, resman_authority_rules),
-        (vault_method_authorities, vault_authority_rules),
-        (bucket_method_authorities, bucket_authority_rules),
+        resman_authority_rules,
+        vault_authority_rules,
+        bucket_authority_rules,
     )
 }
 
@@ -194,9 +181,9 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_config = AuthorityRules::new();
 
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) = if resource_address
         .as_node_id()
@@ -216,12 +203,11 @@ where
     };
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            vault_blueprint_name.to_string() => vault_config,
+            vault_blueprint_name.to_string() => vault_authorities,
             bucket_blueprint_name.to_string() => proof_config,
-            proof_blueprint_name.to_string() => bucket_config,
+            proof_blueprint_name.to_string() => bucket_authorities,
         ),
         api,
     )?
@@ -254,17 +240,16 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_config,
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_config,
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_config
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => bucket_authorities,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?
@@ -302,17 +287,16 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let ((resman_method_authorities, resman_authority_rules), vault_config, bucket_config) =
+    let (resman_authorities, vault_authorities, bucket_authorities) =
         build_access_rules(access_rules);
-    let proof_config = (MethodAuthorities::new(), AuthorityRules::new());
+    let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
-        resman_method_authorities,
-        resman_authority_rules,
+        resman_authorities,
         btreemap!(
-            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_config,
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_config,
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_config
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> bucket_authorities,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => proof_authorities
         ),
         api,
     )?

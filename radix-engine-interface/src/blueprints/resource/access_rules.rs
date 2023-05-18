@@ -63,51 +63,9 @@ pub struct MethodEntry {
     pub authority: String,
 }
 
-impl MethodEntry {
-    fn authority(authority: &str) -> Self {
-        MethodEntry {
-            authority: authority.to_string(),
-        }
-    }
-}
-
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
         AccessRule::Protected(AccessRuleNode::Authority(AuthorityRule::Custom(name)))
-    }
-}
-
-/// Method authorization rules for a component
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct MethodAuthorities {
-    pub methods: BTreeMap<MethodKey, MethodEntry>,
-}
-
-impl MethodAuthorities {
-    pub fn new() -> Self {
-        Self {
-            methods: btreemap!(),
-        }
-    }
-
-    pub fn set_module_method_authority(
-        &mut self,
-        module_id: ObjectModuleId,
-        method: &str,
-        authority: &str,
-    ) {
-        self.methods.insert(
-            MethodKey::new(module_id, method),
-            MethodEntry::authority(authority),
-        );
-    }
-
-    pub fn set_main_method_authority(&mut self, method: &str, authority: &str) {
-        self.methods.insert(
-            MethodKey::new(ObjectModuleId::Main, method),
-            MethodEntry::authority(authority),
-        );
     }
 }
 
@@ -144,7 +102,7 @@ impl AuthorityKey {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct AuthorityRules {
     pub rules: BTreeMap<AuthorityKey, (AccessRule, AccessRule)>,
@@ -155,6 +113,13 @@ impl AuthorityRules {
         Self { rules: btreemap!() }
     }
 
+    pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
+        let mut authority_rules = AuthorityRules::new();
+        authority_rules
+            .set_owner_authority(rule!(require(owner_badge.clone())), rule!(require_owner()));
+        authority_rules
+    }
+
     pub fn set_rule(
         &mut self,
         authority_key: AuthorityKey,
@@ -162,6 +127,26 @@ impl AuthorityRules {
         mutability: AccessRule,
     ) {
         self.rules.insert(authority_key, (rule, mutability));
+    }
+
+    pub fn redirect_to_fixed<S: Into<String>>(&mut self, authority: S, redirect_to: &str) {
+        let name = authority.into();
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            (rule!(require(redirect_to)), AccessRule::DenyAll),
+        );
+    }
+
+    pub fn set_fixed_main_authority_rule<S: Into<String>, R: Into<AccessRule>>(
+        &mut self,
+        authority: S,
+        rule: R,
+    ) {
+        let name = authority.into();
+        self.rules.insert(
+            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            (rule.into(), AccessRule::DenyAll),
+        );
     }
 
     pub fn set_main_authority_rule<S: Into<String>>(
@@ -191,17 +176,8 @@ impl AuthorityRules {
         );
     }
 
-    pub fn set_owner_rule(&mut self, rule: AccessRule, mutability: AccessRule) {
+    pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules.insert(AuthorityKey::Owner, (rule, mutability));
-    }
-
-    pub fn owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_rule(
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        authority_rules
     }
 }
 

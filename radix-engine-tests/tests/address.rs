@@ -279,7 +279,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
             manifest_args!(package_address, child),
         ),
         AssertAgainst::SelfBlueprint => {
-            let blueprint = Blueprint::new(&package_address, "MyComponent");
+            let blueprint = BlueprintId::new(&package_address, "MyComponent");
             (
                 "assert_check_on_global_blueprint_caller",
                 manifest_args!(blueprint, child),
@@ -290,7 +290,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
             manifest_args!(TRANSACTION_PROCESSOR_PACKAGE, child),
         ),
         AssertAgainst::TransactionProcessorBlueprint => {
-            let blueprint = Blueprint::new(
+            let blueprint = BlueprintId::new(
                 &TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
             );

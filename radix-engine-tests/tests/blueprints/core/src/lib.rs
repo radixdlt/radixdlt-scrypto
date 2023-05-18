@@ -24,20 +24,14 @@ mod move_test {
 
         pub fn move_bucket() {
             let bucket = Self::create_test_token(1000);
-            let component_address = MoveTest { vaults: Vec::new() }.instantiate().globalize();
-
-            Runtime::call_method(component_address, "receive_bucket", scrypto_args!(bucket))
+            let component = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            component.receive_bucket(bucket);
         }
 
         pub fn move_proof() -> Bucket {
             let bucket = Self::create_test_token(1000);
-            let component_address = MoveTest { vaults: Vec::new() }.instantiate().globalize();
-
-            let _: () = Runtime::call_method(
-                component_address,
-                "receive_proof",
-                scrypto_args!(bucket.create_proof()),
-            );
+            let component = MoveTest { vaults: Vec::new() }.instantiate().globalize();
+            component.receive_proof(bucket.create_proof());
 
             bucket
         }

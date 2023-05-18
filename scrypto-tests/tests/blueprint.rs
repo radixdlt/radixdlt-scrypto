@@ -17,7 +17,7 @@ mod simple {
     }
 
     impl Simple {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<Simple> {
             Self { state: 0 }.instantiate().globalize()
         }
 

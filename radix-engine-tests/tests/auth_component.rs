@@ -10,7 +10,8 @@ fn create_secured_component(
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule("auth", rule!(require(auth)), rule!(deny_all));
+    authority_rules.set_fixed_main_authority_rule("get_component_state", rule!(require(auth)));
+
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(

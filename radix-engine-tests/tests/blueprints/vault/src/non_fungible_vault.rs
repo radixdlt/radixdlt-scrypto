@@ -24,12 +24,12 @@ mod vault_test {
             Vault::with_bucket(bucket)
         }
 
-        pub fn new_non_fungible_vault() -> ComponentAddress {
+        pub fn new_non_fungible_vault() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_non_fungible_vault_with_take() -> ComponentAddress {
+        pub fn new_non_fungible_vault_with_take() -> Global<NonFungibleVault> {
             let mut vault = Self::create_non_fungible_vault();
             {
                 let bucket = vault.take(1);
@@ -41,7 +41,7 @@ mod vault_test {
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_non_fungible_vault_with_take_twice() -> ComponentAddress {
+        pub fn new_non_fungible_vault_with_take_twice() -> Global<NonFungibleVault> {
             let mut vault = Self::create_non_fungible_vault();
             {
                 let bucket0 = vault.take(1);
@@ -60,7 +60,7 @@ mod vault_test {
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_non_fungible_vault_with_take_non_fungible() -> ComponentAddress {
+        pub fn new_non_fungible_vault_with_take_non_fungible() -> Global<NonFungibleVault> {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault
                 .as_non_fungible()
@@ -69,25 +69,25 @@ mod vault_test {
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_local_ids() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_ids() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _ids = vault.as_non_fungible().non_fungible_local_ids();
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_vault_with_get_non_fungible_local_id() -> ComponentAddress {
+        pub fn new_vault_with_get_non_fungible_local_id() -> Global<NonFungibleVault> {
             let vault = Self::create_singleton_non_fungible_vault();
             let _id = vault.as_non_fungible().non_fungible_local_id();
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_vault_with_get_amount() -> ComponentAddress {
+        pub fn new_vault_with_get_amount() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
             Self { vault }.instantiate().globalize()
         }
 
-        pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
+        pub fn new_vault_with_get_resource_manager() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _resource_manager = vault.resource_address();
             Self { vault }.instantiate().globalize()

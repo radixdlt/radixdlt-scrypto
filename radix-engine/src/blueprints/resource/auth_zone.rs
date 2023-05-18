@@ -97,7 +97,7 @@ impl AuthZoneBlueprint {
                     btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
@@ -111,7 +111,7 @@ impl AuthZoneBlueprint {
                     btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
@@ -149,7 +149,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,
@@ -189,7 +189,7 @@ impl AuthZoneBlueprint {
             btreemap!(
                 OBJECT_BASE_PARTITION => composed_proof.into(),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, blueprint_name),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     global: false,
                     outer_object: Some(resource_address.into()),
                     instance_schema: None,

@@ -46,10 +46,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = bp.module_ident;
-    let component_ident = format_ident!("{}Component", bp_ident);
-    validate_type_ident(&component_ident)?;
-    let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
-    validate_type_ident(&component_ref_ident)?;
+    let stub_ident = format_ident!("{}ObjectStub", bp_ident);
+    validate_type_ident(&stub_ident)?;
+    let functions_ident = format_ident!("{}Functions", bp_ident);
+    validate_type_ident(&functions_ident)?;
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -83,16 +83,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#bp_items)*
         }
 
-        impl ::scrypto::component::ComponentState<#component_ident> for #bp_ident {
-            fn instantiate(self) -> #component_ident {
-                let component = ::scrypto::component::create_component(
-                    #bp_name,
-                    self
-                );
-                #component_ident {
-                    component
-                }
-            }
+        impl ::scrypto::component::ComponentState for #bp_ident {
+            const BLUEPRINT_NAME: &'static str = #bp_name;
+        }
+
+        impl HasStub for #bp_ident {
+            type Stub = #stub_ident;
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_original_code });
@@ -189,7 +185,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(&component_ident, &component_ref_ident, bp_ident, bp_items)?;
+    let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
 
     let output = quote! {
         pub mod #module_ident {
@@ -408,7 +404,7 @@ fn validate_field_name(name: &str, span: Span) -> Result<()> {
 
 fn generate_stubs(
     component_ident: &Ident,
-    component_ref_ident: &Ident,
+    functions_ident: &Ident,
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
@@ -463,7 +459,7 @@ fn generate_stubs(
 
                     if mutable.is_none() {
                         functions.push(parse_quote! {
-                            pub fn #ident(#(#input_args: #input_types),*) -> #output {
+                            fn #ident(#(#input_args: #input_types),*) -> #output {
                                 ::scrypto::runtime::Runtime::call_function(
                                     ::scrypto::runtime::Runtime::package_address(),
                                     #bp_name,
@@ -475,7 +471,7 @@ fn generate_stubs(
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                self.component.call(#name, scrypto_args!(
+                                self.call_raw(#name, scrypto_args!(
                                     #(
                                        #input_args
                                     ),*
@@ -496,74 +492,31 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::scrypto::prelude::ScryptoSbor)]
+        #[derive(Clone, Copy, ::scrypto::prelude::ScryptoSbor)]
         pub struct #component_ident {
-            pub component: ::scrypto::component::OwnedComponent,
+            pub handle: ::scrypto::component::ObjectStubHandle,
         }
 
-        impl ::scrypto::component::Component for #component_ident {
-            fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                self.component.call(method, args)
+        impl ::scrypto::component::ObjectStub for #component_ident {
+            fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
+                Self {
+                    handle
+                }
             }
-            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                self.component.package_address()
-            }
-            fn blueprint_name(&self) -> String {
-                self.component.blueprint_name()
-            }
-        }
-
-        impl From<#component_ident> for ::scrypto::component::OwnedComponent {
-            fn from(value: #component_ident) -> Self {
-                value.component
+            fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
+                &self.handle
             }
         }
 
         impl #component_ident {
+            #(#methods)*
+        }
+
+        pub trait #functions_ident {
             #(#functions)*
-
-            #(#methods)*
         }
 
-        #[allow(non_camel_case_types)]
-        pub struct #component_ref_ident {
-            pub component: ::scrypto::component::GlobalComponentRef,
-        }
-
-        impl From<ComponentAddress> for #component_ref_ident {
-            fn from(address: ComponentAddress) -> Self {
-                Self {
-                    component: ::scrypto::component::GlobalComponentRef(address)
-                }
-            }
-        }
-
-        impl ::scrypto::component::Component for #component_ref_ident {
-            fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                self.component.call(method, args)
-            }
-            fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                self.component.package_address()
-            }
-            fn blueprint_name(&self) -> String {
-                self.component.blueprint_name()
-            }
-        }
-
-        impl #component_ref_ident {
-            pub fn access_rules(&self) -> AttachedAccessRules {
-                self.component.access_rules()
-            }
-
-            pub fn metadata(&self) -> AttachedMetadata {
-                self.component.metadata()
-            }
-
-            pub fn royalty(&self) -> AttachedRoyalty {
-                self.component.royalty()
-            }
-
-            #(#methods)*
+        impl #functions_ident for ::scrypto::component::Blueprint<#bp_ident> {
         }
     };
 
@@ -712,16 +665,12 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
-                        fn instantiate(self) -> TestComponent {
-                            let component = ::scrypto::component::create_component(
-                                "Test",
-                                self
-                            );
-                            TestComponent {
-                                component
-                            }
-                        }
+                    impl ::scrypto::component::ComponentState for Test {
+                        const BLUEPRINT_NAME: &'static str = "Test";
+                    }
+
+                    impl HasStub for Test {
+                        type Stub = TestObjectStub;
                     }
 
                     #[allow(non_camel_case_types)]
@@ -801,81 +750,35 @@ mod tests {
                     }
 
                     #[allow(non_camel_case_types)]
-                    #[derive(::scrypto::prelude::ScryptoSbor)]
-                    pub struct TestComponent {
-                        pub component: ::scrypto::component::OwnedComponent,
+                    #[derive(Clone, Copy, ::scrypto::prelude::ScryptoSbor)]
+                    pub struct TestObjectStub {
+                        pub handle: ::scrypto::component::ObjectStubHandle,
                     }
 
-                    impl ::scrypto::component::Component for TestComponent {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
-                        }
-                    }
-
-                    impl From<TestComponent> for ::scrypto::component::OwnedComponent {
-                        fn from(value: TestComponent) -> Self {
-                            value.component
-                        }
-                    }
-
-                    impl TestComponent {
-                        pub fn y(i: u32) -> u32 {
-                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(i))
-                        }
-
-                        pub fn x(&self, i: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(i))
-                        }
-                    }
-
-                    #[allow(non_camel_case_types)]
-                    pub struct TestGlobalComponentRef {
-                        pub component: ::scrypto::component::GlobalComponentRef,
-                    }
-
-                    impl From<ComponentAddress> for TestGlobalComponentRef {
-                        fn from(address: ComponentAddress) -> Self {
+                    impl ::scrypto::component::ObjectStub for TestObjectStub {
+                        fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                             Self {
-                                component: ::scrypto::component::GlobalComponentRef(address)
+                                handle
                             }
                         }
-                    }
-
-                    impl ::scrypto::component::Component for TestGlobalComponentRef {
-                        fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-                            self.component.call(method, args)
-                        }
-                        fn package_address(&self) -> ::scrypto::prelude::PackageAddress {
-                            self.component.package_address()
-                        }
-                        fn blueprint_name(&self) -> String {
-                            self.component.blueprint_name()
+                        fn handle(&self) -> &::scrypto::component::ObjectStubHandle {
+                            &self.handle
                         }
                     }
 
-                    impl TestGlobalComponentRef {
-                        pub fn access_rules(&self) -> AttachedAccessRules {
-                            self.component.access_rules()
-                        }
-
-                        pub fn metadata(&self) -> AttachedMetadata {
-                            self.component.metadata()
-                        }
-
-                        pub fn royalty(&self) -> AttachedRoyalty {
-                            self.component.royalty()
-                        }
-
+                    impl TestObjectStub {
                         pub fn x(&self, i: u32) -> u32 {
-                            self.component.call("x", scrypto_args!(i))
+                            self.call_raw("x", scrypto_args!(i))
                         }
                     }
+
+                    pub trait TestFunctions {
+                        fn y(i: u32) -> u32 {
+                            ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", scrypto_args!(i))
+                        }
+                    }
+
+                    impl TestFunctions for ::scrypto::component::Blueprint<Test> {}
                 }
             },
         );

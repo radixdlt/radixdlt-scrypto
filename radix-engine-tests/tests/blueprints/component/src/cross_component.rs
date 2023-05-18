@@ -8,18 +8,19 @@ mod cross_component {
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(authority_rules: AuthorityRules) -> ComponentAddress {
-            let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority("get_component_state", "auth");
-            let component = Self {
+        pub fn create_component_with_auth(
+            authority_rules: AuthorityRules,
+        ) -> Global<CrossComponent> {
+            Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate();
-            component.globalize_with_access_rules(method_authorities, authority_rules)
+            .instantiate()
+            .authority_rules(authority_rules)
+            .globalize()
         }
 
-        pub fn create_component() -> ComponentAddress {
+        pub fn create_component() -> Global<CrossComponent> {
             let component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
@@ -32,16 +33,15 @@ mod cross_component {
             self.auth_vault = Some(Vault::with_bucket(auth_bucket.remove(0)));
         }
 
-        pub fn cross_component_call(&mut self, component_address: ComponentAddress) -> String {
-            let other_component_ref: CrossComponentGlobalComponentRef = component_address.into();
+        pub fn cross_component_call(&mut self, other_component: Global<CrossComponent>) -> String {
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = auth_bucket.authorize(|| other_component_ref.get_component_state());
+                    let value = auth_bucket.authorize(|| other_component.get_component_state());
                     vault.put(auth_bucket);
                     value
                 }
-                None => other_component_ref.get_component_state(),
+                None => other_component.get_component_state(),
             }
         }
 

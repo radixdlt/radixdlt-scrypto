@@ -528,7 +528,7 @@ impl TestRunner {
         mutability: AccessRule,
     ) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_rule(withdraw_auth, mutability);
+        authority_rules.set_owner_authority(withdraw_auth, mutability);
 
         let manifest = ManifestBuilder::new()
             .new_account_advanced(authority_rules)
@@ -640,7 +640,7 @@ impl TestRunner {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut authority_rules = AuthorityRules::new();
             authority_rules
-                .set_owner_rule(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+                .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
                 .create_identity_advanced(authority_rules)

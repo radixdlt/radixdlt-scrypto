@@ -7,7 +7,7 @@ mod transaction_limits {
     }
 
     impl TransactionLimitTest {
-        pub fn write_kv_stores(n: u32) -> ComponentAddress {
+        pub fn write_kv_stores(n: u32) -> Global<TransactionLimitTest> {
             let kv_store = KeyValueStore::new();
             for i in 0..n {
                 kv_store.insert(i, i);
@@ -16,7 +16,7 @@ mod transaction_limits {
             TransactionLimitTest { kv_store }.instantiate().globalize()
         }
 
-        pub fn read_kv_stores(n: u32) -> ComponentAddress {
+        pub fn read_kv_stores(n: u32) -> Global<TransactionLimitTest> {
             let kv_store = KeyValueStore::new();
             kv_store.insert(0, 0);
             for _i in 0..n {
@@ -47,7 +47,7 @@ mod transaction_limits_substate {
     }
 
     impl TransactionLimitSubstateTest {
-        pub fn write_large_value(size: u32) -> ComponentAddress {
+        pub fn write_large_value(size: u32) -> Global<TransactionLimitSubstateTest> {
             let kv_store = KeyValueStore::new();
             let mut vector: Vec<u8> = Vec::new();
             for _i in 0..size as usize {

@@ -7,7 +7,7 @@ mod blueprint {
     }
 
     impl NonFungibleVault {
-        pub fn new(tokens: Bucket) -> ComponentAddress {
+        pub fn new(tokens: Bucket) -> Global<NonFungibleVault> {
             Self {
                 vault: Vault::with_bucket(tokens),
             }
