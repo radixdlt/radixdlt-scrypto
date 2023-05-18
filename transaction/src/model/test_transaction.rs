@@ -1,4 +1,5 @@
 use crate::model::*;
+use radix_engine_constants::DEFAULT_TIP_PERCENTAGE;
 use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::*;
@@ -43,7 +44,7 @@ impl TestTransaction {
                 },
                 fee_payment: FeePayment::User {
                     cost_unit_limit: self.cost_unit_limit,
-                    tip_percentage: 0,
+                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
                 },
                 runtime_validations: vec![],
                 pre_allocated_ids: BTreeSet::new(),

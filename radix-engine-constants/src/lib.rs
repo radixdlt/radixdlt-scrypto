@@ -5,6 +5,8 @@
 /// The default cost unit limit.
 pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
+pub const DEFAULT_TIP_PERCENTAGE: u16 = 5;
+
 //==========================
 // Transaction validation
 //==========================

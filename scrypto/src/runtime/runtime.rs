@@ -1,5 +1,6 @@
 use crate::modules::{AccessRules, Attachable};
 use crate::prelude::Attached;
+use radix_engine_common::math::Decimal;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -118,5 +119,21 @@ impl Runtime {
         let mut env = ScryptoEnv;
         let global_address = env.preallocate_global_address().unwrap();
         unsafe { ComponentAddress::new_unchecked(global_address.as_node_id().0) }
+    }
+
+    pub fn cost_unit_limit() -> u32 {
+        ScryptoEnv.cost_unit_limit().unwrap()
+    }
+
+    pub fn cost_unit_price() -> Decimal {
+        ScryptoEnv.cost_unit_price().unwrap()
+    }
+
+    pub fn tip_percentage() -> u32 {
+        ScryptoEnv.tip_percentage().unwrap()
+    }
+
+    pub fn fee_balance() -> Decimal {
+        ScryptoEnv.fee_balance().unwrap()
     }
 }

@@ -214,8 +214,8 @@ impl SystemLoanFeeReserve {
             effective_royalty_price,
 
             // System loan is used for both execution and royalty
-            xrd_balance: cost_unit_price * system_loan as u128,
-            xrd_owed: cost_unit_price * system_loan as u128,
+            xrd_balance: effective_execution_price * system_loan as u128,
+            xrd_owed: effective_execution_price * system_loan as u128,
 
             execution_committed: [0u32; CostingReason::COUNT],
             execution_committed_sum: 0,
