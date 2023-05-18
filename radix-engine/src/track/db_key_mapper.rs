@@ -9,10 +9,10 @@ use utils::copy_u8_array;
 /// A mapper between the business RE Node / Module / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
     /// Converts the given RE Node and Module ID to the database partition's key.
-    /// Note: contrary to the sort key, we do not provide the inverse mapping here (i.e. if you
-    /// find yourself needing to map the database partition key back to RE Node and Module ID, then
-    /// you are most likely using the "partition vs sort key" construct in a wrong way).
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey;
+
+    /// Converts database partition's key back to RE Node and Module ID.
+    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber);
 
     /// Converts the given [`SubstateKey`] to the database's sort key.
     /// This is a convenience method, which simply unwraps the [`SubstateKey`] and maps any specific
@@ -61,10 +61,10 @@ pub trait DatabaseKeyMapper {
 ///
 /// This implementation is the actual, protocol-enforced one, to be used in public Radix networks.
 ///
-/// This implementation achieves the prefix-spreading by:
-/// - using a (long, ~100% unique) hash instead of plain RE Node and Module ID (please note that it
-///   makes this mapping effectively irreversible);
-/// - using a (shorter, but hard to crack) hash prefix for Substate key.
+/// This implementation achieves the prefix-spreading by adding a hash prefix (shortened hash for
+/// performance reasons, but still hard to crach) to:
+/// - the PartitionKey (namely a RE Node and Module ID)
+/// - the SubstateKey
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
@@ -72,7 +72,16 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
         buffer.push(partition_num.0);
-        DbPartitionKey(hash(buffer).to_vec())
+        DbPartitionKey(SpreadPrefixKeyMapper::to_hash_prefixed(&buffer[..]))
+    }
+
+    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
+        let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
+        let mut bytes = [0u8; NodeId::LENGTH];
+        bytes.copy_from_slice(&buffer[..buffer.len() - 1]);
+        let partition_num = PartitionNumber(*buffer.last().unwrap());
+
+        (NodeId(bytes), partition_num)
     }
 
     fn tuple_to_db_sort_key(tuple_key: &TupleKey) -> DbSortKey {
