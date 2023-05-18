@@ -17,8 +17,8 @@ use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -35,8 +35,9 @@ use radix_engine_interface::blueprints::clock::{
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerSetEpochInput,
-    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerNextRoundInput,
+    EpochManagerSetEpochInput, LeaderProposalHistory, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    EPOCH_MANAGER_NEXT_ROUND_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::constants::EPOCH_MANAGER;
@@ -1242,6 +1243,31 @@ impl TestRunner {
         )
     }
 
+    /// Executes a "start round number `round`" system transaction, as if it was proposed by the
+    /// first validator from the validator set, after `round - 1` missed rounds by that validator.
+    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+        self.execute_transaction(
+            SystemTransaction {
+                instructions: vec![Instruction::CallMethod {
+                    address: EPOCH_MANAGER.into(),
+                    method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                    args: to_manifest_value(&EpochManagerNextRoundInput {
+                        round,
+                        leader_proposal_history: LeaderProposalHistory {
+                            gap_round_leaders: (1..round).map(|_| 0).collect(),
+                            current_leader: 0,
+                            is_fallback: false,
+                        },
+                    }),
+                }],
+                blobs: vec![],
+                nonce: 0,
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        )
+    }
+
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
             address: CLOCK.into(),
@@ -1431,6 +1457,15 @@ impl TestRunner {
         };
         let actual_type_name = self.event_name(event_type_identifier);
         expected_type_name == actual_type_name
+    }
+
+    pub fn extract_events_of_type<T: ScryptoEvent>(&self, result: &CommitResult) -> Vec<T> {
+        result
+            .application_events
+            .iter()
+            .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
+            .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
+            .collect::<Vec<_>>()
     }
 }
 

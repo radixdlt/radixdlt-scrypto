@@ -407,5 +407,6 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         total_emission_xrd_per_epoch: Decimal::one(),
         min_validator_reliability: Decimal::one(),
         num_owner_stake_units_unlock_epochs: 2,
+        num_fee_increase_delay_epochs: 3,
     }
 }

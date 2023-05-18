@@ -28,6 +28,7 @@ pub struct EpochManagerInitialConfiguration {
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
+    pub num_fee_increase_delay_epochs: u64,
 }
 
 impl EpochManagerInitialConfiguration {
@@ -58,6 +59,11 @@ impl EpochManagerInitialConfiguration {
 
     pub fn with_num_owner_stake_units_unlock_epochs(mut self, new_value: u64) -> Self {
         self.num_owner_stake_units_unlock_epochs = new_value;
+        self
+    }
+
+    pub fn with_num_fee_increase_delay_epochs(mut self, new_value: u64) -> Self {
+        self.num_fee_increase_delay_epochs = new_value;
         self
     }
 }
@@ -237,6 +243,17 @@ pub struct ValidatorUpdateKeyInput {
 }
 
 pub type ValidatorUpdateKeyOutput = ();
+
+pub const VALIDATOR_UPDATE_FEE_IDENT: &str = "update_fee";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorUpdateFeeInput {
+    /// A fraction of the effective emission amount which gets transferred to the validator's owner.
+    /// Must be within `[0.0, 1.0]`.
+    pub new_fee_factor: Decimal,
+}
+
+pub type ValidatorUpdateFeeOutput = ();
 
 pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 

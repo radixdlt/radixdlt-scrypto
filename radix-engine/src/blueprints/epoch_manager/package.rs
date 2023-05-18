@@ -174,6 +174,15 @@ impl EpochManagerNativePackage {
             },
         );
         functions.insert(
+            VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                export_name: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -410,6 +419,15 @@ impl EpochManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_key(input.key, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_UPDATE_FEE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorUpdateFeeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::update_fee(input.new_fee_factor, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
