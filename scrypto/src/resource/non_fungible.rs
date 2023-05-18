@@ -1,10 +1,10 @@
+use crate::prelude::ResourceManager;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::marker::PhantomData;
-use scrypto::borrow_resource_manager;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
@@ -40,7 +40,7 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        borrow_resource_manager!(self.resource_address().clone())
-            .get_non_fungible_data(self.local_id())
+        let manager: ResourceManager = self.resource_address().into();
+        manager.get_non_fungible_data(self.local_id())
     }
 }

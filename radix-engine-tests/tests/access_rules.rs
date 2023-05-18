@@ -26,15 +26,6 @@ fn initial_cyclic_authority_should_not_be_allowed() {
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_main_authority_rule(
                 "deposit_funds",
-                rule!(deny_all),
-                rule!(require("deposit_funds")),
-            );
-            authority_rules
-        },
-        {
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_main_authority_rule(
-                "deposit_funds",
                 rule!(require("test")),
                 rule!(deny_all),
             );
@@ -77,78 +68,6 @@ fn setting_circular_authority_rule_should_fail() {
         AuthorityKey::main("deposit_funds"),
         rule!(require("deposit_funds")),
     );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_rule_should_fail_2() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule(
-        "deposit_funds",
-        rule!(allow_all),
-        rule!(require("test")),
-    );
-    authority_rules.set_main_authority_rule("test", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("test"), rule!(require("deposit_funds")));
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_mutability_should_fail() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule("deposit_funds", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt = test_runner.set_authority_mutability(
-        AuthorityKey::main("deposit_funds"),
-        rule!(require("deposit_funds")),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
-
-#[test]
-fn setting_circular_authority_mutability_should_fail2() {
-    // Arrange
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule(
-        "deposit_funds",
-        rule!(allow_all),
-        rule!(require("test")),
-    );
-    authority_rules.set_main_authority_rule("test", rule!(allow_all), rule!(allow_all));
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt = test_runner
-        .set_authority_mutability(AuthorityKey::main("test"), rule!(require("deposit_funds")));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -302,7 +221,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
         rule!(require_owner()),
         rule!(require_owner()),
     );
-    authority_rules.set_owner_rule(
+    authority_rules.set_owner_authority(
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
@@ -445,10 +364,6 @@ impl MutableAccessRulesTestRunner {
         authority_rules: AuthorityRules,
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority("deposit_funds", "deposit_funds");
-        method_authorities.set_main_method_authority("borrow_funds", "borrow_funds");
-
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -456,7 +371,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new",
-                manifest_args!(method_authorities, authority_rules),
+                manifest_args!(authority_rules),
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
@@ -489,22 +404,6 @@ impl MutableAccessRulesTestRunner {
                 ObjectKey::SELF,
                 authority_key,
                 access_rule,
-            )
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn set_authority_mutability(
-        &mut self,
-        authority_key: AuthorityKey,
-        mutability: AccessRule,
-    ) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .set_authority_mutability(
-                self.component_address.into(),
-                ObjectKey::SELF,
-                authority_key,
-                mutability,
             )
             .build();
         self.execute_manifest(manifest)

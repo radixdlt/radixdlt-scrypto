@@ -70,7 +70,7 @@ fn test_basic_transfer() {
         + 5587 /* DropLock */
         + 1575 /* DropNode */
         + 1050432 /* Invoke */
-        + 560873 /* LockSubstate */
+        + 570774 /* LockSubstate */
         + 7840 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
@@ -106,7 +106,7 @@ fn test_radiswap() {
                 .default(0),
         ),
         btreemap!(),
-        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -202,14 +202,14 @@ fn test_radiswap() {
     assert_eq!(
         2415 /* AllocateNodeId */
         + 3826 /* CreateNode */
-        + 13912 /* DropLock */
+        + 13875 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5533012 /* LockSubstate */
-        + 19488 /* ReadSubstate */
+        + 5583872 /* LockSubstate */
+        + 19432 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
-        + 1519500 /* RunWasm */
+        + 1523635 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -240,7 +240,7 @@ fn test_flash_loan() {
                 .default(0),
         ),
         btreemap!(),
-        AuthorityRules::owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate flash_loan
@@ -313,14 +313,14 @@ fn test_flash_loan() {
     assert_eq!(
         3933 /* AllocateNodeId */
         + 6213 /* CreateNode */
-        + 22385 /* DropLock */
+        + 22311 /* DropLock */
         + 5985 /* DropNode */
         + 4678666 /* Invoke */
-        + 6818628 /* LockSubstate */
-        + 31752 /* ReadSubstate */
+        + 6866860 /* LockSubstate */
+        + 31640 /* ReadSubstate */
         + 202500 /* RunNative */
         + 40000 /* RunSystem */
-        + 1298095 /* RunWasm */
+        + 1307010 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */

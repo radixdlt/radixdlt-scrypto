@@ -64,22 +64,7 @@ mod genesis_helper {
             whole_lotta_xrd: Bucket,
             epoch_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
-        ) -> ComponentAddress {
-            let mut method_authorities = MethodAuthorities::new();
-            method_authorities.set_main_method_authority("ingest_data_chunk", "system");
-            method_authorities.set_main_method_authority("wrap_up", "system");
-
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_main_authority_rule(
-                "system",
-                rule!(require(system_role.clone())),
-                rule!(require(system_role)),
-            );
-
-            let access_rules = AccessRules::new(method_authorities, authority_rules);
-
-            let metadata = Metadata::new();
-
+        ) -> Global<GenesisHelper> {
             Self {
                 epoch_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
@@ -87,12 +72,18 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_at_address_with_modules(
-                ComponentAddress::new_or_panic(preallocated_address_bytes),
-                access_rules,
-                metadata,
-                Royalty::new(RoyaltyConfig::default()),
+            .authority_rule(
+                "ingest_data_chunk",
+                rule!(require("system")),
+                rule!(deny_all),
             )
+            .authority_rule("wrap_up", rule!(require("system")), rule!(deny_all))
+            .authority_rule(
+                "system",
+                rule!(require(system_role.clone())),
+                rule!(require(system_role)),
+            )
+            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
@@ -195,7 +186,8 @@ mod genesis_helper {
                     )
                     .mint_initial_supply(1);
 
-                borrow_resource_manager!(owner_badge.resource_address())
+                owner_badge
+                    .resource_manager()
                     .metadata()
                     .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
 

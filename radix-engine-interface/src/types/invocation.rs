@@ -19,10 +19,10 @@ impl MethodIdentifier {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct FunctionIdentifier(pub Blueprint, pub String);
+pub struct FunctionIdentifier(pub BlueprintId, pub String);
 
 impl FunctionIdentifier {
-    pub fn new(blueprint: Blueprint, ident: String) -> Self {
+    pub fn new(blueprint: BlueprintId, ident: String) -> Self {
         Self(blueprint, ident)
     }
 
@@ -68,7 +68,7 @@ impl Debug for FnIdent {
 
 #[derive(Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FnIdentifier {
-    pub blueprint: Blueprint,
+    pub blueprint: BlueprintId,
     pub ident: FnIdent,
 }
 

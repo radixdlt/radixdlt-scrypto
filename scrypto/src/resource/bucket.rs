@@ -1,5 +1,5 @@
 use super::ScryptoUncheckedProof;
-use crate::borrow_resource_manager;
+use crate::prelude::ResourceManager;
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
@@ -33,6 +33,10 @@ pub trait ScryptoBucket {
     fn create_proof_of_all(&self) -> Self::ProofType;
 
     fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
 
     fn put(&mut self, other: Self) -> ();
 
@@ -102,8 +106,8 @@ impl ScryptoBucket for Bucket {
     }
 
     fn burn(self) {
-        let resource_address = self.resource_address();
-        borrow_resource_manager!(resource_address).burn(Bucket(self.0));
+        let manager = self.resource_manager();
+        manager.burn(self);
     }
 
     fn create_proof(&self) -> Proof {
@@ -143,6 +147,10 @@ impl ScryptoBucket for Bucket {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -308,6 +316,10 @@ impl ScryptoBucket for NonFungibleBucket {
         Self(Bucket::new(resource_address))
     }
 
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
+    }
+
     fn drop_empty(self) {
         self.0.drop_empty()
     }
@@ -326,10 +338,6 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn create_proof_of_all(&self) -> Self::ProofType {
         NonFungibleProof(self.0.create_proof_of_all())
-    }
-
-    fn resource_address(&self) -> ResourceAddress {
-        self.0.resource_address()
     }
 
     fn put(&mut self, other: Self) -> () {

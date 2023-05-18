@@ -27,22 +27,25 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main("mint")),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main("burn")),
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
         ResourceAuth::UpdateMetadata => {
             (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
         }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("withdraw"),
+            AuthorityKey::main(VAULT_TAKE_IDENT),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("deposit"),
+            AuthorityKey::main(VAULT_PUT_IDENT),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("recall"),
+            AuthorityKey::main(VAULT_RECALL_IDENT),
         ),
     };
     {
@@ -66,22 +69,25 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .create_proof_from_account(account, admin_auth);
 
     let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main("mint")),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main("burn")),
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (
+            ObjectKey::SELF,
+            AuthorityKey::main(RESOURCE_MANAGER_BURN_IDENT),
+        ),
         ResourceAuth::UpdateMetadata => {
             (ObjectKey::SELF, AuthorityKey::metadata(METADATA_AUTHORITY))
         }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("withdraw"),
+            AuthorityKey::main(VAULT_TAKE_IDENT),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("deposit"),
+            AuthorityKey::main(VAULT_PUT_IDENT),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main("recall"),
+            AuthorityKey::main(VAULT_RECALL_IDENT),
         ),
     };
 

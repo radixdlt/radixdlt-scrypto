@@ -203,10 +203,10 @@ pub enum SystemError {
     OuterObjectDoesNotExist,
     NotAFieldLock,
     NotAFieldWriteLock,
-    FieldDoesNotExist(Blueprint, u8),
-    KeyValueStoreDoesNotExist(Blueprint, u8),
-    SortedIndexDoesNotExist(Blueprint, u8),
-    IndexDoesNotExist(Blueprint, u8),
+    FieldDoesNotExist(BlueprintId, u8),
+    KeyValueStoreDoesNotExist(BlueprintId, u8),
+    SortedIndexDoesNotExist(BlueprintId, u8),
+    IndexDoesNotExist(BlueprintId, u8),
     NotAKeyValueStore,
     NotASortedStore,
     NotAnIterableStore,
@@ -228,7 +228,7 @@ pub enum SystemError {
     InvalidInstanceSchema,
     AssertAccessRuleFailed,
     CallMethodOnKeyValueStore,
-    BlueprintDoesNotExist(Blueprint),
+    BlueprintDoesNotExist(BlueprintId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -240,7 +240,7 @@ pub enum SystemUpstreamError {
     NativeExportDoesNotExist(String),
     NativeInvalidCodeId(u8),
 
-    BlueprintNotFound(Blueprint),
+    BlueprintNotFound(BlueprintId),
     FunctionNotFound(String),
     ReceiverNotMatch(String),
     InputSchemaNotMatch(String, String),
@@ -260,9 +260,9 @@ pub enum VmError {
 pub enum CreateObjectError {
     BlueprintNotFound(String),
     InvalidModule,
-    WrongNumberOfKeyValueStores(Blueprint, usize, usize),
-    WrongNumberOfSubstates(Blueprint, usize, usize),
-    SchemaValidationError(Blueprint, String),
+    WrongNumberOfKeyValueStores(BlueprintId, usize, usize),
+    WrongNumberOfSubstates(BlueprintId, usize, usize),
+    SchemaValidationError(BlueprintId, String),
     InvalidSubstateWrite(String),
 }
 
@@ -276,8 +276,8 @@ pub enum ModuleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InvalidModuleType {
-    pub expected_blueprint: Blueprint,
-    pub actual_blueprint: Blueprint,
+    pub expected_blueprint: BlueprintId,
+    pub actual_blueprint: BlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

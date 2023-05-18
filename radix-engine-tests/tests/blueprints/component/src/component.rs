@@ -15,7 +15,7 @@ mod component_test {
                 .mint_initial_supply(amount)
         }
 
-        pub fn create_component() -> ComponentAddress {
+        pub fn create_component() -> Global<ComponentTest> {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
@@ -24,11 +24,8 @@ mod component_test {
             .globalize()
         }
 
-        pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
-            (
-                borrow_component!(component_address).package_address(),
-                borrow_component!(component_address).blueprint_name(),
-            )
+        pub fn get_component_info(component: Global<AnyComponent>) -> BlueprintId {
+            component.blueprint()
         }
 
         pub fn get_component_state(&self) -> String {

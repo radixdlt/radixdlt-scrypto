@@ -9,7 +9,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use utils::rust::prelude::IndexSet;
+use utils::rust::prelude::{index_set_new, IndexSet};
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -205,10 +205,12 @@ pub enum AccessRule {
 }
 
 impl AccessRule {
-    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityRule>) {
+    pub fn get_referenced_authorities(&self) -> IndexSet<AuthorityRule> {
+        let mut authorities = index_set_new();
         match self {
             AccessRule::AllowAll | AccessRule::DenyAll => {}
-            AccessRule::Protected(node) => node.get_referenced_authorities(authorities),
+            AccessRule::Protected(node) => node.get_referenced_authorities(&mut authorities),
         }
+        authorities
     }
 }
