@@ -1,9 +1,12 @@
+use crate::utils::*;
 use clap::Parser;
 use colored::*;
+use radix_engine::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
+use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use transaction::model::Instruction;
 
@@ -18,6 +21,8 @@ impl ShowLedger {
         let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
         Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+        Self::list_entries(out, &substate_db)?;
 
         // Close the database
         drop(substate_db);
@@ -37,6 +42,65 @@ impl ShowLedger {
         .map_err(Error::IOError)?;
 
         writeln!(out, "").map_err(Error::IOError)?;
+
+        Ok(())
+    }
+
+    pub fn list_entries<O: std::io::Write>(
+        out: &mut O,
+        substate_db: &RocksdbSubstateStore,
+    ) -> Result<(), Error> {
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let mut packages: Vec<PackageAddress> = vec![];
+        let mut components: Vec<ComponentAddress> = vec![];
+        let mut resources: Vec<ResourceAddress> = vec![];
+
+        for key in substate_db.list_partition_keys() {
+            let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&key);
+            if let Ok(address) = PackageAddress::try_from(node_id.as_ref()) {
+                if !packages.contains(&address) {
+                    packages.push(address);
+                }
+            } else if let Ok(address) = ComponentAddress::try_from(node_id.as_ref()) {
+                if !components.contains(&address) {
+                    components.push(address);
+                }
+            } else if let Ok(address) = ResourceAddress::try_from(node_id.as_ref()) {
+                if !resources.contains(&address) {
+                    resources.push(address);
+                }
+            }
+        }
+        writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
+        for (last, address) in packages.iter().identify_last() {
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                address.display(&bech32_encoder),
+            )
+            .map_err(Error::IOError)?;
+        }
+        writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
+        for (last, address) in components.iter().identify_last() {
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                address.display(&bech32_encoder),
+            )
+            .map_err(Error::IOError)?;
+        }
+        writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
+        for (last, address) in resources.iter().identify_last() {
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                address.display(&bech32_encoder),
+            )
+            .map_err(Error::IOError)?;
+        }
 
         Ok(())
     }
