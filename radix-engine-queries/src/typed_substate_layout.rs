@@ -279,12 +279,12 @@ fn to_typed_object_substate_key_internal(
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedSubstateValue<'a> {
+pub enum TypedSubstateValue {
     TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue),
     AccessRulesModuleFieldValue(TypedAccessRulesModuleFieldValue),
     RoyaltyModuleFieldValue(TypedRoyaltyModuleFieldValue),
     MetadataModuleEntryValue(MetadataValueSubstate),
-    MainModule(TypedMainModuleSubstateValue<'a>),
+    MainModule(TypedMainModuleSubstateValue),
 }
 
 #[derive(Debug, Clone)]
@@ -305,12 +305,12 @@ pub enum TypedRoyaltyModuleFieldValue {
 
 /// Contains all the main module substate values, by each known partition layout
 #[derive(Debug, Clone)]
-pub enum TypedMainModuleSubstateValue<'a> {
+pub enum TypedMainModuleSubstateValue {
     // Objects
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(Option<ScryptoRawValue<'a>>),
+    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -322,7 +322,7 @@ pub enum TypedMainModuleSubstateValue<'a> {
     AccessController(TypedAccessControllerFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(Option<ScryptoRawValue<'a>>),
+    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -389,10 +389,10 @@ pub struct GenericScryptoSborPayload {
     pub data: Vec<u8>,
 }
 
-pub fn to_typed_substate_value<'a>(
+pub fn to_typed_substate_value(
     substate_key: &TypedSubstateKey,
     data: &[u8],
-) -> Result<TypedSubstateValue<'a>, String> {
+) -> Result<TypedSubstateValue, String> {
     to_typed_substate_value_internal(substate_key, data).map_err(|err| {
         format!(
             "Error decoding substate data for key {:?} - {:?}",
@@ -401,10 +401,10 @@ pub fn to_typed_substate_value<'a>(
     })
 }
 
-fn to_typed_substate_value_internal<'a>(
+fn to_typed_substate_value_internal(
     substate_key: &TypedSubstateKey,
     data: &[u8],
-) -> Result<TypedSubstateValue<'a>, DecodeError> {
+) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
         TypedSubstateKey::TypeInfoModuleField(type_info_offset) => {
             TypedSubstateValue::TypeInfoModuleFieldValue(match type_info_offset {
@@ -440,10 +440,10 @@ fn to_typed_substate_value_internal<'a>(
     Ok(substate_value)
 }
 
-fn to_typed_object_substate_value<'a>(
+fn to_typed_object_substate_value(
     substate_key: &TypedMainModuleSubstateKey,
     data: &[u8],
-) -> Result<TypedMainModuleSubstateValue<'a>, DecodeError> {
+) -> Result<TypedMainModuleSubstateValue, DecodeError> {
     let substate_value = match substate_key {
         TypedMainModuleSubstateKey::PackageField(offset) => {
             TypedMainModuleSubstateValue::Package(match offset {
