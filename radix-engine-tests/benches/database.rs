@@ -9,11 +9,62 @@ use radix_engine::vm::ScryptoVm;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
+use radix_engine_store_interface::interface::{SubstateDatabase, DbPartitionKey, DbSortKey, DbSubstateValue, PartitionEntry, CommittableSubstateDatabase, DatabaseUpdates};
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
 use std::path::PathBuf;
+use std::time::Duration;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
+
+
+struct RocksdbSubstateStoreWithMetrics {
+    db: RocksdbSubstateStore,
+    read_metrics: RefCell<HashMap<usize, Duration>>
+}
+
+impl RocksdbSubstateStoreWithMetrics {
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            db: RocksdbSubstateStore::standard(path),
+            read_metrics: RefCell::new(HashMap::with_capacity(1000))
+        }
+    }
+}
+
+impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
+    fn get_substate(
+        &self,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+    ) -> Option<DbSubstateValue> {
+
+        let start = std::time::Instant::now();
+        let ret = self.db.get_substate(partition_key,sort_key);
+        let duration = start.elapsed();
+
+        if let Some(value) = ret {
+            self.read_metrics.borrow_mut().insert(value.len(), duration);
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    fn list_entries(
+        &self,
+        partition_key: &DbPartitionKey,
+    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        self.db.list_entries(partition_key)
+    }
+}
+
+impl CommittableSubstateDatabase for RocksdbSubstateStoreWithMetrics {
+    fn commit(&mut self, database_updates: &DatabaseUpdates) {
+        self.db.commit(database_updates)
+    }
+}
+
 
 fn db_rw_test(c: &mut Criterion) {
     println!("starting");
@@ -28,7 +79,7 @@ fn db_rw_test(c: &mut Criterion) {
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
-    let mut substate_db = RocksdbSubstateStore::standard(path);
+    let mut substate_db = RocksdbSubstateStoreWithMetrics::new(path);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
         .bootstrap_test_default()
         .unwrap();
