@@ -412,7 +412,7 @@ impl AccountBlueprint {
     pub fn safe_deposit_batch<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
-    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
+    ) -> Result<Vec<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -424,11 +424,7 @@ impl AccountBlueprint {
             }
         }
 
-        if undeposited_buckets.len() != 0 {
-            Ok(Some(undeposited_buckets))
-        } else {
-            Ok(None)
-        }
+        Ok(undeposited_buckets)
     }
 
     pub fn withdraw<Y>(

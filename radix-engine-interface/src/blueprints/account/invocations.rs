@@ -323,4 +323,4 @@ pub struct AccountSafeDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountSafeDepositBatchOutput = Option<Vec<Bucket>>;
+pub type AccountSafeDepositBatchOutput = Vec<Bucket>;
