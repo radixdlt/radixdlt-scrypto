@@ -1,9 +1,6 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::clock::ClockNativePackage;
-use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_common::types::ComponentAddress;
-
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
@@ -20,6 +17,8 @@ use crate::transaction::{
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::ScryptoVm;
+use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::clock::{
     ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
@@ -850,14 +849,14 @@ pub fn create_genesis_data_ingestion_transaction(
     if let GenesisDataChunk::Resources(resources) = &chunk {
         for resource in resources {
             pre_allocated_ids.insert(NodeId::new(
-                EntityType::GlobalFungibleResource as u8,
+                EntityType::GlobalFungibleResourceManager as u8,
                 &resource.address_bytes_without_entity_id,
             ));
         }
     }
 
     instructions.push(Instruction::CallMethod {
-        component_address: genesis_helper.clone(),
+        address: genesis_helper.clone().into(),
         method_name: "ingest_data_chunk".to_string(),
         args: manifest_args!(chunk),
     });
@@ -875,7 +874,7 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let mut instructions = Vec::new();
 
     instructions.push(Instruction::CallMethod {
-        component_address: GENESIS_HELPER,
+        address: GENESIS_HELPER.clone().into(),
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });

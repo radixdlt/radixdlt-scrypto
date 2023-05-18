@@ -62,7 +62,7 @@ pub mod well_known_scrypto_custom_types {
             "ResourceAddress",
             ScryptoCustomTypeKind::Reference,
             Some(ScryptoCustomTypeValidation::Reference(
-                ReferenceValidation::IsGlobalResource,
+                ReferenceValidation::IsGlobalResourceManager,
             )),
         )
     }

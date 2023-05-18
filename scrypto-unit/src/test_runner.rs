@@ -299,8 +299,8 @@ impl TestRunner {
         self.state_hash_support = snapshot.state_hash_support;
     }
 
-    pub fn faucet_component(&self) -> ComponentAddress {
-        FAUCET
+    pub fn faucet_component(&self) -> GlobalAddress {
+        FAUCET.clone().into()
     }
 
     pub fn substate_db(&self) -> &InMemorySubstateDatabase {
@@ -355,7 +355,7 @@ impl TestRunner {
             .set_metadata(
                 address,
                 key.to_string(),
-                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+                MetadataValue::String(value.to_string()),
             )
             .build();
 
@@ -363,28 +363,19 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
 
-        let metadata_entry = self
+        let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
-        let metadata_entry = match metadata_entry {
-            Option::Some(value) => {
-                let value: MetadataEntry =
-                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(value)
-            }
-            Option::None => None,
-        };
-
-        metadata_entry
+        metadata_value
     }
 
     pub fn inspect_component_royalty(
@@ -761,7 +752,7 @@ impl TestRunner {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                component_address: self.faucet_component(),
+                address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
             },
@@ -1157,7 +1148,7 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
         }];
@@ -1178,7 +1169,7 @@ impl TestRunner {
 
     pub fn get_current_epoch(&mut self) -> u64 {
         let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
@@ -1226,7 +1217,7 @@ impl TestRunner {
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
+            address: CLOCK.into(),
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
         }];
@@ -1247,7 +1238,7 @@ impl TestRunner {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
+            address: CLOCK.into(),
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];

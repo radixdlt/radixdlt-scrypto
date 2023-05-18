@@ -2,7 +2,15 @@ use crate::data::*;
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::address::Bech32Encoder;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -13,14 +21,22 @@ use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALI
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
+use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
+use radix_engine_interface::blueprints::package::{
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
 };
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
@@ -115,20 +131,6 @@ pub fn decompile_instruction<F: fmt::Write>(
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        Instruction::TakeAllFromWorktop { resource_address } => {
-            let bucket_id = context
-                .id_allocator
-                .new_bucket_id()
-                .map_err(DecompileError::IdAllocationError)?;
-            let name = format!("bucket{}", context.bucket_names.len() + 1);
-            write!(
-                f,
-                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
-                resource_address.display(context.bech32_encoder),
-                name
-            )?;
-            context.bucket_names.insert(bucket_id, name);
-        }
         Instruction::TakeFromWorktop {
             amount,
             resource_address,
@@ -167,6 +169,20 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .join(", "),
                 name
             )?;
+        }
+        Instruction::TakeAllFromWorktop { resource_address } => {
+            let bucket_id = context
+                .id_allocator
+                .new_bucket_id()
+                .map_err(DecompileError::IdAllocationError)?;
+            let name = format!("bucket{}", context.bucket_names.len() + 1);
+            write!(
+                f,
+                "TAKE_ALL_FROM_WORKTOP\n    Address(\"{}\")\n    Bucket(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+            context.bucket_names.insert(bucket_id, name);
         }
         Instruction::ReturnToWorktop { bucket_id } => {
             write!(
@@ -294,6 +310,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+
+        Instruction::ClearSignatureProofs => {
+            f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
+        }
+
         Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
@@ -372,6 +393,17 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
+        Instruction::BurnResource { bucket_id } => {
+            write!(
+                f,
+                "BURN_RESOURCE\n    Bucket({});",
+                context
+                    .bucket_names
+                    .get(bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
+            )?;
+        }
         Instruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
@@ -401,12 +433,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
         }
-        Instruction::DropAllProofs => {
-            f.write_str("DROP_ALL_PROOFS;")?;
-        }
-        Instruction::ClearSignatureProofs => {
-            f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
-        }
         Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -418,6 +444,12 @@ pub fn decompile_instruction<F: fmt::Write>(
                 blueprint_name.as_str(),
                 function_name.as_str(),
             ) {
+                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT) => {
+                    write!(f, "PUBLISH_PACKAGE")?;
+                }
+                (&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT) => {
+                    write!(f, "PUBLISH_PACKAGE_ADVANCED")?;
+                }
                 (&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT) => {
                     write!(f, "CREATE_ACCOUNT_ADVANCED")?;
                 }
@@ -480,18 +512,73 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str(";")?;
         }
         Instruction::CallMethod {
-            component_address,
+            address,
             method_name,
             args,
         } => {
-            match (component_address, method_name.as_str()) {
-                (&EPOCH_MANAGER, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => {
+            match (address, method_name.as_str()) {
+                // Nb - For Main method call, we also check the address type to avoid name clashing.
+
+                /* Package */
+                (address, PACKAGE_SET_ROYALTY_CONFIG_IDENT)
+                    if address.as_node_id().is_global_package() =>
+                {
+                    f.write_str(&format!(
+                        "SET_PACKAGE_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, PACKAGE_CLAIM_ROYALTY_IDENT)
+                    if address.as_node_id().is_global_package() =>
+                {
+                    f.write_str(&format!(
+                        "CLAIM_PACKAGE_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Resource manager */
+                (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                    if address.as_node_id().is_global_fungible_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
+                    if address
+                        .as_node_id()
+                        .is_global_non_fungible_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_NON_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT)
+                    if address
+                        .as_node_id()
+                        .is_global_non_fungible_resource_manager() =>
+                {
+                    f.write_str(&format!(
+                        "MINT_UUID_NON_FUNGIBLE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Validator */
+                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
+                    if address.as_node_id().is_global_epoch_manager() =>
+                {
                     write!(f, "CREATE_VALIDATOR")?;
                 }
+
+                /* Default */
                 _ => {
                     f.write_str(&format!(
                         "CALL_METHOD\n    Address(\"{}\")\n    \"{}\"",
-                        component_address.display(context.bech32_encoder),
+                        address.display(context.bech32_encoder),
                         method_name
                     ))?;
                 }
@@ -500,44 +587,105 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::PublishPackage {
-            code,
-            schema,
-            royalty_config,
-            metadata,
+        Instruction::CallRoyaltyMethod {
+            address,
+            method_name,
+            args,
         } => {
-            f.write_str("PUBLISH_PACKAGE")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, schema)?;
-            format_typed_value(f, context, royalty_config)?;
-            format_typed_value(f, context, metadata)?;
+            match (address, method_name.as_str()) {
+                /* Component royalty */
+                (address, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_COMPONENT_ROYALTY_CONFIG\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => {
+                    f.write_str(&format!(
+                        "CLAIM_COMPONENT_ROYALTY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_ROYALTY_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::PublishPackageAdvanced {
-            code,
-            schema,
-            royalty_config,
-            metadata,
-            authority_rules,
+        Instruction::CallMetadataMethod {
+            address,
+            method_name,
+            args,
         } => {
-            f.write_str("PUBLISH_PACKAGE_ADVANCED")?;
-            format_typed_value(f, context, code)?;
-            format_typed_value(f, context, schema)?;
-            format_typed_value(f, context, royalty_config)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, authority_rules)?;
+            match (address, method_name.as_str()) {
+                /* Metadata */
+                (address, METADATA_SET_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, METADATA_REMOVE_IDENT) => {
+                    f.write_str(&format!(
+                        "REMOVE_METADATA\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
+                    f.write_str(&format!(
+                        "CALL_METADATA_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::BurnResource { bucket_id } => {
-            write!(
-                f,
-                "BURN_RESOURCE\n    Bucket({});",
-                context
-                    .bucket_names
-                    .get(bucket_id)
-                    .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id.0)),
-            )?;
+        Instruction::CallAccessRulesMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            match (address, method_name.as_str()) {
+                /* Access rules */
+                (address, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_AUTHORITY_ACCESS_RULE\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+                (address, ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT) => {
+                    f.write_str(&format!(
+                        "SET_AUTHORITY_MUTABILITY\n    Address(\"{}\")",
+                        address.display(context.bech32_encoder),
+                    ))?;
+                }
+
+                /* Default */
+                _ => {
+                    // TODO: add compiler support
+                    f.write_str(&format!(
+                        "CALL_ACCESS_RULES_METHOD\n    Address(\"{}\")\n    \"{}\"",
+                        address.display(context.bech32_encoder),
+                        method_name
+                    ))?;
+                }
+            }
+
+            format_encoded_args(f, context, args)?;
+            f.write_str(";")?;
         }
         Instruction::RecallResource { vault_id, amount } => {
             f.write_str("RECALL_RESOURCE")?;
@@ -545,110 +693,12 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
-        Instruction::SetMetadata {
-            entity_address,
-            key,
-            value,
-        } => {
-            f.write_str("SET_METADATA")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            format_typed_value(f, context, value)?;
-            f.write_str(";")?;
-        }
-        Instruction::RemoveMetadata {
-            entity_address,
-            key,
-        } => {
-            f.write_str("REMOVE_METADATA")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_PACKAGE_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, package_address)?;
-            format_typed_value(f, context, royalty_config)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
-        } => {
-            f.write_str("SET_COMPONENT_ROYALTY_CONFIG")?;
-            format_typed_value(f, context, component_address)?;
-            format_typed_value(f, context, royalty_config)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimPackageRoyalty { package_address } => {
-            f.write_str("CLAIM_PACKAGE_ROYALTY")?;
-            format_typed_value(f, context, package_address)?;
-            f.write_str(";")?;
-        }
-        Instruction::ClaimComponentRoyalty { component_address } => {
-            f.write_str("CLAIM_COMPONENT_ROYALTY")?;
-            format_typed_value(f, context, component_address)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetAuthorityAccessRule {
-            entity_address,
-            object_key,
-            authority_key: group,
-            rule,
-        } => {
-            f.write_str("SET_AUTHORITY_ACCESS_RULE")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, object_key)?;
-            format_typed_value(f, context, group)?;
-            format_typed_value(f, context, rule)?;
-            f.write_str(";")?;
-        }
-        Instruction::SetAuthorityMutability {
-            entity_address,
-            object_key,
-            authority_key: group,
-            mutability,
-        } => {
-            f.write_str("SET_AUTHORITY_MUTABILITY")?;
-            format_typed_value(f, context, entity_address)?;
-            format_typed_value(f, context, object_key)?;
-            format_typed_value(f, context, group)?;
-            format_typed_value(f, context, mutability)?;
-            f.write_str(";")?;
-        }
-        Instruction::MintFungible {
-            resource_address,
-            amount,
-        } => {
-            f.write_str("MINT_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, amount)?;
-            f.write_str(";")?;
-        }
-        Instruction::MintNonFungible {
-            resource_address,
-            args,
-        } => {
-            f.write_str("MINT_NON_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            f.write_str("\n    ")?;
-            format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
-        }
-        Instruction::MintUuidNonFungible {
-            resource_address,
-            args,
-        } => {
-            f.write_str("MINT_UUID_NON_FUNGIBLE")?;
-            format_typed_value(f, context, resource_address)?;
-            f.write_str("\n    ")?;
-            format_manifest_value(f, args, &context.for_value_display())?;
-            f.write_str(";")?;
+
+        Instruction::DropAllProofs => {
+            f.write_str("DROP_ALL_PROOFS;")?;
         }
     }
+
     Ok(())
 }
 

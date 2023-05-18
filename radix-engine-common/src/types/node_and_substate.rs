@@ -66,20 +66,24 @@ impl NodeId {
         matches!(self.entity_type(), Some(t) if t.is_global_package())
     }
 
-    pub const fn is_global_resource(&self) -> bool {
-        matches!(self.entity_type(), Some(t) if t.is_global_resource())
+    pub const fn is_global_epoch_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_epoch_manager())
+    }
+
+    pub const fn is_global_resource_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_resource_manager())
+    }
+
+    pub const fn is_global_fungible_resource_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource_manager())
+    }
+
+    pub const fn is_global_non_fungible_resource_manager(&self) -> bool {
+        matches!(self.entity_type(), Some(t) if t.is_global_non_fungible_resource_manager())
     }
 
     pub const fn is_global_virtual(&self) -> bool {
         matches!(self.entity_type(), Some(t) if t.is_global_virtual())
-    }
-
-    pub const fn is_global_fungible_resource(&self) -> bool {
-        matches!(self.entity_type(), Some(t) if t.is_global_fungible_resource())
-    }
-
-    pub const fn is_global_non_fungible_resource(&self) -> bool {
-        matches!(self.entity_type(), Some(t) if t.is_global_non_fungible_resource())
     }
 
     pub const fn is_internal_kv_store(&self) -> bool {
