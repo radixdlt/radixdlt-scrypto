@@ -1,8 +1,8 @@
+use crate::resim::*;
 use clap::Parser;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use transaction::builder::ManifestBuilder;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
-use crate::resim::*;
 
 /// Create a fungible token with mutable supply
 #[derive(Parser, Debug)]
@@ -51,19 +51,22 @@ impl NewTokenMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
-            metadata.insert("symbol".to_string(), MetadataEntry::Value(MetadataValue::String(symbol)));
+            metadata.insert("symbol".to_string(), MetadataValue::String(symbol));
         }
         if let Some(name) = self.name.clone() {
-            metadata.insert("name".to_string(), MetadataEntry::Value(MetadataValue::String(name)));
+            metadata.insert("name".to_string(), MetadataValue::String(name));
         }
         if let Some(description) = self.description.clone() {
-            metadata.insert("description".to_string(), MetadataEntry::Value(MetadataValue::String(description)));
+            metadata.insert(
+                "description".to_string(),
+                MetadataValue::String(description),
+            );
         }
         if let Some(url) = self.url.clone() {
-            metadata.insert("url".to_string(), MetadataEntry::Value(MetadataValue::String(url)));
+            metadata.insert("url".to_string(), MetadataValue::String(url));
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), MetadataEntry::Value(MetadataValue::String(icon_url)));
+            metadata.insert("icon_url".to_string(), MetadataValue::String(icon_url));
         };
 
         let manifest = ManifestBuilder::new()

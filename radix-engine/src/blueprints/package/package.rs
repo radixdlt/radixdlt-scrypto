@@ -16,7 +16,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
@@ -129,7 +129,7 @@ fn globalize_package<Y>(
     code: PackageCodeSubstate,
     royalty: PackageRoyaltySubstate,
     function_access_rules: FunctionAccessRulesSubstate,
-    metadata: BTreeMap<String, MetadataEntry>,
+    metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -427,7 +427,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
         dependent_components: Vec<ComponentAddress>,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         package_access_rules: BTreeMap<FnKey, AccessRule>,
         default_package_access_rule: AccessRule,
         api: &mut Y,
@@ -477,7 +477,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
@@ -502,7 +502,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         authority_rules: AuthorityRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -528,7 +528,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>

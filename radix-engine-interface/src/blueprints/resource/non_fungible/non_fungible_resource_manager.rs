@@ -6,7 +6,7 @@ use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_engine_common::data::manifest::ManifestValue;
 use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, ScryptoValue};
 use radix_engine_common::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
@@ -23,7 +23,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataEntry>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
@@ -37,7 +37,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataEntry>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
@@ -47,7 +47,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataEntry>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }
@@ -62,7 +62,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
     pub id_type: NonFungibleIdType,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataEntry>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up
 }
@@ -76,7 +76,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_UUID_WITH_INITIAL_SUPPLY_IDENT: &
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateUuidWithInitialSupplyInput {
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataEntry>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
 }

@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
@@ -65,7 +65,7 @@ pub struct FungibleResourceManagerBlueprint;
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -92,7 +92,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_initial_supply<Y>(
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         api: &mut Y,
@@ -116,7 +116,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataEntry>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         resource_address: [u8; NodeId::LENGTH], // TODO: Clean this up

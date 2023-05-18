@@ -3,6 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -175,7 +176,7 @@ pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataEntry>,
+    metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
 ) -> Result<(), RuntimeError>
 where
@@ -233,7 +234,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataEntry>,
+    metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
@@ -280,7 +281,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataEntry>,
+    metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>

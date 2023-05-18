@@ -1190,6 +1190,7 @@ mod tests {
     use radix_engine_common::native_addresses::EPOCH_MANAGER;
     use radix_engine_common::types::ComponentAddress;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AuthorityRules, NonFungibleDataSchema,
@@ -1458,7 +1459,10 @@ mod tests {
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1523,7 +1527,10 @@ mod tests {
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        metadata: BTreeMap::from([(
+                            "name".to_string(),
+                            MetadataValue::String("Token".to_string())
+                        )]),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceMethodAuthKey::Withdraw,
@@ -1557,7 +1564,10 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility: 18,
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1584,7 +1594,10 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility: 18,
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
