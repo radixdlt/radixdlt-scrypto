@@ -310,7 +310,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(Option<GenericScryptoSborPayload>),
+    NonFungibleResourceData(Option<ScryptoValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -322,7 +322,7 @@ pub enum TypedMainModuleSubstateValue {
     AccessController(TypedAccessControllerFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(Option<GenericScryptoSborPayload>),
+    GenericKeyValueStore(Option<ScryptoValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -480,10 +480,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            let data_opt: Option<Vec<u8>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::NonFungibleResourceData(
-                data_opt.map(|data| GenericScryptoSborPayload { data }),
-            )
+            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -558,10 +555,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            let data_opt: Option<Vec<u8>> = scrypto_decode(data)?;
-            TypedMainModuleSubstateValue::GenericKeyValueStore(
-                data_opt.map(|data| GenericScryptoSborPayload { data }),
-            )
+            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
     };
     Ok(substate_value)
