@@ -1,3 +1,4 @@
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
@@ -17,7 +18,7 @@ pub struct ResourceManager(pub ResourceAddress);
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
         divisibility: u8,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -44,7 +45,7 @@ impl ResourceManager {
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
         divisibility: u8,
         amount: Decimal,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
@@ -72,7 +73,7 @@ impl ResourceManager {
 
     pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -98,7 +99,7 @@ impl ResourceManager {
 
     pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
         id_type: NonFungibleIdType,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataEntry>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         address: [u8; NodeId::LENGTH], // TODO: Clean this up
         api: &mut Y,

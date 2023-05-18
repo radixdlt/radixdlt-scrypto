@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -51,19 +52,19 @@ impl NewBadgeMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
-            metadata.insert("symbol".to_string(), symbol);
+            metadata.insert("symbol".to_string(), MetadataEntry::Value(MetadataValue::String(symbol)));
         }
         if let Some(name) = self.name.clone() {
-            metadata.insert("name".to_string(), name);
+            metadata.insert("name".to_string(), MetadataEntry::Value(MetadataValue::String(name)));
         }
         if let Some(description) = self.description.clone() {
-            metadata.insert("description".to_string(), description);
+            metadata.insert("description".to_string(), MetadataEntry::Value(MetadataValue::String(description)));
         }
         if let Some(url) = self.url.clone() {
-            metadata.insert("url".to_string(), url);
+            metadata.insert("url".to_string(), MetadataEntry::Value(MetadataValue::String(url)));
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), icon_url);
+            metadata.insert("icon_url".to_string(), MetadataEntry::Value(MetadataValue::String(icon_url)));
         };
 
         let manifest = ManifestBuilder::new()

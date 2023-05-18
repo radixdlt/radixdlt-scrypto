@@ -175,7 +175,7 @@ pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataEntry>,
     api: &mut Y,
 ) -> Result<(), RuntimeError>
 where
@@ -233,7 +233,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataEntry>,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>
@@ -280,7 +280,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address: ResourceAddress,
     access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataEntry>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<Bucket, RuntimeError>

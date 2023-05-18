@@ -10,6 +10,7 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -131,7 +132,7 @@ impl EpochManagerBlueprint {
         let address = ComponentAddress::new_or_panic(component_address);
 
         {
-            let metadata: BTreeMap<String, String> = BTreeMap::new();
+            let metadata: BTreeMap<String, MetadataEntry> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
 
             // TODO: remove mint and premint all tokens
