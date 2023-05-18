@@ -1077,6 +1077,14 @@ impl ManifestBuilder {
         )
     }
 
+    pub fn safe_deposit_batch(&mut self, account_address: ComponentAddress) -> &mut Self {
+        self.call_method(
+            account_address,
+            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+    }
+
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>
     where
         F: FnOnce(&mut Self) -> Result<&mut Self, E>,

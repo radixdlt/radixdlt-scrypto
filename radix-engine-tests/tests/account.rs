@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::account::{
     ACCOUNT_SECURIFY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
@@ -422,6 +423,7 @@ fn can_deposit_any_resource_in_allow_all_mode() {
 fn allow_existing_internal_test(
     sign: bool,
     deposit_existing_resource: bool,
+    safe_deposit: bool,
     failure: Option<&dyn Fn(&RuntimeError) -> bool>,
 ) {
     // Arrange
@@ -457,10 +459,18 @@ fn allow_existing_internal_test(
     }
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .mint_fungible(resource_to_deposit, 1.into())
-        .deposit_batch(account)
-        .build();
+    let manifest = {
+        let mut manifest_builder = &mut ManifestBuilder::new();
+
+        manifest_builder = manifest_builder.mint_fungible(resource_to_deposit, 1.into());
+        manifest_builder = if safe_deposit {
+            manifest_builder.safe_deposit_batch(account)
+        } else {
+            manifest_builder.deposit_batch(account)
+        };
+
+        manifest_builder.build()
+    };
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
         if sign {
@@ -481,6 +491,7 @@ fn allow_existing_internal_test(
 fn allow_list_internal_test(
     sign: bool,
     deposit_allowed_resource: bool,
+    safe_deposit: bool,
     failure: Option<&dyn Fn(&RuntimeError) -> bool>,
 ) {
     // Arrange
@@ -518,10 +529,18 @@ fn allow_list_internal_test(
     }
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .mint_fungible(resource_to_deposit, 1.into())
-        .deposit_batch(account)
-        .build();
+    let manifest = {
+        let mut manifest_builder = &mut ManifestBuilder::new();
+
+        manifest_builder = manifest_builder.mint_fungible(resource_to_deposit, 1.into());
+        manifest_builder = if safe_deposit {
+            manifest_builder.safe_deposit_batch(account)
+        } else {
+            manifest_builder.deposit_batch(account)
+        };
+
+        manifest_builder.build()
+    };
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
         if sign {
@@ -542,6 +561,7 @@ fn allow_list_internal_test(
 fn deny_list_internal_test(
     sign: bool,
     deposit_denied_resource: bool,
+    safe_deposit: bool,
     failure: Option<&dyn Fn(&RuntimeError) -> bool>,
 ) {
     // Arrange
@@ -579,10 +599,18 @@ fn deny_list_internal_test(
     }
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .mint_fungible(resource_to_deposit, 1.into())
-        .deposit_batch(account)
-        .build();
+    let manifest = {
+        let mut manifest_builder = &mut ManifestBuilder::new();
+
+        manifest_builder = manifest_builder.mint_fungible(resource_to_deposit, 1.into());
+        manifest_builder = if safe_deposit {
+            manifest_builder.safe_deposit_batch(account)
+        } else {
+            manifest_builder.deposit_batch(account)
+        };
+
+        manifest_builder.build()
+    };
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,
         if sign {
@@ -602,67 +630,127 @@ fn deny_list_internal_test(
 
 #[test]
 fn test_existing_resources_only_deposit_mode() {
-    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+    let test_vectors: [(bool, bool, bool, Option<ErrorCheckingFunction>); 8] = [
         // Should sign: true
         // Deposit existing resource: true
-        (true, true, None),
+        // Safe deposit: false
+        (true, true, false, None),
         // Should sign: true
         // Deposit existing resource: false
-        (true, false, None),
+        // Safe deposit: false
+        (true, false, false, None),
         // Should sign: false
         // Deposit existing resource: true
-        (false, true, None),
+        // Safe deposit: false
+        (false, true, false, None),
         // Should sign: false
         // Deposit existing resource: false
-        (false, false, Some(&is_assert_rule_error)),
+        // Safe deposit: false
+        (false, false, false, Some(&is_assert_rule_error)),
+        // Should sign: true
+        // Deposit existing resource: true
+        // Safe deposit: true
+        (true, true, true, None),
+        // Should sign: true
+        // Deposit existing resource: false
+        // Safe deposit: true
+        (true, false, true, Some(&is_drop_non_empty_bucket_error)),
+        // Should sign: false
+        // Deposit existing resource: true
+        // Safe deposit: true
+        (false, true, true, None),
+        // Should sign: false
+        // Deposit existing resource: false
+        // Safe deposit: true
+        (false, false, true, Some(&is_drop_non_empty_bucket_error)),
     ];
 
-    for (should_sign, deposit_existing_resource, error) in test_vectors.into_iter() {
-        allow_existing_internal_test(should_sign, deposit_existing_resource, error)
+    for (should_sign, deposit_existing_resource, safe_deposit, error) in test_vectors.into_iter() {
+        allow_existing_internal_test(should_sign, deposit_existing_resource, safe_deposit, error)
     }
 }
 
 #[test]
 fn test_allow_list_only_deposit_mode() {
-    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+    let test_vectors: [(bool, bool, bool, Option<ErrorCheckingFunction>); 8] = [
         // Should sign: true
         // Deposit allowed resource: true
-        (true, true, None),
+        // Safe Deposit: false
+        (true, true, false, None),
         // Should sign: true
         // Deposit allowed resource: false
-        (true, false, None),
+        // Safe Deposit: false
+        (true, false, false, None),
         // Should sign: false
         // Deposit allowed resource: true
-        (false, true, None),
+        // Safe Deposit: false
+        (false, true, false, None),
         // Should sign: false
         // Deposit allowed resource: false
-        (false, false, Some(&is_assert_rule_error)),
+        // Safe Deposit: false
+        (false, false, false, Some(&is_assert_rule_error)),
+        // Should sign: true
+        // Deposit allowed resource: true
+        // Safe Deposit: true
+        (true, true, true, None),
+        // Should sign: true
+        // Deposit allowed resource: false
+        // Safe Deposit: true
+        (true, false, true, Some(&is_drop_non_empty_bucket_error)),
+        // Should sign: false
+        // Deposit allowed resource: true
+        // Safe Deposit: true
+        (false, true, true, None),
+        // Should sign: false
+        // Deposit allowed resource: false
+        // Safe Deposit: true
+        (false, false, true, Some(&is_drop_non_empty_bucket_error)),
     ];
 
-    for (should_sign, deposit_allowed_resource, error) in test_vectors.into_iter() {
-        allow_list_internal_test(should_sign, deposit_allowed_resource, error)
+    for (should_sign, deposit_allowed_resource, safe_deposit, error) in test_vectors.into_iter() {
+        allow_list_internal_test(should_sign, deposit_allowed_resource, safe_deposit, error)
     }
 }
 
 #[test]
 fn test_deny_list_only_deposit_mode() {
-    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+    let test_vectors: [(bool, bool, bool, Option<ErrorCheckingFunction>); 8] = [
         // Should sign: true
         // Deposit denied resource: true
-        (true, true, None),
+        // Safe Deposit: false
+        (true, true, false, None),
         // Should sign: true
         // Deposit denied resource: false
-        (true, false, None),
+        // Safe Deposit: false
+        (true, false, false, None),
         // Should sign: false
         // Deposit denied resource: true
-        (false, true, Some(&is_assert_rule_error)),
+        // Safe Deposit: false
+        (false, true, false, Some(&is_assert_rule_error)),
         // Should sign: false
         // Deposit denied resource: false
-        (false, false, None),
+        // Safe Deposit: false
+        (false, false, false, None),
+        // Should sign: true
+        // Deposit denied resource: true
+        // Safe Deposit: true
+        (true, true, true, Some(&is_drop_non_empty_bucket_error)),
+        // Should sign: true
+        // Deposit denied resource: false
+        // Safe Deposit: true
+        (true, false, true, None),
+        // Should sign: false
+        // Deposit denied resource: true
+        // Safe Deposit: true
+        (false, true, true, Some(&is_drop_non_empty_bucket_error)),
+        // Should sign: false
+        // Deposit denied resource: false
+        // Safe Deposit: true
+        (false, false, true, None),
     ];
 
-    for (should_sign, deposit_denied_resource, error) in test_vectors.into_iter() {
-        deny_list_internal_test(should_sign, deposit_denied_resource, error)
+    for (should_sign, deposit_denied_resource, safe_deposit, error) in test_vectors.into_iter() {
+        deny_list_internal_test(should_sign, deposit_denied_resource, safe_deposit, error)
     }
 }
 
@@ -686,5 +774,14 @@ fn is_assert_rule_error(runtime_error: &RuntimeError) -> bool {
     matches!(
         runtime_error,
         RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+    )
+}
+
+fn is_drop_non_empty_bucket_error(runtime_error: &RuntimeError) -> bool {
+    matches!(
+        runtime_error,
+        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+            FungibleResourceManagerError::DropNonEmptyBucket
+        ))
     )
 }

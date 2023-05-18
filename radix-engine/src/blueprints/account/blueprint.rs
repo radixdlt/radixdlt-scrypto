@@ -377,6 +377,50 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    pub fn safe_deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<Option<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let resource_address = bucket.resource_address(api)?;
+        let deposits_mode = Self::get_current_deposits_mode(api)?;
+
+        let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
+        if !is_deposit_allowed {
+            return Ok(Some(bucket));
+        }
+
+        Self::get_vault(
+            resource_address,
+            |vault, api| vault.put(bucket, api),
+            true,
+            api,
+        )?;
+
+        Ok(None)
+    }
+
+    pub fn safe_deposit_batch<Y>(
+        buckets: Vec<Bucket>,
+        api: &mut Y,
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let mut undeposited_buckets = vec![];
+        for bucket in buckets {
+            let rtn = Self::safe_deposit(bucket, api)?;
+            if let Some(bucket) = rtn {
+                undeposited_buckets.push(bucket)
+            }
+        }
+
+        if undeposited_buckets.len() != 0 {
+            Ok(Some(undeposited_buckets))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn withdraw<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,

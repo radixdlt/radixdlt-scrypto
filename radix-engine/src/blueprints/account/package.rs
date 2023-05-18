@@ -263,6 +263,27 @@ impl AccountNativePackage {
             },
         );
 
+        functions.insert(
+            ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountSafeDepositOutput>(),
+                export_name: ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositBatchInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountSafeDepositBatchOutput>(),
+                export_name: ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+            },
+        );
+
         let virtual_lazy_load_functions = btreemap!(
             ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID => VirtualLazyLoadSchema {
                 export_name: ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME.to_string(),
@@ -433,6 +454,26 @@ impl AccountNativePackage {
                 })?;
 
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_SAFE_DEPOSIT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountSafeDepositInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::safe_deposit(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountSafeDepositBatchInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::safe_deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {

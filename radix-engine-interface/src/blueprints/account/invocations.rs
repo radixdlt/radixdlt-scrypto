@@ -298,3 +298,29 @@ pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
 }
 
 pub type AccountRemoveResourceFromDisallowedDepositsListOutput = ();
+
+//======================
+// Account Safe Deposit
+//======================
+
+pub const ACCOUNT_SAFE_DEPOSIT_IDENT: &str = "safe_deposit";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountSafeDepositInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountSafeDepositOutput = Option<Bucket>;
+
+//============================
+// Account Safe Deposit Batch
+//============================
+
+pub const ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT: &str = "safe_deposit_batch";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountSafeDepositBatchInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountSafeDepositBatchOutput = Option<Vec<Bucket>>;
