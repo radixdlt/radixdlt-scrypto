@@ -16,20 +16,226 @@ use transaction::model::TestTransaction;
 use std::path::PathBuf;
 use std::time::Duration;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
+use std::fs::File;
+use std::io::prelude::*;
+use plotters::prelude::*;
+use linreg::{linear_regression, linear_regression_of};
 
 
 struct RocksdbSubstateStoreWithMetrics {
     db: RocksdbSubstateStore,
-    read_metrics: RefCell<HashMap<usize, Duration>>
+    read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>
 }
 
 impl RocksdbSubstateStoreWithMetrics {
     pub fn new(path: PathBuf) -> Self {
         Self {
             db: RocksdbSubstateStore::standard(path),
-            read_metrics: RefCell::new(HashMap::with_capacity(1000))
+            read_metrics: RefCell::new(BTreeMap::new())
         }
     }
+    pub fn show_output(&self) {
+        for (k, v) in self.read_metrics.borrow().iter() {
+            println!("{:<10} | {:<10?}", k, v);
+        }
+    }
+    pub fn export_to_csv(&self) -> std::io::Result<()> {
+        let mut file = File::create("/tmp/out_01.csv")?;
+
+        file.write_all(b"Size;Duration[ns]\n")?;
+
+        for (k, v) in self.read_metrics.borrow().iter() {
+            for i in v {
+                file.write_all(format!("{};{}\n", k, i.as_nanos()).as_bytes())?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn export_histogram(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let root = BitMapBackend::new("/tmp/h1.png", (640, 480)).into_drawing_area();
+        root.fill(&WHITE)?;
+
+        let mut chart = ChartBuilder::on(&root)
+            .x_label_area_size(35)
+            .y_label_area_size(40)
+            .margin(5)
+            .caption("Histogram Test", ("sans-serif", 50.0))
+            .build_cartesian_2d((0u32..2000u32).into_segmented(), 900u32..10000u32)?;
+
+        chart
+            .configure_mesh()
+            .disable_x_mesh()
+            .bold_line_style(&WHITE.mix(0.3))
+            .y_desc("Count")
+            .x_desc("Bucket")
+            .axis_desc_style(("sans-serif", 15))
+            .draw()?;
+
+        let mut data = Vec::with_capacity(100000);
+        for (k, v) in self.read_metrics.borrow().iter() {
+            for i in v {
+                data.push((*k as u32, i.as_nanos() as u32));
+            }
+        }
+
+        chart.draw_series(
+            Histogram::vertical(&chart)
+                .style(RED.mix(0.5).filled())
+                .data(data),
+        )?;
+
+        root.present().expect("Unable to write result to file");
+
+        Ok(())
+    }
+
+
+    pub fn export_mft(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let root = BitMapBackend::new("/tmp/h2.png", (1024, 768)).into_drawing_area();
+    
+        root.fill(&WHITE)?;
+        root.margin(20, 20, 20, 20);
+    
+        // 1. calculate max values
+        let mut max_values = Vec::with_capacity(100000);
+        let binding = self.read_metrics.borrow();
+        for (_k, v) in binding.iter() {
+            max_values.push( v.iter().max().unwrap() );
+        }
+
+        // 2. filter out spikes and calculate medians
+        let peak_diff_division = 20;
+        let mut data = Vec::with_capacity(100000);
+        let mut median_data = Vec::new();
+        let mut idx = 0;
+        for (k, v) in self.read_metrics.borrow().iter() {
+            let mut w = v.iter().map(|i| *i).collect();
+            let median = discard_spikes(&mut w, Duration::from_nanos((max_values[idx].as_nanos() / peak_diff_division) as u64));
+            for i in w {
+                data.push((*k as i32, i.as_nanos() as i32));
+            }
+            median_data.push((*k as i32, median.as_nanos() as i32));
+            idx += 1;
+        }
+        
+        // 3. calculate axis max/min values
+        let y_ofs = 1000;
+        let x_ofs = 5000;
+        let x_min = data.iter().map(|i| i.0).min().unwrap() - x_ofs;
+        let x_max = data.iter().map(|i| i.0).max().unwrap() + x_ofs;
+        let y_min = data.iter().map(|i| i.1).min().unwrap() - y_ofs;
+        let y_max = data.iter().map(|i| i.1).max().unwrap() + y_ofs;
+
+        let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&data).unwrap();
+        let lin_x_axis = (x_min..x_max).step(10);
+
+        //let areas = root.split_by_breakpoints([944], [80]);
+
+        // let mut x_hist_ctx = ChartBuilder::on(&areas[0])
+        //     .y_label_area_size(40)
+        //     .build_cartesian_2d((0..x_max).step(x_max/10000).use_round().into_segmented(), 0..250)?;
+    //        .build_cartesian_2d((0.0..1.0).step(0.01).use_round().into_segmented(), 0..250)?;
+    // let mut y_hist_ctx = ChartBuilder::on(&areas[3])
+        //     .x_label_area_size(80)
+        //     .build_cartesian_2d(0..y_max, (y_min..y_max).step(1).use_round())?;
+        let mut scatter_ctx = ChartBuilder::on(&root) //&areas[2])
+            .x_label_area_size(40)
+            .y_label_area_size(80)
+            .margin(20)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+        scatter_ctx.configure_mesh()
+            .x_desc("Size [bytes]")
+            .y_desc("DB read duration [nanoseconds]")
+            .axis_desc_style(("sans-serif", 16))
+            .draw()?;
+        scatter_ctx.draw_series(
+            data
+                .iter()
+                .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?
+            .label(format!("Reads (count: {})", data.len()))
+            .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+        scatter_ctx.draw_series(
+            median_data
+                .iter()
+                .map(|(x, y)| Cross::new((*x, *y), 6, RED)),
+            )?
+            .label("Median for each series")
+            .legend(|(x, y)| Cross::new((x + 10, y), 6, RED));
+        scatter_ctx.draw_series(LineSeries::new(
+            lin_x_axis.values().map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
+            &BLUE,
+            ))?
+            .label(format!("Linear approx.: f(x)={:.4}*x+{:.1}", lin_slope, lin_intercept))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        scatter_ctx.configure_series_labels()
+            .background_style(&WHITE)
+            .border_style(&BLACK)
+            .label_font(("sans-serif", 16))
+            .position(SeriesLabelPosition::UpperMiddle
+            )
+            .draw()?;
+
+        // let x_hist = Histogram::vertical(&x_hist_ctx)
+        //     .style(GREEN.filled())
+        //     .margin(0)
+        //     .data(data.iter().map(|(x, _)| (*x, 1)));
+        // let y_hist = Histogram::horizontal(&y_hist_ctx)
+        //     .style(GREEN.filled())
+        //     .margin(0)
+        //     .data(data.iter().map(|(_, y)| (*y, 1)));
+        // x_hist_ctx.draw_series(x_hist)?;
+        // y_hist_ctx.draw_series(y_hist)?;
+    
+        // To avoid the IO failure being ignored silently, we manually call the present function
+        root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    
+
+        println!("Read count: {}", data.len());
+        println!("Distinct size read count: {}", median_data.len());
+        println!("Median points: {:?}", median_data);
+        println!("Linear approx.:  f(size) = {} * size + {}", lin_slope, lin_intercept);
+
+        Ok(())
+    }
+
+    /*pub fn export_mft(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let root = BitMapBackend::new("/tmp/h2.png", (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+    
+        let mut data = Vec::with_capacity(100000);
+        for (k, v) in self.read_metrics.borrow().iter() {
+            for i in v {
+                data.push((*k as u32, i.as_nanos() as u32));
+            }
+        }
+        let x_min = data.iter().map(|i| i.0).min().unwrap();
+        let x_max = data.iter().map(|i| i.0).max().unwrap();
+        let y_min = data.iter().map(|i| i.1).min().unwrap();
+        let y_max = data.iter().map(|i| i.1).max().unwrap();
+    
+        let mut chart = ChartBuilder::on(&root)
+            .x_label_area_size(40)
+            .y_label_area_size(40)
+            .caption("MSFT Stock Price", ("sans-serif", 50.0).into_font())
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+    
+        chart.configure_mesh().light_line_style(&WHITE).draw()?;
+    
+        chart.draw_series(
+            data.iter().map(|x| {
+                CandleStick::new(x.0, x.1, x.2, x.3, x.4, GREEN.filled(), RED, 15)
+//                CandleStick::new(parse_time(x.0), x.1, x.2, x.3, x.4, GREEN.filled(), RED, 15)
+            }),
+        )?;
+    
+        root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    
+        Ok(())
+    }*/
 }
 
 impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
@@ -44,7 +250,12 @@ impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
         let duration = start.elapsed();
 
         if let Some(value) = ret {
-            self.read_metrics.borrow_mut().insert(value.len(), duration);
+            let exists = self.read_metrics.borrow().get(&value.len()).is_some();
+            if exists {
+                self.read_metrics.borrow_mut().get_mut(&value.len()).unwrap().push(duration);
+            } else {
+                self.read_metrics.borrow_mut().insert(value.len(), vec![duration]);
+            }
             Some(value)
         } else {
             None
@@ -127,7 +338,7 @@ fn db_rw_test(c: &mut Criterion) {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    for nonce in 0..1000 {
+    for nonce in 0..10000 {
         execute_and_commit_transaction(
             &mut substate_db,
             &mut scrypto_interpreter,
@@ -166,7 +377,30 @@ fn db_rw_test(c: &mut Criterion) {
             nonce += 1;
         })
     });
+
+    //substate_db.show_output();
+    //substate_db.export_to_csv().unwrap();
+    substate_db.export_mft().unwrap();
 }
 
 criterion_group!(database, db_rw_test);
 criterion_main!(database);
+
+
+// returns median
+fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) -> Duration {
+    // 1. calculate median
+    data.sort();
+    let center_idx = data.len() / 2;
+    let median = data[center_idx];
+
+    // 2. discard items out of median + range
+    data.retain(|&i| {
+        if i > median {
+            i - median <= delta_range
+        } else {
+            median - i <= delta_range
+        }
+    });
+    median
+}
