@@ -227,6 +227,18 @@ impl SystemLoanFeeReserve {
         }
     }
 
+    pub fn cost_unit_price(&self) -> Decimal {
+        u128_to_decimal(self.cost_unit_price)
+    }
+
+    pub fn tip_percentage(&self) -> u16 {
+        self.tip_percentage
+    }
+
+    pub fn fee_balance(&self) -> Decimal {
+        u128_to_decimal(self.xrd_balance)
+    }
+
     fn check_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
         if checked_add(
             self.execution_committed_sum,

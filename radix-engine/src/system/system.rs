@@ -1473,6 +1473,36 @@ where
             .costing
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
+
+    fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .cost_unit_price())
+    }
+
+    fn tip_percentage(&mut self) -> Result<u16, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .tip_percentage())
+    }
+
+    fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .fee_balance())
+    }
 }
 
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
