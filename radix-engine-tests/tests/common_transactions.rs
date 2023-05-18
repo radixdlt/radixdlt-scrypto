@@ -177,6 +177,25 @@ fn minting_of_non_fungible_resource_succeeds() {
     );
 }
 
+#[test]
+fn changing_account_deposits_mode_succeeds() {
+    test_manifest_with_restricted_minting_resource(
+        ResourceType::Fungible { divisibility: 18 },
+        |account_address,
+         minter_badge_resource_address,
+         mintable_resource_address,
+         bech32_encoder| {
+            let manifest = replace_variables!(
+                include_str!("../../transaction/examples/account/deposit_modes.rtm"),
+                account_address = account_address.display(bech32_encoder),
+                first_resource_address = mintable_resource_address.display(bech32_encoder),
+                second_resource_address = minter_badge_resource_address.display(bech32_encoder)
+            );
+            (manifest, Vec::new())
+        },
+    );
+}
+
 fn test_manifest<F>(string_manifest_builder: F)
 where
     F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
