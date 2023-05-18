@@ -7,7 +7,6 @@ use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use sbor::rust::sync::{Arc, Mutex};
-use wasmer::InstantiationError;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -159,11 +158,6 @@ impl From<WasmRuntimeError> for RuntimeError {
     fn from(error: WasmRuntimeError) -> Self {
         RuntimeError::user(Box::new(error))
     }
-}
-
-#[derive(Debug)]
-pub enum WasmerInstantiationError {
-    InstantiationError(InstantiationError),
 }
 
 impl WasmerModule {

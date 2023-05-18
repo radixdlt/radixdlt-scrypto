@@ -4,6 +4,7 @@ use sbor::rust::mem::MaybeUninit;
 use sbor::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
+use wasmi::errors::InstantiationError;
 use wasmi::*;
 
 use super::InstrumentedCode;
@@ -530,21 +531,23 @@ macro_rules! linker_define {
 
 #[derive(Debug)]
 pub enum WasmiInstantiationError {
-    DecodeFailure(Error),
-    InstantiationError(Error),
-    ContainsStartFunction,
+    ValidationError(Error),
+    PreInstantiationError(Error),
+    InstantiationError(InstantiationError),
 }
 
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let engine = Engine::default();
-        let module = Module::new(&engine, code).map_err(WasmiInstantiationError::DecodeFailure)?;
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
+        let module =
+            Module::new(&engine, code).map_err(WasmiInstantiationError::ValidationError)?;
+
         let instance = Self::host_funcs_set(&module, &mut store)
-            .map_err(WasmiInstantiationError::InstantiationError)?
+            .map_err(WasmiInstantiationError::PreInstantiationError)?
             .ensure_no_start(store.as_context_mut())
-            .map_err(|_| WasmiInstantiationError::ContainsStartFunction)?;
+            .map_err(WasmiInstantiationError::InstantiationError)?;
 
         Ok(Self {
             template_store: unsafe { transmute(store) },
