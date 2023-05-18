@@ -28,12 +28,8 @@ pub struct AccountSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
     VaultDoesNotExist { resource_address: ResourceAddress },
-
     AccountIsNotInAllowListDepositsMode { deposits_mode: AccountDepositsMode },
-    ResourceIsNotInAllowedList { resource_address: ResourceAddress },
-
     AccountIsNotInDisallowListDepositsMode { deposits_mode: AccountDepositsMode },
-    ResourceIsNotInDisallowedList { resource_address: ResourceAddress },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -580,7 +576,7 @@ impl AccountBlueprint {
     pub fn add_resource_to_allowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    ) -> Result<bool, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -589,10 +585,7 @@ impl AccountBlueprint {
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
         let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::AllowList(allow_list) => {
-                allow_list.insert(resource_address);
-                Ok(())
-            }
+            AccountDepositsMode::AllowList(allow_list) => Ok(allow_list.insert(resource_address)),
             _ => Err(AccountError::AccountIsNotInAllowListDepositsMode {
                 deposits_mode: account.deposits_mode.clone(),
             }
@@ -608,7 +601,7 @@ impl AccountBlueprint {
     pub fn remove_resource_from_allowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    ) -> Result<bool, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -617,13 +610,7 @@ impl AccountBlueprint {
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
         let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::AllowList(allow_list) => {
-                if allow_list.remove(&resource_address) {
-                    Ok(())
-                } else {
-                    Err(AccountError::ResourceIsNotInAllowedList { resource_address }.into())
-                }
-            }
+            AccountDepositsMode::AllowList(allow_list) => Ok(allow_list.remove(&resource_address)),
             _ => Err(AccountError::AccountIsNotInAllowListDepositsMode {
                 deposits_mode: account.deposits_mode.clone(),
             }
@@ -639,7 +626,7 @@ impl AccountBlueprint {
     pub fn add_resource_to_disallowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    ) -> Result<bool, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -648,9 +635,8 @@ impl AccountBlueprint {
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
         let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::DisallowList(allow_list) => {
-                allow_list.insert(resource_address);
-                Ok(())
+            AccountDepositsMode::DisallowList(disallow_list) => {
+                Ok(disallow_list.insert(resource_address))
             }
             _ => Err(AccountError::AccountIsNotInDisallowListDepositsMode {
                 deposits_mode: account.deposits_mode.clone(),
@@ -667,7 +653,7 @@ impl AccountBlueprint {
     pub fn remove_resource_from_disallowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    ) -> Result<bool, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -676,12 +662,8 @@ impl AccountBlueprint {
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
         let rtn = match &mut account.deposits_mode {
-            AccountDepositsMode::DisallowList(allow_list) => {
-                if allow_list.remove(&resource_address) {
-                    Ok(())
-                } else {
-                    Err(AccountError::ResourceIsNotInDisallowedList { resource_address }.into())
-                }
+            AccountDepositsMode::DisallowList(disallow_list) => {
+                Ok(disallow_list.remove(&resource_address))
             }
             _ => Err(AccountError::AccountIsNotInDisallowListDepositsMode {
                 deposits_mode: account.deposits_mode.clone(),

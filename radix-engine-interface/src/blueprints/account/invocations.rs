@@ -255,7 +255,7 @@ pub struct AccountAddResourceToAllowedDepositsListInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountAddResourceToAllowedDepositsListOutput = ();
+pub type AccountAddResourceToAllowedDepositsListOutput = bool;
 
 //============================================
 // Remove Resource From Allowed Deposits List
@@ -269,7 +269,7 @@ pub struct AccountRemoveResourceFromAllowedDepositsListInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountRemoveResourceFromAllowedDepositsListOutput = ();
+pub type AccountRemoveResourceFromAllowedDepositsListOutput = bool;
 
 //==========================================
 // Add Resource To Disallowed Deposits List
@@ -283,7 +283,7 @@ pub struct AccountAddResourceToDisallowedDepositsListInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountAddResourceToDisallowedDepositsListOutput = ();
+pub type AccountAddResourceToDisallowedDepositsListOutput = bool;
 
 //===============================================
 // Remove Resource From Disallowed Deposits List
@@ -297,7 +297,7 @@ pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
     pub resource_address: ResourceAddress,
 }
 
-pub type AccountRemoveResourceFromDisallowedDepositsListOutput = ();
+pub type AccountRemoveResourceFromDisallowedDepositsListOutput = bool;
 
 //======================
 // Account Safe Deposit
