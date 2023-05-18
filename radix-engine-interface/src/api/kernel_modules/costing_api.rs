@@ -13,6 +13,8 @@ pub trait ClientCostingApi<E> {
         contingent: bool,
     ) -> Result<LiquidFungibleResource, E>;
 
+    fn cost_unit_limit(&mut self) -> Result<u32, E>;
+
     fn cost_unit_price(&mut self) -> Result<Decimal, E>;
 
     fn tip_percentage(&mut self) -> Result<u16, E>;

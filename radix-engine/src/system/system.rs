@@ -1473,6 +1473,16 @@ where
             .credit_cost_units(vault_id, locked_fee, contingent)
     }
 
+    fn cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        Ok(self
+            .api
+            .kernel_get_system()
+            .modules
+            .costing
+            .fee_reserve
+            .cost_unit_limit())
+    }
+
     fn cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
         Ok(self
             .api
