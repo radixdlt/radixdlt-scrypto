@@ -5,7 +5,6 @@ pub use super::super::Instruction as InstructionV1;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-#[repr(transparent)]
 pub struct InstructionsV1(pub Vec<InstructionV1>);
 
 // We summarize all the transactions as a single unit (not transaction-by-transaction)

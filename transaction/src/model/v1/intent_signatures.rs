@@ -3,12 +3,10 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-#[repr(transparent)]
 pub struct IntentSignatureV1(pub SignatureWithPublicKey);
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-#[repr(transparent)]
 pub struct IntentSignaturesV1 {
     pub signatures: Vec<IntentSignatureV1>,
 }

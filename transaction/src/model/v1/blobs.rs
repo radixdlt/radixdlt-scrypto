@@ -5,12 +5,10 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-#[repr(transparent)]
 pub struct BlobV1(pub Vec<u8>);
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-#[repr(transparent)]
 pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,
 }
