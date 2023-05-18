@@ -1,20 +1,37 @@
 use crate::engine::scrypto_env::ScryptoEnv;
+use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
-use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
-use radix_engine_interface::types::NodeId;
-use radix_engine_interface::types::*;
 use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use scrypto::modules::Attachable;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Metadata(pub Own);
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct Metadata(pub ModuleHandle);
+
+impl Attachable for Metadata {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
+
+    fn new(handle: ModuleHandle) -> Self {
+        Metadata(handle)
+    }
+
+    fn handle(&self) -> &ModuleHandle {
+        &self.0
+    }
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata::new()
+    }
+}
 
 impl Metadata {
     pub fn new() -> Self {
@@ -27,84 +44,38 @@ impl Metadata {
             )
             .unwrap();
         let metadata: Own = scrypto_decode(&rtn).unwrap();
-        Self(metadata)
+        Self(ModuleHandle::Own(metadata))
     }
-}
 
-impl MetadataObject for Metadata {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (self.0.as_node_id(), ObjectModuleId::Main)
-    }
-}
-
-#[derive(PartialEq, Eq, Hash)]
-pub struct AttachedMetadata(pub GlobalAddress);
-
-impl MetadataObject for AttachedMetadata {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (self.0.as_node_id(), ObjectModuleId::Metadata)
-    }
-}
-
-pub trait MetadataObject {
-    fn self_id(&self) -> (&NodeId, ObjectModuleId);
-
-    fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
-        let (node_id, module_id) = self.self_id();
-
+    pub fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
         let value: ScryptoValue =
             scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
-
-        let _rtn = ScryptoEnv
-            .call_method_advanced(
-                node_id,
-                false,
-                module_id,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value,
-                })
-                .unwrap(),
-            )
-            .unwrap();
+        self.call_ignore_rtn(
+            METADATA_SET_IDENT,
+            &MetadataSetInput {
+                key: name.as_ref().to_owned(),
+                value,
+            },
+        );
     }
 
-    fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
-        let (node_id, module_id) = self.self_id();
-
-        let _rtn = ScryptoEnv
-            .call_method_advanced(
-                node_id,
-                false,
-                module_id,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: name.as_ref().to_owned(),
-                    value: value.to_metadata_entry(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+    pub fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
+        self.call_ignore_rtn(
+            METADATA_SET_IDENT,
+            &MetadataSetInput {
+                key: name.as_ref().to_owned(),
+                value: value.to_metadata_entry(),
+            },
+        );
     }
 
-    fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
-        let (node_id, module_id) = self.self_id();
-
-        let rtn = ScryptoEnv
-            .call_method_advanced(
-                node_id,
-                false,
-                module_id,
-                METADATA_GET_IDENT,
-                scrypto_encode(&MetadataGetInput {
-                    key: name.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-
-        let value: Option<ScryptoValue> = scrypto_decode(&rtn).unwrap();
+    pub fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
+        let value: Option<ScryptoValue> = self.call(
+            METADATA_GET_IDENT,
+            &MetadataGetInput {
+                key: name.as_ref().to_owned(),
+            },
+        );
 
         match value {
             None => Err(MetadataError::EmptyEntry),
@@ -112,22 +83,14 @@ pub trait MetadataObject {
         }
     }
 
-    fn remove<K: AsRef<str>>(&self, name: K) -> bool {
-        let (node_id, module_id) = self.self_id();
+    pub fn remove<K: AsRef<str>>(&self, name: K) -> bool {
+        let rtn = self.call(
+            METADATA_REMOVE_IDENT,
+            &MetadataRemoveInput {
+                key: name.as_ref().to_owned(),
+            },
+        );
 
-        let rtn = ScryptoEnv
-            .call_method_advanced(
-                node_id,
-                false,
-                module_id,
-                METADATA_REMOVE_IDENT,
-                scrypto_encode(&MetadataRemoveInput {
-                    key: name.as_ref().to_owned(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-
-        scrypto_decode(&rtn).unwrap()
+        rtn
     }
 }

@@ -345,7 +345,7 @@ pub fn export_blueprint_schema(
     Ok(schema)
 }
 
-pub fn get_blueprint(component_address: ComponentAddress) -> Result<Blueprint, Error> {
+pub fn get_blueprint(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
     let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();

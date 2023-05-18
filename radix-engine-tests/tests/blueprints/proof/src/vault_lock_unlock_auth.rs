@@ -16,7 +16,7 @@ mod vault_lock_unlock_auth {
     }
 
     impl VaultLockUnlockAuth {
-        pub fn new_fungible() -> ComponentAddress {
+        pub fn new_fungible() -> Global<VaultLockUnlockAuth> {
             let bucket = ResourceBuilder::new_fungible().mint_initial_supply(100);
 
             Self {
@@ -48,7 +48,7 @@ mod vault_lock_unlock_auth {
                 .unwrap();
         }
 
-        pub fn new_non_fungible() -> ComponentAddress {
+        pub fn new_non_fungible() -> Global<VaultLockUnlockAuth> {
             let bucket = ResourceBuilder::new_integer_non_fungible().mint_initial_supply([(
                 1u64.into(),
                 Example {

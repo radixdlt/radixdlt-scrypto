@@ -12,6 +12,7 @@ use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::String;
 use scrypto::prelude::ScryptoValue;
+use scrypto::resource::ResourceManager;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -405,7 +406,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     /// Creates the resource with no initial supply.
     ///
     /// The resource's address is returned.
-    fn create_with_no_initial_supply(self) -> ResourceAddress {
+    fn create_with_no_initial_supply(self) -> ResourceManager {
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
                 divisibility,

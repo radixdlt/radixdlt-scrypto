@@ -17,7 +17,7 @@ pub enum VaultError {
 pub struct VaultUtil;
 
 impl VaultUtil {
-    pub fn is_vault_blueprint(blueprint: &Blueprint) -> bool {
+    pub fn is_vault_blueprint(blueprint: &BlueprintId) -> bool {
         blueprint.package_address.eq(&RESOURCE_PACKAGE)
             && (blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 || blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT))

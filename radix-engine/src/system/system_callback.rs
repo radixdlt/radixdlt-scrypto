@@ -60,6 +60,7 @@ fn validate_input<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
             function_schema.input,
         )
         .map_err(|err| {
+            println!("{:?}", input.to_scrypto_value());
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputSchemaNotMatch(
                 fn_ident.to_string(),
                 err.error_message(&blueprint_schema.schema),
@@ -138,7 +139,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     // TODO: We should be able to make this a more generic cache for
     // TODO: immutable substates
-    pub blueprint_schema_cache: NonIterMap<Blueprint, IndexedBlueprintSchema>,
+    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 

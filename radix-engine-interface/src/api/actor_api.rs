@@ -21,7 +21,7 @@ pub trait ClientActorApi<E: Debug> {
 
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, E>;
+    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, E>;
 
     fn actor_call_module_method(
         &mut self,

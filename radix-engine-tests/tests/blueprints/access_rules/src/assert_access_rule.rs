@@ -5,7 +5,7 @@ mod assert_access_rule {
     struct AssertAccessRule {}
 
     impl AssertAccessRule {
-        pub fn new() -> ComponentAddress {
+        pub fn new() -> Global<AssertAccessRule> {
             Self {}.instantiate().globalize()
         }
 

@@ -162,18 +162,14 @@ impl ClockNativePackage {
             .unwrap()],
         )?;
 
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(CLOCK_SET_CURRENT_TIME_IDENT, "validator");
-
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            "validator",
+            CLOCK_SET_CURRENT_TIME_IDENT,
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );
 
-        let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 

@@ -126,7 +126,7 @@ where
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
         if node_id.eq(RADIX_TOKEN.as_node_id()) {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
-                blueprint: Blueprint {
+                blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -145,7 +145,7 @@ where
             || node_id.eq(ACCOUNT_OWNER_BADGE.as_node_id())
         {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
-                blueprint: Blueprint {
+                blueprint: BlueprintId {
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
@@ -178,7 +178,7 @@ where
 
     fn new_object_internal(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
@@ -238,7 +238,7 @@ where
 
     pub fn get_blueprint_schema(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
     ) -> Result<IndexedBlueprintSchema, RuntimeError> {
         let schema = self
             .api
@@ -286,7 +286,7 @@ where
 
     fn verify_instance_schema_and_state(
         &mut self,
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, Vec<u8>>>,
@@ -585,7 +585,7 @@ where
     fn resolve_blueprint_from_modules(
         &mut self,
         modules: &BTreeMap<ObjectModuleId, NodeId>,
-    ) -> Result<Blueprint, RuntimeError> {
+    ) -> Result<BlueprintId, RuntimeError> {
         let node_id = modules
             .get(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
@@ -815,7 +815,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
         let instance_context = actor.instance_context();
-        let blueprint = Blueprint::new(&package_address, blueprint_ident);
+        let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(&blueprint, instance_context, schema, fields, kv_entries)
     }
@@ -873,7 +873,7 @@ where
 
         self.globalize_with_address_internal(modules, address)?;
 
-        let blueprint = Blueprint::new(&actor_blueprint.package_address, inner_object_blueprint);
+        let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
         self.new_object_internal(
             &blueprint,
@@ -1412,7 +1412,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let identifier = FunctionIdentifier::new(
-            Blueprint::new(&package_address, blueprint_name),
+            BlueprintId::new(&package_address, blueprint_name),
             function_name.to_string(),
         );
 
@@ -1555,7 +1555,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_blueprint(&mut self) -> Result<Blueprint, RuntimeError> {
+    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, RuntimeError> {
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
@@ -2078,7 +2078,7 @@ where
 
 pub fn check_address_allowed_for_blueprint(
     address: &GlobalAddress,
-    blueprint: &Blueprint,
+    blueprint: &BlueprintId,
 ) -> Result<(), RuntimeError> {
     let entity_type = address.as_node_id().entity_type();
 
@@ -2108,7 +2108,7 @@ pub fn check_address_allowed_for_blueprint(
     Ok(())
 }
 
-pub fn get_entity_type_for_blueprint(blueprint: &Blueprint) -> EntityType {
+pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
     // FIXME check completeness of modules
     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
         (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,

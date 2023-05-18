@@ -9,21 +9,13 @@ mod faucet {
     }
 
     impl Faucet {
-        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> ComponentAddress {
-            let access_rules = AccessRules::new(MethodAuthorities::new(), AuthorityRules::new());
-            let metadata = Metadata::new();
-
+        pub fn new(preallocated_address_bytes: [u8; 30], bucket: Bucket) -> Global<Faucet> {
             Self {
                 vault: Vault::with_bucket(bucket),
                 transactions: KeyValueStore::new(),
             }
             .instantiate()
-            .globalize_at_address_with_modules(
-                ComponentAddress::new_or_panic(preallocated_address_bytes),
-                access_rules,
-                metadata,
-                Royalty::new(RoyaltyConfig::default()),
-            )
+            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
         /// Gives away tokens.

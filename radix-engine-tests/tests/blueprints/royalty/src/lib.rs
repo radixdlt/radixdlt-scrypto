@@ -17,22 +17,14 @@ mod royalty_test {
             1
         }
 
-        pub fn create_component_with_royalty_enabled() -> ComponentAddress {
-            let local_component = Self {}.instantiate();
-
-            let config = RoyaltyConfigBuilder::new()
-                .add_rule("paid_method", 1)
-                .add_rule("paid_method_panic", 1)
-                .default(0);
-
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_owner_rule(rule!(allow_all), rule!(allow_all));
-
-            local_component.globalize_with_modules(
-                AccessRules::new(MethodAuthorities::new(), authority_rules),
-                Metadata::new(),
-                Royalty::new(config),
-            )
+        pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTest> {
+            Self {}
+                .instantiate()
+                .royalty("paid_method", 1)
+                .royalty("paid_method_panic", 1)
+                .royalty_default(0)
+                .owner_authority(rule!(allow_all), rule!(allow_all))
+                .globalize()
         }
     }
 }

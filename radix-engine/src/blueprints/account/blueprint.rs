@@ -42,109 +42,125 @@ impl From<AccountError> for RuntimeError {
     }
 }
 
-const ACCOUNT_SECURIFY_AUTHORITY: &str = "securify";
-const ACCOUNT_LOCK_FEE_AUTHORITY: &str = "lock_fee";
-const ACCOUNT_WITHDRAW_AUTHORITY: &str = "withdraw";
-const ACCOUNT_DEPOSIT_AUTHORITY: &str = "deposit";
-const ACCOUNT_CREATE_PROOF_AUTHORITY: &str = "create_proof";
-const ACCOUNT_LOCK_FEE_AND_WITHDRAW_AUTHORITY: &str = "lock_fee_and_withdraw";
-const ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY: &str = "deposit_modes_management";
+const ACCOUNT_DEPOSITS_AUTHORITY: &str = "deposits_authority";
 
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
-
-    fn method_authorities() -> MethodAuthorities {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities
-            .set_main_method_authority(ACCOUNT_SECURIFY_IDENT, ACCOUNT_SECURIFY_AUTHORITY);
-        method_authorities
-            .set_main_method_authority(ACCOUNT_LOCK_FEE_IDENT, ACCOUNT_LOCK_FEE_AUTHORITY);
-        method_authorities.set_main_method_authority(
-            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
-            ACCOUNT_LOCK_FEE_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-            "lock_fee_and_withdraw",
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-            "lock_fee_and_withdraw",
-        );
-        method_authorities
-            .set_main_method_authority(ACCOUNT_WITHDRAW_IDENT, ACCOUNT_WITHDRAW_AUTHORITY);
-        method_authorities.set_main_method_authority(
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-            ACCOUNT_WITHDRAW_AUTHORITY,
-        );
-        method_authorities
-            .set_main_method_authority(ACCOUNT_CREATE_PROOF_IDENT, ACCOUNT_CREATE_PROOF_AUTHORITY);
-        method_authorities.set_main_method_authority(
-            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
-            ACCOUNT_CREATE_PROOF_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
-            ACCOUNT_CREATE_PROOF_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT,
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT,
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
-        );
-        method_authorities.set_main_method_authority(
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT,
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
-        );
-        method_authorities
-    }
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
 
     fn authority_rules() -> AuthorityRules {
+        /*
+        FIXME: The following is temporary until we implement the ability to map methods to roles or
+        authorities. Once that's done, we would like the methods to be grouped as follows:
+
+        lock_fee: [
+            "lock_fee",
+            "lock_contingent_fee"
+        ]
+        withdraw: [
+            "withdraw",
+            "withdraw_non_fungibles"
+        ]
+        withdraw & lock fee: [
+            "lock_fee_and_withdraw",
+            "lock_fee_and_withdraw_non_fungibles"
+        ]
+        create_proof: [
+            "create_proof",
+            "create_proof_of_amount",
+            "create_proof_of_ids",
+        ]
+        deposit: [
+            "deposit",
+            "safe_deposit",
+            "deposit_batch",
+            "safe_deposit_batch",
+        ]
+         */
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AUTHORITY,
+            ACCOUNT_SECURIFY_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_WITHDRAW_AUTHORITY,
+            ACCOUNT_LOCK_FEE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSIT_AUTHORITY,
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_AUTHORITY,
+            ACCOUNT_WITHDRAW_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSIT_MODES_MANAGEMENT_AUTHORITY,
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_AUTHORITY,
-            rule!(require(ACCOUNT_LOCK_FEE_AUTHORITY) && require(ACCOUNT_WITHDRAW_AUTHORITY)),
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
+            rule!(require_owner()),
             rule!(deny_all),
         );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_CREATE_PROOF_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+        authority_rules.set_main_authority_rule(
+            ACCOUNT_DEPOSITS_AUTHORITY,
+            rule!(require_owner()),
+            rule!(deny_all),
+        );
+
         authority_rules
     }
 }
@@ -353,7 +369,7 @@ impl AccountBlueprint {
 
         let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
         if !is_deposit_allowed {
-            Runtime::assert_access_rule(rule!(require(ACCOUNT_DEPOSIT_AUTHORITY)), api)?;
+            Runtime::assert_access_rule(rule!(require(ACCOUNT_DEPOSITS_AUTHORITY)), api)?;
         }
 
         Self::get_vault(
@@ -757,7 +773,7 @@ impl AccountBlueprint {
                     api.key_value_entry_release(kv_store_entry_lock_handle)?;
                     Ok(rtn)
                 }
-                Err(error) => Err(error)
+                Err(error) => Err(error),
             }
         } else {
             api.key_value_entry_release(kv_store_entry_lock_handle)?;

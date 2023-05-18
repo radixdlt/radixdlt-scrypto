@@ -8,8 +8,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 //========

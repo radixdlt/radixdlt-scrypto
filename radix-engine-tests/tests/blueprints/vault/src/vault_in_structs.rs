@@ -19,7 +19,7 @@ mod vault_test {
                 .mint_initial_supply(1)
         }
 
-        pub fn new_vault_into_map() -> ComponentAddress {
+        pub fn new_vault_into_map() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();
@@ -35,7 +35,7 @@ mod vault_test {
             .globalize()
         }
 
-        pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
+        pub fn invalid_double_ownership_of_vault() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
             let vault_fake_copy = Vault(vault.0.clone());
@@ -49,7 +49,7 @@ mod vault_test {
             .globalize()
         }
 
-        pub fn new_vault_into_map_then_get() -> ComponentAddress {
+        pub fn new_vault_into_map_then_get() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
             let mut vaults = KeyValueStore::new();
@@ -74,7 +74,7 @@ mod vault_test {
             self.vaults.insert(0, Vault::with_bucket(bucket))
         }
 
-        pub fn new_vault_into_vector() -> ComponentAddress {
+        pub fn new_vault_into_vector() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();
@@ -99,7 +99,7 @@ mod vault_test {
             self.vault_vector.push(Vault::with_bucket(bucket))
         }
 
-        pub fn new_fungible_vault_with_take() -> ComponentAddress {
+        pub fn new_fungible_vault_with_take() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);

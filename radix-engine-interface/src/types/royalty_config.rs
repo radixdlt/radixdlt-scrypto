@@ -10,7 +10,7 @@ use crate::*;
 
 /// Royalty rules
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Sbor)]
 pub struct RoyaltyConfig {
     pub rules: BTreeMap<String, u32>,
     pub default_rule: u32,
@@ -28,6 +28,10 @@ impl Default for RoyaltyConfig {
 impl RoyaltyConfig {
     pub fn get_rule(&self, method_name: &str) -> &u32 {
         self.rules.get(method_name).unwrap_or(&self.default_rule)
+    }
+
+    pub fn set_rule(&mut self, method: &str, amount: u32) {
+        self.rules.insert(method.to_string(), amount);
     }
 }
 
