@@ -1103,7 +1103,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
@@ -1113,7 +1113,31 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .call_method(
+                account,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_freely_mintable_and_burnable_fungible_resource(
+        &mut self,
+        amount: Option<Decimal>,
+        divisibility: u8,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new()
+            .lock_fee(self.faucet_component(), 100u32.into())
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 "deposit_batch",
