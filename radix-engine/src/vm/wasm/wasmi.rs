@@ -528,18 +528,23 @@ macro_rules! linker_define {
     };
 }
 
+#[derive(Debug)]
+pub enum WasmiInstantiationError {
+    DecodeFailure(Error),
+    InstantiationError(Error),
+    ContainsStartFunction,
+}
+
 impl WasmiModule {
-    pub fn new(code: &[u8]) -> Result<Self, PrepareError> {
+    pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let engine = Engine::default();
-        let module = Module::new(&engine, code).expect("WASM undecodable, prepare step missed?");
+        let module = Module::new(&engine, code).map_err(WasmiInstantiationError::DecodeFailure)?;
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&module, &mut store)
-            .map_err(|err| PrepareError::NotInstantiatable {
-                reason: format!("{err:?}"),
-            })?
+            .map_err(WasmiInstantiationError::InstantiationError)?
             .ensure_no_start(store.as_context_mut())
-            .expect("WASM contains start function, prepare step missed?");
+            .map_err(|_| WasmiInstantiationError::ContainsStartFunction)?;
 
         Ok(Self {
             template_store: unsafe { transmute(store) },
@@ -1190,10 +1195,7 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(
-        &self,
-        instrumented_code: &InstrumentedCode,
-    ) -> Result<WasmiInstance, PrepareError> {
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 
@@ -1202,17 +1204,17 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
-                    return Ok(cached_module.instantiate());
+                    return cached_module.instantiate();
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
-                return Ok(cached_module.as_ref().instantiate());
+                return cached_module.as_ref().instantiate();
             }
         }
 
         let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code)?;
+        let module = WasmiModule::new(code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1226,6 +1228,6 @@ impl WasmEngine for WasmiEngine {
                 .insert(*metered_code_key, Arc::new(module));
         }
 
-        Ok(instance)
+        instance
     }
 }

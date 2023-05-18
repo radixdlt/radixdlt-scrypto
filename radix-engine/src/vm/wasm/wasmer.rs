@@ -7,6 +7,7 @@ use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use sbor::rust::sync::{Arc, Mutex};
+use wasmer::InstantiationError;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
@@ -160,8 +161,13 @@ impl From<WasmRuntimeError> for RuntimeError {
     }
 }
 
+#[derive(Debug)]
+pub enum WasmerInstantiationError {
+    InstantiationError(InstantiationError),
+}
+
 impl WasmerModule {
-    fn instantiate(&self) -> Result<WasmerInstance, PrepareError> {
+    fn instantiate(&self) -> WasmerInstance {
         // native functions starts
         pub fn consume_buffer(
             env: &WasmerInstanceEnv,
@@ -664,16 +670,13 @@ impl WasmerModule {
         };
 
         // instantiate
-        let instance = Instance::new(&self.module, &import_object).map_err(|err| {
-            PrepareError::NotInstantiatable {
-                reason: format!("{err:?}"),
-            }
-        })?;
+        let instance =
+            Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
 
-        Ok(WasmerInstance {
+        WasmerInstance {
             instance,
             runtime_ptr: env.runtime_ptr,
-        })
+        }
     }
 }
 
@@ -779,10 +782,7 @@ impl WasmerEngine {
 impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
-    fn instantiate(
-        &self,
-        instrumented_code: &InstrumentedCode,
-    ) -> Result<WasmerInstance, PrepareError> {
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         let metered_code_key = &instrumented_code.metered_code_key;
 

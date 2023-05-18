@@ -36,7 +36,7 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
     )?;
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
-    let mut instance = wasm_engine.instantiate(&instrumented_code)?;
+    let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance
