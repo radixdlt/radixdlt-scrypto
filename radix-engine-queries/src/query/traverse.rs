@@ -10,10 +10,10 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
-    FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField, ObjectInfo, PartitionNumber,
-    PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_FIELD_PARTITION,
-    METADATA_KV_STORE_PARTITION, OBJECT_BASE_PARTITION, ROYALTY_FIELD_PARTITION,
-    TYPE_INFO_FIELD_PARTITION,
+    AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
+    ObjectInfo, PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField,
+    ACCESS_RULES_FIELD_PARTITION, METADATA_KV_STORE_PARTITION, OBJECT_BASE_PARTITION,
+    ROYALTY_FIELD_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::interface::SubstateDatabase;
@@ -192,7 +192,11 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     {
                         self.traverse_substates::<MapKey>(
                             node_id,
-                            OBJECT_BASE_PARTITION.at_offset(PartitionOffset(1)).unwrap(),
+                            OBJECT_BASE_PARTITION
+                                .at_offset(
+                                    AccountPartitionOffset::AccountVaultsByResourceAddress.into(),
+                                )
+                                .unwrap(),
                             depth,
                         )
                     } else {

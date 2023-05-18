@@ -195,6 +195,12 @@ pub enum AccountPartitionOffset {
     AccountVaultsByResourceAddress,
 }
 
+impl From<AccountPartitionOffset> for PartitionOffset {
+    fn from(value: AccountPartitionOffset) -> Self {
+        PartitionOffset(value as u8)
+    }
+}
+
 impl TryFrom<u8> for AccountPartitionOffset {
     type Error = ();
 
