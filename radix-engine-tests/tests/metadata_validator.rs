@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -19,7 +19,7 @@ fn can_set_validator_metadata_with_owner() {
         .set_metadata(
             validator.into(),
             "name".to_string(),
-            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -34,7 +34,7 @@ fn can_set_validator_metadata_with_owner() {
         .expect("Should exist");
     assert_eq!(
         value,
-        MetadataEntry::Value(MetadataValue::String("best package ever!".to_string()))
+        MetadataValue::String("best package ever!".to_string())
     );
 }
 
@@ -51,7 +51,7 @@ fn cannot_set_validator_metadata_without_owner() {
         .set_metadata(
             validator.into(),
             "name".to_string(),
-            MetadataEntry::Value(MetadataValue::String("best package ever!".to_string())),
+            MetadataValue::String("best package ever!".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(

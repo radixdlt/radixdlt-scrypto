@@ -134,8 +134,8 @@ pub fn add_call_method_instruction_with_schema<'a>(
         account,
     )?;
 
-    builder.add_instruction(Instruction::CallMethod {
-        component_address,
+    builder.add_instruction(Instruction::CallMethod { 
+        address: component_address.into(),
         method_name: method_name.to_owned(),
         args: built_args,
     });
@@ -309,7 +309,7 @@ fn build_call_argument<'a>(
             if matches!(
                 type_validation,
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-                    ReferenceValidation::IsGlobalResource
+                    ReferenceValidation::IsGlobalResourceManager
                 ))
             ) =>
         {
@@ -353,7 +353,7 @@ fn build_call_argument<'a>(
                     }
                     builder
                         .add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                            ids,
+                            ids: ids.into_iter().collect(),
                             resource_address,
                         })
                         .1
@@ -622,14 +622,14 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let resource_address = resource_address(EntityType::GlobalFungibleResource, 5);
+        let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 5);
 
         let arg = Bech32Encoder::for_simulator()
             .encode(resource_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
         let type_validation = TypeValidation::Custom(ScryptoCustomTypeValidation::Reference(
-            ReferenceValidation::IsGlobalResource,
+            ReferenceValidation::IsGlobalResourceManager,
         ));
 
         // Act

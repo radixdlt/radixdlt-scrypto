@@ -11,6 +11,7 @@ use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::Deref;
+use sbor::rust::prelude::*;
 use scrypto::prelude::ScryptoDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
@@ -62,12 +63,16 @@ pub trait Attachable: Sized {
 
     fn call<A: ScryptoEncode, T: ScryptoDecode>(&self, method: &str, args: &A) -> T {
         let args = scrypto_encode(args).unwrap();
+        scrypto_decode(&self.call_raw(method, args)).unwrap()
+    }
+
+    fn call_raw(&self, method: &str, args: Vec<u8>) -> Vec<u8> {
         match self.handle() {
             ModuleHandle::Own(own) => {
                 let output = ScryptoEnv
                     .call_method(own.as_node_id(), method, args)
                     .unwrap();
-                scrypto_decode(&output).unwrap()
+                output
             }
             ModuleHandle::Attached(address, module_id) => {
                 let output = ScryptoEnv
@@ -79,13 +84,13 @@ pub trait Attachable: Sized {
                         args,
                     )
                     .unwrap();
-                scrypto_decode(&output).unwrap()
+                output
             }
             ModuleHandle::SELF(module_id) => {
                 let output = ScryptoEnv
                     .actor_call_module_method(OBJECT_HANDLE_SELF, *module_id, method, args)
                     .unwrap();
-                scrypto_decode(&output).unwrap()
+                output
             }
         }
     }

@@ -69,13 +69,17 @@ impl Parser {
         Ok(instructions)
     }
 
+    fn parse_values_till_semicolon(&mut self) -> Result<Vec<Value>, ParserError> {
+        let mut values = Vec::new();
+        while self.peek()?.kind != TokenKind::Semicolon {
+            values.push(self.parse_value()?);
+        }
+        Ok(values)
+    }
+
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_address: self.parse_value()?,
-                new_bucket: self.parse_value()?,
-            },
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 resource_address: self.parse_value()?,
                 amount: self.parse_value()?,
@@ -84,6 +88,10 @@ impl Parser {
             TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
                 resource_address: self.parse_value()?,
                 ids: self.parse_value()?,
+                new_bucket: self.parse_value()?,
+            },
+            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
+                resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
@@ -128,6 +136,8 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
+            TokenKind::ClearSignatureProofs => Instruction::ClearSignatureProofs,
+
             TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
@@ -150,6 +160,10 @@ impl Parser {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
+            TokenKind::BurnResource => Instruction::BurnResource {
+                bucket: self.parse_value()?,
+            },
+
             TokenKind::CloneProof => Instruction::CloneProof {
                 proof: self.parse_value()?,
                 new_proof: self.parse_value()?,
@@ -157,143 +171,129 @@ impl Parser {
             TokenKind::DropProof => Instruction::DropProof {
                 proof: self.parse_value()?,
             },
-            TokenKind::DropAllProofs => Instruction::DropAllProofs,
-            TokenKind::ClearSignatureProofs => Instruction::ClearSignatureProofs,
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
                 function_name: self.parse_value()?,
-                args: {
-                    let mut values = Vec::new();
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
+                args: self.parse_values_till_semicolon()?,
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_address: self.parse_value()?,
+                address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: {
-                    let mut values = Vec::new();
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
+                args: self.parse_values_till_semicolon()?,
             },
-
-            TokenKind::PublishPackage => Instruction::PublishPackage {
-                code: self.parse_value()?,
-                schema: self.parse_value()?,
-                royalty_config: self.parse_value()?,
-                metadata: self.parse_value()?,
+            TokenKind::CallRoyaltyMethod => Instruction::CallRoyaltyMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::PublishPackageAdvanced => Instruction::PublishPackageAdvanced {
-                code: self.parse_value()?,
-                schema: self.parse_value()?,
-                royalty_config: self.parse_value()?,
-                metadata: self.parse_value()?,
-                authority_rules: self.parse_value()?,
+            TokenKind::CallMetadataMethod => Instruction::CallMetadataMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::BurnResource => Instruction::BurnResource {
-                bucket: self.parse_value()?,
+            TokenKind::CallAccessRulesMethod => Instruction::CallAccessRulesMethod {
+                address: self.parse_value()?,
+                method_name: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
             TokenKind::RecallResource => Instruction::RecallResource {
                 vault_id: self.parse_value()?,
                 amount: self.parse_value()?,
             },
-            TokenKind::SetMetadata => Instruction::SetMetadata {
-                entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-                value: self.parse_value()?,
+            TokenKind::DropAllProofs => Instruction::DropAllProofs,
+
+            /* Call function aliases */
+            TokenKind::PublishPackage => Instruction::PublishPackage {
+                args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
-                entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-            },
-            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
-                package_address: self.parse_value()?,
-                royalty_config: self.parse_value()?,
-            },
-            TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
-                component_address: self.parse_value()?,
-                royalty_config: self.parse_value()?,
-            },
-            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
-                package_address: self.parse_value()?,
-            },
-            TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
-                component_address: self.parse_value()?,
-            },
-            TokenKind::SetAuthorityAccessRule => Instruction::SetGroupAccessRule {
-                entity_address: self.parse_value()?,
-                object_key: self.parse_value()?,
-                authority_key: self.parse_value()?,
-                rule: self.parse_value()?,
-            },
-            TokenKind::SetAuthorityMutability => Instruction::SetGroupMutability {
-                entity_address: self.parse_value()?,
-                object_key: self.parse_value()?,
-                authority_key: self.parse_value()?,
-                mutability: self.parse_value()?,
-            },
-            TokenKind::MintFungible => Instruction::MintFungible {
-                resource_address: self.parse_value()?,
-                amount: self.parse_value()?,
-            },
-            TokenKind::MintNonFungible => Instruction::MintNonFungible {
-                resource_address: self.parse_value()?,
-                args: self.parse_value()?,
-            },
-            TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
-                resource_address: self.parse_value()?,
-                args: self.parse_value()?,
+            TokenKind::PublishPackageAdvanced => Instruction::PublishPackageAdvanced {
+                args: self.parse_values_till_semicolon()?,
             },
             TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource {
-                divisibility: self.parse_value()?,
-                metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
             TokenKind::CreateFungibleResourceWithInitialSupply => {
                 Instruction::CreateFungibleResourceWithInitialSupply {
-                    divisibility: self.parse_value()?,
-                    metadata: self.parse_value()?,
-                    access_rules: self.parse_value()?,
-                    initial_supply: self.parse_value()?,
+                    args: self.parse_values_till_semicolon()?,
                 }
             }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
-                id_type: self.parse_value()?,
-                schema: self.parse_value()?,
-                metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
             TokenKind::CreateNonFungibleResourceWithInitialSupply => {
                 Instruction::CreateNonFungibleResourceWithInitialSupply {
-                    id_type: self.parse_value()?,
-                    schema: self.parse_value()?,
-                    metadata: self.parse_value()?,
-                    access_rules: self.parse_value()?,
-                    initial_supply: self.parse_value()?,
+                    args: self.parse_values_till_semicolon()?,
                 }
             }
-            TokenKind::CreateValidator => Instruction::CreateValidator {
-                key: self.parse_value()?,
-            },
             TokenKind::CreateAccessController => Instruction::CreateAccessController {
-                controlled_asset: self.parse_value()?,
-                rule_set: self.parse_value()?,
-                timed_recovery_delay_in_minutes: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::CreateIdentity => Instruction::CreateIdentity {},
+            TokenKind::CreateIdentity => Instruction::CreateIdentity {
+                args: self.parse_values_till_semicolon()?,
+            },
             TokenKind::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                authority_rules: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::CreateAccount => Instruction::CreateAccount {},
+            TokenKind::CreateAccount => Instruction::CreateAccount {
+                args: self.parse_values_till_semicolon()?,
+            },
             TokenKind::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
-                config: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
             },
+
+            /* Call non-main method aliases */
+            TokenKind::SetMetadata => Instruction::SetMetadata {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::RemoveMetadata => Instruction::RemoveMetadata {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::SetAuthorityAccessRule => Instruction::SetAuthorityAccessRule {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::SetAuthorityMutability => Instruction::SetAuthorityMutability {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+
+            /* Call main method aliases */
+            TokenKind::MintFungible => Instruction::MintFungible {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::MintNonFungible => Instruction::MintNonFungible {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            TokenKind::CreateValidator => Instruction::CreateValidator {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

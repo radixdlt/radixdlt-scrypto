@@ -2113,10 +2113,10 @@ pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
         (ACCOUNT_PACKAGE, PACKAGE_BLUEPRINT) => EntityType::GlobalPackage,
         (RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalFungibleResource
+            EntityType::GlobalFungibleResourceManager
         }
         (RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT) => {
-            EntityType::GlobalNonFungibleResource
+            EntityType::GlobalNonFungibleResourceManager
         }
         (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
         (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,

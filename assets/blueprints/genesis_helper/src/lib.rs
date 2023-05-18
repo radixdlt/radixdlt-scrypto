@@ -1,6 +1,5 @@
 use native_sdk::account::*;
 use native_sdk::epoch_manager::*;
-use scrypto::api::node_modules::metadata::MetadataValue;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -167,7 +166,7 @@ mod genesis_helper {
             let metadata: BTreeMap<String, String> = resource.metadata.into_iter().collect();
 
             let address_bytes = NodeId::new(
-                EntityType::GlobalFungibleResource as u8,
+                EntityType::GlobalFungibleResourceManager as u8,
                 &resource.address_bytes_without_entity_id,
             )
             .0;
@@ -189,7 +188,7 @@ mod genesis_helper {
                 owner_badge
                     .resource_manager()
                     .metadata()
-                    .set_list("tags", vec![MetadataValue::String("badge".to_string())]);
+                    .set("tags", vec!["badge".to_string()]);
 
                 access_rules.insert(
                     Mint,

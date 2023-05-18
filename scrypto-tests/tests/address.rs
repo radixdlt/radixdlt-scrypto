@@ -64,7 +64,7 @@ fn encode_package_address_to_string_correct_entity_type_succeeds() {
 #[test]
 fn decode_truncated_checksum_address_fails() {
     // Arrange
-    let resource_address = resource_address(EntityType::GlobalFungibleResource, 2);
+    let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 2);
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
@@ -84,7 +84,7 @@ fn decode_truncated_checksum_address_fails() {
 #[test]
 fn decode_modified_checksum_address_fails() {
     // Arrange
-    let resource_address = resource_address(EntityType::GlobalFungibleResource, 2);
+    let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 2);
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
@@ -105,7 +105,7 @@ fn decode_modified_checksum_address_fails() {
 #[test]
 fn decode_invalid_bech32_variant_fails() {
     // Arrange
-    let resource_address = resource_address(EntityType::GlobalFungibleResource, 2);
+    let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 2);
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
@@ -113,7 +113,7 @@ fn decode_invalid_bech32_variant_fails() {
     let encoded_resource_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalNonFungibleResource),
+            .get_entity_hrp(&EntityType::GlobalNonFungibleResourceManager),
         resource_address.to_vec().to_base32(),
         Variant::Bech32,
     )
@@ -205,7 +205,7 @@ fn decode_mismatched_package_address_entity_id_fails() {
         bech32_encoder
             .hrp_set
             .get_entity_hrp(&EntityType::GlobalPackage),
-        generate_u8_array(EntityType::GlobalNonFungibleResource as u8).to_base32(),
+        generate_u8_array(EntityType::GlobalNonFungibleResourceManager as u8).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();
@@ -229,8 +229,8 @@ fn decode_matching_resource_address_entity_id_succeeds() {
     let encoded_resource_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalNonFungibleResource),
-        generate_u8_array(EntityType::GlobalNonFungibleResource as u8).to_base32(),
+            .get_entity_hrp(&EntityType::GlobalNonFungibleResourceManager),
+        generate_u8_array(EntityType::GlobalNonFungibleResourceManager as u8).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();
@@ -251,7 +251,7 @@ fn decode_mismatched_resource_address_entity_id_fails() {
     let encoded_resource_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalNonFungibleResource),
+            .get_entity_hrp(&EntityType::GlobalNonFungibleResourceManager),
         generate_u8_array(EntityType::GlobalPackage as u8).to_base32(),
         Variant::Bech32m,
     )
@@ -276,7 +276,7 @@ fn decode_invalid_entity_specifier_fails() {
     let encoded_resource_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalNonFungibleResource),
+            .get_entity_hrp(&EntityType::GlobalNonFungibleResourceManager),
         generate_u8_array(EntityType::GlobalPackage as u8).to_base32(),
         Variant::Bech32m,
     )
@@ -298,8 +298,8 @@ fn decode_invalid_network_specifier_fails() {
     let encoded_resource_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::GlobalNonFungibleResource),
-        generate_u8_array(EntityType::GlobalNonFungibleResource as u8).to_base32(),
+            .get_entity_hrp(&EntityType::GlobalNonFungibleResourceManager),
+        generate_u8_array(EntityType::GlobalNonFungibleResourceManager as u8).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();

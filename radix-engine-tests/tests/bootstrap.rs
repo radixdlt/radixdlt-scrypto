@@ -8,7 +8,7 @@ use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
@@ -182,7 +182,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
-            EntityType::GlobalFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
             &address_bytes_without_entity_id,
         )
         .0,
@@ -234,14 +234,14 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
+        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap();
 
-    if let Some(MetadataEntry::Value(MetadataValue::String(symbol))) = entry {
+    if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
     } else {
         panic!("Resource symbol was not a string");
