@@ -8,6 +8,7 @@
         "bincode",
         "btreemap",
         "btreeset",
+        "callframe",
         "debuggability",
         "Decompilation",
         "decompile",
