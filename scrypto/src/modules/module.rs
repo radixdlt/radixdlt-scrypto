@@ -11,6 +11,7 @@ use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::Deref;
+use sbor::rust::prelude::*;
 use scrypto::prelude::ScryptoDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
