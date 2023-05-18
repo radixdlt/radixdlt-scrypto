@@ -153,6 +153,7 @@ impl<Ext: CustomExtension, E: Encoder<Ext::CustomValueKind>> Encode<Ext::CustomV
 ///
 /// Categorize can't be implemented, because we can't guarantee the value kind is constant.
 /// This means RawValue can't be put as an immediate child to a Vec or Map.
+#[derive(Debug, Clone)]
 pub struct RawValue<'a, E: CustomExtension> {
     value_kind: ValueKind<E::CustomValueKind>,
     value_body: Cow<'a, [u8]>,
