@@ -56,7 +56,7 @@ Ord,
 ScryptoSbor,
 ManifestSbor,
 )]
-pub enum ObjectModuleId {
+pub enum SchemaObjectModuleId {
     Main,
     Metadata,
     Royalty,
@@ -64,24 +64,24 @@ pub enum ObjectModuleId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum ObjectKey {
+pub enum SchemaObjectKey {
     SELF,
     InnerChild(String),
 }
 
 // TODO: dedup
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AuthorityKey {
+pub enum SchemaAuthorityKey {
     Owner,
-    Module(ObjectModuleId, String),
+    Module(SchemaObjectModuleId, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct FullyQualifiedAuthorityKey(ObjectKey, AuthorityKey);
+pub struct FullyQualifiedAuthorityKey(pub SchemaObjectKey, pub SchemaAuthorityKey);
 
 impl FullyQualifiedAuthorityKey {
     pub fn new_self_main<S: Into<String>>(name: S) -> Self {
-        Self(ObjectKey::SELF, AuthorityKey::Module(ObjectModuleId::Main, name.into()))
+        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, name.into()))
     }
 }
 
@@ -224,6 +224,8 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -250,6 +252,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            authority_schema: schema.authority_schema,
         }
     }
 }

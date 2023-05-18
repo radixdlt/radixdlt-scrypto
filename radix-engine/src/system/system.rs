@@ -10,7 +10,7 @@ use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::NodeAuthorityRules;
+use crate::system::node_modules::access_rules::{MethodAccessRulesSubstate, NodeAuthorityRules};
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -38,10 +38,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreInfo, TypeSchema,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FullyQualifiedAuthorityKey, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, SchemaObjectKey, SchemaObjectModuleId, TypeSchema};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -649,9 +646,11 @@ where
             .as_typed()
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
-                *global = true
+
+        let blueprint_id = match type_info {
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, ref blueprint, .. }) if !*global => {
+                *global = true;
+                blueprint.clone()
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -659,6 +658,44 @@ where
                 )))
             }
         };
+
+        {
+            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
+            let access_rule_node_id = modules.get(&ObjectModuleId::AccessRules).unwrap().clone();
+            let blueprint_id = self.get_object_info(&access_rule_node_id)?.blueprint;
+            let expected_blueprint = ObjectModuleId::AccessRules.static_blueprint().unwrap();
+            if !blueprint_id.eq(&expected_blueprint) {
+                return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
+                    Box::new(InvalidModuleType {
+                        expected_blueprint,
+                        actual_blueprint: blueprint_id,
+                    }),
+                )));
+            }
+
+            let handle = self.kernel_lock_substate(
+                &access_rule_node_id,
+                OBJECT_BASE_PARTITION,
+                &SubstateKey::Tuple(0u8),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+
+            let access_rules: MethodAccessRulesSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
+            for (key, _) in blueprint_schema.authority_schema {
+                match key {
+                    FullyQualifiedAuthorityKey(SchemaObjectKey::SELF, SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident)) => {
+                        let key = AuthorityKey::main(ident.as_str());
+                        if !access_rules.access_rules.rules.contains_key(&key) {
+                            return Err(RuntimeError::SystemError(SystemError::MissingAuthority(ident)));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            self.kernel_drop_lock(handle)?;
+        }
+
 
         // Create a global node
         self.kernel_create_node(
