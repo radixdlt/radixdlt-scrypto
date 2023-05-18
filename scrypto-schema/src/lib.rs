@@ -79,6 +79,12 @@ pub enum AuthorityKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FullyQualifiedAuthorityKey(ObjectKey, AuthorityKey);
 
+impl FullyQualifiedAuthorityKey {
+    pub fn new_self_main<S: Into<String>>(name: S) -> Self {
+        Self(ObjectKey::SELF, AuthorityKey::Module(ObjectModuleId::Main, name.into()))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct AuthoritySchema;
 

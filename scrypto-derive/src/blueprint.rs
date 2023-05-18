@@ -75,15 +75,18 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
-    let (function_names, function_schemas)
-        = generate_schema(bp_ident, bp_items)?;
+    let generated_schema_info = generate_schema(bp_ident, bp_items)?;
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
-    let _ = function_names;
-    let _ = function_schemas;
+    let _ = generated_schema_info;
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
+        let function_names = generated_schema_info.function_names;
+        let function_schemas = generated_schema_info.function_schemas;
+        let function_authority_names = generated_schema_info.function_authority_names;
+        let function_mapped_authorities = generated_schema_info.function_mapped_authorities;
+
         let schema_ident = format_ident!("{}_schema", bp_ident);
 
         // Getting the event types if the event attribute is defined for the type
@@ -143,6 +146,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
+                let mut authority_schema = BTreeMap::new();
+                #({
+                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_authority_names), AuthoritySchema);
+                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_mapped_authorities), AuthoritySchema);
+                })*
+
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
@@ -151,7 +160,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
-                    authority_schema: BTreeMap::new(),
+                    authority_schema,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -559,9 +568,19 @@ fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
 }
 
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<(Vec<String>, Vec<Expr>)> {
+struct GeneratedSchemaInfo {
+    function_names: Vec<String>,
+    function_schemas: Vec<Expr>,
+    function_authority_names: Vec<String>,
+    function_mapped_authorities: Vec<String>,
+}
+
+#[allow(dead_code)]
+fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
     let mut function_names = Vec::<String>::new();
     let mut function_schemas = Vec::<Expr>::new();
+    let mut function_authority_names = Vec::<String>::new();
+    let mut function_mapped_authorities = Vec::<String>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -570,10 +589,15 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<(Vec<Stri
             ImplItem::Method(ref mut m) => {
 
                 if let Visibility::Public(_) = &m.vis {
-                    
-                    let authority = get_restrict_to(&mut m.attrs);
-
                     let function_name = m.sig.ident.to_string();
+
+                    {
+                        if let Some(authority) = get_restrict_to(&mut m.attrs) {
+                            function_authority_names.push(function_name.clone());
+                            function_mapped_authorities.push(authority);
+                        }
+                    }
+
                     let mut receiver = None;
                     for input in &m.sig.inputs {
                         match input {
@@ -640,7 +664,12 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<(Vec<Stri
         };
     }
 
-    Ok((function_names, function_schemas))
+    Ok(GeneratedSchemaInfo {
+        function_names,
+        function_schemas,
+        function_authority_names,
+        function_mapped_authorities,
+    })
 }
 
 fn replace_self_with(t: &Type, name: &Ident) -> Type {
@@ -777,6 +806,9 @@ mod tests {
                             }
                         );
                         let mut event_schema = BTreeMap::new();
+
+                        let mut authority_schema = BTreeMap::new();
+
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
@@ -785,7 +817,7 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
-                            authority_schema: BTreeMap::new(),
+                            authority_schema,
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }
