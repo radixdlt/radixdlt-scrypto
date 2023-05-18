@@ -592,8 +592,10 @@ impl AccountBlueprint {
             .into()),
         };
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        if rtn.is_ok() {
+            api.field_lock_write_typed(handle, account)?;
+            api.field_lock_release(handle)?;
+        }
 
         rtn
     }
@@ -617,8 +619,10 @@ impl AccountBlueprint {
             .into()),
         };
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        if rtn.is_ok() {
+            api.field_lock_write_typed(handle, account)?;
+            api.field_lock_release(handle)?;
+        }
 
         rtn
     }
@@ -644,8 +648,10 @@ impl AccountBlueprint {
             .into()),
         };
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        if rtn.is_ok() {
+            api.field_lock_write_typed(handle, account)?;
+            api.field_lock_release(handle)?;
+        }
 
         rtn
     }
@@ -671,8 +677,10 @@ impl AccountBlueprint {
             .into()),
         };
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        if rtn.is_ok() {
+            api.field_lock_write_typed(handle, account)?;
+            api.field_lock_release(handle)?;
+        }
 
         rtn
     }
