@@ -6,6 +6,7 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
 use crate::vm::NopWasmRuntime;
+use sbor::rust::sync::Arc;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {
@@ -27,13 +28,23 @@ pub fn extract_schema(code: &[u8]) -> Result<PackageSchema, ExtractSchemaError> 
         .into_iter()
         .filter(|s| s.ends_with("_schema"));
 
+    // Validate WASM
+    let validator = WasmValidator::default();
+    let instrumented_code = InstrumentedCode {
+        metered_code_key: (
+            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
+            validator.metering_config,
+        ),
+        code: Arc::new(
+            validator
+                .validate(&code, &PackageSchema::default())
+                .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
+                .0,
+        ),
+    };
+
+    // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
-    let wasm_instrumenter = WasmInstrumenter::default();
-    let instrumented_code = wasm_instrumenter.instrument(
-        PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-        code,
-        WasmMeteringConfig::V0,
-    )?;
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
