@@ -78,7 +78,8 @@ impl IdentityNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions,
-                    event_schema: [].into()
+                    event_schema: [].into(),
+                    authority_schema: btreemap!(),
                 }
             ),
         }

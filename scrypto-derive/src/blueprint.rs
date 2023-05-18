@@ -18,14 +18,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     // parse blueprint struct and impl
     let blueprint = parse2::<ast::Blueprint>(input)?;
-    let bp = blueprint.module;
+    let mut bp = blueprint.module;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
-    let bp_impl = &bp.implementation;
+    let bp_impl = &mut bp.implementation;
     let bp_ident = &bp_strut.ident;
     validate_type_ident(&bp_ident)?;
-    let bp_items = &bp_impl.items;
+    let bp_items = &mut bp_impl.items;
     let bp_name = bp_ident.to_string();
 
     trace!("Blueprint name: {}", bp_name);
@@ -75,39 +75,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         use_statements
     };
 
-    let output_original_code = quote! {
-        #[derive(::scrypto::prelude::ScryptoSbor)]
-        pub struct #bp_ident #bp_fields #bp_semi_token
-
-        impl #bp_ident {
-            #(#bp_items)*
-        }
-
-        impl ::scrypto::component::ComponentState for #bp_ident {
-            const BLUEPRINT_NAME: &'static str = #bp_name;
-        }
-
-        impl HasStub for #bp_ident {
-            type Stub = #stub_ident;
-        }
-    };
-    trace!("Generated mod: \n{}", quote! { #output_original_code });
-    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
-
-    let functions = generate_dispatcher(bp_ident, bp_items)?;
-    let output_dispatcher = quote! {
-        #(#method_input_structs)*
-        #(#functions)*
-    };
-
-    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
+    let (function_names, function_schemas)
+        = generate_schema(bp_ident, bp_items)?;
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
+    let _ = function_names;
+    let _ = function_schemas;
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
         let schema_ident = format_ident!("{}_schema", bp_ident);
-        let (function_names, function_schemas) = generate_schema(bp_ident, bp_items)?;
 
         // Getting the event types if the event attribute is defined for the type
         let (event_type_names, event_type_paths) = {
@@ -173,7 +150,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     collections: Vec::new(),
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
-                    event_schema
+                    event_schema,
+                    authority_schema: BTreeMap::new(),
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -184,6 +162,33 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         "Generated SCHEMA exporter: \n{}",
         quote! { #output_dispatcher }
     );
+
+    let output_original_code = quote! {
+        #[derive(::scrypto::prelude::ScryptoSbor)]
+        pub struct #bp_ident #bp_fields #bp_semi_token
+
+        impl #bp_ident {
+            #(#bp_items)*
+        }
+
+        impl ::scrypto::component::ComponentState for #bp_ident {
+            const BLUEPRINT_NAME: &'static str = #bp_name;
+        }
+
+        impl HasStub for #bp_ident {
+            type Stub = #stub_ident;
+        }
+    };
+    trace!("Generated mod: \n{}", quote! { #output_original_code });
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
+
+    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let output_dispatcher = quote! {
+        #(#method_input_structs)*
+        #(#functions)*
+    };
+
+    trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
     let output_stubs = generate_stubs(&stub_ident, &functions_ident, bp_ident, bp_items)?;
 
@@ -523,16 +528,28 @@ fn generate_stubs(
     Ok(output)
 }
 
+fn get_restrict_to(attributes: &mut Vec<Attribute>) {
+    let restrict_to = attributes.iter().position(|e| e.path.is_ident("restrict_to"));
+    if let Some(restrict_to) = restrict_to {
+        attributes.remove(restrict_to);
+    }
+}
+
 #[allow(dead_code)]
-fn generate_schema(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<String>, Vec<Expr>)> {
+fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<(Vec<String>, Vec<Expr>)> {
     let mut function_names = Vec::<String>::new();
     let mut function_schemas = Vec::<Expr>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
+
         match item {
-            ImplItem::Method(ref m) => {
+            ImplItem::Method(ref mut m) => {
+
                 if let Visibility::Public(_) = &m.vis {
+
+                    get_restrict_to(&mut m.attrs);
+
                     let function_name = m.sig.ident.to_string();
                     let mut receiver = None;
                     for input in &m.sig.inputs {
@@ -744,7 +761,8 @@ mod tests {
                             collections: Vec::new(),
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
-                            event_schema
+                            event_schema,
+                            authority_schema: BTreeMap::new(),
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

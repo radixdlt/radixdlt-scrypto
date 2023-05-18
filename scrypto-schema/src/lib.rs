@@ -42,6 +42,46 @@ impl KeyValueStoreInfo {
     }
 }
 
+// TODO: Dedup
+#[repr(u8)]
+#[derive(
+Debug,
+Clone,
+Copy,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+ScryptoSbor,
+ManifestSbor,
+)]
+pub enum ObjectModuleId {
+    Main,
+    Metadata,
+    Royalty,
+    AccessRules,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum ObjectKey {
+    SELF,
+    InnerChild(String),
+}
+
+// TODO: dedup
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum AuthorityKey {
+    Owner,
+    Module(ObjectModuleId, String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct FullyQualifiedAuthorityKey(ObjectKey, AuthorityKey);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub struct AuthoritySchema;
+
 // We keep one self-contained schema per blueprint:
 // - Easier macro to export schema, as they work at blueprint level
 // - Can always combine multiple schemas into one for storage benefits
@@ -66,6 +106,8 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -156,7 +198,8 @@ impl Default for BlueprintSchema {
             collections: Vec::default(),
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
-            event_schema: Default::default(),
+            event_schema: BTreeMap::default(),
+            authority_schema: BTreeMap::default(),
         }
     }
 }

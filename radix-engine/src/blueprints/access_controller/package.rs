@@ -379,7 +379,8 @@ impl AccessControllerNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema
+                    event_schema,
+                    authority_schema: btreemap!(),
                 }
             ),
         }

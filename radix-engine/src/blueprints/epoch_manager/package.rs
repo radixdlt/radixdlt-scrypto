@@ -111,6 +111,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            authority_schema: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -216,6 +217,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            authority_schema: btreemap!(),
         };
 
         PackageSchema {

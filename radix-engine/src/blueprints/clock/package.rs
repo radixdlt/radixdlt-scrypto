@@ -86,7 +86,8 @@ impl ClockNativePackage {
                     collections: vec![],
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
-                    event_schema: [].into()
+                    event_schema: [].into(),
+                    authority_schema: btreemap!(),
                 }
             ),
         }
