@@ -1688,9 +1688,8 @@ where
             .last_auth_zone()
             .expect("Missing auth zone");
 
-        // TODO: Use real access rules of this method/function
         let config = {
-            let node_id = self.actor_get_node_id()?;
+            let node_id = self.actor_get_global_address()?.into_node_id();
             let handle = self.kernel_lock_substate(
                 &node_id,
                 ACCESS_RULES_FIELD_PARTITION,

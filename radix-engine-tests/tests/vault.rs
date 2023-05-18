@@ -7,6 +7,7 @@ use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::manifest::ast::Type::NonFungibleLocalId;
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {

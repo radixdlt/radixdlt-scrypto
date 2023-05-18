@@ -432,7 +432,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take(amount, api),
-            true,
+            false,
             api,
         )?;
 
@@ -450,7 +450,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take_non_fungibles(ids, api),
-            true,
+            false,
             api,
         )?;
 
@@ -471,7 +471,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take(amount, api),
-            true,
+            false,
             api,
         )?;
 
@@ -492,7 +492,7 @@ impl AccountBlueprint {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take_non_fungibles(ids, api),
-            true,
+            false,
             api,
         )?;
 
@@ -509,7 +509,7 @@ impl AccountBlueprint {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof(api),
-            true,
+            false,
             api,
         )?;
 
@@ -527,7 +527,7 @@ impl AccountBlueprint {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_amount(amount, api),
-            true,
+            false,
             api,
         )?;
 
@@ -545,7 +545,7 @@ impl AccountBlueprint {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_non_fungibles(ids, api),
-            true,
+            false,
             api,
         )?;
 
@@ -715,20 +715,16 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        // Getting a read-only lock handle on the KVStore ENTRY
-        let kv_store_entry_lock_handle = {
-            let handle = api.actor_lock_key_value_entry(
-                OBJECT_HANDLE_SELF,
-                ACCOUNT_VAULT_INDEX,
-                &encoded_key,
-                if create {
-                    LockFlags::MUTABLE
-                } else {
-                    LockFlags::read_only()
-                },
-            )?;
-            handle
-        };
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_VAULT_INDEX,
+            &encoded_key,
+            if create {
+                LockFlags::MUTABLE
+            } else {
+                LockFlags::read_only()
+            },
+        )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
         // instructed to.
@@ -756,9 +752,13 @@ impl AccountBlueprint {
         };
 
         if let Ok(mut vault) = vault {
-            let rtn = vault_fn(&mut vault, api);
-            api.key_value_entry_release(kv_store_entry_lock_handle)?;
-            rtn
+            match vault_fn(&mut vault, api) {
+                Ok(rtn) => {
+                    api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                    Ok(rtn)
+                }
+                Err(error) => Err(error)
+            }
         } else {
             api.key_value_entry_release(kv_store_entry_lock_handle)?;
             Err(vault.unwrap_err().into())
