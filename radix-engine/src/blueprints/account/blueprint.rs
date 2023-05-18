@@ -809,21 +809,21 @@ impl AccountBlueprint {
                 // we need to check how much of it we have. If it's more than zero then we allow
                 // it.
                 AccountDepositsMode::AllowExisting => {
-                    let amount = Self::get_vault(
+                    let amount_lookup_result = Self::get_vault(
                         *resource_address,
                         |vault, api| vault.amount(api),
                         false,
                         api,
                     );
-                    if let Ok(amount) = amount {
-                        Ok(amount > Decimal::zero())
+                    if let Ok(amount_lookup_result) = amount_lookup_result {
+                        Ok(amount_lookup_result > Decimal::zero())
                     } else if let Err(RuntimeError::ApplicationError(
                         ApplicationError::AccountError(AccountError::VaultDoesNotExist { .. }),
-                    )) = amount
+                    )) = amount_lookup_result
                     {
                         Ok(false)
                     } else {
-                        Err(amount.unwrap_err())
+                        Err(amount_lookup_result.unwrap_err())
                     }
                 }
                 _ => Ok(false),
