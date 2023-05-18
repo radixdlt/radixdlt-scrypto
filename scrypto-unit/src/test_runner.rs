@@ -1112,7 +1112,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
@@ -1122,7 +1122,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 "deposit_batch",

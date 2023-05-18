@@ -1,11 +1,13 @@
-use radix_engine::errors::{ModuleError, RuntimeError};
+use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError, SystemError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
 use radix_engine_interface::blueprints::account::{
-    AccountChangeAllowedDepositsModeInput, AccountDepositsMode, AccountSecurifyInput,
-    ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
+    AccountAddResourceToAllowedDepositsListInput, AccountChangeAllowedDepositsModeInput,
+    AccountDepositsMode, AccountSecurifyInput, ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
+    ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT, ACCOUNT_DEPOSIT_BATCH_IDENT,
+    ACCOUNT_SECURIFY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -306,7 +308,7 @@ fn account_deposit_mode_change_test(
     let manifest = ManifestBuilder::new()
         .call_method(
             account,
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE,
+            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
             to_manifest_value(&AccountChangeAllowedDepositsModeInput {
                 deposit_mode: AccountDepositsMode::AllowExisting,
             }),
@@ -349,9 +351,340 @@ fn allocated_account_deposits_mode_can_be_changed_with_owner_auth() {
     account_deposit_mode_change_test(true, false, None)
 }
 
+#[test]
+fn cant_add_allowed_resources_without_owner_auth() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (_, _, account) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
+            to_manifest_value(&AccountAddResourceToAllowedDepositsListInput {
+                resource_address: RADIX_TOKEN,
+            }),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(is_auth_unauthorized_error)
+}
+
+#[test]
+fn cant_add_allowed_resources_when_in_invalid_mode() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
+            to_manifest_value(&AccountAddResourceToAllowedDepositsListInput {
+                resource_address: RADIX_TOKEN,
+            }),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(is_account_error)
+}
+
+#[test]
+fn can_deposit_any_resource_in_allow_all_mode() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+    let resource_address = test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(resource_address, 1.into())
+        .deposit_batch(account)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+fn allow_existing_internal_test(
+    sign: bool,
+    deposit_existing_resource: bool,
+    failure: Option<&dyn Fn(&RuntimeError) -> bool>,
+) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+
+    let non_existing_resource =
+        test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+    let existing_resource =
+        test_runner.create_freely_mintable_fungible_resource(Some(10.into()), 18, account);
+
+    let resource_to_deposit = if deposit_existing_resource {
+        existing_resource
+    } else {
+        non_existing_resource
+    };
+
+    {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                account,
+                ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+                to_manifest_value(&AccountChangeAllowedDepositsModeInput {
+                    deposit_mode: AccountDepositsMode::AllowExisting,
+                }),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+    }
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(resource_to_deposit, 1.into())
+        .deposit_batch(account)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        if sign {
+            vec![NonFungibleGlobalId::from_public_key(&public_key)]
+        } else {
+            vec![]
+        },
+    );
+
+    // Assert
+    if let Some(failure_function) = failure {
+        receipt.expect_specific_failure(failure_function);
+    } else {
+        receipt.expect_commit_success();
+    }
+}
+
+fn allow_list_internal_test(
+    sign: bool,
+    deposit_allowed_resource: bool,
+    failure: Option<&dyn Fn(&RuntimeError) -> bool>,
+) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+
+    let allowed_resource = test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+    let non_allowed_resource =
+        test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+
+    let resource_to_deposit = if deposit_allowed_resource {
+        allowed_resource
+    } else {
+        non_allowed_resource
+    };
+
+    {
+        let mut allowed_resources = index_set_new();
+        allowed_resources.insert(allowed_resource);
+
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                account,
+                ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+                to_manifest_value(&AccountChangeAllowedDepositsModeInput {
+                    deposit_mode: AccountDepositsMode::AllowList(allowed_resources),
+                }),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+    }
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(resource_to_deposit, 1.into())
+        .deposit_batch(account)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        if sign {
+            vec![NonFungibleGlobalId::from_public_key(&public_key)]
+        } else {
+            vec![]
+        },
+    );
+
+    // Assert
+    if let Some(failure_function) = failure {
+        receipt.expect_specific_failure(failure_function);
+    } else {
+        receipt.expect_commit_success();
+    }
+}
+
+fn deny_list_internal_test(
+    sign: bool,
+    deposit_denied_resource: bool,
+    failure: Option<&dyn Fn(&RuntimeError) -> bool>,
+) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+
+    let allowed_resource = test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+    let non_allowed_resource =
+        test_runner.create_freely_mintable_fungible_resource(None, 18, account);
+
+    let resource_to_deposit = if deposit_denied_resource {
+        non_allowed_resource
+    } else {
+        allowed_resource
+    };
+
+    {
+        let mut denied_resources = index_set_new();
+        denied_resources.insert(non_allowed_resource);
+
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                account,
+                ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+                to_manifest_value(&AccountChangeAllowedDepositsModeInput {
+                    deposit_mode: AccountDepositsMode::DisallowList(denied_resources),
+                }),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest_ignoring_fee(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&public_key)],
+        );
+        receipt.expect_commit_success();
+    }
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .mint_fungible(resource_to_deposit, 1.into())
+        .deposit_batch(account)
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        if sign {
+            vec![NonFungibleGlobalId::from_public_key(&public_key)]
+        } else {
+            vec![]
+        },
+    );
+
+    // Assert
+    if let Some(failure_function) = failure {
+        receipt.expect_specific_failure(failure_function);
+    } else {
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn test_existing_resources_only_deposit_mode() {
+    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+        // Should sign: true
+        // Deposit existing resource: true
+        (true, true, None),
+        // Should sign: true
+        // Deposit existing resource: false
+        (true, false, None),
+        // Should sign: false
+        // Deposit existing resource: true
+        (false, true, None),
+        // Should sign: false
+        // Deposit existing resource: false
+        (false, false, Some(&is_assert_rule_error)),
+    ];
+
+    for (should_sign, deposit_existing_resource, error) in test_vectors.into_iter() {
+        allow_existing_internal_test(should_sign, deposit_existing_resource, error)
+    }
+}
+
+#[test]
+fn test_allow_list_only_deposit_mode() {
+    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+        // Should sign: true
+        // Deposit allowed resource: true
+        (true, true, None),
+        // Should sign: true
+        // Deposit allowed resource: false
+        (true, false, None),
+        // Should sign: false
+        // Deposit allowed resource: true
+        (false, true, None),
+        // Should sign: false
+        // Deposit allowed resource: false
+        (false, false, Some(&is_assert_rule_error)),
+    ];
+
+    for (should_sign, deposit_allowed_resource, error) in test_vectors.into_iter() {
+        allow_list_internal_test(should_sign, deposit_allowed_resource, error)
+    }
+}
+
+#[test]
+fn test_deny_list_only_deposit_mode() {
+    let test_vectors: [(bool, bool, Option<ErrorCheckingFunction>); 4] = [
+        // Should sign: true
+        // Deposit denied resource: true
+        (true, true, None),
+        // Should sign: true
+        // Deposit denied resource: false
+        (true, false, None),
+        // Should sign: false
+        // Deposit denied resource: true
+        (false, true, Some(&is_assert_rule_error)),
+        // Should sign: false
+        // Deposit denied resource: false
+        (false, false, None),
+    ];
+
+    for (should_sign, deposit_denied_resource, error) in test_vectors.into_iter() {
+        deny_list_internal_test(should_sign, deposit_denied_resource, error)
+    }
+}
+
+type ErrorCheckingFunction = &'static dyn Fn(&RuntimeError) -> bool;
+
 fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {
     matches!(
         runtime_error,
         RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized(_)))
+    )
+}
+
+fn is_account_error(runtime_error: &RuntimeError) -> bool {
+    matches!(
+        runtime_error,
+        RuntimeError::ApplicationError(ApplicationError::AccountError(..))
+    )
+}
+
+fn is_assert_rule_error(runtime_error: &RuntimeError) -> bool {
+    matches!(
+        runtime_error,
+        RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
     )
 }

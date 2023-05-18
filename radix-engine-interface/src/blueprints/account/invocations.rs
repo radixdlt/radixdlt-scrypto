@@ -234,7 +234,7 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 // Account Transition Deposit Mode
 //=================================
 
-pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE: &str = "change_allowed_deposits_mode";
+pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT: &str = "change_allowed_deposits_mode";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountChangeAllowedDepositsModeInput {
@@ -242,3 +242,59 @@ pub struct AccountChangeAllowedDepositsModeInput {
 }
 
 pub type AccountChangeAllowedDepositsModeOutput = ();
+
+//=======================================
+// Add Resource To Allowed Deposits List
+//=======================================
+
+pub const ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "add_resource_to_allowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountAddResourceToAllowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountAddResourceToAllowedDepositsListOutput = ();
+
+//============================================
+// Remove Resource From Allowed Deposits List
+//============================================
+
+pub const ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "remove_resource_from_allowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveResourceFromAllowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountRemoveResourceFromAllowedDepositsListOutput = ();
+
+//==========================================
+// Add Resource To Disallowed Deposits List
+//==========================================
+
+pub const ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "add_resource_to_disallowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountAddResourceToDisallowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountAddResourceToDisallowedDepositsListOutput = ();
+
+//===============================================
+// Remove Resource From Disallowed Deposits List
+//===============================================
+
+pub const ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "remove_resource_from_disallowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountRemoveResourceFromDisallowedDepositsListOutput = ();

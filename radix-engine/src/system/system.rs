@@ -10,7 +10,6 @@ use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::ModuleInit;
-use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
@@ -1690,7 +1689,22 @@ where
             .expect("Missing auth zone");
 
         // TODO: Use real access rules of this method/function
-        let config = NodeAuthorityRules::new();
+        let config = {
+            let node_id = self.actor_get_node_id()?;
+            let handle = self.kernel_lock_substate(
+                &node_id,
+                ACCESS_RULES_FIELD_PARTITION,
+                &AccessRulesField::AccessRules.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let access_rules = self
+                .kernel_read_substate(handle)?
+                .as_typed::<super::node_modules::access_rules::MethodAccessRulesSubstate>()
+                .unwrap();
+            self.kernel_drop_lock(handle)?;
+            access_rules.access_rules
+        };
 
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
