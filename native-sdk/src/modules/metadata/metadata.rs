@@ -65,8 +65,7 @@ impl Metadata {
             METADATA_SET_IDENT,
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),
-                value: scrypto_decode(&scrypto_encode(&value.to_metadata_entry()).unwrap())
-                    .unwrap(),
+                value: value.to_metadata_value(),
             })
             .unwrap(),
         )?;

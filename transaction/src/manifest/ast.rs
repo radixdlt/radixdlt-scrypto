@@ -5,11 +5,6 @@ use strum_macros::EnumCount;
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(EnumCount))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    TakeAllFromWorktop {
-        resource_address: Value,
-        new_bucket: Value,
-    },
-
     TakeFromWorktop {
         resource_address: Value,
         amount: Value,
@@ -18,6 +13,11 @@ pub enum Instruction {
 
     TakeNonFungiblesFromWorktop {
         ids: Value,
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
+    TakeAllFromWorktop {
         resource_address: Value,
         new_bucket: Value,
     },
@@ -68,6 +68,8 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    ClearSignatureProofs,
+
     CreateProofFromBucket {
         bucket: Value,
         new_proof: Value,
@@ -90,6 +92,10 @@ pub enum Instruction {
         new_proof: Value,
     },
 
+    BurnResource {
+        bucket: Value,
+    },
+
     CloneProof {
         proof: Value,
         new_proof: Value,
@@ -99,10 +105,6 @@ pub enum Instruction {
         proof: Value,
     },
 
-    DropAllProofs,
-
-    ClearSignatureProofs,
-
     CallFunction {
         package_address: Value,
         blueprint_name: Value,
@@ -111,140 +113,121 @@ pub enum Instruction {
     },
 
     CallMethod {
-        component_address: Value,
+        address: Value,
         method_name: Value,
         args: Vec<Value>,
     },
 
-    PublishPackage {
-        code: Value,
-        schema: Value,
-        royalty_config: Value,
-        metadata: Value,
-    },
-    PublishPackageAdvanced {
-        code: Value,
-        schema: Value,
-        royalty_config: Value,
-        metadata: Value,
-        authority_rules: Value,
+    CallRoyaltyMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
     },
 
-    BurnResource {
-        bucket: Value,
+    CallMetadataMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
     },
 
-    // TODO: Dedicated bucket for this?
+    CallAccessRulesMethod {
+        address: Value,
+        method_name: Value,
+        args: Vec<Value>,
+    },
+
     RecallResource {
         vault_id: Value,
         amount: Value,
     },
 
-    SetMetadata {
-        entity_address: Value,
-        key: Value,
-        value: Value,
-    },
+    DropAllProofs,
 
-    RemoveMetadata {
-        entity_address: Value,
-        key: Value,
+    /* Call function aliases */
+    PublishPackage {
+        args: Vec<Value>,
     },
-
-    SetPackageRoyaltyConfig {
-        package_address: Value,
-        royalty_config: Value,
+    PublishPackageAdvanced {
+        args: Vec<Value>,
     },
-
-    SetComponentRoyaltyConfig {
-        component_address: Value,
-        royalty_config: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
-    ClaimPackageRoyalty {
-        package_address: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
-    ClaimComponentRoyalty {
-        component_address: Value,
-    },
-
-    SetGroupAccessRule {
-        entity_address: Value,
-        object_key: Value,
-        authority_key: Value,
-        rule: Value,
-    },
-
-    SetGroupMutability {
-        entity_address: Value,
-        object_key: Value,
-        authority_key: Value,
-        mutability: Value,
-    },
-
-    MintFungible {
-        resource_address: Value,
-        amount: Value,
-    },
-
-    MintNonFungible {
-        resource_address: Value,
-        args: Value,
-    },
-
-    MintUuidNonFungible {
-        resource_address: Value,
-        args: Value,
-    },
-
     CreateFungibleResource {
-        divisibility: Value,
-        metadata: Value,
-        access_rules: Value,
+        args: Vec<Value>,
     },
-
     CreateFungibleResourceWithInitialSupply {
-        divisibility: Value,
-        metadata: Value,
-        access_rules: Value,
-        initial_supply: Value,
+        args: Vec<Value>,
     },
-
     CreateNonFungibleResource {
-        id_type: Value,
-        schema: Value,
-        metadata: Value,
-        access_rules: Value,
+        args: Vec<Value>,
     },
-
     CreateNonFungibleResourceWithInitialSupply {
-        id_type: Value,
-        schema: Value,
-        metadata: Value,
-        access_rules: Value,
-        initial_supply: Value,
-    },
-
-    CreateValidator {
-        key: Value,
+        args: Vec<Value>,
     },
     CreateAccessController {
-        controlled_asset: Value,
-        rule_set: Value,
-        timed_recovery_delay_in_minutes: Value,
+        args: Vec<Value>,
     },
-
-    CreateIdentity {},
+    CreateIdentity {
+        args: Vec<Value>,
+    },
     CreateIdentityAdvanced {
-        authority_rules: Value,
+        args: Vec<Value>,
+    },
+    CreateAccount {
+        args: Vec<Value>,
+    },
+    CreateAccountAdvanced {
+        args: Vec<Value>,
     },
 
-    CreateAccount {},
-    CreateAccountAdvanced {
-        config: Value,
+    /* call non-main method aliases */
+    SetMetadata {
+        address: Value,
+        args: Vec<Value>,
+    },
+    RemoveMetadata {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetComponentRoyaltyConfig {
+        address: Value,
+        args: Vec<Value>,
+    },
+    ClaimComponentRoyalty {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAuthorityAccessRule {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAuthorityMutability {
+        address: Value,
+        args: Vec<Value>,
+    },
+
+    /* call main method aliases */
+    SetPackageRoyaltyConfig {
+        address: Value,
+        args: Vec<Value>,
+    },
+    ClaimPackageRoyalty {
+        address: Value,
+        args: Vec<Value>,
+    },
+    MintFungible {
+        address: Value,
+        args: Vec<Value>,
+    },
+    MintNonFungible {
+        address: Value,
+        args: Vec<Value>,
+    },
+    MintUuidNonFungible {
+        address: Value,
+        args: Vec<Value>,
+    },
+    CreateValidator {
+        address: Value,
+        args: Vec<Value>,
     },
 }
 

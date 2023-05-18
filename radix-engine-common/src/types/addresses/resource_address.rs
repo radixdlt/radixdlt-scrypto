@@ -18,7 +18,7 @@ pub struct ResourceAddress(NodeId); // private to ensure entity type check
 impl ResourceAddress {
     pub const fn new_or_panic(raw: [u8; NodeId::LENGTH]) -> Self {
         let node_id = NodeId(raw);
-        assert!(node_id.is_global_resource());
+        assert!(node_id.is_global_resource_manager());
         Self(node_id)
     }
 
@@ -64,8 +64,8 @@ impl<'a> Arbitrary<'a> for ResourceAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
         let resource_entities: [u8; 2] = [
-            EntityType::GlobalFungibleResource as u8,
-            EntityType::GlobalNonFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
+            EntityType::GlobalNonFungibleResourceManager as u8,
         ];
 
         let mut node_id = [0u8; NodeId::LENGTH];
@@ -91,7 +91,7 @@ impl TryFrom<[u8; NodeId::LENGTH]> for ResourceAddress {
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
         let node_id = NodeId(value);
 
-        if node_id.is_global_resource() {
+        if node_id.is_global_resource_manager() {
             Ok(Self(node_id))
         } else {
             Err(ParseResourceAddressError::InvalidEntityTypeId(value[0]))

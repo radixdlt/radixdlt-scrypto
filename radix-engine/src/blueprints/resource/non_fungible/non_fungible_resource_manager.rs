@@ -102,7 +102,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
         Self::create_with_address(
             id_type,
@@ -175,7 +176,8 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let supply: Decimal = Decimal::from(entries.len());
@@ -255,7 +257,8 @@ impl NonFungibleResourceManagerBlueprint {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
 
-        let global_node_id = api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResource)?;
+        let global_node_id =
+            api.kernel_allocate_node_id(EntityType::GlobalNonFungibleResourceManager)?;
         let resource_address = ResourceAddress::new_or_panic(global_node_id.into());
 
         let instance_schema = InstanceSchema {

@@ -490,6 +490,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "metadata"
+version = "0.1.0"
+dependencies = [
+ "native-sdk",
+ "radix-engine",
+ "sbor",
+ "scrypto",
+ "scrypto-unit",
+ "transaction",
+]
+
+[[package]]
 name = "moka"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"

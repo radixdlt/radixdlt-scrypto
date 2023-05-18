@@ -1,7 +1,8 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "simulator/Cargo.toml"
+        "simulator/Cargo.toml",
+        "fuzz-tests/Cargo.toml"
     ],
     "cSpell.words": [
         "bech",
@@ -29,6 +30,7 @@
         "Sbor",
         "Scrypto",
         "Secp",
+        "SECURIFY",
         "Substate",
         "substates",
         "unregistration",

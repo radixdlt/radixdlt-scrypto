@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, ObjectKey};
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::{Debug, ToOwned};
 
@@ -37,8 +37,7 @@ impl BorrowedObject {
             METADATA_SET_IDENT,
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),
-                value: scrypto_decode(&scrypto_encode(&value.to_metadata_entry()).unwrap())
-                    .unwrap(),
+                value: value.to_metadata_value(),
             })
             .unwrap(),
         )?;
