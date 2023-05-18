@@ -57,7 +57,7 @@ pub enum AuthorizationCheckResult {
 
 impl AuthModule {
     fn function_auth<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        blueprint: &Blueprint,
+        blueprint: &BlueprintId,
         ident: &str,
         api: &mut SystemService<Y, V>,
     ) -> Result<AccessRule, RuntimeError> {
@@ -229,17 +229,23 @@ impl AuthModule {
         key: &MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let authority = match access_rules.methods.get(key) {
+        /*
+        let authority_key = AuthorityKey::Module(key.module_id.clone(), key.ident.clone());
+        if access_rules.rules.get(authority_key) {
+        }
+
+        let authority = match access_rules.rules.get(authority_key) {
             Some(entry) => &entry.authority,
             None => return Ok(()),
         };
+         */
 
         let result = Authorization::check_authorization_against_access_rule(
             acting_location,
             *auth_zone_id,
             access_rules,
             key.module_id,
-            &rule!(require(authority.to_string())),
+            &rule!(require(key.ident.as_str())),
             api,
         )?;
         match result {
@@ -367,7 +373,7 @@ impl AuthModule {
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&auth_zone)
                 ),
                 TYPE_INFO_FIELD_PARTITION => ModuleInit::TypeInfo(TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint: Blueprint::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    blueprint: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     global: false,
                     outer_object: None,
                     instance_schema: None,

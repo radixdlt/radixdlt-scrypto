@@ -1,8 +1,10 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::resource::*;
 use crate::*;
+use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_common::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
+use utils::rust::prelude::IndexSet;
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 
@@ -30,6 +32,17 @@ impl Clone for AccessControllerCreateGlobalInput {
 }
 
 pub type AccessControllerCreateGlobalOutput = ComponentAddress;
+
+//======================================
+// Access Controller Post Instantiation
+//======================================
+
+pub const ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT: &str = "post_instantiation";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerPostInstantiationInput;
+
+pub type AccessControllerPostInstantiationOutput = ();
 
 //================================
 // Access Controller Create Proof
@@ -247,3 +260,16 @@ pub struct AccessControllerStopTimedRecoveryInput {
 }
 
 pub type AccessControllerStopTimedRecoveryOutput = ();
+
+//========================================
+// Access Controller Mint Recovery Badges
+//========================================
+
+pub const ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT: &str = "mint_recovery_badges";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerMintRecoveryBadgesInput {
+    pub non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
+}
+
+pub type AccessControllerMintRecoveryBadgesOutput = Bucket;

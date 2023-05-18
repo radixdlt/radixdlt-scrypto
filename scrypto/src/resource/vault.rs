@@ -8,8 +8,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 //========
@@ -219,7 +218,9 @@ impl ScryptoVault for FungibleVault {
     }
 
     fn new(resource_address: ResourceAddress) -> Self {
-        assert!(resource_address.as_node_id().is_global_fungible_resource());
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
         Self(Vault::new(resource_address))
     }
 
@@ -323,7 +324,7 @@ impl ScryptoVault for NonFungibleVault {
     fn new(resource_address: ResourceAddress) -> Self {
         assert!(resource_address
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         Self(Vault::new(resource_address))
     }
 

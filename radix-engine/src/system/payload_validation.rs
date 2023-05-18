@@ -145,7 +145,9 @@ fn apply_custom_validation_to_custom_value(
                 ReferenceValidation::IsGlobal => node_id.is_global(),
                 ReferenceValidation::IsGlobalPackage => node_id.is_global_package(),
                 ReferenceValidation::IsGlobalComponent => node_id.is_global_component(),
-                ReferenceValidation::IsGlobalResource => node_id.is_global_resource(),
+                ReferenceValidation::IsGlobalResourceManager => {
+                    node_id.is_global_resource_manager()
+                }
                 ReferenceValidation::IsInternal => node_id.is_internal(),
                 ReferenceValidation::IsTypedObject(expect_package, expect_blueprint) => {
                     type_info.matches_object(expect_package, &expect_blueprint)

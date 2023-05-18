@@ -1,7 +1,14 @@
 use arbitrary::{Arbitrary, Unstructured};
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::types::blueprints::package::*;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::*;
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
@@ -141,11 +148,11 @@ impl TxFuzzer {
         &mut self,
         component_address: ComponentAddress,
         resource_address: ResourceAddress,
-    ) -> BTreeSet<NonFungibleLocalId> {
+    ) -> Vec<NonFungibleLocalId> {
         let vaults = self
             .runner
             .get_component_vaults(component_address, resource_address);
-        let mut btree_ids = btreeset![];
+        let mut btree_ids = vec![];
         for vault in vaults {
             let mut substate_iter = self
                 .runner
@@ -158,7 +165,7 @@ impl TxFuzzer {
                 );
 
             substate_iter.next().map(|(_key, id)| {
-                btree_ids.insert(id);
+                btree_ids.push(id);
             });
         }
         btree_ids
@@ -244,8 +251,8 @@ impl TxFuzzer {
                 // AssertWorktopContainsNonFungibles
                 1 => {
                     Some(Instruction::AssertWorktopContainsNonFungibles {
-                        ids: non_fungible_ids.clone(),
                         resource_address,
+                        ids: non_fungible_ids.clone(),
                     })
                 }
                 // BurnResource
@@ -265,14 +272,22 @@ impl TxFuzzer {
                     None
                 }
                 // ClaimComponentRoyalty
-                5 => Some(Instruction::ClaimComponentRoyalty { component_address }),
+                5 => Some(Instruction::CallRoyaltyMethod { 
+                    address: component_address.into(),
+                    method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                    args: manifest_args!()
+                }),
                 // ClaimPackageRoyalty
                 6 => {
                     package_addresses
                         .push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
 
-                    Some(Instruction::ClaimPackageRoyalty { package_address })
+                    Some(Instruction::CallMethod { 
+                        address: package_address.into(),
+                        method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+                        args: manifest_args!()
+                    })
                 }
                 // ClearAuthZone
                 7 => Some(Instruction::ClearAuthZone),
@@ -475,8 +490,8 @@ impl TxFuzzer {
                 27 => {
                     let input = EpochManagerCreateValidatorInput { key: public_key };
 
-                    Some(Instruction::CallMethod {
-                        component_address,
+                    Some(Instruction::CallMethod { 
+                        address: component_address.into(),
                         method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
@@ -493,9 +508,10 @@ impl TxFuzzer {
                 30 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::MintFungible {
-                        resource_address,
-                        amount,
+                    Some(Instruction::CallMethod { 
+                        address: resource_address.into(),
+                        method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                        args: manifest_args!(amount)
                     })
                 }
                 // MintNonFungible
@@ -504,8 +520,9 @@ impl TxFuzzer {
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
 
-                    Some(Instruction::MintNonFungible {
-                        resource_address,
+                    Some(Instruction::CallMethod { 
+                        address: resource_address.into(),
+                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
@@ -516,8 +533,9 @@ impl TxFuzzer {
                     )
                     .unwrap();
 
-                    Some(Instruction::MintUuidNonFungible {
-                        resource_address,
+                    Some(Instruction::CallMethod { 
+                        address: resource_address.into(),
+                        method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }
@@ -564,9 +582,10 @@ impl TxFuzzer {
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::RemoveMetadata {
-                        entity_address,
-                        key,
+                    Some(Instruction::CallMetadataMethod { 
+                        address: entity_address.into(),
+                        method_name: METADATA_REMOVE_IDENT.to_string(),
+                        args: manifest_args!(key)
                     })
                 }
                 // ReturnToWorktop
@@ -579,12 +598,13 @@ impl TxFuzzer {
                 40 => {
                     let royalty_config = RoyaltyConfig::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetComponentRoyaltyConfig {
-                        component_address,
-                        royalty_config,
+                    Some(Instruction::CallRoyaltyMethod { 
+                        address: component_address.into(),
+                        method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                        args: manifest_args!(royalty_config)
                     })
                 }
-                // SetGroupAccessRule
+                // SetAuthorityAccessRule
                 41 => {
                     let groups = vec![
                         "owner".to_string(),
@@ -597,14 +617,13 @@ impl TxFuzzer {
                     let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let rule = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetAuthorityAccessRule {
-                        entity_address,
-                        object_key,
-                        authority_key,
-                        rule,
+                    Some(Instruction::CallAccessRulesMethod { 
+                        address: entity_address.into(),
+                        method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
+                        args: manifest_args!(object_key, authority_key, rule)
                     })
                 }
-                // SetGroupMutability
+                // SetAuthorityMutability
                 42 => {
                     let groups = vec![
                         "owner".to_string(),
@@ -617,11 +636,10 @@ impl TxFuzzer {
                     let authority_key = AuthorityKey::arbitrary(&mut unstructured).unwrap();
                     let mutability = AccessRule::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetAuthorityMutability {
-                        entity_address,
-                        object_key,
-                        authority_key,
-                        mutability,
+                    Some(Instruction::CallAccessRulesMethod { 
+                        address: entity_address.into(),
+                        method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
+                        args: manifest_args!(object_key, authority_key, mutability)
                     })
                 }
                 // SetMetadata
@@ -630,12 +648,12 @@ impl TxFuzzer {
                         GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let entity_address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
-                    let value = MetadataEntry::arbitrary(&mut unstructured).unwrap();
+                    let value = MetadataValue::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetMetadata {
-                        entity_address,
-                        key,
-                        value,
+                    Some(Instruction::CallMetadataMethod { 
+                        address: entity_address.into(),
+                        method_name: METADATA_SET_IDENT.to_string(),
+                        args: manifest_args!(key, value)
                     })
                 }
                 // SetPackageRoyaltyConfig
@@ -645,9 +663,10 @@ impl TxFuzzer {
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let royalty_config = BTreeMap::<String, RoyaltyConfig>::arbitrary(&mut unstructured).unwrap();
 
-                    Some(Instruction::SetPackageRoyaltyConfig {
-                        package_address,
-                        royalty_config,
+                    Some(Instruction::CallMethod { 
+                        address: package_address.into(),
+                        method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                        args: manifest_args!(royalty_config),
                     })
                 }
                 // TakeFromWorktop

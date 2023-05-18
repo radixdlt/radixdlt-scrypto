@@ -184,13 +184,7 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some("securify");
-
-    fn method_authorities() -> MethodAuthorities {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(IDENTITY_SECURIFY_IDENT, "securify");
-        method_authorities
-    }
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
@@ -283,13 +277,7 @@ impl IdentityBlueprint {
                 METADATA_SET_IDENT,
                 scrypto_encode(&MetadataSetInput {
                     key: "owner_keys".to_string(),
-                    value: scrypto_decode(
-                        &scrypto_encode(&MetadataEntry::List(vec![MetadataValue::PublicKeyHash(
-                            public_key_hash,
-                        )]))
-                        .unwrap(),
-                    )
-                    .unwrap(),
+                    value: MetadataValue::PublicKeyHashArray(vec![public_key_hash]),
                 })
                 .unwrap(),
             )?;

@@ -103,6 +103,7 @@ pub enum TypedMainModuleSubstateKey {
     ValidatorField(ValidatorField),
     AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
+    AccountField(AccountField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -194,10 +195,12 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalPackage => {
             TypedMainModuleSubstateKey::PackageField(PackageField::try_from(substate_key)?)
         }
-        EntityType::GlobalFungibleResource => TypedMainModuleSubstateKey::FungibleResourceField(
-            FungibleResourceManagerField::try_from(substate_key)?,
-        ),
-        EntityType::GlobalNonFungibleResource => {
+        EntityType::GlobalFungibleResourceManager => {
+            TypedMainModuleSubstateKey::FungibleResourceField(
+                FungibleResourceManagerField::try_from(substate_key)?,
+            )
+        }
+        EntityType::GlobalNonFungibleResourceManager => {
             let partition_offset =
                 NonFungibleResourceManagerPartitionOffset::try_from(partition_offset)?;
             match partition_offset {
@@ -243,8 +246,19 @@ fn to_typed_object_substate_key_internal(
         | EntityType::GlobalVirtualEd25519Account
         | EntityType::InternalAccount
         | EntityType::GlobalAccount => {
-            let key = substate_key.for_map().ok_or(())?;
-            TypedMainModuleSubstateKey::AccountVaultIndexKey(scrypto_decode(&key).map_err(|_| ())?)
+            let partition_offset = AccountPartitionOffset::try_from(partition_offset)?;
+
+            match partition_offset {
+                AccountPartitionOffset::AccountVaultsByResourceAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountVaultIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
+                AccountPartitionOffset::Account => {
+                    TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
+                }
+            }
         }
         EntityType::GlobalVirtualSecp256k1Identity
         | EntityType::GlobalVirtualEd25519Identity
@@ -310,7 +324,7 @@ pub enum TypedMainModuleSubstateValue {
     Package(TypedPackageFieldValue),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
-    NonFungibleResourceData(GenericScryptoSborPayload),
+    NonFungibleResourceData(Option<ScryptoOwnedRawValue>),
     FungibleVault(TypedFungibleVaultFieldValue),
     NonFungibleVaultField(TypedNonFungibleVaultFieldValue),
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
@@ -318,11 +332,12 @@ pub enum TypedMainModuleSubstateValue {
     EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
     Clock(TypedClockFieldValue),
     Validator(TypedValidatorFieldValue),
+    Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
-    GenericKeyValueStore(GenericScryptoSborPayload),
+    GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
 }
 
 #[derive(Debug, Clone)]
@@ -383,6 +398,11 @@ pub enum TypedAccessControllerFieldValue {
 #[derive(Debug, Clone)]
 pub enum GenericScryptoComponentFieldValue {
     State(GenericScryptoSborPayload),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedAccountFieldValue {
+    Account(AccountSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -481,9 +501,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::NonFungibleResourceData(_) => {
-            TypedMainModuleSubstateValue::NonFungibleResourceData(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
+            TypedMainModuleSubstateValue::NonFungibleResourceData(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::FungibleVaultField(offset) => {
             TypedMainModuleSubstateValue::FungibleVault(match offset {
@@ -541,6 +559,11 @@ fn to_typed_object_substate_value(
                 }
             })
         }
+        TypedMainModuleSubstateKey::AccountField(offset) => {
+            TypedMainModuleSubstateValue::Account(match offset {
+                AccountField::Account => TypedAccountFieldValue::Account(scrypto_decode(data)?),
+            })
+        }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
         }
@@ -561,9 +584,7 @@ fn to_typed_object_substate_value(
             })
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
-            TypedMainModuleSubstateValue::GenericKeyValueStore(GenericScryptoSborPayload {
-                data: data.to_vec(),
-            })
+            TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
         }
     };
     Ok(substate_value)

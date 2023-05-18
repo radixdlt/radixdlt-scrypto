@@ -11,9 +11,7 @@ use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use runtime::LocalAuthZone;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 // Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`
@@ -36,6 +34,10 @@ pub trait ScryptoUncheckedProof {
 
     fn resource_address(&self) -> ResourceAddress;
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self);
 
     fn clone(&self) -> Self;
@@ -49,6 +51,10 @@ pub trait ScryptoProof {
     fn amount(&self) -> Decimal;
 
     fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
 
     fn drop(self);
 
@@ -136,6 +142,10 @@ impl ScryptoUncheckedProof for Proof {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn drop(self) {
@@ -255,6 +265,10 @@ impl ScryptoProof for CheckedProof {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
+
     fn drop(self) {
         self.0.drop()
     }
@@ -271,7 +285,7 @@ impl ScryptoProof for CheckedProof {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_fungible_resource());
+            .is_global_fungible_resource_manager());
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
@@ -279,7 +293,7 @@ impl ScryptoProof for CheckedProof {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 }
@@ -295,6 +309,10 @@ impl ScryptoProof for CheckedFungibleProof {
 
     fn amount(&self) -> Decimal {
         self.0.amount()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -335,6 +353,10 @@ impl ScryptoProof for CheckedNonFungibleProof {
 
     fn amount(&self) -> Decimal {
         self.0.amount()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {

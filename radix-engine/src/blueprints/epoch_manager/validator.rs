@@ -788,59 +788,29 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn method_authorities() -> MethodAuthorities {
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(VALIDATOR_STAKE_IDENT, "stake");
-        method_authorities
-            .set_main_method_authority(VALIDATOR_REGISTER_IDENT, VALIDATOR_REGISTER_IDENT);
-        method_authorities
-            .set_main_method_authority(VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNREGISTER_IDENT);
-        method_authorities
-            .set_main_method_authority(VALIDATOR_UPDATE_KEY_IDENT, VALIDATOR_UPDATE_KEY_IDENT);
-        method_authorities.set_main_method_authority(
-            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-        );
-        method_authorities
-            .set_main_method_authority(VALIDATOR_APPLY_EMISSION_IDENT, "epoch_manager");
-        method_authorities
-    }
-
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
         authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
 
-        authority_rules.set_main_authority_rule(
-            VALIDATOR_REGISTER_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            VALIDATOR_UNREGISTER_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            VALIDATOR_UPDATE_KEY_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             rule!(require_owner()),
-            rule!(deny_all),
         );
-
         authority_rules.set_main_authority_rule(
-            "stake",
+            VALIDATOR_STAKE_IDENT,
             rule!(require_owner()),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_main_authority_rule(
-            "epoch_manager",
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_APPLY_EMISSION_IDENT,
             rule!(require(global_caller(EPOCH_MANAGER))),
-            rule!(deny_all),
         );
         authority_rules
     }

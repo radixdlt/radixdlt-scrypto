@@ -1,5 +1,5 @@
 use super::ScryptoUncheckedProof;
-use crate::borrow_resource_manager;
+use crate::prelude::ResourceManager;
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_engine_interface::api::ClientObjectApi;
@@ -10,8 +10,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
 //=============
@@ -34,6 +33,10 @@ pub trait ScryptoBucket {
     fn create_proof_of_all(&self) -> Self::ProofType;
 
     fn resource_address(&self) -> ResourceAddress;
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
+    }
 
     fn put(&mut self, other: Self) -> ();
 
@@ -103,8 +106,8 @@ impl ScryptoBucket for Bucket {
     }
 
     fn burn(self) {
-        let resource_address = self.resource_address();
-        borrow_resource_manager!(resource_address).burn(Bucket(self.0));
+        let manager = self.resource_manager();
+        manager.burn(self);
     }
 
     fn create_proof(&self) -> Proof {
@@ -144,6 +147,10 @@ impl ScryptoBucket for Bucket {
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
+    }
+
+    fn resource_manager(&self) -> ResourceManager {
+        self.resource_address().into()
     }
 
     fn resource_address(&self) -> ResourceAddress {
@@ -215,7 +222,7 @@ impl ScryptoBucket for Bucket {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_fungible_resource());
+            .is_global_fungible_resource_manager());
         FungibleBucket(Bucket(self.0))
     }
 
@@ -223,7 +230,7 @@ impl ScryptoBucket for Bucket {
         assert!(self
             .resource_address()
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         NonFungibleBucket(Bucket(self.0))
     }
 }
@@ -236,7 +243,9 @@ impl ScryptoBucket for FungibleBucket {
     type ProofType = FungibleProof;
 
     fn new(resource_address: ResourceAddress) -> Self {
-        assert!(resource_address.as_node_id().is_global_fungible_resource());
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
         Self(Bucket::new(resource_address))
     }
 
@@ -305,8 +314,12 @@ impl ScryptoBucket for NonFungibleBucket {
     fn new(resource_address: ResourceAddress) -> Self {
         assert!(resource_address
             .as_node_id()
-            .is_global_non_fungible_resource());
+            .is_global_non_fungible_resource_manager());
         Self(Bucket::new(resource_address))
+    }
+
+    fn resource_address(&self) -> ResourceAddress {
+        self.0.resource_address()
     }
 
     fn drop_empty(self) {
@@ -327,10 +340,6 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn create_proof_of_all(&self) -> Self::ProofType {
         NonFungibleProof(self.0.create_proof_of_all())
-    }
-
-    fn resource_address(&self) -> ResourceAddress {
-        self.0.resource_address()
     }
 
     fn put(&mut self, other: Self) -> () {

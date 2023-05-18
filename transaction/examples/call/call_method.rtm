@@ -3,3 +3,18 @@ CALL_METHOD
     "complicated_method"
     Decimal("1")
     PreciseDecimal("2");
+
+CALL_ROYALTY_METHOD
+    Address("${component_address}")
+    "some_method_1"
+    Decimal("1");
+
+CALL_METADATA_METHOD
+    Address("${component_address}")
+    "some_method_2"
+    Decimal("2");
+
+CALL_ACCESS_RULES_METHOD
+    Address("${component_address}")
+    "some_method_3"
+    Decimal("3");

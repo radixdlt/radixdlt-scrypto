@@ -1,4 +1,5 @@
-use crate::modules::ActorAccessRules;
+use crate::modules::{AccessRules, Attachable};
+use crate::prelude::Attached;
 use radix_engine_interface::api::kernel_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -34,12 +35,12 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn get_access_rules() -> ActorAccessRules {
-        ActorAccessRules
+    pub fn access_rules() -> Attached<'static, AccessRules> {
+        Attached::new(AccessRules::self_attached())
     }
 
     /// Returns the running entity.
-    pub fn blueprint() -> Blueprint {
+    pub fn blueprint() -> BlueprintId {
         ScryptoEnv.actor_get_blueprint().unwrap()
     }
 

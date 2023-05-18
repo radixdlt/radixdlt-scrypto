@@ -2,7 +2,7 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::scrypto::model::*;
-use crate::types::Blueprint;
+use crate::types::BlueprintId;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -77,23 +77,20 @@ pub enum GlobalCaller {
     /// If the previous global frame started with an object's main module
     GlobalObject(GlobalAddress),
     /// If the previous global frame started with a function call
-    PackageBlueprint(Blueprint),
+    PackageBlueprint(BlueprintId),
 }
 
-impl From<ComponentAddress> for GlobalCaller {
-    fn from(value: ComponentAddress) -> Self {
+impl<T> From<T> for GlobalCaller
+where
+    T: Into<GlobalAddress>,
+{
+    fn from(value: T) -> Self {
         GlobalCaller::GlobalObject(value.into())
     }
 }
 
-impl From<GlobalAddress> for GlobalCaller {
-    fn from(value: GlobalAddress) -> Self {
-        GlobalCaller::GlobalObject(value)
-    }
-}
-
-impl From<Blueprint> for GlobalCaller {
-    fn from(blueprint: Blueprint) -> Self {
+impl From<BlueprintId> for GlobalCaller {
+    fn from(blueprint: BlueprintId) -> Self {
         GlobalCaller::PackageBlueprint(blueprint)
     }
 }

@@ -11,6 +11,7 @@ pub const CLOCK_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
 pub struct ClockCreateInput {
     pub component_address: [u8; NodeId::LENGTH], // TODO: Clean this up
+    pub initial_time_ms: i64,
 }
 
 pub type ClockCreateOutput = ComponentAddress;

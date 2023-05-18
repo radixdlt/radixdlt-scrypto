@@ -1,13 +1,15 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "simulator/Cargo.toml"
+        "simulator/Cargo.toml",
+        "fuzz-tests/Cargo.toml"
     ],
     "cSpell.words": [
         "bech",
         "bincode",
         "btreemap",
         "btreeset",
+        "callframe",
         "debuggability",
         "Decompilation",
         "decompile",
@@ -22,14 +24,17 @@
         "Instrumenter",
         "Invokable",
         "persistable",
+        "Presecurified",
         "radiswap",
         "repr",
         "Rocksdb",
         "Sbor",
         "Scrypto",
         "Secp",
+        "SECURIFY",
         "Substate",
         "substates",
+        "undeposited",
         "unregistration",
         "Unstake",
         "unstaked",

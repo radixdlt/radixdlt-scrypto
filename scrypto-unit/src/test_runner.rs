@@ -131,6 +131,7 @@ pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
     pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
@@ -175,6 +176,7 @@ impl CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
             initial_configuration,
+            initial_time_ms: 1,
         }
     }
 }
@@ -218,6 +220,7 @@ impl TestRunnerBuilder {
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_configuration,
+                    custom_genesis.initial_time_ms,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),
@@ -299,8 +302,8 @@ impl TestRunner {
         self.state_hash_support = snapshot.state_hash_support;
     }
 
-    pub fn faucet_component(&self) -> ComponentAddress {
-        FAUCET
+    pub fn faucet_component(&self) -> GlobalAddress {
+        FAUCET.clone().into()
     }
 
     pub fn substate_db(&self) -> &InMemorySubstateDatabase {
@@ -355,7 +358,7 @@ impl TestRunner {
             .set_metadata(
                 address,
                 key.to_string(),
-                MetadataEntry::Value(MetadataValue::String(value.to_string())),
+                MetadataValue::String(value.to_string()),
             )
             .build();
 
@@ -363,28 +366,19 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataEntry> {
+    pub fn get_metadata(&mut self, address: GlobalAddress, key: &str) -> Option<MetadataValue> {
         // TODO: Move this to system wrapper around substate_store
         let key = scrypto_encode(key).unwrap();
 
-        let metadata_entry = self
+        let metadata_value = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, Option<ScryptoValue>>(
+            .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
                 &SubstateKey::Map(key),
             )?;
 
-        let metadata_entry = match metadata_entry {
-            Option::Some(value) => {
-                let value: MetadataEntry =
-                    scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap();
-                Some(value)
-            }
-            Option::None => None,
-        };
-
-        metadata_entry
+        metadata_value
     }
 
     pub fn inspect_component_royalty(
@@ -537,7 +531,7 @@ impl TestRunner {
         mutability: AccessRule,
     ) -> ComponentAddress {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_owner_rule(withdraw_auth, mutability);
+        authority_rules.set_owner_authority(withdraw_auth, mutability);
 
         let manifest = ManifestBuilder::new()
             .new_account_advanced(authority_rules)
@@ -649,7 +643,7 @@ impl TestRunner {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let mut authority_rules = AuthorityRules::new();
             authority_rules
-                .set_owner_rule(rule!(require(owner_id.clone())), rule!(require(owner_id)));
+                .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
                 .create_identity_advanced(authority_rules)
@@ -761,7 +755,7 @@ impl TestRunner {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                component_address: self.faucet_component(),
+                address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
             },
@@ -1112,7 +1106,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
@@ -1122,7 +1116,31 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
+            .call_method(
+                account,
+                "deposit_batch",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    }
+
+    pub fn create_freely_mintable_and_burnable_fungible_resource(
+        &mut self,
+        amount: Option<Decimal>,
+        divisibility: u8,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new()
+            .lock_fee(self.faucet_component(), 100u32.into())
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
                 "deposit_batch",
@@ -1157,7 +1175,7 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
         }];
@@ -1178,7 +1196,7 @@ impl TestRunner {
 
     pub fn get_current_epoch(&mut self) -> u64 {
         let instructions = vec![Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
         }];
@@ -1226,7 +1244,7 @@ impl TestRunner {
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
+            address: CLOCK.into(),
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
         }];
@@ -1247,7 +1265,7 @@ impl TestRunner {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
-            component_address: CLOCK,
+            address: CLOCK.into(),
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
         }];

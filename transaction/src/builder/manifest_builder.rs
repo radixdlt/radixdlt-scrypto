@@ -1,4 +1,12 @@
-use radix_engine_interface::api::node_modules::metadata::MetadataEntry;
+use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_interface::api::node_modules::auth::*;
+use radix_engine_interface::api::node_modules::metadata::{
+    MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
+};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltyInput, ComponentSetRoyaltyConfigInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
@@ -11,6 +19,12 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::package::{
+    PackageClaimRoyaltyInput, PackagePublishWasmAdvancedManifestInput,
+    PackagePublishWasmManifestInput, PackageSetRoyaltyConfigInput, PACKAGE_BLUEPRINT,
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
+    PACKAGE_SET_ROYALTY_CONFIG_IDENT,
 };
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
@@ -134,7 +148,7 @@ impl ManifestBuilder {
     {
         let (builder, bucket_id, _) =
             self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                ids: ids.clone(),
+                ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
         then(builder, bucket_id.unwrap())
@@ -166,7 +180,7 @@ impl ManifestBuilder {
         ids: &BTreeSet<NonFungibleLocalId>,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContainsNonFungibles {
-            ids: ids.clone(),
+            ids: ids.clone().into_iter().collect(),
             resource_address,
         })
         .0
@@ -236,7 +250,7 @@ impl ManifestBuilder {
     {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromAuthZoneOfNonFungibles {
-                ids: ids.clone(),
+                ids: ids.clone().into_iter().collect(),
                 resource_address,
             });
         then(builder, proof_id.unwrap())
@@ -296,7 +310,7 @@ impl ManifestBuilder {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromBucketOfNonFungibles {
                 bucket_id: bucket_id.clone(),
-                ids,
+                ids: ids.into_iter().collect(),
             });
         then(builder, proof_id.unwrap())
     }
@@ -461,7 +475,7 @@ impl ManifestBuilder {
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
         });
@@ -470,7 +484,7 @@ impl ManifestBuilder {
 
     pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_REGISTER_IDENT.to_string(),
             args: manifest_args!(),
         });
@@ -479,7 +493,7 @@ impl ManifestBuilder {
 
     pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
         });
@@ -492,7 +506,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_STAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -505,7 +519,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -518,7 +532,7 @@ impl ManifestBuilder {
         bucket: ManifestBucket,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: validator_address,
+            address: validator_address.into(),
             method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
             args: manifest_args!(bucket),
         });
@@ -543,14 +557,14 @@ impl ManifestBuilder {
     }
 
     /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
-    pub fn call_method(
+    pub fn call_method<A: Into<GlobalAddress>>(
         &mut self,
-        component_address: ComponentAddress,
+        address: A,
         method_name: &str,
         args: ManifestValue,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address,
+            address: address.into(),
             method_name: method_name.to_owned(),
             args: args,
         });
@@ -562,9 +576,19 @@ impl ManifestBuilder {
         package_address: PackageAddress,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
+        self.add_instruction(Instruction::CallMethod {
+            address: package_address.into(),
+            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&PackageSetRoyaltyConfigInput { royalty_config }),
+        })
+        .0
+    }
+
+    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            address: package_address.into(),
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&PackageClaimRoyaltyInput {}),
         })
         .0
     }
@@ -574,65 +598,71 @@ impl ManifestBuilder {
         component_address: ComponentAddress,
         royalty_config: RoyaltyConfig,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
+        self.add_instruction(Instruction::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: to_manifest_value(&ComponentSetRoyaltyConfigInput { royalty_config }),
         })
         .0
     }
 
-    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
-        self.add_instruction(Instruction::ClaimPackageRoyalty { package_address })
-            .0
-    }
-
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
-        self.add_instruction(Instruction::ClaimComponentRoyalty { component_address })
-            .0
+        self.add_instruction(Instruction::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value(&ComponentClaimRoyaltyInput {}),
+        })
+        .0
     }
 
     pub fn set_authority_access_rule(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         object_key: ObjectKey,
         authority_key: AuthorityKey,
         rule: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetAuthorityAccessRule {
-            entity_address,
-            object_key,
-            authority_key,
-            rule,
+        self.add_instruction(Instruction::CallAccessRulesMethod {
+            address,
+            method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetAuthorityRuleInput {
+                object_key,
+                authority_key,
+                rule,
+            }),
         })
         .0
     }
 
     pub fn set_authority_mutability(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         object_key: ObjectKey,
         authority_key: AuthorityKey,
         mutability: AccessRule,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetAuthorityMutability {
-            entity_address,
-            object_key,
-            authority_key,
-            mutability,
+        self.add_instruction(Instruction::CallAccessRulesMethod {
+            address,
+            method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetAuthorityMutabilityInput {
+                object_key,
+                authority_key,
+                mutability,
+            }),
         })
         .0
     }
 
     pub fn set_metadata(
         &mut self,
-        entity_address: GlobalAddress,
+        address: GlobalAddress,
         key: String,
-        value: MetadataEntry,
+        value: MetadataValue,
     ) -> &mut Self {
-        self.add_instruction(Instruction::SetMetadata {
-            entity_address,
-            key,
-            value,
+        self.add_instruction(Instruction::CallMetadataMethod {
+            address,
+            method_name: METADATA_SET_IDENT.to_string(),
+            args: to_manifest_value(&MetadataSetInput { key, value }),
         })
         .0
     }
@@ -649,12 +679,18 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackageAdvanced {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config,
-            metadata,
-            authority_rules,
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config,
+                metadata,
+                package_address: None,
+                authority_rules,
+            }),
         });
         self
     }
@@ -664,11 +700,16 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackage {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmManifestInput {
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+            }),
         });
         self
     }
@@ -683,12 +724,18 @@ impl ManifestBuilder {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        self.add_instruction(Instruction::PublishPackageAdvanced {
-            code: ManifestBlobRef(code_hash.0),
-            schema,
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
-            authority_rules: AuthorityRules::owner_authority(&owner_badge),
+        self.add_instruction(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishWasmAdvancedManifestInput {
+                package_address: None,
+                code: ManifestBlobRef(code_hash.0),
+                schema,
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                authority_rules: AuthorityRules::new_with_owner_authority(&owner_badge),
+            }),
         });
         self
     }
@@ -802,9 +849,10 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         amount: Decimal,
     ) -> &mut Self {
-        self.add_instruction(Instruction::MintFungible {
-            resource_address,
-            amount,
+        self.add_instruction(Instruction::CallMethod {
+            address: resource_address.into(),
+            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: to_manifest_value(&FungibleResourceManagerMintInput { amount }),
         });
         self
     }
@@ -822,11 +870,11 @@ impl ManifestBuilder {
             .into_iter()
             .map(|(id, e)| (id, (to_manifest_value(&e),)))
             .collect();
-        let input = NonFungibleResourceManagerMintManifestInput { entries };
 
-        self.add_instruction(Instruction::MintNonFungible {
-            resource_address,
-            args: to_manifest_value(&input),
+        self.add_instruction(Instruction::CallMethod {
+            address: resource_address.into(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput { entries }),
         });
         self
     }
@@ -844,11 +892,11 @@ impl ManifestBuilder {
             .into_iter()
             .map(|e| (to_manifest_value(&e),))
             .collect();
-        let input = NonFungibleResourceManagerMintUuidManifestInput { entries };
 
-        self.add_instruction(Instruction::MintUuidNonFungible {
-            resource_address,
-            args: to_manifest_value(&input),
+        self.add_instruction(Instruction::CallMethod {
+            address: resource_address.into(),
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+            args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput { entries }),
         });
         self
     }
@@ -897,7 +945,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string(),
             args,
         })
@@ -918,7 +966,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
@@ -926,11 +974,11 @@ impl ManifestBuilder {
     }
 
     /// Locks a fee from the XRD vault of an account.
-    pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
+    pub fn lock_fee<A: Into<GlobalAddress>>(&mut self, account: A, amount: Decimal) -> &mut Self {
         let args = to_manifest_value(&AccountLockFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
             args,
         })
@@ -941,7 +989,7 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountLockContingentFeeInput { amount });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string(),
             args,
         })
@@ -961,7 +1009,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_WITHDRAW_IDENT.to_string(),
             args,
         })
@@ -981,7 +1029,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
@@ -997,7 +1045,7 @@ impl ManifestBuilder {
         let args = to_manifest_value(&AccountCreateProofInput { resource_address });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
             args,
         })
@@ -1017,7 +1065,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             args,
         })
@@ -1037,7 +1085,7 @@ impl ManifestBuilder {
         });
 
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
+            address: account.into(),
             method_name: ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
             args,
         })
@@ -1067,6 +1115,22 @@ impl ManifestBuilder {
             ),
         });
         self
+    }
+
+    pub fn deposit_batch(&mut self, account_address: ComponentAddress) -> &mut Self {
+        self.call_method(
+            account_address,
+            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+    }
+
+    pub fn safe_deposit_batch(&mut self, account_address: ComponentAddress) -> &mut Self {
+        self.call_method(
+            account_address,
+            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
     }
 
     pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>

@@ -138,7 +138,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     // TODO: We should be able to make this a more generic cache for
     // TODO: immutable substates
-    pub blueprint_schema_cache: NonIterMap<Blueprint, IndexedBlueprintSchema>,
+    pub blueprint_schema_cache: NonIterMap<BlueprintId, IndexedBlueprintSchema>,
     pub modules: SystemModuleMixer,
 }
 

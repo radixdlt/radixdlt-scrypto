@@ -13,7 +13,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::epoch_manager::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
@@ -185,33 +184,25 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(EPOCH_MANAGER_START_IDENT, "start");
-        method_authorities.set_main_method_authority(EPOCH_MANAGER_NEXT_ROUND_IDENT, "validator");
-        method_authorities.set_main_method_authority(EPOCH_MANAGER_SET_EPOCH_IDENT, "system");
-
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            "start",
+            EPOCH_MANAGER_START_IDENT,
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_main_authority_rule(
-            "validator",
+        authority_rules.set_fixed_main_authority_rule(
+            EPOCH_MANAGER_NEXT_ROUND_IDENT,
             rule!(require(AuthAddresses::validator_role())),
-            DenyAll,
         );
-        authority_rules.set_main_authority_rule(
-            "system",
+        authority_rules.set_fixed_main_authority_rule(
+            EPOCH_MANAGER_SET_EPOCH_IDENT,
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-            DenyAll,
         );
 
         let access_rules = AccessRules::create(
-            method_authorities,
             authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => (MethodAuthorities::new(), AuthorityRules::new())
+                VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()
             ),
             api,
         )?

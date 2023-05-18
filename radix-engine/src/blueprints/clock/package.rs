@@ -157,23 +157,21 @@ impl ClockNativePackage {
         let clock_id = api.new_simple_object(
             CLOCK_BLUEPRINT,
             vec![scrypto_encode(&ClockSubstate {
-                current_time_rounded_to_minutes_ms: 0,
+                current_time_rounded_to_minutes_ms: Self::round_to_minutes_ms(
+                    input.initial_time_ms,
+                ),
             })
             .unwrap()],
         )?;
 
-        let mut method_authorities = MethodAuthorities::new();
-        method_authorities.set_main_method_authority(CLOCK_SET_CURRENT_TIME_IDENT, "validator");
-
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            "validator",
+            CLOCK_SET_CURRENT_TIME_IDENT,
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );
 
-        let access_rules =
-            AccessRules::create(method_authorities, authority_rules, btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
@@ -203,8 +201,7 @@ impl ClockNativePackage {
         })?;
 
         let current_time_ms = input.current_time_ms;
-        let current_time_rounded_to_minutes =
-            (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
+        let current_time_rounded_to_minutes = Self::round_to_minutes_ms(current_time_ms);
 
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -216,6 +213,10 @@ impl ClockNativePackage {
         api.field_lock_write_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn round_to_minutes_ms(input: i64) -> i64 {
+        (input / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR
     }
 
     fn get_current_time<Y>(
