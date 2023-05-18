@@ -158,10 +158,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
         }
     };
-    trace!(
-        "Generated SCHEMA exporter: \n{}",
-        quote! { #output_dispatcher }
-    );
 
     let output_original_code = quote! {
         #[derive(::scrypto::prelude::ScryptoSbor)]
@@ -528,10 +524,37 @@ fn generate_stubs(
     Ok(output)
 }
 
-fn get_restrict_to(attributes: &mut Vec<Attribute>) {
-    let restrict_to = attributes.iter().position(|e| e.path.is_ident("restrict_to"));
-    if let Some(restrict_to) = restrict_to {
-        attributes.remove(restrict_to);
+fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
+    let to_remove = attributes.iter_mut().enumerate().find_map(
+        |(index, attribute)| {
+            if let Ok(Meta::List(meta_list)) = attribute.parse_meta() {
+                if !meta_list.path.is_ident("restrict_to") {
+                    return None;
+                }
+
+                if meta_list.nested.len() != 1 {
+                    return None;
+                }
+
+                match meta_list.nested.first().unwrap() {
+                    NestedMeta::Lit(Lit::Str(s)) => {
+                        return Some((index, s.value()));
+                    }
+                    _ => {
+                        return None;
+                    }
+                }
+            }
+
+            return None;
+        }
+    );
+
+    if let Some((to_remove, authority)) = to_remove {
+        attributes.remove(to_remove);
+        Some(authority)
+    } else {
+        None
     }
 }
 
@@ -547,8 +570,8 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<(Vec<Stri
             ImplItem::Method(ref mut m) => {
 
                 if let Visibility::Public(_) = &m.vis {
-
-                    get_restrict_to(&mut m.attrs);
+                    
+                    let authority = get_restrict_to(&mut m.attrs);
 
                     let function_name = m.sig.ident.to_string();
                     let mut receiver = None;

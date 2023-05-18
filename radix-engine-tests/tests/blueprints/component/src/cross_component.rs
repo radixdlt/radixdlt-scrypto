@@ -29,7 +29,7 @@ mod cross_component {
             component.globalize()
         }
 
-        #[restrict_to("some_role")]
+        #[restrict_to("some_authority")]
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {
             self.auth_vault = Some(Vault::with_bucket(auth_bucket.remove(0)));
         }
