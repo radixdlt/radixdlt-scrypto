@@ -797,6 +797,18 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
