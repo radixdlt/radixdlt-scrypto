@@ -1,0 +1,71 @@
+# This transaction manifest file shows how an account could be configured to use any of the four 
+# allowed deposit modes. This manifest shows it for all four; thus, you're likely only going to need
+# a subset of this full manifest.
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+CALL_METHOD 
+    Address("${account_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Example 1: Allow All deposits mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_allowed_deposits_mode" 
+    Enum("AccountDepositsMode::AllowAll");
+
+# Example 2: Allow Existing deposits mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_allowed_deposits_mode" 
+    Enum("AccountDepositsMode::AllowExisting");
+
+# Example 3: Allow List Deposit Mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_allowed_deposits_mode" 
+    Enum(
+        "AccountDepositsMode::AllowList", 
+        Array<Address>(
+            Address("${first_resource_address}")
+        )
+    );
+
+# Example 3a: Adding a resource to the allow list
+CALL_METHOD
+    Address("${account_address}")
+    "add_resource_to_allowed_deposits_list"
+    Address("${second_resource_address}");
+
+# Example 3b: Removing a resource from the allow list
+CALL_METHOD
+    Address("${account_address}")
+    "remove_resource_from_allowed_deposits_list"
+    Address("${second_resource_address}");
+
+# Example 4: Allow List Deposit Mode
+CALL_METHOD 
+    Address("${account_address}") 
+    "change_allowed_deposits_mode" 
+    Enum(
+        "AccountDepositsMode::DisallowList", 
+        Array<Address>(
+            Address("${first_resource_address}")
+        )
+    );
+
+# Example 4a: Adding a resource to the allow list
+CALL_METHOD
+    Address("${account_address}")
+    "add_resource_to_disallowed_deposits_list"
+    Address("${second_resource_address}");
+
+# Example 4b: Removing a resource from the allow list
+CALL_METHOD
+    Address("${account_address}")
+    "remove_resource_from_disallowed_deposits_list"
+    Address("${second_resource_address}");
