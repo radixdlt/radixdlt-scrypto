@@ -131,6 +131,7 @@ pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
     pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
@@ -175,6 +176,7 @@ impl CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
             initial_configuration,
+            initial_time_ms: 1,
         }
     }
 }
@@ -218,6 +220,7 @@ impl TestRunnerBuilder {
                     custom_genesis.genesis_data_chunks,
                     custom_genesis.initial_epoch,
                     custom_genesis.initial_configuration,
+                    custom_genesis.initial_time_ms,
                 )
                 .unwrap(),
             None => bootstrapper.bootstrap_test_default().unwrap(),

@@ -144,6 +144,7 @@ where
                 min_validator_reliability: Decimal::one(),
                 num_owner_stake_units_unlock_epochs: 2,
             },
+            1,
         )
     }
 
@@ -152,6 +153,7 @@ where
         genesis_data_chunks: Vec<GenesisDataChunk>,
         initial_epoch: u64,
         initial_configuration: EpochManagerInitialConfiguration,
+        initial_time_ms: i64,
     ) -> Option<GenesisReceipts> {
         let xrd_info = self
             .substate_db
@@ -162,8 +164,11 @@ where
             );
 
         if xrd_info.is_none() {
-            let system_bootstrap_receipt =
-                self.execute_system_bootstrap(initial_epoch, initial_configuration);
+            let system_bootstrap_receipt = self.execute_system_bootstrap(
+                initial_epoch,
+                initial_configuration,
+                initial_time_ms,
+            );
 
             let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
@@ -189,8 +194,13 @@ where
         &mut self,
         initial_epoch: u64,
         initial_configuration: EpochManagerInitialConfiguration,
+        initial_time_ms: i64,
     ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(initial_epoch, initial_configuration);
+        let transaction = create_system_bootstrap_transaction(
+            initial_epoch,
+            initial_configuration,
+            initial_time_ms,
+        );
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -251,6 +261,7 @@ where
 pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
     initial_configuration: EpochManagerInitialConfiguration,
+    initial_time_ms: i64,
 ) -> SystemTransaction {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
@@ -782,7 +793,10 @@ pub fn create_system_bootstrap_transaction(
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput { component_address }),
+            args: to_manifest_value(&ClockCreateInput {
+                component_address,
+                initial_time_ms,
+            }),
         });
     }
 
