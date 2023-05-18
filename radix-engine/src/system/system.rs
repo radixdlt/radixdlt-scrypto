@@ -38,7 +38,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FullyQualifiedAuthorityKey, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, SchemaObjectKey, SchemaObjectModuleId, TypeSchema};
+use radix_engine_interface::schema::{AuthoritySchema, BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FullyQualifiedAuthorityKey, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, SchemaObjectKey, SchemaObjectModuleId, TypeSchema};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -662,13 +662,13 @@ where
         {
             let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
             let access_rule_node_id = modules.get(&ObjectModuleId::AccessRules).unwrap().clone();
-            let blueprint_id = self.get_object_info(&access_rule_node_id)?.blueprint;
+            let access_rule_blueprint_id = self.get_object_info(&access_rule_node_id)?.blueprint;
             let expected_blueprint = ObjectModuleId::AccessRules.static_blueprint().unwrap();
-            if !blueprint_id.eq(&expected_blueprint) {
+            if !access_rule_blueprint_id.eq(&expected_blueprint) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
                     Box::new(InvalidModuleType {
                         expected_blueprint,
-                        actual_blueprint: blueprint_id,
+                        actual_blueprint: access_rule_blueprint_id,
                     }),
                 )));
             }
@@ -682,12 +682,22 @@ where
             )?;
 
             let access_rules: MethodAccessRulesSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
-            for (key, _) in blueprint_schema.authority_schema {
+            for (key, schema) in blueprint_schema.authority_schema {
                 match key {
                     FullyQualifiedAuthorityKey(SchemaObjectKey::SELF, SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident)) => {
                         let key = AuthorityKey::main(ident.as_str());
-                        if !access_rules.access_rules.rules.contains_key(&key) {
-                            return Err(RuntimeError::SystemError(SystemError::MissingAuthority(ident)));
+
+                        match schema {
+                            AuthoritySchema::RequiredEmpty => {
+                                if access_rules.access_rules.rules.contains_key(&key) {
+                                    return Err(RuntimeError::SystemError(SystemError::AuthorityMustBeEmpty(blueprint_id.clone(), ident)));
+                                }
+                            }
+                            AuthoritySchema::Required => {
+                                if !access_rules.access_rules.rules.contains_key(&key) {
+                                    return Err(RuntimeError::SystemError(SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident)));
+                                }
+                            }
                         }
                     }
                     _ => {}

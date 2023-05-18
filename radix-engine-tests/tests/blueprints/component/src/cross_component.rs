@@ -9,24 +9,22 @@ mod cross_component {
 
     impl CrossComponent {
         pub fn create_component_with_auth(
-            authority_rules: AuthorityRules,
+            access_rule: AccessRule,
         ) -> Global<CrossComponent> {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
             .instantiate()
-            .authority_rules(authority_rules)
+            .authority_rule("get_component_state",
+                            rule!(require("get_component_state_auth")),
+                            rule!(deny_all))
+            .authority_rule("get_component_state_auth", access_rule, rule!(deny_all))
             .globalize()
         }
 
         pub fn create_component() -> Global<CrossComponent> {
-            let component = Self {
-                secret: "Secret".to_owned(),
-                auth_vault: None,
-            }
-            .instantiate();
-            component.globalize()
+            Self::create_component_with_auth(rule!(allow_all))
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {
@@ -45,6 +43,7 @@ mod cross_component {
             }
         }
 
+        #[restrict_to("get_component_state_auth")]
         pub fn get_component_state(&self) -> String {
             self.secret.clone()
         }

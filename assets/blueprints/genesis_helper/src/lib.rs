@@ -86,6 +86,7 @@ mod genesis_helper {
             .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
+        #[restrict_to("system")]
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
             match chunk {
                 GenesisDataChunk::Validators(validators) => self.create_validators(validators),
@@ -100,6 +101,19 @@ mod genesis_helper {
                 } => self.allocate_resources(accounts, allocations),
                 GenesisDataChunk::XrdBalances(allocations) => self.allocate_xrd(allocations),
             }
+        }
+
+        #[restrict_to("system")]
+        pub fn wrap_up(&mut self) -> Bucket {
+            EpochManager(self.epoch_manager)
+                .start(&mut ScryptoEnv)
+                .unwrap();
+
+            // TODO: assert all resource vaults are empty
+            // i.e. that for all resources: initial_supply == sum(allocations)
+
+            // return any unused XRD
+            self.xrd_vault.take_all()
         }
 
         fn create_validators(&mut self, validators: Vec<GenesisValidator>) {
@@ -265,18 +279,6 @@ mod genesis_helper {
                     .deposit(bucket, &mut ScryptoEnv)
                     .unwrap();
             }
-        }
-
-        pub fn wrap_up(&mut self) -> Bucket {
-            EpochManager(self.epoch_manager)
-                .start(&mut ScryptoEnv)
-                .unwrap();
-
-            // TODO: assert all resource vaults are empty
-            // i.e. that for all resources: initial_supply == sum(allocations)
-
-            // return any unused XRD
-            self.xrd_vault.take_all()
         }
     }
 }

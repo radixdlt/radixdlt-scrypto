@@ -86,7 +86,10 @@ impl FullyQualifiedAuthorityKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct AuthoritySchema;
+pub enum AuthoritySchema {
+    RequiredEmpty,
+    Required,
+}
 
 // We keep one self-contained schema per blueprint:
 // - Easier macro to export schema, as they work at blueprint level

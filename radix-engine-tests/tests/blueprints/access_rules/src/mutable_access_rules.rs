@@ -5,8 +5,19 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(authority_rules: AuthorityRules) -> Global<MutableAccessRulesComponent> {
+        pub fn new(mut authority_rules: AuthorityRules) -> Global<MutableAccessRulesComponent> {
             let component = Self {}.instantiate();
+
+            authority_rules.set_main_authority_rule(
+                "deposit_funds",
+                rule!(require("deposit_funds_auth")),
+                rule!(deny_all),
+            );
+            authority_rules.set_main_authority_rule(
+                "borrow_funds",
+                rule!(require("borrow_funds_auth")),
+                rule!(deny_all),
+            );
 
             component.authority_rules(authority_rules).globalize()
         }
@@ -27,7 +38,10 @@ mod mutable_access_rules_component {
         }
 
         // The methods that the access rules will be added to
+        #[restrict_to("borrow_funds_auth")]
         pub fn borrow_funds(&self) {}
+
+        #[restrict_to("deposit_funds_auth")]
         pub fn deposit_funds(&self) {}
     }
 }

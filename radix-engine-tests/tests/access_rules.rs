@@ -16,8 +16,13 @@ fn initial_cyclic_authority_should_not_be_allowed() {
         {
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_main_authority_rule(
-                "deposit_funds",
-                rule!(require("deposit_funds")),
+                "deposit_funds_auth",
+                rule!(require("deposit_funds_auth")),
+                rule!(deny_all),
+            );
+            authority_rules.set_main_authority_rule(
+                "borrow_faunds_auth",
+                rule!(deny_all),
                 rule!(deny_all),
             );
             authority_rules
@@ -25,15 +30,16 @@ fn initial_cyclic_authority_should_not_be_allowed() {
         {
             let mut authority_rules = AuthorityRules::new();
             authority_rules.set_main_authority_rule(
-                "deposit_funds",
-                rule!(require("test")),
+                "deposit_funds_auth",
+                rule!(require("borrow_funds_auth")),
                 rule!(deny_all),
             );
             authority_rules.set_main_authority_rule(
-                "test",
-                rule!(require("deposit_funds")),
+                "borrow_faunds_auth",
+                rule!(require("deposit_funds_auth")),
                 rule!(deny_all),
             );
+
             authority_rules
         },
     ];
@@ -60,12 +66,13 @@ fn initial_cyclic_authority_should_not_be_allowed() {
 fn setting_circular_authority_rule_should_fail() {
     // Arrange
     let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule("deposit_funds", rule!(allow_all), rule!(allow_all));
+    authority_rules.set_main_authority_rule("deposit_funds_auth", rule!(allow_all), rule!(allow_all));
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     let receipt = test_runner.set_authority_rule(
-        AuthorityKey::main("deposit_funds"),
+        AuthorityKey::main("deposit_funds_auth"),
         rule!(require("deposit_funds")),
     );
 
@@ -82,8 +89,9 @@ fn setting_circular_authority_rule_should_fail() {
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
     let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require(RADIX_TOKEN)),
         rule!(deny_all),
     );
@@ -91,7 +99,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 
     // Act
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -107,8 +115,9 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
@@ -132,15 +141,16 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
-    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds"));
+    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds_auth"));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -156,8 +166,9 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
@@ -166,7 +177,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -180,8 +191,9 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
     let mut authority_rules = AuthorityRules::new();
+    authority_rules.set_main_authority_rule("borrow_funds_auth", rule!(allow_all), rule!(allow_all));
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require(RADIX_TOKEN)),
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
     );
@@ -189,14 +201,14 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds"));
+    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds_auth"));
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -212,12 +224,12 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
 
     let mut authority_rules = AuthorityRules::new();
     authority_rules.set_main_authority_rule(
-        "deposit_funds",
+        "deposit_funds_auth",
         rule!(require_owner()),
         rule!(require_owner()),
     );
     authority_rules.set_main_authority_rule(
-        "borrow_funds",
+        "borrow_funds_auth",
         rule!(require_owner()),
         rule!(require_owner()),
     );

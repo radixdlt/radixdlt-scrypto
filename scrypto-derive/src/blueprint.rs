@@ -86,6 +86,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let function_schemas = generated_schema_info.function_schemas;
         let function_authority_names = generated_schema_info.function_authority_names;
         let function_mapped_authorities = generated_schema_info.function_mapped_authorities;
+        let public_function_names = generated_schema_info.public_function_names;
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
 
@@ -148,8 +149,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let mut authority_schema = BTreeMap::new();
                 #({
-                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_authority_names), AuthoritySchema);
-                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_mapped_authorities), AuthoritySchema);
+                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_authority_names), AuthoritySchema::Required);
+                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_mapped_authorities), AuthoritySchema::Required);
+                })*
+                #({
+                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#public_function_names), AuthoritySchema::RequiredEmpty);
                 })*
 
                 let return_data = BlueprintSchema {
@@ -571,6 +575,7 @@ fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
 struct GeneratedSchemaInfo {
     function_names: Vec<String>,
     function_schemas: Vec<Expr>,
+    public_function_names: Vec<String>,
     function_authority_names: Vec<String>,
     function_mapped_authorities: Vec<String>,
 }
@@ -581,6 +586,7 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
     let mut function_schemas = Vec::<Expr>::new();
     let mut function_authority_names = Vec::<String>::new();
     let mut function_mapped_authorities = Vec::<String>::new();
+    let mut public_function_names = Vec::<String>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -590,13 +596,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
 
                 if let Visibility::Public(_) = &m.vis {
                     let function_name = m.sig.ident.to_string();
-
-                    {
-                        if let Some(authority) = get_restrict_to(&mut m.attrs) {
-                            function_authority_names.push(function_name.clone());
-                            function_mapped_authorities.push(authority);
-                        }
-                    }
 
                     let mut receiver = None;
                     for input in &m.sig.inputs {
@@ -643,6 +642,13 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                             }
                         });
                     } else {
+                        if let Some(authority) = get_restrict_to(&mut m.attrs) {
+                            function_authority_names.push(function_name.clone());
+                            function_mapped_authorities.push(authority);
+                        } else {
+                            public_function_names.push(function_name.clone());
+                        }
+
                         function_names.push(function_name);
                         function_schemas.push(parse_quote! {
                             ::scrypto::schema::FunctionSchema {
@@ -669,6 +675,7 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
         function_schemas,
         function_authority_names,
         function_mapped_authorities,
+        public_function_names,
     })
 }
 
@@ -808,6 +815,10 @@ mod tests {
                         let mut event_schema = BTreeMap::new();
 
                         let mut authority_schema = BTreeMap::new();
+
+                        {
+                            authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main("x"), AuthoritySchema::RequiredEmpty);
+                        }
 
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
