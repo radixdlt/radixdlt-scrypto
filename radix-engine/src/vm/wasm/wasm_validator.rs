@@ -9,6 +9,7 @@ pub struct WasmValidator {
     pub max_number_of_br_table_targets: u32,
     pub max_number_of_functions: u32,
     pub max_number_of_globals: u32,
+    pub metering_config: WasmMeteringConfig,
 }
 
 impl Default for WasmValidator {
@@ -19,17 +20,17 @@ impl Default for WasmValidator {
             max_number_of_br_table_targets: DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS,
             max_number_of_functions: DEFAULT_MAX_NUMBER_OF_FUNCTIONS,
             max_number_of_globals: DEFAULT_MAX_NUMBER_OF_GLOBALS,
+            metering_config: WasmMeteringConfig::V0,
         }
     }
 }
 
 impl WasmValidator {
-    pub fn validate(&self, code: &[u8], schema: &PackageSchema) -> Result<(), PrepareError> {
-        // Not all "valid" wasm modules are instrumentable, with the instrumentation library
-        // we are using. To deal with this, we attempt to instrument the input module with
-        // some mocked parameters and reject it if fails to do so.
-        let parameters = WasmMeteringConfig::V0.parameters();
-
+    pub fn validate(
+        &self,
+        code: &[u8],
+        schema: &PackageSchema,
+    ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
             .enforce_no_floating_point()?
             .enforce_no_start_function()?
@@ -40,12 +41,12 @@ impl WasmValidator {
             .enforce_function_limit(self.max_number_of_functions)?
             .enforce_global_limit(self.max_number_of_globals)?
             .enforce_export_constraints(schema)?
-            .inject_instruction_metering(parameters.instruction_cost_rules())?
-            .inject_stack_metering(parameters.max_stack_size())?
+            .inject_instruction_metering(
+                self.metering_config.parameters().instruction_cost_rules(),
+            )?
+            .inject_stack_metering(self.metering_config.parameters().max_stack_size())?
             .ensure_instantiatable()?
             .ensure_compilable()?
-            .to_bytes()?;
-
-        Ok(())
+            .to_bytes()
     }
 }
