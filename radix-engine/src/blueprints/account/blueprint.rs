@@ -17,7 +17,8 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{Bucket, Proof};
+use crate::blueprints::account::{ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -34,38 +35,14 @@ struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
+    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules
-            .set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT,
-            rule!(require(ACCOUNT_WITHDRAW_IDENT)),
-        );
-
+            .set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require_owner()));
         authority_rules
-            .set_fixed_main_authority_rule(ACCOUNT_LOCK_FEE_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT,
-            rule!(require(ACCOUNT_LOCK_FEE_IDENT)),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT,
-            rule!(require(ACCOUNT_LOCK_FEE_IDENT) && require(ACCOUNT_WITHDRAW_IDENT)),
-        );
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT,
-            rule!(require(ACCOUNT_LOCK_FEE_IDENT) && require(ACCOUNT_WITHDRAW_IDENT)),
-        );
-        authority_rules
-            .set_fixed_main_authority_rule(ACCOUNT_CREATE_PROOF_IDENT, rule!(require_owner()));
-        authority_rules.set_fixed_main_authority_rule(
-            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT,
-            rule!(require(ACCOUNT_CREATE_PROOF_IDENT)),
-        );
-
+            .set_fixed_main_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require_owner()));
         authority_rules
     }
 }

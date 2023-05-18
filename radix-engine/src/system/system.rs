@@ -682,22 +682,12 @@ where
             )?;
 
             let access_rules: MethodAccessRulesSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
-            for (key, schema) in blueprint_schema.authority_schema {
-                match key {
-                    FullyQualifiedAuthorityKey(SchemaObjectKey::SELF, SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident)) => {
+            for (_method, schema) in blueprint_schema.method_authority_mapping {
+                match schema {
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident) => {
                         let key = AuthorityKey::main(ident.as_str());
-
-                        match schema {
-                            AuthoritySchema::RequiredEmpty => {
-                                if access_rules.access_rules.rules.contains_key(&key) {
-                                    return Err(RuntimeError::SystemError(SystemError::AuthorityMustBeEmpty(blueprint_id.clone(), ident)));
-                                }
-                            }
-                            AuthoritySchema::Required => {
-                                if !access_rules.access_rules.rules.contains_key(&key) {
-                                    return Err(RuntimeError::SystemError(SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident)));
-                                }
-                            }
+                        if !access_rules.access_rules.rules.contains_key(&key) {
+                            return Err(RuntimeError::SystemError(SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident)));
                         }
                     }
                     _ => {}

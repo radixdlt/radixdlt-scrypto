@@ -86,7 +86,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let function_schemas = generated_schema_info.function_schemas;
         let function_authority_names = generated_schema_info.function_authority_names;
         let function_mapped_authorities = generated_schema_info.function_mapped_authorities;
-        let public_function_names = generated_schema_info.public_function_names;
 
         let schema_ident = format_ident!("{}_schema", bp_ident);
 
@@ -148,12 +147,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 })*
 
                 let mut authority_schema = BTreeMap::new();
+
+                let mut method_authority_mapping = BTreeMap::new();
                 #({
-                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_authority_names), AuthoritySchema::Required);
-                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#function_mapped_authorities), AuthoritySchema::Required);
-                })*
-                #({
-                    authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main(#public_function_names), AuthoritySchema::RequiredEmpty);
+                    method_authority_mapping.insert(#function_authority_names.to_owned(), SchemaAuthorityKey::new(#function_mapped_authorities));
                 })*
 
                 let return_data = BlueprintSchema {
@@ -164,6 +161,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
+                    method_authority_mapping,
                     authority_schema,
                 };
 
@@ -575,7 +573,6 @@ fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
 struct GeneratedSchemaInfo {
     function_names: Vec<String>,
     function_schemas: Vec<Expr>,
-    public_function_names: Vec<String>,
     function_authority_names: Vec<String>,
     function_mapped_authorities: Vec<String>,
 }
@@ -586,7 +583,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
     let mut function_schemas = Vec::<Expr>::new();
     let mut function_authority_names = Vec::<String>::new();
     let mut function_mapped_authorities = Vec::<String>::new();
-    let mut public_function_names = Vec::<String>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -645,8 +641,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                         if let Some(authority) = get_restrict_to(&mut m.attrs) {
                             function_authority_names.push(function_name.clone());
                             function_mapped_authorities.push(authority);
-                        } else {
-                            public_function_names.push(function_name.clone());
                         }
 
                         function_names.push(function_name);
@@ -675,7 +669,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
         function_schemas,
         function_authority_names,
         function_mapped_authorities,
-        public_function_names,
     })
 }
 
@@ -816,9 +809,7 @@ mod tests {
 
                         let mut authority_schema = BTreeMap::new();
 
-                        {
-                            authority_schema.insert(FullyQualifiedAuthorityKey::new_self_main("x"), AuthoritySchema::RequiredEmpty);
-                        }
+                        let mut method_authority_mapping = BTreeMap::new();
 
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
@@ -828,6 +819,7 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
+                            method_authority_mapping,
                             authority_schema,
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());

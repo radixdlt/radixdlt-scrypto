@@ -60,7 +60,6 @@ pub enum SchemaObjectModuleId {
     Main,
     Metadata,
     Royalty,
-    AccessRules,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -74,6 +73,12 @@ pub enum SchemaObjectKey {
 pub enum SchemaAuthorityKey {
     Owner,
     Module(SchemaObjectModuleId, String),
+}
+
+impl SchemaAuthorityKey {
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Self::Module(SchemaObjectModuleId::Main, name.into())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -115,6 +120,8 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
+
+    pub method_authority_mapping: BTreeMap<String, SchemaAuthorityKey>,
 
     pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>
 }
@@ -208,6 +215,8 @@ impl Default for BlueprintSchema {
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
+
+            method_authority_mapping: BTreeMap::default(),
             authority_schema: BTreeMap::default(),
         }
     }
@@ -228,6 +237,7 @@ pub struct IndexedBlueprintSchema {
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
 
+    pub method_authority_mapping: BTreeMap<String, SchemaAuthorityKey>,
     pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>,
 }
 
@@ -255,6 +265,7 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
+            method_authority_mapping: schema.method_authority_mapping,
             authority_schema: schema.authority_schema,
         }
     }

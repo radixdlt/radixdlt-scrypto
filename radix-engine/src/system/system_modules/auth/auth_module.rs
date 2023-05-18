@@ -23,6 +23,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::{SchemaAuthorityKey, SchemaObjectModuleId};
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -135,19 +136,41 @@ impl AuthModule {
                 }
             }
             (node_id, module_id, ..) => {
-                let method_key = MethodKey::new(module_id, ident);
-
                 let info = api.get_object_info(&node_id)?;
 
+                let key = match module_id {
+                    ObjectModuleId::Main => {
+                        let schema = api.get_blueprint_schema(&info.blueprint)?;
+                        if let Some(key) = schema.method_authority_mapping.get(ident) {
+                            key.clone()
+                        } else {
+                            return Ok(())
+                        }
+                    }
+                    ObjectModuleId::Metadata => {
+                        SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, METADATA_AUTHORITY.to_string())
+                    }
+                    ObjectModuleId::Royalty => {
+                        SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ROYALTY_AUTHORITY.to_string())
+                    }
+                    _ => panic!("Unexpected"),
+                };
+
+                let authority_key = match key {
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident) => AuthorityKey::Module(ObjectModuleId::Main, ident),
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, ident) => AuthorityKey::Module(ObjectModuleId::Metadata, ident),
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ident) => AuthorityKey::Module(ObjectModuleId::Royalty, ident),
+                    SchemaAuthorityKey::Owner => AuthorityKey::Owner,
+                };
+
                 if let Some(parent) = info.outer_object {
-                    let method_key = MethodKey::new(module_id, ident);
                     Self::check_authorization_against_access_rules(
                         callee.fn_identifier(),
                         auth_zone_id,
                         acting_location,
                         parent.as_node_id(),
                         ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
-                        method_key,
+                        authority_key.clone(),
                         api,
                     )?;
                 }
@@ -159,7 +182,7 @@ impl AuthModule {
                         acting_location,
                         &node_id,
                         ObjectKey::SELF,
-                        method_key,
+                        authority_key,
                         api,
                     )?;
                 }
@@ -178,7 +201,7 @@ impl AuthModule {
         acting_location: ActingLocation,
         receiver: &NodeId,
         object_key: ObjectKey,
-        key: MethodKey,
+        authority_key: AuthorityKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
@@ -209,7 +232,7 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             &access_rules_config,
-            &key,
+            &authority_key,
             api,
         )?;
 
@@ -226,7 +249,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &NodeAuthorityRules,
-        key: &MethodKey,
+        authority_key: &AuthorityKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         /*
@@ -239,13 +262,17 @@ impl AuthModule {
             None => return Ok(()),
         };
          */
+        let (access_rule, module_id) = match authority_key {
+            AuthorityKey::Owner => (rule!(require_owner()), ObjectModuleId::Main),
+            AuthorityKey::Module(module_id, ident) => (rule!(require(ident.as_str())), module_id.clone()),
+        };
 
         let result = Authorization::check_authorization_against_access_rule(
             acting_location,
             *auth_zone_id,
             access_rules,
-            key.module_id,
-            &rule!(require(key.ident.as_str())),
+            module_id,
+            &access_rule,
             api,
         )?;
         match result {

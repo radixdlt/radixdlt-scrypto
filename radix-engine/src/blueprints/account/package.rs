@@ -4,15 +4,16 @@ use crate::types::*;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaAuthorityKey, TypeSchema, VirtualLazyLoadSchema};
 
 use crate::blueprints::account::AccountBlueprint;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
+
+pub const ACCOUNT_WITHDRAW_AUTHORITY: &str = "withdraw";
+pub const ACCOUNT_CREATE_PROOF_AUTHORITY: &str = "create_proof";
+pub const ACCOUNT_SECURIFY_AUTHORITY: &str = "securify";
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
@@ -209,6 +210,19 @@ impl AccountNativePackage {
             }
         );
 
+        let method_authority_mapping = btreemap!(
+            ACCOUNT_WITHDRAW_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_LOCK_FEE_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY),
+            ACCOUNT_CREATE_PROOF_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY),
+            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY),
+            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY),
+            ACCOUNT_SECURIFY_IDENT.to_string() => SchemaAuthorityKey::new(ACCOUNT_SECURIFY_AUTHORITY),
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -220,6 +234,7 @@ impl AccountNativePackage {
                     functions,
                     virtual_lazy_load_functions,
                     event_schema: [].into(),
+                    method_authority_mapping,
                     authority_schema: btreemap!(),
                 }
             ),

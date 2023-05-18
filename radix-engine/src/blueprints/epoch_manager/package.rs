@@ -111,6 +111,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            method_authority_mapping: btreemap!(),
             authority_schema: btreemap!(),
         };
 
@@ -217,6 +218,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
+            method_authority_mapping: btreemap!(),
             authority_schema: btreemap!(),
         };
 

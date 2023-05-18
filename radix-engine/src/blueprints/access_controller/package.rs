@@ -15,7 +15,7 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::FunctionSchema;
+use radix_engine_interface::schema::{FunctionSchema, SchemaAuthorityKey};
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
 use radix_engine_interface::time::Instant;
@@ -369,6 +369,30 @@ impl AccessControllerNativePackage {
             ]
         };
 
+        let method_authority_mapping = btreemap!(
+            ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string() => SchemaAuthorityKey::new("primary"),
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string() => SchemaAuthorityKey::new("primary"),
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => SchemaAuthorityKey::new("primary"),
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string() => SchemaAuthorityKey::new("primary"),
+            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() =>  SchemaAuthorityKey::new("primary"),
+            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string() => SchemaAuthorityKey::new("recovery"),
+
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => SchemaAuthorityKey::new("recovery_or_confirmation"),
+            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() => SchemaAuthorityKey::new("recovery_or_confirmation"),
+
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => SchemaAuthorityKey::new("primary_or_confirmation"),
+            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() => SchemaAuthorityKey::new("primary_or_confirmation"),
+
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string() => SchemaAuthorityKey::new("any_role"),
+
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -380,6 +404,7 @@ impl AccessControllerNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema,
+                    method_authority_mapping,
                     authority_schema: btreemap!(),
                 }
             ),
@@ -1082,69 +1107,22 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         rule!(require(global_caller(address))),
     );
 
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_CREATE_PROOF_IDENT, primary);
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
-        primary,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        primary,
-    );
-
-    // Recovery Role Rules
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT, recovery);
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        recovery,
-    );
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT, recovery);
-    authority_rules.redirect_to_fixed(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT, recovery);
-
-    // Recovery || Confirmation Role Rules
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT,
+    authority_rules.set_main_authority_rule(
+        "recovery_or_confirmation",
         rule!(require("recovery") || require("confirmation")),
-    );
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        rule!(require("recovery") || require("confirmation")),
+        rule!(deny_all),
     );
 
-    // Primary || Confirmation Role Rules
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT,
+    authority_rules.set_main_authority_rule(
+        "primary_or_confirmation",
         rule!(require("primary") || require("confirmation")),
-    );
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
-        rule!(require("primary") || require("confirmation")),
+        rule!(deny_all),
     );
 
-    // Other methods
-    authority_rules.set_fixed_main_authority_rule(
-        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT,
+    authority_rules.set_main_authority_rule(
+        "any_role",
         rule!(require("primary") || require("confirmation") || require("recovery")),
+        rule!(deny_all),
     );
 
     authority_rules
