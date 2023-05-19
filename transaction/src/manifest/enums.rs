@@ -35,9 +35,40 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccessRuleEntry {
-                AccessRule = 0;
-                Group = 1;
+            enum Metadata {
+                String = 0;
+                Bool = 1;
+                U8 = 2;
+                U32 = 3;
+                U64 = 4;
+                I32 = 5;
+                I64 = 6;
+                Decimal = 7;
+                GlobalAddress = 8;
+                PublicKey = 9;
+                NonFungibleGlobalId = 10;
+                NonFungibleLocalId = 11;
+                Instant = 12;
+                Url = 13;
+                Origin = 14;
+                PublicKeyHash = 15;
+
+                StringArray = 128;
+                BoolArray = 129;
+                U8Array = 130;
+                U32Array = 131;
+                U64Array = 132;
+                I32Array = 133;
+                I64Array = 134;
+                DecimalArray = 135;
+                GlobalAddressArray = 136;
+                PublicKeyArray = 137;
+                NonFungibleGlobalIdArray = 138;
+                NonFungibleLocalIdArray = 139;
+                InstantArray = 140;
+                UrlArray = 141;
+                OriginArray = 142;
+                PublicKeyHashArray = 143;
             }
         );
 
@@ -53,9 +84,10 @@ lazy_static! {
         known_enum!(
             m,
             enum AccessRuleNode {
-                ProofRule = 0;
-                AnyOf = 1;
-                AllOf = 2;
+                Authority = 0;
+                ProofRule = 1;
+                AnyOf = 2;
+                AllOf = 3;
             }
         );
 
@@ -72,21 +104,11 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum SoftResourceOrNonFungible {
-                StaticNonFungible = 0;
-                StaticResource = 1;
-                Dynamic = 2;
-            }
-        );
-
-        known_enum!(
-            m,
-            enum TypedModuleId {
-                TypeInfo = 0;
-                ObjectState = 1;
-                Metadata = 2;
-                Royalty = 3;
-                AccessRules = 4;
+            enum ModuleId {
+                Main = 0;
+                Metadata = 1;
+                Royalty = 2;
+                AccessRules = 3;
             }
         );
 
