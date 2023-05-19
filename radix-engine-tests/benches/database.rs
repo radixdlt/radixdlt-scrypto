@@ -15,7 +15,7 @@ use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::TestTransaction;
 use std::path::PathBuf;
 use std::time::Duration;
-use radix_engine_stores::rocks_db::RocksdbSubstateStore;
+use radix_engine_stores::rocks_db::{RocksdbSubstateStore, Options, BlockBasedOptions};
 use std::fs::File;
 use std::io::prelude::*;
 use plotters::prelude::*;
@@ -29,8 +29,16 @@ struct RocksdbSubstateStoreWithMetrics {
 
 impl RocksdbSubstateStoreWithMetrics {
     pub fn new(path: PathBuf) -> Self {
+        let mut factory_opts = BlockBasedOptions::default();
+        factory_opts.disable_cache();
+
+        let mut opt = Options::default();
+        opt.set_disable_auto_compactions(true);
+        opt.create_if_missing(true);
+        opt.set_block_based_table_factory(&factory_opts);
+
         Self {
-            db: RocksdbSubstateStore::standard(path),
+            db: RocksdbSubstateStore::with_options(&opt, path),
             read_metrics: RefCell::new(BTreeMap::new())
         }
     }

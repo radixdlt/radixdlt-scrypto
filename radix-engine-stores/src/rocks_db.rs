@@ -1,5 +1,6 @@
 use radix_engine_store_interface::interface::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+pub use rocksdb::{Options, BlockBasedOptions};
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
 use utils::copy_u8_array;
@@ -11,6 +12,11 @@ pub struct RocksdbSubstateStore {
 impl RocksdbSubstateStore {
     pub fn standard(root: PathBuf) -> Self {
         let db = DB::open_default(root.as_path()).expect("IO Error");
+
+        Self { db }
+    }
+    pub fn with_options(options: &Options, root: PathBuf) -> Self {
+        let db = DB::open(options, root.as_path()).expect("IO Error");
 
         Self { db }
     }
