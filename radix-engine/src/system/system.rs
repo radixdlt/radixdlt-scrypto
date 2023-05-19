@@ -40,7 +40,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
-    InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, TypeSchema,
+    InstanceSchema, KeyValueStoreInfo, TypeSchema,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
@@ -692,15 +692,11 @@ where
                 self.kernel_read_substate(handle)?.as_typed().unwrap();
             for (_method, authority_list) in blueprint_schema.protected_methods {
                 for authority in authority_list {
-                    match authority {
-                        SchemaAuthorityKey::Main(ident) => {
-                            let key = AuthorityKey::main(ident.as_str());
-                            if !access_rules.access_rules.rules.contains_key(&key) {
-                                return Err(RuntimeError::SystemError(
-                                    SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident),
-                                ));
-                            }
-                        }
+                    let key = authority.into();
+                    if !access_rules.access_rules.rules.contains_key(&key) {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::MissingRequiredAuthority(blueprint_id.clone(), key),
+                        ));
                     }
                 }
             }

@@ -8,6 +8,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use scrypto_schema::SchemaAuthorityKey;
 use utils::btreemap;
 
 use super::AccessRule;
@@ -74,6 +75,12 @@ pub enum AttachedModule {
 pub enum AuthorityKey {
     Main(String),
     ModuleEntryPoint(AttachedModule, String),
+}
+
+impl From<SchemaAuthorityKey> for AuthorityKey {
+    fn from(value: SchemaAuthorityKey) -> Self {
+        Self::Main(value.key)
+    }
 }
 
 impl AuthorityKey {

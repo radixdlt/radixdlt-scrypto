@@ -58,13 +58,16 @@ pub enum SchemaObjectKey {
 
 // TODO: dedup
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SchemaAuthorityKey {
-    Main(String),
+#[sbor(transparent)]
+pub struct SchemaAuthorityKey {
+    pub key: String,
 }
 
 impl SchemaAuthorityKey {
     pub fn new<S: Into<String>>(name: S) -> Self {
-        Self::Main(name.into())
+        Self {
+            key: name.into()
+        }
     }
 }
 
@@ -73,7 +76,7 @@ pub struct FullyQualifiedAuthorityKey(pub SchemaObjectKey, pub SchemaAuthorityKe
 
 impl FullyQualifiedAuthorityKey {
     pub fn new_self_main<S: Into<String>>(name: S) -> Self {
-        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::Main(name.into()))
+        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::new(name))
     }
 }
 

@@ -24,7 +24,6 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::SchemaAuthorityKey;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -157,11 +156,7 @@ impl AuthModule {
                             return Ok(());
                         };
 
-                        authority_list.into_iter().map(|a| {
-                            match a {
-                                SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
-                            }
-                        }).collect()
+                        authority_list.into_iter().map(|key| key.into()).collect()
                     }
                     ObjectModuleId::Metadata => match ident {
                         METADATA_GET_IDENT => return Ok(()),
