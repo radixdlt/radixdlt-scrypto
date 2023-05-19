@@ -106,18 +106,22 @@ impl RocksdbSubstateStoreWithMetrics {
         }
 
         // 2. filter out spikes and calculate medians
-        let peak_diff_division = 20;
+        //let peak_diff_division = 10;
+        //let mut idx = 0;
         let mut data = Vec::with_capacity(100000);
         let mut median_data = Vec::new();
-        let mut idx = 0;
         for (k, v) in self.read_metrics.borrow().iter() {
             let mut w = v.iter().map(|i| *i).collect();
-            let median = discard_spikes(&mut w, Duration::from_nanos((max_values[idx].as_nanos() / peak_diff_division) as u64));
+            let median = calculate_median(&mut w);
+            // if *max_values[idx] > 10 * median {
+            //     let max_spike_offset = Duration::from_nanos((max_values[idx].as_nanos() / peak_diff_division) as u64);
+            //     discard_spikes(&mut w, max_spike_offset);
+            // }
             for i in w {
                 data.push((*k as i32, i.as_nanos() as i32));
             }
             median_data.push((*k as i32, median.as_nanos() as i32));
-            idx += 1;
+            //idx += 1;
         }
 
         // 3. calculate axis max/min values
@@ -147,13 +151,6 @@ impl RocksdbSubstateStoreWithMetrics {
             .y_desc("DB read duration [nanoseconds]")
             .axis_desc_style(("sans-serif", 16))
             .draw()?;
-        scatter_ctx.configure_series_labels()
-                .background_style(&WHITE)
-                .border_style(&BLACK)
-                .label_font(("sans-serif", 16))
-                .position(SeriesLabelPosition::UpperMiddle
-            )
-            .draw()?;
         // 1. draw all read points
         scatter_ctx.draw_series(
             data
@@ -177,6 +174,13 @@ impl RocksdbSubstateStoreWithMetrics {
             ))?
             .label(format!("Linear approx.: f(x)={:.4}*x+{:.1}", lin_slope, lin_intercept))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        scatter_ctx.configure_series_labels()
+                .background_style(&WHITE)
+                .border_style(&BLACK)
+                .label_font(("sans-serif", 16))
+                .position(SeriesLabelPosition::UpperMiddle
+            )
+            .draw()?;
 
         root.present().expect("Unable to write result to file");
 
@@ -375,12 +379,17 @@ criterion_group!(database, db_rw_test);
 criterion_main!(database);
 
 
-// returns median
-fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) -> Duration {
-    // 1. calculate median
+fn calculate_median(data: &mut Vec<Duration>) -> Duration {
     data.sort();
     let center_idx = data.len() / 2;
     let median = data[center_idx];
+    median
+}
+
+#[allow(dead_code)]
+fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) {
+    // 1. calculate median
+    let median = calculate_median(data);
 
     // 2. discard items out of median + range
     data.retain(|&i| {
@@ -390,5 +399,4 @@ fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) -> Duration {
             median - i <= delta_range
         }
     });
-    median
 }
