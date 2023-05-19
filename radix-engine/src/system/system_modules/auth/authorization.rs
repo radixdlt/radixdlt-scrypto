@@ -304,7 +304,7 @@ impl Authorization {
                 )) {
                     Some(access_rule) => {
                         // TODO: Add costing for every access rule hop
-                        Self::check_authorization_against_access_rule_internal(
+                        let rtn = Self::check_authorization_against_access_rule_internal(
                             acting_location,
                             auth_zone_id,
                             access_rules,
@@ -312,7 +312,14 @@ impl Authorization {
                             access_rule,
                             already_verified_authorities,
                             api,
-                        )
+                        )?;
+                        match rtn {
+                            AuthorizationCheckResult::Authorized => {
+                                already_verified_authorities.insert(authority.clone(), ());
+                            },
+                            AuthorizationCheckResult::Failed(..) => {}
+                        }
+                        Ok(rtn)
                     }
                     None => Ok(AuthorizationCheckResult::Authorized),
                 }
