@@ -64,18 +64,16 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
 
 impl ListableSubstateDatabase for RocksdbSubstateStore {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
-        let mut partition_keys: Vec<DbPartitionKey> = self
-            .db
-            .iterator(IteratorMode::Start)
-            .map(|kv| {
-                let (iter_key_bytes, _) = kv.as_ref().unwrap();
-                let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
-                iter_key
-            })
-            .collect();
-        // Eliminate duplicated keys (if any). Rocksdb iterator returns sorted entries, so we can
-        // dedup() directly.
-        partition_keys.dedup();
+        let mut partition_keys: Vec<DbPartitionKey> = vec![];
+
+        self.db.iterator(IteratorMode::Start).for_each(|kv| {
+            let (iter_key_bytes, _) = kv.as_ref().unwrap();
+            let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
+            // Eliminate duplicated keys (if any).
+            if !partition_keys.contains(&iter_key) {
+                partition_keys.push(iter_key)
+            }
+        });
 
         Box::new(partition_keys.into_iter())
     }
