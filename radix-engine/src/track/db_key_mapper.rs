@@ -62,7 +62,7 @@ pub trait DatabaseKeyMapper {
 /// This implementation is the actual, protocol-enforced one, to be used in public Radix networks.
 ///
 /// This implementation achieves the prefix-spreading by adding a hash prefix (shortened hash for
-/// performance reasons, but still hard to crach) to:
+/// performance reasons, but still hard to crack) to:
 /// - the PartitionKey (namely a RE Node and Module ID)
 /// - the SubstateKey
 pub struct SpreadPrefixKeyMapper;
