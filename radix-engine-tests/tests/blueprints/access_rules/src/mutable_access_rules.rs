@@ -6,20 +6,10 @@ mod mutable_access_rules_component {
 
     impl MutableAccessRulesComponent {
         pub fn new(mut authority_rules: AuthorityRules) -> Global<MutableAccessRulesComponent> {
-            let component = Self {}.instantiate();
-
-            authority_rules.set_main_authority_rule(
-                "deposit_funds",
-                rule!(require("deposit_funds_auth")),
-                rule!(deny_all),
-            );
-            authority_rules.set_main_authority_rule(
-                "borrow_funds",
-                rule!(require("borrow_funds_auth")),
-                rule!(deny_all),
-            );
-
-            component.authority_rules(authority_rules).globalize()
+            Self {}
+                .instantiate()
+                .authority_rules(authority_rules)
+                .globalize()
         }
 
         pub fn access_rules_function(component_address: ComponentAddress) {

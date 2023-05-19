@@ -61,7 +61,6 @@ pub enum SchemaObjectKey {
 pub enum SchemaAuthorityKey {
     Owner,
     Main(String),
-    Module(SchemaObjectModuleId, String),
 }
 
 impl SchemaAuthorityKey {

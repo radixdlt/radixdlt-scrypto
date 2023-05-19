@@ -136,38 +136,30 @@ impl AuthModule {
             (node_id, module_id, ..) => {
                 let info = api.get_object_info(&node_id)?;
 
-                let key = match module_id {
+                let authority_key = match module_id {
                     ObjectModuleId::Main => {
                         let schema = api.get_blueprint_schema(&info.blueprint)?;
-                        if let Some(key) = schema.method_authority_mapping.get(ident) {
+                        let key = if let Some(key) = schema.method_authority_mapping.get(ident) {
                             key.clone()
                         } else {
                             return Ok(());
+                        };
+
+                        match key {
+                            SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
+                            SchemaAuthorityKey::Owner => AuthorityKey::Owner,
                         }
                     }
                     ObjectModuleId::Metadata => match ident {
                         METADATA_GET_IDENT => return Ok(()),
-                        _ => SchemaAuthorityKey::Module(
-                            SchemaObjectModuleId::Metadata,
-                            METADATA_AUTHORITY.to_string(),
-                        ),
+                        _ => {
+                            AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, METADATA_AUTHORITY.to_string())
+                        },
                     },
-                    ObjectModuleId::Royalty => SchemaAuthorityKey::Module(
-                        SchemaObjectModuleId::Royalty,
-                        ROYALTY_AUTHORITY.to_string(),
-                    ),
+                    ObjectModuleId::Royalty => {
+                        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ROYALTY_AUTHORITY.to_string())
+                    },
                     _ => panic!("Unexpected"),
-                };
-
-                let authority_key = match key {
-                    SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, ident) => {
-                        AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, ident)
-                    }
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ident) => {
-                        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ident)
-                    }
-                    SchemaAuthorityKey::Owner => AuthorityKey::Owner,
                 };
 
                 if let Some(parent) = info.outer_object {
