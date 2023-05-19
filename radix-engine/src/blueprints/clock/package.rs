@@ -14,9 +14,7 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{
-    BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo,
-};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaAuthorityKey};
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
 
@@ -24,6 +22,8 @@ use resources_tracker_macro::trace_resources;
 pub struct ClockSubstate {
     pub current_time_rounded_to_minutes_ms: i64,
 }
+
+const CLOCK_AUTHORITY: &str = "clock";
 
 const SECONDS_TO_MS_FACTOR: i64 = 1000;
 const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
@@ -76,6 +76,10 @@ impl ClockNativePackage {
             },
         );
 
+        let method_authority_mapping = btreemap!(
+            CLOCK_SET_CURRENT_TIME_IDENT.to_string() => SchemaAuthorityKey::new(CLOCK_AUTHORITY),
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -87,7 +91,7 @@ impl ClockNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_authority_mapping: btreemap!(),
+                    method_authority_mapping,
                     authority_schema: btreemap!(),
                 }
             ),
@@ -166,7 +170,7 @@ impl ClockNativePackage {
 
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_main_authority_rule(
-            CLOCK_SET_CURRENT_TIME_IDENT,
+            CLOCK_AUTHORITY,
             rule!(require(AuthAddresses::validator_role())),
             DenyAll,
         );

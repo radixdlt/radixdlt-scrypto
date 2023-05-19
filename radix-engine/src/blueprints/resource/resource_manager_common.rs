@@ -39,30 +39,25 @@ fn build_access_rules(
                 mint_access_rule,
                 mint_mutability,
             );
-            resman_authority_rules
-                .redirect_to_fixed(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
-            resman_authority_rules.redirect_to_fixed(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT,
-                MINT_AUTHORITY,
-            );
-            resman_authority_rules.redirect_to_fixed(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT,
-                MINT_AUTHORITY,
-            );
-            resman_authority_rules
-                .redirect_to_fixed(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, MINT_AUTHORITY);
         }
 
-        resman_authority_rules.set_main_authority_rule(
-            RESOURCE_MANAGER_BURN_IDENT,
-            burn_access_rule,
-            burn_mutability,
-        );
-        resman_authority_rules.set_main_authority_rule(
-            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
-            update_non_fungible_data_access_rule,
-            update_non_fungible_data_mutability,
-        );
+        // Burn
+        {
+            resman_authority_rules.set_main_authority_rule(
+                BURN_AUTHORITY,
+                burn_access_rule,
+                burn_mutability,
+            );
+        }
+
+        // Non Fungible Update data
+        {
+            resman_authority_rules.set_main_authority_rule(
+                UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
+                update_non_fungible_data_access_rule,
+                update_non_fungible_data_mutability,
+            );
+        }
 
         resman_authority_rules
     };
@@ -83,37 +78,25 @@ fn build_access_rules(
         // Withdraw
         {
             vault_authority_rules.set_main_authority_rule(
-                VAULT_TAKE_IDENT,
+                WITHDRAW_AUTHORITY,
                 withdraw_access_rule,
                 withdraw_mutability,
-            );
-            vault_authority_rules.set_fixed_main_authority_rule(
-                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT,
-                rule!(require(VAULT_TAKE_IDENT)),
-            );
-            vault_authority_rules.set_fixed_main_authority_rule(
-                FUNGIBLE_VAULT_LOCK_FEE_IDENT,
-                rule!(require(VAULT_TAKE_IDENT)),
             );
         }
 
         // Recall
         {
             vault_authority_rules.set_main_authority_rule(
-                VAULT_RECALL_IDENT,
+                RECALL_AUTHORITY,
                 recall_access_rule,
                 recall_mutability,
-            );
-            vault_authority_rules.set_fixed_main_authority_rule(
-                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT,
-                rule!(require(VAULT_RECALL_IDENT)),
             );
         }
 
         // Deposit
         {
             vault_authority_rules.set_main_authority_rule(
-                VAULT_PUT_IDENT,
+                DEPOSIT_AUTHORITY,
                 deposit_access_rule,
                 deposit_mutability,
             );
@@ -121,17 +104,6 @@ fn build_access_rules(
 
         // Internal
         {
-            vault_authority_rules
-                .redirect_to_fixed(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
-            vault_authority_rules
-                .redirect_to_fixed(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT, "this_package");
-            vault_authority_rules
-                .redirect_to_fixed(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT, "this_package");
-            vault_authority_rules.redirect_to_fixed(
-                NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT,
-                "this_package",
-            );
-
             vault_authority_rules.set_fixed_main_authority_rule(
                 "this_package",
                 rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
@@ -150,15 +122,6 @@ fn build_access_rules(
         bucket_authority_rules.set_fixed_main_authority_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-        );
-        bucket_authority_rules.redirect_to_fixed(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT, "this_package");
-        bucket_authority_rules
-            .redirect_to_fixed(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT, "this_package");
-        bucket_authority_rules
-            .redirect_to_fixed(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT, "this_package");
-        bucket_authority_rules.redirect_to_fixed(
-            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT,
-            "this_package",
         );
 
         bucket_authority_rules

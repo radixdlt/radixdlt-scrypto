@@ -19,6 +19,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::node_modules::metadata::METADATA_GET_IDENT;
 use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -148,7 +149,10 @@ impl AuthModule {
                         }
                     }
                     ObjectModuleId::Metadata => {
-                        SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, METADATA_AUTHORITY.to_string())
+                        match ident {
+                            METADATA_GET_IDENT => return Ok(()),
+                            _ => SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, METADATA_AUTHORITY.to_string()),
+                        }
                     }
                     ObjectModuleId::Royalty => {
                         SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ROYALTY_AUTHORITY.to_string())

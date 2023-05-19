@@ -16,10 +16,7 @@ mod cross_component {
                 auth_vault: None,
             }
             .instantiate()
-            .authority_rule("get_component_state",
-                            rule!(require("get_component_state_auth")),
-                            rule!(deny_all))
-            .authority_rule("get_component_state_auth", access_rule, rule!(deny_all))
+            .authority_rule("get_component_state", access_rule, rule!(deny_all))
             .globalize()
         }
 
@@ -43,7 +40,7 @@ mod cross_component {
             }
         }
 
-        #[restrict_to("get_component_state_auth")]
+        #[restrict_to("get_component_state")]
         pub fn get_component_state(&self) -> String {
             self.secret.clone()
         }

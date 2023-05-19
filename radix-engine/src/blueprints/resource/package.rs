@@ -8,7 +8,7 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema, SchemaAuthorityKey};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -262,6 +262,11 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
+            let method_authority_mapping = btreemap!(
+                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string() => SchemaAuthorityKey::new(MINT_AUTHORITY),
+                RESOURCE_MANAGER_BURN_IDENT.to_string() => SchemaAuthorityKey::new(BURN_AUTHORITY),
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -271,7 +276,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };
@@ -503,6 +508,16 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
+            let method_authority_mapping = btreemap!(
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string() => SchemaAuthorityKey::new(MINT_AUTHORITY),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string() => SchemaAuthorityKey::new(MINT_AUTHORITY),
+                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string() => SchemaAuthorityKey::new(MINT_AUTHORITY),
+
+                RESOURCE_MANAGER_BURN_IDENT.to_string() => SchemaAuthorityKey::new(BURN_AUTHORITY),
+
+                NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string() => SchemaAuthorityKey::new(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY),
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -512,7 +527,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };
@@ -632,6 +647,19 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            let method_authority_mapping = btreemap!(
+                VAULT_TAKE_IDENT.to_string() => SchemaAuthorityKey::new(WITHDRAW_AUTHORITY),
+                FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string() => SchemaAuthorityKey::new(WITHDRAW_AUTHORITY),
+
+                VAULT_RECALL_IDENT.to_string() => SchemaAuthorityKey::new(RECALL_AUTHORITY),
+
+                VAULT_PUT_IDENT.to_string() => SchemaAuthorityKey::new(DEPOSIT_AUTHORITY),
+
+                FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+                FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+            );
+
+
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -640,7 +668,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };
@@ -804,6 +832,19 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
+            let method_authority_mapping = btreemap!(
+                VAULT_TAKE_IDENT.to_string() => SchemaAuthorityKey::new(WITHDRAW_AUTHORITY),
+                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new(WITHDRAW_AUTHORITY),
+
+                VAULT_RECALL_IDENT.to_string() => SchemaAuthorityKey::new(RECALL_AUTHORITY),
+                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new(RECALL_AUTHORITY),
+
+                VAULT_PUT_IDENT.to_string() => SchemaAuthorityKey::new(DEPOSIT_AUTHORITY),
+
+                NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+                NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+            );
+
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -812,7 +853,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };
@@ -918,6 +959,12 @@ impl ResourceManagerNativePackage {
                     export_name: FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
+
+            let method_authority_mapping = btreemap!(
+                FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+                FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -927,7 +974,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };
@@ -1067,6 +1114,12 @@ impl ResourceManagerNativePackage {
                     export_name: NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME.to_string(),
                 },
             );
+
+            let method_authority_mapping = btreemap!(
+                NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+                NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
+            );
+
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -1076,7 +1129,7 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                method_authority_mapping: btreemap!(),
+                method_authority_mapping,
                 authority_schema: btreemap!(),
             }
         };

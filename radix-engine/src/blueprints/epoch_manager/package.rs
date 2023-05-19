@@ -8,13 +8,17 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
-use radix_engine_interface::schema::{
-    BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo,
-};
+use radix_engine_interface::schema::{BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaAuthorityKey};
 use resources_tracker_macro::trace_resources;
 
 use super::*;
+
+pub const EPOCH_MANAGER_START_AUTHORITY: &str = "start";
+pub const VALIDATOR_AUTHORITY: &str = "validator";
+pub const SYSTEM_AUTHORITY: &str = "system";
+
+pub const VALIDATOR_STAKE_AUTHORITY: &str = "stake";
+pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 
 pub struct EpochManagerNativePackage;
 
@@ -103,6 +107,13 @@ impl EpochManagerNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
+
+        let method_authority_mapping = btreemap!(
+            EPOCH_MANAGER_START_IDENT.to_string() => SchemaAuthorityKey::new(EPOCH_MANAGER_START_AUTHORITY),
+            EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_AUTHORITY),
+            EPOCH_MANAGER_SET_EPOCH_IDENT.to_string() => SchemaAuthorityKey::new(SYSTEM_AUTHORITY),
+        );
+
         let epoch_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
@@ -111,7 +122,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_authority_mapping: btreemap!(),
+            method_authority_mapping,
             authority_schema: btreemap!(),
         };
 
@@ -210,6 +221,16 @@ impl EpochManagerNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
+
+        let method_authority_mapping = btreemap!(
+            VALIDATOR_REGISTER_IDENT.to_string() => SchemaAuthorityKey::Owner,
+            VALIDATOR_UNREGISTER_IDENT.to_string() => SchemaAuthorityKey::Owner,
+            VALIDATOR_UPDATE_KEY_IDENT.to_string() => SchemaAuthorityKey::Owner,
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string() => SchemaAuthorityKey::Owner,
+            VALIDATOR_STAKE_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_STAKE_AUTHORITY),
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY),
+        );
+
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
@@ -218,7 +239,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_authority_mapping: btreemap!(),
+            method_authority_mapping,
             authority_schema: btreemap!(),
         };
 

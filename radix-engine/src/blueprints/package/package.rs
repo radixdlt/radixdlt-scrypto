@@ -19,7 +19,7 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes};
+use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaAuthorityKey};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -28,6 +28,8 @@ pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate a
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
+
+pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -114,8 +116,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
-        authority_rules.redirect_to_fixed(PACKAGE_CLAIM_ROYALTY_IDENT, "package_royalty");
-        authority_rules.redirect_to_fixed(PACKAGE_SET_ROYALTY_CONFIG_IDENT, "package_royalty");
+
         authority_rules.set_fixed_main_authority_rule("package_royalty", rule!(require_owner()));
         authority_rules
     }
@@ -284,6 +285,11 @@ impl PackageNativePackage {
             },
         );
 
+        let method_authority_mapping = btreemap!(
+            PACKAGE_CLAIM_ROYALTY_IDENT.to_string() => SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY),
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string() => SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY),
+        );
+
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -295,7 +301,7 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_authority_mapping: btreemap!(),
+                    method_authority_mapping,
                     authority_schema: btreemap!(),
                 }
             ),
