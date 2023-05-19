@@ -19,7 +19,7 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::fs::File;
 use std::io::prelude::*;
 use plotters::prelude::*;
-use linreg::{linear_regression, linear_regression_of};
+use linreg::linear_regression_of;
 
 
 struct RocksdbSubstateStoreWithMetrics {
@@ -34,11 +34,15 @@ impl RocksdbSubstateStoreWithMetrics {
             read_metrics: RefCell::new(BTreeMap::new())
         }
     }
+
+    #[allow(dead_code)]
     pub fn show_output(&self) {
         for (k, v) in self.read_metrics.borrow().iter() {
             println!("{:<10} | {:<10?}", k, v);
         }
     }
+
+    #[allow(dead_code)]
     pub fn export_to_csv(&self) -> std::io::Result<()> {
         let mut file = File::create("/tmp/out_01.csv")?;
 
@@ -53,6 +57,7 @@ impl RocksdbSubstateStoreWithMetrics {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn export_histogram(&self) -> Result<(), Box<dyn std::error::Error>> {
         let root = BitMapBackend::new("/tmp/h1.png", (640, 480)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -93,11 +98,6 @@ impl RocksdbSubstateStoreWithMetrics {
 
 
     pub fn export_mft(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new("/tmp/h2.png", (1024, 768)).into_drawing_area();
-    
-        root.fill(&WHITE)?;
-        root.margin(20, 20, 20, 20);
-    
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
         let binding = self.read_metrics.borrow();
@@ -119,7 +119,7 @@ impl RocksdbSubstateStoreWithMetrics {
             median_data.push((*k as i32, median.as_nanos() as i32));
             idx += 1;
         }
-        
+
         // 3. calculate axis max/min values
         let y_ofs = 1000;
         let x_ofs = 5000;
@@ -128,19 +128,16 @@ impl RocksdbSubstateStoreWithMetrics {
         let y_min = data.iter().map(|i| i.1).min().unwrap() - y_ofs;
         let y_max = data.iter().map(|i| i.1).max().unwrap() + y_ofs;
 
+        // 4. calculate linear approximation
         let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&data).unwrap();
         let lin_x_axis = (x_min..x_max).step(10);
 
-        //let areas = root.split_by_breakpoints([944], [80]);
+        // draw scatter plot
+        let root = BitMapBackend::new("/tmp/h2.png", (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+        root.margin(20, 20, 20, 20);
 
-        // let mut x_hist_ctx = ChartBuilder::on(&areas[0])
-        //     .y_label_area_size(40)
-        //     .build_cartesian_2d((0..x_max).step(x_max/10000).use_round().into_segmented(), 0..250)?;
-    //        .build_cartesian_2d((0.0..1.0).step(0.01).use_round().into_segmented(), 0..250)?;
-    // let mut y_hist_ctx = ChartBuilder::on(&areas[3])
-        //     .x_label_area_size(80)
-        //     .build_cartesian_2d(0..y_max, (y_min..y_max).step(1).use_round())?;
-        let mut scatter_ctx = ChartBuilder::on(&root) //&areas[2])
+        let mut scatter_ctx = ChartBuilder::on(&root)
             .x_label_area_size(40)
             .y_label_area_size(80)
             .margin(20)
@@ -150,6 +147,14 @@ impl RocksdbSubstateStoreWithMetrics {
             .y_desc("DB read duration [nanoseconds]")
             .axis_desc_style(("sans-serif", 16))
             .draw()?;
+        scatter_ctx.configure_series_labels()
+                .background_style(&WHITE)
+                .border_style(&BLACK)
+                .label_font(("sans-serif", 16))
+                .position(SeriesLabelPosition::UpperMiddle
+            )
+            .draw()?;
+        // 1. draw all read points
         scatter_ctx.draw_series(
             data
                 .iter()
@@ -157,6 +162,7 @@ impl RocksdbSubstateStoreWithMetrics {
             )?
             .label(format!("Reads (count: {})", data.len()))
             .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+        // 2. draw median for each read series (basaed on same size)
         scatter_ctx.draw_series(
             median_data
                 .iter()
@@ -164,39 +170,21 @@ impl RocksdbSubstateStoreWithMetrics {
             )?
             .label("Median for each series")
             .legend(|(x, y)| Cross::new((x + 10, y), 6, RED));
+        // 3. draw linear approximetion line
         scatter_ctx.draw_series(LineSeries::new(
-            lin_x_axis.values().map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
-            &BLUE,
+                lin_x_axis.values().map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
+                &BLUE,
             ))?
             .label(format!("Linear approx.: f(x)={:.4}*x+{:.1}", lin_slope, lin_intercept))
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
-        scatter_ctx.configure_series_labels()
-            .background_style(&WHITE)
-            .border_style(&BLACK)
-            .label_font(("sans-serif", 16))
-            .position(SeriesLabelPosition::UpperMiddle
-            )
-            .draw()?;
+        root.present().expect("Unable to write result to file");
 
-        // let x_hist = Histogram::vertical(&x_hist_ctx)
-        //     .style(GREEN.filled())
-        //     .margin(0)
-        //     .data(data.iter().map(|(x, _)| (*x, 1)));
-        // let y_hist = Histogram::horizontal(&y_hist_ctx)
-        //     .style(GREEN.filled())
-        //     .margin(0)
-        //     .data(data.iter().map(|(_, y)| (*y, 1)));
-        // x_hist_ctx.draw_series(x_hist)?;
-        // y_hist_ctx.draw_series(y_hist)?;
-    
-        // To avoid the IO failure being ignored silently, we manually call the present function
-        root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-    
-
+        // print some informations
         println!("Read count: {}", data.len());
-        println!("Distinct size read count: {}", median_data.len());
-        println!("Median points: {:?}", median_data);
+        println!("Distinct size read count: {}", self.read_metrics.borrow().len());
+        println!("Read counts list (size, count): {:?}", self.read_metrics.borrow().iter().map(|(k,v)| (*k, v.len()) ).collect::<Vec<(usize, usize)>>());
+        println!("Median points list (size, time): {:?}", median_data);
         println!("Linear approx.:  f(size) = {} * size + {}", lin_slope, lin_intercept);
 
         Ok(())
