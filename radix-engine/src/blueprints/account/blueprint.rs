@@ -769,26 +769,26 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Case: XRD - Deposit of XRD is always allowed.
-        if *resource_address == RADIX_TOKEN {
-            Ok(true)
-        } else {
-            match deposits_mode {
-                AccountDepositsMode::AllowAll => Ok(true),
-                AccountDepositsMode::AllowList(ref allow_list)
-                    if allow_list.contains(resource_address) =>
-                {
+        match deposits_mode {
+            AccountDepositsMode::AllowAll => Ok(true),
+            AccountDepositsMode::AllowList(ref allow_list)
+                if allow_list.contains(resource_address) =>
+            {
+                Ok(true)
+            }
+            AccountDepositsMode::DisallowList(ref disallow_list)
+                if !disallow_list.contains(resource_address) =>
+            {
+                Ok(true)
+            }
+            // Case: Only if the resource exists (not just that we have a vault for it). So,
+            // we need to check how much of it we have. If it's more than zero then we allow
+            // it.
+            AccountDepositsMode::AllowExisting => {
+                // Case: Deposit of XRD is always allowed in `AllowExisting` mode.
+                if *resource_address == RADIX_TOKEN {
                     Ok(true)
-                }
-                AccountDepositsMode::DisallowList(ref disallow_list)
-                    if !disallow_list.contains(resource_address) =>
-                {
-                    Ok(true)
-                }
-                // Case: Only if the resource exists (not just that we have a vault for it). So,
-                // we need to check how much of it we have. If it's more than zero then we allow
-                // it.
-                AccountDepositsMode::AllowExisting => {
+                } else {
                     let amount_lookup_result = Self::get_vault(
                         *resource_address,
                         |vault, api| vault.amount(api),
@@ -806,8 +806,8 @@ impl AccountBlueprint {
                         Err(amount_lookup_result.unwrap_err())
                     }
                 }
-                _ => Ok(false),
             }
+            _ => Ok(false),
         }
     }
 }
