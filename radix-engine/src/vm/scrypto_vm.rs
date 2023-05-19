@@ -27,12 +27,14 @@ impl<W: WasmEngine> ScryptoVm<W> {
         &self,
         package_address: &PackageAddress,
         code: &[u8],
-    ) -> Result<ScryptoVmInstance<W::WasmInstance>, PrepareError> {
-        let instrumented_code =
-            self.wasm_instrumenter
-                .instrument(*package_address, code, self.wasm_metering_config)?;
-        let instance = self.wasm_engine.instantiate(&instrumented_code)?;
-        Ok(ScryptoVmInstance { instance })
+    ) -> ScryptoVmInstance<W::WasmInstance> {
+        let instrumented_code = self
+            .wasm_instrumenter
+            .instrument(*package_address, code, self.wasm_metering_config)
+            .expect("Failed to re-instrument");
+        ScryptoVmInstance {
+            instance: self.wasm_engine.instantiate(&instrumented_code),
+        }
     }
 }
 
