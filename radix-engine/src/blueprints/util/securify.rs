@@ -72,9 +72,9 @@ pub trait SecurifiedAccessRules {
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
 
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::Owner,
+            AuthorityKey::main("owner"),
             rule!(require(global_id.clone())),
-            rule!(require_owner()),
+            rule!(require("owner")),
             api,
         )?;
 
@@ -104,7 +104,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         }
 
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::Owner,
+            AuthorityKey::main("owner"),
             access_rule.clone(),
             this_package_rule.clone(),
             api,

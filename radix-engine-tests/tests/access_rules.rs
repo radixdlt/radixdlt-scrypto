@@ -253,13 +253,13 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let mut authority_rules = AuthorityRules::new();
     authority_rules.set_main_authority_rule(
         "deposit_funds_auth",
-        rule!(require_owner()),
-        rule!(require_owner()),
+        rule!(require("owner")),
+        rule!(require("owner")),
     );
     authority_rules.set_main_authority_rule(
         "borrow_funds_auth",
-        rule!(require_owner()),
-        rule!(require_owner()),
+        rule!(require("owner")),
+        rule!(require("owner")),
     );
     authority_rules.set_owner_authority(
         rule!(require(RADIX_TOKEN)),
@@ -275,7 +275,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
             .set_authority_access_rule(
                 test_runner.component_address.into(),
                 ObjectKey::SELF,
-                AuthorityKey::Owner,
+                AuthorityKey::main("owner"),
                 to_rule,
             )
             .build(),

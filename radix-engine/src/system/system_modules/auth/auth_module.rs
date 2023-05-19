@@ -160,7 +160,6 @@ impl AuthModule {
                         authority_list.into_iter().map(|a| {
                             match a {
                                 SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
-                                SchemaAuthorityKey::Owner => AuthorityKey::Owner,
                             }
                         }).collect()
                     }

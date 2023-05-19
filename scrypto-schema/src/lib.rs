@@ -59,7 +59,6 @@ pub enum SchemaObjectKey {
 // TODO: dedup
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SchemaAuthorityKey {
-    Owner,
     Main(String),
 }
 

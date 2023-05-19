@@ -226,10 +226,10 @@ impl EpochManagerNativePackage {
         let schema = generate_full_schema(aggregator);
 
         let protected_methods = btreemap!(
-            VALIDATOR_REGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
-            VALIDATOR_UNREGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
-            VALIDATOR_UPDATE_KEY_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
-            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
+            VALIDATOR_REGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::new("owner")],
+            VALIDATOR_UNREGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::new("owner")],
+            VALIDATOR_UPDATE_KEY_IDENT.to_string() => vec![SchemaAuthorityKey::new("owner")],
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string() => vec![SchemaAuthorityKey::new("owner")],
             VALIDATOR_STAKE_IDENT.to_string() => vec![SchemaAuthorityKey::new(VALIDATOR_STAKE_AUTHORITY)],
             VALIDATOR_APPLY_EMISSION_IDENT.to_string() => vec![SchemaAuthorityKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY)],
         );

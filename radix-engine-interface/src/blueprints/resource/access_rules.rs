@@ -72,7 +72,6 @@ pub enum AttachedModule {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityKey {
-    Owner,
     Main(String),
     ModuleEntryPoint(AttachedModule, String),
 }
@@ -80,7 +79,6 @@ pub enum AuthorityKey {
 impl AuthorityKey {
     pub fn from_access_rule(rule: AuthorityRule) -> Self {
         match rule {
-            AuthorityRule::Owner => AuthorityKey::Owner,
             AuthorityRule::Custom(key) => AuthorityKey::Main(key),
         }
     }
@@ -113,7 +111,11 @@ impl AuthorityRules {
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules
-            .set_owner_authority(rule!(require(owner_badge.clone())), rule!(require_owner()));
+            .set_main_authority_rule(
+                "owner",
+                rule!(require(owner_badge.clone())),
+                rule!(require("owner"))
+            );
         authority_rules
     }
 
@@ -161,7 +163,7 @@ impl AuthorityRules {
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules.insert(AuthorityKey::Owner, (rule, mutability));
+        self.rules.insert(AuthorityKey::main("owner"), (rule, mutability));
     }
 }
 

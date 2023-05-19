@@ -430,7 +430,7 @@ impl ValidatorBlueprint {
         let rule = if accept_delegated_stake {
             AccessRule::AllowAll
         } else {
-            rule!(require_owner())
+            rule!(require("owner"))
         };
 
         api.call_method_advanced(
@@ -627,12 +627,12 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
+        authority_rules.set_metadata_authority(rule!(require("owner")), rule!(deny_all));
         authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
 
         authority_rules.set_main_authority_rule(
             VALIDATOR_STAKE_AUTHORITY,
-            rule!(require_owner()),
+            rule!(require("owner")),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
         authority_rules.set_fixed_authority_rule(

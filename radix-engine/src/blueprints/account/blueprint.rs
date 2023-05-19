@@ -42,9 +42,9 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules
-            .set_fixed_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require_owner()));
+            .set_fixed_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")));
         authority_rules
-            .set_fixed_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require_owner()));
+            .set_fixed_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require("owner")));
         authority_rules
     }
 }

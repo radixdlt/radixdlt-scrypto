@@ -89,7 +89,6 @@ impl From<&str> for AccessRuleNode {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityRule {
-    Owner,
     Custom(String),
 }
 
@@ -150,10 +149,6 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(
         global_caller.into(),
     ))
-}
-
-pub fn require_owner() -> AccessRuleNode {
-    AccessRuleNode::Authority(AuthorityRule::Owner)
 }
 
 pub fn require<T>(required: T) -> AccessRuleNode
