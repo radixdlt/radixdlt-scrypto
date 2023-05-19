@@ -287,9 +287,9 @@ impl PackageNativePackage {
             },
         );
 
-        let method_authority_mapping = btreemap!(
-            PACKAGE_CLAIM_ROYALTY_IDENT.to_string() => SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY),
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string() => SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY),
+        let protected_methods = btreemap!(
+            PACKAGE_CLAIM_ROYALTY_IDENT.to_string() => vec![SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY)],
+            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string() => vec![SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY)],
         );
 
         let schema = generate_full_schema(aggregator);
@@ -303,7 +303,7 @@ impl PackageNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_authority_mapping,
+                    protected_methods,
                     authority_schema: btreemap!(),
                 }
             ),

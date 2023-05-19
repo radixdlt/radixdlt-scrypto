@@ -32,6 +32,7 @@ mod vault_test {
                 vault_vector,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -46,6 +47,7 @@ mod vault_test {
                 vault_vector: vec![vault_fake_copy],
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -66,6 +68,7 @@ mod vault_test {
                 vault_vector,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -87,6 +90,7 @@ mod vault_test {
                 vault_vector,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -112,6 +116,7 @@ mod vault_test {
                 vault_vector,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
     }

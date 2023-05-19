@@ -20,6 +20,7 @@ mod royalty_test {
         pub fn create_component_with_royalty_enabled() -> Global<RoyaltyTest> {
             Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)

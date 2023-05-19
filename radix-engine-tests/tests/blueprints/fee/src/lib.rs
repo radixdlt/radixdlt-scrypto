@@ -22,6 +22,7 @@ mod fee {
                 garbage_vaults: Vec::new(),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 

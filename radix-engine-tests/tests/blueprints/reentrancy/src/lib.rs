@@ -8,7 +8,9 @@ mod reentrant_component {
 
     impl ReentrantComponent {
         pub fn new() -> Global<ReentrantComponent> {
-            Self {}.instantiate().globalize()
+            Self {}.instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn func(&self) {}

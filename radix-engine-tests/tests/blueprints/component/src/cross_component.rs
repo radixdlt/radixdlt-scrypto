@@ -14,6 +14,7 @@ mod cross_component {
                 auth_vault: None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .authority_rule("get_component_state", access_rule, rule!(deny_all))
             .globalize()
         }

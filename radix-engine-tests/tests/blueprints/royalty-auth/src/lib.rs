@@ -38,6 +38,7 @@ mod royalty_test {
             let local_component = Self {}.instantiate();
 
             local_component
+                .prepare_to_globalize()
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)

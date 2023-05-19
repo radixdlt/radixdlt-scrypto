@@ -1533,7 +1533,7 @@ pub fn single_function_package_schema(blueprint_name: &str, function_name: &str)
             ),
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
-            method_authority_mapping: btreemap!(),
+            protected_methods: btreemap!(),
             authority_schema: btreemap!(),
         },
     );

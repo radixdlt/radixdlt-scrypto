@@ -24,7 +24,7 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{SchemaAuthorityKey, SchemaObjectModuleId};
+use radix_engine_interface::schema::SchemaAuthorityKey;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 
@@ -35,9 +35,16 @@ pub enum AuthError {
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FailedAccessRules {
+    AuthorityList(Vec<(AuthorityKey, Vec<AccessRule>)>),
+    AccessRule(Vec<AccessRule>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub access_rule_stack: Vec<AccessRule>,
+    pub failed_access_rules: FailedAccessRules,
     pub fn_identifier: FnIdentifier,
 }
 
@@ -54,6 +61,11 @@ pub struct AuthModule {
 pub enum AuthorizationCheckResult {
     Authorized,
     Failed(Vec<AccessRule>),
+}
+
+pub enum AuthorityListAuthorizationResult {
+    Authorized,
+    Failed(Vec<(AuthorityKey, Vec<AccessRule>)>),
 }
 
 impl AuthModule {
@@ -126,7 +138,7 @@ impl AuthModule {
                     AuthorizationCheckResult::Failed(access_rule_stack) => {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                access_rule_stack,
+                                failed_access_rules: FailedAccessRules::AccessRule(access_rule_stack),
                                 fn_identifier: callee.fn_identifier(),
                             })),
                         )));
@@ -136,28 +148,30 @@ impl AuthModule {
             (node_id, module_id, ..) => {
                 let info = api.get_object_info(&node_id)?;
 
-                let authority_key = match module_id {
+                let authority_list = match module_id {
                     ObjectModuleId::Main => {
                         let schema = api.get_blueprint_schema(&info.blueprint)?;
-                        let key = if let Some(key) = schema.method_authority_mapping.get(ident) {
+                        let authority_list = if let Some(key) = schema.protected_methods.get(ident) {
                             key.clone()
                         } else {
                             return Ok(());
                         };
 
-                        match key {
-                            SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
-                            SchemaAuthorityKey::Owner => AuthorityKey::Owner,
-                        }
+                        authority_list.into_iter().map(|a| {
+                            match a {
+                                SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
+                                SchemaAuthorityKey::Owner => AuthorityKey::Owner,
+                            }
+                        }).collect()
                     }
                     ObjectModuleId::Metadata => match ident {
                         METADATA_GET_IDENT => return Ok(()),
                         _ => {
-                            AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, METADATA_AUTHORITY.to_string())
+                            vec![AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, METADATA_AUTHORITY.to_string())]
                         },
                     },
                     ObjectModuleId::Royalty => {
-                        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ROYALTY_AUTHORITY.to_string())
+                        vec![AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ROYALTY_AUTHORITY.to_string())]
                     },
                     _ => panic!("Unexpected"),
                 };
@@ -169,7 +183,7 @@ impl AuthModule {
                         acting_location,
                         parent.as_node_id(),
                         ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
-                        authority_key.clone(),
+                        authority_list.clone(),
                         api,
                     )?;
                 }
@@ -181,7 +195,7 @@ impl AuthModule {
                         acting_location,
                         &node_id,
                         ObjectKey::SELF,
-                        authority_key,
+                        authority_list,
                         api,
                     )?;
                 }
@@ -200,7 +214,7 @@ impl AuthModule {
         acting_location: ActingLocation,
         receiver: &NodeId,
         object_key: ObjectKey,
-        authority_key: AuthorityKey,
+        authority_list: Vec<AuthorityKey>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
@@ -231,7 +245,7 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             &access_rules_config,
-            &authority_key,
+            &authority_list,
             api,
         )?;
 
@@ -248,21 +262,21 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &NodeAuthorityRules,
-        authority_key: &AuthorityKey,
+        authority_list: &Vec<AuthorityKey>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let result = Authorization::check_authorization_against_authority_key(
+        let result = Authorization::check_authorization_against_authority_list(
             acting_location,
             *auth_zone_id,
             access_rules,
-            authority_key,
+            authority_list,
             api,
         )?;
         match result {
-            AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(access_rule_stack) => Err(RuntimeError::ModuleError(
+            AuthorityListAuthorizationResult::Authorized => Ok(()),
+            AuthorityListAuthorizationResult::Failed(auth_list_fail) => Err(RuntimeError::ModuleError(
                 ModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                    access_rule_stack,
+                    failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
                     fn_identifier,
                 }))),
             )),
@@ -307,7 +321,7 @@ impl AuthModule {
                         AuthorizationCheckResult::Failed(access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
-                                    access_rule_stack,
+                                    failed_access_rules: FailedAccessRules::AccessRule(access_rule_stack),
                                     fn_identifier: callee.fn_identifier(),
                                 })),
                             )));

@@ -10,6 +10,7 @@ mod factory {
         pub fn create_raw() -> Global<Factory> {
             Self { my_component: None }
                 .instantiate()
+                .prepare_to_globalize()
                 .authority_rule(
                     "set_address",
                     rule!(require(Runtime::package_token())),
@@ -23,6 +24,7 @@ mod factory {
                 my_component: Option::None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .authority_rule(
                 "set_address",
                 rule!(require(Runtime::package_token())),

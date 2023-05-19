@@ -78,8 +78,8 @@ impl ClockNativePackage {
             },
         );
 
-        let method_authority_mapping = btreemap!(
-            CLOCK_SET_CURRENT_TIME_IDENT.to_string() => SchemaAuthorityKey::new(CLOCK_AUTHORITY),
+        let protected_methods = btreemap!(
+            CLOCK_SET_CURRENT_TIME_IDENT.to_string() => vec![SchemaAuthorityKey::new(CLOCK_AUTHORITY)],
         );
 
         let schema = generate_full_schema(aggregator);
@@ -93,7 +93,7 @@ impl ClockNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    method_authority_mapping,
+                    protected_methods,
                     authority_schema: btreemap!(),
                 }
             ),

@@ -24,12 +24,14 @@ mod execution_trace_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize();
 
             let target_component = ExecutionTraceTest {
                 vault: Vault::new(resource_address),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize();
 
             let transfer_bucket: Bucket = source_component.take(amount);
@@ -48,7 +50,10 @@ mod execution_trace_test {
 
         pub fn create_and_fund_a_component(xrd: Vec<Bucket>) -> Global<ExecutionTraceTest> {
             let vault = Vault::with_bucket(xrd.into_iter().nth(0).unwrap());
-            ExecutionTraceTest { vault }.instantiate().globalize()
+            ExecutionTraceTest { vault }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn test_lock_contingent_fee(&mut self) {

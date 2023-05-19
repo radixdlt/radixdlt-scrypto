@@ -111,10 +111,10 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let method_authority_mapping = btreemap!(
-            EPOCH_MANAGER_START_IDENT.to_string() => SchemaAuthorityKey::new(EPOCH_MANAGER_START_AUTHORITY),
-            EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_AUTHORITY),
-            EPOCH_MANAGER_SET_EPOCH_IDENT.to_string() => SchemaAuthorityKey::new(SYSTEM_AUTHORITY),
+        let protected_methods = btreemap!(
+            EPOCH_MANAGER_START_IDENT.to_string() => vec![SchemaAuthorityKey::new(EPOCH_MANAGER_START_AUTHORITY)],
+            EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string() => vec![SchemaAuthorityKey::new(VALIDATOR_AUTHORITY)],
+            EPOCH_MANAGER_SET_EPOCH_IDENT.to_string() => vec![SchemaAuthorityKey::new(SYSTEM_AUTHORITY)],
         );
 
         let epoch_manager_schema = BlueprintSchema {
@@ -125,7 +125,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_authority_mapping,
+            protected_methods,
             authority_schema: btreemap!(),
         };
 
@@ -225,13 +225,13 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let method_authority_mapping = btreemap!(
-            VALIDATOR_REGISTER_IDENT.to_string() => SchemaAuthorityKey::Owner,
-            VALIDATOR_UNREGISTER_IDENT.to_string() => SchemaAuthorityKey::Owner,
-            VALIDATOR_UPDATE_KEY_IDENT.to_string() => SchemaAuthorityKey::Owner,
-            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string() => SchemaAuthorityKey::Owner,
-            VALIDATOR_STAKE_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_STAKE_AUTHORITY),
-            VALIDATOR_APPLY_EMISSION_IDENT.to_string() => SchemaAuthorityKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY),
+        let protected_methods = btreemap!(
+            VALIDATOR_REGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
+            VALIDATOR_UNREGISTER_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
+            VALIDATOR_UPDATE_KEY_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
+            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string() => vec![SchemaAuthorityKey::Owner],
+            VALIDATOR_STAKE_IDENT.to_string() => vec![SchemaAuthorityKey::new(VALIDATOR_STAKE_AUTHORITY)],
+            VALIDATOR_APPLY_EMISSION_IDENT.to_string() => vec![SchemaAuthorityKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY)],
         );
 
         let validator_schema = BlueprintSchema {
@@ -242,7 +242,7 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            method_authority_mapping,
+            protected_methods,
             authority_schema: btreemap!(),
         };
 

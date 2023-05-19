@@ -8,7 +8,10 @@ mod deep_struct {
 
     impl DeepStruct {
         pub fn new() -> Global<DeepStruct> {
-            Self { deep_object: None }.instantiate().globalize()
+            Self { deep_object: None }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn set_depth(&mut self, resource_address: ResourceAddress, exceed_depth: usize) {

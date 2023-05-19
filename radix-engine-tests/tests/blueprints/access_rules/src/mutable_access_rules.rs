@@ -8,6 +8,7 @@ mod mutable_access_rules_component {
         pub fn new(mut authority_rules: AuthorityRules) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .authority_rules(authority_rules)
                 .globalize()
         }

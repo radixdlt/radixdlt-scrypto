@@ -18,7 +18,10 @@ mod simple {
 
     impl Simple {
         pub fn new() -> Global<Simple> {
-            Self { state: 0 }.instantiate().globalize()
+            Self { state: 0 }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn get_state(&self) -> u32 {

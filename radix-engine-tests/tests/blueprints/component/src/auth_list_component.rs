@@ -15,6 +15,7 @@ mod auth_list_component {
         ) -> Global<AuthListComponent> {
             Self { count, auth }
                 .instantiate()
+                .prepare_to_globalize()
                 .authority_rules(authority_rules)
                 .globalize()
         }

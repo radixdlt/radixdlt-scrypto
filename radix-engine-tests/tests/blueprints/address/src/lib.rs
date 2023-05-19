@@ -45,7 +45,10 @@ mod my_component {
     impl MyComponent {
         pub fn create(to_call: Global<CalledComponent>) -> Global<MyComponent> {
             let child = ChildComponent::create(to_call.clone());
-            Self { child, to_call }.instantiate().globalize()
+            Self { child, to_call }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn get_global_address_in_parent(&self) -> ComponentAddress {
@@ -59,7 +62,10 @@ mod my_component {
         pub fn get_global_address_in_local(to_call: Global<CalledComponent>) -> ComponentAddress {
             let child = ChildComponent::create(to_call.clone());
             let address = child.get_global_address();
-            Self { child, to_call }.instantiate().globalize();
+            Self { child, to_call }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize();
             address
         }
 
@@ -116,7 +122,10 @@ mod called_component {
     impl CalledComponent {
         pub fn create() -> Global<CalledComponent> {
             let child = CalledComponentChild::create();
-            Self { child }.instantiate().globalize()
+            Self { child }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn protected_method(&self, component_address: ComponentAddress, child: bool) {
@@ -155,6 +164,7 @@ mod preallocation_component {
             let component_address = Runtime::preallocate_global_component_address();
             Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize_at_address(component_address)
         }
 
@@ -163,12 +173,16 @@ mod preallocation_component {
             Runtime::preallocate_global_component_address();
             Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize_at_address(component_address)
         }
 
         pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent> {
             Runtime::preallocate_global_component_address();
-            Self {}.instantiate().globalize()
+            Self {}
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn create_two_with_same_address() -> (
@@ -178,9 +192,11 @@ mod preallocation_component {
             let component_address = Runtime::preallocate_global_component_address();
             let one = Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize_at_address(component_address);
             let two = Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize_at_address(component_address);
             (one, two)
         }
@@ -199,6 +215,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -211,6 +228,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize_at_address(component_address)
         }
 
@@ -221,6 +239,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize_at_address(preallocated_address)
         }
 
@@ -229,6 +248,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: Some(Runtime::preallocate_global_component_address().into()),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -239,6 +259,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: Some(address),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -250,6 +271,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: Some(address),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -270,6 +292,7 @@ mod preallocation_smuggler_component {
                 preallocated_address: None,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize_at_address(component_address)
         }
     }

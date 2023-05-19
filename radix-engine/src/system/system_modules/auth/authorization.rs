@@ -3,7 +3,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::auth::AuthorizationCheckResult;
+use crate::system::system_modules::auth::{AuthorityListAuthorizationResult, AuthorizationCheckResult};
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
@@ -438,24 +438,36 @@ impl Authorization {
         )
     }
 
-    pub fn check_authorization_against_authority_key<
+    pub fn check_authorization_against_authority_list<
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        key: &AuthorityKey,
+        authority_list: &Vec<AuthorityKey>,
         api: &mut Y,
-    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+    ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
         let mut already_verified_authorities = NonIterMap::new();
 
-        Self::check_authorization_against_authority_key_internal(
-            acting_location,
-            auth_zone_id,
-            access_rules,
-            key,
-            &mut already_verified_authorities,
-            api,
-        )
+        let mut failed = Vec::new();
+
+        for key in authority_list {
+            let result = Self::check_authorization_against_authority_key_internal(
+                acting_location,
+                auth_zone_id,
+                access_rules,
+                key,
+                &mut already_verified_authorities,
+                api,
+            )?;
+            match result {
+                AuthorizationCheckResult::Authorized => return Ok(AuthorityListAuthorizationResult::Authorized),
+                AuthorizationCheckResult::Failed(stack) => {
+                    failed.push((key.clone(), stack));
+                },
+            }
+        }
+
+        Ok(AuthorityListAuthorizationResult::Failed(failed))
     }
 }

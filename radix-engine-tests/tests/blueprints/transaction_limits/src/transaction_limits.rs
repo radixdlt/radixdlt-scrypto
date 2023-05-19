@@ -13,7 +13,9 @@ mod transaction_limits {
                 kv_store.insert(i, i);
             }
 
-            TransactionLimitTest { kv_store }.instantiate().globalize()
+            TransactionLimitTest { kv_store }.instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn read_kv_stores(n: u32) -> Global<TransactionLimitTest> {
@@ -23,7 +25,9 @@ mod transaction_limits {
                 kv_store.get(&0);
             }
 
-            TransactionLimitTest { kv_store }.instantiate().globalize()
+            TransactionLimitTest { kv_store }.instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn recursive_with_memory(n: u32, m: usize) {
@@ -58,6 +62,7 @@ mod transaction_limits_substate {
 
             TransactionLimitSubstateTest { kv_store }
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize()
         }
     }

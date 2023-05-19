@@ -8,6 +8,7 @@ mod metadata_component {
         pub fn new(key: String, value: String) {
             let global = Self {}
                 .instantiate()
+                .prepare_to_globalize()
                 .metadata(key.clone(), value.clone())
                 .globalize();
 
@@ -19,6 +20,7 @@ mod metadata_component {
         pub fn new2(key: String, value: String) {
             let global = MetadataComponent {}
                 .instantiate()
+                .prepare_to_globalize()
                 .metadata_authority(AccessRule::AllowAll, AccessRule::DenyAll)
                 .globalize();
 

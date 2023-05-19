@@ -84,7 +84,10 @@ mod bucket_test {
 
             let token_bucket = auth_bucket.authorize(|| vault.take(1));
 
-            BucketTest { vault }.instantiate().globalize();
+            BucketTest { vault }
+                .instantiate()
+                .prepare_to_globalize()
+                .globalize();
             vec![auth_bucket, token_bucket]
         }
 
@@ -140,6 +143,7 @@ mod bucket_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize();
         }
 
@@ -152,6 +156,7 @@ mod bucket_test {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize();
         }
     }

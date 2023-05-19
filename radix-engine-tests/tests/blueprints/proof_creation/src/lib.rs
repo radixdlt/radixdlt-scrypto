@@ -95,14 +95,18 @@ mod pc {
             let proof = vault.create_proof().skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
         pub fn create_proof_from_fungible_vault_of_amount() {
             let vault = Self::create_fungible_vault();
             let proof = vault.create_proof_of_amount(2).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
         pub fn create_proof_from_fungible_vault_of_non_fungibles() {
             let vault = Self::create_fungible_vault();
@@ -115,7 +119,9 @@ mod pc {
                 .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
 
         pub fn create_proof_from_non_fungible_vault() {
@@ -123,14 +129,18 @@ mod pc {
             let proof = vault.create_proof().skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
         pub fn create_proof_from_non_fungible_vault_of_amount() {
             let vault = Self::create_non_fungible_vault();
             let proof = vault.create_proof_of_amount(2).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
         pub fn create_proof_from_non_fungible_vault_of_non_fungibles() {
             let vault = Self::create_non_fungible_vault();
@@ -143,7 +153,9 @@ mod pc {
                 .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate().globalize();
+            ProofCreation { vault }.instantiate()
+                .prepare_to_globalize()
+                .globalize();
         }
 
         //==================

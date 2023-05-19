@@ -38,7 +38,9 @@ mod cyclic_map {
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
-            CyclicMap { store: kv_store0 }.instantiate().globalize()
+            CyclicMap { store: kv_store0 }.instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
 
         pub fn new_self_cyclic() -> Global<CyclicMap> {
@@ -60,7 +62,9 @@ mod cyclic_map {
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
-            CyclicMap { store: kv_store }.instantiate().globalize()
+            CyclicMap { store: kv_store }.instantiate()
+                .prepare_to_globalize()
+                .globalize()
         }
     }
 }

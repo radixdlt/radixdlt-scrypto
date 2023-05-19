@@ -21,6 +21,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -35,6 +36,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -52,6 +54,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -65,6 +68,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -78,6 +82,7 @@ mod key_value_store_test {
                 kv_stores,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 

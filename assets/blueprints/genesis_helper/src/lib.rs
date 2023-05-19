@@ -72,6 +72,7 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
+            .prepare_to_globalize()
             .authority_rule(
                 "ingest_data_chunk",
                 rule!(require("system")),

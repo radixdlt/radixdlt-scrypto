@@ -12,6 +12,7 @@ mod balance_changes_test {
                 vault: Vault::new(RADIX_TOKEN),
             }
             .instantiate()
+            .prepare_to_globalize()
             .royalty("put", 1)
             .royalty("boom", 1)
             .royalty_default(0)

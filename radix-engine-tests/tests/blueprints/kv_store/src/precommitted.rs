@@ -27,6 +27,7 @@ mod precommitted {
                 deep_vault: KeyValueStore::new(),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -45,6 +46,7 @@ mod precommitted {
                 deep_vault: KeyValueStore::new(),
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
 
@@ -71,6 +73,7 @@ mod precommitted {
                 deep_vault,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize()
         }
     }

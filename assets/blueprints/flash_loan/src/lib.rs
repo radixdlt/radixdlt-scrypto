@@ -45,6 +45,7 @@ mod basic_flash_loan {
                 transient_resource_manager,
             }
             .instantiate()
+            .prepare_to_globalize()
             .globalize();
 
             (global_component, transient_resource_manager)
