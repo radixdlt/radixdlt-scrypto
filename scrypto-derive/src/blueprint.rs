@@ -536,8 +536,10 @@ fn generate_stubs(
 }
 
 fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
-    let to_remove = attributes.iter_mut().enumerate().find_map(
-        |(index, attribute)| {
+    let to_remove = attributes
+        .iter_mut()
+        .enumerate()
+        .find_map(|(index, attribute)| {
             if let Ok(Meta::List(meta_list)) = attribute.parse_meta() {
                 if !meta_list.path.is_ident("restrict_to") {
                     return None;
@@ -558,8 +560,7 @@ fn get_restrict_to(attributes: &mut Vec<Attribute>) -> Option<String> {
             }
 
             return None;
-        }
-    );
+        });
 
     if let Some((to_remove, authority)) = to_remove {
         attributes.remove(to_remove);
@@ -589,7 +590,6 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
 
         match item {
             ImplItem::Method(ref mut m) => {
-
                 if let Visibility::Public(_) = &m.vis {
                     let function_name = m.sig.ident.to_string();
 

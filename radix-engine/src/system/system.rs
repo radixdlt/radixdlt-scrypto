@@ -38,7 +38,10 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{AuthoritySchema, BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, FullyQualifiedAuthorityKey, IndexedBlueprintSchema, InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, SchemaObjectKey, SchemaObjectModuleId, TypeSchema};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, IndexedBlueprintSchema,
+    InstanceSchema, KeyValueStoreInfo, SchemaAuthorityKey, TypeSchema,
+};
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -648,7 +651,11 @@ where
         self.api.kernel_drop_lock(lock_handle)?;
 
         let blueprint_id = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { ref mut global, ref blueprint, .. }) if !*global => {
+            TypeInfoSubstate::Object(ObjectInfo {
+                ref mut global,
+                ref blueprint,
+                ..
+            }) if !*global => {
                 *global = true;
                 blueprint.clone()
             }
@@ -681,13 +688,16 @@ where
                 SystemLockData::default(),
             )?;
 
-            let access_rules: MethodAccessRulesSubstate = self.kernel_read_substate(handle)?.as_typed().unwrap();
+            let access_rules: MethodAccessRulesSubstate =
+                self.kernel_read_substate(handle)?.as_typed().unwrap();
             for (_method, schema) in blueprint_schema.method_authority_mapping {
                 match schema {
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident) => {
+                    SchemaAuthorityKey::Main(ident) => {
                         let key = AuthorityKey::main(ident.as_str());
                         if !access_rules.access_rules.rules.contains_key(&key) {
-                            return Err(RuntimeError::SystemError(SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident)));
+                            return Err(RuntimeError::SystemError(
+                                SystemError::MissingRequiredAuthority(blueprint_id.clone(), ident),
+                            ));
                         }
                     }
                     _ => {}
@@ -695,7 +705,6 @@ where
             }
             self.kernel_drop_lock(handle)?;
         }
-
 
         // Create a global node
         self.kernel_create_node(
@@ -1734,7 +1743,6 @@ where
             ActingLocation::InCallFrame,
             auth_zone_id,
             &config,
-            ObjectModuleId::Main,
             &rule,
             self,
         )?;

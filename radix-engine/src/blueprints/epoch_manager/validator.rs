@@ -635,7 +635,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             rule!(require_owner()),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_fixed_main_authority_rule(
+        authority_rules.set_fixed_authority_rule(
             VALIDATOR_APPLY_EMISSION_AUTHORITY,
             rule!(require(global_caller(EPOCH_MANAGER))),
         );

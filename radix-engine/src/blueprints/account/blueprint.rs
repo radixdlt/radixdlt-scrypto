@@ -1,3 +1,6 @@
+use crate::blueprints::account::{
+    ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY,
+};
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -18,7 +21,6 @@ use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
-use crate::blueprints::account::{ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
@@ -40,9 +42,9 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules
-            .set_fixed_main_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require_owner()));
+            .set_fixed_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require_owner()));
         authority_rules
-            .set_fixed_main_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require_owner()));
+            .set_fixed_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require_owner()));
         authority_rules
     }
 }

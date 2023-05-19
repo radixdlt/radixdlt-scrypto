@@ -44,20 +44,8 @@ impl KeyValueStoreInfo {
 
 // TODO: Dedup
 #[repr(u8)]
-#[derive(
-Debug,
-Clone,
-Copy,
-PartialEq,
-Eq,
-Hash,
-PartialOrd,
-Ord,
-ScryptoSbor,
-ManifestSbor,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
 pub enum SchemaObjectModuleId {
-    Main,
     Metadata,
     Royalty,
 }
@@ -72,12 +60,13 @@ pub enum SchemaObjectKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum SchemaAuthorityKey {
     Owner,
+    Main(String),
     Module(SchemaObjectModuleId, String),
 }
 
 impl SchemaAuthorityKey {
     pub fn new<S: Into<String>>(name: S) -> Self {
-        Self::Module(SchemaObjectModuleId::Main, name.into())
+        Self::Main(name.into())
     }
 }
 
@@ -86,7 +75,7 @@ pub struct FullyQualifiedAuthorityKey(pub SchemaObjectKey, pub SchemaAuthorityKe
 
 impl FullyQualifiedAuthorityKey {
     pub fn new_self_main<S: Into<String>>(name: S) -> Self {
-        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, name.into()))
+        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::Main(name.into()))
     }
 }
 
@@ -123,7 +112,7 @@ pub struct BlueprintSchema {
 
     pub method_authority_mapping: BTreeMap<String, SchemaAuthorityKey>,
 
-    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>
+    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

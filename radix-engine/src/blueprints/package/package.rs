@@ -19,7 +19,9 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaAuthorityKey};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, RefTypes, SchemaAuthorityKey,
+};
 use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
@@ -117,7 +119,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
         let mut authority_rules = AuthorityRules::new();
         authority_rules.set_metadata_authority(rule!(require_owner()), rule!(deny_all));
 
-        authority_rules.set_fixed_main_authority_rule("package_royalty", rule!(require_owner()));
+        authority_rules.set_fixed_authority_rule("package_royalty", rule!(require_owner()));
         authority_rules
     }
 }

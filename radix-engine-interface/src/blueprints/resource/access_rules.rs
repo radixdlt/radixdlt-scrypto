@@ -64,33 +64,37 @@ impl From<String> for AccessRule {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum AttachedModule {
+    Metadata,
+    Royalty,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityKey {
     Owner,
-    Module(ObjectModuleId, String),
+    Main(String),
+    ModuleEntryPoint(AttachedModule, String),
 }
 
 impl AuthorityKey {
-    pub fn from_access_rule(module_id: ObjectModuleId, rule: AuthorityRule) -> Self {
+    pub fn from_access_rule(rule: AuthorityRule) -> Self {
         match rule {
             AuthorityRule::Owner => AuthorityKey::Owner,
-            AuthorityRule::Custom(key) => AuthorityKey::Module(module_id, key),
+            AuthorityRule::Custom(key) => AuthorityKey::Main(key),
         }
     }
 
-    pub fn module(module_id: ObjectModuleId, key: &str) -> Self {
-        AuthorityKey::Module(module_id, key.to_string())
-    }
-
-    pub fn main(key: &str) -> Self {
-        AuthorityKey::Module(ObjectModuleId::Main, key.to_string())
+    pub fn main<S: Into<String>>(key: S) -> Self {
+        AuthorityKey::Main(key.into())
     }
 
     pub fn metadata(key: &str) -> Self {
-        AuthorityKey::Module(ObjectModuleId::Metadata, key.to_string())
+        AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, key.to_string())
     }
 
     pub fn royalty(key: &str) -> Self {
-        AuthorityKey::Module(ObjectModuleId::Royalty, key.to_string())
+        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, key.to_string())
     }
 }
 
@@ -122,22 +126,13 @@ impl AuthorityRules {
         self.rules.insert(authority_key, (rule, mutability));
     }
 
-    pub fn redirect_to_fixed<S: Into<String>>(&mut self, authority: S, redirect_to: &str) {
-        let name = authority.into();
-        self.rules.insert(
-            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
-            (rule!(require(redirect_to)), AccessRule::DenyAll),
-        );
-    }
-
-    pub fn set_fixed_main_authority_rule<S: Into<String>, R: Into<AccessRule>>(
+    pub fn set_fixed_authority_rule<S: Into<String>, R: Into<AccessRule>>(
         &mut self,
         authority: S,
         rule: R,
     ) {
-        let name = authority.into();
         self.rules.insert(
-            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
+            AuthorityKey::main(authority),
             (rule.into(), AccessRule::DenyAll),
         );
     }
@@ -149,24 +144,20 @@ impl AuthorityRules {
         mutability: AccessRule,
     ) {
         let name = authority.into();
-        self.rules.insert(
-            AuthorityKey::module(ObjectModuleId::Main, name.as_str()),
-            (rule, mutability),
-        );
+        self.rules
+            .insert(AuthorityKey::main(name.as_str()), (rule, mutability));
     }
 
     pub fn set_metadata_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules.insert(
-            AuthorityKey::module(ObjectModuleId::Metadata, METADATA_AUTHORITY),
+            AuthorityKey::metadata(METADATA_AUTHORITY),
             (rule, mutability),
         );
     }
 
     pub fn set_royalty_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules.insert(
-            AuthorityKey::module(ObjectModuleId::Royalty, ROYALTY_AUTHORITY),
-            (rule, mutability),
-        );
+        self.rules
+            .insert(AuthorityKey::royalty(ROYALTY_AUTHORITY), (rule, mutability));
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {

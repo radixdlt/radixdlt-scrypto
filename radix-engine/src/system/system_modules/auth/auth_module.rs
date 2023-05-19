@@ -18,8 +18,8 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::api::node_modules::metadata::METADATA_GET_IDENT;
+use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -37,7 +37,6 @@ pub enum AuthError {
 }
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
-    pub module_id: ObjectModuleId,
     pub access_rule_stack: Vec<AccessRule>,
     pub fn_identifier: FnIdentifier,
 }
@@ -54,7 +53,7 @@ pub struct AuthModule {
 
 pub enum AuthorizationCheckResult {
     Authorized,
-    Failed(ObjectModuleId, Vec<AccessRule>),
+    Failed(Vec<AccessRule>),
 }
 
 impl AuthModule {
@@ -119,16 +118,14 @@ impl AuthModule {
                     acting_location,
                     *auth_zone_id,
                     &NodeAuthorityRules::new(),
-                    module_id,
                     &access_rule,
                     api,
                 )?;
                 match auth_result {
                     AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                    AuthorizationCheckResult::Failed(access_rule_stack) => {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                module_id,
                                 access_rule_stack,
                                 fn_identifier: callee.fn_identifier(),
                             })),
@@ -145,25 +142,31 @@ impl AuthModule {
                         if let Some(key) = schema.method_authority_mapping.get(ident) {
                             key.clone()
                         } else {
-                            return Ok(())
+                            return Ok(());
                         }
                     }
-                    ObjectModuleId::Metadata => {
-                        match ident {
-                            METADATA_GET_IDENT => return Ok(()),
-                            _ => SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, METADATA_AUTHORITY.to_string()),
-                        }
-                    }
-                    ObjectModuleId::Royalty => {
-                        SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ROYALTY_AUTHORITY.to_string())
-                    }
+                    ObjectModuleId::Metadata => match ident {
+                        METADATA_GET_IDENT => return Ok(()),
+                        _ => SchemaAuthorityKey::Module(
+                            SchemaObjectModuleId::Metadata,
+                            METADATA_AUTHORITY.to_string(),
+                        ),
+                    },
+                    ObjectModuleId::Royalty => SchemaAuthorityKey::Module(
+                        SchemaObjectModuleId::Royalty,
+                        ROYALTY_AUTHORITY.to_string(),
+                    ),
                     _ => panic!("Unexpected"),
                 };
 
                 let authority_key = match key {
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Main, ident) => AuthorityKey::Module(ObjectModuleId::Main, ident),
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, ident) => AuthorityKey::Module(ObjectModuleId::Metadata, ident),
-                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ident) => AuthorityKey::Module(ObjectModuleId::Royalty, ident),
+                    SchemaAuthorityKey::Main(ident) => AuthorityKey::main(ident),
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Metadata, ident) => {
+                        AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, ident)
+                    }
+                    SchemaAuthorityKey::Module(SchemaObjectModuleId::Royalty, ident) => {
+                        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ident)
+                    }
                     SchemaAuthorityKey::Owner => AuthorityKey::Owner,
                 };
 
@@ -256,40 +259,21 @@ impl AuthModule {
         authority_key: &AuthorityKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        /*
-        let authority_key = AuthorityKey::Module(key.module_id.clone(), key.ident.clone());
-        if access_rules.rules.get(authority_key) {
-        }
-
-        let authority = match access_rules.rules.get(authority_key) {
-            Some(entry) => &entry.authority,
-            None => return Ok(()),
-        };
-         */
-        let (access_rule, module_id) = match authority_key {
-            AuthorityKey::Owner => (rule!(require_owner()), ObjectModuleId::Main),
-            AuthorityKey::Module(module_id, ident) => (rule!(require(ident.as_str())), module_id.clone()),
-        };
-
-        let result = Authorization::check_authorization_against_access_rule(
+        let result = Authorization::check_authorization_against_authority_key(
             acting_location,
             *auth_zone_id,
             access_rules,
-            module_id,
-            &access_rule,
+            authority_key,
             api,
         )?;
         match result {
             AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
-                Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                    AuthError::Unauthorized(Box::new(Unauthorized {
-                        module_id,
-                        access_rule_stack,
-                        fn_identifier,
-                    })),
-                )))
-            }
+            AuthorizationCheckResult::Failed(access_rule_stack) => Err(RuntimeError::ModuleError(
+                ModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
+                    access_rule_stack,
+                    fn_identifier,
+                }))),
+            )),
         }
     }
 
@@ -323,16 +307,14 @@ impl AuthModule {
                         acting_location,
                         auth_zone_id,
                         &NodeAuthorityRules::new(),
-                        ObjectModuleId::Main, // Mocked, does it make sense to add FunctionAuthorities?
                         &access_rule,
                         &mut system,
                     )?;
                     match auth_result {
                         AuthorizationCheckResult::Authorized => {}
-                        AuthorizationCheckResult::Failed(module_id, access_rule_stack) => {
+                        AuthorizationCheckResult::Failed(access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
-                                    module_id,
                                     access_rule_stack,
                                     fn_identifier: callee.fn_identifier(),
                                 })),

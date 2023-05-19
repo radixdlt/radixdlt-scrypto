@@ -1,4 +1,7 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
+use crate::blueprints::epoch_manager::{
+    EPOCH_MANAGER_START_AUTHORITY, SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY,
+};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -15,7 +18,6 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use crate::blueprints::epoch_manager::{EPOCH_MANAGER_START_AUTHORITY, SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerConfigSubstate {
@@ -191,11 +193,11 @@ impl EpochManagerBlueprint {
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
         );
-        authority_rules.set_fixed_main_authority_rule(
+        authority_rules.set_fixed_authority_rule(
             VALIDATOR_AUTHORITY,
             rule!(require(AuthAddresses::validator_role())),
         );
-        authority_rules.set_fixed_main_authority_rule(
+        authority_rules.set_fixed_authority_rule(
             SYSTEM_AUTHORITY,
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );

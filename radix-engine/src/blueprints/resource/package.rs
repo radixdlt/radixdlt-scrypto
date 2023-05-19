@@ -8,7 +8,9 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXE
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{BlueprintCollectionSchema, PackageSchema, SchemaAuthorityKey};
+use radix_engine_interface::schema::{
+    BlueprintCollectionSchema, PackageSchema, SchemaAuthorityKey,
+};
 use radix_engine_interface::schema::{BlueprintIndexSchema, FunctionSchema};
 use radix_engine_interface::schema::{BlueprintKeyValueStoreSchema, BlueprintSchema, TypeSchema};
 use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
@@ -658,7 +660,6 @@ impl ResourceManagerNativePackage {
                 FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
                 FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => SchemaAuthorityKey::new("this_package"),
             );
-
 
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),

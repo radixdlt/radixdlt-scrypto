@@ -104,7 +104,7 @@ fn build_access_rules(
 
         // Internal
         {
-            vault_authority_rules.set_fixed_main_authority_rule(
+            vault_authority_rules.set_fixed_authority_rule(
                 "this_package",
                 rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
             );
@@ -119,7 +119,7 @@ fn build_access_rules(
 
     let bucket_authority_rules = {
         let mut bucket_authority_rules = AuthorityRules::new();
-        bucket_authority_rules.set_fixed_main_authority_rule(
+        bucket_authority_rules.set_fixed_authority_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );

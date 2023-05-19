@@ -6,7 +6,7 @@ use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
@@ -287,7 +287,6 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        module_id: ObjectModuleId,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
@@ -298,37 +297,29 @@ impl Authorization {
                     return Ok(AuthorizationCheckResult::Authorized);
                 }
 
-                match access_rules.get_rule(&AuthorityKey::from_access_rule(
-                    module_id,
-                    authority.clone(),
-                )) {
-                    Some(access_rule) => {
-                        // TODO: Add costing for every access rule hop
-                        let rtn = Self::check_authorization_against_access_rule_internal(
-                            acting_location,
-                            auth_zone_id,
-                            access_rules,
-                            module_id,
-                            access_rule,
-                            already_verified_authorities,
-                            api,
-                        )?;
-                        match rtn {
-                            AuthorizationCheckResult::Authorized => {
-                                already_verified_authorities.insert(authority.clone(), ());
-                            },
-                            AuthorizationCheckResult::Failed(..) => {}
-                        }
-                        Ok(rtn)
+                let rtn = Self::check_authorization_against_authority_key_internal(
+                    acting_location,
+                    auth_zone_id,
+                    access_rules,
+                    &AuthorityKey::from_access_rule(authority.clone()),
+                    already_verified_authorities,
+                    api,
+                )?;
+
+                match rtn {
+                    AuthorizationCheckResult::Authorized => {
+                        already_verified_authorities.insert(authority.clone(), ());
                     }
-                    None => Ok(AuthorizationCheckResult::Authorized),
+                    AuthorizationCheckResult::Failed(..) => {}
                 }
+
+                Ok(rtn)
             }
             AccessRuleNode::ProofRule(rule) => {
                 if Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
                 } else {
-                    Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
+                    Ok(AuthorizationCheckResult::Failed(vec![]))
                 }
             }
             AccessRuleNode::AnyOf(rules) => {
@@ -337,7 +328,6 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules,
-                        module_id,
                         r,
                         already_verified_authorities,
                         api,
@@ -346,7 +336,7 @@ impl Authorization {
                         return Ok(rtn);
                     }
                 }
-                Ok(AuthorizationCheckResult::Failed(module_id, vec![]))
+                Ok(AuthorizationCheckResult::Failed(vec![]))
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
@@ -354,7 +344,6 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules,
-                        module_id,
                         r,
                         already_verified_authorities,
                         api,
@@ -369,13 +358,38 @@ impl Authorization {
         }
     }
 
+    pub fn check_authorization_against_authority_key_internal<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
+        acting_location: ActingLocation,
+        auth_zone_id: NodeId,
+        access_rules: &NodeAuthorityRules,
+        key: &AuthorityKey,
+        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
+        api: &mut Y,
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+        match access_rules.get_rule(key) {
+            Some(access_rule) => {
+                // TODO: Add costing for every access rule hop
+                Self::check_authorization_against_access_rule_internal(
+                    acting_location,
+                    auth_zone_id,
+                    access_rules,
+                    access_rule,
+                    already_verified_authorities,
+                    api,
+                )
+            }
+            None => Ok(AuthorizationCheckResult::Authorized),
+        }
+    }
+
     fn check_authorization_against_access_rule_internal<
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        module_id: ObjectModuleId,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
         api: &mut Y,
@@ -386,24 +400,20 @@ impl Authorization {
                     acting_location,
                     auth_zone_id,
                     access_rules,
-                    module_id,
                     rule_node,
                     already_verified_authorities,
                     api,
                 )?;
                 match &mut rtn {
                     AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(_, stack) => {
+                    AuthorizationCheckResult::Failed(stack) => {
                         stack.push(rule.clone());
                     }
                 }
                 Ok(rtn)
             }
             AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
-            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(
-                module_id,
-                vec![rule.clone()],
-            )),
+            AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
         }
     }
 
@@ -413,7 +423,6 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        module_id: ObjectModuleId,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -423,8 +432,28 @@ impl Authorization {
             acting_location,
             auth_zone_id,
             access_rules,
-            module_id,
             rule,
+            &mut already_verified_authorities,
+            api,
+        )
+    }
+
+    pub fn check_authorization_against_authority_key<
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    >(
+        acting_location: ActingLocation,
+        auth_zone_id: NodeId,
+        access_rules: &NodeAuthorityRules,
+        key: &AuthorityKey,
+        api: &mut Y,
+    ) -> Result<AuthorizationCheckResult, RuntimeError> {
+        let mut already_verified_authorities = NonIterMap::new();
+
+        Self::check_authorization_against_authority_key_internal(
+            acting_location,
+            auth_zone_id,
+            access_rules,
+            key,
             &mut already_verified_authorities,
             api,
         )

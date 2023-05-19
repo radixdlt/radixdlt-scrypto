@@ -8,9 +8,7 @@ mod cross_component {
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(
-            access_rule: AccessRule,
-        ) -> Global<CrossComponent> {
+        pub fn create_component_with_auth(access_rule: AccessRule) -> Global<CrossComponent> {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,

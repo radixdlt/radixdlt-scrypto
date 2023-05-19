@@ -14,7 +14,9 @@ use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use radix_engine_interface::schema::{BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaAuthorityKey};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, PackageSchema, ReceiverInfo, SchemaAuthorityKey,
+};
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
 
