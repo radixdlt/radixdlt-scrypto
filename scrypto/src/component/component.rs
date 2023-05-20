@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, Me
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, MethodKey};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -132,6 +132,21 @@ impl<C: HasStub> Owned<C> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub enum RoyaltyMethod {
+    SetRoyaltyConfig,
+    ClaimRoyalty,
+}
+
+impl ToString for RoyaltyMethod {
+    fn to_string(&self) -> String {
+        match self {
+            RoyaltyMethod::ClaimRoyalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+            RoyaltyMethod::SetRoyaltyConfig => COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
@@ -169,19 +184,19 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn authority_rules(mut self, authority_rules: AuthorityRules) -> Self {
+    pub fn define_roles(mut self, authority_rules: AuthorityRules) -> Self {
         self.authority_rules = authority_rules;
         self
     }
 
-    pub fn authority_rule<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        name: &str,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_main_authority_rule(name, entry.into(), mutability.into());
+    pub fn protect_royalty(mut self, protected_royalty_methods: BTreeMap<RoyaltyMethod, Vec<String>>) -> Self {
+        for (protected_royalty_method, authorities) in protected_royalty_methods {
+            self.protected_module_methods.insert(
+                MethodKey::new(ObjectModuleId::Royalty, protected_royalty_method),
+                authorities
+            );
+        }
+
         self
     }
 
@@ -191,28 +206,6 @@ impl<C: HasStub> Globalizing<C> {
     ) -> Self {
         self.protected_module_methods.insert(
             MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            vec![authority.into()],
-        );
-        self
-    }
-
-    pub fn protect_royalty_set_config<S: Into<String>>(
-        mut self,
-        authority: S,
-    ) -> Self {
-        self.protected_module_methods.insert(
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT),
-            vec![authority.into()],
-        );
-        self
-    }
-
-    pub fn protect_royalty_claim<S: Into<String>>(
-        mut self,
-        authority: S,
-    ) -> Self {
-        self.protected_module_methods.insert(
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT),
             vec![authority.into()],
         );
         self

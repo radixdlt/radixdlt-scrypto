@@ -15,7 +15,11 @@ mod cross_component {
             }
             .instantiate()
             .prepare_to_globalize()
-            .authority_rule("get_component_state", access_rule, rule!(deny_all))
+            .define_roles({
+                let mut roles = AuthorityRules::new();
+                roles.define_role("get_component_state", access_rule, rule!(deny_all));
+                roles
+            })
             .globalize()
         }
 

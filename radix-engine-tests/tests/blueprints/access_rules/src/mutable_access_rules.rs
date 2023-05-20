@@ -9,7 +9,7 @@ mod mutable_access_rules_component {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .authority_rules(authority_rules)
+                .define_roles(authority_rules)
                 .globalize()
         }
 

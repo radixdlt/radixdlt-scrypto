@@ -13,7 +13,7 @@ mod deep_auth_rules_on_create {
             let authority_rules = generate_deep_access_rules(resource_address, access_rules_depth);
             component
                 .prepare_to_globalize()
-                .authority_rules(authority_rules)
+                .define_roles(authority_rules)
                 .globalize()
         }
     }
@@ -32,7 +32,7 @@ fn generate_deep_access_rules(
         curr_depth += 2;
     }
     let mut authority_rules = AuthorityRules::new();
-    authority_rules.set_main_authority_rule(
+    authority_rules.define_role(
         "test",
         AccessRule::Protected(access_rule_node.clone()),
         AccessRule::Protected(access_rule_node),

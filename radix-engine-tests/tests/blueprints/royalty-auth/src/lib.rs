@@ -39,9 +39,15 @@ mod royalty_test {
 
             local_component
                 .prepare_to_globalize()
-                .authority_rule("auth", rule!(require(badge.clone())), rule!(require(badge.clone())))
-                .protect_royalty_set_config("auth")
-                .protect_royalty_claim("auth")
+                .define_roles({
+                    let mut roles = AuthorityRules::new();
+                    roles.define_role("auth", rule!(require(badge.clone())), rule!(require(badge.clone())));
+                    roles
+                })
+                .protect_royalty(btreemap!(
+                    RoyaltyMethod::SetRoyaltyConfig => vec!["auth".to_string()],
+                    RoyaltyMethod::ClaimRoyalty => vec!["auth".to_string()],
+                ))
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)

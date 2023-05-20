@@ -46,7 +46,7 @@ pub struct MethodKey {
 }
 
 impl MethodKey {
-    pub fn new(module_id: ObjectModuleId, method_ident: &str) -> Self {
+    pub fn new<S: ToString>(module_id: ObjectModuleId, method_ident: S) -> Self {
         Self {
             module_id,
             ident: method_ident.to_string(),
@@ -72,6 +72,18 @@ pub enum AttachedModule {
 #[sbor(transparent)]
 pub struct AuthorityKey {
     pub key: String,
+}
+
+impl From<String> for AuthorityKey {
+    fn from(s: String) -> Self {
+        Self::new(s)
+    }
+}
+
+impl From<&str> for AuthorityKey {
+    fn from(s: &str) -> Self {
+        Self::new(s)
+    }
 }
 
 impl From<SchemaAuthorityKey> for AuthorityKey {
@@ -103,21 +115,12 @@ impl AuthorityRules {
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules
-            .set_main_authority_rule(
+            .define_role(
                 "owner",
                 rule!(require(owner_badge.clone())),
                 rule!(require("owner"))
             );
         authority_rules
-    }
-
-    pub fn set_rule(
-        &mut self,
-        authority_key: AuthorityKey,
-        rule: AccessRule,
-        mutability: AccessRule,
-    ) {
-        self.rules.insert(authority_key, (rule, mutability));
     }
 
     pub fn set_fixed_authority_rule<S: Into<String>, R: Into<AccessRule>>(
@@ -131,15 +134,14 @@ impl AuthorityRules {
         );
     }
 
-    pub fn set_main_authority_rule<S: Into<String>>(
+    pub fn define_role<K: Into<AuthorityKey>>(
         &mut self,
-        authority: S,
+        authority: K,
         rule: AccessRule,
         mutability: AccessRule,
     ) {
-        let name = authority.into();
         self.rules
-            .insert(AuthorityKey::new(name.as_str()), (rule, mutability));
+            .insert(authority.into(), (rule, mutability));
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {

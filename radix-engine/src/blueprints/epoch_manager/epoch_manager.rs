@@ -188,7 +188,7 @@ impl EpochManagerBlueprint {
         };
 
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
+        authority_rules.define_role(
             EPOCH_MANAGER_START_AUTHORITY,
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),

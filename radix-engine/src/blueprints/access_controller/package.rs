@@ -1099,19 +1099,19 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
     let mut authority_rules = AuthorityRules::new();
 
     let primary = "primary";
-    authority_rules.set_main_authority_rule(
+    authority_rules.define_role(
         primary,
         rule_set.primary_role.clone(),
         rule!(require(global_caller(address))),
     );
     let recovery = "recovery";
-    authority_rules.set_main_authority_rule(
+    authority_rules.define_role(
         recovery,
         rule_set.recovery_role.clone(),
         rule!(require(global_caller(address))),
     );
     let confirmation = "confirmation";
-    authority_rules.set_main_authority_rule(
+    authority_rules.define_role(
         confirmation,
         rule_set.confirmation_role.clone(),
         rule!(require(global_caller(address))),

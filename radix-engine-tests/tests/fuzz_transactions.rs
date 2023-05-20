@@ -72,7 +72,7 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_main_authority_rule(
+                    authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
@@ -82,7 +82,7 @@ impl TransactionFuzzer {
                 }
                 1 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_main_authority_rule(
+                    authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,
@@ -91,7 +91,7 @@ impl TransactionFuzzer {
                 }
                 2 => {
                     let mut authority_rules = AuthorityRules::new();
-                    authority_rules.set_main_authority_rule(
+                    authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
                         AccessRule::AllowAll,

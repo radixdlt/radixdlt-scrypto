@@ -21,7 +21,11 @@ mod metadata_component {
             let global = MetadataComponent {}
                 .instantiate()
                 .prepare_to_globalize()
-                .authority_rule("metadata", AccessRule::AllowAll, AccessRule::DenyAll)
+                .define_roles({
+                    let mut roles = AuthorityRules::new();
+                    roles.define_role("metadata", rule!(allow_all), rule!(deny_all));
+                    roles
+                })
                 .protect_metadata_set("metadata")
                 .globalize();
 

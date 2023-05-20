@@ -29,7 +29,7 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut resman_authority_rules = AuthorityRules::new();
-        resman_authority_rules.set_main_authority_rule(
+        resman_authority_rules.define_role(
             UPDATE_METADATA_AUTHORITY,
             update_metadata_access_rule,
             update_metadata_mutability,
@@ -37,7 +37,7 @@ fn build_access_rules(
 
         // Mint
         {
-            resman_authority_rules.set_main_authority_rule(
+            resman_authority_rules.define_role(
                 MINT_AUTHORITY,
                 mint_access_rule,
                 mint_mutability,
@@ -46,7 +46,7 @@ fn build_access_rules(
 
         // Burn
         {
-            resman_authority_rules.set_main_authority_rule(
+            resman_authority_rules.define_role(
                 BURN_AUTHORITY,
                 burn_access_rule,
                 burn_mutability,
@@ -55,7 +55,7 @@ fn build_access_rules(
 
         // Non Fungible Update data
         {
-            resman_authority_rules.set_main_authority_rule(
+            resman_authority_rules.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
                 update_non_fungible_data_access_rule,
                 update_non_fungible_data_mutability,
@@ -80,7 +80,7 @@ fn build_access_rules(
 
         // Withdraw
         {
-            vault_authority_rules.set_main_authority_rule(
+            vault_authority_rules.define_role(
                 WITHDRAW_AUTHORITY,
                 withdraw_access_rule,
                 withdraw_mutability,
@@ -89,7 +89,7 @@ fn build_access_rules(
 
         // Recall
         {
-            vault_authority_rules.set_main_authority_rule(
+            vault_authority_rules.define_role(
                 RECALL_AUTHORITY,
                 recall_access_rule,
                 recall_mutability,
@@ -98,7 +98,7 @@ fn build_access_rules(
 
         // Deposit
         {
-            vault_authority_rules.set_main_authority_rule(
+            vault_authority_rules.define_role(
                 DEPOSIT_AUTHORITY,
                 deposit_access_rule,
                 deposit_mutability,

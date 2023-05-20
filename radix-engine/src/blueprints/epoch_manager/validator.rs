@@ -634,7 +634,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_main_authority_rule(
+        authority_rules.define_role(
             VALIDATOR_STAKE_AUTHORITY,
             rule!(require("owner")),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),

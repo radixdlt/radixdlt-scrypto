@@ -21,8 +21,14 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .authority_rule("public", rule!(allow_all), rule!(allow_all))
-                .protect_royalty_claim("public")
+                .define_roles({
+                    let mut roles = AuthorityRules::new();
+                    roles.define_role("public", rule!(allow_all), rule!(allow_all));
+                    roles
+                })
+                .protect_royalty(btreemap!(
+                    RoyaltyMethod::ClaimRoyalty => vec!["public".to_string()],
+                ))
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)

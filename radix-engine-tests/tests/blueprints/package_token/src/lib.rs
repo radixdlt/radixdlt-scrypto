@@ -11,11 +11,11 @@ mod factory {
             Self { my_component: None }
                 .instantiate()
                 .prepare_to_globalize()
-                .authority_rule(
-                    "set_address",
-                    rule!(require(Runtime::package_token())),
-                    AccessRule::DenyAll,
-                )
+                .define_roles({
+                   let mut roles = AuthorityRules::new();
+                   roles.define_role("set_address", rule!(require(Runtime::package_token())), rule!(deny_all));
+                   roles
+                })
                 .globalize()
         }
 
@@ -25,11 +25,11 @@ mod factory {
             }
             .instantiate()
             .prepare_to_globalize()
-            .authority_rule(
-                "set_address",
-                rule!(require(Runtime::package_token())),
-                AccessRule::DenyAll,
-            )
+            .define_roles({
+                let mut roles = AuthorityRules::new();
+                roles.define_role("set_address", rule!(require(Runtime::package_token())), rule!(deny_all));
+                roles
+            })
             .globalize();
 
             component.set_address(component.clone());
