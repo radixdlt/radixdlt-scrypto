@@ -26,7 +26,9 @@ mod metadata_component {
                     roles.define_role("metadata", rule!(allow_all), rule!(deny_all));
                     roles
                 })
-                .protect_metadata_set("metadata")
+                .protect_metadata(btreemap!(
+                    MetadataMethod::Set => vec!["metadata".to_string()],
+                ))
                 .globalize();
 
             let metadata = global.metadata();

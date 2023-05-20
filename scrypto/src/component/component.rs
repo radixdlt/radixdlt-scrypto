@@ -147,6 +147,20 @@ impl ToString for RoyaltyMethod {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub enum MetadataMethod {
+    Set,
+}
+
+impl ToString for MetadataMethod {
+    fn to_string(&self) -> String {
+        match self {
+            MetadataMethod::Set => METADATA_SET_IDENT.to_string(),
+        }
+    }
+}
+
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
@@ -200,14 +214,14 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn protect_metadata_set<S: Into<String>>(
-        mut self,
-        authority: S,
-    ) -> Self {
-        self.protected_module_methods.insert(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
-            vec![authority.into()],
-        );
+    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<String>>) -> Self {
+        for (protected_metadata_method, authorities) in protected_metadata_methods {
+            self.protected_module_methods.insert(
+                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
+                authorities
+            );
+        }
+
         self
     }
 
