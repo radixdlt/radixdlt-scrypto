@@ -13,9 +13,6 @@ use utils::btreemap;
 
 use super::AccessRule;
 
-pub const METADATA_AUTHORITY: &str = "metadata";
-pub const ROYALTY_AUTHORITY: &str = "royalty";
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FnKey {
     pub blueprint: String,
@@ -74,7 +71,6 @@ pub enum AttachedModule {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AuthorityKey {
     Main(String),
-    ModuleEntryPoint(AttachedModule, String),
 }
 
 impl From<SchemaAuthorityKey> for AuthorityKey {
@@ -92,14 +88,6 @@ impl AuthorityKey {
 
     pub fn main<S: Into<String>>(key: S) -> Self {
         AuthorityKey::Main(key.into())
-    }
-
-    pub fn metadata(key: &str) -> Self {
-        AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, key.to_string())
-    }
-
-    pub fn royalty(key: &str) -> Self {
-        AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, key.to_string())
     }
 }
 
@@ -155,11 +143,6 @@ impl AuthorityRules {
         let name = authority.into();
         self.rules
             .insert(AuthorityKey::main(name.as_str()), (rule, mutability));
-    }
-
-    pub fn set_royalty_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules
-            .insert(AuthorityKey::royalty(ROYALTY_AUTHORITY), (rule, mutability));
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {

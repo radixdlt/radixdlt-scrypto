@@ -205,7 +205,7 @@ fn test_radiswap() {
         + 13875 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5571862 /* LockSubstate */
+        + 5565003 /* LockSubstate */
         + 19432 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */

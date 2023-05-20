@@ -634,8 +634,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
-
         authority_rules.set_main_authority_rule(
             VALIDATOR_STAKE_AUTHORITY,
             rule!(require("owner")),
