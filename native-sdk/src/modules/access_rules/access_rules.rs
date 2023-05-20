@@ -21,7 +21,7 @@ impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
         protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
         authority_rules: AuthorityRules,
-        inner_blueprint_rules: BTreeMap<String, AuthorityRules>,
+        inner_blueprint_rules: BTreeMap<String, (AuthorityRules, BTreeMap<MethodKey, Vec<String>>)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where

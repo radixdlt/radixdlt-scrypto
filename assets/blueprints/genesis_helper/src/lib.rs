@@ -73,21 +73,18 @@ mod genesis_helper {
             }
             .instantiate()
             .prepare_to_globalize()
-            .authority_rule(
-                "ingest_data_chunk",
-                rule!(require("system")),
-                rule!(deny_all),
-            )
-            .authority_rule("wrap_up", rule!(require("system")), rule!(deny_all))
-            .authority_rule(
-                "system",
-                rule!(require(system_role.clone())),
-                rule!(require(system_role)),
-            )
+            .define_roles({
+                let mut roles = AuthorityRules::new();
+                roles.define_role("system", rule!(require(system_role.clone())), rule!(require(system_role)));
+                roles
+            })
+            .protect_methods(btreemap!(
+                "ingest_data_chunk" => vec!["system".to_string()],
+                "wrap_up" => vec!["system".to_string()],
+            ))
             .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }
 
-        #[restrict_to("system")]
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {
             match chunk {
                 GenesisDataChunk::Validators(validators) => self.create_validators(validators),
@@ -104,7 +101,6 @@ mod genesis_helper {
             }
         }
 
-        #[restrict_to("system")]
         pub fn wrap_up(&mut self) -> Bucket {
             EpochManager(self.epoch_manager)
                 .start(&mut ScryptoEnv)

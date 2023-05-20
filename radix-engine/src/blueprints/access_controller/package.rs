@@ -369,34 +369,9 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let protected_methods = btreemap!(
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT.to_string() => vec![SchemaAuthorityKey::new("primary")],
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT.to_string() => vec![SchemaAuthorityKey::new("primary")],
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => vec![SchemaAuthorityKey::new("primary")],
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT.to_string() => vec![SchemaAuthorityKey::new("primary")],
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() =>  vec![SchemaAuthorityKey::new("primary")],
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT.to_string() => vec![SchemaAuthorityKey::new("recovery")],
+        let protected_methods = btreemap!();
 
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() =>
-                vec![SchemaAuthorityKey::new("recovery"), SchemaAuthorityKey::new("confirmation")],
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() =>
-                vec![SchemaAuthorityKey::new("recovery"), SchemaAuthorityKey::new("confirmation")],
 
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT.to_string() =>
-                vec![SchemaAuthorityKey::new("primary"), SchemaAuthorityKey::new("confirmation")],
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string() =>
-                vec![SchemaAuthorityKey::new("primary"), SchemaAuthorityKey::new("confirmation")],
-
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT.to_string() =>
-                vec![SchemaAuthorityKey::new("primary"), SchemaAuthorityKey::new("confirmation"), SchemaAuthorityKey::new("recovery")],
-
-        );
 
         let schema = generate_full_schema(aggregator);
         PackageSchema {
@@ -575,9 +550,9 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-        let authority_rules = init_access_rules_from_rule_set(address, input.rule_set);
+        let (authority_rules, protected_methods) = init_access_rules_from_rule_set(address, input.rule_set);
         let access_rules = AccessRules::create(
-            btreemap!(),
+            protected_methods,
             authority_rules,
             btreemap!(),
             api
@@ -1095,7 +1070,7 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> AuthorityRules {
+fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (AuthorityRules, BTreeMap<MethodKey, Vec<String>>) {
     let mut authority_rules = AuthorityRules::new();
 
     let primary = "primary";
@@ -1117,7 +1092,33 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         rule!(require(global_caller(address))),
     );
 
-    authority_rules
+    let protected_methods = btreemap!(
+        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => vec!["primary"],
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => vec!["primary"],
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["primary"],
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => vec!["primary"],
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  vec!["primary"],
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => vec!["recovery"],
+
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["recovery", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["recovery", "confirmation"],
+
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["primary", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["primary", "confirmation"],
+        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => vec!["primary", "confirmation", "recovery"],
+    );
+
+    let protected_methods = protected_methods.into_iter()
+        .map(|(s, roles)| (MethodKey::new(ObjectModuleId::Main, s), roles.into_iter().map(|s| s.to_string()).collect()))
+        .collect();
+
+    (authority_rules, protected_methods)
 }
 
 fn transition<Y, I>(

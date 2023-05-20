@@ -118,7 +118,9 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()]
+            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => vec![PACKAGE_ROYALTY_AUTHORITY.to_string()],
+            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => vec![PACKAGE_ROYALTY_AUTHORITY.to_string()],
         )
     }
 
@@ -294,8 +296,7 @@ impl PackageNativePackage {
         );
 
         let protected_methods = btreemap!(
-            PACKAGE_CLAIM_ROYALTY_IDENT.to_string() => vec![SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY)],
-            PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string() => vec![SchemaAuthorityKey::new(PACKAGE_ROYALTY_AUTHORITY)],
+
         );
 
         let schema = generate_full_schema(aggregator);

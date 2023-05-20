@@ -210,7 +210,6 @@ impl<C: HasStub> Globalizing<C> {
                 authorities
             );
         }
-
         self
     }
 
@@ -221,7 +220,16 @@ impl<C: HasStub> Globalizing<C> {
                 authorities
             );
         }
+        self
+    }
 
+    pub fn protect_methods(mut self, protected_methods: BTreeMap<&str, Vec<String>>) -> Self {
+        for (protected_method, authorities) in protected_methods {
+            self.protected_module_methods.insert(
+                MethodKey::new(ObjectModuleId::Main, protected_method),
+                authorities
+            );
+        }
         self
     }
 

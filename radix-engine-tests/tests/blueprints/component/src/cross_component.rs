@@ -17,9 +17,12 @@ mod cross_component {
             .prepare_to_globalize()
             .define_roles({
                 let mut roles = AuthorityRules::new();
-                roles.define_role("get_component_state", access_rule, rule!(deny_all));
+                roles.define_role("auth", access_rule, rule!(deny_all));
                 roles
             })
+            .protect_methods(btreemap!(
+                "get_component_state" => vec!["auth".to_string()],
+            ))
             .globalize()
         }
 
@@ -43,7 +46,6 @@ mod cross_component {
             }
         }
 
-        #[restrict_to("get_component_state")]
         pub fn get_component_state(&self) -> String {
             self.secret.clone()
         }

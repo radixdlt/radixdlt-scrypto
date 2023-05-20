@@ -628,7 +628,13 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(VALIDATOR_REGISTER_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => vec!["owner".to_string()],
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => vec![VALIDATOR_STAKE_AUTHORITY.to_string()],
+            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => vec![VALIDATOR_APPLY_EMISSION_AUTHORITY.to_string()],
         )
     }
 

@@ -13,9 +13,12 @@ mod factory {
                 .prepare_to_globalize()
                 .define_roles({
                    let mut roles = AuthorityRules::new();
-                   roles.define_role("set_address", rule!(require(Runtime::package_token())), rule!(deny_all));
+                   roles.define_role("auth", rule!(require(Runtime::package_token())), rule!(deny_all));
                    roles
                 })
+                .protect_methods(btreemap!(
+                    "set_address" => vec!["auth".to_string()],
+                ))
                 .globalize()
         }
 
@@ -27,9 +30,12 @@ mod factory {
             .prepare_to_globalize()
             .define_roles({
                 let mut roles = AuthorityRules::new();
-                roles.define_role("set_address", rule!(require(Runtime::package_token())), rule!(deny_all));
+                roles.define_role("auth", rule!(require(Runtime::package_token())), rule!(deny_all));
                 roles
             })
+            .protect_methods(btreemap!(
+                "set_address" => vec!["auth".to_string()],
+            ))
             .globalize();
 
             component.set_address(component.clone());
@@ -37,7 +43,6 @@ mod factory {
             component
         }
 
-        #[restrict_to("set_address")]
         pub fn set_address(&mut self, my_component: Global<Factory>) {
             self.my_component = Option::Some(my_component);
         }

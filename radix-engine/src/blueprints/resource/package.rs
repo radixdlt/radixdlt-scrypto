@@ -264,10 +264,7 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let protected_methods = btreemap!(
-                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string() => vec![SchemaAuthorityKey::new(MINT_AUTHORITY)],
-                RESOURCE_MANAGER_BURN_IDENT.to_string() => vec![SchemaAuthorityKey::new(BURN_AUTHORITY)],
-            );
+            let protected_methods = btreemap!();
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
@@ -510,13 +507,7 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let protected_methods = btreemap!(
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string() => vec![SchemaAuthorityKey::new(MINT_AUTHORITY)],
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string() => vec![SchemaAuthorityKey::new(MINT_AUTHORITY)],
-                NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT.to_string() => vec![SchemaAuthorityKey::new(MINT_AUTHORITY)],
-                RESOURCE_MANAGER_BURN_IDENT.to_string() => vec![SchemaAuthorityKey::new(BURN_AUTHORITY)],
-                NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT.to_string() => vec![SchemaAuthorityKey::new(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY)],
-            );
+            let protected_methods = btreemap!();
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
@@ -647,14 +638,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let protected_methods = btreemap!(
-                VAULT_TAKE_IDENT.to_string() => vec![SchemaAuthorityKey::new(WITHDRAW_AUTHORITY)],
-                FUNGIBLE_VAULT_LOCK_FEE_IDENT.to_string() => vec![SchemaAuthorityKey::new(WITHDRAW_AUTHORITY)],
-                VAULT_RECALL_IDENT.to_string() => vec![SchemaAuthorityKey::new(RECALL_AUTHORITY)],
-                VAULT_PUT_IDENT.to_string() => vec![SchemaAuthorityKey::new(DEPOSIT_AUTHORITY)],
-                FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-                FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-            );
+            let protected_methods = btreemap!();
 
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -828,15 +812,7 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let protected_methods = btreemap!(
-                VAULT_TAKE_IDENT.to_string() => vec![SchemaAuthorityKey::new(WITHDRAW_AUTHORITY)],
-                NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new(WITHDRAW_AUTHORITY)],
-                VAULT_RECALL_IDENT.to_string() => vec![SchemaAuthorityKey::new(RECALL_AUTHORITY)],
-                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new(RECALL_AUTHORITY)],
-                VAULT_PUT_IDENT.to_string() => vec![SchemaAuthorityKey::new(DEPOSIT_AUTHORITY)],
-                NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-                NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-            );
+            let protected_methods = btreemap!();
 
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -953,10 +929,7 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let protected_methods = btreemap!(
-                FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-                FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-            );
+            let protected_methods = btreemap!();
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
@@ -1108,10 +1081,7 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let protected_methods = btreemap!(
-                NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-                NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new("this_package")],
-            );
+            let protected_methods = btreemap!();
 
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {

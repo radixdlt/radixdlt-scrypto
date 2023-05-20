@@ -52,6 +52,20 @@ impl MethodKey {
             ident: method_ident.to_string(),
         }
     }
+
+    pub fn metadata<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: ObjectModuleId::Metadata,
+            ident: method_ident.to_string(),
+        }
+    }
+
+    pub fn main<S: ToString>(method_ident: S) -> Self {
+        Self {
+            module_id: ObjectModuleId::Main,
+            ident: method_ident.to_string(),
+        }
+    }
 }
 
 impl From<String> for AccessRule {

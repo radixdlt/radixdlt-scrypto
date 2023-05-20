@@ -41,7 +41,18 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
+
+            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
+            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => vec![ACCOUNT_SECURIFY_AUTHORITY.to_string()],
         )
     }
 

@@ -79,7 +79,6 @@ impl ClockNativePackage {
         );
 
         let protected_methods = btreemap!(
-            CLOCK_SET_CURRENT_TIME_IDENT.to_string() => vec![SchemaAuthorityKey::new(CLOCK_AUTHORITY)],
         );
 
         let schema = generate_full_schema(aggregator);
@@ -178,8 +177,14 @@ impl ClockNativePackage {
         );
 
         let access_rules = AccessRules::create(
+            btreemap!(
+                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => vec![CLOCK_AUTHORITY.to_string()],
+            ),
+            authority_rules,
             btreemap!(),
-            authority_rules, btreemap!(), api)?.0;
+            api,
+        )?.0;
+
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 

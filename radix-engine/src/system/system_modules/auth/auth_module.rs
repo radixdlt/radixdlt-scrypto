@@ -215,24 +215,10 @@ impl AuthModule {
             }
         };
 
-        let authority_list = match method_key.module_id {
-            ObjectModuleId::Main => {
-                let schema = api.get_blueprint_schema(&info.blueprint)?;
-                let authority_list = if let Some(key) = schema.protected_methods.get(&method_key.ident) {
-                    key.clone()
-                } else {
-                    return Ok(());
-                };
-
-                authority_list.into_iter().map(|key| key.into()).collect()
-            }
-            _ => {
-                if let Some(list) = node_authority_rules.protected_module_methods.get(&method_key) {
-                    list.iter().map(|authority| AuthorityKey::new(authority)).collect()
-                } else {
-                    return Ok(())
-                }
-            },
+        let authority_list = if let Some(list) = node_authority_rules.protected_module_methods.get(&method_key) {
+            list.iter().map(|authority| AuthorityKey::new(authority)).collect()
+        } else {
+            return Ok(())
         };
 
         Self::check_authorization_against_config(

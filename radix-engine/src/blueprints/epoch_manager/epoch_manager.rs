@@ -203,10 +203,14 @@ impl EpochManagerBlueprint {
         );
 
         let access_rules = AccessRules::create(
-            btreemap!(),
+            btreemap!(
+                MethodKey::main(EPOCH_MANAGER_START_AUTHORITY) => vec![EPOCH_MANAGER_START_AUTHORITY.to_string()],
+                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => vec![VALIDATOR_AUTHORITY.to_string()],
+                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => vec![SYSTEM_AUTHORITY.to_string()],
+            ),
             authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()
+                VALIDATOR_BLUEPRINT.to_string() => (AuthorityRules::new(), btreemap!())
             ),
             api,
         )?

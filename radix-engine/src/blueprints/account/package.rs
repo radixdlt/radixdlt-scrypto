@@ -214,16 +214,7 @@ impl AccountNativePackage {
         );
 
         let protected_methods = btreemap!(
-            ACCOUNT_WITHDRAW_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_LOCK_FEE_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_LOCK_CONTINGENT_FEE_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_WITHDRAW_AUTHORITY)],
-            ACCOUNT_CREATE_PROOF_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY)],
-            ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY)],
-            ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_CREATE_PROOF_AUTHORITY)],
-            ACCOUNT_SECURIFY_IDENT.to_string() => vec![SchemaAuthorityKey::new(ACCOUNT_SECURIFY_AUTHORITY)],
+
         );
 
         let schema = generate_full_schema(aggregator);
