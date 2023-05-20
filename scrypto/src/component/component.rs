@@ -4,9 +4,10 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataVal;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, MetadataVal};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
 use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodKey};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
@@ -184,23 +185,36 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn metadata_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+    pub fn protect_metadata_set<S: Into<String>>(
         mut self,
-        entry: A,
-        mutability: B,
+        authority: S,
     ) -> Self {
-        self.authority_rules
-            .set_metadata_authority(entry.into(), mutability.into());
+        self.protected_module_methods.insert(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT),
+            vec![authority.into()],
+        );
         self
     }
 
-    pub fn royalty_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
+    pub fn protect_royalty_set_config<S: Into<String>>(
         mut self,
-        entry: A,
-        mutability: B,
+        authority: S,
     ) -> Self {
-        self.authority_rules
-            .set_royalty_authority(entry.into(), mutability.into());
+        self.protected_module_methods.insert(
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT),
+            vec![authority.into()],
+        );
+        self
+    }
+
+    pub fn protect_royalty_claim<S: Into<String>>(
+        mut self,
+        authority: S,
+    ) -> Self {
+        self.protected_module_methods.insert(
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT),
+            vec![authority.into()],
+        );
         self
     }
 

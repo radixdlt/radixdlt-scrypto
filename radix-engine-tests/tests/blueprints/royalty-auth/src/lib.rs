@@ -39,10 +39,12 @@ mod royalty_test {
 
             local_component
                 .prepare_to_globalize()
+                .authority_rule("auth", rule!(require(badge.clone())), rule!(require(badge.clone())))
+                .protect_royalty_set_config("auth")
+                .protect_royalty_claim("auth")
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)
-                .owner_authority(rule!(require(badge.clone())), rule!(require(badge.clone())))
                 .globalize()
         }
 

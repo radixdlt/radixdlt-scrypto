@@ -21,10 +21,11 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
+                .authority_rule("public", rule!(allow_all), rule!(allow_all))
+                .protect_royalty_claim("public")
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)
                 .royalty_default(0)
-                .owner_authority(rule!(allow_all), rule!(allow_all))
                 .globalize()
         }
     }

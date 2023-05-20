@@ -29,9 +29,11 @@ fn build_access_rules(
             .unwrap_or((DenyAll, rule!(deny_all)));
 
         let mut resman_authority_rules = AuthorityRules::new();
-        resman_authority_rules
-            .set_metadata_authority(update_metadata_access_rule, update_metadata_mutability);
-        resman_authority_rules.set_royalty_authority(rule!(deny_all), rule!(deny_all));
+        resman_authority_rules.set_main_authority_rule(
+            UPDATE_METADATA_AUTHORITY,
+            update_metadata_access_rule,
+            update_metadata_mutability,
+        );
 
         // Mint
         {
@@ -166,7 +168,7 @@ where
 
     let resman_access_rules = AccessRules::create(
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_METADATA_AUTHORITY.to_string()]
         ),
         resman_authorities,
         btreemap!(
@@ -211,7 +213,7 @@ where
 
     let resman_access_rules = AccessRules::create(
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_METADATA_AUTHORITY.to_string()]
         ),
         resman_authorities,
         btreemap!(
@@ -261,7 +263,7 @@ where
 
     let resman_access_rules = AccessRules::create(
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_METADATA_AUTHORITY.to_string()]
         ),
         resman_authorities,
         btreemap!(

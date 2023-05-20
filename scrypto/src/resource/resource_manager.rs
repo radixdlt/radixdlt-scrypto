@@ -86,7 +86,7 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.set_metadata_authority_rule(access_rule);
+        access_rules.set_authority_rule(UPDATE_METADATA_AUTHORITY, access_rule);
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
@@ -106,7 +106,7 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_metadata_mutability(AccessRule::DenyAll);
+        access_rules.set_authority_mutability(UPDATE_METADATA_AUTHORITY, AccessRule::DenyAll);
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {

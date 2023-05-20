@@ -157,13 +157,6 @@ impl AuthorityRules {
             .insert(AuthorityKey::main(name.as_str()), (rule, mutability));
     }
 
-    pub fn set_metadata_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules.insert(
-            AuthorityKey::metadata(METADATA_AUTHORITY),
-            (rule, mutability),
-        );
-    }
-
     pub fn set_royalty_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
         self.rules
             .insert(AuthorityKey::royalty(ROYALTY_AUTHORITY), (rule, mutability));

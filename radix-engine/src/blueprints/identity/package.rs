@@ -199,7 +199,6 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require("owner")), rule!(deny_all));
         authority_rules.set_royalty_authority(rule!(require("owner")), rule!(deny_all));
         authority_rules
     }

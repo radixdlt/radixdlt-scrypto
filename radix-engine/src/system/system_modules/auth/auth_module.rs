@@ -18,7 +18,6 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_GET_IDENT;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
@@ -146,29 +145,7 @@ impl AuthModule {
             }
             (node_id, module_id, ..) => {
                 let info = api.get_object_info(&node_id)?;
-
-                let authority_list = match module_id {
-                    ObjectModuleId::Main => {
-                        let schema = api.get_blueprint_schema(&info.blueprint)?;
-                        let authority_list = if let Some(key) = schema.protected_methods.get(ident) {
-                            key.clone()
-                        } else {
-                            return Ok(());
-                        };
-
-                        authority_list.into_iter().map(|key| key.into()).collect()
-                    }
-                    ObjectModuleId::Metadata => match ident {
-                        METADATA_GET_IDENT => return Ok(()),
-                        _ => {
-                            vec![AuthorityKey::ModuleEntryPoint(AttachedModule::Metadata, METADATA_AUTHORITY.to_string())]
-                        },
-                    },
-                    ObjectModuleId::Royalty => {
-                        vec![AuthorityKey::ModuleEntryPoint(AttachedModule::Royalty, ROYALTY_AUTHORITY.to_string())]
-                    },
-                    _ => panic!("Unexpected"),
-                };
+                let method_key = MethodKey::new(module_id, ident);
 
                 if let Some(parent) = info.outer_object {
                     Self::check_authorization_against_access_rules(
@@ -176,8 +153,9 @@ impl AuthModule {
                         auth_zone_id,
                         acting_location,
                         parent.as_node_id(),
-                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name),
-                        authority_list.clone(),
+                        &info,
+                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
+                        method_key.clone(),
                         api,
                     )?;
                 }
@@ -188,8 +166,9 @@ impl AuthModule {
                         auth_zone_id,
                         acting_location,
                         &node_id,
+                        &info,
                         ObjectKey::SELF,
-                        authority_list,
+                        method_key,
                         api,
                     )?;
                 }
@@ -207,8 +186,9 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         receiver: &NodeId,
+        info: &ObjectInfo,
         object_key: ObjectKey,
-        authority_list: Vec<AuthorityKey>,
+        method_key: MethodKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
@@ -220,8 +200,9 @@ impl AuthModule {
         )?;
         let access_rules: MethodAccessRulesSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
+        api.kernel_drop_lock(handle)?;
 
-        let access_rules_config = match object_key {
+        let node_authority_rules = match object_key {
             ObjectKey::SELF => &access_rules.access_rules,
             ObjectKey::InnerBlueprint(blueprint_name) => {
                 let child_rules = access_rules
@@ -234,16 +215,34 @@ impl AuthModule {
             }
         };
 
+        let authority_list = match method_key.module_id {
+            ObjectModuleId::Main => {
+                let schema = api.get_blueprint_schema(&info.blueprint)?;
+                let authority_list = if let Some(key) = schema.protected_methods.get(&method_key.ident) {
+                    key.clone()
+                } else {
+                    return Ok(());
+                };
+
+                authority_list.into_iter().map(|key| key.into()).collect()
+            }
+            _ => {
+                if let Some(list) = node_authority_rules.protected_module_methods.get(&method_key) {
+                    list.iter().map(|authority| AuthorityKey::main(authority)).collect()
+                } else {
+                    return Ok(())
+                }
+            },
+        };
+
         Self::check_authorization_against_config(
             fn_identifier,
             auth_zone_id,
             acting_location,
-            &access_rules_config,
+            &node_authority_rules,
             &authority_list,
             api,
         )?;
-
-        api.kernel_drop_lock(handle)?;
 
         Ok(())
     }

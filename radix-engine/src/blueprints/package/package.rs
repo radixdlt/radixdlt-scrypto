@@ -124,7 +124,6 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
-        authority_rules.set_metadata_authority(rule!(require("owner")), rule!(deny_all));
 
         authority_rules.set_fixed_authority_rule("package_royalty", rule!(require("owner")));
         authority_rules

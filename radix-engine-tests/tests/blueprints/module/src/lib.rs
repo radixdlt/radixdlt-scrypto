@@ -7,6 +7,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
+    use std::collections::BTreeMap;
     use crate::RoyaltyConfig;
 
     struct ComponentModule {}
@@ -44,6 +45,7 @@ mod component_module {
                     ACCESS_RULES_BLUEPRINT,
                     ACCESS_RULES_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
+                        protected_module_methods: BTreeMap::new(),
                         authority_rules: AuthorityRules::new(),
                         inner_blueprint_rules: BTreeMap::new(),
                     })

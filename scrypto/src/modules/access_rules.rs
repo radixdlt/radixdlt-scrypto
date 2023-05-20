@@ -52,17 +52,6 @@ impl AccessRules {
         );
     }
 
-    pub fn set_metadata_authority_rule<A: Into<AccessRule>>(&self, entry: A) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
-                rule: entry.into(),
-            },
-        );
-    }
-
     pub fn set_authority_rule_on_inner_blueprint<A: Into<AccessRule>>(
         &self,
         inner_blueprint: &str,
@@ -85,17 +74,6 @@ impl AccessRules {
             &AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::SELF,
                 authority_key: AuthorityKey::main(name),
-                mutability,
-            },
-        );
-    }
-
-    pub fn set_metadata_mutability(&self, mutability: AccessRule) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-            &AccessRulesSetAuthorityMutabilityInput {
-                object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::metadata(METADATA_AUTHORITY),
                 mutability,
             },
         );

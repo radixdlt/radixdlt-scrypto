@@ -413,7 +413,7 @@ REMOVE_METADATA
 SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
     Enum(0u8)
-    Enum(0u8)
+    Enum(0u8, "auth")
     Enum(0u8);
 "##,
             ),
