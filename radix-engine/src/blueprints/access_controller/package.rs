@@ -576,7 +576,12 @@ impl AccessControllerNativePackage {
         let address = GlobalAddress::new_or_panic(address.0);
 
         let authority_rules = init_access_rules_from_rule_set(address, input.rule_set);
-        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(
+            btreemap!(),
+            authority_rules,
+            btreemap!(),
+            api
+        )?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;

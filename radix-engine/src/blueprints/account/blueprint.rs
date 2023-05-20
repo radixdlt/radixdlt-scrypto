@@ -39,6 +39,12 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
 
+    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
+        )
+    }
+
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();
         authority_rules

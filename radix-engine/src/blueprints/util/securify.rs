@@ -9,6 +9,8 @@ pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
+    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>>;
+
     fn authority_rules() -> AuthorityRules;
 
     fn create_config(authority_rules: AuthorityRules) -> AuthorityRules {
@@ -24,7 +26,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let authority_rules = Self::create_config(AuthorityRules::new());
-        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?;
+        let access_rules = AccessRules::create(Self::protected_module_methods(), authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
@@ -42,7 +44,7 @@ pub trait SecurifiedAccessRules {
             );
         }
 
-        let access_rules = AccessRules::create(authority_rules, btreemap!(), api)?;
+        let access_rules = AccessRules::create(Self::protected_module_methods(), authority_rules, btreemap!(), api)?;
 
         Ok(access_rules)
     }

@@ -10,6 +10,7 @@ use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::BlueprintSchema;
@@ -187,6 +188,14 @@ struct SecurifiedIdentity;
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
+
+    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => vec!["owner".to_string()],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => vec!["owner".to_string()],
+        )
+    }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();

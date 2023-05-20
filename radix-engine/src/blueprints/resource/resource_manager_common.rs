@@ -8,6 +8,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -164,6 +165,9 @@ where
         };
 
     let resman_access_rules = AccessRules::create(
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+        ),
         resman_authorities,
         btreemap!(
             vault_blueprint_name.to_string() => vault_authorities,
@@ -206,6 +210,9 @@ where
     let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+        ),
         resman_authorities,
         btreemap!(
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,
@@ -253,6 +260,9 @@ where
     let proof_authorities = AuthorityRules::new();
 
     let resman_access_rules = AccessRules::create(
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()]
+        ),
         resman_authorities,
         btreemap!(
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => vault_authorities,

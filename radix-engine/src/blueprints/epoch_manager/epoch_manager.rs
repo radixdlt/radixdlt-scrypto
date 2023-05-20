@@ -203,6 +203,7 @@ impl EpochManagerBlueprint {
         );
 
         let access_rules = AccessRules::create(
+            btreemap!(),
             authority_rules,
             btreemap!(
                 VALIDATOR_BLUEPRINT.to_string() => AuthorityRules::new()

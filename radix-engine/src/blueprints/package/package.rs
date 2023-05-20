@@ -16,7 +16,8 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF, ObjectModuleId};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, Bucket, FnKey};
 use radix_engine_interface::schema::{
@@ -114,6 +115,12 @@ struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
+
+    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()]
+        )
+    }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();

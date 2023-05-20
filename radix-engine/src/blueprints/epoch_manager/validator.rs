@@ -17,6 +17,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
@@ -624,6 +625,12 @@ struct SecurifiedValidator;
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
+
+    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+        btreemap!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
+        )
+    }
 
     fn authority_rules() -> AuthorityRules {
         let mut authority_rules = AuthorityRules::new();

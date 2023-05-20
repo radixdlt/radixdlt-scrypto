@@ -7,7 +7,7 @@ use crate::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataVal;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodKey};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -122,7 +122,10 @@ impl<C: HasStub> Owned<C> {
             stub: self.0,
             metadata: None,
             royalty: RoyaltyConfig::default(),
+
             authority_rules: AuthorityRules::new(),
+            protected_module_methods: BTreeMap::new(),
+
             address: None,
         }
     }
@@ -133,7 +136,10 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
+
     pub authority_rules: AuthorityRules,
+    pub protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
+
     pub address: Option<ComponentAddress>,
 }
 
@@ -216,7 +222,7 @@ impl<C: HasStub> Globalizing<C> {
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = Royalty::new(self.royalty);
-        let access_rules = AccessRules::new(self.authority_rules);
+        let access_rules = AccessRules::new(self.protected_module_methods, self.authority_rules);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

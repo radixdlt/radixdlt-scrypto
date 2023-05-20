@@ -9,6 +9,7 @@ pub const WITHDRAW_AUTHORITY: &str = "withdraw";
 pub const DEPOSIT_AUTHORITY: &str = "deposit";
 pub const RECALL_AUTHORITY: &str = "recall";
 pub const UPDATE_NON_FUNGIBLE_DATA_AUTHORITY: &str = "update_non_fungible_data";
+pub const UPDATE_METADATA_AUTHORITY: &str = "update_metadata_authority";
 
 // TODO: Remove?
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
