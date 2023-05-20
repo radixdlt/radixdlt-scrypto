@@ -187,8 +187,6 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         functions,
         virtual_lazy_load_functions: BTreeMap::new(),
         event_schema: [].into(),
-        protected_methods: btreemap!(),
-        authority_schema: btreemap!(),
     };
 
     ::scrypto::engine::wasm_api::forget_vec(

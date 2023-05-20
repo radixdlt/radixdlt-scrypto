@@ -650,14 +650,12 @@ where
             .unwrap();
         self.api.kernel_drop_lock(lock_handle)?;
 
-        let blueprint_id = match type_info {
+        match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 ref mut global,
-                ref blueprint,
                 ..
             }) if !*global => {
                 *global = true;
-                blueprint.clone()
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -665,43 +663,6 @@ where
                 )))
             }
         };
-
-        {
-            let blueprint_schema = self.get_blueprint_schema(&blueprint_id)?;
-            let access_rule_node_id = modules.get(&ObjectModuleId::AccessRules).unwrap().clone();
-            let access_rule_blueprint_id = self.get_object_info(&access_rule_node_id)?.blueprint;
-            let expected_blueprint = ObjectModuleId::AccessRules.static_blueprint().unwrap();
-            if !access_rule_blueprint_id.eq(&expected_blueprint) {
-                return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
-                    Box::new(InvalidModuleType {
-                        expected_blueprint,
-                        actual_blueprint: access_rule_blueprint_id,
-                    }),
-                )));
-            }
-
-            let handle = self.kernel_lock_substate(
-                &access_rule_node_id,
-                OBJECT_BASE_PARTITION,
-                &SubstateKey::Tuple(0u8),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-
-            let access_rules: MethodAccessRulesSubstate =
-                self.kernel_read_substate(handle)?.as_typed().unwrap();
-            for (_method, authority_list) in blueprint_schema.protected_methods {
-                for authority in authority_list {
-                    let key = authority.into();
-                    if !access_rules.access_rules.rules.contains_key(&key) {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::MissingRequiredAuthority(blueprint_id.clone(), key),
-                        ));
-                    }
-                }
-            }
-            self.kernel_drop_lock(handle)?;
-        }
 
         // Create a global node
         self.kernel_create_node(

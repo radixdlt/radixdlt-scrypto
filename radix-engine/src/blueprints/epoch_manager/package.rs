@@ -111,8 +111,6 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let protected_methods = btreemap!();
-
         let epoch_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
@@ -121,8 +119,6 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            protected_methods,
-            authority_schema: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -221,10 +217,6 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
 
-        let protected_methods = btreemap!(
-
-        );
-
         let validator_schema = BlueprintSchema {
             outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
             schema,
@@ -233,8 +225,6 @@ impl EpochManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema,
-            protected_methods,
-            authority_schema: btreemap!(),
         };
 
         PackageSchema {

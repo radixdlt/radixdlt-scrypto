@@ -110,10 +110,6 @@ pub struct BlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
-
-    pub protected_methods: BTreeMap<String, Vec<SchemaAuthorityKey>>,
-
-    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -205,9 +201,6 @@ impl Default for BlueprintSchema {
             functions: BTreeMap::default(),
             virtual_lazy_load_functions: BTreeMap::default(),
             event_schema: BTreeMap::default(),
-
-            protected_methods: BTreeMap::default(),
-            authority_schema: BTreeMap::default(),
         }
     }
 }
@@ -226,9 +219,6 @@ pub struct IndexedBlueprintSchema {
     pub virtual_lazy_load_functions: BTreeMap<u8, VirtualLazyLoadSchema>,
     /// For each event, there is a name [`String`] that maps to a [`LocalTypeIndex`]
     pub event_schema: BTreeMap<String, LocalTypeIndex>,
-
-    pub protected_methods: BTreeMap<String, Vec<SchemaAuthorityKey>>,
-    pub authority_schema: BTreeMap<FullyQualifiedAuthorityKey, AuthoritySchema>,
 }
 
 impl From<BlueprintSchema> for IndexedBlueprintSchema {
@@ -255,8 +245,6 @@ impl From<BlueprintSchema> for IndexedBlueprintSchema {
             functions: schema.functions,
             virtual_lazy_load_functions: schema.virtual_lazy_load_functions,
             event_schema: schema.event_schema,
-            protected_methods: schema.protected_methods,
-            authority_schema: schema.authority_schema,
         }
     }
 }

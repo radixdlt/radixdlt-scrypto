@@ -146,13 +146,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     event_schema.insert(#event_type_names.to_owned(), local_type_index);
                 })*
 
-                let mut authority_schema = BTreeMap::new();
-
-                let mut protected_methods = BTreeMap::new();
-                #({
-                    protected_methods.insert(#protected_methods.to_owned(), #protected_method_authorities);
-                })*
-
                 let return_data = BlueprintSchema {
                     outer_blueprint: None,
                     schema: generate_full_schema(aggregator),
@@ -161,8 +154,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     functions,
                     virtual_lazy_load_functions: BTreeMap::new(),
                     event_schema,
-                    protected_methods,
-                    authority_schema,
                 };
 
                 return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
@@ -815,10 +806,6 @@ mod tests {
                         );
                         let mut event_schema = BTreeMap::new();
 
-                        let mut authority_schema = BTreeMap::new();
-
-                        let mut protected_methods = BTreeMap::new();
-
                         let return_data = BlueprintSchema {
                             outer_blueprint: None,
                             schema: generate_full_schema(aggregator),
@@ -827,8 +814,6 @@ mod tests {
                             functions,
                             virtual_lazy_load_functions: BTreeMap::new(),
                             event_schema,
-                            protected_methods,
-                            authority_schema,
                         };
                         return ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto::scrypto_encode(&return_data).unwrap());
                     }

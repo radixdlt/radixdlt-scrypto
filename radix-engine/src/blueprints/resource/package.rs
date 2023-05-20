@@ -264,8 +264,6 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let protected_methods = btreemap!();
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -275,8 +273,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -507,8 +503,6 @@ impl ResourceManagerNativePackage {
                 ]
             };
 
-            let protected_methods = btreemap!();
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: None,
@@ -518,8 +512,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -638,8 +630,6 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let protected_methods = btreemap!();
-
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -648,8 +638,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -812,8 +800,6 @@ impl ResourceManagerNativePackage {
 
             let schema = generate_full_schema(aggregator);
 
-            let protected_methods = btreemap!();
-
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
                 schema,
@@ -822,8 +808,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema,
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -929,8 +913,6 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let protected_methods = btreemap!();
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -940,8 +922,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -1081,8 +1061,6 @@ impl ResourceManagerNativePackage {
                 },
             );
 
-            let protected_methods = btreemap!();
-
             let schema = generate_full_schema(aggregator);
             BlueprintSchema {
                 outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
@@ -1092,8 +1070,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                protected_methods,
-                authority_schema: btreemap!(),
             }
         };
 
@@ -1153,8 +1129,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                protected_methods: btreemap!(),
-                authority_schema: btreemap!(),
             }
         };
 
@@ -1226,8 +1200,6 @@ impl ResourceManagerNativePackage {
                 functions,
                 virtual_lazy_load_functions: btreemap!(),
                 event_schema: [].into(),
-                protected_methods: btreemap!(),
-                authority_schema: btreemap!(),
             }
         };
 
@@ -1332,8 +1304,6 @@ impl ResourceManagerNativePackage {
             functions,
             virtual_lazy_load_functions: btreemap!(),
             event_schema: [].into(),
-            protected_methods: btreemap!(),
-            authority_schema: btreemap!(),
         };
 
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -1449,8 +1419,6 @@ impl ResourceManagerNativePackage {
             functions,
             event_schema: btreemap!(),
             virtual_lazy_load_functions: btreemap!(),
-            protected_methods: btreemap!(),
-            authority_schema: btreemap!(),
         };
 
         PackageSchema {

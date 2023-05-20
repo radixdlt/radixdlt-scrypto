@@ -45,8 +45,6 @@ impl TransactionProcessorNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    protected_methods: btreemap!(),
-                    authority_schema: btreemap!(),
                 }
             ),
         }

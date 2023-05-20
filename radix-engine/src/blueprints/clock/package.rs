@@ -78,9 +78,6 @@ impl ClockNativePackage {
             },
         );
 
-        let protected_methods = btreemap!(
-        );
-
         let schema = generate_full_schema(aggregator);
         PackageSchema {
             blueprints: btreemap!(
@@ -92,8 +89,6 @@ impl ClockNativePackage {
                     functions,
                     virtual_lazy_load_functions: btreemap!(),
                     event_schema: [].into(),
-                    protected_methods,
-                    authority_schema: btreemap!(),
                 }
             ),
         }
