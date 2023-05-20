@@ -1180,17 +1180,17 @@ where
 {
     let attached = AttachedAccessRules(receiver.clone());
     attached.set_authority_rule(
-        AuthorityKey::main("primary"),
+        AuthorityKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
     attached.set_authority_rule(
-        AuthorityKey::main("recovery"),
+        AuthorityKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
     attached.set_authority_rule(
-        AuthorityKey::main("confirmation"),
+        AuthorityKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,
     )?;

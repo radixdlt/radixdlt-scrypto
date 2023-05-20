@@ -56,7 +56,7 @@ impl MethodKey {
 
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
-        AccessRule::Protected(AccessRuleNode::Authority(AuthorityRule::Custom(name)))
+        AccessRule::Protected(AccessRuleNode::Authority(AuthorityKey::new(name)))
     }
 }
 
@@ -69,25 +69,22 @@ pub enum AttachedModule {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AuthorityKey {
-    Main(String),
+#[sbor(transparent)]
+pub struct AuthorityKey {
+    pub key: String,
 }
 
 impl From<SchemaAuthorityKey> for AuthorityKey {
     fn from(value: SchemaAuthorityKey) -> Self {
-        Self::Main(value.key)
+        Self::new(value.key)
     }
 }
 
 impl AuthorityKey {
-    pub fn from_access_rule(rule: AuthorityRule) -> Self {
-        match rule {
-            AuthorityRule::Custom(key) => AuthorityKey::Main(key),
+    pub fn new<S: Into<String>>(key: S) -> Self {
+        AuthorityKey {
+            key: key.into()
         }
-    }
-
-    pub fn main<S: Into<String>>(key: S) -> Self {
-        AuthorityKey::Main(key.into())
     }
 }
 
@@ -129,7 +126,7 @@ impl AuthorityRules {
         rule: R,
     ) {
         self.rules.insert(
-            AuthorityKey::main(authority),
+            AuthorityKey::new(authority),
             (rule.into(), AccessRule::DenyAll),
         );
     }
@@ -142,11 +139,11 @@ impl AuthorityRules {
     ) {
         let name = authority.into();
         self.rules
-            .insert(AuthorityKey::main(name.as_str()), (rule, mutability));
+            .insert(AuthorityKey::new(name.as_str()), (rule, mutability));
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules.insert(AuthorityKey::main("owner"), (rule, mutability));
+        self.rules.insert(AuthorityKey::new("owner"), (rule, mutability));
     }
 }
 

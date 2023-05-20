@@ -67,7 +67,7 @@ pub trait SecurifiedAccessRules {
         let (bucket, owner_local_id) = owner_token.mint_non_fungible_single_uuid((), api)?;
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                AuthorityKey::main(securify),
+                AuthorityKey::new(securify),
                 AccessRule::DenyAll,
                 AccessRule::DenyAll,
                 api,
@@ -76,7 +76,7 @@ pub trait SecurifiedAccessRules {
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
 
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::main("owner"),
+            AuthorityKey::new("owner"),
             rule!(require(global_id.clone())),
             rule!(require("owner")),
             api,
@@ -100,7 +100,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
-                AuthorityKey::main(securify),
+                AuthorityKey::new(securify),
                 access_rule.clone(),
                 this_package_rule.clone(),
                 api,
@@ -108,7 +108,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         }
 
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::main("owner"),
+            AuthorityKey::new("owner"),
             access_rule.clone(),
             this_package_rule.clone(),
             api,

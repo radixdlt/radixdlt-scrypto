@@ -1504,7 +1504,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<Enum, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<String, Tuple>();"#,
             Instruction::PublishPackageAdvanced {
                 code: ManifestBlobRef(
                     hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")

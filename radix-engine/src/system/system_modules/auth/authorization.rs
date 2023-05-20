@@ -288,7 +288,7 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
         auth_rule: &AccessRuleNode,
-        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
+        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
@@ -301,7 +301,7 @@ impl Authorization {
                     acting_location,
                     auth_zone_id,
                     access_rules,
-                    &AuthorityKey::from_access_rule(authority.clone()),
+                    authority,
                     already_verified_authorities,
                     api,
                 )?;
@@ -365,7 +365,7 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
         key: &AuthorityKey,
-        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
+        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match access_rules.get_rule(key) {
@@ -391,7 +391,7 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
         rule: &AccessRule,
-        already_verified_authorities: &mut NonIterMap<AuthorityRule, ()>,
+        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {

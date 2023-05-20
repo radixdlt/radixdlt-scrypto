@@ -6,7 +6,6 @@ use crate::*;
 use arbitrary::Arbitrary;
 use radix_engine_common::types::*;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use utils::rust::prelude::{index_set_new, IndexSet};
@@ -76,33 +75,27 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
 
 impl From<String> for AccessRuleNode {
     fn from(authority: String) -> Self {
-        AccessRuleNode::Authority(AuthorityRule::Custom(authority))
+        AccessRuleNode::Authority(AuthorityKey::new(authority))
     }
 }
 
 impl From<&str> for AccessRuleNode {
     fn from(authority: &str) -> Self {
-        AccessRuleNode::Authority(AuthorityRule::Custom(authority.to_string()))
+        AccessRuleNode::Authority(AuthorityKey::new(authority))
     }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AuthorityRule {
-    Custom(String),
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
-    Authority(AuthorityRule),
+    Authority(AuthorityKey),
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
 }
 
 impl AccessRuleNode {
-    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityRule>) {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityKey>) {
         match self {
             AccessRuleNode::Authority(authority) => {
                 authorities.insert(authority.clone());
@@ -200,7 +193,7 @@ pub enum AccessRule {
 }
 
 impl AccessRule {
-    pub fn get_referenced_authorities(&self) -> IndexSet<AuthorityRule> {
+    pub fn get_referenced_authorities(&self) -> IndexSet<AuthorityKey> {
         let mut authorities = index_set_new();
         match self {
             AccessRule::AllowAll | AccessRule::DenyAll => {}

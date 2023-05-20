@@ -441,7 +441,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main("stake"),
+                authority_key: AuthorityKey::new("stake"),
                 rule,
             })
             .unwrap(),

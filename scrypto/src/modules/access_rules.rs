@@ -46,7 +46,7 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main(name),
+                authority_key: AuthorityKey::new(name),
                 rule: entry.into(),
             },
         );
@@ -62,7 +62,7 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                authority_key: AuthorityKey::main(name),
+                authority_key: AuthorityKey::new(name),
                 rule: entry.into(),
             },
         );
@@ -73,7 +73,7 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             &AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::main(name),
+                authority_key: AuthorityKey::new(name),
                 mutability,
             },
         );

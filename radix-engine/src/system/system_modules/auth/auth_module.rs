@@ -228,7 +228,7 @@ impl AuthModule {
             }
             _ => {
                 if let Some(list) = node_authority_rules.protected_module_methods.get(&method_key) {
-                    list.iter().map(|authority| AuthorityKey::main(authority)).collect()
+                    list.iter().map(|authority| AuthorityKey::new(authority)).collect()
                 } else {
                     return Ok(())
                 }

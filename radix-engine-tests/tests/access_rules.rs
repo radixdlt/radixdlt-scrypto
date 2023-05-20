@@ -80,7 +80,7 @@ fn setting_circular_authority_rule_should_fail() {
 
     // Act
     let receipt = test_runner.set_authority_rule(
-        AuthorityKey::main("deposit_funds_auth"),
+        AuthorityKey::new("deposit_funds_auth"),
         rule!(require("deposit_funds")),
     );
 
@@ -111,7 +111,7 @@ fn access_rules_method_auth_can_not_be_mutated_when_locked() {
 
     // Act
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::new("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -141,7 +141,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 
     // Act
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::new("deposit_funds"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -170,7 +170,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
-    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds_auth"));
+    let receipt = test_runner.lock_group_auth(AuthorityKey::new("deposit_funds_auth"));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -201,7 +201,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::new("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -229,14 +229,14 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_group_auth(AuthorityKey::main("deposit_funds_auth"));
+    let receipt = test_runner.lock_group_auth(AuthorityKey::new("deposit_funds_auth"));
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
     let receipt =
-        test_runner.set_authority_rule(AuthorityKey::main("deposit_funds_auth"), rule!(allow_all));
+        test_runner.set_authority_rule(AuthorityKey::new("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -275,7 +275,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
             .set_authority_access_rule(
                 test_runner.component_address.into(),
                 ObjectKey::SELF,
-                AuthorityKey::main("owner"),
+                AuthorityKey::new("owner"),
                 to_rule,
             )
             .build(),

@@ -27,22 +27,22 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main(BURN_AUTHORITY)),
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::new(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::new(BURN_AUTHORITY)),
         ResourceAuth::UpdateMetadata => {
-            (ObjectKey::SELF, AuthorityKey::main(UPDATE_METADATA_AUTHORITY))
+            (ObjectKey::SELF, AuthorityKey::new(UPDATE_METADATA_AUTHORITY))
         }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(WITHDRAW_AUTHORITY),
+            AuthorityKey::new(WITHDRAW_AUTHORITY),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(DEPOSIT_AUTHORITY),
+            AuthorityKey::new(DEPOSIT_AUTHORITY),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(RECALL_AUTHORITY),
+            AuthorityKey::new(RECALL_AUTHORITY),
         ),
     };
     {
@@ -66,22 +66,22 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .create_proof_from_account(account, admin_auth);
 
     let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::main(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::main(BURN_AUTHORITY)),
+        ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::new(MINT_AUTHORITY)),
+        ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::new(BURN_AUTHORITY)),
         ResourceAuth::UpdateMetadata => {
-            (ObjectKey::SELF, AuthorityKey::main(UPDATE_METADATA_AUTHORITY))
+            (ObjectKey::SELF, AuthorityKey::new(UPDATE_METADATA_AUTHORITY))
         }
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(WITHDRAW_AUTHORITY),
+            AuthorityKey::new(WITHDRAW_AUTHORITY),
         ),
         ResourceAuth::Deposit => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(DEPOSIT_AUTHORITY),
+            AuthorityKey::new(DEPOSIT_AUTHORITY),
         ),
         ResourceAuth::Recall => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            AuthorityKey::main(RECALL_AUTHORITY),
+            AuthorityKey::new(RECALL_AUTHORITY),
         ),
     };
 
