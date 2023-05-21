@@ -14,33 +14,21 @@ mod factory {
                 .define_roles(roles! {
                     "auth" => rule!(require(Runtime::package_token())), rule!(deny_all)
                 })
-                .protect_methods(btreemap!(
+                .protect_methods(protect!(
                     Method::set_address => vec!["auth"],
                 ))
                 .globalize()
         }
 
         pub fn create() -> Global<Factory> {
-            let component = Self {
-                my_component: Option::None,
-            }
-            .instantiate()
-            .prepare_to_globalize()
-            .define_roles(roles! {
-                "auth" => rule!(require(Runtime::package_token())), rule!(deny_all)
-            })
-            .protect_methods(btreemap!(
-                Method::set_address => vec!["auth"],
-            ))
-            .globalize();
-
+            let component = Self::create_raw();
             component.set_address(component.clone());
 
             component
         }
 
         pub fn set_address(&mut self, my_component: Global<Factory>) {
-            self.my_component = Option::Some(my_component);
+            self.my_component = Some(my_component);
         }
     }
 }

@@ -76,7 +76,7 @@ mod genesis_helper {
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), rule!(require(system_role)),
             })
-            .protect_methods(btreemap!(
+            .protect_methods(protect!(
                 Method::ingest_data_chunk => vec!["system"],
                 Method::wrap_up => vec!["system"],
             ))

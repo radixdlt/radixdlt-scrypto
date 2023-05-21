@@ -30,7 +30,7 @@ pub trait HasStub {
 }
 
 pub trait HasMethods {
-    type BlueprintMethod: ToString;
+    type BlueprintMethod: ModuleMethod;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -230,7 +230,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn set_royalties(mut self, royalties: BTreeMap<C::BlueprintMethod, u32>) -> Self {
         for (method, amount) in royalties {
-            self.royalty.set_rule(method, amount);
+            self.royalty.set_rule(method.to_ident(), amount);
         }
 
         self
@@ -255,13 +255,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_methods(mut self, protected_methods: BTreeMap<C::BlueprintMethod, Vec<&str>>) -> Self {
-        for (protected_method, authorities) in protected_methods {
-            self.protected_module_methods.insert(
-                MethodKey::new(ObjectModuleId::Main, protected_method),
-                authorities.iter().map(|s| s.to_string()).collect(),
-            );
-        }
+    pub fn protect_methods(mut self, protected_methods: ProtectedMethods<C::BlueprintMethod>) -> Self {
+        self.protect(protected_methods);
         self
     }
 

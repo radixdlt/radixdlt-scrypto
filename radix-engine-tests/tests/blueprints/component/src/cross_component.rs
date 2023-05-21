@@ -18,7 +18,7 @@ mod cross_component {
             .define_roles(roles! {
                 "auth" => access_rule, rule!(deny_all)
             })
-            .protect_methods(btreemap!(
+            .protect_methods(protect!(
                 Method::get_component_state => vec!["auth"],
             ))
             .globalize()

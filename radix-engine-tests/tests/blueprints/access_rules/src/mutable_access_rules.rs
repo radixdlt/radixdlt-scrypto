@@ -10,7 +10,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles)
-                .protect_methods(btreemap!(
+                .protect_methods(protect!(
                     Method::borrow_funds => vec!["borrow_funds_auth"],
                     Method::deposit_funds => vec!["deposit_funds_auth"],
                 ))

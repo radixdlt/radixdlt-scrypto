@@ -191,8 +191,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )*
             }
 
-            impl ToString for Method {
-                fn to_string(&self) -> String {
+            impl ModuleMethod for Method {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_ident(&self) -> String {
                     panic!();
                 }
             }
@@ -207,8 +209,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )*
             }
 
-            impl ToString for Method {
-                fn to_string(&self) -> String {
+            impl ModuleMethod for Method {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_ident(&self) -> String {
                     match self {
                     #(
                         Self::#method_idents => #method_names.to_string(),
@@ -797,8 +801,10 @@ mod tests {
                         x,
                     }
 
-                    impl ToString for Method {
-                        fn to_string(&self) -> String {
+                    impl ModuleMethod for Method {
+                        const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                        fn to_ident(&self) -> String {
                             match self {
                                 Self::x => "x".to_string(),
                             }
