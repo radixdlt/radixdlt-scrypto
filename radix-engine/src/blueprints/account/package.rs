@@ -15,7 +15,6 @@ use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
 use super::AccountSubstate;
-use super::ResourceDepositConfiguration;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
@@ -228,50 +227,14 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToAllowedDepositsListInput>(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToAllowedDepositsListOutput>(),
-                export_name: ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromAllowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromAllowedDepositsListOutput>(),
-                export_name: ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToDisallowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToDisallowedDepositsListOutput>(),
-                export_name: ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromDisallowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromDisallowedDepositsListOutput>(),
-                export_name: ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositOutput>(),
+                export_name: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT.to_string(),
             },
         );
 
@@ -628,52 +591,18 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::change_allowed_deposits_mode(deposit_mode, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT => {
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountAddResourceToAllowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn =
-                    AccountBlueprint::add_resource_to_allowed_deposits_list(resource_address, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountRemoveResourceFromAllowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::remove_resource_from_allowed_deposits_list(
+                let AccountConfigureResourceDepositInput {
                     resource_address,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountAddResourceToDisallowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::add_resource_to_disallowed_deposits_list(
+                    resource_deposit_configuration,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::configure_resource_deposit(
                     resource_address,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountRemoveResourceFromDisallowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::remove_resource_from_disallowed_deposits_list(
-                    resource_address,
+                    resource_deposit_configuration,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

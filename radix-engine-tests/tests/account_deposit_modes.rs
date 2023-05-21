@@ -526,21 +526,35 @@ impl AccountDepositModesTestRunner {
         self.execute_manifest(manifest, sign)
     }
 
-    pub fn add_to_allow_list(
+    fn configure_resource_deposit(
         &mut self,
         resource_address: ResourceAddress,
+        resource_deposit_configuration: ResourceDepositConfiguration,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
-                to_manifest_value(&AccountAddResourceToAllowedDepositsListInput {
+                ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT,
+                to_manifest_value(&AccountConfigureResourceDepositInput {
                     resource_address,
+                    resource_deposit_configuration,
                 }),
             )
             .build();
         self.execute_manifest(manifest, sign)
+    }
+
+    pub fn add_to_allow_list(
+        &mut self,
+        resource_address: ResourceAddress,
+        sign: bool,
+    ) -> TransactionReceipt {
+        self.configure_resource_deposit(
+            resource_address,
+            ResourceDepositConfiguration::Allowed,
+            sign,
+        )
     }
 
     pub fn add_to_deny_list(
@@ -548,16 +562,11 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .call_method(
-                self.component_address,
-                ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT,
-                to_manifest_value(&AccountAddResourceToDisallowedDepositsListInput {
-                    resource_address,
-                }),
-            )
-            .build();
-        self.execute_manifest(manifest, sign)
+        self.configure_resource_deposit(
+            resource_address,
+            ResourceDepositConfiguration::Disallowed,
+            sign,
+        )
     }
 
     pub fn remove_from_allow_list(
@@ -565,16 +574,11 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .call_method(
-                self.component_address,
-                ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT,
-                to_manifest_value(&AccountAddResourceToAllowedDepositsListInput {
-                    resource_address,
-                }),
-            )
-            .build();
-        self.execute_manifest(manifest, sign)
+        self.configure_resource_deposit(
+            resource_address,
+            ResourceDepositConfiguration::Neither,
+            sign,
+        )
     }
 
     pub fn remove_from_deny_list(
@@ -582,16 +586,11 @@ impl AccountDepositModesTestRunner {
         resource_address: ResourceAddress,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .call_method(
-                self.component_address,
-                ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT,
-                to_manifest_value(&AccountAddResourceToDisallowedDepositsListInput {
-                    resource_address,
-                }),
-            )
-            .build();
-        self.execute_manifest(manifest, sign)
+        self.configure_resource_deposit(
+            resource_address,
+            ResourceDepositConfiguration::Neither,
+            sign,
+        )
     }
 
     pub fn virtual_signature_badge(&self) -> NonFungibleGlobalId {

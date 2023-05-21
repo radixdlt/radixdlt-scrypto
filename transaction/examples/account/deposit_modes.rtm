@@ -33,23 +33,20 @@ CALL_METHOD
 # Example 4a: Adding a resource to the allow list
 CALL_METHOD
     Address("${account_address}")
-    "add_resource_to_allowed_deposits_list"
-    Address("${second_resource_address}");
+    "configure_resource_deposit"
+    Address("${second_resource_address}")
+    Enum("ResourceDepositConfiguration::Allowed");
 
-# Example 4b: Removing a resource from the allow list
+# Example 4a: Adding a resource to the deny list
 CALL_METHOD
     Address("${account_address}")
-    "remove_resource_from_allowed_deposits_list"
-    Address("${second_resource_address}");
+    "configure_resource_deposit"
+    Address("${second_resource_address}")
+    Enum("ResourceDepositConfiguration::Disallowed");
 
-# Example 5a: Adding a resource to the allow list
+# Example 4a: Removing a resource from the allow and deny lists
 CALL_METHOD
     Address("${account_address}")
-    "add_resource_to_disallowed_deposits_list"
-    Address("${second_resource_address}");
-
-# Example 5b: Removing a resource from the allow list
-CALL_METHOD
-    Address("${account_address}")
-    "remove_resource_from_disallowed_deposits_list"
-    Address("${second_resource_address}");
+    "configure_resource_deposit"
+    Address("${second_resource_address}")
+    Enum("ResourceDepositConfiguration::Neither");

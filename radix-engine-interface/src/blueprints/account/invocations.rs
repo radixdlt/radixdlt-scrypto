@@ -10,6 +10,18 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+pub enum ResourceDepositConfiguration {
+    /// The resource is neither on the allow or deny list.
+    Neither,
+
+    /// The resource is on the allow list.
+    Allowed,
+
+    /// The resource is on the deny list.
+    Disallowed,
+}
+
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
 pub enum AccountDepositsMode {
     /// Allows the deposit of all resources - the deny list is honored in this state.o
@@ -241,61 +253,19 @@ pub struct AccountChangeAllowedDepositsModeInput {
 
 pub type AccountChangeAllowedDepositsModeOutput = ();
 
-//=======================================
-// Add Resource To Allowed Deposits List
-//=======================================
+//============================
+// Configure Resource Deposit
+//============================
 
-pub const ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "add_resource_to_allowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountAddResourceToAllowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountAddResourceToAllowedDepositsListOutput = ();
-
-//============================================
-// Remove Resource From Allowed Deposits List
-//============================================
-
-pub const ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "remove_resource_from_allowed_deposits_list";
+pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT: &str = "configure_resource_deposit";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountRemoveResourceFromAllowedDepositsListInput {
+pub struct AccountConfigureResourceDepositInput {
     pub resource_address: ResourceAddress,
+    pub resource_deposit_configuration: ResourceDepositConfiguration,
 }
 
-pub type AccountRemoveResourceFromAllowedDepositsListOutput = ();
-
-//==========================================
-// Add Resource To Disallowed Deposits List
-//==========================================
-
-pub const ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "add_resource_to_disallowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountAddResourceToDisallowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountAddResourceToDisallowedDepositsListOutput = ();
-
-//===============================================
-// Remove Resource From Disallowed Deposits List
-//===============================================
-
-pub const ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "remove_resource_from_disallowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountRemoveResourceFromDisallowedDepositsListOutput = ();
+pub type AccountConfigureResourceDepositOutput = ();
 
 //=====================
 // Account Try Deposit

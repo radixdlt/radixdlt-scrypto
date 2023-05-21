@@ -128,22 +128,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT,
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
@@ -166,18 +151,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
 impl PresecurifiedAccessRules for SecurifiedAccount {
     const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
-pub enum ResourceDepositConfiguration {
-    /// The resource is neither on the allow or deny list.
-    Neither,
-
-    /// The resource is on the allow list.
-    Allowed,
-
-    /// The resource is on the deny list.
-    Disallowed,
 }
 
 const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
@@ -617,8 +590,9 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn add_resource_to_allowed_deposits_list<Y>(
+    pub fn configure_resource_deposit<Y>(
         resource_address: ResourceAddress,
+        resource_deposit_configuration: ResourceDepositConfiguration,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -626,83 +600,30 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-            &encoded_key,
-            LockFlags::MUTABLE,
-        )?;
+        match resource_deposit_configuration {
+            ResourceDepositConfiguration::Allowed | ResourceDepositConfiguration::Disallowed => {
+                let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+                    OBJECT_HANDLE_SELF,
+                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+                    &encoded_key,
+                    LockFlags::MUTABLE,
+                )?;
 
-        api.key_value_entry_set_typed(
-            kv_store_entry_lock_handle,
-            &ResourceDepositConfiguration::Allowed,
-        )?;
+                api.key_value_entry_set_typed(
+                    kv_store_entry_lock_handle,
+                    &resource_deposit_configuration,
+                )?;
 
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
-
-        Ok(())
-    }
-    pub fn remove_resource_from_allowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        // TODO: Check first
-        api.actor_remove_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-            &encoded_key,
-        )?;
-
-        Ok(())
-    }
-
-    pub fn add_resource_to_disallowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-            &encoded_key,
-            LockFlags::MUTABLE,
-        )?;
-
-        api.key_value_entry_set_typed(
-            kv_store_entry_lock_handle,
-            &ResourceDepositConfiguration::Disallowed,
-        )?;
-
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
-
-        Ok(())
-    }
-
-    pub fn remove_resource_from_disallowed_deposits_list<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        // TODO: Check first
-        api.actor_remove_key_value_entry(
-            OBJECT_HANDLE_SELF,
-            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
-            &encoded_key,
-        )?;
-
+                api.key_value_entry_release(kv_store_entry_lock_handle)?;
+            }
+            ResourceDepositConfiguration::Neither => {
+                api.actor_remove_key_value_entry(
+                    OBJECT_HANDLE_SELF,
+                    ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+                    &encoded_key,
+                )?;
+            }
+        };
         Ok(())
     }
 

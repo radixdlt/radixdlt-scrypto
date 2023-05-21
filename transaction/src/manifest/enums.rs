@@ -53,9 +53,10 @@ lazy_static! {
         known_enum!(
             m,
             enum AccessRuleNode {
-                ProofRule = 0;
-                AnyOf = 1;
-                AllOf = 2;
+                Authority = 0;
+                ProofRule = 1;
+                AnyOf = 2;
+                AllOf = 4;
             }
         );
 
@@ -119,6 +120,15 @@ lazy_static! {
                 AllowAll = 0;
                 DenyAll = 1;
                 AllowExisting = 2;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum ResourceDepositConfiguration {
+                Neither = 0;
+                Allowed = 1;
+                Disallowed = 2;
             }
         );
 
