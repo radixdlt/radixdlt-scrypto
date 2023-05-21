@@ -103,7 +103,7 @@ impl NewSimpleBadge {
             .0
             .call_method(
                 default_account,
-                "deposit_batch",
+                "try_deposit_batch",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

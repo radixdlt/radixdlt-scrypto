@@ -166,7 +166,7 @@ fn transfer_test(c: &mut Criterion) {
                 .call_method(test_runner.faucet_component(), "free", manifest_args!())
                 .call_method(
                     account,
-                    "deposit_batch",
+                    "try_deposit_batch_unsafe",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build();
@@ -193,7 +193,7 @@ fn transfer_test(c: &mut Criterion) {
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_method(
             account1,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -216,7 +216,7 @@ fn transfer_test(c: &mut Criterion) {
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

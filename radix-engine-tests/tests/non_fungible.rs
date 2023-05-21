@@ -25,7 +25,7 @@ fn create_non_fungible_mutable() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -54,7 +54,7 @@ fn can_burn_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -78,7 +78,7 @@ fn can_burn_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -109,7 +109,7 @@ fn test_take_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -137,7 +137,7 @@ fn test_take_non_fungibles() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -162,7 +162,7 @@ fn can_update_non_fungible_when_mutable() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -188,7 +188,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -221,7 +221,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -261,7 +261,7 @@ fn can_call_non_fungible_data_reference() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -304,7 +304,7 @@ fn cannot_have_non_fungible_data_ownership() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -335,7 +335,7 @@ fn can_update_and_get_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -361,7 +361,7 @@ fn can_update_and_get_non_fungible_reference() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -424,7 +424,7 @@ fn test_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -451,7 +451,7 @@ fn test_singleton_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -481,7 +481,7 @@ fn test_mint_update_and_withdraw() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -509,7 +509,7 @@ fn test_mint_update_and_withdraw() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -525,7 +525,7 @@ fn test_mint_update_and_withdraw() {
         .withdraw_from_account(account, nft_resource_address, 1.into())
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -554,7 +554,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -585,7 +585,7 @@ fn create_bytes_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -613,7 +613,7 @@ fn create_string_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -641,7 +641,7 @@ fn create_uuid_non_fungible() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -695,7 +695,7 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -753,7 +753,7 @@ fn can_mint_uuid_non_fungible_with_reference_in_manifest() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -796,7 +796,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -822,7 +822,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         )
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

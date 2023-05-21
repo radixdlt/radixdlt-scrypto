@@ -117,9 +117,8 @@ lazy_static! {
             m,
             enum AccountDepositsMode {
                 AllowAll = 0;
-                AllowExisting = 1;
-                AllowList = 2;
-                DisallowList = 3;
+                DenyAll = 1;
+                AllowExisting = 2;
             }
         );
 

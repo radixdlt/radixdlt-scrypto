@@ -574,7 +574,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
         .withdraw_from_account(account, resource_address, dec!("5.55555"))
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

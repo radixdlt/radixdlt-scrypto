@@ -48,7 +48,7 @@ fn test_basic_transfer() {
         .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -67,15 +67,15 @@ fn test_basic_transfer() {
     assert_eq!(
         1035 /* AllocateNodeId */
         + 1635 /* CreateNode */
-        + 5624 /* DropLock */
+        + 5661 /* DropLock */
         + 1575 /* DropNode */
-        + 1050432 /* Invoke */
-        + 617624 /* LockSubstate */
-        + 7896 /* ReadSubstate */
+        + 1005585 /* Invoke */
+        + 625045 /* LockSubstate */
+        + 7952 /* ReadSubstate */
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
+        + 1375 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 938, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -141,7 +141,7 @@ fn test_radiswap() {
                 })
                 .call_method(
                     account2,
-                    "deposit_batch",
+                    "try_deposit_batch_unsafe",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -159,7 +159,7 @@ fn test_radiswap() {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
-                    "deposit_batch",
+                    "try_deposit_batch_unsafe",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -179,7 +179,7 @@ fn test_radiswap() {
             })
             .call_method(
                 account3,
-                "deposit_batch",
+                "try_deposit_batch_unsafe",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -202,16 +202,16 @@ fn test_radiswap() {
     assert_eq!(
         2415 /* AllocateNodeId */
         + 3826 /* CreateNode */
-        + 13912 /* DropLock */
+        + 13949 /* DropLock */
         + 3570 /* DropNode */
-        + 3305144 /* Invoke */
-        + 5625359 /* LockSubstate */
-        + 19488 /* ReadSubstate */
+        + 3260297 /* Invoke */
+        + 5632237 /* LockSubstate */
+        + 19544 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
         + 1534145 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1715 /* TxPayloadCost */
+        + 1770 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 2330, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -260,7 +260,7 @@ fn test_flash_loan() {
                 })
                 .call_method(
                     account2,
-                    "deposit_batch",
+                    "try_deposit_batch_unsafe",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -289,7 +289,7 @@ fn test_flash_loan() {
             })
             .call_method(
                 account3,
-                "deposit_batch",
+                "try_deposit_batch_unsafe",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -313,16 +313,16 @@ fn test_flash_loan() {
     assert_eq!(
         3933 /* AllocateNodeId */
         + 6213 /* CreateNode */
-        + 22348 /* DropLock */
+        + 22385 /* DropLock */
         + 5985 /* DropNode */
-        + 4678666 /* Invoke */
-        + 6915995 /* LockSubstate */
-        + 31696 /* ReadSubstate */
+        + 4633819 /* Invoke */
+        + 6922935 /* LockSubstate */
+        + 31752 /* ReadSubstate */
         + 202500 /* RunNative */
         + 40000 /* RunSystem */
         + 1325920 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2495 /* TxPayloadCost */
+        + 2550 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 4395, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -380,7 +380,7 @@ fn should_be_able_run_large_manifest() {
     }
     builder.call_method(
         account,
-        "deposit_batch",
+        "try_deposit_batch_unsafe",
         manifest_args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();

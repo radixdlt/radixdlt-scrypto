@@ -2,7 +2,7 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -57,7 +57,7 @@ fn can_set_package_metadata_with_owner() {
         .publish_package(code, single_function_package_schema("Test", "f"))
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

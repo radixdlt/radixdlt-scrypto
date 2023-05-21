@@ -61,7 +61,7 @@ impl Mint {
             .mint_fungible(self.resource_address.0, self.amount)
             .call_method(
                 default_account,
-                "deposit_batch",
+                "try_deposit_batch",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

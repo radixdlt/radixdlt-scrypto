@@ -376,7 +376,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         })
         .call_method(
             validator_account_address,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -873,7 +873,7 @@ impl RegisterAndStakeTransactionType {
                     })
                     .call_method(
                         account_address,
-                        "deposit_batch",
+                        "try_deposit_batch_unsafe",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build();
@@ -890,7 +890,7 @@ impl RegisterAndStakeTransactionType {
                     .register_validator(validator_address)
                     .call_method(
                         account_address,
-                        "deposit_batch",
+                        "try_deposit_batch_unsafe",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build();
@@ -912,7 +912,7 @@ impl RegisterAndStakeTransactionType {
                     })
                     .call_method(
                         account_address,
-                        "deposit_batch",
+                        "try_deposit_batch_unsafe",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build();
@@ -935,7 +935,7 @@ impl RegisterAndStakeTransactionType {
                     })
                     .call_method(
                         account_address,
-                        "deposit_batch",
+                        "try_deposit_batch_unsafe",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build();
@@ -1306,7 +1306,7 @@ fn cannot_claim_unstake_immediately() {
         })
         .call_method(
             account_with_su,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1359,7 +1359,7 @@ fn can_claim_unstake_after_epochs() {
         })
         .call_method(
             account_with_su,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1379,7 +1379,7 @@ fn can_claim_unstake_after_epochs() {
         })
         .call_method(
             account_with_su,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1427,7 +1427,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         })
         .call_method(
             account_with_su,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

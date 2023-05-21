@@ -240,7 +240,7 @@ fn test_fee_accounting_success() {
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -295,7 +295,7 @@ fn test_fee_accounting_failure() {
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
-            "deposit_batch",
+            "try_deposit_batch_unsafe",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains(RADIX_TOKEN, 1.into())

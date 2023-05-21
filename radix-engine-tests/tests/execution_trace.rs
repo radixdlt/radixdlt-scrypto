@@ -2,7 +2,7 @@ use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
 };
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -408,7 +408,7 @@ fn test_worktop_changes() {
         )
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

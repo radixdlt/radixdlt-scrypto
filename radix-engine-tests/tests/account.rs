@@ -4,8 +4,7 @@ use radix_engine::system::system_modules::execution_trace::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{
-    AccountSecurifyInput, ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_SECURIFY_IDENT,
-    ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
+    AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -98,7 +97,7 @@ where
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -139,7 +138,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10.into(), resource_address, 1.into())
         .call_method(
             other_account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -172,7 +171,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
         .withdraw_from_account(other_account, RADIX_TOKEN, 1.into())
         .call_method(
             account,
-            "deposit_batch",
+            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -225,7 +224,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             builder
                 .add_instruction(Instruction::CallMethod {
                     address: account.into(),
-                    method_name: "deposit".to_string(),
+                    method_name: "try_deposit_unsafe".to_string(),
                     args: manifest_args!(bucket_id),
                 })
                 .0

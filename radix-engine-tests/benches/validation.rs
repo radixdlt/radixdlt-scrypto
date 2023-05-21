@@ -70,7 +70,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 .withdraw_from_account(account1, RADIX_TOKEN, 1u32.into())
                 .call_method(
                     account2,
-                    "deposit_batch",
+                    "try_deposit_batch_unsafe",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
