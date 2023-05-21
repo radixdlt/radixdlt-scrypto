@@ -194,15 +194,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
-        for (protected_metadata_method, authorities) in protected_metadata_methods {
-            self.protected_module_methods.insert(
-                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
-                authorities.iter().map(|s| s.to_string()).collect(),
-            );
-        }
-        self
-    }
 
     pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
         let metadata = self.metadata.get_or_insert(Metadata::new());
@@ -210,8 +201,21 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalty(mut self, method: &str, amount: u32) -> Self {
-        self.royalty.set_rule(method, amount);
+    pub fn set_royalties(mut self, royalties: BTreeMap<C::BlueprintMethod, u32>) -> Self {
+        for (method, amount) in royalties {
+            self.royalty.set_rule(method, amount);
+        }
+
+        self
+    }
+
+    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
+        for (protected_metadata_method, authorities) in protected_metadata_methods {
+            self.protected_module_methods.insert(
+                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
+                authorities.iter().map(|s| s.to_string()).collect(),
+            );
+        }
         self
     }
 

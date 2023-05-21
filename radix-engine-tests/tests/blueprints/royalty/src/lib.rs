@@ -29,9 +29,10 @@ mod royalty_test {
                 .protect_royalty(btreemap!(
                     RoyaltyMethod::claim_royalty => vec!["public"],
                 ))
-                .royalty("paid_method", 1)
-                .royalty("paid_method_panic", 1)
-                .royalty_default(0)
+                .set_royalties(btreemap!(
+                    Method::paid_method => 1u32,
+                    Method::paid_method_panic => 1u32,
+                ))
                 .globalize()
         }
     }

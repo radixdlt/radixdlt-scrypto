@@ -292,7 +292,7 @@ SET_PACKAGE_ROYALTY_CONFIG
     Map<String, Tuple>("Blueprint", Tuple(Map<String, U32>("method", 1u32), 0u32));
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
-    Tuple(Map<String, U32>("method", 1u32), 0u32);
+    Tuple(Map<String, U32>("method", 1u32));
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}");
 CLAIM_COMPONENT_ROYALTY

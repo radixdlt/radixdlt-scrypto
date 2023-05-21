@@ -28,7 +28,7 @@ impl RoyaltyConfig {
         self.rules.get(method_name).cloned().unwrap_or(0)
     }
 
-    pub fn set_rule(&mut self, method: &str, amount: u32) {
+    pub fn set_rule<S: ToString>(&mut self, method: S, amount: u32) {
         self.rules.insert(method.to_string(), amount);
     }
 }

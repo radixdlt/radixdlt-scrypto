@@ -24,10 +24,12 @@ mod royalty_test {
             proof.authorize(|| {
                 package.set_royalty_config(BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
-                    RoyaltyConfigBuilder::new()
-                        .add_rule("paid_method", 2)
-                        .add_rule("paid_method_panic", 2)
-                        .default(0),
+                    {
+                        let mut config = RoyaltyConfig::default();
+                        config.set_rule("paid_method", 2);
+                        config.set_rule("paid_method_panic", 2);
+                        config
+                    }
                 )]));
             })
         }
@@ -48,9 +50,10 @@ mod royalty_test {
                     RoyaltyMethod::set_royalty_config => vec!["auth"],
                     RoyaltyMethod::claim_royalty => vec!["auth"],
                 ))
-                .royalty("paid_method", 1)
-                .royalty("paid_method_panic", 1)
-                .royalty_default(0)
+                .set_royalties(btreemap!(
+                    Method::paid_method => 1u32,
+                    Method::paid_method_panic => 1u32,
+                ))
                 .globalize()
         }
 
