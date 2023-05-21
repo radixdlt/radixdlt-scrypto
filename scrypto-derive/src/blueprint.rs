@@ -787,6 +787,10 @@ mod tests {
                         type Stub = TestObjectStub;
                     }
 
+                    impl HasMethods for #bp_ident {
+                        type BlueprintMethod = Method;
+                    }
+
                     #[derive(PartialEq, Eq, Ord, PartialOrd)]
                     #[allow(non_camel_case_types)]
                     pub enum Method {

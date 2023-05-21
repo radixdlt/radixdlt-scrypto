@@ -45,8 +45,8 @@ mod royalty_test {
                     roles
                 })
                 .protect_royalty(btreemap!(
-                    RoyaltyMethod::SetRoyaltyConfig => vec!["auth".to_string()],
-                    RoyaltyMethod::ClaimRoyalty => vec!["auth".to_string()],
+                    RoyaltyMethod::set_royalty_config => vec!["auth"],
+                    RoyaltyMethod::claim_royalty => vec!["auth"],
                 ))
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)

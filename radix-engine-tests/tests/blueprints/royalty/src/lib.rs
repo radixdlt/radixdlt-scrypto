@@ -27,7 +27,7 @@ mod royalty_test {
                     roles
                 })
                 .protect_royalty(btreemap!(
-                    RoyaltyMethod::ClaimRoyalty => vec!["public".to_string()],
+                    RoyaltyMethod::claim_royalty => vec!["public"],
                 ))
                 .royalty("paid_method", 1)
                 .royalty("paid_method_panic", 1)

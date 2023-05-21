@@ -136,30 +136,32 @@ impl<C: HasStub> Owned<C> {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum RoyaltyMethod {
-    SetRoyaltyConfig,
-    ClaimRoyalty,
+    set_royalty_config,
+    claim_royalty,
 }
 
 impl ToString for RoyaltyMethod {
     fn to_string(&self) -> String {
         match self {
-            RoyaltyMethod::ClaimRoyalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            RoyaltyMethod::SetRoyaltyConfig => COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            RoyaltyMethod::claim_royalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+            RoyaltyMethod::set_royalty_config => COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
         }
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum MetadataMethod {
-    Set,
+    set,
 }
 
 impl ToString for MetadataMethod {
     fn to_string(&self) -> String {
         match self {
-            MetadataMethod::Set => METADATA_SET_IDENT.to_string(),
+            MetadataMethod::set => METADATA_SET_IDENT.to_string(),
         }
     }
 }
@@ -207,21 +209,21 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_royalty(mut self, protected_royalty_methods: BTreeMap<RoyaltyMethod, Vec<String>>) -> Self {
+    pub fn protect_royalty(mut self, protected_royalty_methods: BTreeMap<RoyaltyMethod, Vec<&str>>) -> Self {
         for (protected_royalty_method, authorities) in protected_royalty_methods {
             self.protected_module_methods.insert(
                 MethodKey::new(ObjectModuleId::Royalty, protected_royalty_method),
-                authorities
+                authorities.iter().map(|s| s.to_string()).collect(),
             );
         }
         self
     }
 
-    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<String>>) -> Self {
+    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
         for (protected_metadata_method, authorities) in protected_metadata_methods {
             self.protected_module_methods.insert(
                 MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
-                authorities
+                authorities.iter().map(|s| s.to_string()).collect(),
             );
         }
         self

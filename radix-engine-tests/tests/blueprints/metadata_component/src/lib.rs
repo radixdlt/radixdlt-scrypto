@@ -3,7 +3,6 @@ use scrypto::prelude::*;
 #[blueprint]
 mod metadata_component {
     use scrypto::prelude::*;
-    use scrypto::prelude::MetadataMethod::Set;
 
     struct MetadataComponent {}
 
@@ -30,7 +29,7 @@ mod metadata_component {
                     roles
                 })
                 .protect_metadata(btreemap!(
-                    Set => vec!["metadata".to_string()],
+                    MetadataMethod::set => vec!["metadata"],
                 ))
                 .globalize();
 
