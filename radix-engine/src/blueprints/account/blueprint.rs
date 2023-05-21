@@ -398,18 +398,17 @@ impl AccountBlueprint {
         let resource_address = bucket.resource_address(api)?;
 
         let is_deposit_allowed = Self::is_deposit_allowed(&resource_address, api)?;
-        if !is_deposit_allowed {
-            return Ok(Some(bucket));
+        if is_deposit_allowed {
+            Self::get_vault(
+                resource_address,
+                |vault, api| vault.put(bucket, api),
+                true,
+                api,
+            )?;
+            Ok(None)
+        } else {
+            Ok(Some(bucket))
         }
-
-        Self::get_vault(
-            resource_address,
-            |vault, api| vault.put(bucket, api),
-            true,
-            api,
-        )?;
-
-        Ok(None)
     }
 
     pub fn try_deposit_batch<Y>(
@@ -421,8 +420,7 @@ impl AccountBlueprint {
     {
         let mut undeposited_buckets = vec![];
         for bucket in buckets {
-            let rtn = Self::try_deposit(bucket, api)?;
-            if let Some(bucket) = rtn {
+            if let Some(bucket) = Self::try_deposit(bucket, api)? {
                 undeposited_buckets.push(bucket)
             }
         }
@@ -608,39 +606,90 @@ impl AccountBlueprint {
     pub fn add_resource_to_allowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!("To implement once the mapping is all in order");
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
+
+        api.key_value_entry_set_typed(
+            kv_store_entry_lock_handle,
+            &ResourceDepositConfiguration::Allowed,
+        )?;
+
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+
+        Ok(())
     }
     pub fn remove_resource_from_allowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!("To implement once the mapping is all in order");
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
+
+        api.key_value_entry_set_typed(
+            kv_store_entry_lock_handle,
+            &ResourceDepositConfiguration::Allowed,
+        )?;
+
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+
+        Ok(())
     }
+
     pub fn add_resource_to_disallowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!("To implement once the mapping is all in order");
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+
+        // TODO: Check first
+        api.actor_remove_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+        )?;
+
+        Ok(())
     }
 
     pub fn remove_resource_from_disallowed_deposits_list<Y>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!("To implement once the mapping is all in order");
+        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
+
+        // TODO: Check first
+        api.actor_remove_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
+            &encoded_key,
+        )?;
+
+        Ok(())
     }
 
     fn get_current_deposits_mode<Y>(api: &mut Y) -> Result<AccountDepositsMode, RuntimeError>
@@ -691,12 +740,8 @@ impl AccountBlueprint {
                 Option::None => {
                     if create {
                         let vault = Vault::create(resource_address, api)?;
-                        let encoded_value = IndexedScryptoValue::from_typed(&vault.0);
 
-                        api.key_value_entry_set_typed(
-                            kv_store_entry_lock_handle,
-                            &encoded_value.to_scrypto_value(),
-                        )?;
+                        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &vault.0)?;
                         Ok(vault)
                     } else {
                         Err(AccountError::VaultDoesNotExist { resource_address })
