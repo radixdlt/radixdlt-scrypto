@@ -6,7 +6,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintKeyValueStoreSchema, BlueprintSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaAuthorityKey, TypeSchema, VirtualLazyLoadSchema,
+    PackageSchema, ReceiverInfo, TypeSchema, VirtualLazyLoadSchema,
 };
 
 use crate::blueprints::account::AccountBlueprint;

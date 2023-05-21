@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
-use radix_engine_interface::schema::{FunctionSchema, SchemaAuthorityKey};
+use radix_engine_interface::schema::{FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;

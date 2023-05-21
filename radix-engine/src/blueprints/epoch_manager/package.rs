@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
-    PackageSchema, ReceiverInfo, SchemaAuthorityKey,
+    PackageSchema, ReceiverInfo,
 };
 use resources_tracker_macro::trace_resources;
 

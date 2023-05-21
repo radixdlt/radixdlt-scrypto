@@ -42,50 +42,6 @@ impl KeyValueStoreInfo {
     }
 }
 
-// TODO: Dedup
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor, ManifestSbor)]
-pub enum SchemaObjectModuleId {
-    Metadata,
-    Royalty,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum SchemaObjectKey {
-    SELF,
-    InnerChild(String),
-}
-
-// TODO: dedup
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
-pub struct SchemaAuthorityKey {
-    pub key: String,
-}
-
-impl SchemaAuthorityKey {
-    pub fn new<S: Into<String>>(name: S) -> Self {
-        Self {
-            key: name.into()
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct FullyQualifiedAuthorityKey(pub SchemaObjectKey, pub SchemaAuthorityKey);
-
-impl FullyQualifiedAuthorityKey {
-    pub fn new_self_main<S: Into<String>>(name: S) -> Self {
-        Self(SchemaObjectKey::SELF, SchemaAuthorityKey::new(name))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AuthoritySchema {
-    RequiredEmpty,
-    Required,
-}
-
 // We keep one self-contained schema per blueprint:
 // - Easier macro to export schema, as they work at blueprint level
 // - Can always combine multiple schemas into one for storage benefits

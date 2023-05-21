@@ -24,9 +24,9 @@ mod royalty_test {
                 .define_roles(roles! {
                     "public" => rule!(allow_all), rule!(allow_all),
                 })
-                .protect_royalty(btreemap!(
+                .protect_royalty(protect! {
                     RoyaltyMethod::claim_royalty => vec!["public"],
-                ))
+                })
                 .set_royalties(btreemap!(
                     Method::paid_method => 1u32,
                     Method::paid_method_panic => 1u32,

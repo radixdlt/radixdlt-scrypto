@@ -143,8 +143,10 @@ pub enum RoyaltyMethod {
     claim_royalty,
 }
 
-impl ToString for RoyaltyMethod {
-    fn to_string(&self) -> String {
+impl ModuleMethod for RoyaltyMethod {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+
+    fn to_ident(&self) -> String {
         match self {
             RoyaltyMethod::claim_royalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
             RoyaltyMethod::set_royalty_config => COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
@@ -234,23 +236,22 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_metadata(mut self, protected_metadata_methods: ProtectedMethods<MetadataMethod>) -> Self {
-        for (method, roles) in protected_metadata_methods.protected_methods {
+    fn protect<M: ModuleMethod>(&mut self, protected: ProtectedMethods<M>) {
+        for (method, roles) in protected.protected_methods {
             self.protected_module_methods.insert(
-                MethodKey::new(MetadataMethod::MODULE_ID, method),
+                MethodKey::new(M::MODULE_ID, method),
                 roles,
             );
         }
+    }
+
+    pub fn protect_metadata(mut self, protected_metadata_methods: ProtectedMethods<MetadataMethod>) -> Self {
+        self.protect(protected_metadata_methods);
         self
     }
 
-    pub fn protect_royalty(mut self, protected_royalty_methods: BTreeMap<RoyaltyMethod, Vec<&str>>) -> Self {
-        for (protected_royalty_method, authorities) in protected_royalty_methods {
-            self.protected_module_methods.insert(
-                MethodKey::new(ObjectModuleId::Royalty, protected_royalty_method),
-                authorities.iter().map(|s| s.to_string()).collect(),
-            );
-        }
+    pub fn protect_royalty(mut self, protected_royalty_methods: ProtectedMethods<RoyaltyMethod>) -> Self {
+        self.protect(protected_royalty_methods);
         self
     }
 

@@ -44,7 +44,7 @@ mod royalty_test {
                 .define_roles(roles! {
                     "auth" => rule!(require(badge.clone())), rule!(require(badge.clone()))
                 })
-                .protect_royalty(btreemap!(
+                .protect_royalty(protect!(
                     RoyaltyMethod::set_royalty_config => vec!["auth"],
                     RoyaltyMethod::claim_royalty => vec!["auth"],
                 ))

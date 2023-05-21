@@ -8,7 +8,6 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use scrypto_schema::SchemaAuthorityKey;
 use utils::btreemap;
 
 use super::AccessRule;
@@ -97,12 +96,6 @@ impl From<String> for AuthorityKey {
 impl From<&str> for AuthorityKey {
     fn from(s: &str) -> Self {
         Self::new(s)
-    }
-}
-
-impl From<SchemaAuthorityKey> for AuthorityKey {
-    fn from(value: SchemaAuthorityKey) -> Self {
-        Self::new(value.key)
     }
 }
 
