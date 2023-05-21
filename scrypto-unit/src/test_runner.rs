@@ -1186,7 +1186,7 @@ impl TestRunner {
                     epoch: epoch as u64,
                 }),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![AuthAddresses::system_role()],
         );
         receipt.expect_commit_success();
     }
