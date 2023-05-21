@@ -1,7 +1,5 @@
 use crate::model::*;
 use crate::signing::Signer;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::manifest::manifest_encode;
 
 use super::manifest_builder::TransactionManifestV1;
 
@@ -34,10 +32,9 @@ impl TransactionBuilder {
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = manifest_encode(&intent).unwrap();
-        let intent_payload_hash = hash(intent_payload);
+        let prepared = intent.prepare().expect("Intent could be prepared");
         self.intent_signatures
-            .push(signer.sign_with_public_key(&intent_payload_hash));
+            .push(signer.sign_with_public_key(&prepared.intent_hash()));
         self
     }
 
@@ -48,11 +45,12 @@ impl TransactionBuilder {
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
-        let signed_intent_payload_hash = hash(signed_intent_payload);
+        let prepared = signed_intent
+            .prepare()
+            .expect("Signed intent could be prepared");
         self.notary_signature = Some(
             signer
-                .sign_with_public_key(&signed_intent_payload_hash)
+                .sign_with_public_key(&prepared.signed_intent_hash())
                 .signature(),
         );
         self
