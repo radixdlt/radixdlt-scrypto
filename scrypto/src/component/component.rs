@@ -181,8 +181,8 @@ pub trait ModuleMethod {
 }
 
 pub struct ProtectedMethods<M: ModuleMethod> {
-    pub protected_methods: IndexMap<String, Vec<String>>,
-    pub phantom: PhantomData<M>,
+    protected_methods: IndexMap<String, Vec<String>>,
+    phantom: PhantomData<M>,
 }
 
 impl<M: ModuleMethod> ProtectedMethods<M> {
@@ -198,6 +198,24 @@ impl<M: ModuleMethod> ProtectedMethods<M> {
             method.to_ident(),
             roles.into_iter().map(|s| s.to_string()).collect(),
         );
+    }
+}
+
+pub struct Royalties<M: ModuleMethod> {
+    royalties: IndexMap<String, u32>,
+    phantom: PhantomData<M>,
+}
+
+impl<M: ModuleMethod> Royalties<M> {
+    pub fn new() -> Self {
+        Self {
+            royalties: index_map_new(),
+            phantom: PhantomData::default(),
+        }
+    }
+
+    pub fn insert(&mut self, method: M, royalty: u32) {
+        self.royalties.insert(method.to_ident(), royalty);
     }
 }
 
@@ -227,25 +245,24 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
+    fn protect<M: ModuleMethod>(&mut self, protected: ProtectedMethods<M>) {
+        for (method, roles) in protected.protected_methods {
+            self.protected_module_methods
+                .insert(MethodKey::new(M::MODULE_ID, method), roles);
+        }
+    }
+
     pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
         let metadata = self.metadata.get_or_insert(Metadata::new());
         metadata.set(name, value);
         self
     }
 
-    pub fn set_royalties(mut self, royalties: BTreeMap<C::BlueprintMethod, u32>) -> Self {
-        for (method, amount) in royalties {
-            self.royalty.set_rule(method.to_ident(), amount);
+    pub fn set_royalties(mut self, royalties: Royalties<C::BlueprintMethod>) -> Self {
+        for (method, amount) in royalties.royalties {
+            self.royalty.set_rule(method, amount);
         }
-
         self
-    }
-
-    fn protect<M: ModuleMethod>(&mut self, protected: ProtectedMethods<M>) {
-        for (method, roles) in protected.protected_methods {
-            self.protected_module_methods
-                .insert(MethodKey::new(M::MODULE_ID, method), roles);
-        }
     }
 
     pub fn protect_metadata(

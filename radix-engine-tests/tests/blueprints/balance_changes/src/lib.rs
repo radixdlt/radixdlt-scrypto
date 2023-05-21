@@ -13,7 +13,7 @@ mod balance_changes_test {
             }
             .instantiate()
             .prepare_to_globalize()
-            .set_royalties(btreemap!(
+            .set_royalties(royalties!(
                 Method::put => 1u32,
                 Method::boom => 1u32,
             ))

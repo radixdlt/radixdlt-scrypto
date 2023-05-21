@@ -492,3 +492,20 @@ macro_rules! protect {
         protect!{$($method => $roles),*}
     })
 }
+
+#[macro_export]
+macro_rules! royalties {
+    ( ) => ({
+        ::scrypto::component::Royalties::new()
+    });
+    ( $($method:expr => $royalty:expr),* ) => ({
+        let mut royalties = ::scrypto::component::Royalties::new();
+        $(
+            royalties.insert($method, $royalty);
+        )*
+        royalties
+    });
+    ( $($method:expr => $royalty:expr,)* ) => ({
+        royalties!{$($method => $royalty),*}
+    })
+}
