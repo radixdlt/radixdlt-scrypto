@@ -155,7 +155,9 @@ fn transfer_test(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new(manifest.clone(), 1)
+                    .prepare()
+                    .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true)
@@ -175,7 +177,9 @@ fn transfer_test(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new(manifest.clone(), 1)
+                    .prepare()
+                    .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true);
@@ -204,7 +208,9 @@ fn transfer_test(c: &mut Criterion) {
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+            &TestTransaction::new(manifest.clone(), nonce)
+                .prepare()
+                .unwrap()
                 .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
         .expect_commit(true);
@@ -230,7 +236,9 @@ fn transfer_test(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new(manifest.clone(), nonce)
+                    .prepare()
+                    .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             );
 

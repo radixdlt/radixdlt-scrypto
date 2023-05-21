@@ -11,10 +11,12 @@ use sbor::*;
 //=================================================================================
 
 mod decoder;
+mod references;
 mod summarized_composite;
 mod summarized_raw;
 mod summary;
 pub use decoder::*;
+pub use references::*;
 pub use summarized_composite::*;
 pub use summarized_raw::*;
 pub use summary::*;
@@ -31,7 +33,6 @@ pub trait TransactionFullChildPreparable: HasSummary + Sized {
     fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
     /// Only exposed for testing
-    #[cfg(test)]
     fn prepare_as_full_body_child_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
         let mut manifest_decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
         manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;

@@ -21,15 +21,32 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInput {
+    pub transaction_hash: Hash,
+    pub runtime_validations: Vec<RuntimeValidationRequest>,
+    pub manifest_encoded_instructions: Vec<u8>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+}
+
+// This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoEncode)]
+pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
+    pub transaction_hash: &'a Hash,
+    pub runtime_validations: &'a [RuntimeValidationRequest],
+    pub manifest_encoded_instructions: &'a [u8],
+    pub blobs: &'a IndexMap<Hash, Vec<u8>>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
-        valid_from: u64,
-        current_epoch: u64,
+        valid_from: u32,
+        current_epoch: u32,
     },
     TransactionEpochNoLongerValid {
-        valid_until: u64,
-        current_epoch: u64,
+        valid_until: u32,
+        current_epoch: u32,
     },
     BucketNotFound(u32),
     ProofNotFound(u32),
@@ -102,9 +119,9 @@ impl TransactionProcessorBlueprint {
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));
-
-        // Decode instructions
-        let instructions: Vec<Instruction> = manifest_decode(&input.instructions).unwrap();
+        let instructions =
+            manifest_decode::<Vec<InstructionV1>>(&input.manifest_encoded_instructions)
+                .expect("Instructions could not be decoded");
 
         let mut processor = TransactionProcessor::new(input.blobs);
         let mut outputs = Vec::new();
@@ -112,12 +129,12 @@ impl TransactionProcessorBlueprint {
             api.update_instruction_index(index)?;
 
             let result = match inst {
-                Instruction::TakeAllFromWorktop { resource_address } => {
+                InstructionV1::TakeAllFromWorktop { resource_address } => {
                     let bucket = worktop.take_all(resource_address, api)?;
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeFromWorktop {
+                InstructionV1::TakeFromWorktop {
                     amount,
                     resource_address,
                 } => {
@@ -125,7 +142,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::TakeNonFungiblesFromWorktop {
+                InstructionV1::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_address,
                 } => {
@@ -137,19 +154,19 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_bucket(bucket)?;
                     InstructionOutput::None
                 }
-                Instruction::ReturnToWorktop { bucket_id } => {
+                InstructionV1::ReturnToWorktop { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     worktop.put(bucket, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContains {
+                InstructionV1::AssertWorktopContains {
                     amount,
                     resource_address,
                 } => {
                     worktop.assert_contains_amount(resource_address, amount, api)?;
                     InstructionOutput::None
                 }
-                Instruction::AssertWorktopContainsNonFungibles {
+                InstructionV1::AssertWorktopContainsNonFungibles {
                     ids,
                     resource_address,
                 } => {
@@ -160,30 +177,30 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::None
                 }
-                Instruction::PopFromAuthZone {} => {
+                InstructionV1::PopFromAuthZone {} => {
                     let proof = LocalAuthZone::pop(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::ClearAuthZone => {
+                InstructionV1::ClearAuthZone => {
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
-                Instruction::ClearSignatureProofs => {
+                InstructionV1::ClearSignatureProofs => {
                     LocalAuthZone::clear_signature_proofs(api)?;
                     InstructionOutput::None
                 }
-                Instruction::PushToAuthZone { proof_id } => {
+                InstructionV1::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     LocalAuthZone::push(proof, api)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZone { resource_address } => {
+                InstructionV1::CreateProofFromAuthZone { resource_address } => {
                     let proof = LocalAuthZone::create_proof(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneOfAmount {
+                InstructionV1::CreateProofFromAuthZoneOfAmount {
                     amount,
                     resource_address,
                 } => {
@@ -192,7 +209,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneOfNonFungibles {
+                InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
                     ids,
                     resource_address,
                 } => {
@@ -204,48 +221,48 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+                InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
                     let proof = LocalAuthZone::create_proof_of_all(resource_address, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromBucket { bucket_id } => {
+                InstructionV1::CreateProofFromBucket { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+                InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_amount(amount, api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+                InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof =
                         bucket.create_proof_of_non_fungibles(ids.into_iter().collect(), api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+                InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::CloneProof { proof_id } => {
+                InstructionV1::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;
                     let proof = proof.clone(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                Instruction::DropProof { proof_id } => {
+                InstructionV1::DropProof { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     proof.drop(api)?;
                     InstructionOutput::None
                 }
-                Instruction::DropAllProofs => {
+                InstructionV1::DropAllProofs => {
                     // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
                     // the former will drop all named proofs before clearing the auth zone.
 
@@ -256,7 +273,7 @@ impl TransactionProcessorBlueprint {
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
-                Instruction::CallFunction {
+                InstructionV1::CallFunction {
                     package_address,
                     blueprint_name,
                     function_name,
@@ -283,7 +300,7 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                Instruction::CallMethod {
+                InstructionV1::CallMethod {
                     address,
                     method_name,
                     args,
@@ -298,7 +315,7 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                Instruction::CallRoyaltyMethod {
+                InstructionV1::CallRoyaltyMethod {
                     address,
                     method_name,
                     args,
@@ -313,7 +330,7 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                Instruction::CallMetadataMethod {
+                InstructionV1::CallMetadataMethod {
                     address,
                     method_name,
                     args,
@@ -328,7 +345,7 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                Instruction::CallAccessRulesMethod {
+                InstructionV1::CallAccessRulesMethod {
                     address,
                     method_name,
                     args,
@@ -344,7 +361,7 @@ impl TransactionProcessorBlueprint {
                     )
                 }
 
-                Instruction::BurnResource { bucket_id } => {
+                InstructionV1::BurnResource { bucket_id } => {
                     let bucket = processor.take_bucket(&bucket_id)?;
                     let rtn = bucket.burn(api)?;
 
@@ -354,7 +371,7 @@ impl TransactionProcessorBlueprint {
                     )?;
                     InstructionOutput::CallReturn(result.into())
                 }
-                Instruction::RecallResource { vault_id, amount } => {
+                InstructionV1::RecallResource { vault_id, amount } => {
                     let rtn = api.call_method_advanced(
                         vault_id.as_node_id(),
                         true,
@@ -379,15 +396,15 @@ impl TransactionProcessorBlueprint {
     }
 }
 
-struct TransactionProcessor<'blob> {
+struct TransactionProcessor {
     proof_id_mapping: IndexMap<ManifestProof, NodeId>,
     bucket_id_mapping: NonIterMap<ManifestBucket, NodeId>,
     id_allocator: ManifestIdAllocator,
-    blobs_by_hash: BTreeMap<Hash, Cow<'blob, [u8]>>,
+    blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
 
-impl<'blob> TransactionProcessor<'blob> {
-    fn new(blobs_by_hash: BTreeMap<Hash, Cow<'blob, [u8]>>) -> Self {
+impl TransactionProcessor {
+    fn new(blobs_by_hash: IndexMap<Hash, Vec<u8>>) -> Self {
         Self {
             proof_id_mapping: index_map_new(),
             bucket_id_mapping: NonIterMap::new(),
@@ -522,7 +539,9 @@ impl<'blob> TransactionProcessor<'blob> {
             } => {
                 // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
                 //        Which could allow for better caching of transaction validity over epoch boundaries
-                let current_epoch = Runtime::current_epoch(env)?;
+                let current_epoch: u32 = Runtime::current_epoch(env)?
+                    .try_into()
+                    .expect("Epoch convertible to u32");
 
                 if !should_skip_assertion && current_epoch < *start_epoch_inclusive {
                     return Err(RuntimeError::ApplicationError(
@@ -556,14 +575,14 @@ impl<'blob> TransactionProcessor<'blob> {
     }
 }
 
-struct TransactionProcessorWithApi<'blob, 'a, Y: ClientApi<RuntimeError>> {
+struct TransactionProcessorWithApi<'a, Y: ClientApi<RuntimeError>> {
     worktop: Worktop,
-    processor: TransactionProcessor<'blob>,
+    processor: TransactionProcessor,
     api: &'a mut Y,
 }
 
-impl<'blob, 'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
-    for TransactionProcessorWithApi<'blob, 'a, Y>
+impl<'a, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
+    for TransactionProcessorWithApi<'a, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {
         self.processor.take_bucket(&b).map(|x| x.0)

@@ -1,26 +1,42 @@
-use crate::model::*;
-use radix_engine_interface::blueprints::resource::NonFungibleGlobalId;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::manifest::*;
-use radix_engine_interface::*;
-use std::collections::BTreeSet;
+use crate::internal_prelude::*;
 
 #[derive(ManifestSbor)]
 pub struct TestTransaction {
-    nonce: u64,
-    cost_unit_limit: u32,
-    manifest: TransactionManifest,
+    pub instructions: InstructionsV1,
+    pub blobs: BlobsV1,
+    pub nonce: u64,
+}
+
+#[derive(ManifestSbor)]
+pub struct PreparedTestTransaction {
+    pub encoded_instructions: Vec<u8>,
+    pub references: IndexSet<Reference>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub nonce: u64,
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifest, nonce: u64, cost_unit_limit: u32) -> Self {
+    pub fn new(manifest: TransactionManifestV1, nonce: u64) -> Self {
+        let (instructions, blobs) = manifest.for_intent();
         Self {
+            instructions,
+            blobs,
             nonce,
-            cost_unit_limit,
-            manifest,
         }
     }
 
+    pub fn prepare(self) -> Result<PreparedTestTransaction, ConvertToPreparedError> {
+        let prepared_instructions = self.instructions.prepare_partial()?;
+        Ok(PreparedTestTransaction {
+            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            references: prepared_instructions.references,
+            blobs: self.blobs.prepare_partial()?.blobs_by_hash,
+            nonce: self.nonce,
+        })
+    }
+}
+
+impl PreparedTestTransaction {
     pub fn get_executable<'a>(
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -28,23 +44,20 @@ impl TestTransaction {
         // Fake transaction hash
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
-        let payload = manifest_encode(self).unwrap();
-        let payload_size = payload.len();
+        let auth_zone_params = AuthZoneParams {
+            initial_proofs,
+            virtual_resources: BTreeSet::new(),
+        };
 
         Executable::new(
-            &self.manifest.blobs,
-            &self.manifest.instructions,
+            &self.encoded_instructions,
+            &self.references,
+            &self.blobs,
             ExecutionContext {
                 transaction_hash,
-                payload_size,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
-                fee_payment: FeePayment::User {
-                    cost_unit_limit: self.cost_unit_limit,
-                    tip_percentage: 0,
-                },
+                payload_size: self.encoded_instructions.len(),
+                auth_zone_params,
+                fee_payment: FeePayment::User { tip_percentage: 0 },
                 runtime_validations: vec![],
                 pre_allocated_ids: BTreeSet::new(),
             },

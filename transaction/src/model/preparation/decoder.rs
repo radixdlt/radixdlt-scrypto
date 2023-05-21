@@ -28,6 +28,24 @@ impl From<DecodeError> for PrepareError {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ConvertToPreparedError {
+    EncodeError(EncodeError),
+    PrepareError(PrepareError),
+}
+
+impl From<EncodeError> for ConvertToPreparedError {
+    fn from(value: EncodeError) -> Self {
+        Self::EncodeError(value)
+    }
+}
+
+impl From<PrepareError> for ConvertToPreparedError {
+    fn from(value: PrepareError) -> Self {
+        Self::PrepareError(value)
+    }
+}
+
 pub struct TransactionDecoder<'a>(ManifestDecoder<'a>);
 
 impl<'a> TransactionDecoder<'a> {

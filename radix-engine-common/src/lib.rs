@@ -59,8 +59,9 @@ pub mod prelude {
     // Exports from this crate
     pub use super::address::*;
     pub use super::crypto::*;
-    pub use super::data::*;
-    pub use super::data::*;
+    pub use super::data::manifest::*;
+    pub use super::data::scrypto::model::*;
+    pub use super::data::scrypto::*;
     pub use super::native_addresses::*;
     pub use super::network::*;
     pub use super::time::*;

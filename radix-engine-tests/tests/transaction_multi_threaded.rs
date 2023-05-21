@@ -6,13 +6,12 @@ mod multi_threaded_test {
     use radix_engine::types::*;
     use radix_engine::vm::wasm::WasmInstrumenter;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
-    use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
     use transaction::builder::ManifestBuilder;
     use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-    use transaction::model::TestTransaction;
+    use transaction::model::{SystemTransaction, TestTransaction};
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
@@ -55,7 +54,9 @@ mod multi_threaded_test {
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
-                    &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
+                    &SystemTransaction::new(manifest.clone(), 1)
+                        .prepare()
+                        .unwrap()
                         .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                             &public_key
                         )]),
@@ -85,7 +86,9 @@ mod multi_threaded_test {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                &TestTransaction::new(manifest.clone(), nonce)
+                    .prepare()
+                    .expect("Expected transaction to be preparable")
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
             .expect_commit(true);
@@ -114,7 +117,9 @@ mod multi_threaded_test {
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
                         &ExecutionConfig::default(),
-                        &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
+                        &TestTransaction::new(manifest.clone(), nonce)
+                            .prepare()
+                            .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                                 &public_key,
                             )]),

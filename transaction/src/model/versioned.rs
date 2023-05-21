@@ -26,11 +26,28 @@ pub trait TransactionPayloadEncode {
     type EncodablePayload<'a>: ManifestEncode + ManifestCategorize
     where
         Self: 'a;
+    type Prepared: TransactionPayloadPreparable;
 
     fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a>;
 
     fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
         manifest_encode(&self.as_payload())
+    }
+
+    fn prepare(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
+        Ok(Self::Prepared::prepare_from_payload(
+            &self.to_payload_bytes()?,
+        )?)
+    }
+}
+
+pub trait TransactionPartialEncode: ManifestEncode {
+    type Prepared: TransactionFullChildPreparable;
+
+    fn prepare_partial(&self) -> Result<Self::Prepared, ConvertToPreparedError> {
+        Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
+            &manifest_encode(self)?,
+        )?)
     }
 }
 
@@ -88,12 +105,11 @@ mod tests {
             nonce: 0,
             notary_public_key: notary_private_key.public_key().into(),
             notary_is_signatory: false,
-            cost_unit_limit: 123,
             tip_percentage: 0,
         };
         let expected_header_hash = hash_manifest_encoded_without_prefix_byte(&header_v1);
 
-        let instructions = vec![Instruction::ClearAuthZone];
+        let instructions = vec![InstructionV1::ClearAuthZone];
         let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
         let instructions_v1 = InstructionsV1(instructions);
 

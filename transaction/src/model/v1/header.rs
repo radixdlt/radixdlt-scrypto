@@ -11,7 +11,6 @@ pub struct TransactionHeaderV1 {
     pub nonce: u32,
     pub notary_public_key: PublicKey,
     pub notary_is_signatory: bool,
-    pub cost_unit_limit: u32,
     pub tip_percentage: u16,
 }
 

@@ -17,6 +17,8 @@ impl TransactionPayloadEncode for NotarizedTransactionV1 {
     type EncodablePayload<'a> =
         SborEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, &'a Self>;
 
+    type Prepared = PreparedNotarizedTransactionV1;
+
     fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
         SborEnumVariant::new(self)
     }

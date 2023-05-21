@@ -79,13 +79,12 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
-use transaction::model::Instruction;
 use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
-use transaction::model::TransactionManifest;
+use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -158,7 +157,7 @@ pub fn run() -> Result<(), Error> {
 }
 
 pub fn handle_system_transaction<O: std::io::Write>(
-    instructions: Vec<Instruction>,
+    instructions: Vec<InstructionV1>,
     blobs: Vec<Vec<u8>>,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
     trace: bool,
@@ -171,8 +170,10 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
-        instructions,
-        blobs,
+        instructions: InstructionsV1(instructions),
+        blobs: BlobsV1 {
+            blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
+        },
         nonce,
         pre_allocated_ids: BTreeSet::new(),
     };
@@ -182,7 +183,10 @@ pub fn handle_system_transaction<O: std::io::Write>(
         &scrypto_interpreter,
         &FeeReserveConfig::default(),
         &ExecutionConfig::standard().with_trace(trace),
-        &transaction.get_executable(initial_proofs),
+        &transaction
+            .prepare()
+            .map_err(Error::ConvertToPreparedError)?
+            .get_executable(initial_proofs),
     );
 
     if print_receipt {
@@ -201,7 +205,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 }
 
 pub fn handle_manifest<O: std::io::Write>(
-    manifest: TransactionManifest,
+    manifest: TransactionManifestV1,
     signing_keys: &Option<String>,
     network: &Option<String>,
     write_manifest: &Option<PathBuf>,
@@ -219,7 +223,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 let manifest_str =
                     decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
-                for blob in manifest.blobs {
+                for blob in manifest.blobs.values() {
                     let blob_hash = hash(&blob);
                     let mut blob_path = path
                         .parent()
@@ -243,14 +247,17 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
+            let transaction = TestTransaction::new(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 &scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::standard().with_trace(trace),
-                &transaction.get_executable(initial_proofs),
+                &transaction
+                    .prepare()
+                    .map_err(Error::ConvertToPreparedError)?
+                    .get_executable(initial_proofs),
             );
 
             if print_receipt {

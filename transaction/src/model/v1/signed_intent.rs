@@ -17,6 +17,8 @@ impl TransactionPayloadEncode for SignedIntentV1 {
     type EncodablePayload<'a> =
         SborEnumVariant<{ TransactionDiscriminator::V1SignedIntent as u8 }, &'a Self>;
 
+    type Prepared = PreparedSignedIntentV1;
+
     fn as_payload<'a>(&'a self) -> Self::EncodablePayload<'a> {
         SborEnumVariant::new(self)
     }

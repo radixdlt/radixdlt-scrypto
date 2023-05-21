@@ -13,10 +13,14 @@ pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,
 }
 
+impl TransactionPartialEncode for BlobsV1 {
+    type Prepared = PreparedBlobsV1;
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedBlobsV1 {
-    blobs_by_hash: IndexMap<Hash, BlobV1>,
-    summary: Summary,
+    pub blobs_by_hash: IndexMap<Hash, Vec<u8>>,
+    pub summary: Summary,
 }
 
 impl HasSummary for PreparedBlobsV1 {
@@ -34,7 +38,7 @@ impl TransactionFullChildPreparable for PreparedBlobsV1 {
 
         let mut blobs_by_hash = index_map_with_capacity(blobs.len());
         for blob in blobs {
-            blobs_by_hash.insert(blob.summary.hash, BlobV1(blob.inner));
+            blobs_by_hash.insert(blob.summary.hash, blob.inner);
         }
 
         Ok(PreparedBlobsV1 {

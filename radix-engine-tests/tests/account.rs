@@ -16,7 +16,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 #[test]
 fn can_securify_virtual_account() {
@@ -229,7 +229,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN, 1.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallMethod {
+                .add_instruction(InstructionV1::CallMethod {
                     address: account.into(),
                     method_name: "deposit".to_string(),
                     args: manifest_args!(bucket_id),

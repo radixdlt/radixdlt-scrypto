@@ -9,7 +9,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use scrypto_unit::TestRunner;
-use transaction::{builder::ManifestBuilder, model::TransactionManifest};
+use transaction::builder::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
@@ -2003,7 +2003,7 @@ impl AccessControllerTestRunner {
         self.execute_manifest(manifest)
     }
 
-    fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+    fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner.execute_manifest_ignoring_fee(
             manifest,
             [NonFungibleGlobalId::from_public_key(&self.account.1)],
