@@ -175,6 +175,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         impl HasStub for #bp_ident {
             type Stub = #stub_ident;
         }
+
+        impl HasMethods for #bp_ident {
+            type BlueprintMethod = Method;
+        }
     };
 
     let output_method_enum = if method_idents.is_empty() {
@@ -185,6 +189,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(
                     #method_idents,
                 )*
+            }
+
+            impl ToString for Method {
+                fn to_string(&self) -> String {
+                    panic!();
+                }
             }
         }
     } else {

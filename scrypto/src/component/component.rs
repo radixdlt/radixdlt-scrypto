@@ -29,7 +29,11 @@ pub trait HasStub {
     type Stub: ObjectStub;
 }
 
-pub trait ComponentState: HasStub + ScryptoEncode + ScryptoDecode {
+pub trait HasMethods {
+    type BlueprintMethod: ToString;
+}
+
+pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
     const BLUEPRINT_NAME: &'static str;
 
     fn instantiate(self) -> Owned<Self> {
@@ -181,7 +185,7 @@ impl<C: HasStub> Deref for Globalizing<C> {
     }
 }
 
-impl<C: HasStub> Globalizing<C> {
+impl<C: HasStub + HasMethods> Globalizing<C> {
     pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
         let metadata = self.metadata.get_or_insert(Metadata::new());
         metadata.set(name, value);
@@ -223,7 +227,7 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn protect_methods<S: ToString>(mut self, protected_methods: BTreeMap<S, Vec<&str>>) -> Self {
+    pub fn protect_methods(mut self, protected_methods: BTreeMap<C::BlueprintMethod, Vec<&str>>) -> Self {
         for (protected_method, authorities) in protected_methods {
             self.protected_module_methods.insert(
                 MethodKey::new(ObjectModuleId::Main, protected_method),
