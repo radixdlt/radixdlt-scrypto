@@ -367,6 +367,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    /// Method requires auth - if call goes through it performs the deposit with no questions asked
     pub fn deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -381,6 +382,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    /// Method requires auth - if call goes through it performs the deposit with no questions asked
     pub fn deposit_batch<Y>(buckets: Vec<Bucket>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -391,6 +393,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    /// Method is public to all - if the resource can't be deposited it is returned.
     pub fn try_deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<Option<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -411,6 +414,7 @@ impl AccountBlueprint {
         }
     }
 
+    /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
     pub fn try_deposit_batch<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
@@ -425,9 +429,7 @@ impl AccountBlueprint {
                     .resource_address(api)
                     .and_then(|resource_address| Self::is_deposit_allowed(&resource_address, api))
             })
-            .collect::<Result<Vec<_>, _>>()?
-            .iter()
-            .all(|can_be_deposited| *can_be_deposited == true);
+            .all(|item| item == Ok(true));
 
         if can_all_be_deposited {
             Self::deposit_batch(buckets, api)?;
@@ -437,6 +439,7 @@ impl AccountBlueprint {
         }
     }
 
+    /// Method is public to all - if the resources can't be deposited then the execution panics.
     pub fn try_deposit_unsafe<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -449,6 +452,8 @@ impl AccountBlueprint {
         }
     }
 
+    /// Method is public to all - if ANY of the resources can't be deposited then the execution
+    /// panics.
     pub fn try_deposit_batch_unsafe<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
@@ -646,19 +651,12 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        // TODO: Check first
+        api.actor_remove_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
             &encoded_key,
-            LockFlags::MUTABLE,
         )?;
-
-        api.key_value_entry_set_typed(
-            kv_store_entry_lock_handle,
-            &ResourceDepositConfiguration::Allowed,
-        )?;
-
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -672,12 +670,19 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        // TODO: Check first
-        api.actor_remove_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
             &encoded_key,
+            LockFlags::MUTABLE,
         )?;
+
+        api.key_value_entry_set_typed(
+            kv_store_entry_lock_handle,
+            &ResourceDepositConfiguration::Disallowed,
+        )?;
+
+        api.key_value_entry_release(kv_store_entry_lock_handle)?;
 
         Ok(())
     }
@@ -799,7 +804,7 @@ impl AccountBlueprint {
             (
                 AccountDepositsMode::DenyAll,
                 ResourceDepositConfiguration::Disallowed | ResourceDepositConfiguration::Neither,
-            ) => true,
+            ) => false,
             // Case: Account is in airdrop mode
             (AccountDepositsMode::AllowExisting, resource_deposits_configuration) => {
                 // Deny list check takes precedence over other checks
