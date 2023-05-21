@@ -9,7 +9,6 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
@@ -18,7 +17,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::{require, Bucket, Proof};
+use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -30,6 +29,7 @@ pub enum AccountError {
     VaultDoesNotExist { resource_address: ResourceAddress },
     AccountIsNotInAllowListDepositsMode { deposits_mode: AccountDepositsMode },
     AccountIsNotInDisallowListDepositsMode { deposits_mode: AccountDepositsMode },
+    DepositIsDisallowed { resource_address: ResourceAddress },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -37,8 +37,6 @@ impl From<AccountError> for RuntimeError {
         Self::ApplicationError(ApplicationError::AccountError(value))
     }
 }
-
-const ACCOUNT_DEPOSITS_AUTHORITY: &str = "deposits_authority";
 
 struct SecurifiedAccount;
 
@@ -158,12 +156,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
         );
         authority_rules.set_main_authority_rule(
             ACCOUNT_DEPOSIT_BATCH_IDENT,
-            rule!(require_owner()),
-            rule!(deny_all),
-        );
-
-        authority_rules.set_main_authority_rule(
-            ACCOUNT_DEPOSITS_AUTHORITY,
             rule!(require_owner()),
             rule!(deny_all),
         );
@@ -436,6 +428,31 @@ impl AccountBlueprint {
         }
 
         Ok(undeposited_buckets)
+    }
+
+    pub fn try_deposit_unsafe<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if let Some(bucket) = Self::try_deposit(bucket, api)? {
+            let resource_address = bucket.resource_address(api)?;
+            Err(AccountError::DepositIsDisallowed { resource_address }.into())
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn try_deposit_batch_unsafe<Y>(
+        buckets: Vec<Bucket>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        for bucket in buckets {
+            Self::try_deposit_unsafe(bucket, api)?;
+        }
+        Ok(())
     }
 
     pub fn withdraw<Y>(

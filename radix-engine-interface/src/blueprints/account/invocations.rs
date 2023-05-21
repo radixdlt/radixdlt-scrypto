@@ -297,9 +297,9 @@ pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
 
 pub type AccountRemoveResourceFromDisallowedDepositsListOutput = bool;
 
-//======================
+//=====================
 // Account Try Deposit
-//======================
+//=====================
 
 pub const ACCOUNT_TRY_DEPOSIT_IDENT: &str = "try_deposit";
 
@@ -310,9 +310,9 @@ pub struct AccountTryDepositInput {
 
 pub type AccountTryDepositOutput = Option<Bucket>;
 
-//============================
+//===========================
 // Account Try Deposit Batch
-//============================
+//===========================
 
 pub const ACCOUNT_TRY_DEPOSIT_BATCH_IDENT: &str = "try_deposit_batch";
 
@@ -322,3 +322,29 @@ pub struct AccountTryDepositBatchInput {
 }
 
 pub type AccountTryDepositBatchOutput = Vec<Bucket>;
+
+//============================
+// Account Try Deposit Unsafe
+//============================
+
+pub const ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT: &str = "try_deposit_unsafe";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositUnsafeInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountTryDepositUnsafeOutput = ();
+
+//==================================
+// Account Try Deposit Batch Unsafe
+//==================================
+
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT: &str = "try_deposit_batch_unsafe";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositBatchUnsafeInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountTryDepositBatchUnsafeOutput = ();
