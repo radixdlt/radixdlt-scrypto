@@ -15,6 +15,7 @@ use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
 use super::AccountSubstate;
+use super::ResourceDepositConfiguration;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const ACCOUNT_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_ecdsa_ed25519";
@@ -36,6 +37,17 @@ impl AccountNativePackage {
                 ),
                 value: TypeSchema::Blueprint(aggregator.add_child_type_and_descendents::<Own>()),
                 can_own: true,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceAddress>(),
+                ),
+                value: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceDepositConfiguration>(),
+                ),
+                can_own: false,
             },
         ));
 
@@ -264,23 +276,22 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountSafeDepositOutput>(),
-                export_name: ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<AccountTryDepositInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountTryDepositOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositBatchInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountSafeDepositBatchOutput>(),
-                export_name: ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<AccountTryDepositBatchInput>(),
+                output: aggregator.add_child_type_and_descendents::<AccountTryDepositBatchOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_IDENT.to_string(),
             },
         );
 
@@ -456,24 +467,24 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_SAFE_DEPOSIT_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountSafeDepositInput = input.as_typed().map_err(|e| {
+                let input: AccountTryDepositInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::safe_deposit(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountSafeDepositBatchInput = input.as_typed().map_err(|e| {
+                let input: AccountTryDepositBatchInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::safe_deposit_batch(input.buckets, api)?;
+                let rtn = AccountBlueprint::try_deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {

@@ -12,17 +12,15 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
 pub enum AccountDepositsMode {
-    /// Allows the deposit of all resources. Equivalent to a DisallowList of an empty set.
+    /// Allows the deposit of all resources - the deny list is honored in this state.o
     AllowAll,
 
-    /// Only allows deposits of resources that the account has a vault for (i.e., existing).
+    /// Disallows the deposit of all resources - the allow list is honored in this state.
+    DenyAll,
+
+    /// Only deposits of existing resources is accepted - both allow and deny lists are honored in
+    /// this mode.
     AllowExisting,
-
-    /// Only allows deposits of resources specified by the owner of the account.
-    AllowList(IndexSet<ResourceAddress>),
-
-    /// Disallows deposits of resources specified by the owner of the account.
-    DisallowList(IndexSet<ResourceAddress>),
 }
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
@@ -300,27 +298,27 @@ pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
 pub type AccountRemoveResourceFromDisallowedDepositsListOutput = bool;
 
 //======================
-// Account Safe Deposit
+// Account Try Deposit
 //======================
 
-pub const ACCOUNT_SAFE_DEPOSIT_IDENT: &str = "safe_deposit";
+pub const ACCOUNT_TRY_DEPOSIT_IDENT: &str = "try_deposit";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountSafeDepositInput {
+pub struct AccountTryDepositInput {
     pub bucket: Bucket,
 }
 
-pub type AccountSafeDepositOutput = Option<Bucket>;
+pub type AccountTryDepositOutput = Option<Bucket>;
 
 //============================
-// Account Safe Deposit Batch
+// Account Try Deposit Batch
 //============================
 
-pub const ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT: &str = "safe_deposit_batch";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_IDENT: &str = "try_deposit_batch";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountSafeDepositBatchInput {
+pub struct AccountTryDepositBatchInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountSafeDepositBatchOutput = Vec<Bucket>;
+pub type AccountTryDepositBatchOutput = Vec<Bucket>;

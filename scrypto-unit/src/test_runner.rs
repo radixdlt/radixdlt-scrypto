@@ -29,7 +29,9 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
+use radix_engine_interface::blueprints::account::{
+    ACCOUNT_DEPOSIT_BATCH_IDENT, ACCOUNT_TRY_DEPOSIT_IDENT,
+};
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
     CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
@@ -517,7 +519,11 @@ impl TestRunner {
             .lock_fee(self.faucet_component(), 100u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(account_address, "deposit", manifest_args!(bucket))
+                builder.call_method(
+                    account_address,
+                    ACCOUNT_TRY_DEPOSIT_IDENT,
+                    manifest_args!(bucket),
+                )
             })
             .build();
 
