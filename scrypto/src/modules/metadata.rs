@@ -7,8 +7,8 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
-use sbor::rust::prelude::ToOwned;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Attachable;
 
@@ -47,33 +47,33 @@ impl Metadata {
         Self(ModuleHandle::Own(metadata))
     }
 
-    pub fn set_list<K: AsRef<str>>(&self, name: K, list: Vec<MetadataValue>) {
+    pub fn set_list<S: ToString>(&self, name: S, list: Vec<MetadataValue>) {
         let value: ScryptoValue =
             scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
         self.call_ignore_rtn(
             METADATA_SET_IDENT,
             &MetadataSetInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
                 value,
             },
         );
     }
 
-    pub fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
+    pub fn set<S: ToString, V: MetadataVal>(&self, name: S, value: V) {
         self.call_ignore_rtn(
             METADATA_SET_IDENT,
             &MetadataSetInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
                 value: value.to_metadata_entry(),
             },
         );
     }
 
-    pub fn get_string<K: AsRef<str>>(&self, name: K) -> Result<String, MetadataError> {
+    pub fn get_string<S: ToString>(&self, name: S) -> Result<String, MetadataError> {
         let value: Option<ScryptoValue> = self.call(
             METADATA_GET_IDENT,
             &MetadataGetInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
             },
         );
 
@@ -83,11 +83,11 @@ impl Metadata {
         }
     }
 
-    pub fn remove<K: AsRef<str>>(&self, name: K) -> bool {
+    pub fn remove<S: ToString>(&self, name: S) -> bool {
         let rtn = self.call(
             METADATA_REMOVE_IDENT,
             &MetadataRemoveInput {
-                key: name.as_ref().to_owned(),
+                key: name.to_string(),
             },
         );
 

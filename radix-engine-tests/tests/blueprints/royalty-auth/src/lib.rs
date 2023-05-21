@@ -45,7 +45,7 @@ mod royalty_test {
                     RoyaltyMethod::set_royalty_config => vec!["auth"],
                     RoyaltyMethod::claim_royalty => vec!["auth"],
                 ))
-                .set_royalties(btreemap!(
+                .set_royalties(royalties!(
                     Method::paid_method => 1u32,
                     Method::paid_method_panic => 1u32,
                 ))

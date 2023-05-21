@@ -11,7 +11,9 @@ mod metadata_component {
             let global = Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .metadata(key.clone(), value.clone())
+                .set_metadata(metadata! {
+                    key.clone() => value.clone()
+                })
                 .globalize();
 
             let metadata = global.metadata();

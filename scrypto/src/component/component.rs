@@ -4,7 +4,7 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataVal, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -224,10 +224,8 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
-
     pub authority_rules: Roles,
     pub protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
-
     pub address: Option<ComponentAddress>,
 }
 
@@ -252,9 +250,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
     }
 
-    pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
-        let metadata = self.metadata.get_or_insert(Metadata::new());
-        metadata.set(name, value);
+    pub fn set_metadata(mut self, metadata: Metadata) -> Self {
+        if self.metadata.is_some() {
+            panic!("Metadata already set.");
+        }
+        self.metadata = Some(metadata);
         self
     }
 

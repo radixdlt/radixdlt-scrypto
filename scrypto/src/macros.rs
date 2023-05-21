@@ -509,3 +509,20 @@ macro_rules! royalties {
         royalties!{$($method => $royalty),*}
     })
 }
+
+#[macro_export]
+macro_rules! metadata {
+    ( ) => ({
+        ::scrypto::prelude::Metadata::new()
+    });
+    ( $($key:expr => $value:expr),* ) => ({
+        let mut metadata = ::scrypto::prelude::Metadata::new();
+        $(
+            metadata.set($key, $value);
+        )*
+        metadata
+    });
+    ( $($key:expr => $value:expr,)* ) => ({
+        metadata!{$($key => $value),*}
+    })
+}
