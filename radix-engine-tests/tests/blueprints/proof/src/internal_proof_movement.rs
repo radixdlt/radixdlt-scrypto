@@ -26,7 +26,8 @@ mod outer {
     impl Outer {
         pub fn instantiate() -> Global<Outer> {
             let inner = Inner::instantiate();
-            Self { inner }.instantiate()
+            Self { inner }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

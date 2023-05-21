@@ -15,9 +15,9 @@ use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::schema::FunctionSchema;
 use radix_engine_interface::schema::PackageSchema;
 use radix_engine_interface::schema::{BlueprintSchema, ReceiverInfo};
-use radix_engine_interface::schema::{FunctionSchema};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
@@ -544,13 +544,10 @@ impl AccessControllerNativePackage {
         let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
         let address = GlobalAddress::new_or_panic(address.0);
 
-        let (authority_rules, protected_methods) = init_access_rules_from_rule_set(address, input.rule_set);
-        let access_rules = AccessRules::create(
-            protected_methods,
-            authority_rules,
-            btreemap!(),
-            api
-        )?.0;
+        let (authority_rules, protected_methods) =
+            init_access_rules_from_rule_set(address, input.rule_set);
+        let access_rules =
+            AccessRules::create(protected_methods, authority_rules, btreemap!(), api)?.0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
@@ -1064,7 +1061,10 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (Roles, BTreeMap<MethodKey, Vec<String>>) {
+fn init_access_rules_from_rule_set(
+    address: GlobalAddress,
+    rule_set: RuleSet,
+) -> (Roles, BTreeMap<MethodKey, Vec<String>>) {
     let mut authority_rules = Roles::new();
 
     let primary = "primary";
@@ -1108,8 +1108,14 @@ fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) ->
         ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => vec!["primary", "confirmation", "recovery"],
     );
 
-    let protected_methods = protected_methods.into_iter()
-        .map(|(s, roles)| (MethodKey::new(ObjectModuleId::Main, s), roles.into_iter().map(|s| s.to_string()).collect()))
+    let protected_methods = protected_methods
+        .into_iter()
+        .map(|(s, roles)| {
+            (
+                MethodKey::new(ObjectModuleId::Main, s),
+                roles.into_iter().map(|s| s.to_string()).collect(),
+            )
+        })
         .collect();
 
     (authority_rules, protected_methods)

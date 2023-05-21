@@ -27,7 +27,8 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let authority_rules = Self::create_config(Roles::new());
         let protected_module_methods = Self::protected_module_methods();
-        let access_rules = AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
+        let access_rules =
+            AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
@@ -38,15 +39,12 @@ pub trait SecurifiedAccessRules {
         let mut authority_rules = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
-            authority_rules.define_role(
-                securify,
-                AccessRule::DenyAll,
-                AccessRule::DenyAll,
-            );
+            authority_rules.define_role(securify, AccessRule::DenyAll, AccessRule::DenyAll);
         }
 
         let protected_module_methods = Self::protected_module_methods();
-        let access_rules = AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
+        let access_rules =
+            AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
 
         Ok(access_rules)
     }

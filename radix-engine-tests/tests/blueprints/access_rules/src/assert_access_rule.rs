@@ -6,10 +6,7 @@ mod assert_access_rule {
 
     impl AssertAccessRule {
         pub fn new() -> Global<AssertAccessRule> {
-            Self {}
-                .instantiate()
-                .prepare_to_globalize()
-                .globalize()
+            Self {}.instantiate().prepare_to_globalize().globalize()
         }
 
         pub fn assert_access_rule(&self, access_rule: AccessRule) {

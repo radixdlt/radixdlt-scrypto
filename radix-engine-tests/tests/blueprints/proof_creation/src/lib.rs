@@ -95,7 +95,8 @@ mod pc {
             let proof = vault.create_proof().skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }
@@ -104,7 +105,8 @@ mod pc {
             let proof = vault.create_proof_of_amount(2).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }
@@ -119,7 +121,8 @@ mod pc {
                 .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }
@@ -129,7 +132,8 @@ mod pc {
             let proof = vault.create_proof().skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }
@@ -138,7 +142,8 @@ mod pc {
             let proof = vault.create_proof_of_amount(2).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }
@@ -153,7 +158,8 @@ mod pc {
                 .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
-            ProofCreation { vault }.instantiate()
+            ProofCreation { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }

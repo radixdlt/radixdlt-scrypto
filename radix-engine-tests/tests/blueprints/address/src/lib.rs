@@ -179,10 +179,7 @@ mod preallocation_component {
 
         pub fn create_with_unused_preallocated_address_2() -> Global<PreallocationComponent> {
             Runtime::preallocate_global_component_address();
-            Self {}
-                .instantiate()
-                .prepare_to_globalize()
-                .globalize()
+            Self {}.instantiate().prepare_to_globalize().globalize()
         }
 
         pub fn create_two_with_same_address() -> (

@@ -651,10 +651,7 @@ where
         self.api.kernel_drop_lock(lock_handle)?;
 
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                ref mut global,
-                ..
-            }) if !*global => {
+            TypeInfoSubstate::Object(ObjectInfo { ref mut global, .. }) if !*global => {
                 *global = true;
             }
             _ => {

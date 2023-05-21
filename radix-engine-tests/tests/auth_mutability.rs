@@ -29,9 +29,10 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::new(MINT_AUTHORITY)),
         ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => {
-            (ObjectKey::SELF, AuthorityKey::new(UPDATE_METADATA_AUTHORITY))
-        }
+        ResourceAuth::UpdateMetadata => (
+            ObjectKey::SELF,
+            AuthorityKey::new(UPDATE_METADATA_AUTHORITY),
+        ),
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             AuthorityKey::new(WITHDRAW_AUTHORITY),
@@ -68,9 +69,10 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, AuthorityKey::new(MINT_AUTHORITY)),
         ResourceAuth::Burn => (ObjectKey::SELF, AuthorityKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => {
-            (ObjectKey::SELF, AuthorityKey::new(UPDATE_METADATA_AUTHORITY))
-        }
+        ResourceAuth::UpdateMetadata => (
+            ObjectKey::SELF,
+            AuthorityKey::new(UPDATE_METADATA_AUTHORITY),
+        ),
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             AuthorityKey::new(WITHDRAW_AUTHORITY),

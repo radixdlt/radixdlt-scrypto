@@ -7,8 +7,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    use std::collections::BTreeMap;
     use crate::RoyaltyConfig;
+    use std::collections::BTreeMap;
 
     struct ComponentModule {}
 

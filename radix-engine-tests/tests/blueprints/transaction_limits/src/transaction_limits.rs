@@ -13,7 +13,8 @@ mod transaction_limits {
                 kv_store.insert(i, i);
             }
 
-            TransactionLimitTest { kv_store }.instantiate()
+            TransactionLimitTest { kv_store }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -25,7 +26,8 @@ mod transaction_limits {
                 kv_store.get(&0);
             }
 
-            TransactionLimitTest { kv_store }.instantiate()
+            TransactionLimitTest { kv_store }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

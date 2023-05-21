@@ -732,13 +732,7 @@ impl TestRunner {
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, schema) = Compile::compile(package_dir);
-        self.publish_package(
-            code,
-            schema,
-            BTreeMap::new(),
-            BTreeMap::new(),
-            Roles::new(),
-        )
+        self.publish_package(code, schema, BTreeMap::new(), BTreeMap::new(), Roles::new())
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(

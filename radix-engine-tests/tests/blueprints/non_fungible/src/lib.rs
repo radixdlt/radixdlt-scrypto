@@ -301,7 +301,8 @@ mod non_fungible_test {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
-            NonFungibleTest { vault }.instantiate()
+            NonFungibleTest { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
 
@@ -360,7 +361,8 @@ mod non_fungible_test {
                 ])
             );
 
-            NonFungibleTest { vault }.instantiate()
+            NonFungibleTest { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
 
@@ -381,7 +383,8 @@ mod non_fungible_test {
                 NonFungibleLocalId::integer(2)
             );
 
-            NonFungibleTest { vault }.instantiate()
+            NonFungibleTest { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
 
@@ -408,7 +411,8 @@ mod non_fungible_test {
 
             // clean up
             vault.put(bucket);
-            NonFungibleTest { vault }.instantiate()
+            NonFungibleTest { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize();
         }

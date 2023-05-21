@@ -20,9 +20,9 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    Roles, FungibleResourceManagerCreateInput,
-    FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
+    FungibleResourceManagerCreateInput, FungibleResourceManagerCreateWithInitialSupplyInput,
+    NonFungibleResourceManagerCreateInput,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, Roles,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -1275,9 +1275,8 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, Roles, NonFungibleDataSchema,
-        NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
+        AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::PackageSchema;

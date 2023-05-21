@@ -3,7 +3,9 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::access_rules::NodeAuthorityRules;
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::auth::{AuthorityListAuthorizationResult, AuthorizationCheckResult};
+use crate::system::system_modules::auth::{
+    AuthorityListAuthorizationResult, AuthorizationCheckResult,
+};
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{ClientApi, ClientObjectApi, LockFlags};
@@ -461,10 +463,12 @@ impl Authorization {
                 api,
             )?;
             match result {
-                AuthorizationCheckResult::Authorized => return Ok(AuthorityListAuthorizationResult::Authorized),
+                AuthorizationCheckResult::Authorized => {
+                    return Ok(AuthorityListAuthorizationResult::Authorized)
+                }
                 AuthorizationCheckResult::Failed(stack) => {
                     failed.push((key.clone(), stack));
-                },
+                }
             }
         }
 

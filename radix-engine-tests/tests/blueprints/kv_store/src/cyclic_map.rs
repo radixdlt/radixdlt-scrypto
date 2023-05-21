@@ -38,7 +38,8 @@ mod cyclic_map {
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
-            CyclicMap { store: kv_store0 }.instantiate()
+            CyclicMap { store: kv_store0 }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -62,7 +63,8 @@ mod cyclic_map {
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
                 .unwrap();
 
-            CyclicMap { store: kv_store }.instantiate()
+            CyclicMap { store: kv_store }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

@@ -36,7 +36,10 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let (object_key, authority_key) = match action {
             Action::Mint => (ObjectKey::SELF, AuthorityKey::new(MINT_AUTHORITY)),
             Action::Burn => (ObjectKey::SELF, AuthorityKey::new(BURN_AUTHORITY)),
-            Action::UpdateMetadata => (ObjectKey::SELF, AuthorityKey::new(UPDATE_METADATA_AUTHORITY)),
+            Action::UpdateMetadata => (
+                ObjectKey::SELF,
+                AuthorityKey::new(UPDATE_METADATA_AUTHORITY),
+            ),
             Action::Withdraw => (
                 ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
                 AuthorityKey::new(WITHDRAW_AUTHORITY),

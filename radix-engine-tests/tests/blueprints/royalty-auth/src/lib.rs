@@ -22,15 +22,12 @@ mod royalty_test {
 
         pub fn enable_royalty_for_package(package: Package, proof: Proof) {
             proof.authorize(|| {
-                package.set_royalty_config(BTreeMap::from([(
-                    "RoyaltyTest".to_owned(),
-                    {
-                        let mut config = RoyaltyConfig::default();
-                        config.set_rule("paid_method", 2);
-                        config.set_rule("paid_method_panic", 2);
-                        config
-                    }
-                )]));
+                package.set_royalty_config(BTreeMap::from([("RoyaltyTest".to_owned(), {
+                    let mut config = RoyaltyConfig::default();
+                    config.set_rule("paid_method", 2);
+                    config.set_rule("paid_method_panic", 2);
+                    config
+                })]));
             })
         }
 

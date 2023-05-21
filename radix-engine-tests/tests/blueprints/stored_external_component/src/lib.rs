@@ -37,9 +37,7 @@ mod external_component {
             .instantiate();
             component.func();
 
-            component
-                .prepare_to_globalize()
-                .globalize()
+            component.prepare_to_globalize().globalize()
         }
 
         pub fn func(&mut self) {

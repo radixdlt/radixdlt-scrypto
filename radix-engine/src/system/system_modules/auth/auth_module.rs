@@ -136,7 +136,9 @@ impl AuthModule {
                     AuthorizationCheckResult::Failed(access_rule_stack) => {
                         return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                             AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::AccessRule(access_rule_stack),
+                                failed_access_rules: FailedAccessRules::AccessRule(
+                                    access_rule_stack,
+                                ),
                                 fn_identifier: callee.fn_identifier(),
                             })),
                         )));
@@ -212,10 +214,15 @@ impl AuthModule {
             }
         };
 
-        let authority_list = if let Some(list) = node_authority_rules.protected_module_methods.get(&method_key) {
-            list.iter().map(|authority| AuthorityKey::new(authority)).collect()
+        let authority_list = if let Some(list) = node_authority_rules
+            .protected_module_methods
+            .get(&method_key)
+        {
+            list.iter()
+                .map(|authority| AuthorityKey::new(authority))
+                .collect()
         } else {
-            return Ok(())
+            return Ok(());
         };
 
         Self::check_authorization_against_config(
@@ -250,12 +257,14 @@ impl AuthModule {
         )?;
         match result {
             AuthorityListAuthorizationResult::Authorized => Ok(()),
-            AuthorityListAuthorizationResult::Failed(auth_list_fail) => Err(RuntimeError::ModuleError(
-                ModuleError::AuthError(AuthError::Unauthorized(Box::new(Unauthorized {
-                    failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
-                    fn_identifier,
-                }))),
-            )),
+            AuthorityListAuthorizationResult::Failed(auth_list_fail) => {
+                Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                    AuthError::Unauthorized(Box::new(Unauthorized {
+                        failed_access_rules: FailedAccessRules::AuthorityList(auth_list_fail),
+                        fn_identifier,
+                    })),
+                )))
+            }
         }
     }
 
@@ -297,7 +306,9 @@ impl AuthModule {
                         AuthorizationCheckResult::Failed(access_rule_stack) => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
                                 AuthError::Unauthorized(Box::new(Unauthorized {
-                                    failed_access_rules: FailedAccessRules::AccessRule(access_rule_stack),
+                                    failed_access_rules: FailedAccessRules::AccessRule(
+                                        access_rule_stack,
+                                    ),
                                     fn_identifier: callee.fn_identifier(),
                                 })),
                             )));

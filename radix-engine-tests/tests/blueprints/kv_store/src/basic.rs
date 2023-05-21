@@ -9,7 +9,8 @@ mod basic {
     impl Basic {
         pub fn new() -> Global<Basic> {
             let map = KeyValueStore::new();
-            Self { map }.instantiate()
+            Self { map }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -17,7 +18,8 @@ mod basic {
         pub fn new_with_entry(key: String, value: String) -> Global<Basic> {
             let map = KeyValueStore::new();
             map.insert(key, value);
-            Self { map }.instantiate()
+            Self { map }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -32,7 +34,8 @@ mod basic {
                 assert_eq!(*maybe_entry.unwrap(), "hello");
                 assert_eq!(*maybe_entry2.unwrap(), "hello2");
             }
-            Self { map }.instantiate()
+            Self { map }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -47,7 +50,8 @@ mod basic {
                 assert!(maybe_entry.is_none());
             }
 
-            Self { map }.instantiate()
+            Self { map }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -81,7 +85,8 @@ mod kv_vault {
             let vault = Vault::with_bucket(bucket);
             let map = KeyValueStore::new();
             map.insert("key".to_string(), vault);
-            Self { map }.instantiate()
+            Self { map }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

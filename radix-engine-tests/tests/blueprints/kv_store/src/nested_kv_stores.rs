@@ -21,7 +21,8 @@ mod nested_kv_stores {
                 *value += 1;
             }
 
-            Self { counters }.instantiate()
+            Self { counters }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

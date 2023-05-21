@@ -25,9 +25,7 @@ mod secret {
             let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
-            local_component
-                .prepare_to_globalize()
-                .globalize()
+            local_component.prepare_to_globalize().globalize()
         }
 
         pub fn write_local_component() -> Global<Secret> {
@@ -37,9 +35,7 @@ mod secret {
             let rtn = local_component.get_secret();
             assert_eq!(99999, rtn);
 
-            local_component
-                .prepare_to_globalize()
-                .globalize()
+            local_component.prepare_to_globalize().globalize()
         }
 
         pub fn check_info_of_local_component(
@@ -53,9 +49,7 @@ mod secret {
             assert_eq!(blueprint.package_address, expected_package_address);
             assert_eq!(blueprint.blueprint_name, expected_blueprint_name);
 
-            local_component
-                .prepare_to_globalize()
-                .globalize()
+            local_component.prepare_to_globalize().globalize()
         }
     }
 }
@@ -101,9 +95,7 @@ mod stored_kv_local {
             let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
 
-            my_component
-                .prepare_to_globalize()
-                .globalize()
+            my_component.prepare_to_globalize().globalize()
         }
 
         pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredKVLocal> {
@@ -113,9 +105,7 @@ mod stored_kv_local {
             let rtn = my_component.parent_get_secret();
             assert_eq!(99999, rtn);
 
-            my_component
-                .prepare_to_globalize()
-                .globalize()
+            my_component.prepare_to_globalize().globalize()
         }
     }
 }
@@ -144,7 +134,8 @@ mod stored_secret {
 
         pub fn new_global(secret: u32) -> Global<StoredSecret> {
             let component = Blueprint::<Secret>::new(secret);
-            Self { component }.instantiate()
+            Self { component }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -156,9 +147,7 @@ mod stored_secret {
             let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
 
-            my_component
-                .prepare_to_globalize()
-                .globalize()
+            my_component.prepare_to_globalize().globalize()
         }
 
         pub fn call_write_on_stored_component_in_owned_component() -> Global<StoredSecret> {
@@ -169,9 +158,7 @@ mod stored_secret {
             let rtn = my_component.parent_get_secret();
             assert_eq!(99999, rtn);
 
-            my_component
-                .prepare_to_globalize()
-                .globalize()
+            my_component.prepare_to_globalize().globalize()
         }
     }
 }

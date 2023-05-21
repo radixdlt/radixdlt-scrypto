@@ -40,15 +40,12 @@ fn set_up_package_and_component() -> (
             )
             .set_package_royalty_config(
                 package_address,
-                BTreeMap::from([(
-                    "RoyaltyTest".to_owned(),
-                    {
-                        let mut config = RoyaltyConfig::default();
-                        config.set_rule("paid_method", 2);
-                        config.set_rule("paid_method_panic", 2);
-                        config
-                    }
-                )]),
+                BTreeMap::from([("RoyaltyTest".to_owned(), {
+                    let mut config = RoyaltyConfig::default();
+                    config.set_rule("paid_method", 2);
+                    config.set_rule("paid_method_panic", 2);
+                    config
+                })]),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -111,10 +108,7 @@ fn test_only_package_owner_can_set_royalty_config() {
             )
             .set_package_royalty_config(
                 package_address,
-                BTreeMap::from([(
-                    "RoyaltyTest".to_owned(),
-                    RoyaltyConfig::default(),
-                )]),
+                BTreeMap::from([("RoyaltyTest".to_owned(), RoyaltyConfig::default())]),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -127,10 +121,7 @@ fn test_only_package_owner_can_set_royalty_config() {
             .lock_fee(account, 100.into())
             .set_package_royalty_config(
                 package_address,
-                BTreeMap::from([(
-                    "RoyaltyTest".to_owned(),
-                    RoyaltyConfig::default(),
-                )]),
+                BTreeMap::from([("RoyaltyTest".to_owned(), RoyaltyConfig::default())]),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

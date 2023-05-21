@@ -178,7 +178,8 @@ impl ClockNativePackage {
             authority_rules,
             btreemap!(),
             api,
-        )?.0;
+        )?
+        .0;
 
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;

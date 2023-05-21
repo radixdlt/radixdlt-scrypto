@@ -101,9 +101,7 @@ impl From<&str> for AuthorityKey {
 
 impl AuthorityKey {
     pub fn new<S: Into<String>>(key: S) -> Self {
-        AuthorityKey {
-            key: key.into()
-        }
+        AuthorityKey { key: key.into() }
     }
 }
 
@@ -121,12 +119,11 @@ impl Roles {
 
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> Roles {
         let mut authority_rules = Roles::new();
-        authority_rules
-            .define_role(
-                "owner",
-                rule!(require(owner_badge.clone())),
-                rule!(require("owner"))
-            );
+        authority_rules.define_role(
+            "owner",
+            rule!(require(owner_badge.clone())),
+            rule!(require("owner")),
+        );
         authority_rules
     }
 
@@ -147,12 +144,12 @@ impl Roles {
         rule: AccessRule,
         mutability: AccessRule,
     ) {
-        self.rules
-            .insert(authority.into(), (rule, mutability));
+        self.rules.insert(authority.into(), (rule, mutability));
     }
 
     pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules.insert(AuthorityKey::new("owner"), (rule, mutability));
+        self.rules
+            .insert(AuthorityKey::new("owner"), (rule, mutability));
     }
 }
 

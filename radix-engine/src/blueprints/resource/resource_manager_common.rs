@@ -3,12 +3,12 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
@@ -44,20 +44,12 @@ fn build_access_rules(
 
         // Mint
         {
-            resman_authority_rules.define_role(
-                MINT_AUTHORITY,
-                mint_access_rule,
-                mint_mutability,
-            );
+            resman_authority_rules.define_role(MINT_AUTHORITY, mint_access_rule, mint_mutability);
         }
 
         // Burn
         {
-            resman_authority_rules.define_role(
-                BURN_AUTHORITY,
-                burn_access_rule,
-                burn_mutability,
-            );
+            resman_authority_rules.define_role(BURN_AUTHORITY, burn_access_rule, burn_mutability);
         }
 
         // Non Fungible Update data
@@ -68,8 +60,6 @@ fn build_access_rules(
                 update_non_fungible_data_mutability,
             );
         }
-
-
 
         let resman_protected_methods = btreemap!(
             MethodKey::metadata(METADATA_SET_IDENT) => vec![UPDATE_METADATA_AUTHORITY.to_string()],
@@ -188,9 +178,8 @@ where
     let (
         (resman_roles, protected_resman_methods),
         (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods)
-    ) =
-        build_access_rules(access_rules);
+        (bucket_authorities, protected_bucket_methods),
+    ) = build_access_rules(access_rules);
 
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
         if resource_address.as_node_id().is_global_fungible_resource() {
@@ -249,9 +238,8 @@ where
     let (
         (resman_roles, protected_resman_methods),
         (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods)
-    ) =
-        build_access_rules(access_rules);
+        (bucket_authorities, protected_bucket_methods),
+    ) = build_access_rules(access_rules);
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
@@ -300,9 +288,8 @@ where
     let (
         (resman_roles, protected_resman_methods),
         (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods)
-    ) =
-        build_access_rules(access_rules);
+        (bucket_authorities, protected_bucket_methods),
+    ) = build_access_rules(access_rules);
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,

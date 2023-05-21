@@ -26,7 +26,8 @@ mod super_key_value_store {
                 map3.insert(4u32, map4);
             }
 
-            SuperKeyValueStore { maps: map0 }.instantiate()
+            SuperKeyValueStore { maps: map0 }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

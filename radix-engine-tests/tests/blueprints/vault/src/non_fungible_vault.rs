@@ -26,7 +26,8 @@ mod vault_test {
 
         pub fn new_non_fungible_vault() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -40,7 +41,8 @@ mod vault_test {
                 vault.put(bucket);
             }
 
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -61,7 +63,8 @@ mod vault_test {
                 assert_eq!(vault.amount(), Decimal::from(2));
             }
 
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -72,7 +75,8 @@ mod vault_test {
                 .as_non_fungible()
                 .take_non_fungible(&NonFungibleLocalId::integer(1));
             vault.put(bucket.into());
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -80,7 +84,8 @@ mod vault_test {
         pub fn new_vault_with_get_non_fungible_local_ids() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _ids = vault.as_non_fungible().non_fungible_local_ids();
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -88,7 +93,8 @@ mod vault_test {
         pub fn new_vault_with_get_non_fungible_local_id() -> Global<NonFungibleVault> {
             let vault = Self::create_singleton_non_fungible_vault();
             let _id = vault.as_non_fungible().non_fungible_local_id();
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -96,7 +102,8 @@ mod vault_test {
         pub fn new_vault_with_get_amount() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }
@@ -104,7 +111,8 @@ mod vault_test {
         pub fn new_vault_with_get_resource_manager() -> Global<NonFungibleVault> {
             let vault = Self::create_non_fungible_vault();
             let _resource_manager = vault.resource_address();
-            Self { vault }.instantiate()
+            Self { vault }
+                .instantiate()
                 .prepare_to_globalize()
                 .globalize()
         }

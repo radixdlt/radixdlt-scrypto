@@ -24,13 +24,8 @@ fn test_call_package_address_undeclared() {
     let start = find_subsequence(&code, &PACKAGE_ADDRESS_PLACE_HOLDER).unwrap();
     code[start..start + PACKAGE_ADDRESS_PLACE_HOLDER.len()]
         .copy_from_slice(package_address1.as_ref());
-    let package_address2 = test_runner.publish_package(
-        code,
-        schema,
-        BTreeMap::new(),
-        BTreeMap::new(),
-        Roles::new(),
-    );
+    let package_address2 =
+        test_runner.publish_package(code, schema, BTreeMap::new(), BTreeMap::new(), Roles::new());
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())

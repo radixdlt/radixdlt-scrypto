@@ -136,9 +136,7 @@ mod auth_resource {
 
     impl AuthResource {
         pub fn create() -> Global<AuthResource> {
-            Self {}.instantiate()
-                .prepare_to_globalize()
-                .globalize()
+            Self {}.instantiate().prepare_to_globalize().globalize()
         }
 
         pub fn mint(&self, resource_manager: ResourceManager) -> Bucket {

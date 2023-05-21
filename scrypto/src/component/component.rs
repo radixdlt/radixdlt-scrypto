@@ -4,11 +4,13 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, MetadataVal};
+use radix_engine_interface::api::node_modules::metadata::{MetadataVal, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::resource::{AccessRule, Roles, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, Roles};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -149,7 +151,9 @@ impl ModuleMethod for RoyaltyMethod {
     fn to_ident(&self) -> String {
         match self {
             RoyaltyMethod::claim_royalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            RoyaltyMethod::set_royalty_config => COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            RoyaltyMethod::set_royalty_config => {
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string()
+            }
         }
     }
 }
@@ -190,10 +194,12 @@ impl<M: ModuleMethod> ProtectedMethods<M> {
     }
 
     pub fn insert<S: ToString>(&mut self, method: M, roles: Vec<S>) {
-        self.protected_methods.insert(method.to_ident(), roles.into_iter().map(|s| s.to_string()).collect());
+        self.protected_methods.insert(
+            method.to_ident(),
+            roles.into_iter().map(|s| s.to_string()).collect(),
+        );
     }
 }
-
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Globalizing<C: HasStub> {
@@ -216,7 +222,6 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-
     pub fn define_roles(mut self, authority_rules: Roles) -> Self {
         self.authority_rules = authority_rules;
         self
@@ -238,24 +243,31 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     fn protect<M: ModuleMethod>(&mut self, protected: ProtectedMethods<M>) {
         for (method, roles) in protected.protected_methods {
-            self.protected_module_methods.insert(
-                MethodKey::new(M::MODULE_ID, method),
-                roles,
-            );
+            self.protected_module_methods
+                .insert(MethodKey::new(M::MODULE_ID, method), roles);
         }
     }
 
-    pub fn protect_metadata(mut self, protected_metadata_methods: ProtectedMethods<MetadataMethod>) -> Self {
+    pub fn protect_metadata(
+        mut self,
+        protected_metadata_methods: ProtectedMethods<MetadataMethod>,
+    ) -> Self {
         self.protect(protected_metadata_methods);
         self
     }
 
-    pub fn protect_royalty(mut self, protected_royalty_methods: ProtectedMethods<RoyaltyMethod>) -> Self {
+    pub fn protect_royalty(
+        mut self,
+        protected_royalty_methods: ProtectedMethods<RoyaltyMethod>,
+    ) -> Self {
         self.protect(protected_royalty_methods);
         self
     }
 
-    pub fn protect_methods(mut self, protected_methods: ProtectedMethods<C::BlueprintMethod>) -> Self {
+    pub fn protect_methods(
+        mut self,
+        protected_methods: ProtectedMethods<C::BlueprintMethod>,
+    ) -> Self {
         self.protect(protected_methods);
         self
     }
