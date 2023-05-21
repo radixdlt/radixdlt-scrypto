@@ -21,10 +21,8 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles({
-                    let mut roles = AuthorityRules::new();
-                    roles.define_role("public", rule!(allow_all), rule!(allow_all));
-                    roles
+                .define_roles(roles! {
+                    "public" => rule!(allow_all), rule!(allow_all),
                 })
                 .protect_royalty(btreemap!(
                     RoyaltyMethod::claim_royalty => vec!["public"],

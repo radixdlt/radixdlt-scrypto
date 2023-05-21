@@ -41,10 +41,8 @@ mod royalty_test {
 
             local_component
                 .prepare_to_globalize()
-                .define_roles({
-                    let mut roles = AuthorityRules::new();
-                    roles.define_role("auth", rule!(require(badge.clone())), rule!(require(badge.clone())));
-                    roles
+                .define_roles(roles! {
+                    "auth" => rule!(require(badge.clone())), rule!(require(badge.clone()))
                 })
                 .protect_royalty(btreemap!(
                     RoyaltyMethod::set_royalty_config => vec!["auth"],

@@ -158,11 +158,37 @@ pub enum MetadataMethod {
     set,
 }
 
-impl ToString for MetadataMethod {
-    fn to_string(&self) -> String {
+impl ModuleMethod for MetadataMethod {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
+
+    fn to_ident(&self) -> String {
         match self {
             MetadataMethod::set => METADATA_SET_IDENT.to_string(),
         }
+    }
+}
+
+pub trait ModuleMethod {
+    const MODULE_ID: ObjectModuleId;
+
+    fn to_ident(&self) -> String;
+}
+
+pub struct ProtectedMethods<M: ModuleMethod> {
+    pub protected_methods: IndexMap<String, Vec<String>>,
+    pub phantom: PhantomData<M>,
+}
+
+impl<M: ModuleMethod> ProtectedMethods<M> {
+    pub fn new() -> Self {
+        Self {
+            protected_methods: index_map_new(),
+            phantom: PhantomData::default(),
+        }
+    }
+
+    pub fn insert<S: ToString>(&mut self, method: M, roles: Vec<S>) {
+        self.protected_methods.insert(method.to_ident(), roles.into_iter().map(|s| s.to_string()).collect());
     }
 }
 
@@ -194,7 +220,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-
     pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
         let metadata = self.metadata.get_or_insert(Metadata::new());
         metadata.set(name, value);
@@ -212,7 +237,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
         for (protected_metadata_method, authorities) in protected_metadata_methods {
             self.protected_module_methods.insert(
-                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
+                MethodKey::new(MetadataMethod::MODULE_ID, protected_metadata_method.to_ident()),
                 authorities.iter().map(|s| s.to_string()).collect(),
             );
         }
