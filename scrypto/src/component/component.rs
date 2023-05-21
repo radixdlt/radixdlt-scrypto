@@ -234,11 +234,11 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
-        for (protected_metadata_method, authorities) in protected_metadata_methods {
+    pub fn protect_metadata(mut self, protected_metadata_methods: ProtectedMethods<MetadataMethod>) -> Self {
+        for (method, roles) in protected_metadata_methods.protected_methods {
             self.protected_module_methods.insert(
-                MethodKey::new(MetadataMethod::MODULE_ID, protected_metadata_method.to_ident()),
-                authorities.iter().map(|s| s.to_string()).collect(),
+                MethodKey::new(MetadataMethod::MODULE_ID, method),
+                roles,
             );
         }
         self

@@ -475,3 +475,20 @@ macro_rules! roles {
         roles!{$($role => $rule, $mutability),*}
     })
 }
+
+#[macro_export]
+macro_rules! protect {
+    ( ) => ({
+        ::scrypto::component::ProtectedMethods::new()
+    });
+    ( $($method:expr => $roles:expr),* ) => ({
+        let mut protected_methods = ::scrypto::component::ProtectedMethods::new();
+        $(
+            protected_methods.insert($method, $roles);
+        )*
+        protected_methods
+    });
+    ( $($method:expr => $roles:expr,)* ) => ({
+        protect!{$($method => $roles),*}
+    })
+}

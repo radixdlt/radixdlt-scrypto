@@ -5,8 +5,7 @@ SET_PACKAGE_ROYALTY_CONFIG
         Tuple(
             Map<String, U32>(
                 "method", 1u32
-            ),
-            0u32
+            )
         )
     );
 
