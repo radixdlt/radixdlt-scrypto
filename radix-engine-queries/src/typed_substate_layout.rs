@@ -101,9 +101,10 @@ pub enum TypedMainModuleSubstateKey {
     EpochManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ClockField(ClockField),
     ValidatorField(ValidatorField),
-    AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
+    AccountVaultIndexKey(ResourceAddress),
+    AccountResourceDepositConfigurationIndexKey(ResourceAddress),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -255,6 +256,12 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                AccountPartitionOffset::AccountResourceDepositConfigurationByAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountResourceDepositConfigurationIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
                 AccountPartitionOffset::Account => {
                     TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
                 }
@@ -332,9 +339,10 @@ pub enum TypedMainModuleSubstateValue {
     EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
     Clock(TypedClockFieldValue),
     Validator(TypedValidatorFieldValue),
-    Account(TypedAccountFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
+    Account(TypedAccountFieldValue),
+    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountResourceDepositConfigurationIndex(AccountResourceDepositConfigurationEntry),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -566,6 +574,11 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccountResourceDepositConfigurationIndexKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourceDepositConfigurationIndex(scrypto_decode(
+                data,
+            )?)
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {

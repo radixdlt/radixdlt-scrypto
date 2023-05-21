@@ -198,6 +198,15 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 )
                                 .unwrap(),
                             depth,
+                        );
+                        self.traverse_substates::<MapKey>(
+                            node_id,
+                            OBJECT_BASE_PARTITION
+                                .at_offset(
+                                    AccountPartitionOffset::AccountResourceDepositConfigurationByAddress.into(),
+                                )
+                                .unwrap(),
+                            depth,
                         )
                     } else {
                         self.traverse_substates::<TupleKey>(node_id, OBJECT_BASE_PARTITION, depth)
