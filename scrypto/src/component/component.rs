@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, Me
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodKey};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -223,11 +223,11 @@ impl<C: HasStub> Globalizing<C> {
         self
     }
 
-    pub fn protect_methods(mut self, protected_methods: BTreeMap<&str, Vec<String>>) -> Self {
+    pub fn protect_methods<S: ToString>(mut self, protected_methods: BTreeMap<S, Vec<&str>>) -> Self {
         for (protected_method, authorities) in protected_methods {
             self.protected_module_methods.insert(
                 MethodKey::new(ObjectModuleId::Main, protected_method),
-                authorities
+                authorities.iter().map(|s| s.to_string()).collect(),
             );
         }
         self

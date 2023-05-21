@@ -79,8 +79,8 @@ mod genesis_helper {
                 roles
             })
             .protect_methods(btreemap!(
-                "ingest_data_chunk" => vec!["system".to_string()],
-                "wrap_up" => vec!["system".to_string()],
+                Method::ingest_data_chunk => vec!["system"],
+                Method::wrap_up => vec!["system"],
             ))
             .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
         }

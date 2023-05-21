@@ -17,7 +17,7 @@ mod factory {
                    roles
                 })
                 .protect_methods(btreemap!(
-                    "set_address" => vec!["auth".to_string()],
+                    Method::set_address => vec!["auth"],
                 ))
                 .globalize()
         }
@@ -34,7 +34,7 @@ mod factory {
                 roles
             })
             .protect_methods(btreemap!(
-                "set_address" => vec!["auth".to_string()],
+                Method::set_address => vec!["auth"],
             ))
             .globalize();
 

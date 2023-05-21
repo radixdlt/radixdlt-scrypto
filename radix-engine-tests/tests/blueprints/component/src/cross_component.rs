@@ -21,7 +21,7 @@ mod cross_component {
                 roles
             })
             .protect_methods(btreemap!(
-                "get_component_state" => vec!["auth".to_string()],
+                Method::get_component_state => vec!["auth"],
             ))
             .globalize()
         }

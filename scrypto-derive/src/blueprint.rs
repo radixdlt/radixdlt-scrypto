@@ -50,6 +50,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     validate_type_ident(&stub_ident)?;
     let functions_ident = format_ident!("{}Functions", bp_ident);
     validate_type_ident(&functions_ident)?;
+
     let use_statements = {
         let mut use_statements = bp.use_statements;
 
@@ -76,18 +77,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     let generated_schema_info = generate_schema(bp_ident, bp_items)?;
+    let method_idents = generated_schema_info.method_idents;
+    let method_names: Vec<String> = method_idents.iter().map(|i| i.to_string()).collect();
 
     #[cfg(feature = "no-schema")]
     let output_schema = quote! {};
-    let _ = generated_schema_info;
     #[cfg(not(feature = "no-schema"))]
     let output_schema = {
+        let schema_ident = format_ident!("{}_schema", bp_ident);
         let function_names = generated_schema_info.function_names;
         let function_schemas = generated_schema_info.function_schemas;
-        let protected_methods = generated_schema_info.protected_methods;
-        let protected_method_authorities = generated_schema_info.protected_method_authorities;
-
-        let schema_ident = format_ident!("{}_schema", bp_ident);
 
         // Getting the event types if the event attribute is defined for the type
         let (event_type_names, event_type_paths) = {
@@ -177,6 +176,39 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             type Stub = #stub_ident;
         }
     };
+
+    let output_method_enum = if method_idents.is_empty() {
+        quote! {
+            #[derive(PartialEq, Eq, Ord, PartialOrd)]
+            #[allow(non_camel_case_types)]
+            pub enum Method {
+                #(
+                    #method_idents,
+                )*
+            }
+        }
+    } else {
+        quote! {
+            #[derive(PartialEq, Eq, Ord, PartialOrd)]
+            #[allow(non_camel_case_types)]
+            pub enum Method {
+                #(
+                    #method_idents,
+                )*
+            }
+
+            impl ToString for Method {
+                fn to_string(&self) -> String {
+                    match self {
+                    #(
+                        Self::#method_idents => #method_names.to_string(),
+                    )*
+                    }
+                }
+            }
+        }
+    };
+
     trace!("Generated mod: \n{}", quote! { #output_original_code });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items)?;
 
@@ -195,6 +227,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#use_statements)*
 
             #output_original_code
+
+            #output_method_enum
 
             #output_dispatcher
 
@@ -526,6 +560,7 @@ fn generate_stubs(
     Ok(output)
 }
 
+/*
 fn get_protection(attributes: &mut Vec<Attribute>) -> Option<Vec<String>> {
     let to_remove = attributes
         .iter_mut()
@@ -562,21 +597,20 @@ fn get_protection(attributes: &mut Vec<Attribute>) -> Option<Vec<String>> {
         None
     }
 }
+ */
 
 #[allow(dead_code)]
 struct GeneratedSchemaInfo {
     function_names: Vec<String>,
     function_schemas: Vec<Expr>,
-    protected_methods: Vec<String>,
-    protected_method_authorities: Vec<Expr>,
+    method_idents: Vec<Ident>,
 }
 
 #[allow(dead_code)]
 fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<GeneratedSchemaInfo> {
     let mut function_names = Vec::<String>::new();
     let mut function_schemas = Vec::<Expr>::new();
-    let mut protected_methods = Vec::<String>::new();
-    let mut protected_method_authorities = Vec::<Expr>::new();
+    let mut method_idents = Vec::<Ident>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -631,6 +665,8 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                             }
                         });
                     } else {
+                        method_idents.push(m.sig.ident.clone());
+                        /*
                         if let Some(authority) = get_protection(&mut m.attrs) {
                             protected_methods.push(function_name.clone());
                             protected_method_authorities.push(parse_quote!( {
@@ -641,6 +677,7 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
                                 authorities
                             }));
                         }
+                         */
 
                         function_names.push(function_name);
                         function_schemas.push(parse_quote! {
@@ -666,8 +703,7 @@ fn generate_schema(bp_ident: &Ident, items: &mut [ImplItem]) -> Result<Generated
     Ok(GeneratedSchemaInfo {
         function_names,
         function_schemas,
-        protected_methods,
-        protected_method_authorities,
+        method_idents,
     })
 }
 
@@ -739,6 +775,20 @@ mod tests {
 
                     impl HasStub for Test {
                         type Stub = TestObjectStub;
+                    }
+
+                    #[derive(PartialEq, Eq, Ord, PartialOrd)]
+                    #[allow(non_camel_case_types)]
+                    pub enum Method {
+                        x,
+                    }
+
+                    impl ToString for Method {
+                        fn to_string(&self) -> String {
+                            match self {
+                                Self::x => "x".to_string(),
+                            }
+                        }
                     }
 
                     #[allow(non_camel_case_types)]
