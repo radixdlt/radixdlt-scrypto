@@ -22,7 +22,7 @@ pub struct SetCurrentTime {
 
 impl SetCurrentTime {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::CallMethod { 
+        let instructions = vec![Instruction::CallMethod {
             address: CLOCK.into(),
             method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockSetCurrentTimeInput {
