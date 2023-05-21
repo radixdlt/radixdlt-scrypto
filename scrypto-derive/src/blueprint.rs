@@ -787,7 +787,7 @@ mod tests {
                         type Stub = TestObjectStub;
                     }
 
-                    impl HasMethods for #bp_ident {
+                    impl HasMethods for Test {
                         type BlueprintMethod = Method;
                     }
 

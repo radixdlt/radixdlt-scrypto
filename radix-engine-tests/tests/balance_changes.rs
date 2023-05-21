@@ -26,10 +26,12 @@ fn test_balance_changes_when_success() {
             .set_package_royalty_config(
                 package_address,
                 btreemap!(
-                    "BalanceChangesTest".to_owned() => RoyaltyConfigBuilder::new()
-                        .add_rule("put", 2)
-                        .add_rule("boom", 2)
-                        .default(0)
+                    "BalanceChangesTest".to_owned() => {
+                        let mut config = RoyaltyConfig::default();
+                        config.set_rule("put", 2);
+                        config.set_rule("boom", 2);
+                        config
+                    }
                 ),
             )
             .call_function(
@@ -101,10 +103,12 @@ fn test_balance_changes_when_failure() {
             .set_package_royalty_config(
                 package_address,
                 btreemap!(
-                    "BalanceChangesTest".to_owned() => RoyaltyConfigBuilder::new()
-                        .add_rule("put", 2)
-                        .add_rule("boom", 2)
-                        .default(0)
+                    "BalanceChangesTest".to_owned() => {
+                        let mut config = RoyaltyConfig::default();
+                        config.set_rule("put", 2);
+                        config.set_rule("boom", 2);
+                        config
+                    }
                 ),
             )
             .call_function(

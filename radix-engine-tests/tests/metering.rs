@@ -98,12 +98,14 @@ fn test_radiswap() {
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
-            "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
-                .add_rule("instantiate_pool", 5)
-                .add_rule("add_liquidity", 1)
-                .add_rule("remove_liquidity", 1)
-                .add_rule("swap", 2)
-                .default(0),
+            "Radiswap".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_pool", 5);
+                config.set_rule("add_liquidity", 1);
+                config.set_rule("remove_liquidity", 1);
+                config.set_rule("swap", 2);
+                config
+            }
         ),
         btreemap!(),
         AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
@@ -205,7 +207,7 @@ fn test_radiswap() {
         + 13875 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5593826 /* LockSubstate */
+        + 5588088 /* LockSubstate */
         + 19432 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
@@ -234,10 +236,12 @@ fn test_flash_loan() {
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
         btreemap!(
-            "BasicFlashLoan".to_owned() => RoyaltyConfigBuilder::new()
-                .add_rule("instantiate_default", 5)
-                .add_rule("take_loan", 2)
-                .default(0),
+            "BasicFlashLoan".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_default", 5);
+                config.set_rule("take_loan", 2);
+                config
+            }
         ),
         btreemap!(),
         AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
@@ -316,7 +320,7 @@ fn test_flash_loan() {
         + 22311 /* DropLock */
         + 5985 /* DropNode */
         + 4678666 /* Invoke */
-        + 6895308 /* LockSubstate */
+        + 6893281 /* LockSubstate */
         + 31640 /* ReadSubstate */
         + 202500 /* RunNative */
         + 40000 /* RunSystem */

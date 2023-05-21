@@ -188,6 +188,22 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
+
+    pub fn define_roles(mut self, authority_rules: AuthorityRules) -> Self {
+        self.authority_rules = authority_rules;
+        self
+    }
+
+    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
+        for (protected_metadata_method, authorities) in protected_metadata_methods {
+            self.protected_module_methods.insert(
+                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
+                authorities.iter().map(|s| s.to_string()).collect(),
+            );
+        }
+        self
+    }
+
     pub fn metadata<K: AsRef<str>, V: MetadataVal>(mut self, name: K, value: V) -> Self {
         let metadata = self.metadata.get_or_insert(Metadata::new());
         metadata.set(name, value);
@@ -199,30 +215,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalty_default(mut self, amount: u32) -> Self {
-        self.royalty.default_rule = amount;
-        self
-    }
-
-    pub fn define_roles(mut self, authority_rules: AuthorityRules) -> Self {
-        self.authority_rules = authority_rules;
-        self
-    }
-
     pub fn protect_royalty(mut self, protected_royalty_methods: BTreeMap<RoyaltyMethod, Vec<&str>>) -> Self {
         for (protected_royalty_method, authorities) in protected_royalty_methods {
             self.protected_module_methods.insert(
                 MethodKey::new(ObjectModuleId::Royalty, protected_royalty_method),
-                authorities.iter().map(|s| s.to_string()).collect(),
-            );
-        }
-        self
-    }
-
-    pub fn protect_metadata(mut self, protected_metadata_methods: BTreeMap<MetadataMethod, Vec<&str>>) -> Self {
-        for (protected_metadata_method, authorities) in protected_metadata_methods {
-            self.protected_module_methods.insert(
-                MethodKey::new(ObjectModuleId::Metadata, protected_metadata_method),
                 authorities.iter().map(|s| s.to_string()).collect(),
             );
         }

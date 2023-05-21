@@ -42,10 +42,12 @@ fn set_up_package_and_component() -> (
                 package_address,
                 BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
-                    RoyaltyConfigBuilder::new()
-                        .add_rule("paid_method", 2)
-                        .add_rule("paid_method_panic", 2)
-                        .default(0),
+                    {
+                        let mut config = RoyaltyConfig::default();
+                        config.set_rule("paid_method", 2);
+                        config.set_rule("paid_method_panic", 2);
+                        config
+                    }
                 )]),
             )
             .build(),
@@ -111,7 +113,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                 package_address,
                 BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
-                    RoyaltyConfigBuilder::new().default(0),
+                    RoyaltyConfig::default(),
                 )]),
             )
             .build(),
@@ -127,7 +129,7 @@ fn test_only_package_owner_can_set_royalty_config() {
                 package_address,
                 BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
-                    RoyaltyConfigBuilder::new().default(0),
+                    RoyaltyConfig::default(),
                 )]),
             )
             .build(),
@@ -201,7 +203,7 @@ fn test_only_component_owner_can_set_royalty_config() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
+            .set_component_royalty_config(component_address, RoyaltyConfig::default())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -211,7 +213,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 100.into())
-            .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
+            .set_component_royalty_config(component_address, RoyaltyConfig::default())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
