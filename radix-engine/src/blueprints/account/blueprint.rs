@@ -418,14 +418,23 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut undeposited_buckets = vec![];
-        for bucket in buckets {
-            if let Some(bucket) = Self::try_deposit(bucket, api)? {
-                undeposited_buckets.push(bucket)
-            }
-        }
+        let can_all_be_deposited = buckets
+            .iter()
+            .map(|bucket| {
+                bucket
+                    .resource_address(api)
+                    .and_then(|resource_address| Self::is_deposit_allowed(&resource_address, api))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .iter()
+            .all(|can_be_deposited| *can_be_deposited == true);
 
-        Ok(undeposited_buckets)
+        if can_all_be_deposited {
+            Self::deposit_batch(buckets, api)?;
+            Ok(vec![])
+        } else {
+            Ok(buckets)
+        }
     }
 
     pub fn try_deposit_unsafe<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
