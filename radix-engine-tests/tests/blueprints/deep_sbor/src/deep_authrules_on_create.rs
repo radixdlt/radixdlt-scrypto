@@ -10,10 +10,10 @@ mod deep_auth_rules_on_create {
             access_rules_depth: usize,
         ) -> Global<DeepAuthRulesOnCreate> {
             let component = Self {}.instantiate();
-            let authority_rules = generate_deep_access_rules(resource_address, access_rules_depth);
+            let roles = generate_deep_access_rules(resource_address, access_rules_depth);
             component
                 .prepare_to_globalize()
-                .define_roles(authority_rules)
+                .define_roles(roles)
                 .globalize()
         }
     }
@@ -22,7 +22,7 @@ mod deep_auth_rules_on_create {
 fn generate_deep_access_rules(
     resource_address: ResourceAddress,
     exceed_depth: usize,
-) -> AuthorityRules {
+) -> Roles {
     let mut access_rule_node = AccessRuleNode::ProofRule(ProofRule::Require(
         ResourceOrNonFungible::Resource(resource_address),
     ));
@@ -31,11 +31,8 @@ fn generate_deep_access_rules(
         access_rule_node = AccessRuleNode::AllOf(vec![access_rule_node]);
         curr_depth += 2;
     }
-    let mut authority_rules = AuthorityRules::new();
-    authority_rules.define_role(
-        "test",
-        AccessRule::Protected(access_rule_node.clone()),
-        AccessRule::Protected(access_rule_node),
-    );
-    authority_rules
+
+    roles! {
+        "test" => AccessRule::Protected(access_rule_node.clone()), AccessRule::Protected(access_rule_node),
+    }
 }

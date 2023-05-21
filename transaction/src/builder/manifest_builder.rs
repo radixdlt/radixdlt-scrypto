@@ -439,7 +439,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, authority_rules: Roles) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
@@ -644,7 +644,7 @@ impl ManifestBuilder {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -688,7 +688,7 @@ impl ManifestBuilder {
             schema,
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            authority_rules: AuthorityRules::new_with_owner_authority(&owner_badge),
+            authority_rules: Roles::new_with_owner_authority(&owner_badge),
         });
         self
     }
@@ -873,7 +873,7 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, authority_rules: AuthorityRules) -> &mut Self {
+    pub fn new_account_advanced(&mut self, authority_rules: Roles) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),

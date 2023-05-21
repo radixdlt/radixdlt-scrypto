@@ -11,10 +11,8 @@ mod factory {
             Self { my_component: None }
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles({
-                   let mut roles = AuthorityRules::new();
-                   roles.define_role("auth", rule!(require(Runtime::package_token())), rule!(deny_all));
-                   roles
+                .define_roles(roles! {
+                    "auth" => rule!(require(Runtime::package_token())), rule!(deny_all)
                 })
                 .protect_methods(btreemap!(
                     Method::set_address => vec!["auth"],
@@ -28,10 +26,8 @@ mod factory {
             }
             .instantiate()
             .prepare_to_globalize()
-            .define_roles({
-                let mut roles = AuthorityRules::new();
-                roles.define_role("auth", rule!(require(Runtime::package_token())), rule!(deny_all));
-                roles
+            .define_roles(roles! {
+                "auth" => rule!(require(Runtime::package_token())), rule!(deny_all)
             })
             .protect_methods(btreemap!(
                 Method::set_address => vec!["auth"],

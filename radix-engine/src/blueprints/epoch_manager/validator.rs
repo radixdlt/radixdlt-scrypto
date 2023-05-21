@@ -638,8 +638,8 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         )
     }
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
+    fn authority_rules() -> Roles {
+        let mut authority_rules = Roles::new();
         authority_rules.define_role(
             VALIDATOR_STAKE_AUTHORITY,
             rule!(require("owner")),

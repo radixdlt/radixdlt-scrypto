@@ -71,7 +71,7 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    let mut authority_rules = AuthorityRules::new();
+                    let mut authority_rules = Roles::new();
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
@@ -81,7 +81,7 @@ impl TransactionFuzzer {
                     builder.new_account_advanced(authority_rules);
                 }
                 1 => {
-                    let mut authority_rules = AuthorityRules::new();
+                    let mut authority_rules = Roles::new();
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
@@ -90,7 +90,7 @@ impl TransactionFuzzer {
                     builder.new_account_advanced(authority_rules);
                 }
                 2 => {
-                    let mut authority_rules = AuthorityRules::new();
+                    let mut authority_rules = Roles::new();
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,

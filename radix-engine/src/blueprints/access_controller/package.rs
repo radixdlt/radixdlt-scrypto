@@ -1064,8 +1064,8 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (AuthorityRules, BTreeMap<MethodKey, Vec<String>>) {
-    let mut authority_rules = AuthorityRules::new();
+fn init_access_rules_from_rule_set(address: GlobalAddress, rule_set: RuleSet) -> (Roles, BTreeMap<MethodKey, Vec<String>>) {
+    let mut authority_rules = Roles::new();
 
     let primary = "primary";
     authority_rules.define_role(

@@ -41,7 +41,7 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
-        let mut authority_rules = AuthorityRules::new();
+        let mut authority_rules = Roles::new();
         authority_rules.set_owner_authority(withdraw_auth.clone(), withdraw_auth);
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 100.into())

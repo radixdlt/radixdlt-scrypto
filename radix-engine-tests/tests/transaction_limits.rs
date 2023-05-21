@@ -24,7 +24,7 @@ fn transaction_limit_call_frame_memory_exceeded() {
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AuthorityRules::new(),
+        Roles::new(),
     );
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
@@ -260,7 +260,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            Roles::new(),
         )
         .build();
 

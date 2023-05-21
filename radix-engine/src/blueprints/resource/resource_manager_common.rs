@@ -13,9 +13,9 @@ use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    (AuthorityRules, BTreeMap<MethodKey, Vec<String>>),
-    (AuthorityRules, BTreeMap<MethodKey, Vec<String>>),
-    (AuthorityRules, BTreeMap<MethodKey, Vec<String>>),
+    (Roles, BTreeMap<MethodKey, Vec<String>>),
+    (Roles, BTreeMap<MethodKey, Vec<String>>),
+    (Roles, BTreeMap<MethodKey, Vec<String>>),
 ) {
     let (resman_authority_rules, resman_protected_methods) = {
         let (mint_access_rule, mint_mutability) = access_rules_map
@@ -32,7 +32,7 @@ fn build_access_rules(
             .remove(&UpdateMetadata)
             .unwrap_or((DenyAll, rule!(deny_all)));
 
-        let mut resman_authority_rules = AuthorityRules::new();
+        let mut resman_authority_rules = Roles::new();
 
         {
             resman_authority_rules.define_role(
@@ -94,7 +94,7 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Recall)
             .unwrap_or((DenyAll, rule!(deny_all)));
 
-        let mut vault_authority_rules = AuthorityRules::new();
+        let mut vault_authority_rules = Roles::new();
 
         // Withdraw
         {
@@ -152,7 +152,7 @@ fn build_access_rules(
     // theoretically.
 
     let (bucket_authority_rules, bucket_protected_methods) = {
-        let mut bucket_authority_rules = AuthorityRules::new();
+        let mut bucket_authority_rules = Roles::new();
         bucket_authority_rules.set_fixed_authority_rule(
             "this_package",
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
@@ -213,7 +213,7 @@ where
         btreemap!(
             vault_blueprint_name.to_string() => (vault_authorities, protected_vault_methods),
             bucket_blueprint_name.to_string() => (bucket_authorities, protected_bucket_methods),
-            proof_blueprint_name.to_string() => (AuthorityRules::new(), btreemap!()),
+            proof_blueprint_name.to_string() => (Roles::new(), btreemap!()),
         ),
         api,
     )?
@@ -259,7 +259,7 @@ where
         btreemap!(
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
             FUNGIBLE_BUCKET_BLUEPRINT.to_string() => (bucket_authorities, protected_bucket_methods),
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => (AuthorityRules::new(), btreemap!()),
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), btreemap!()),
         ),
         api,
     )?
@@ -310,7 +310,7 @@ where
         btreemap!(
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
             NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> (bucket_authorities, protected_bucket_methods),
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => (AuthorityRules::new(), btreemap!()),
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), btreemap!()),
         ),
         api,
     )?

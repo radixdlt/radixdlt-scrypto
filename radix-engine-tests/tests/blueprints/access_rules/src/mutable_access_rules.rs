@@ -5,11 +5,11 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(authority_rules: AuthorityRules) -> Global<MutableAccessRulesComponent> {
+        pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles(authority_rules)
+                .define_roles(roles)
                 .protect_methods(btreemap!(
                     Method::borrow_funds => vec!["borrow_funds_auth"],
                     Method::deposit_funds => vec!["deposit_funds_auth"],

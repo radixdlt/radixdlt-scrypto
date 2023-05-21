@@ -117,17 +117,17 @@ impl AuthorityKey {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
-pub struct AuthorityRules {
+pub struct Roles {
     pub rules: BTreeMap<AuthorityKey, (AccessRule, AccessRule)>,
 }
 
-impl AuthorityRules {
+impl Roles {
     pub fn new() -> Self {
         Self { rules: btreemap!() }
     }
 
-    pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
+    pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> Roles {
+        let mut authority_rules = Roles::new();
         authority_rules
             .define_role(
                 "owner",

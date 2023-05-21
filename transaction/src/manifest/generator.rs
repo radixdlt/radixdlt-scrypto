@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::{
-    AuthorityRules, FungibleResourceManagerCreateInput,
+    Roles, FungibleResourceManagerCreateInput,
     FungibleResourceManagerCreateWithInitialSupplyInput, NonFungibleResourceManagerCreateInput,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
@@ -689,7 +689,7 @@ pub fn generate_instruction(
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value(&IdentityCreateAdvancedInput {
-                authority_rules: generate_typed_value::<AuthorityRules>(
+                authority_rules: generate_typed_value::<Roles>(
                     authority_rules,
                     resolver,
                     bech32_decoder,
@@ -1275,7 +1275,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, AuthorityRules, NonFungibleDataSchema,
+        AccessRule, Roles, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey,
     };
@@ -1517,7 +1517,7 @@ mod tests {
                 },
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                authority_rules: AuthorityRules::new(),
+                authority_rules: Roles::new(),
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"

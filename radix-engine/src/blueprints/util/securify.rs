@@ -11,9 +11,9 @@ pub trait SecurifiedAccessRules {
 
     fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>>;
 
-    fn authority_rules() -> AuthorityRules;
+    fn authority_rules() -> Roles;
 
-    fn create_config(authority_rules: AuthorityRules) -> AuthorityRules {
+    fn create_config(authority_rules: Roles) -> Roles {
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
             authority_rules_to_use.define_role(authority.key, access_rule, mutability);
@@ -25,14 +25,14 @@ pub trait SecurifiedAccessRules {
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let authority_rules = Self::create_config(AuthorityRules::new());
+        let authority_rules = Self::create_config(Roles::new());
         let protected_module_methods = Self::protected_module_methods();
         let access_rules = AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
         Ok(access_rules)
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut authority_rules = Self::create_config(authority_rules);

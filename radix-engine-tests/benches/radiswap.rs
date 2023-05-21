@@ -36,7 +36,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .default(0),
         ),
         btreemap!(),
-        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap

@@ -536,7 +536,7 @@ impl TestRunner {
         withdraw_auth: AccessRule,
         mutability: AccessRule,
     ) -> ComponentAddress {
-        let mut authority_rules = AuthorityRules::new();
+        let mut authority_rules = Roles::new();
         authority_rules.set_owner_authority(withdraw_auth, mutability);
 
         let manifest = ManifestBuilder::new()
@@ -647,7 +647,7 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let mut authority_rules = AuthorityRules::new();
+            let mut authority_rules = Roles::new();
             authority_rules
                 .set_owner_authority(rule!(require(owner_id.clone())), rule!(require(owner_id)));
             let manifest = ManifestBuilder::new()
@@ -704,7 +704,7 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
@@ -737,7 +737,7 @@ impl TestRunner {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            Roles::new(),
         )
     }
 

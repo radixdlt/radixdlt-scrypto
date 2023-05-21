@@ -15,10 +15,8 @@ mod cross_component {
             }
             .instantiate()
             .prepare_to_globalize()
-            .define_roles({
-                let mut roles = AuthorityRules::new();
-                roles.define_role("auth", access_rule, rule!(deny_all));
-                roles
+            .define_roles(roles! {
+                "auth" => access_rule, rule!(deny_all)
             })
             .protect_methods(btreemap!(
                 Method::get_component_state => vec!["auth"],

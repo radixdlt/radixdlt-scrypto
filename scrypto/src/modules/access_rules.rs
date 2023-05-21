@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, AuthorityRules, ObjectKey, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityKey, Roles, ObjectKey, MethodKey};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -22,7 +22,7 @@ pub struct AccessRules(pub ModuleHandle);
 impl AccessRules {
     pub fn new(
         protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
     ) -> Self {
         let rtn = ScryptoEnv
             .call_function(
@@ -94,7 +94,7 @@ impl Attachable for AccessRules {
 
 impl Default for AccessRules {
     fn default() -> Self {
-        AccessRules::new(btreemap!(), AuthorityRules::new())
+        AccessRules::new(btreemap!(), Roles::new())
     }
 }
 

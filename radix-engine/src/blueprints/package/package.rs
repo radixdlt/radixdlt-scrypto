@@ -124,8 +124,8 @@ impl SecurifiedAccessRules for SecurifiedPackage {
         )
     }
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
+    fn authority_rules() -> Roles {
+        let mut authority_rules = Roles::new();
 
         authority_rules.set_fixed_authority_rule("package_royalty", rule!(require("owner")));
         authority_rules
@@ -513,7 +513,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where

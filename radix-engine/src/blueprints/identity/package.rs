@@ -195,8 +195,8 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
         )
     }
 
-    fn authority_rules() -> AuthorityRules {
-        AuthorityRules::new()
+    fn authority_rules() -> Roles {
+        Roles::new()
     }
 }
 
@@ -208,7 +208,7 @@ pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where

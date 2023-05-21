@@ -164,7 +164,7 @@ impl ClockNativePackage {
             .unwrap()],
         )?;
 
-        let mut authority_rules = AuthorityRules::new();
+        let mut authority_rules = Roles::new();
         authority_rules.define_role(
             CLOCK_AUTHORITY,
             rule!(require(AuthAddresses::validator_role())),

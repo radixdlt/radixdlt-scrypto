@@ -133,7 +133,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
         single_function_package_schema("Test", "f"),
         BTreeMap::new(),
         BTreeMap::new(),
-        AuthorityRules::new(),
+        Roles::new(),
     );
 
     // Act

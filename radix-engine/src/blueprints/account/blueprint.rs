@@ -56,8 +56,8 @@ impl SecurifiedAccessRules for SecurifiedAccount {
         )
     }
 
-    fn authority_rules() -> AuthorityRules {
-        let mut authority_rules = AuthorityRules::new();
+    fn authority_rules() -> Roles {
+        let mut authority_rules = Roles::new();
         authority_rules
             .set_fixed_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")));
         authority_rules
@@ -170,7 +170,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where

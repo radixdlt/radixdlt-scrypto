@@ -108,7 +108,7 @@ fn test_radiswap() {
             }
         ),
         btreemap!(),
-        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate radiswap
@@ -207,7 +207,7 @@ fn test_radiswap() {
         + 13875 /* DropLock */
         + 3570 /* DropNode */
         + 3305144 /* Invoke */
-        + 5588088 /* LockSubstate */
+        + 5590648 /* LockSubstate */
         + 19432 /* ReadSubstate */
         + 135000 /* RunNative */
         + 15000 /* RunSystem */
@@ -244,7 +244,7 @@ fn test_flash_loan() {
             }
         ),
         btreemap!(),
-        AuthorityRules::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+        Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
     );
 
     // Instantiate flash_loan
@@ -356,7 +356,7 @@ fn test_publish_large_package() {
             PackageSchema::default(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            Roles::new(),
         )
         .build();
 

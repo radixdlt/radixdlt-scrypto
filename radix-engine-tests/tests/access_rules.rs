@@ -14,7 +14,7 @@ use transaction::model::TransactionManifest;
 fn initial_cyclic_authority_should_not_be_allowed() {
     let test_vectors = vec![
         {
-            let mut authority_rules = AuthorityRules::new();
+            let mut authority_rules = Roles::new();
             authority_rules.define_role(
                 "deposit_funds_auth",
                 rule!(require("deposit_funds_auth")),
@@ -28,7 +28,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
             authority_rules
         },
         {
-            let mut authority_rules = AuthorityRules::new();
+            let mut authority_rules = Roles::new();
             authority_rules.define_role(
                 "deposit_funds_auth",
                 rule!(require("borrow_funds_auth")),
@@ -65,7 +65,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
 #[test]
 fn setting_circular_authority_rule_should_fail() {
     // Arrange
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "deposit_funds_auth",
         rule!(allow_all),
@@ -96,7 +96,7 @@ fn setting_circular_authority_rule_should_fail() {
 #[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
     // Arrange
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "borrow_funds_auth",
         rule!(allow_all),
@@ -126,7 +126,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "borrow_funds_auth",
         rule!(allow_all),
@@ -156,7 +156,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "borrow_funds_auth",
         rule!(allow_all),
@@ -185,7 +185,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "borrow_funds_auth",
         rule!(allow_all),
@@ -214,7 +214,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "borrow_funds_auth",
         rule!(allow_all),
@@ -250,7 +250,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
 
-    let mut authority_rules = AuthorityRules::new();
+    let mut authority_rules = Roles::new();
     authority_rules.define_role(
         "deposit_funds_auth",
         rule!(require("owner")),
@@ -401,7 +401,7 @@ impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn create_component(
-        authority_rules: AuthorityRules,
+        authority_rules: Roles,
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
@@ -417,7 +417,7 @@ impl MutableAccessRulesTestRunner {
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
     }
 
-    pub fn new(authority_rules: AuthorityRules) -> Self {
+    pub fn new(authority_rules: Roles) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt = Self::create_component(authority_rules, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];

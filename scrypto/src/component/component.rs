@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_SET_IDENT, Me
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::node_modules::royalty::{COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT};
-use radix_engine_interface::blueprints::resource::{AccessRule, AuthorityRules, MethodKey};
+use radix_engine_interface::blueprints::resource::{AccessRule, Roles, MethodKey};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -128,7 +128,7 @@ impl<C: HasStub> Owned<C> {
             metadata: None,
             royalty: RoyaltyConfig::default(),
 
-            authority_rules: AuthorityRules::new(),
+            authority_rules: Roles::new(),
             protected_module_methods: BTreeMap::new(),
 
             address: None,
@@ -173,7 +173,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
 
-    pub authority_rules: AuthorityRules,
+    pub authority_rules: Roles,
     pub protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
 
     pub address: Option<ComponentAddress>,
@@ -189,7 +189,7 @@ impl<C: HasStub> Deref for Globalizing<C> {
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
 
-    pub fn define_roles(mut self, authority_rules: AuthorityRules) -> Self {
+    pub fn define_roles(mut self, authority_rules: Roles) -> Self {
         self.authority_rules = authority_rules;
         self
     }

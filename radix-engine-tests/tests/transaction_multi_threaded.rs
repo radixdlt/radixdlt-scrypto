@@ -37,7 +37,7 @@ mod multi_threaded_test {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
 
-        let mut authority_rules = AuthorityRules::new();
+        let mut authority_rules = Roles::new();
         authority_rules.set_owner_authority(
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
             AccessRule::DenyAll,

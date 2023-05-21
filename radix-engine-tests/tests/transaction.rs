@@ -123,7 +123,7 @@ fn test_non_existent_blob_hash() {
             schema: PackageSchema::default(),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            authority_rules: AuthorityRules::new(),
+            authority_rules: Roles::new(),
         })
         .0
         .build();

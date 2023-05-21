@@ -11,12 +11,12 @@ mod auth_list_component {
         pub fn create_component(
             count: u8,
             auth: Vec<NonFungibleGlobalId>,
-            authority_rules: AuthorityRules,
+            roles: Roles,
         ) -> Global<AuthListComponent> {
             Self { count, auth }
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles(authority_rules)
+                .define_roles(roles)
                 .globalize()
         }
 

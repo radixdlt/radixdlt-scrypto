@@ -127,7 +127,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            Roles::new(),
         )
         .build();
 
@@ -168,7 +168,7 @@ fn local_type_index_with_misleading_name_fails() {
             schema,
             BTreeMap::new(),
             BTreeMap::new(),
-            AuthorityRules::new(),
+            Roles::new(),
         )
         .build();
 
@@ -1461,7 +1461,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .new_account_advanced(AuthorityRules::new())
+        .new_account_advanced(Roles::new())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 

@@ -23,10 +23,8 @@ mod metadata_component {
             let global = MetadataComponent {}
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles({
-                    let mut roles = AuthorityRules::new();
-                    roles.define_role("metadata", rule!(allow_all), rule!(deny_all));
-                    roles
+                .define_roles(roles! {
+                    "metadata" => rule!(allow_all), rule!(deny_all),
                 })
                 .protect_metadata(btreemap!(
                     MetadataMethod::set => vec!["metadata"],

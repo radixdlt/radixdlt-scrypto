@@ -187,7 +187,7 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let mut authority_rules = AuthorityRules::new();
+        let mut authority_rules = Roles::new();
         authority_rules.define_role(
             EPOCH_MANAGER_START_AUTHORITY,
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
@@ -210,7 +210,7 @@ impl EpochManagerBlueprint {
             ),
             authority_rules,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => (AuthorityRules::new(), btreemap!())
+                VALIDATOR_BLUEPRINT.to_string() => (Roles::new(), btreemap!())
             ),
             api,
         )?

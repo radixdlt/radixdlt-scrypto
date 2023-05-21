@@ -73,10 +73,8 @@ mod genesis_helper {
             }
             .instantiate()
             .prepare_to_globalize()
-            .define_roles({
-                let mut roles = AuthorityRules::new();
-                roles.define_role("system", rule!(require(system_role.clone())), rule!(require(system_role)));
-                roles
+            .define_roles(roles! {
+                "system" => rule!(require(system_role.clone())), rule!(require(system_role)),
             })
             .protect_methods(btreemap!(
                 Method::ingest_data_chunk => vec!["system"],
