@@ -223,6 +223,7 @@ where
                     transaction_hash: executable.transaction_hash(),
                     runtime_validations: executable.runtime_validations(),
                     manifest_encoded_instructions: executable.encoded_instructions(),
+                    references: executable.references(),
                     blobs: executable.blobs(),
                 })
                 .unwrap(),

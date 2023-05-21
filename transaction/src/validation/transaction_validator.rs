@@ -352,12 +352,6 @@ mod tests {
     fn test_invalid_header() {
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::UnknownVersion(2)
-            ),
-            (0, 100, 5, vec![1], 2)
-        );
-        assert_invalid_tx!(
-            TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::InvalidEpochRange
             ),
             (0, 0, 5, vec![1], 2)

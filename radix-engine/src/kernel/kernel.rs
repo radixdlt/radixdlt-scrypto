@@ -75,7 +75,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 continue;
             }
 
-            // We have a reference to a node which can't be invoked -
+            // We have a reference to a node which can't be invoked - so it must be a direct access,
+            // let's validate it as such
 
             let (handle, _store_access) = kernel
                 .store
