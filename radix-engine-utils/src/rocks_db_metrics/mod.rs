@@ -2,19 +2,22 @@ use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionEntry, SubstateDatabase,
 };
-use radix_engine_stores::rocks_db::{BlockBasedOptions, Options, RocksdbSubstateStore};
+use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
 use std::{path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
 use linreg::linear_regression_of;
 use plotters::prelude::*;
 
 
-pub struct RocksdbSubstateStoreWithMetrics {
-    db: RocksdbSubstateStore,
+pub struct SubstateStoreWithMetrics<S>
+where
+    S: SubstateDatabase + CommittableSubstateDatabase
+{
+    db: S,
     read_metrics: RefCell<BTreeMap<usize, Vec<Duration>>>,
 }
 
-impl RocksdbSubstateStoreWithMetrics {
-    pub fn new(path: PathBuf) -> Self {
+impl SubstateStoreWithMetrics<RocksdbSubstateStore> {
+    pub fn new_rocksdb(path: PathBuf) -> Self {
         let mut factory_opts = BlockBasedOptions::default();
         factory_opts.disable_cache();
 
@@ -28,7 +31,18 @@ impl RocksdbSubstateStoreWithMetrics {
             read_metrics: RefCell::new(BTreeMap::new()),
         }
     }
+}
 
+impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
+    pub fn new_inmem() -> Self {
+        Self {
+            db: InMemorySubstateDatabase::standard(),
+            read_metrics: RefCell::new(BTreeMap::new()),
+        }
+    }
+}
+
+impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics<S> {
     pub fn export_graph_and_print_summary(&mut self, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
@@ -172,7 +186,7 @@ impl RocksdbSubstateStoreWithMetrics {
 
 }
 
-impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
+impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateDatabase for SubstateStoreWithMetrics<S> {
     fn get_substate(
         &self,
         partition_key: &DbPartitionKey,
@@ -209,7 +223,7 @@ impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
     }
 }
 
-impl CommittableSubstateDatabase for RocksdbSubstateStoreWithMetrics {
+impl<S: SubstateDatabase + CommittableSubstateDatabase> CommittableSubstateDatabase for SubstateStoreWithMetrics<S> {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         self.db.commit(database_updates)
     }
