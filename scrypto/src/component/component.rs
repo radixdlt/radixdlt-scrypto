@@ -308,14 +308,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_methods(
-        mut self,
-        protected_methods: ProtectedMethods<C::BlueprintMethod>,
-    ) -> Self {
-        self.protect(protected_methods);
-        self
-    }
-
     pub fn with_address(mut self, address: ComponentAddress) -> Self {
         self.address = Some(address);
         self

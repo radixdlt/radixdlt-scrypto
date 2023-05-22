@@ -79,10 +79,6 @@ mod genesis_helper {
                 ingest_data_chunk: MethodPermission::Protected(["system"].into()),
                 wrap_up: MethodPermission::Protected(["system"].into()),
             })
-            .protect_methods(protect!(
-                Method::ingest_data_chunk => ["system"];
-                Method::wrap_up => ["system"];
-            ))
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()
         }
