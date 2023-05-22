@@ -33,6 +33,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type BlueprintMethod: ModuleMethod;
+    type Permissions: ToPermissions;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -180,23 +181,9 @@ pub trait ModuleMethod {
     fn to_ident(&self) -> String;
 }
 
-pub enum MethodPerm {
+pub enum MethodPermission {
     Public,
     Protected(RoleList),
-}
-
-impl<L: Into<RoleList>> From<MethodPermission<L>> for MethodPerm {
-    fn from(value: MethodPermission<L>) -> Self {
-        match value {
-            MethodPermission::Public => MethodPerm::Public,
-            MethodPermission::Protected(role_list) => MethodPerm::Protected(role_list.into()),
-        }
-    }
-}
-
-pub enum MethodPermission<L: Into<RoleList>> {
-    Public,
-    Protected(L),
 }
 
 pub enum MethodPermissionMutability {
@@ -206,7 +193,7 @@ pub enum MethodPermissionMutability {
 
 pub trait ToPermissions {
     const MODULE_ID: ObjectModuleId;
-    fn to_permissions(self) -> Vec<(String, MethodPerm)>;
+    fn to_permissions(self) -> Vec<(String, MethodPermission)>;
 }
 
 pub struct ProtectedMethods<M: ModuleMethod> {
@@ -288,6 +275,19 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     pub fn set_royalties(mut self, royalties: Royalties<C::BlueprintMethod>) -> Self {
         for (method, amount) in royalties.royalties {
             self.royalty.set_rule(method, amount);
+        }
+        self
+    }
+
+    pub fn method_permissions(mut self, permissions: C::Permissions) -> Self {
+        for (method, permissions) in permissions.to_permissions() {
+            match permissions {
+                MethodPermission::Public => {}
+                MethodPermission::Protected(role_list) => {
+                    self.protected_module_methods
+                        .insert(MethodKey::new(ObjectModuleId::Main, method), role_list);
+                }
+            }
         }
         self
     }

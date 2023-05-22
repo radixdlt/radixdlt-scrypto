@@ -178,6 +178,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasMethods for #bp_ident {
             type BlueprintMethod = Method;
+            type Permissions = MethodPermissions;
         }
     };
 
@@ -189,7 +190,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             impl ToPermissions for MethodPermissions {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
-                fn to_permissions(self) -> Vec<(String, RoleList)> {
+                fn to_permissions(self) -> Vec<(String, MethodPermission)> {
                     vec![]
                 }
             }
@@ -213,21 +214,19 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     } else {
         quote! {
-            pub struct MethodPermissions<
-                #(#method_idents: Into<RoleList>),*
-            > {
+            pub struct MethodPermissions {
                 #(
-                    #method_idents: MethodPermission<#method_idents>,
+                    #method_idents: MethodPermission,
                 )*
             }
 
-            impl< #(#method_idents: Into<RoleList>),* > ToPermissions for MethodPermissions< #(#method_idents),* > {
+            impl ToPermissions for MethodPermissions {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
-                fn to_permissions(self) -> Vec<(String, MethodPerm)> {
+                fn to_permissions(self) -> Vec<(String, MethodPermission)> {
                     vec![
                         #(
-                            (#method_names.to_string(), self.#method_idents.into())
+                            (#method_names.to_string(), self.#method_idents)
                         ,
                         )*
                     ]

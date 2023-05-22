@@ -64,12 +64,6 @@ mod genesis_helper {
             epoch_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
-
-            let _permissions = MethodPermissions {
-                ingest_data_chunk: MethodPermission::Protected(["system"]),
-                wrap_up: MethodPermission::Protected(["system"]),
-            };
-
             Self {
                 epoch_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
@@ -80,6 +74,10 @@ mod genesis_helper {
             .prepare_to_globalize()
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), ["system"];
+            })
+            .method_permissions(MethodPermissions {
+                ingest_data_chunk: MethodPermission::Protected(["system"].into()),
+                wrap_up: MethodPermission::Protected(["system"].into()),
             })
             .protect_methods(protect!(
                 Method::ingest_data_chunk => ["system"];
