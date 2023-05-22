@@ -184,16 +184,17 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
         impl HasMethods for #bp_ident {
             type BlueprintMethod = Method;
-            type Permissions = MethodPermissions;
+            type Permissions = Methods<MethodPermission>;
         }
     };
 
     let output_method_enum = if method_idents.is_empty() {
         quote! {
-            pub struct MethodPermissions {
+            pub struct Methods<T> {
+                t: PhantomData<T>,
             }
 
-            impl ToPermissions for MethodPermissions {
+            impl ToPermissions for Methods<MethodPermission> {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
                 fn to_permissions(self) -> Vec<(String, MethodPermission)> {
@@ -220,13 +221,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     } else {
         quote! {
-            pub struct MethodPermissions {
+            pub struct Methods<T> {
                 #(
-                    #method_idents: MethodPermission,
+                    #method_idents: T,
                 )*
             }
 
-            impl ToPermissions for MethodPermissions {
+            impl ToPermissions for Methods<MethodPermission> {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
                 fn to_permissions(self) -> Vec<(String, MethodPermission)> {

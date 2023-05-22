@@ -75,7 +75,7 @@ mod genesis_helper {
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), ["system"];
             })
-            .method_permissions(methods! {
+            .methods(methods! {
                 ingest_data_chunk => ["system"];
                 wrap_up => ["system"];
             })

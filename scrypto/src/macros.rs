@@ -462,7 +462,7 @@ macro_rules! external_component_members {
 #[macro_export]
 macro_rules! methods {
     ($($method:ident => $permission:expr;)*) => ({
-        MethodPermissions {
+        Methods::<MethodPermission> {
             $(
                 $method: $permission.into(),
             )*
