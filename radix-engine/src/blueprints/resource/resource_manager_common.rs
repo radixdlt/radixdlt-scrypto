@@ -36,28 +36,42 @@ fn build_access_rules(
 
         {
             resman_authority_rules.define_role(
+                UPDATE_METADATA_UPDATE_AUTHORITY,
+                update_metadata_mutability,
+                vec![UPDATE_METADATA_UPDATE_AUTHORITY],
+            );
+
+            resman_authority_rules.define_role(
                 UPDATE_METADATA_AUTHORITY,
                 update_metadata_access_rule,
-                update_metadata_mutability,
+                vec![UPDATE_METADATA_UPDATE_AUTHORITY],
             );
         }
 
         // Mint
         {
-            resman_authority_rules.define_role(MINT_AUTHORITY, mint_access_rule, mint_mutability);
+            resman_authority_rules.define_role(MINT_UPDATE_AUTHORITY, mint_mutability, vec![MINT_UPDATE_AUTHORITY]);
+            resman_authority_rules.define_role(MINT_AUTHORITY, mint_access_rule, vec![MINT_UPDATE_AUTHORITY]);
         }
 
         // Burn
         {
-            resman_authority_rules.define_role(BURN_AUTHORITY, burn_access_rule, burn_mutability);
+            resman_authority_rules.define_role(BURN_UPDATE_AUTHORITY, burn_mutability, vec![BURN_UPDATE_AUTHORITY]);
+            resman_authority_rules.define_role(BURN_AUTHORITY, burn_access_rule,vec![BURN_UPDATE_AUTHORITY]);
         }
 
         // Non Fungible Update data
         {
             resman_authority_rules.define_role(
+                UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY,
+                update_non_fungible_data_mutability,
+                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
+            );
+
+            resman_authority_rules.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
                 update_non_fungible_data_access_rule,
-                update_non_fungible_data_mutability,
+                vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
             );
         }
 
@@ -89,35 +103,52 @@ fn build_access_rules(
         // Withdraw
         {
             vault_authority_rules.define_role(
+                WITHDRAW_UPDATE_AUTHORITY,
+                withdraw_mutability,
+                vec![WITHDRAW_UPDATE_AUTHORITY]
+            );
+            vault_authority_rules.define_role(
                 WITHDRAW_AUTHORITY,
                 withdraw_access_rule,
-                withdraw_mutability,
+                vec![WITHDRAW_UPDATE_AUTHORITY]
             );
         }
 
         // Recall
         {
             vault_authority_rules.define_role(
+                RECALL_UPDATE_AUTHORITY,
+                recall_mutability,
+                vec![RECALL_UPDATE_AUTHORITY],
+            );
+            vault_authority_rules.define_role(
                 RECALL_AUTHORITY,
                 recall_access_rule,
-                recall_mutability,
+                vec![RECALL_UPDATE_AUTHORITY],
             );
         }
 
         // Deposit
         {
             vault_authority_rules.define_role(
+                DEPOSIT_UPDATE_AUTHORITY,
+                deposit_mutability,
+                vec![DEPOSIT_UPDATE_AUTHORITY]
+            );
+
+            vault_authority_rules.define_role(
                 DEPOSIT_AUTHORITY,
                 deposit_access_rule,
-                deposit_mutability,
+                vec![DEPOSIT_UPDATE_AUTHORITY],
             );
         }
 
         // Internal
         {
-            vault_authority_rules.set_fixed_authority_rule(
+            vault_authority_rules.define_role(
                 "this_package",
                 rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+                vec![],
             );
         }
 
@@ -143,10 +174,7 @@ fn build_access_rules(
 
     let (bucket_authority_rules, bucket_protected_methods) = {
         let mut bucket_authority_rules = Roles::new();
-        bucket_authority_rules.set_fixed_authority_rule(
-            "this_package",
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-        );
+        bucket_authority_rules.define_role( "this_package", rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))), vec![]);
 
         let bucket_protected_methods = btreemap!(
             MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => vec!["this_package".to_string()],

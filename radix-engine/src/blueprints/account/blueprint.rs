@@ -57,17 +57,22 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     }
 
     fn authority_rules() -> Roles {
-        let mut authority_rules = Roles::new();
-        authority_rules
-            .set_fixed_authority_rule(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")));
-        authority_rules
-            .set_fixed_authority_rule(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require("owner")));
-        authority_rules
+        let mut roles = Roles::new();
+        roles
+            .define_role(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")), vec![]);
+        roles
+            .define_role(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require("owner")), vec![]);
+        roles.define_role(
+            Self::SELF_ROLE,
+            rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), // TODO: Use self object
+            vec![],
+        );
+        roles
     }
 }
 
 impl PresecurifiedAccessRules for SecurifiedAccount {
-    const PACKAGE: PackageAddress = ACCOUNT_PACKAGE;
+    const SELF_ROLE: &'static str = "self";
 }
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;

@@ -74,7 +74,7 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize()
             .define_roles(roles! {
-                "system" => rule!(require(system_role.clone())), rule!(require(system_role)),
+                "system" => rule!(require(system_role.clone())), vec!("system"),
             })
             .protect_methods(protect!(
                 Method::ingest_data_chunk => vec!["system"],

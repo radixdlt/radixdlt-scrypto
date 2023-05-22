@@ -184,6 +184,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_method_enum = if method_idents.is_empty() {
         quote! {
             #[derive(PartialEq, Eq, Ord, PartialOrd)]
+            #[allow(dead_code)]
             #[allow(non_camel_case_types)]
             pub enum Method {
                 #(
@@ -202,6 +203,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     } else {
         quote! {
             #[derive(PartialEq, Eq, Ord, PartialOrd)]
+            #[allow(dead_code)]
             #[allow(non_camel_case_types)]
             pub enum Method {
                 #(
@@ -796,6 +798,7 @@ mod tests {
                     }
 
                     #[derive(PartialEq, Eq, Ord, PartialOrd)]
+                    #[allow(dead_code)]
                     #[allow(non_camel_case_types)]
                     pub enum Method {
                         x,

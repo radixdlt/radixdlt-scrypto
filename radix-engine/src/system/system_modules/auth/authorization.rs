@@ -440,7 +440,7 @@ impl Authorization {
         )
     }
 
-    pub fn check_authorization_against_authority_list<
+    pub fn check_authorization_against_role_list<
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     >(
         acting_location: ActingLocation,

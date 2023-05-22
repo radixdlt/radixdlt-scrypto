@@ -96,38 +96,38 @@ impl ResourceManager {
 
     pub fn lock_mintable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(MINT_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(MINT_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_burnable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(BURN_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(BURN_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_updateable_metadata(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(UPDATE_METADATA_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(UPDATE_METADATA_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
         access_rules
-            .set_authority_mutability(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, AccessRule::DenyAll);
+            .set_authority_mutability(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(WITHDRAW_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(WITHDRAW_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_depositable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(DEPOSIT_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(DEPOSIT_AUTHORITY, Vec::<String>::new());
     }
 
     pub fn lock_recallable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(RECALL_AUTHORITY, AccessRule::DenyAll);
+        access_rules.set_authority_mutability(RECALL_AUTHORITY, Vec::<String>::new());
     }
 }
 

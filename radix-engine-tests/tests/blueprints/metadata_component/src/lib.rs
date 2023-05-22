@@ -26,7 +26,7 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "metadata" => rule!(allow_all), rule!(deny_all),
+                    "metadata" => rule!(allow_all), vec![],
                 })
                 .protect_metadata(protect!(
                     MetadataMethod::set => vec!["metadata"],

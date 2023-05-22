@@ -109,7 +109,7 @@ impl AuthorityKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub rules: BTreeMap<AuthorityKey, (AccessRule, AccessRule)>,
+    pub rules: BTreeMap<AuthorityKey, (AccessRule, Vec<String>)>,
 }
 
 impl Roles {
@@ -122,34 +122,18 @@ impl Roles {
         authority_rules.define_role(
             "owner",
             rule!(require(owner_badge.clone())),
-            rule!(require("owner")),
+            vec!["owner"],
         );
         authority_rules
-    }
-
-    pub fn set_fixed_authority_rule<S: Into<String>, R: Into<AccessRule>>(
-        &mut self,
-        authority: S,
-        rule: R,
-    ) {
-        self.rules.insert(
-            AuthorityKey::new(authority),
-            (rule.into(), AccessRule::DenyAll),
-        );
     }
 
     pub fn define_role<K: Into<AuthorityKey>>(
         &mut self,
         authority: K,
         rule: AccessRule,
-        mutability: AccessRule,
+        mutability: Vec<&str>,
     ) {
-        self.rules.insert(authority.into(), (rule, mutability));
-    }
-
-    pub fn set_owner_authority(&mut self, rule: AccessRule, mutability: AccessRule) {
-        self.rules
-            .insert(AuthorityKey::new("owner"), (rule, mutability));
+        self.rules.insert(authority.into(), (rule, mutability.into_iter().map(|s| s.to_string()).collect()));
     }
 }
 

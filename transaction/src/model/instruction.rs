@@ -219,7 +219,7 @@ pub enum Instruction {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
         authority_key: AuthorityKey,
-        mutability: AccessRule,
+        mutability: Vec<String>,
     },
 }
 

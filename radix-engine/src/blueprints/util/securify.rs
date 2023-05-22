@@ -16,7 +16,7 @@ pub trait SecurifiedAccessRules {
     fn create_config(authority_rules: Roles) -> Roles {
         let mut authority_rules_to_use = Self::authority_rules();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
-            authority_rules_to_use.define_role(authority.key, access_rule, mutability);
+            authority_rules_to_use.define_role(authority.key, access_rule, mutability.iter().map(|s| s.as_str()).collect());
         }
 
         authority_rules_to_use
@@ -39,7 +39,7 @@ pub trait SecurifiedAccessRules {
         let mut authority_rules = Self::create_config(authority_rules);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
-            authority_rules.define_role(securify, AccessRule::DenyAll, AccessRule::DenyAll);
+            authority_rules.define_role(securify, AccessRule::DenyAll, vec![]);
         }
 
         let protected_module_methods = Self::protected_module_methods();
@@ -67,7 +67,7 @@ pub trait SecurifiedAccessRules {
             access_rules.set_authority_rule_and_mutability(
                 AuthorityKey::new(securify),
                 AccessRule::DenyAll,
-                AccessRule::DenyAll,
+                Vec::<String>::new(),
                 api,
             )?;
         }
@@ -76,7 +76,7 @@ pub trait SecurifiedAccessRules {
         access_rules.set_authority_rule_and_mutability(
             AuthorityKey::new("owner"),
             rule!(require(global_id.clone())),
-            rule!(require("owner")),
+            vec!["owner".to_string()],
             api,
         )?;
 
@@ -85,7 +85,8 @@ pub trait SecurifiedAccessRules {
 }
 
 pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
-    const PACKAGE: PackageAddress;
+    const SELF_ROLE: &'static str;
+    //const PACKAGE: PackageAddress;
 
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
@@ -93,14 +94,14 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let access_rules = Self::init_securified_rules(api)?;
 
-        let this_package_rule = rule!(require(package_of_direct_caller(Self::PACKAGE)));
+        //let this_package_rule = rule!(require(package_of_direct_caller(Self::PACKAGE)));
         let access_rule = rule!(require(owner_id));
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
             access_rules.set_authority_rule_and_mutability(
                 AuthorityKey::new(securify),
                 access_rule.clone(),
-                this_package_rule.clone(),
+                vec![Self::SELF_ROLE.to_string()],
                 api,
             )?;
         }
@@ -108,7 +109,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         access_rules.set_authority_rule_and_mutability(
             AuthorityKey::new("owner"),
             access_rule.clone(),
-            this_package_rule.clone(),
+            vec![Self::SELF_ROLE.to_string()],
             api,
         )?;
 

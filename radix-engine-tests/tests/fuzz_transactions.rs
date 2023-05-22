@@ -75,7 +75,7 @@ impl TransactionFuzzer {
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
-                        AccessRule::AllowAll,
+                        vec!["owner"],
                     );
 
                     builder.new_account_advanced(authority_rules);
@@ -85,7 +85,7 @@ impl TransactionFuzzer {
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
-                        AccessRule::AllowAll,
+                        vec!["owner"],
                     );
                     builder.new_account_advanced(authority_rules);
                 }
@@ -94,7 +94,7 @@ impl TransactionFuzzer {
                     authority_rules.define_role(
                         "owner",
                         AccessRule::AllowAll,
-                        AccessRule::AllowAll,
+                        vec!["owner"],
                     );
                     builder.new_account_advanced(authority_rules);
                 }

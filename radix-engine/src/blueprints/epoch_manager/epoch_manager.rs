@@ -1,6 +1,6 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
 use crate::blueprints::epoch_manager::{
-    EPOCH_MANAGER_START_AUTHORITY, SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY,
+    SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY,
 };
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -189,22 +189,24 @@ impl EpochManagerBlueprint {
 
         let mut authority_rules = Roles::new();
         authority_rules.define_role(
-            EPOCH_MANAGER_START_AUTHORITY,
+            "self",
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            vec!["self"],
         );
-        authority_rules.set_fixed_authority_rule(
+        authority_rules.define_role(
             VALIDATOR_AUTHORITY,
             rule!(require(AuthAddresses::validator_role())),
+            vec![],
         );
-        authority_rules.set_fixed_authority_rule(
+        authority_rules.define_role(
             SYSTEM_AUTHORITY,
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
+            vec![],
         );
 
         let access_rules = AccessRules::create(
             btreemap!(
-                MethodKey::main(EPOCH_MANAGER_START_AUTHORITY) => vec![EPOCH_MANAGER_START_AUTHORITY.to_string()],
+                MethodKey::main(EPOCH_MANAGER_START_IDENT) => vec!["self".to_string()],
                 MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => vec![VALIDATOR_AUTHORITY.to_string()],
                 MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => vec![SYSTEM_AUTHORITY.to_string()],
             ),
@@ -268,9 +270,9 @@ impl EpochManagerBlueprint {
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::new("start"),
+            AuthorityKey::new("self"),
             AccessRule::DenyAll,
-            AccessRule::DenyAll,
+            vec![],
             api,
         )?;
 

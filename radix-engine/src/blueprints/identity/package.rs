@@ -198,12 +198,18 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     }
 
     fn authority_rules() -> Roles {
-        Roles::new()
+        let mut roles = Roles::new();
+        roles.define_role(
+            Self::SELF_ROLE,
+            rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), // TODO: Use self object
+            vec![],
+        );
+        roles
     }
 }
 
 impl PresecurifiedAccessRules for SecurifiedIdentity {
-    const PACKAGE: PackageAddress = IDENTITY_PACKAGE;
+    const SELF_ROLE: &'static str = "self";
 }
 
 pub struct IdentityBlueprint;

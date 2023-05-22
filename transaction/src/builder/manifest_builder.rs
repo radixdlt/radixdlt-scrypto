@@ -612,7 +612,7 @@ impl ManifestBuilder {
         entity_address: GlobalAddress,
         object_key: ObjectKey,
         authority_key: AuthorityKey,
-        mutability: AccessRule,
+        mutability: Vec<String>,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetAuthorityMutability {
             entity_address,

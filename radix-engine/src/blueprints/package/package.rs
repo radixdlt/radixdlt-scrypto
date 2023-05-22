@@ -125,7 +125,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     fn authority_rules() -> Roles {
         let mut authority_rules = Roles::new();
 
-        authority_rules.set_fixed_authority_rule("package_royalty", rule!(require("owner")));
+        authority_rules.define_role("package_royalty", rule!(require("owner")), vec![]);
         authority_rules
     }
 }

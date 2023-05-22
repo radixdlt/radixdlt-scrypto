@@ -95,7 +95,7 @@ pub trait AccessRulesObject {
         &self,
         authority_key: AuthorityKey,
         rule: R,
-        mutability: AccessRule,
+        mutability: Vec<String>,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();

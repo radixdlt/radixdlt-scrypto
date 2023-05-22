@@ -12,7 +12,7 @@ mod factory {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "auth" => rule!(require(Runtime::package_token())), rule!(deny_all)
+                    "auth" => rule!(require(Runtime::package_token())), vec![]
                 })
                 .protect_methods(protect!(
                     Method::set_address => vec!["auth"],

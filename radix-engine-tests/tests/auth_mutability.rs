@@ -3,7 +3,6 @@ extern crate core;
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
 };
@@ -50,7 +49,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_mutability(token_address.into(), object_key, authority_key, DenyAll)
+            .set_authority_mutability(token_address.into(), object_key, authority_key, vec![])
             .build();
         test_runner
             .execute_manifest(
@@ -92,7 +91,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             token_address.into(),
             object_key,
             authority_key.clone(),
-            DenyAll,
+            vec![],
         )
     } else {
         builder.set_authority_access_rule(

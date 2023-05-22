@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, Roles};
+use radix_engine_interface::blueprints::resource::{MethodKey, Roles};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -286,16 +286,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         protected_methods: ProtectedMethods<C::BlueprintMethod>,
     ) -> Self {
         self.protect(protected_methods);
-        self
-    }
-
-    pub fn owner_authority<A: Into<AccessRule>, B: Into<AccessRule>>(
-        mut self,
-        entry: A,
-        mutability: B,
-    ) -> Self {
-        self.authority_rules
-            .set_owner_authority(entry.into(), mutability.into());
         self
     }
 

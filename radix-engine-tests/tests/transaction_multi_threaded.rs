@@ -38,9 +38,10 @@ mod multi_threaded_test {
         let public_key = private_key.public_key();
 
         let mut authority_rules = Roles::new();
-        authority_rules.set_owner_authority(
+        authority_rules.define_role(
+            "owner",
             rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
-            AccessRule::DenyAll,
+            vec![],
         );
 
         // Create two accounts

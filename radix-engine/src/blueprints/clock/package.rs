@@ -11,7 +11,6 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::clock::ClockCreateInput;
 use radix_engine_interface::blueprints::clock::TimePrecision;
 use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::resource::AccessRule::DenyAll;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::schema::{
@@ -168,7 +167,7 @@ impl ClockNativePackage {
         authority_rules.define_role(
             CLOCK_AUTHORITY,
             rule!(require(AuthAddresses::validator_role())),
-            DenyAll,
+            vec![],
         );
 
         let access_rules = AccessRules::create(

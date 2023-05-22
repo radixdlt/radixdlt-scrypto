@@ -22,7 +22,7 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "public" => rule!(allow_all), rule!(allow_all),
+                    "public" => rule!(allow_all), vec!["public"],
                 })
                 .protect_royalty(protect! {
                     RoyaltyMethod::claim_royalty => vec!["public"],

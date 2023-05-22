@@ -119,60 +119,33 @@ impl AuthModule {
             ActingLocation::AtLocalBarrier
         };
 
-        match (node_id, module_id, ident) {
-            (node_id, module_id, ident) if matches!(module_id, ObjectModuleId::AccessRules) => {
-                let access_rule =
-                    AccessRulesNativePackage::authorization(&node_id, ident, args, api)?;
+        let info = api.get_object_info(&node_id)?;
+        let method_key = MethodKey::new(module_id, ident);
 
-                let auth_result = Authorization::check_authorization_against_access_rule(
-                    acting_location,
-                    *auth_zone_id,
-                    &NodeAuthorityRules::new(),
-                    &access_rule,
-                    api,
-                )?;
-                match auth_result {
-                    AuthorizationCheckResult::Authorized => {}
-                    AuthorizationCheckResult::Failed(access_rule_stack) => {
-                        return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                            AuthError::Unauthorized(Box::new(Unauthorized {
-                                failed_access_rules: FailedAccessRules::AccessRule(
-                                    access_rule_stack,
-                                ),
-                                fn_identifier: callee.fn_identifier(),
-                            })),
-                        )));
-                    }
-                }
-            }
-            (node_id, module_id, ..) => {
-                let info = api.get_object_info(&node_id)?;
-                let method_key = MethodKey::new(module_id, ident);
+        if let Some(parent) = info.outer_object {
+            Self::check_authorization_against_access_rules(
+                callee.fn_identifier(),
+                auth_zone_id,
+                acting_location,
+                parent.as_node_id(),
+                ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
+                method_key.clone(),
+                args,
+                api,
+            )?;
+        }
 
-                if let Some(parent) = info.outer_object {
-                    Self::check_authorization_against_access_rules(
-                        callee.fn_identifier(),
-                        auth_zone_id,
-                        acting_location,
-                        parent.as_node_id(),
-                        ObjectKey::InnerBlueprint(info.blueprint.blueprint_name.clone()),
-                        method_key.clone(),
-                        api,
-                    )?;
-                }
-
-                if info.global {
-                    Self::check_authorization_against_access_rules(
-                        callee.fn_identifier(),
-                        auth_zone_id,
-                        acting_location,
-                        &node_id,
-                        ObjectKey::SELF,
-                        method_key,
-                        api,
-                    )?;
-                }
-            }
+        if info.global {
+            Self::check_authorization_against_access_rules(
+                callee.fn_identifier(),
+                auth_zone_id,
+                acting_location,
+                &node_id,
+                ObjectKey::SELF,
+                method_key,
+                args,
+                api,
+            )?;
         }
 
         Ok(())
@@ -188,6 +161,7 @@ impl AuthModule {
         receiver: &NodeId,
         object_key: ObjectKey,
         method_key: MethodKey,
+        args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
@@ -201,31 +175,49 @@ impl AuthModule {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
-        let node_authority_rules = match object_key {
+        let node_authority_rules = match &object_key {
             ObjectKey::SELF => &access_rules.access_rules,
             ObjectKey::InnerBlueprint(blueprint_name) => {
                 let child_rules = access_rules
                     .inner_blueprint_access_rules
-                    .get(&blueprint_name)
+                    .get(blueprint_name)
                     .ok_or(RuntimeError::ModuleError(ModuleError::AuthError(
-                        AuthError::InnerBlueprintDoesNotExist(blueprint_name),
+                        AuthError::InnerBlueprintDoesNotExist(blueprint_name.clone()),
                     )))?;
                 child_rules
             }
         };
 
-        let authority_list = if let Some(list) = node_authority_rules
-            .protected_module_methods
-            .get(&method_key)
-        {
-            list.iter()
-                .map(|authority| AuthorityKey::new(authority))
-                .collect()
-        } else {
-            return Ok(());
+        let authority_list = match method_key.module_id {
+            ObjectModuleId::AccessRules => {
+                match &object_key {
+                    ObjectKey::SELF => {}
+                    ObjectKey::InnerBlueprint(..) => {
+                        return Ok(())
+                    }
+                }
+                AccessRulesNativePackage::authorization(
+                    receiver,
+                    method_key.ident.as_str(),
+                    args,
+                    api,
+                )?.into_iter().map(|s| AuthorityKey::new(s)).collect()
+            }
+            _ => {
+                if let Some(list) = node_authority_rules
+                    .protected_methods
+                    .get(&method_key)
+                {
+                    list.iter()
+                        .map(|authority| AuthorityKey::new(authority))
+                        .collect()
+                } else {
+                    return Ok(());
+                }
+            }
         };
 
-        Self::check_authorization_against_config(
+        Self::check_authorization_against_role_list(
             fn_identifier,
             auth_zone_id,
             acting_location,
@@ -237,7 +229,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn check_authorization_against_config<
+    pub fn check_authorization_against_role_list<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
@@ -245,14 +237,14 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &NodeAuthorityRules,
-        authority_list: &Vec<AuthorityKey>,
+        role_list: &Vec<AuthorityKey>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-        let result = Authorization::check_authorization_against_authority_list(
+        let result = Authorization::check_authorization_against_role_list(
             acting_location,
             *auth_zone_id,
             access_rules,
-            authority_list,
+            role_list,
             api,
         )?;
         match result {

@@ -70,7 +70,7 @@ impl AccessRules {
         );
     }
 
-    pub fn set_authority_mutability(&self, name: &str, mutability: AccessRule) {
+    pub fn set_authority_mutability(&self, name: &str, mutability: Vec<String>) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             &AccessRulesSetAuthorityMutabilityInput {
