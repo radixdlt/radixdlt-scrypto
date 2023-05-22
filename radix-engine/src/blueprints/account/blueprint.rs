@@ -58,10 +58,12 @@ impl SecurifiedAccessRules for SecurifiedAccount {
 
     fn authority_rules() -> Roles {
         let mut roles = Roles::new();
-        roles
-            .define_role(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")), vec![]);
-        roles
-            .define_role(ACCOUNT_CREATE_PROOF_AUTHORITY, rule!(require("owner")), vec![]);
+        roles.define_role(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")), vec![]);
+        roles.define_role(
+            ACCOUNT_CREATE_PROOF_AUTHORITY,
+            rule!(require("owner")),
+            vec![],
+        );
         roles.define_role(
             Self::SELF_ROLE,
             rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), // TODO: Use self object

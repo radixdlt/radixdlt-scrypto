@@ -1,7 +1,5 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::blueprints::epoch_manager::{
-    SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY,
-};
+use crate::blueprints::epoch_manager::{SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;

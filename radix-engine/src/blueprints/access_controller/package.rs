@@ -1067,25 +1067,12 @@ fn init_access_rules_from_rule_set(
 ) -> (Roles, BTreeMap<MethodKey, Vec<String>>) {
     let mut authority_rules = Roles::new();
 
-
-    authority_rules.define_role(
-        "self",
-        rule!(require(global_caller(address))),
-        vec![],
-    );
+    authority_rules.define_role("self", rule!(require(global_caller(address))), vec![]);
 
     let primary = "primary";
-    authority_rules.define_role(
-        primary,
-        rule_set.primary_role.clone(),
-        vec!["self"],
-    );
+    authority_rules.define_role(primary, rule_set.primary_role.clone(), vec!["self"]);
     let recovery = "recovery";
-    authority_rules.define_role(
-        recovery,
-        rule_set.recovery_role.clone(),
-        vec!["self"],
-    );
+    authority_rules.define_role(recovery, rule_set.recovery_role.clone(), vec!["self"]);
     let confirmation = "confirmation";
     authority_rules.define_role(
         confirmation,

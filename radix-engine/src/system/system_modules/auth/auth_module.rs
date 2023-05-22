@@ -192,22 +192,20 @@ impl AuthModule {
             ObjectModuleId::AccessRules => {
                 match &object_key {
                     ObjectKey::SELF => {}
-                    ObjectKey::InnerBlueprint(..) => {
-                        return Ok(())
-                    }
+                    ObjectKey::InnerBlueprint(..) => return Ok(()),
                 }
                 AccessRulesNativePackage::authorization(
                     receiver,
                     method_key.ident.as_str(),
                     args,
                     api,
-                )?.into_iter().map(|s| AuthorityKey::new(s)).collect()
+                )?
+                .into_iter()
+                .map(|s| AuthorityKey::new(s))
+                .collect()
             }
             _ => {
-                if let Some(list) = node_authority_rules
-                    .protected_methods
-                    .get(&method_key)
-                {
+                if let Some(list) = node_authority_rules.protected_methods.get(&method_key) {
                     list.iter()
                         .map(|authority| AuthorityKey::new(authority))
                         .collect()

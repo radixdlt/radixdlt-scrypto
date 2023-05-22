@@ -119,11 +119,7 @@ impl Roles {
 
     pub fn new_with_owner_authority(owner_badge: &NonFungibleGlobalId) -> Roles {
         let mut authority_rules = Roles::new();
-        authority_rules.define_role(
-            "owner",
-            rule!(require(owner_badge.clone())),
-            vec!["owner"],
-        );
+        authority_rules.define_role("owner", rule!(require(owner_badge.clone())), vec!["owner"]);
         authority_rules
     }
 
@@ -133,7 +129,13 @@ impl Roles {
         rule: AccessRule,
         mutability: Vec<&str>,
     ) {
-        self.rules.insert(authority.into(), (rule, mutability.into_iter().map(|s| s.to_string()).collect()));
+        self.rules.insert(
+            authority.into(),
+            (
+                rule,
+                mutability.into_iter().map(|s| s.to_string()).collect(),
+            ),
+        );
     }
 }
 

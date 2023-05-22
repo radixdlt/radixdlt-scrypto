@@ -50,14 +50,30 @@ fn build_access_rules(
 
         // Mint
         {
-            resman_authority_rules.define_role(MINT_UPDATE_AUTHORITY, mint_mutability, vec![MINT_UPDATE_AUTHORITY]);
-            resman_authority_rules.define_role(MINT_AUTHORITY, mint_access_rule, vec![MINT_UPDATE_AUTHORITY]);
+            resman_authority_rules.define_role(
+                MINT_UPDATE_AUTHORITY,
+                mint_mutability,
+                vec![MINT_UPDATE_AUTHORITY],
+            );
+            resman_authority_rules.define_role(
+                MINT_AUTHORITY,
+                mint_access_rule,
+                vec![MINT_UPDATE_AUTHORITY],
+            );
         }
 
         // Burn
         {
-            resman_authority_rules.define_role(BURN_UPDATE_AUTHORITY, burn_mutability, vec![BURN_UPDATE_AUTHORITY]);
-            resman_authority_rules.define_role(BURN_AUTHORITY, burn_access_rule,vec![BURN_UPDATE_AUTHORITY]);
+            resman_authority_rules.define_role(
+                BURN_UPDATE_AUTHORITY,
+                burn_mutability,
+                vec![BURN_UPDATE_AUTHORITY],
+            );
+            resman_authority_rules.define_role(
+                BURN_AUTHORITY,
+                burn_access_rule,
+                vec![BURN_UPDATE_AUTHORITY],
+            );
         }
 
         // Non Fungible Update data
@@ -105,12 +121,12 @@ fn build_access_rules(
             vault_authority_rules.define_role(
                 WITHDRAW_UPDATE_AUTHORITY,
                 withdraw_mutability,
-                vec![WITHDRAW_UPDATE_AUTHORITY]
+                vec![WITHDRAW_UPDATE_AUTHORITY],
             );
             vault_authority_rules.define_role(
                 WITHDRAW_AUTHORITY,
                 withdraw_access_rule,
-                vec![WITHDRAW_UPDATE_AUTHORITY]
+                vec![WITHDRAW_UPDATE_AUTHORITY],
             );
         }
 
@@ -133,7 +149,7 @@ fn build_access_rules(
             vault_authority_rules.define_role(
                 DEPOSIT_UPDATE_AUTHORITY,
                 deposit_mutability,
-                vec![DEPOSIT_UPDATE_AUTHORITY]
+                vec![DEPOSIT_UPDATE_AUTHORITY],
             );
 
             vault_authority_rules.define_role(
@@ -174,7 +190,11 @@ fn build_access_rules(
 
     let (bucket_authority_rules, bucket_protected_methods) = {
         let mut bucket_authority_rules = Roles::new();
-        bucket_authority_rules.define_role( "this_package", rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))), vec![]);
+        bucket_authority_rules.define_role(
+            "this_package",
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+            vec![],
+        );
 
         let bucket_protected_methods = btreemap!(
             MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => vec!["this_package".to_string()],
