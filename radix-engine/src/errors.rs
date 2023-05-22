@@ -207,7 +207,7 @@ pub enum SystemError {
     KeyValueStoreDoesNotExist(BlueprintId, u8),
     SortedIndexDoesNotExist(BlueprintId, u8),
     IndexDoesNotExist(BlueprintId, u8),
-    MissingRequiredAuthority(BlueprintId, AuthorityKey),
+    MissingRequiredAuthority(BlueprintId, RoleKey),
     AuthorityMustBeEmpty(BlueprintId, String),
     NotAKeyValueStore,
     NotASortedStore,

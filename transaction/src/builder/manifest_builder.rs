@@ -595,7 +595,7 @@ impl ManifestBuilder {
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        authority_key: AuthorityKey,
+        authority_key: RoleKey,
         rule: AccessRule,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetAuthorityAccessRule {
@@ -611,8 +611,8 @@ impl ManifestBuilder {
         &mut self,
         entity_address: GlobalAddress,
         object_key: ObjectKey,
-        authority_key: AuthorityKey,
-        mutability: Vec<String>,
+        authority_key: RoleKey,
+        mutability: RoleList,
     ) -> &mut Self {
         self.add_instruction(Instruction::SetAuthorityMutability {
             entity_address,

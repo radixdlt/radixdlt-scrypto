@@ -441,7 +441,7 @@ impl ValidatorBlueprint {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             scrypto_encode(&AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::new("stake"),
+                authority_key: RoleKey::new("stake"),
                 rule,
             })
             .unwrap(),
@@ -626,37 +626,24 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => vec![VALIDATOR_STAKE_AUTHORITY.to_string()],
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => vec![VALIDATOR_APPLY_EMISSION_AUTHORITY.to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
+            MethodKey::main(VALIDATOR_REGISTER_IDENT) => role_list!["owner"],
+            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => role_list!["owner"],
+            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => role_list!["owner"],
+            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => role_list!["owner"],
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => role_list![VALIDATOR_STAKE_AUTHORITY],
+            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => role_list![VALIDATOR_APPLY_EMISSION_AUTHORITY],
         )
     }
 
-    fn authority_rules() -> Roles {
-        let mut authority_rules = Roles::new();
-
-        authority_rules.define_role(
-            "self",
-            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-            vec![],
-        );
-        authority_rules.define_role(
-            VALIDATOR_STAKE_AUTHORITY,
-            rule!(require("owner")),
-            vec!["self"],
-        );
-        authority_rules.define_role(
-            VALIDATOR_APPLY_EMISSION_AUTHORITY,
-            rule!(require(global_caller(EPOCH_MANAGER))),
-            vec![],
-        );
-        authority_rules
+    fn role_definitions() -> Roles {
+        roles! {
+            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE)));
+            VALIDATOR_STAKE_AUTHORITY => rule!(require("owner")), vec!["self"];
+            VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(EPOCH_MANAGER)));
+        }
     }
 }
 

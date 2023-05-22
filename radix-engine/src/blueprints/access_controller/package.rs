@@ -1064,42 +1064,34 @@ fn locked_access_rules() -> RuleSet {
 fn init_access_rules_from_rule_set(
     address: GlobalAddress,
     rule_set: RuleSet,
-) -> (Roles, BTreeMap<MethodKey, Vec<String>>) {
-    let mut authority_rules = Roles::new();
-
-    authority_rules.define_role("self", rule!(require(global_caller(address))), vec![]);
-
-    let primary = "primary";
-    authority_rules.define_role(primary, rule_set.primary_role.clone(), vec!["self"]);
-    let recovery = "recovery";
-    authority_rules.define_role(recovery, rule_set.recovery_role.clone(), vec!["self"]);
-    let confirmation = "confirmation";
-    authority_rules.define_role(
-        confirmation,
-        rule_set.confirmation_role.clone(),
-        vec!["self"],
-    );
+) -> (Roles, BTreeMap<MethodKey, RoleList>) {
+    let role_definitions = roles! {
+        "self" => rule!(require(global_caller(address)));
+        "primary" => rule_set.primary_role, ["self"];
+        "recovery" => rule_set.recovery_role, ["self"];
+        "confirmation" => rule_set.confirmation_role, ["self"];
+    };
 
     let protected_methods = btreemap!(
-        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => vec!["primary"],
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => vec!["primary"],
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["primary"],
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => vec!["primary"],
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  vec!["primary"],
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => vec!["recovery"],
-        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => vec!["recovery"],
+        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => role_list!["primary"],
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => role_list!["primary"],
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary"],
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => role_list!["primary"],
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  role_list!["primary"],
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"],
+        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"],
 
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["recovery", "confirmation"],
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["recovery", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery", "confirmation"],
 
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => vec!["primary", "confirmation"],
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => vec!["primary", "confirmation"],
-        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => vec!["primary", "confirmation", "recovery"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["primary", "confirmation"],
+        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => role_list!["primary", "confirmation", "recovery"],
     );
 
     let protected_methods = protected_methods
@@ -1107,12 +1099,12 @@ fn init_access_rules_from_rule_set(
         .map(|(s, roles)| {
             (
                 MethodKey::new(ObjectModuleId::Main, s),
-                roles.into_iter().map(|s| s.to_string()).collect(),
+                roles,
             )
         })
         .collect();
 
-    (authority_rules, protected_methods)
+    (role_definitions, protected_methods)
 }
 
 fn transition<Y, I>(
@@ -1175,17 +1167,17 @@ where
 {
     let attached = AttachedAccessRules(receiver.clone());
     attached.set_authority_rule(
-        AuthorityKey::new("primary"),
+        RoleKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
     attached.set_authority_rule(
-        AuthorityKey::new("recovery"),
+        RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
     attached.set_authority_rule(
-        AuthorityKey::new("confirmation"),
+        RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,
     )?;

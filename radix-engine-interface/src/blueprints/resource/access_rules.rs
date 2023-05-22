@@ -69,7 +69,7 @@ impl MethodKey {
 
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
-        AccessRule::Protected(AccessRuleNode::Authority(AuthorityKey::new(name)))
+        AccessRule::Protected(AccessRuleNode::Authority(RoleKey::new(name)))
     }
 }
 
@@ -83,25 +83,60 @@ pub enum AttachedModule {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
-pub struct AuthorityKey {
+pub struct RoleKey {
     pub key: String,
 }
 
-impl From<String> for AuthorityKey {
+impl From<String> for RoleKey {
     fn from(s: String) -> Self {
         Self::new(s)
     }
 }
 
-impl From<&str> for AuthorityKey {
+impl From<&str> for RoleKey {
     fn from(s: &str) -> Self {
         Self::new(s)
     }
 }
 
-impl AuthorityKey {
+impl RoleKey {
     pub fn new<S: Into<String>>(key: S) -> Self {
-        AuthorityKey { key: key.into() }
+        RoleKey { key: key.into() }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct RoleList {
+    pub list: Vec<RoleKey>,
+}
+
+impl RoleList {
+    pub fn none() -> Self {
+        Self {
+            list: vec![],
+        }
+    }
+
+    pub fn insert<R: Into<RoleKey>>(&mut self, role: R) {
+        self.list.push(role.into());
+    }
+}
+
+impl From<Vec<&str>> for RoleList {
+    fn from(value: Vec<&str>) -> Self {
+        Self {
+            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+        }
+    }
+}
+
+impl<const N: usize> From<[&str; N]> for RoleList {
+    fn from(value: [&str; N]) -> Self {
+        Self {
+            list: value.into_iter().map(|s| RoleKey::new(s)).collect(),
+        }
     }
 }
 
@@ -109,7 +144,7 @@ impl AuthorityKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub rules: BTreeMap<AuthorityKey, (AccessRule, Vec<String>)>,
+    pub rules: BTreeMap<RoleKey, (AccessRule, RoleList)>,
 }
 
 impl Roles {
@@ -123,17 +158,17 @@ impl Roles {
         authority_rules
     }
 
-    pub fn define_role<K: Into<AuthorityKey>>(
+    pub fn define_role<K: Into<RoleKey>, L: Into<RoleList>>(
         &mut self,
         authority: K,
         rule: AccessRule,
-        mutability: Vec<&str>,
+        mutability: L,
     ) {
         self.rules.insert(
             authority.into(),
             (
                 rule,
-                mutability.into_iter().map(|s| s.to_string()).collect(),
+                mutability.into(),
             ),
         );
     }

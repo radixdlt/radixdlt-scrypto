@@ -9,9 +9,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, MethodKey, ObjectKey, Roles,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, MethodKey, ObjectKey, Roles, RoleList};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -23,7 +21,7 @@ pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
     pub fn new(
-        protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
+        protected_module_methods: BTreeMap<MethodKey, RoleList>,
         authority_rules: Roles,
     ) -> Self {
         let rtn = ScryptoEnv
@@ -48,7 +46,7 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::new(name),
+                authority_key: RoleKey::new(name),
                 rule: entry.into(),
             },
         );
@@ -64,19 +62,19 @@ impl AccessRules {
             ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
             &AccessRulesSetAuthorityRuleInput {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                authority_key: AuthorityKey::new(name),
+                authority_key: RoleKey::new(name),
                 rule: entry.into(),
             },
         );
     }
 
-    pub fn set_authority_mutability(&self, name: &str, mutability: Vec<String>) {
+    pub fn set_authority_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
             &AccessRulesSetAuthorityMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key: AuthorityKey::new(name),
-                mutability,
+                authority_key: RoleKey::new(name),
+                mutability: mutability.into(),
             },
         );
     }
@@ -114,3 +112,4 @@ impl From<Mutability> for AccessRule {
         }
     }
 }
+

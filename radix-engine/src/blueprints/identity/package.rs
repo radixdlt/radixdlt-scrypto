@@ -189,22 +189,18 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
         btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => vec!["owner".to_string()],
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => vec!["owner".to_string()],
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => vec!["owner".to_string()],
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => role_list!["owner"],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => role_list!["owner"],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => role_list!["owner"],
         )
     }
 
-    fn authority_rules() -> Roles {
-        let mut roles = Roles::new();
-        roles.define_role(
-            Self::SELF_ROLE,
-            rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), // TODO: Use self object
-            vec![],
-        );
-        roles
+    fn role_definitions() -> Roles {
+        roles! {
+            Self::SELF_ROLE => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))); // TODO: Use self object
+        }
     }
 }
 

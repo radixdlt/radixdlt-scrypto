@@ -172,7 +172,7 @@ impl ClockNativePackage {
 
         let access_rules = AccessRules::create(
             btreemap!(
-                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => vec![CLOCK_AUTHORITY.to_string()],
+                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => role_list![CLOCK_AUTHORITY],
             ),
             authority_rules,
             btreemap!(),

@@ -80,7 +80,8 @@ mod genesis_helper {
                 Method::ingest_data_chunk => vec!["system"];
                 Method::wrap_up => vec!["system"];
             ))
-            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .globalize()
         }
 
         pub fn ingest_data_chunk(&mut self, chunk: GenesisDataChunk) {

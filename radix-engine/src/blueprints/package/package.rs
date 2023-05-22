@@ -114,19 +114,18 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => vec![PACKAGE_ROYALTY_AUTHORITY.to_string()],
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => vec![PACKAGE_ROYALTY_AUTHORITY.to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
+            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY],
+            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY],
         )
     }
 
-    fn authority_rules() -> Roles {
-        let mut authority_rules = Roles::new();
-
-        authority_rules.define_role("package_royalty", rule!(require("owner")), vec![]);
-        authority_rules
+    fn role_definitions() -> Roles {
+        roles! {
+            "package_royalty" => rule!(require("owner"));
+        }
     }
 }
 

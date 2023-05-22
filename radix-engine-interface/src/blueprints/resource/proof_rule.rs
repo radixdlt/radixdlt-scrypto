@@ -75,27 +75,27 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
 
 impl From<String> for AccessRuleNode {
     fn from(authority: String) -> Self {
-        AccessRuleNode::Authority(AuthorityKey::new(authority))
+        AccessRuleNode::Authority(RoleKey::new(authority))
     }
 }
 
 impl From<&str> for AccessRuleNode {
     fn from(authority: &str) -> Self {
-        AccessRuleNode::Authority(AuthorityKey::new(authority))
+        AccessRuleNode::Authority(RoleKey::new(authority))
     }
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AccessRuleNode {
-    Authority(AuthorityKey),
+    Authority(RoleKey),
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
 }
 
 impl AccessRuleNode {
-    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<AuthorityKey>) {
+    pub fn get_referenced_authorities(&self, authorities: &mut IndexSet<RoleKey>) {
         match self {
             AccessRuleNode::Authority(authority) => {
                 authorities.insert(authority.clone());
@@ -193,7 +193,7 @@ pub enum AccessRule {
 }
 
 impl AccessRule {
-    pub fn get_referenced_authorities(&self) -> IndexSet<AuthorityKey> {
+    pub fn get_referenced_authorities(&self) -> IndexSet<RoleKey> {
         let mut authorities = index_set_new();
         match self {
             AccessRule::AllowAll | AccessRule::DenyAll => {}

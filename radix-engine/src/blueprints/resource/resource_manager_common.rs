@@ -13,9 +13,9 @@ use radix_engine_interface::*;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    (Roles, BTreeMap<MethodKey, Vec<String>>),
-    (Roles, BTreeMap<MethodKey, Vec<String>>),
-    (Roles, BTreeMap<MethodKey, Vec<String>>),
+    (Roles, BTreeMap<MethodKey, RoleList>),
+    (Roles, BTreeMap<MethodKey, RoleList>),
+    (Roles, BTreeMap<MethodKey, RoleList>),
 ) {
     let (resman_authority_rules, resman_protected_methods) = {
         let (mint_access_rule, mint_mutability) = access_rules_map
@@ -92,12 +92,12 @@ fn build_access_rules(
         }
 
         let resman_protected_methods = btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => vec![UPDATE_METADATA_AUTHORITY.to_string()],
-            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => vec![MINT_AUTHORITY.to_string()],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => vec![MINT_AUTHORITY.to_string()],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => vec![MINT_AUTHORITY.to_string()],
-            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => vec![BURN_AUTHORITY.to_string()],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => vec![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY.to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list![UPDATE_METADATA_AUTHORITY],
+            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => role_list![MINT_AUTHORITY],
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => role_list![MINT_AUTHORITY],
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => role_list![MINT_AUTHORITY],
+            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => role_list![BURN_AUTHORITY],
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => role_list![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY],
         );
 
         (resman_authority_rules, resman_protected_methods)
@@ -169,16 +169,16 @@ fn build_access_rules(
         }
 
         let vault_protected_methods = btreemap!(
-            MethodKey::main(VAULT_TAKE_IDENT) => vec![WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => vec![WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => vec![WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(VAULT_RECALL_IDENT) => vec![RECALL_AUTHORITY.to_string()],
-            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => vec![RECALL_AUTHORITY.to_string()],
-            MethodKey::main(VAULT_PUT_IDENT) => vec![DEPOSIT_AUTHORITY.to_string()],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => vec!["this_package".to_string()],
+            MethodKey::main(VAULT_TAKE_IDENT) => role_list![WITHDRAW_AUTHORITY],
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => role_list![WITHDRAW_AUTHORITY],
+            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => role_list![WITHDRAW_AUTHORITY],
+            MethodKey::main(VAULT_RECALL_IDENT) => role_list![RECALL_AUTHORITY],
+            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => role_list![RECALL_AUTHORITY],
+            MethodKey::main(VAULT_PUT_IDENT) => role_list![DEPOSIT_AUTHORITY],
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"],
+            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
+            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"],
+            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
         );
 
         (vault_authority_rules, vault_protected_methods)
@@ -197,10 +197,10 @@ fn build_access_rules(
         );
 
         let bucket_protected_methods = btreemap!(
-            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => vec!["this_package".to_string()],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => vec!["this_package".to_string()],
+            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => role_list!["this_package"],
+            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => role_list!["this_package"],
+            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
+            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
         );
 
         (bucket_authority_rules, bucket_protected_methods)

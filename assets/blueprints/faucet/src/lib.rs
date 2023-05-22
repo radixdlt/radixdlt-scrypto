@@ -16,7 +16,8 @@ mod faucet {
             }
             .instantiate()
             .prepare_to_globalize()
-            .globalize_at_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
+            .globalize()
         }
 
         /// Gives away tokens.

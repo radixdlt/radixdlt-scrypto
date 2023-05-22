@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodKey, Roles};
+use radix_engine_interface::blueprints::resource::{MethodKey, RoleList, Roles};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -181,7 +181,7 @@ pub trait ModuleMethod {
 }
 
 pub struct ProtectedMethods<M: ModuleMethod> {
-    protected_methods: IndexMap<String, Vec<String>>,
+    protected_methods: IndexMap<String, RoleList>,
     phantom: PhantomData<M>,
 }
 
@@ -193,10 +193,10 @@ impl<M: ModuleMethod> ProtectedMethods<M> {
         }
     }
 
-    pub fn insert<S: ToString>(&mut self, method: M, roles: Vec<S>) {
+    pub fn insert<L: Into<RoleList>>(&mut self, method: M, roles: L) {
         self.protected_methods.insert(
             method.to_ident(),
-            roles.into_iter().map(|s| s.to_string()).collect(),
+            roles.into(),
         );
     }
 }
@@ -225,7 +225,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub authority_rules: Roles,
-    pub protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
+    pub protected_module_methods: BTreeMap<MethodKey, RoleList>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -289,9 +289,9 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn globalize_at_address(mut self, address: ComponentAddress) -> Global<C> {
-        let _ = self.address.insert(address);
-        self.globalize()
+    pub fn with_address(mut self, address: ComponentAddress) -> Self {
+        self.address = Some(address);
+        self
     }
 
     pub fn globalize(mut self) -> Global<C> {

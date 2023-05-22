@@ -18,9 +18,9 @@ mod cross_component {
             .define_roles(roles! {
                 "auth" => access_rule;
             })
-            .protect_methods(protect!(
+            .protect_methods(protect! {
                 Method::get_component_state => vec!["auth"];
-            ))
+            })
             .globalize()
         }
 

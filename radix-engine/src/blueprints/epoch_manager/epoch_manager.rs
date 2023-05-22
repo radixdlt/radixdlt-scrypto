@@ -185,30 +185,19 @@ impl EpochManagerBlueprint {
             )?
         };
 
-        let mut authority_rules = Roles::new();
-        authority_rules.define_role(
-            "self",
-            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
-            vec!["self"],
-        );
-        authority_rules.define_role(
-            VALIDATOR_AUTHORITY,
-            rule!(require(AuthAddresses::validator_role())),
-            vec![],
-        );
-        authority_rules.define_role(
-            SYSTEM_AUTHORITY,
-            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-            vec![],
-        );
+        let role_definitions = roles! {
+            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))), ["self"];
+            VALIDATOR_AUTHORITY => rule!(require(AuthAddresses::validator_role()));
+            SYSTEM_AUTHORITY => rule!(require(AuthAddresses::system_role())); // Set epoch only used for debugging
+        };
 
         let access_rules = AccessRules::create(
             btreemap!(
-                MethodKey::main(EPOCH_MANAGER_START_IDENT) => vec!["self".to_string()],
-                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => vec![VALIDATOR_AUTHORITY.to_string()],
-                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => vec![SYSTEM_AUTHORITY.to_string()],
+                MethodKey::main(EPOCH_MANAGER_START_IDENT) => role_list!["self"],
+                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => role_list![VALIDATOR_AUTHORITY],
+                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => role_list![SYSTEM_AUTHORITY],
             ),
-            authority_rules,
+            role_definitions,
             btreemap!(
                 VALIDATOR_BLUEPRINT.to_string() => (Roles::new(), btreemap!())
             ),
@@ -268,7 +257,7 @@ impl EpochManagerBlueprint {
 
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_authority_rule_and_mutability(
-            AuthorityKey::new("self"),
+            RoleKey::new("self"),
             AccessRule::DenyAll,
             vec![],
             api,

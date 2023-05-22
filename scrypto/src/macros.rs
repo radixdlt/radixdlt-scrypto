@@ -459,32 +459,6 @@ macro_rules! external_component_members {
     () => {}
 }
 
-#[macro_export]
-macro_rules! role_entry {
-    ($roles: expr, $role: expr, $rule:expr) => ({
-        $roles.define_role($role, $rule, vec![]);
-    });
-    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => ({
-        $roles.define_role($role, $rule, $mutability);
-    });
-}
-
-#[macro_export]
-macro_rules! roles {
-    ( ) => ({
-        ::scrypto::blueprints::resource::Roles::new()
-    });
-    ( $($role:expr => $($entry:expr),* );* ) => ({
-        let mut roles = ::scrypto::blueprints::resource::Roles::new();
-        $(
-            role_entry!(roles, $role, $($entry),*);
-        )*
-        roles
-    });
-    ( $($role:expr => $($entry:expr),*;)* ) => ({
-        roles!($($role => $($entry),*);*)
-    })
-}
 
 #[macro_export]
 macro_rules! protect {

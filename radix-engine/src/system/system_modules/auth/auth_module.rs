@@ -28,7 +28,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
-    CycleCheckError(CycleCheckError<AuthorityKey>),
+    CycleCheckError(CycleCheckError<RoleKey>),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -36,7 +36,7 @@ pub enum AuthError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FailedAccessRules {
-    AuthorityList(Vec<(AuthorityKey, Vec<AccessRule>)>),
+    AuthorityList(Vec<(RoleKey, Vec<AccessRule>)>),
     AccessRule(Vec<AccessRule>),
 }
 
@@ -63,7 +63,7 @@ pub enum AuthorizationCheckResult {
 
 pub enum AuthorityListAuthorizationResult {
     Authorized,
-    Failed(Vec<(AuthorityKey, Vec<AccessRule>)>),
+    Failed(Vec<(RoleKey, Vec<AccessRule>)>),
 }
 
 impl AuthModule {
@@ -188,7 +188,7 @@ impl AuthModule {
             }
         };
 
-        let authority_list = match method_key.module_id {
+        let role_list = match method_key.module_id {
             ObjectModuleId::AccessRules => {
                 match &object_key {
                     ObjectKey::SELF => {}
@@ -200,15 +200,10 @@ impl AuthModule {
                     args,
                     api,
                 )?
-                .into_iter()
-                .map(|s| AuthorityKey::new(s))
-                .collect()
             }
             _ => {
                 if let Some(list) = node_authority_rules.protected_methods.get(&method_key) {
-                    list.iter()
-                        .map(|authority| AuthorityKey::new(authority))
-                        .collect()
+                    list.clone()
                 } else {
                     return Ok(());
                 }
@@ -220,7 +215,7 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             &node_authority_rules,
-            &authority_list,
+            &role_list,
             api,
         )?;
 
@@ -235,7 +230,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules: &NodeAuthorityRules,
-        role_list: &Vec<AuthorityKey>,
+        role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let result = Authorization::check_authorization_against_role_list(

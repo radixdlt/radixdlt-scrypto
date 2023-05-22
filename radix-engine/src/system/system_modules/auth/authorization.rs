@@ -290,7 +290,7 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
         auth_rule: &AccessRuleNode,
-        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
+        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
@@ -366,8 +366,8 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        key: &AuthorityKey,
-        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
+        key: &RoleKey,
+        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match access_rules.get_rule(key) {
@@ -393,7 +393,7 @@ impl Authorization {
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
         rule: &AccessRule,
-        already_verified_authorities: &mut NonIterMap<AuthorityKey, ()>,
+        already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
@@ -446,14 +446,14 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules: &NodeAuthorityRules,
-        authority_list: &Vec<AuthorityKey>,
+        role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
         let mut already_verified_authorities = NonIterMap::new();
 
         let mut failed = Vec::new();
 
-        for key in authority_list {
+        for key in &role_list.list {
             let result = Self::check_authorization_against_authority_key_internal(
                 acting_location,
                 auth_zone_id,

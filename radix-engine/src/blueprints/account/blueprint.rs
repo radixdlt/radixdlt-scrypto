@@ -39,37 +39,28 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, Vec<String>> {
+    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => vec!["owner".to_string()],
-
-            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_WITHDRAW_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => vec![ACCOUNT_CREATE_PROOF_AUTHORITY.to_string()],
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => vec![ACCOUNT_SECURIFY_AUTHORITY.to_string()],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
+            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
+            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => role_list![ACCOUNT_SECURIFY_AUTHORITY],
         )
     }
 
-    fn authority_rules() -> Roles {
-        let mut roles = Roles::new();
-        roles.define_role(ACCOUNT_WITHDRAW_AUTHORITY, rule!(require("owner")), vec![]);
-        roles.define_role(
-            ACCOUNT_CREATE_PROOF_AUTHORITY,
-            rule!(require("owner")),
-            vec![],
-        );
-        roles.define_role(
-            Self::SELF_ROLE,
-            rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), // TODO: Use self object
-            vec![],
-        );
-        roles
+    fn role_definitions() -> Roles {
+        roles! {
+            ACCOUNT_WITHDRAW_AUTHORITY => rule!(require("owner"));
+            ACCOUNT_CREATE_PROOF_AUTHORITY => rule!(require("owner"));
+            Self::SELF_ROLE => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))); // TODO: Use self object
+        }
     }
 }
 

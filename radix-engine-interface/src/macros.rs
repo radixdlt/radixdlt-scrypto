@@ -93,3 +93,46 @@ macro_rules! rule {
         $crate::blueprints::resource::AccessRule::Protected($crate::access_rule_node!($($tt)+))
     }};
 }
+
+#[macro_export]
+macro_rules! role_list {
+    ( ) => ({
+        $crate::blueprints::resource::RoleList { list: vec![] }
+    });
+    ( $($role:expr),* ) => ({
+        let mut list = vec![];
+        $(
+            list.push(RoleKey::new($role));
+        )*
+
+        $crate::blueprints::resource::RoleList { list }
+    });
+}
+
+
+#[macro_export]
+macro_rules! role_entry {
+    ($roles: expr, $role: expr, $rule:expr) => ({
+        $roles.define_role($role, $rule, RoleList::none());
+    });
+    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => ({
+        $roles.define_role($role, $rule, $mutability);
+    });
+}
+
+#[macro_export]
+macro_rules! roles {
+    ( ) => ({
+        $crate::blueprints::resource::Roles::new()
+    });
+    ( $($role:expr => $($entry:expr),* );* ) => ({
+        let mut roles = $crate::blueprints::resource::Roles::new();
+        $(
+            role_entry!(roles, $role, $($entry),*);
+        )*
+        roles
+    });
+    ( $($role:expr => $($entry:expr),*;)* ) => ({
+        roles!($($role => $($entry),*);*)
+    })
+}

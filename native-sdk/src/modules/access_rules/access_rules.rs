@@ -5,9 +5,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AuthorityKey, MethodKey, ObjectKey, Roles,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, MethodKey, ObjectKey, Roles, RoleList};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -21,9 +19,9 @@ pub struct AccessRules(pub Own);
 
 impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
-        protected_module_methods: BTreeMap<MethodKey, Vec<String>>,
+        protected_module_methods: BTreeMap<MethodKey, RoleList>,
         authority_rules: Roles,
-        inner_blueprint_rules: BTreeMap<String, (Roles, BTreeMap<MethodKey, Vec<String>>)>,
+        inner_blueprint_rules: BTreeMap<String, (Roles, BTreeMap<MethodKey, RoleList>)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -66,7 +64,7 @@ pub trait AccessRulesObject {
 
     fn set_authority_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
-        authority_key: AuthorityKey,
+        authority_key: RoleKey,
         entry: A,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -91,11 +89,12 @@ pub trait AccessRulesObject {
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
         R: Into<AccessRule>,
+        L: Into<RoleList>,
     >(
         &self,
-        authority_key: AuthorityKey,
+        authority_key: RoleKey,
         rule: R,
-        mutability: Vec<String>,
+        mutability: L,
         api: &mut Y,
     ) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
@@ -108,7 +107,7 @@ pub trait AccessRulesObject {
                 object_key: ObjectKey::SELF,
                 authority_key,
                 rule: rule.into(),
-                mutability,
+                mutability: mutability.into(),
             })
             .unwrap(),
         )?;
