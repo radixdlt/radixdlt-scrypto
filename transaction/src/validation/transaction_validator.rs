@@ -109,17 +109,17 @@ impl NotarizedTransactionValidator {
         self.validate_header(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        Self::validate_manifest(&intent.instructions.inner)?;
+        Self::validate_instructions(&intent.instructions.inner.0)?;
 
         return Ok(());
     }
 
-    pub fn validate_manifest(
-        instructions: &InstructionsV1,
+    pub fn validate_instructions(
+        instructions: &[InstructionV1],
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
         let mut id_validator = ManifestValidator::new();
-        for inst in &instructions.0 {
+        for inst in instructions {
             match inst {
                 InstructionV1::TakeAllFromWorktop { .. } => {
                     id_validator
