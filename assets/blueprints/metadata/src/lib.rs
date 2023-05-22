@@ -6,12 +6,15 @@ mod metadata {
 
     impl MetadataTest {
         pub fn new() -> Global<MetadataTest> {
-            let mut authority_rules = AuthorityRules::new();
-            authority_rules.set_metadata_authority(AccessRule::AllowAll, AccessRule::DenyAll);
-
             Self {}
                 .instantiate()
-                .authority_rules(authority_rules)
+                .prepare_to_globalize()
+                .define_roles(roles! {
+                    "public" => rule!(allow_all);
+                })
+                .protect_metadata(protect! {
+                    MetadataMethod::set => ["public"];
+                })
                 .globalize()
         }
 

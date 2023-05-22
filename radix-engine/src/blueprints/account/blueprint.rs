@@ -1,4 +1,6 @@
-use crate::blueprints::account::{ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_DEPOSIT_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY};
+use crate::blueprints::account::{
+    ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY,
+};
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -64,11 +66,6 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
             MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
             MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
-
-            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_IDENT) => role_list![ACCOUNT_DEPOSIT_AUTHORITY],
-            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => role_list![ACCOUNT_DEPOSIT_AUTHORITY],
-            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT) => role_list![ACCOUNT_DEPOSIT_AUTHORITY],
-
             MethodKey::main(ACCOUNT_SECURIFY_IDENT) => role_list![ACCOUNT_SECURIFY_AUTHORITY],
         )
     }
@@ -280,7 +277,7 @@ impl AccountBlueprint {
 
         let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
         if !is_deposit_allowed {
-            Runtime::assert_access_rule(rule!(require(ACCOUNT_DEPOSIT_AUTHORITY)), api)?;
+            Runtime::assert_access_rule(rule!(require("owner")), api)?;
         }
 
         Self::get_vault(

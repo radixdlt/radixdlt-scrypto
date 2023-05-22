@@ -15,7 +15,6 @@ use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
 pub const ACCOUNT_WITHDRAW_AUTHORITY: &str = "withdraw";
-pub const ACCOUNT_DEPOSIT_AUTHORITY: &str = "deposit";
 pub const ACCOUNT_CREATE_PROOF_AUTHORITY: &str = "create_proof";
 pub const ACCOUNT_SECURIFY_AUTHORITY: &str = "securify";
 

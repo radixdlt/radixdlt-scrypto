@@ -8,9 +8,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
+use sbor::rust::prelude::*;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto::modules::Attachable;
 
