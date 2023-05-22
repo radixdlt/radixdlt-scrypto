@@ -4,7 +4,6 @@ use sbor::rust::prelude::*;
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
-pub use radix_engine::blueprints::clock::*;
 pub use radix_engine::blueprints::epoch_manager::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::resource::*;
@@ -99,7 +98,6 @@ pub enum TypedMainModuleSubstateKey {
     NonFungibleVaultContentsIndexKey(NonFungibleLocalId),
     EpochManagerField(EpochManagerField),
     EpochManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
-    ClockField(ClockField),
     ValidatorField(ValidatorField),
     AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
@@ -236,9 +234,6 @@ fn to_typed_object_substate_key_internal(
         EntityType::GlobalValidator => {
             TypedMainModuleSubstateKey::ValidatorField(ValidatorField::try_from(substate_key)?)
         }
-        EntityType::GlobalClock => {
-            TypedMainModuleSubstateKey::ClockField(ClockField::try_from(substate_key)?)
-        }
         EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessControllerField(
             AccessControllerField::try_from(substate_key)?,
         ),
@@ -330,7 +325,6 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleVaultContentsIndexEntry(NonFungibleVaultContentsEntry),
     EpochManagerField(TypedEpochManagerFieldValue),
     EpochManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
-    Clock(TypedClockFieldValue),
     Validator(TypedValidatorFieldValue),
     Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
@@ -378,11 +372,8 @@ pub enum TypedEpochManagerFieldValue {
     EpochManager(EpochManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
-}
-
-#[derive(Debug, Clone)]
-pub enum TypedClockFieldValue {
-    CurrentTimeRoundedToMinutes(ClockSubstate),
+    CurrentTimeRoundedToMinutes(i64),
+    CurrentTime(i64),
 }
 
 #[derive(Debug, Clone)]
@@ -538,19 +529,18 @@ fn to_typed_object_substate_value(
                 EpochManagerField::CurrentProposalStatistic => {
                     TypedEpochManagerFieldValue::CurrentProposalStatistic(scrypto_decode(data)?)
                 }
+                EpochManagerField::CurrentTimeRoundedToMinutes => {
+                    TypedEpochManagerFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(data)?)
+                }
+                EpochManagerField::CurrentTime => {
+                    TypedEpochManagerFieldValue::CurrentTime(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::EpochManagerRegisteredValidatorsByStakeIndexKey(_) => {
             TypedMainModuleSubstateValue::EpochManagerRegisteredValidatorsByStakeIndexEntry(
                 scrypto_decode(data)?,
             )
-        }
-        TypedMainModuleSubstateKey::ClockField(offset) => {
-            TypedMainModuleSubstateValue::Clock(match offset {
-                ClockField::CurrentTimeRoundedToMinutes => {
-                    TypedClockFieldValue::CurrentTimeRoundedToMinutes(scrypto_decode(data)?)
-                }
-            })
         }
         TypedMainModuleSubstateKey::ValidatorField(offset) => {
             TypedMainModuleSubstateValue::Validator(match offset {

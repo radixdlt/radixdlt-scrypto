@@ -128,6 +128,8 @@ pub enum EpochManagerField {
     EpochManager,
     CurrentValidatorSet,
     CurrentProposalStatistic,
+    CurrentTimeRoundedToMinutes,
+    CurrentTime,
 }
 
 #[repr(u8)]
@@ -168,12 +170,6 @@ pub enum NonFungibleProofField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum WorktopField {
     Worktop,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum ClockField {
-    CurrentTimeRoundedToMinutes,
 }
 
 #[repr(u8)]
@@ -262,5 +258,4 @@ substate_key!(AccountField);
 
 // Transient
 substate_key!(WorktopField);
-substate_key!(ClockField);
 substate_key!(AuthZoneField);

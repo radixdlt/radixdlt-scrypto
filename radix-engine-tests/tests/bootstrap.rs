@@ -1,4 +1,3 @@
-use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
@@ -385,18 +384,15 @@ fn test_genesis_time() {
         )
         .unwrap();
 
-    let current_time_substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, ClockSubstate>(
-            CLOCK.as_node_id(),
+    let current_time_rounded_to_minutes_ms = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, i64>(
+            EPOCH_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
-            &ClockField::CurrentTimeRoundedToMinutes.into(),
+            &EpochManagerField::CurrentTimeRoundedToMinutes.into(),
         )
         .unwrap();
 
-    assert_eq!(
-        current_time_substate.current_time_rounded_to_minutes_ms,
-        123 * 60 * 1000
-    );
+    assert_eq!(current_time_rounded_to_minutes_ms, 123 * 60 * 1000);
 }
 
 fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {

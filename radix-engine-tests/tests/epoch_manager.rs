@@ -1483,7 +1483,8 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
             Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             1u64,
-            dummy_epoch_manager_configuration()
+            dummy_epoch_manager_configuration(),
+            120000i64
         ),
     }];
     let blobs = vec![];
@@ -1521,7 +1522,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
             Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
             1u64,
-            dummy_epoch_manager_configuration()
+            dummy_epoch_manager_configuration(),
+            120000i64
         ),
     }];
     let blobs = vec![];

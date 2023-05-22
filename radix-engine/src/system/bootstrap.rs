@@ -1,6 +1,5 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
@@ -20,9 +19,6 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{
-    ClockCreateInput, CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT,
-};
 use radix_engine_interface::blueprints::epoch_manager::{
     EpochManagerInitialConfiguration, EPOCH_MANAGER_BLUEPRINT, EPOCH_MANAGER_CREATE_IDENT,
 };
@@ -564,27 +560,6 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Clock Package
-    {
-        pre_allocated_ids.insert(CLOCK_PACKAGE.into());
-        let package_address = CLOCK_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
-            package_address: PACKAGE_PACKAGE,
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value(&PackagePublishNativeInput {
-                package_address: Some(package_address), // TODO: Clean this up
-                schema: ClockNativePackage::schema(),
-                native_package_code_id: CLOCK_CODE_ID,
-                metadata: BTreeMap::new(),
-                dependent_resources: vec![SYSTEM_TRANSACTION_BADGE],
-                dependent_components: vec![],
-                package_access_rules: ClockNativePackage::package_access_rules(),
-                default_package_access_rule: AccessRule::DenyAll,
-            }),
-        });
-    }
-
     // Account Package
     {
         // TODO: Integrate this into package instantiation to remove circular dependency
@@ -650,7 +625,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE],
-                dependent_components: vec![CLOCK],
+                dependent_components: vec![EPOCH_MANAGER],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
@@ -785,21 +760,6 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    // Clock Component
-    {
-        let component_address = CLOCK.into();
-        pre_allocated_ids.insert(CLOCK.into());
-        instructions.push(Instruction::CallFunction {
-            package_address: CLOCK_PACKAGE,
-            blueprint_name: CLOCK_BLUEPRINT.to_string(),
-            function_name: CLOCK_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&ClockCreateInput {
-                component_address,
-                initial_time_ms,
-            }),
-        });
-    }
-
     // Create EpochManager
     {
         let epoch_manager_component_address = Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER);
@@ -815,7 +775,8 @@ pub fn create_system_bootstrap_transaction(
                 validator_owner_token,
                 epoch_manager_component_address,
                 initial_epoch,
-                initial_configuration
+                initial_configuration,
+                initial_time_ms
             ),
         });
     }

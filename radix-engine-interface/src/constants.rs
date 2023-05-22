@@ -34,7 +34,6 @@ lazy_static! {
             RESOURCE_PACKAGE.into(),
             IDENTITY_PACKAGE.into(),
             EPOCH_MANAGER_PACKAGE.into(),
-            CLOCK_PACKAGE.into(),
             ACCOUNT_PACKAGE.into(),
             ACCESS_CONTROLLER_PACKAGE.into(),
             TRANSACTION_PROCESSOR_PACKAGE.into(),
@@ -44,7 +43,6 @@ lazy_static! {
             GENESIS_HELPER_PACKAGE.into(),
             FAUCET_PACKAGE.into(),
             // components
-            CLOCK.into(),
             EPOCH_MANAGER.into(),
         ]
     };

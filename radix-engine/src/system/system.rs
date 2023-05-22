@@ -32,7 +32,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::clock::CLOCK_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
@@ -2120,7 +2119,6 @@ pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
         }
         (EPOCH_MANAGER_PACKAGE, EPOCH_MANAGER_BLUEPRINT) => EntityType::GlobalEpochManager,
         (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => EntityType::GlobalValidator,
-        (CLOCK_PACKAGE, CLOCK_BLUEPRINT) => EntityType::GlobalClock,
         (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
             EntityType::GlobalAccessController
         }

@@ -16,6 +16,10 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
+const SECONDS_TO_MS_FACTOR: i64 = 1000;
+const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
+const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerConfigSubstate {
     pub max_validators: u32,
@@ -123,6 +127,7 @@ impl EpochManagerBlueprint {
         component_address: [u8; NodeId::LENGTH],       // TODO: Clean this up
         initial_epoch: u64,
         initial_configuration: EpochManagerInitialConfiguration,
+        initial_time_ms: i64,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -180,6 +185,8 @@ impl EpochManagerBlueprint {
                     scrypto_encode(&epoch_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&current_proposal_statistic).unwrap(),
+                    scrypto_encode(&Self::round_to_minutes_ms(initial_time_ms)).unwrap(),
+                    scrypto_encode(&initial_time_ms).unwrap(),
                 ],
             )?
         };
@@ -189,6 +196,10 @@ impl EpochManagerBlueprint {
             EPOCH_MANAGER_START_IDENT,
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
             rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
+            rule!(require(AuthAddresses::validator_role())),
         );
         authority_rules.set_fixed_main_authority_rule(
             EPOCH_MANAGER_NEXT_ROUND_IDENT,
@@ -267,6 +278,94 @@ impl EpochManagerBlueprint {
         )?;
 
         Ok(())
+    }
+
+    pub(crate) fn set_current_time<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::CurrentTime.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &current_time_ms)?;
+        api.field_lock_release(handle)?;
+
+        let current_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(current_time_ms);
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            EpochManagerField::CurrentTimeRoundedToMinutes.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &current_time_rounded_to_minutes_ms)?;
+        api.field_lock_release(handle)?;
+
+        Ok(())
+    }
+
+    pub(crate) fn get_current_time<Y>(
+        precision: TimePrecision,
+        api: &mut Y,
+    ) -> Result<Instant, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match precision {
+            TimePrecision::Minute => {
+                let handle = api.actor_lock_field(
+                    OBJECT_HANDLE_SELF,
+                    EpochManagerField::CurrentTimeRoundedToMinutes.into(),
+                    LockFlags::read_only(),
+                )?;
+                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                api.field_lock_release(handle)?;
+                let instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
+                Ok(instant)
+            }
+        }
+    }
+
+    pub(crate) fn compare_current_time<Y>(
+        other_arbitrary_precision_instant: Instant,
+        precision: TimePrecision,
+        operator: TimeComparisonOperator,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match precision {
+            TimePrecision::Minute => {
+                let handle = api.actor_lock_field(
+                    OBJECT_HANDLE_SELF,
+                    EpochManagerField::CurrentTimeRoundedToMinutes.into(),
+                    LockFlags::read_only(),
+                )?;
+                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                api.field_lock_release(handle)?;
+
+                let other_time_ms = Self::instant_to_millis(other_arbitrary_precision_instant);
+                let other_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(other_time_ms);
+
+                let current_instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
+                let other_instant = Self::instant_from_millis(other_time_rounded_to_minutes_ms);
+                let result = current_instant.compare(other_instant, operator);
+                Ok(result)
+            }
+        }
+    }
+
+    fn round_to_minutes_ms(time_ms: i64) -> i64 {
+        (time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR
+    }
+
+    fn instant_from_millis(time_ms: i64) -> Instant {
+        Instant::new(time_ms / SECONDS_TO_MS_FACTOR)
+    }
+
+    fn instant_to_millis(instant: Instant) -> i64 {
+        instant.seconds_since_unix_epoch * SECONDS_TO_MS_FACTOR
     }
 
     pub(crate) fn next_round<Y>(

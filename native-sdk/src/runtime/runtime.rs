@@ -1,8 +1,7 @@
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::clock::*;
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
+use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
@@ -44,9 +43,9 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            CLOCK.as_node_id(),
-            CLOCK_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+            EPOCH_MANAGER.as_node_id(),
+            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&EpochManagerGetCurrentTimeInput { precision }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -63,9 +62,9 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            CLOCK.as_node_id(),
-            CLOCK_COMPARE_CURRENT_TIME_IDENT,
-            scrypto_encode(&ClockCompareCurrentTimeInput {
+            EPOCH_MANAGER.as_node_id(),
+            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&EpochManagerCompareCurrentTimeInput {
                 precision,
                 instant,
                 operator,

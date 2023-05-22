@@ -26,9 +26,6 @@ pub enum EntityType {
     /// A global validator entity (130 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
     GlobalValidator = 0b10000010, //----------------- 10000 => s, 110xx => vdw0
 
-    /// The global clock entity (133 in decimal). Gives Bech32 prefix: `s` followed by one of `5`, `4`, `k` or `h`.
-    GlobalClock = 0b10000101, //--------------------- 10000 => s, 101xx => 54kh
-
     //=========================================================================
     // Standard Global Components (start with char c for component)
     //=========================================================================
@@ -106,7 +103,6 @@ impl EntityType {
             | EntityType::GlobalNonFungibleResourceManager
             | EntityType::GlobalEpochManager
             | EntityType::GlobalValidator
-            | EntityType::GlobalClock
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
@@ -131,7 +127,6 @@ impl EntityType {
         match self {
             EntityType::GlobalEpochManager
             | EntityType::GlobalValidator
-            | EntityType::GlobalClock
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity

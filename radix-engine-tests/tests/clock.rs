@@ -1,72 +1,9 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{
-    CLOCK_BLUEPRINT, CLOCK_CREATE_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
-};
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_SET_CURRENT_TIME_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, SystemTransaction};
-
-#[test]
-fn a_new_clock_instance_can_be_created_by_the_system() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-
-    // Act
-    let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(CLOCK.into());
-    let instructions = vec![Instruction::CallFunction {
-        package_address: CLOCK_PACKAGE,
-        blueprint_name: CLOCK_BLUEPRINT.to_string(),
-        function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(Into::<[u8; NodeId::LENGTH]>::into(CLOCK), 1i64),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-fn a_new_clock_instance_cannot_be_created_by_a_validator() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-
-    // Act
-    let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(CLOCK.into());
-    let instructions = vec![Instruction::CallFunction {
-        package_address: CLOCK_PACKAGE,
-        blueprint_name: CLOCK_BLUEPRINT.to_string(),
-        function_name: CLOCK_CREATE_IDENT.to_string(),
-        args: manifest_args!(Into::<[u8; NodeId::LENGTH]>::into(CLOCK), 1i64),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![]),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
-    });
-}
 
 #[test]
 fn set_current_time_should_fail_without_validator_auth() {
@@ -77,8 +14,8 @@ fn set_current_time_should_fail_without_validator_auth() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            CLOCK,
-            CLOCK_SET_CURRENT_TIME_IDENT,
+            EPOCH_MANAGER,
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(123 as i64),
         )
         .build();
@@ -103,8 +40,8 @@ fn validator_can_set_current_time() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            CLOCK,
-            CLOCK_SET_CURRENT_TIME_IDENT,
+            EPOCH_MANAGER,
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(time_to_set_ms),
         )
         .call_function(
@@ -157,8 +94,8 @@ fn test_clock_comparison_methods_against_the_current_time() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            CLOCK,
-            CLOCK_SET_CURRENT_TIME_IDENT,
+            EPOCH_MANAGER,
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(1669663688996 as i64),
         )
         .call_function(

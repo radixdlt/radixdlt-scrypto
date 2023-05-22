@@ -30,13 +30,11 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::blueprints::clock::{
-    ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
-    CLOCK_GET_CURRENT_TIME_IDENT, CLOCK_SET_CURRENT_TIME_IDENT,
-};
 use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerInitialConfiguration, EpochManagerSetEpochInput,
-    EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+    EpochManagerGetCurrentEpochInput, EpochManagerGetCurrentTimeInput,
+    EpochManagerInitialConfiguration, EpochManagerSetCurrentTimeInput, EpochManagerSetEpochInput,
+    TimePrecision, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_GET_CURRENT_TIME_IDENT,
+    EPOCH_MANAGER_SET_CURRENT_TIME_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::constants::EPOCH_MANAGER;
@@ -1244,9 +1242,9 @@ impl TestRunner {
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
-            address: CLOCK.into(),
-            method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput { current_time_ms }),
+            address: EPOCH_MANAGER.into(),
+            method_name: EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&EpochManagerSetCurrentTimeInput { current_time_ms }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1265,9 +1263,9 @@ impl TestRunner {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
-            address: CLOCK.into(),
-            method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
+            address: EPOCH_MANAGER.into(),
+            method_name: EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&EpochManagerGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

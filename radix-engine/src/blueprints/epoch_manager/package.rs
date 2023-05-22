@@ -2,7 +2,7 @@ use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
+use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
@@ -28,6 +28,8 @@ impl EpochManagerNativePackage {
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
         fields
             .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<i64>());
+        fields.push(aggregator.add_child_type_and_descendents::<i64>());
 
         let mut collections = Vec::new();
         collections.push(BlueprintCollectionSchema::SortedIndex(
@@ -71,6 +73,39 @@ impl EpochManagerNativePackage {
                 input: aggregator.add_child_type_and_descendents::<EpochManagerStartInput>(),
                 output: aggregator.add_child_type_and_descendents::<EpochManagerStartOutput>(),
                 export_name: EPOCH_MANAGER_START_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: aggregator
+                    .add_child_type_and_descendents::<EpochManagerGetCurrentTimeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<EpochManagerGetCurrentTimeOutput>(),
+                export_name: EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<EpochManagerSetCurrentTimeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<EpochManagerSetCurrentTimeOutput>(),
+                export_name: EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: aggregator
+                    .add_child_type_and_descendents::<EpochManagerCompareCurrentTimeInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<EpochManagerCompareCurrentTimeOutput>(),
+                export_name: EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -265,6 +300,7 @@ impl EpochManagerNativePackage {
                     input.component_address,
                     input.initial_epoch,
                     input.initial_configuration,
+                    input.initial_time_ms,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -298,6 +334,44 @@ impl EpochManagerNativePackage {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = EpochManagerBlueprint::start(receiver, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: EpochManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::get_current_time(input.precision, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: EpochManagerSetCurrentTimeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::set_current_time(input.current_time_ms, api)?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
+                // TODO(resolve during review): I copied the `FIXED_HIGH_FEE` here as-is, but it
+                // does not feel right... (I mean: why would anyone call it instead of the cheaper
+                // `get_current_time()`?)
+                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+
+                let input: EpochManagerCompareCurrentTimeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = EpochManagerBlueprint::compare_current_time(
+                    input.instant,
+                    input.precision,
+                    input.operator,
+                    api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

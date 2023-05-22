@@ -273,7 +273,6 @@ CALL_METHOD
     Address("${package_address}")
     Address("${account_address}")
     Address("${epochmanager_address}")
-    Address("${clock_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
     Bucket("bucket1")
@@ -759,7 +758,6 @@ CREATE_ACCESS_CONTROLLER
         //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
         //     println!("{}", Bech32Encoder::for_simulator().encode(EPOCH_MANAGER.as_node_id().as_bytes()).unwrap());
-        //     println!("{}", Bech32Encoder::for_simulator().encode(CLOCK.as_node_id().as_bytes()).unwrap());
 
         //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
         //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
@@ -848,10 +846,6 @@ CREATE_ACCESS_CONTROLLER
             (
                 "${epochmanager_address}",
                 "epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl",
-            ),
-            (
-                "${clock_address}",
-                "clock_sim1skxxxxxxxxxxclckxxxxxxxxxxx002253583992xxxxxxxxxx58hk6",
             ),
             (
                 "${validator_address}",

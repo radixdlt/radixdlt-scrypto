@@ -1,6 +1,7 @@
 use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
+use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
@@ -18,6 +19,7 @@ pub struct EpochManagerCreateInput {
     pub component_address: [u8; NodeId::LENGTH],     // TODO: Clean this up
     pub initial_epoch: u64,
     pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_time_ms: i64,
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
@@ -81,6 +83,40 @@ pub const EPOCH_MANAGER_START_IDENT: &str = "start";
 pub struct EpochManagerStartInput {}
 
 pub type EpochManagerStartOutput = ();
+
+#[derive(Sbor, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum TimePrecision {
+    Minute,
+}
+
+pub const EPOCH_MANAGER_GET_CURRENT_TIME_IDENT: &str = "get_current_time";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct EpochManagerGetCurrentTimeInput {
+    pub precision: TimePrecision,
+}
+
+pub type EpochManagerGetCurrentTimeOutput = Instant;
+
+pub const EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT: &str = "compare_current_time";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct EpochManagerCompareCurrentTimeInput {
+    pub instant: Instant,
+    pub precision: TimePrecision,
+    pub operator: TimeComparisonOperator,
+}
+
+pub type EpochManagerCompareCurrentTimeOutput = bool;
+
+pub const EPOCH_MANAGER_SET_CURRENT_TIME_IDENT: &str = "set_current_time";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct EpochManagerSetCurrentTimeInput {
+    pub current_time_ms: i64,
+}
+
+pub type EpochManagerSetCurrentTimeOutput = ();
 
 pub const EPOCH_MANAGER_NEXT_ROUND_IDENT: &str = "next_round";
 

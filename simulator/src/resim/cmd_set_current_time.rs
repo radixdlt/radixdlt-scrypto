@@ -1,8 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::{
-    ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerSetCurrentTimeInput, EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::time::UtcDateTime;
 use transaction::model::Instruction;
@@ -22,10 +22,10 @@ pub struct SetCurrentTime {
 
 impl SetCurrentTime {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::CallMethod { 
-            address: CLOCK.into(),
-            method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockSetCurrentTimeInput {
+        let instructions = vec![Instruction::CallMethod {
+            address: EPOCH_MANAGER.into(),
+            method_name: EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&EpochManagerSetCurrentTimeInput {
                 current_time_ms: self.date_time.to_instant().seconds_since_unix_epoch * 1000,
             }),
         }];

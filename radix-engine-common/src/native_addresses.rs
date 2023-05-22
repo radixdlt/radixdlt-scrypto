@@ -136,11 +136,6 @@ pub const EPOCH_MANAGER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
 ]);
 
 /// The native package for the clock.
-pub const CLOCK_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
-    13, 144, 99, 24, 198, 49, 140, 108, 127, 22, 49, 140, 99, 24, 198, 49, 140, 247, 190, 158, 244,
-    107, 90, 248, 230, 49, 140, 99, 24, 198,
-]);
-
 /// The native package for access controllers.
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 144, 99, 24, 198, 49, 140, 108, 77, 99, 248, 204, 99, 24, 198, 49, 140, 247, 191, 85, 61,
@@ -195,12 +190,6 @@ pub const FAUCET_BLUEPRINT: &str = "Faucet";
 pub const EPOCH_MANAGER: ComponentAddress = ComponentAddress::new_or_panic([
     134, 76, 99, 24, 198, 49, 140, 108, 134, 251, 64, 204, 99, 24, 198, 49, 140, 247, 150, 52, 85,
     30, 250, 28, 166, 49, 140, 99, 24, 198,
-]);
-
-/// The clock native component - in charge of time.
-pub const CLOCK: ComponentAddress = ComponentAddress::new_or_panic([
-    133, 140, 99, 24, 198, 49, 140, 108, 127, 22, 49, 140, 99, 24, 198, 49, 140, 247, 169, 84, 141,
-    15, 18, 149, 70, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
@@ -316,11 +305,6 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxepchmgxxxxxxxxx000797223725xxxxxxxxxepchmg",
         );
         check_address(
-            CLOCK_PACKAGE.as_ref(),
-            EntityType::GlobalPackage,
-            "package_rdx1pkgxxxxxxxxxclckxxxxxxxxxxx000577344478xxxxxxxxxclckxx",
-        );
-        check_address(
             ACCESS_CONTROLLER_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
             "package_rdx1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxcntrlr",
@@ -361,11 +345,6 @@ mod tests {
             EPOCH_MANAGER.as_ref(),
             EntityType::GlobalEpochManager,
             "epochmanager_rdx1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxxephmgr",
-        );
-        check_address(
-            CLOCK.as_ref(),
-            EntityType::GlobalClock,
-            "clock_rdx1skxxxxxxxxxxclckxxxxxxxxxxx002253583992xxxxxxxxxclckxx",
         );
 
         // System singleton components - scrypto
