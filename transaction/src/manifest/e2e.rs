@@ -885,37 +885,32 @@ CREATE_ACCESS_CONTROLLER
         blobs: Vec<Vec<u8>>,
         expected_canonical: impl AsRef<str>,
     ) {
-        let manifest = manifest.as_ref();
-        let expected_canonical = expected_canonical.as_ref();
+        let original_string = manifest.as_ref();
+        let original_struct = compile(original_string, network, blobs.clone()).unwrap();
+        let original_binary = manifest_encode(&original_struct);
 
-        let compiled1 = compile(manifest, network, blobs.clone()).unwrap();
-        let decompiled1 = decompile(&compiled1.instructions, network).unwrap();
+        let decompiled_string = decompile(&original_struct.instructions, network).unwrap();
+        let decompiled_struct = compile(&decompiled_string, network, blobs.clone()).unwrap();
+        let decompiled_binary = manifest_encode(&decompiled_struct);
 
-        // Whilst we're here - let's test that compile/decompile are inverses...
-        let compiled2 = compile(manifest, network, blobs.clone()).unwrap();
-        let decompiled2 = decompile(&compiled2.instructions, network).unwrap();
-
-        // The manifest argument is not necessarily in canonical decompiled string representation,
-        // therefore we can't assert that decompiled1 == manifest ...
-        // So instead we assert that decompiled1 and decompiled2 match :)
-        assert_eq!(
-            compiled1, compiled2,
-            "Compile(Decompile(compiled_manifest)) != compiled_manifest"
-        );
-        assert_eq!(
-            decompiled1, decompiled2,
-            "Decompile(Compile(canonical_manifest_str)) != canonical_manifest_str"
-        );
+        let recompiled_string = decompile(&decompiled_struct.instructions, network).unwrap();
+        let recompiled_struct = compile(&recompiled_string, network, blobs.clone()).unwrap();
+        let recompiled_binary = manifest_encode(&recompiled_struct);
 
         // If you use the following output for test cases, make sure you've checked the diff
-        println!("{}", decompiled2);
-
-        assert_eq!(decompiled2.trim(), expected_canonical.trim()); // trim for better view
-
-        let intent = build_intent(&expected_canonical, blobs)
+        println!("{}", recompiled_string);
+        let intent = build_intent(expected_canonical.as_ref(), blobs)
             .to_payload_bytes()
             .unwrap();
         print_blob(name, intent);
+
+        // Check round-trip property
+        assert_eq!(original_binary, decompiled_binary);
+        assert_eq!(decompiled_binary, recompiled_binary);
+        assert_eq!(decompiled_string, recompiled_string);
+
+        // Assert with expectation
+        assert_eq!(recompiled_string.trim(), expected_canonical.as_ref().trim());
     }
 
     fn print_blob(name: &str, blob: Vec<u8>) {
