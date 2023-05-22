@@ -20,7 +20,7 @@ pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
-    pub multi_line: Option<MultiLine>, // TODO: do not print `\n` if `None`
+    pub multi_line: Option<MultiLine>,
 }
 
 impl<'a> ManifestDecompilationDisplayContext<'a> {
@@ -69,6 +69,22 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         self.proof_names
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
     }
+
+    pub fn get_ident(&self, depth: usize) -> String {
+        if let Some(MultiLine { margin, ident }) = self.multi_line {
+            " ".repeat(margin + ident * depth)
+        } else {
+            String::new()
+        }
+    }
+
+    pub fn get_new_line(&self) -> &str {
+        if self.multi_line.is_some() {
+            "\n"
+        } else {
+            " "
+        }
+    }
 }
 
 impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for &'a Bech32Encoder {
@@ -99,11 +115,7 @@ macro_rules! write_with_ident {
     ($f:expr, $context:expr, $depth:expr, $($args:expr),*) => {
         write!($f,
             "{}{}",
-            if let Some(MultiLine {margin, ident}) = $context.multi_line {
-                " ".repeat(margin + ident * $depth)
-            } else {
-                String::new()
-            },
+            $context.get_ident($depth),
             format!($($args),*)
         )
     };
@@ -159,7 +171,7 @@ pub fn format_manifest_value<F: fmt::Write>(
             if fields.is_empty() {
                 write_with_ident!(f, context, depth, "Tuple()")?;
             } else {
-                write_with_ident!(f, context, depth, "Tuple(\n")?;
+                write_with_ident!(f, context, depth, "Tuple({}", context.get_new_line())?;
                 format_elements(f, fields, context, depth + 1)?;
                 write_with_ident!(f, context, depth, ")")?;
             }
@@ -171,7 +183,14 @@ pub fn format_manifest_value<F: fmt::Write>(
             if fields.is_empty() {
                 write_with_ident!(f, context, depth, "Enum({}u8)", discriminator)?;
             } else {
-                write_with_ident!(f, context, depth, "Enum({}u8,\n", discriminator)?;
+                write_with_ident!(
+                    f,
+                    context,
+                    depth,
+                    "Enum({}u8,{}",
+                    discriminator,
+                    context.get_new_line()
+                )?;
                 format_elements(f, fields, context, depth + 1)?;
                 write_with_ident!(f, context, depth, ")")?;
             }
@@ -205,8 +224,9 @@ pub fn format_manifest_value<F: fmt::Write>(
                         f,
                         context,
                         depth,
-                        "Array<{}>(\n",
-                        format_value_kind(element_value_kind)
+                        "Array<{}>({}",
+                        format_value_kind(element_value_kind),
+                        context.get_new_line()
                     )?;
                     format_elements(f, elements, context, depth + 1)?;
                     write_with_ident!(f, context, depth, ")")?;
@@ -232,9 +252,10 @@ pub fn format_manifest_value<F: fmt::Write>(
                     f,
                     context,
                     depth,
-                    "Map<{}, {}>(\n",
+                    "Map<{}, {}>({}",
                     format_value_kind(key_value_kind),
-                    format_value_kind(value_value_kind)
+                    format_value_kind(value_value_kind),
+                    context.get_new_line()
                 )?;
                 format_kv_entries(f, entries, context, depth + 1)?;
                 write_with_ident!(f, context, depth, ")")?;
@@ -257,9 +278,9 @@ pub fn format_elements<F: fmt::Write>(
     for (i, x) in values.iter().enumerate() {
         format_manifest_value(f, x, context, depth)?;
         if i == values.len() - 1 {
-            write!(f, "\n")?;
+            write!(f, "{}", context.get_new_line())?;
         } else {
-            write!(f, ",\n")?;
+            write!(f, ",{}", context.get_new_line())?;
         }
     }
     Ok(())
@@ -273,12 +294,12 @@ pub fn format_kv_entries<F: fmt::Write>(
 ) -> fmt::Result {
     for (i, x) in entries.iter().enumerate() {
         format_manifest_value(f, &x.0, context, depth)?;
-        write!(f, ",\n")?;
+        write!(f, ",{}", context.get_new_line())?;
         format_manifest_value(f, &x.1, context, depth)?;
         if i == entries.len() - 1 {
-            write!(f, "\n")?;
+            write!(f, "{}", context.get_new_line())?;
         } else {
-            write!(f, ",\n")?;
+            write!(f, ",{}", context.get_new_line())?;
         }
     }
     Ok(())
