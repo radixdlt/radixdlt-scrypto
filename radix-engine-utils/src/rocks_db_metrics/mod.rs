@@ -3,7 +3,7 @@ use radix_engine_store_interface::interface::{
     PartitionEntry, SubstateDatabase,
 };
 use radix_engine_stores::rocks_db::{BlockBasedOptions, Options, RocksdbSubstateStore};
-use std::{fs::File, io::prelude::*, path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
+use std::{path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
 use linreg::linear_regression_of;
 use plotters::prelude::*;
 
@@ -29,68 +29,7 @@ impl RocksdbSubstateStoreWithMetrics {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn show_output(&self) {
-        for (k, v) in self.read_metrics.borrow().iter() {
-            println!("{:<10} | {:<10?}", k, v);
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn export_to_csv(&self) -> std::io::Result<()> {
-        let mut file = File::create("/tmp/out_01.csv")?;
-
-        file.write_all(b"Size;Duration[ns]\n")?;
-
-        for (k, v) in self.read_metrics.borrow().iter() {
-            for i in v {
-                file.write_all(format!("{};{}\n", k, i.as_nanos()).as_bytes())?;
-            }
-        }
-
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn export_histogram(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new("/tmp/h1.png", (640, 480)).into_drawing_area();
-        root.fill(&WHITE)?;
-
-        let mut chart = ChartBuilder::on(&root)
-            .x_label_area_size(35)
-            .y_label_area_size(40)
-            .margin(5)
-            .caption("Histogram Test", ("sans-serif", 50.0))
-            .build_cartesian_2d((0u32..2000u32).into_segmented(), 900u32..10000u32)?;
-
-        chart
-            .configure_mesh()
-            .disable_x_mesh()
-            .bold_line_style(&WHITE.mix(0.3))
-            .y_desc("Count")
-            .x_desc("Bucket")
-            .axis_desc_style(("sans-serif", 15))
-            .draw()?;
-
-        let mut data = Vec::with_capacity(100000);
-        for (k, v) in self.read_metrics.borrow().iter() {
-            for i in v {
-                data.push((*k as u32, i.as_nanos() as u32));
-            }
-        }
-
-        chart.draw_series(
-            Histogram::vertical(&chart)
-                .style(RED.mix(0.5).filled())
-                .data(data),
-        )?;
-
-        root.present().expect("Unable to write result to file");
-
-        Ok(())
-    }
-
-    pub fn export_mft(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export_graph_and_print_summary(&mut self, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
         let binding = self.read_metrics.borrow();
@@ -105,7 +44,7 @@ impl RocksdbSubstateStoreWithMetrics {
         let mut median_data = Vec::new();
         for (k, v) in self.read_metrics.borrow().iter() {
             let mut w = v.iter().map(|i| *i).collect();
-            let median = calculate_median(&mut w);
+            let median = Self::calculate_median(&mut w);
             // if *max_values[idx] > 10 * median {
             //     let max_spike_offset = Duration::from_nanos((max_values[idx].as_nanos() / peak_diff_division) as u64);
             //     discard_spikes(&mut w, max_spike_offset);
@@ -130,7 +69,7 @@ impl RocksdbSubstateStoreWithMetrics {
         let lin_x_axis = (x_min..x_max).step(10);
 
         // draw scatter plot
-        let root = BitMapBackend::new("/tmp/h3.png", (1024, 768)).into_drawing_area();
+        let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
         root.fill(&WHITE)?;
         root.margin(20, 20, 20, 20);
 
@@ -207,6 +146,30 @@ impl RocksdbSubstateStoreWithMetrics {
 
         Ok(())
     }
+
+
+    fn calculate_median(data: &mut Vec<Duration>) -> Duration {
+        data.sort();
+        let center_idx = data.len() / 2;
+        let median = data[center_idx];
+        median
+    }
+
+    #[allow(dead_code)]
+    fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) {
+        // 1. calculate median
+        let median = Self::calculate_median(data);
+
+        // 2. discard items out of median + range
+        data.retain(|&i| {
+            if i > median {
+                i - median <= delta_range
+            } else {
+                median - i <= delta_range
+            }
+        });
+    }
+
 }
 
 impl SubstateDatabase for RocksdbSubstateStoreWithMetrics {
@@ -250,27 +213,5 @@ impl CommittableSubstateDatabase for RocksdbSubstateStoreWithMetrics {
     fn commit(&mut self, database_updates: &DatabaseUpdates) {
         self.db.commit(database_updates)
     }
-}
-
-fn calculate_median(data: &mut Vec<Duration>) -> Duration {
-    data.sort();
-    let center_idx = data.len() / 2;
-    let median = data[center_idx];
-    median
-}
-
-#[allow(dead_code)]
-fn discard_spikes(data: &mut Vec<Duration>, delta_range: Duration) {
-    // 1. calculate median
-    let median = calculate_median(data);
-
-    // 2. discard items out of median + range
-    data.retain(|&i| {
-        if i > median {
-            i - median <= delta_range
-        } else {
-            median - i <= delta_range
-        }
-    });
 }
 

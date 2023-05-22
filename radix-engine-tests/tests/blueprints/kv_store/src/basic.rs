@@ -99,10 +99,6 @@ mod db {
             self.map.insert(len, val);
         }
 
-        pub fn read(&mut self, key: u32) -> String {
-            (*self.map.get(&key).unwrap().clone()).to_string()
-        }
-
         pub fn read_repeat(&mut self, len: u32, count: u32) -> bool {
             for _ in 0..count {
                 if self.map.get(&len).is_none() {
