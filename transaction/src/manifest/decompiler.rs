@@ -710,7 +710,7 @@ pub fn format_typed_value<F: fmt::Write, T: ManifestEncode>(
     f.write_str("\n    ")?;
     let value: ManifestValue = to_manifest_value(value);
 
-    format_manifest_value(f, &value, &context.for_value_display())?;
+    format_manifest_value(f, &value, &context.for_value_display(), 0)?;
     Ok(())
 }
 
@@ -722,7 +722,7 @@ pub fn format_encoded_args<F: fmt::Write>(
     if let Value::Tuple { fields } = value {
         for field in fields {
             f.write_str("\n    ")?;
-            format_manifest_value(f, &field, &context.for_value_display())?;
+            format_manifest_value(f, &field, &context.for_value_display(), 0)?;
         }
     } else {
         return Err(DecompileError::InvalidArguments);
