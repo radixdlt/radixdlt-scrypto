@@ -12,7 +12,7 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .set_metadata(metadata! {
-                    key.clone() => value.clone()
+                    key.clone() => value.clone();
                 })
                 .globalize();
 
@@ -26,10 +26,10 @@ mod metadata_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "metadata" => rule!(allow_all), vec![],
+                    "metadata" => rule!(allow_all);
                 })
                 .protect_metadata(protect!(
-                    MetadataMethod::set => vec!["metadata"],
+                    MetadataMethod::set => vec!["metadata"];
                 ))
                 .globalize();
 

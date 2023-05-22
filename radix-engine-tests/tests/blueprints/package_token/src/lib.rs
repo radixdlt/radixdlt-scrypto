@@ -12,10 +12,10 @@ mod factory {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "auth" => rule!(require(Runtime::package_token())), vec![]
+                    "auth" => rule!(require(Runtime::package_token()));
                 })
                 .protect_methods(protect!(
-                    Method::set_address => vec!["auth"],
+                    Method::set_address => vec!["auth"];
                 ))
                 .globalize()
         }
@@ -23,7 +23,6 @@ mod factory {
         pub fn create() -> Global<Factory> {
             let component = Self::create_raw();
             component.set_address(component.clone());
-
             component
         }
 

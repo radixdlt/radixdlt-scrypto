@@ -460,19 +460,29 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
+macro_rules! role_entry {
+    ($roles: expr, $role: expr, $rule:expr) => ({
+        $roles.define_role($role, $rule, vec![]);
+    });
+    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => ({
+        $roles.define_role($role, $rule, $mutability);
+    });
+}
+
+#[macro_export]
 macro_rules! roles {
     ( ) => ({
         ::scrypto::blueprints::resource::Roles::new()
     });
-    ( $($role:expr => $rule:expr, $mutability:expr),* ) => ({
+    ( $($role:expr => $($entry:expr),* );* ) => ({
         let mut roles = ::scrypto::blueprints::resource::Roles::new();
         $(
-            roles.define_role($role, $rule, $mutability);
+            role_entry!(roles, $role, $($entry),*);
         )*
         roles
     });
-    ( $($role:expr => $rule:expr, $mutability:expr,)* ) => ({
-        roles!{$($role => $rule, $mutability),*}
+    ( $($role:expr => $($entry:expr),*;)* ) => ({
+        roles!($($role => $($entry),*);*)
     })
 }
 
@@ -481,15 +491,15 @@ macro_rules! protect {
     ( ) => ({
         ::scrypto::component::ProtectedMethods::new()
     });
-    ( $($method:expr => $roles:expr),* ) => ({
+    ( $($method:expr => $roles:expr);* ) => ({
         let mut protected_methods = ::scrypto::component::ProtectedMethods::new();
         $(
             protected_methods.insert($method, $roles);
         )*
         protected_methods
     });
-    ( $($method:expr => $roles:expr,)* ) => ({
-        protect!{$($method => $roles),*}
+    ( $($method:expr => $roles:expr;)* ) => ({
+        protect!{$($method => $roles);*}
     })
 }
 
@@ -498,15 +508,15 @@ macro_rules! royalties {
     ( ) => ({
         ::scrypto::component::Royalties::new()
     });
-    ( $($method:expr => $royalty:expr),* ) => ({
+    ( $($method:expr => $royalty:expr);* ) => ({
         let mut royalties = ::scrypto::component::Royalties::new();
         $(
             royalties.insert($method, $royalty);
         )*
         royalties
     });
-    ( $($method:expr => $royalty:expr,)* ) => ({
-        royalties!{$($method => $royalty),*}
+    ( $($method:expr => $royalty:expr;)* ) => ({
+        royalties!{$($method => $royalty);*}
     })
 }
 
@@ -515,14 +525,14 @@ macro_rules! metadata {
     ( ) => ({
         ::scrypto::prelude::Metadata::new()
     });
-    ( $($key:expr => $value:expr),* ) => ({
+    ( $($key:expr => $value:expr);* ) => ({
         let mut metadata = ::scrypto::prelude::Metadata::new();
         $(
             metadata.set($key, $value);
         )*
         metadata
     });
-    ( $($key:expr => $value:expr,)* ) => ({
-        metadata!{$($key => $value),*}
+    ( $($key:expr => $value:expr;)* ) => ({
+        metadata!{$($key => $value);*}
     })
 }

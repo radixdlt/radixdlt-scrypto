@@ -39,15 +39,15 @@ mod royalty_test {
             local_component
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "auth" => rule!(require(badge)), vec!["auth"]
+                    "auth" => rule!(require(badge)), vec!["auth"];
                 })
                 .protect_royalty(protect!(
-                    RoyaltyMethod::set_royalty_config => vec!["auth"],
-                    RoyaltyMethod::claim_royalty => vec!["auth"],
+                    RoyaltyMethod::set_royalty_config => vec!["auth"];
+                    RoyaltyMethod::claim_royalty => vec!["auth"];
                 ))
                 .set_royalties(royalties!(
-                    Method::paid_method => 1u32,
-                    Method::paid_method_panic => 1u32,
+                    Method::paid_method => 1u32;
+                    Method::paid_method_panic => 1u32;
                 ))
                 .globalize()
         }

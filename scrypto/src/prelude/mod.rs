@@ -9,7 +9,7 @@ pub use crate::resource::*;
 pub use crate::runtime::*;
 pub use crate::{
     blueprint, debug, error, external_blueprint, external_component, include_code, include_schema,
-    info, metadata, protect, resource_list, roles, royalties, this_package, trace, warn,
+    info, metadata, protect, resource_list, roles, role_entry, royalties, this_package, trace, warn,
     NonFungibleData,
 };
 
