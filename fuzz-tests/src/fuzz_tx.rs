@@ -241,9 +241,11 @@ impl TxFuzzer {
                     Some(Instruction::BurnResource { bucket_id })
                 }
                 // CallAccessRulesMethod
-                3 => {
-                    None
-                }
+                3 => Some(Instruction::CallAccessRulesMethod {
+                    address: component_address.into(),
+                    method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
+                    args: manifest_args!()
+                }),
                 // CallFunction
                 4 => {
                     // TODO
@@ -260,10 +262,11 @@ impl TxFuzzer {
                     None
                 }
                 // CallRoyaltyMethod
-                7 => {
-                    // TODO
-                    None
-                }
+                7 => Some(Instruction::CallRoyaltyMethod {
+                    address: component_address.into(),
+                    method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                    args: manifest_args!(),
+                }),
                 // ClaimComponentRoyalty
                 8 => Some(Instruction::CallRoyaltyMethod {
                     address: component_address.into(),
