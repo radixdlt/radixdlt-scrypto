@@ -81,3 +81,36 @@ mod kv_vault {
         }
     }
 }
+
+#[blueprint]
+mod db {
+    struct DatabaseBench {
+        map: KeyValueStore<u32, String>,
+    }
+
+    impl DatabaseBench {
+        pub fn new() -> ComponentAddress {
+            let map = KeyValueStore::new();
+            Self { map }.instantiate().globalize()
+        }
+
+        pub fn insert(&mut self, len: u32) {
+            let val = (0..len).map(|_| 'A').collect::<String>();
+            self.map.insert(len, val);
+        }
+
+        pub fn read(&mut self, key: u32) -> String {
+            (*self.map.get(&key).unwrap().clone()).to_string()
+        }
+
+        pub fn read_repeat(&mut self, len: u32, count: u32) -> bool {
+            for _ in 0..count {
+                if self.map.get(&len).is_none() {
+                    return false;
+                }
+            }
+            true
+        }
+
+    }
+}

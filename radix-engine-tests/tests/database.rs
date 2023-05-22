@@ -12,8 +12,7 @@ use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 
-
-
+#[cfg(feature = "rocksdb")]
 #[test]
 fn db_read_test() {
     println!("starting");
@@ -54,24 +53,70 @@ fn db_read_test() {
         &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
             .get_executable(BTreeSet::new()),
     )
-    .expect_commit(true).new_package_addresses()[0];
+    .expect_commit(true)
+    .new_package_addresses()[0];
 
-    // run scrypto blueprint
+    let max_count = 10u32;
+    let cost_unit_limit = u32::MAX;
+
+    // run scrypto blueprint - create component
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET, 10.into())
-        .call_function(package_address, "Basic", "multiple_reads", manifest_args!())
+        .lock_fee(FAUCET, 1000.into())
+        .call_function(package_address, "DatabaseBench", "new", manifest_args!())
         .build();
+    let component = execute_and_commit_transaction(
+        &mut substate_db,
+        &mut scrypto_interpreter,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig::default(),
+        &TestTransaction::new(manifest.clone(), 2, cost_unit_limit)
+            .get_executable(BTreeSet::new()),
+    )
+    .expect_commit(true)
+    .new_component_addresses()[0];
 
-    for i in 0..10000 {
+    let lengths = vec![ 10u32, 100u32, 500u32, 1000u32, 2000u32, 3000u32, 4000u32, 5000u32, 6000u32, 7000u32, 
+        8000u32, 9000u32, 10000u32, 20000u32, 30000u32, 50000u32, 60000u32, 70000u32, 80000u32, 90000u32, 
+        100000u32, 150000u32, 200000u32, 250000u32, 300000u32, 350000u32, 400000u32, 450000u32, 500000u32, 
+        550000u32, 600000u32, 650000u32, 700000u32 ];
+    for i in 0..lengths.len() {
+        println!("insert {}", i);
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 1000.into())
+            .call_method(
+                component,
+                "insert",
+                manifest_args!(lengths[i]),
+            )
+            .build();
         execute_and_commit_transaction(
             &mut substate_db,
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), i + 1, DEFAULT_COST_UNIT_LIMIT)
+            &TestTransaction::new(manifest.clone(), (i + 3) as u64, cost_unit_limit)
                 .get_executable(BTreeSet::new()),
         )
         .expect_commit(true);
+    }
+    for _ in 0..10 {
+        for i in 0..lengths.len() {
+            println!("read {}", i);
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET, 1000.into())
+                .call_method(component, "read_repeat", manifest_args!(lengths[i], 10u32))
+                .build();
+            execute_and_commit_transaction(
+                &mut substate_db,
+                &mut scrypto_interpreter,
+                &FeeReserveConfig::default(),
+                &ExecutionConfig::default(),
+                &TestTransaction::new(manifest.clone(), (max_count * 2 + i as 
+                    u32 + 3) as u64, cost_unit_limit)
+                    .get_executable(BTreeSet::new()),
+            )
+            .expect_commit(true);
+        }
     }
 
     substate_db.export_mft().unwrap();
