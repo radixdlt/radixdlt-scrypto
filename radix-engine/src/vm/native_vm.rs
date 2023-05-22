@@ -4,6 +4,7 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::errors::{RuntimeError, SystemUpstreamError, VmError};
@@ -83,6 +84,7 @@ impl VmInvoke for NativeVmInstance {
             ACCESS_RULES_CODE_ID => {
                 AccessRulesNativePackage::invoke_export(export_name, receiver, input, api)
             }
+            POOL_ID => PoolNativePackage::invoke_export(export_name, receiver, input, api),
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeInvalidCodeId(self.native_package_code_id),
             )),

@@ -7,6 +7,7 @@ macro_rules! define_invocation {
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
+            pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _EXPORT_NAME >]: &'static str = stringify!([<$function_name _ $blueprint_name:snake>]);
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
@@ -27,6 +28,7 @@ macro_rules! define_invocation {
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
+            pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _EXPORT_NAME >]: &'static str = stringify!([<$function_name _ $blueprint_name:snake>]);
 
             $crate::blueprints::macros::resolve_struct_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
@@ -47,6 +49,7 @@ macro_rules! define_invocation {
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
+            pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _EXPORT_NAME >]: &'static str = stringify!([<$function_name _ $blueprint_name:snake>]);
 
             $crate::blueprints::macros::resolve_type_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],
@@ -67,6 +70,7 @@ macro_rules! define_invocation {
     ) => {
         paste::paste! {
             pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _IDENT >]: &'static str = stringify!($function_name);
+            pub const [< $blueprint_name:snake:upper _ $function_name:snake:upper _EXPORT_NAME >]: &'static str = stringify!([<$function_name _ $blueprint_name:snake>]);
 
             $crate::blueprints::macros::resolve_type_definition! {
                 [< $blueprint_name:camel $function_name:camel Input >],

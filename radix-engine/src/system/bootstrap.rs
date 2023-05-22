@@ -4,6 +4,7 @@ use crate::blueprints::clock::ClockNativePackage;
 use crate::blueprints::epoch_manager::EpochManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
@@ -651,6 +652,27 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
                 dependent_resources: vec![PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE],
                 dependent_components: vec![CLOCK],
+                package_access_rules: BTreeMap::new(),
+                default_package_access_rule: AccessRule::AllowAll,
+            }),
+        });
+    }
+
+    // Pool Package
+    {
+        pre_allocated_ids.insert(POOL_PACKAGE.into());
+        let package_address = POOL_PACKAGE.into();
+        instructions.push(Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+            args: to_manifest_value(&PackagePublishNativeInput {
+                package_address: Some(package_address), // TODO: Clean this up
+                schema: PoolNativePackage::schema(),
+                metadata: BTreeMap::new(),
+                native_package_code_id: POOL_ID,
+                dependent_resources: vec![],
+                dependent_components: vec![],
                 package_access_rules: BTreeMap::new(),
                 default_package_access_rule: AccessRule::AllowAll,
             }),
