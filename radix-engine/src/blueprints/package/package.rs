@@ -405,7 +405,7 @@ impl PackageNativePackage {
                     input.schema,
                     input.royalty_config,
                     input.metadata,
-                    input.authority_rules,
+                    input.role_definitions,
                     api,
                 )?;
 

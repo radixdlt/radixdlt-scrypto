@@ -158,7 +158,9 @@ impl ClockNativePackage {
         let clock_id = api.new_simple_object(
             CLOCK_BLUEPRINT,
             vec![scrypto_encode(&ClockSubstate {
-                current_time_rounded_to_minutes_ms: 0,
+                current_time_rounded_to_minutes_ms: Self::round_to_minutes_ms(
+                    input.initial_time_ms,
+                ),
             })
             .unwrap()],
         )?;
@@ -209,8 +211,7 @@ impl ClockNativePackage {
         })?;
 
         let current_time_ms = input.current_time_ms;
-        let current_time_rounded_to_minutes =
-            (current_time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR;
+        let current_time_rounded_to_minutes = Self::round_to_minutes_ms(current_time_ms);
 
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -222,6 +223,10 @@ impl ClockNativePackage {
         api.field_lock_write_typed(handle, &substate)?;
 
         Ok(IndexedScryptoValue::from_typed(&()))
+    }
+
+    fn round_to_minutes_ms(input: i64) -> i64 {
+        (input / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR
     }
 
     fn get_current_time<Y>(

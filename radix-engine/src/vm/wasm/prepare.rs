@@ -921,8 +921,11 @@ impl WasmModule {
         // we're using the `wasmi` logic as a shortcut.
         let code = parity_wasm::serialize(self.module.clone())
             .map_err(|_| PrepareError::SerializationError)?;
+        WasmiModule::new(&code[..]).map_err(|e| PrepareError::NotInstantiatable {
+            reason: format!("{:?}", e),
+        })?;
 
-        WasmiModule::new(&code[..]).map(|_| self)
+        Ok(self)
     }
 
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {

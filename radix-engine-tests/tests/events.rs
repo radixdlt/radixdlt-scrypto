@@ -10,7 +10,7 @@ use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_modules::events::EventError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::epoch_manager::{
@@ -620,7 +620,7 @@ fn epoch_manager_round_update_emits_correct_event() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];
@@ -665,7 +665,7 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
     test_runner.execute_transaction(
         SystemTransaction {
             instructions: vec![Instruction::CallMethod {
-                component_address: EPOCH_MANAGER,
+                address: EPOCH_MANAGER.into(),
                 method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
                 args: to_manifest_value(&EpochManagerNextRoundInput {
                     round: rounds_per_epoch - 1,
@@ -685,7 +685,7 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
 
     // Act: perform the most usual successful next round
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
     }];
@@ -733,7 +733,7 @@ fn epoch_manager_epoch_update_emits_xrd_minting_event() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        component_address: EPOCH_MANAGER,
+        address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];
@@ -1396,11 +1396,7 @@ fn setting_metadata_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .set_metadata(
-            resource_address.into(),
-            "key".into(),
-            MetadataEntry::Value(MetadataValue::I32(1)),
-        )
+        .set_metadata(resource_address.into(), "key".into(), MetadataValue::I32(1))
         .build();
 
     // Act

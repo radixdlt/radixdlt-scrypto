@@ -66,8 +66,8 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
         use core::cmp::min;
         let global_entities: [u8; 14] = [
             EntityType::GlobalPackage as u8,
-            EntityType::GlobalFungibleResource as u8,
-            EntityType::GlobalNonFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
+            EntityType::GlobalNonFungibleResourceManager as u8,
             EntityType::GlobalEpochManager as u8,
             EntityType::GlobalValidator as u8,
             EntityType::GlobalClock as u8,

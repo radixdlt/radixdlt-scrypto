@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
+use radix_engine_common::data::manifest::model::ManifestBlobRef;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -18,6 +19,14 @@ pub struct PackagePublishWasmInput {
     pub metadata: BTreeMap<String, String>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct PackagePublishWasmManifestInput {
+    pub code: ManifestBlobRef,
+    pub schema: PackageSchema,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub metadata: BTreeMap<String, String>,
+}
+
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
 
 pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
@@ -29,7 +38,17 @@ pub struct PackagePublishWasmAdvancedInput {
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
-    pub authority_rules: Roles,
+    pub role_definitions: Roles,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct PackagePublishWasmAdvancedManifestInput {
+    pub package_address: Option<[u8; NodeId::LENGTH]>, // TODO: Clean this up
+    pub code: ManifestBlobRef,
+    pub schema: PackageSchema,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
+    pub metadata: BTreeMap<String, String>,
+    pub role_definitions: Roles,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;

@@ -10,6 +10,21 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
+pub enum AccountDepositsMode {
+    /// Allows the deposit of all resources. Equivalent to a DisallowList of an empty set.
+    AllowAll,
+
+    /// Only allows deposits of resources that the account has a vault for (i.e., existing).
+    AllowExisting,
+
+    /// Only allows deposits of resources specified by the owner of the account.
+    AllowList(IndexSet<ResourceAddress>),
+
+    /// Disallows deposits of resources specified by the owner of the account.
+    DisallowList(IndexSet<ResourceAddress>),
+}
+
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 pub const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_ID: u8 = 0u8;
@@ -214,3 +229,98 @@ pub struct AccountCreateProofOfNonFungiblesInput {
 }
 
 pub type AccountCreateProofOfNonFungiblesOutput = Proof;
+
+//=================================
+// Account Transition Deposit Mode
+//=================================
+
+pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT: &str = "change_allowed_deposits_mode";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountChangeAllowedDepositsModeInput {
+    pub deposit_mode: AccountDepositsMode,
+}
+
+pub type AccountChangeAllowedDepositsModeOutput = ();
+
+//=======================================
+// Add Resource To Allowed Deposits List
+//=======================================
+
+pub const ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "add_resource_to_allowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountAddResourceToAllowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountAddResourceToAllowedDepositsListOutput = bool;
+
+//============================================
+// Remove Resource From Allowed Deposits List
+//============================================
+
+pub const ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "remove_resource_from_allowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveResourceFromAllowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountRemoveResourceFromAllowedDepositsListOutput = bool;
+
+//==========================================
+// Add Resource To Disallowed Deposits List
+//==========================================
+
+pub const ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "add_resource_to_disallowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountAddResourceToDisallowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountAddResourceToDisallowedDepositsListOutput = bool;
+
+//===============================================
+// Remove Resource From Disallowed Deposits List
+//===============================================
+
+pub const ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
+    "remove_resource_from_disallowed_deposits_list";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
+    pub resource_address: ResourceAddress,
+}
+
+pub type AccountRemoveResourceFromDisallowedDepositsListOutput = bool;
+
+//======================
+// Account Safe Deposit
+//======================
+
+pub const ACCOUNT_SAFE_DEPOSIT_IDENT: &str = "safe_deposit";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountSafeDepositInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountSafeDepositOutput = Option<Bucket>;
+
+//============================
+// Account Safe Deposit Batch
+//============================
+
+pub const ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT: &str = "safe_deposit_batch";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountSafeDepositBatchInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountSafeDepositBatchOutput = Vec<Bucket>;

@@ -2,14 +2,16 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
+use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::constants::METADATA_MODULE_PACKAGE;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoValue};
+use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
+use sbor::rust::prelude::*;
+use sbor::*;
 use scrypto::modules::Attachable;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -47,43 +49,71 @@ impl Metadata {
         Self(ModuleHandle::Own(metadata))
     }
 
-    pub fn set_list<S: ToString>(&self, name: S, list: Vec<MetadataValue>) {
-        let value: ScryptoValue =
-            scrypto_decode(&scrypto_encode(&MetadataEntry::List(list)).unwrap()).unwrap();
-        self.call_ignore_rtn(
-            METADATA_SET_IDENT,
-            &MetadataSetInput {
-                key: name.to_string(),
-                value,
-            },
-        );
+    pub fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
+        // Manual encoding to avoid large code size
+        // TODO: to replace with EnumVariant when it's ready
+        let mut buffer = Vec::new();
+        let mut encoder =
+            VecEncoder::<ScryptoCustomValueKind>::new(&mut buffer, SCRYPTO_SBOR_V1_MAX_DEPTH);
+        encoder
+            .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap();
+        encoder.write_value_kind(ValueKind::Tuple).unwrap();
+        encoder.write_size(2).unwrap();
+        encoder.encode(name.as_ref()).unwrap();
+        encoder.write_value_kind(ValueKind::Enum).unwrap();
+        encoder.write_discriminator(V::DISCRIMINATOR).unwrap();
+        encoder.write_size(1).unwrap();
+        encoder.encode(&value).unwrap();
+
+        self.call_raw(METADATA_SET_IDENT, buffer);
     }
 
-    pub fn set<S: ToString, V: MetadataVal>(&self, name: S, value: V) {
-        self.call_ignore_rtn(
-            METADATA_SET_IDENT,
-            &MetadataSetInput {
-                key: name.to_string(),
-                value: value.to_metadata_entry(),
-            },
-        );
-    }
-
-    pub fn get_string<S: ToString>(&self, name: S) -> Result<String, MetadataError> {
-        let value: Option<ScryptoValue> = self.call(
+    pub fn get<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+        let rtn = self.call_raw(
             METADATA_GET_IDENT,
-            &MetadataGetInput {
+            scrypto_encode(&MetadataGetInput {
                 key: name.to_string(),
-            },
+            })
+            .unwrap(),
         );
 
-        match value {
-            None => Err(MetadataError::EmptyEntry),
-            Some(value) => String::from_metadata_entry(value),
+        // Manual decoding of Option<MetadataValue> to avoid large code size
+        // TODO: to replace with EnumVariant when it's ready
+        let mut decoder =
+            VecDecoder::<ScryptoCustomValueKind>::new(&rtn, SCRYPTO_SBOR_V1_MAX_DEPTH);
+        decoder
+            .read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+            .unwrap();
+        decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
+        match decoder.read_discriminator().unwrap() {
+            OPTION_VARIANT_NONE => {
+                return Err(MetadataError::NotFound);
+            }
+            OPTION_VARIANT_SOME => {
+                decoder.read_and_check_size(1).unwrap();
+                decoder.read_and_check_value_kind(ValueKind::Enum).unwrap();
+                let id = decoder.read_discriminator().unwrap();
+                if id == V::DISCRIMINATOR {
+                    decoder.read_and_check_size(1).unwrap();
+                    let v: V = decoder.decode().unwrap();
+                    return Ok(v);
+                } else {
+                    return Err(MetadataError::UnexpectedType {
+                        expected_type_id: V::DISCRIMINATOR,
+                        actual_type_id: id,
+                    });
+                }
+            }
+            _ => unreachable!(),
         }
     }
 
-    pub fn remove<S: ToString>(&self, name: S) -> bool {
+    pub fn get_string<K: ToString>(&self, name: K) -> Result<String, MetadataError> {
+        self.get(name)
+    }
+
+    pub fn remove<K: ToString>(&self, name: K) -> bool {
         let rtn = self.call(
             METADATA_REMOVE_IDENT,
             &MetadataRemoveInput {

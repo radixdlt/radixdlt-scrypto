@@ -5,6 +5,7 @@ use crate::event_schema;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -12,6 +13,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -23,7 +25,7 @@ use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use resources_tracker_macro::trace_resources;
-use sbor::rust::vec;
+use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -34,6 +36,10 @@ pub struct AccessControllerSubstate {
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
     /// recovery can not be performed through this access controller.
     pub timed_recovery_delay_in_minutes: Option<u32>,
+
+    /// The resource address of the recovery badge that will be used by the wallet and optionally
+    /// by other clients as well.
+    pub recovery_badge: ResourceAddress,
 
     /// The states of the Access Controller.
     pub state: (
@@ -49,10 +55,15 @@ pub struct AccessControllerSubstate {
 }
 
 impl AccessControllerSubstate {
-    pub fn new(controlled_asset: Own, timed_recovery_delay_in_minutes: Option<u32>) -> Self {
+    pub fn new(
+        controlled_asset: Own,
+        timed_recovery_delay_in_minutes: Option<u32>,
+        recovery_badge: ResourceAddress,
+    ) -> Self {
         Self {
             controlled_asset,
             timed_recovery_delay_in_minutes,
+            recovery_badge,
             state: Default::default(),
         }
     }
@@ -164,6 +175,17 @@ impl AccessControllerNativePackage {
                 output: aggregator
                     .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
                 export_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(),
+                export_name: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -353,6 +375,17 @@ impl AccessControllerNativePackage {
                 export_name: ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT.to_string(),
             },
         );
+        functions.insert(
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccessControllerMintRecoveryBadgesOutput>(),
+                export_name: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
+            },
+        );
 
         let event_schema = event_schema! {
             aggregator,
@@ -405,6 +438,11 @@ impl AccessControllerNativePackage {
                     ));
                 }
                 Self::create_global(input, api)
+            }
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::post_instantiation(input, api)
             }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -506,6 +544,11 @@ impl AccessControllerNativePackage {
 
                 Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
             }
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                Self::mint_recovery_badges(input, api)
+            }
             _ => Err(RuntimeError::SystemUpstreamError(
                 SystemUpstreamError::NativeExportDoesNotExist(export_name.to_string()),
             )),
@@ -523,6 +566,11 @@ impl AccessControllerNativePackage {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
+        // Allocating the address of the access controller - this will be needed for the metadata
+        // and access rules of the recovery badge
+        let node_id = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
+        let address = GlobalAddress::new_or_panic(node_id.0);
+
         // Creating a new vault and putting in it the controlled asset
         let vault = {
             let mut vault = input
@@ -534,15 +582,90 @@ impl AccessControllerNativePackage {
             vault
         };
 
-        let substate =
-            AccessControllerSubstate::new(vault.0, input.timed_recovery_delay_in_minutes);
+        // Creating a new recovery badge resource
+        let recovery_badge_resource = {
+            let global_component_caller_badge =
+                NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
+
+            // Hack: Interfaces for initializing metadata only allows for <String, String> metadata
+            // but the interfaces for setting metadata allow for any `MetadataEntry`. So we will
+            // set the metadata to be updatable by the component caller badge and then switch it
+            // back to only be immutable.
+            // FIXME: When metadata initialization allows MetadataEntry stop making update metadata
+            // rule be transient
+            let access_rules = [
+                (
+                    ResourceMethodAuthKey::Mint,
+                    (
+                        rule!(require(global_component_caller_badge.clone())),
+                        AccessRule::DenyAll,
+                    ),
+                ),
+                (
+                    ResourceMethodAuthKey::Burn,
+                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::Withdraw,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::Deposit,
+                    (AccessRule::AllowAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::UpdateMetadata,
+                    (
+                        rule!(require(global_component_caller_badge.clone())),
+                        rule!(require(global_component_caller_badge.clone())),
+                    ),
+                ),
+                (
+                    ResourceMethodAuthKey::Recall,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+                (
+                    ResourceMethodAuthKey::UpdateNonFungibleData,
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
+                ),
+            ];
+
+            let resource_address = {
+                let (local_type_index, schema) =
+                    generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
+                let non_fungible_schema = NonFungibleDataSchema {
+                    schema,
+                    non_fungible: local_type_index,
+                    mutable_fields: Default::default(),
+                };
+
+                let result = api.call_function(
+                    RESOURCE_PACKAGE,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        id_type: NonFungibleIdType::Integer,
+                        non_fungible_schema,
+                        metadata: Default::default(),
+                        access_rules: access_rules.into(),
+                    })
+                    .unwrap(),
+                )?;
+                scrypto_decode::<ResourceAddress>(result.as_slice()).unwrap()
+            };
+
+            resource_address
+        };
+
+        let substate = AccessControllerSubstate::new(
+            vault.0,
+            input.timed_recovery_delay_in_minutes,
+            recovery_badge_resource,
+        );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             vec![scrypto_encode(&substate).unwrap()],
         )?;
-
-        let address = api.kernel_allocate_node_id(EntityType::GlobalAccessController)?;
-        let address = GlobalAddress::new_or_panic(address.0);
 
         let (authority_rules, protected_methods) =
             init_access_rules_from_rule_set(address, input.rule_set);
@@ -563,7 +686,68 @@ impl AccessControllerNativePackage {
             address,
         )?;
 
+        // Invoking the post-initialization method on the component
+        api.call_method(
+            &node_id,
+            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
+            scrypto_encode(&AccessControllerPostInstantiationInput).unwrap(),
+        )?;
+
         Ok(IndexedScryptoValue::from_typed(&address))
+    }
+
+    /// This method is only callable when the access controller virtual direct package caller
+    /// badge is present.
+    ///
+    /// This method has been added due to an issue with setting the metadata of the recovery badge
+    /// resource to include the address of the access controller before the access controller was
+    /// globalized. Doing that lead to an error along the lines of "callframe has no reference to
+    /// the (access controller) node id" because the access controller's node id has been allocated
+    /// but nothing has been globalized to it. Thus, the call frame did not have a reference to the
+    /// global address to pass when calling the metadata set method.
+    ///
+    /// A minimal example that reproduces this issue is only possible after the metadata interfaces
+    /// are updated to support any MetadataEntry.
+    ///
+    /// The method below can be removed and the logic can be moved to the instantiation function
+    /// once this bug is fixed.
+    fn post_instantiation<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        input
+            .as_typed::<AccessControllerPostInstantiationInput>()
+            .map_err(|e| {
+                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+            })?;
+
+        let access_controller = api.actor_get_global_address()?;
+        let resource_address = {
+            let substate_key = AccessControllerField::AccessController.into();
+            let handle =
+                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+
+            let access_controller = {
+                let access_controller: AccessControllerSubstate =
+                    api.field_lock_read_typed(handle)?;
+                access_controller
+            };
+            access_controller.recovery_badge
+        };
+
+        let mut resource_manager = BorrowedObject(resource_address.into_node_id());
+        resource_manager.set_metadata("name", "Recovery Badge".to_owned(), api)?;
+        resource_manager.set_metadata(
+            "icon_url",
+            Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()),
+            api,
+        )?;
+        resource_manager.set_metadata("access_controller", access_controller, api)?;
+
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn create_proof<Y>(
@@ -1047,6 +1231,54 @@ impl AccessControllerNativePackage {
 
         Ok(IndexedScryptoValue::from_typed(&()))
     }
+
+    fn mint_recovery_badges<Y>(
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let AccessControllerMintRecoveryBadgesInput {
+            non_fungible_local_ids,
+        } = input.as_typed().map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let resource_address = {
+            let substate_key = AccessControllerField::AccessController.into();
+            let handle =
+                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+
+            let access_controller = {
+                let access_controller: AccessControllerSubstate =
+                    api.field_lock_read_typed(handle)?;
+                access_controller
+            };
+            access_controller.recovery_badge
+        };
+
+        let non_fungibles: BTreeMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
+            .into_iter()
+            .map(|local_id| {
+                (
+                    local_id,
+                    (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+                )
+            })
+            .collect();
+
+        let rtn = api.call_method(
+            resource_address.as_node_id(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintInput {
+                entries: non_fungibles,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(IndexedScryptoValue::from_slice(&rtn).unwrap())
+    }
 }
 
 //=========
@@ -1067,6 +1299,7 @@ fn init_access_rules_from_rule_set(
 ) -> (Roles, BTreeMap<MethodKey, RoleList>) {
     let role_definitions = roles! {
         "self" => rule!(require(global_caller(address)));
+        "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, ["self"];
         "recovery" => rule_set.recovery_role, ["self"];
         "confirmation" => rule_set.confirmation_role, ["self"];
@@ -1091,7 +1324,13 @@ fn init_access_rules_from_rule_set(
 
         ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary", "confirmation"],
         ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["primary", "confirmation"],
+
+
+        ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => role_list!["primary", "recovery"],
+
         ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => role_list!["primary", "confirmation", "recovery"],
+
+        ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => role_list!["this_package"],
     );
 
     let protected_methods = protected_methods

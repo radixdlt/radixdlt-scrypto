@@ -1,3 +1,4 @@
+use radix_engine::blueprints::clock::ClockSubstate;
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
@@ -8,7 +9,7 @@ use radix_engine::transaction::{BalanceChange, CommitResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataEntry, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::epoch_manager::EpochManagerInitialConfiguration;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
@@ -46,6 +47,7 @@ fn test_bootstrap_receipt_should_match_constants() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -101,6 +103,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -159,6 +162,7 @@ fn test_genesis_xrd_allocation_to_accounts() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -182,7 +186,7 @@ fn test_genesis_resource_with_initial_allocation() {
     let address_bytes_without_entity_id = hash(vec![1, 2, 3]).lower_bytes();
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
-            EntityType::GlobalFungibleResource as u8,
+            EntityType::GlobalFungibleResourceManager as u8,
             &address_bytes_without_entity_id,
         )
         .0,
@@ -220,6 +224,7 @@ fn test_genesis_resource_with_initial_allocation() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -234,14 +239,14 @@ fn test_genesis_resource_with_initial_allocation() {
 
     let key = scrypto_encode("symbol").unwrap();
     let entry = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataEntry>>(
+        .get_mapped::<SpreadPrefixKeyMapper, Option<MetadataValue>>(
             &resource_address.as_node_id(),
             METADATA_KV_STORE_PARTITION,
             &SubstateKey::Map(key),
         )
         .unwrap();
 
-    if let Some(MetadataEntry::Value(MetadataValue::String(symbol))) = entry {
+    if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
     } else {
         panic!("Resource symbol was not a string");
@@ -324,6 +329,7 @@ fn test_genesis_stake_allocation() {
             genesis_data_chunks,
             1u64,
             dummy_epoch_manager_configuration(),
+            1,
         )
         .unwrap();
 
@@ -361,6 +367,36 @@ fn test_genesis_stake_allocation() {
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));
     }
+}
+
+#[test]
+fn test_genesis_time() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = InMemorySubstateDatabase::standard();
+
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, false);
+
+    let _ = bootstrapper
+        .bootstrap_with_genesis_data(
+            vec![],
+            1u64,
+            dummy_epoch_manager_configuration(),
+            123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+        )
+        .unwrap();
+
+    let current_time_substate = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, ClockSubstate>(
+            CLOCK.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ClockField::CurrentTimeRoundedToMinutes.into(),
+        )
+        .unwrap();
+
+    assert_eq!(
+        current_time_substate.current_time_rounded_to_minutes_ms,
+        123 * 60 * 1000
+    );
 }
 
 fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {

@@ -3,51 +3,55 @@ use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
+use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::blueprints::access_controller::RuleSet;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
+use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::royalty::{
+    COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+};
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::{
-    AccountCreateAdvancedInput, AccountCreateInput, ACCOUNT_BLUEPRINT,
-    ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
+    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-};
+use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IdentityCreateInput, IDENTITY_BLUEPRINT,
-    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
+};
+use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
+use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
+use radix_engine_interface::blueprints::package::{
+    PACKAGE_CLAIM_ROYALTY_IDENT, PACKAGE_SET_ROYALTY_CONFIG_IDENT,
+};
+use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::resource::{
+    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
 use radix_engine_interface::blueprints::resource::{
-    FungibleResourceManagerCreateInput, FungibleResourceManagerCreateWithInitialSupplyInput,
-    NonFungibleResourceManagerCreateInput,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, Roles,
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{
-    NonFungibleGlobalId, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::manifest::model::*;
 use radix_engine_interface::data::manifest::*;
 use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::manifest_args;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
-use radix_engine_interface::types::ComponentAddress;
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::ResourceAddress;
 use sbor::rust::borrow::Borrow;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
 use sbor::rust::vec;
 use sbor::*;
@@ -198,19 +202,6 @@ pub fn generate_instruction(
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::TakeAllFromWorktop {
-            resource_address,
-            new_bucket,
-        } => {
-            let bucket_id = id_validator
-                .new_bucket()
-                .map_err(GeneratorError::IdValidationError)?;
-            declare_bucket(new_bucket, resolver, bucket_id)?;
-
-            Instruction::TakeAllFromWorktop {
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            }
-        }
         ast::Instruction::TakeFromWorktop {
             resource_address,
             amount,
@@ -238,6 +229,19 @@ pub fn generate_instruction(
 
             Instruction::TakeNonFungiblesFromWorktop {
                 ids: generate_non_fungible_local_ids(ids)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            }
+        }
+        ast::Instruction::TakeAllFromWorktop {
+            resource_address,
+            new_bucket,
+        } => {
+            let bucket_id = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidationError)?;
+            declare_bucket(new_bucket, resolver, bucket_id)?;
+
+            Instruction::TakeAllFromWorktop {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
@@ -337,6 +341,13 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZoneOfAll { resource_address }
         }
+        ast::Instruction::ClearSignatureProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::ClearSignatureProofs
+        }
+
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
@@ -345,6 +356,13 @@ pub fn generate_instruction(
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::CreateProofFromBucket { bucket_id }
+        }
+        ast::Instruction::BurnResource { bucket } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            id_validator
+                .drop_bucket(&bucket_id)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::BurnResource { bucket_id }
         }
 
         ast::Instruction::CreateProofFromBucketOfAmount {
@@ -401,18 +419,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::DropProof { proof_id }
         }
-        ast::Instruction::DropAllProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            Instruction::DropAllProofs
-        }
-        ast::Instruction::ClearSignatureProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            Instruction::ClearSignatureProofs
-        }
+
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -435,282 +442,228 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::CallMethod {
-            component_address,
+            address,
             method_name,
             args,
         } => {
-            let component_address = generate_component_address(component_address, bech32_decoder)?;
+            let address = generate_global_address(address, bech32_decoder)?;
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethod {
-                component_address,
+                address,
                 method_name,
                 args,
             }
         }
-        ast::Instruction::PublishPackage {
-            code,
-            schema,
-            royalty_config,
-            metadata,
-        } => Instruction::PublishPackage {
-            code: generate_blob(code, blobs)?,
-            schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::PublishPackageAdvanced {
-            code,
-            schema,
-            royalty_config,
-            metadata,
-            authority_rules: access_rules,
-        } => Instruction::PublishPackageAdvanced {
-            code: generate_blob(code, blobs)?,
-            schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            authority_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::BurnResource { bucket } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
+        ast::Instruction::CallRoyaltyMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             id_validator
-                .drop_bucket(&bucket_id)
+                .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::BurnResource { bucket_id }
+            Instruction::CallRoyaltyMethod {
+                address,
+                method_name,
+                args,
+            }
+        }
+        ast::Instruction::CallMetadataMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::CallMetadataMethod {
+                address,
+                method_name,
+                args,
+            }
+        }
+        ast::Instruction::CallAccessRulesMethod {
+            address,
+            method_name,
+            args,
+        } => {
+            let address = generate_global_address(address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            id_validator
+                .process_call_data(&args)
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::CallAccessRulesMethod {
+                address,
+                method_name,
+                args,
+            }
         }
         ast::Instruction::RecallResource { vault_id, amount } => Instruction::RecallResource {
             vault_id: generate_local_address(vault_id, bech32_decoder)?,
             amount: generate_decimal(amount)?,
         },
-        ast::Instruction::SetMetadata {
-            entity_address,
-            key,
-            value,
-        } => Instruction::SetMetadata {
-            entity_address: generate_global_address(entity_address, bech32_decoder)?,
-            key: generate_string(key)?,
-            value: generate_typed_value(value, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::RemoveMetadata {
-            entity_address,
-            key,
-        } => Instruction::RemoveMetadata {
-            entity_address: generate_global_address(entity_address, bech32_decoder)?,
-            key: generate_string(key)?,
-        },
-        ast::Instruction::SetPackageRoyaltyConfig {
-            package_address,
-            royalty_config,
-        } => Instruction::SetPackageRoyaltyConfig {
-            package_address: generate_package_address(package_address, bech32_decoder)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetComponentRoyaltyConfig {
-            component_address,
-            royalty_config,
-        } => Instruction::SetComponentRoyaltyConfig {
-            component_address: generate_component_address(component_address, bech32_decoder)?,
-            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::ClaimPackageRoyalty { package_address } => {
-            Instruction::ClaimPackageRoyalty {
-                package_address: generate_package_address(package_address, bech32_decoder)?,
-            }
-        }
-        ast::Instruction::ClaimComponentRoyalty { component_address } => {
-            Instruction::ClaimComponentRoyalty {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-            }
-        }
-        ast::Instruction::SetGroupAccessRule {
-            entity_address,
-            object_key,
-            authority_key,
-            rule,
-        } => Instruction::SetAuthorityAccessRule {
-            entity_address: generate_global_address(entity_address, bech32_decoder)?,
-            object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
-            rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetGroupMutability {
-            entity_address,
-            object_key,
-            authority_key,
-            mutability,
-        } => Instruction::SetAuthorityMutability {
-            entity_address: generate_global_address(entity_address, bech32_decoder)?,
-            object_key: generate_typed_value(object_key, resolver, bech32_decoder, blobs)?,
-            authority_key: generate_typed_value(authority_key, resolver, bech32_decoder, blobs)?,
-            mutability: generate_typed_value(mutability, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::MintFungible {
-            resource_address,
-            amount,
-        } => Instruction::MintFungible {
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            amount: generate_decimal(amount)?,
-        },
-        ast::Instruction::MintNonFungible {
-            resource_address,
-            args,
-        } => Instruction::MintNonFungible {
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::MintUuidNonFungible {
-            resource_address,
-            args,
-        } => Instruction::MintUuidNonFungible {
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            args: generate_value(args, None, resolver, bech32_decoder, blobs)?,
-        },
 
-        ast::Instruction::CreateValidator { key } => Instruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerCreateValidatorInput {
-                key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
-            }),
+        ast::Instruction::DropAllProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::DropAllProofs
+        }
+
+        /* call function aliases */
+        ast::Instruction::PublishPackage { args } => Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateFungibleResource {
-            divisibility,
-            metadata,
-            access_rules,
-        } => Instruction::CallFunction {
+        ast::Instruction::PublishPackageAdvanced { args } => Instruction::CallFunction {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateFungibleResource { args } => Instruction::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&FungibleResourceManagerCreateInput {
-                divisibility: generate_u8(divisibility)?,
-                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            }),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateFungibleResourceWithInitialSupply {
-            divisibility,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => Instruction::CallFunction {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-            args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
-                divisibility: generate_u8(divisibility)?,
-                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-                initial_supply: generate_decimal(initial_supply)?,
-            }),
-        },
-        ast::Instruction::CreateNonFungibleResource {
-            id_type,
-            schema,
-            metadata,
-            access_rules,
-        } => Instruction::CallFunction {
+        ast::Instruction::CreateFungibleResourceWithInitialSupply { args } => {
+            Instruction::CallFunction {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::CreateNonFungibleResource { args } => Instruction::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
-                id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-                non_fungible_schema: generate_typed_value(schema, resolver, bech32_decoder, blobs)?,
-                metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            }),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateNonFungibleResourceWithInitialSupply {
-            id_type,
-            schema,
-            metadata,
-            access_rules,
-            initial_supply,
-        } => Instruction::CallFunction {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                .to_string(),
-            args: to_manifest_value(
-                &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
-                    non_fungible_schema: generate_typed_value(
-                        schema,
-                        resolver,
-                        bech32_decoder,
-                        blobs,
-                    )?,
-                    metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-                    access_rules: generate_typed_value(
-                        access_rules,
-                        resolver,
-                        bech32_decoder,
-                        blobs,
-                    )?,
-                    entries: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
-                },
-            ),
-        },
-        ast::Instruction::CreateAccessController {
-            controlled_asset,
-            rule_set,
-            timed_recovery_delay_in_minutes,
-        } => Instruction::CallFunction {
+        ast::Instruction::CreateNonFungibleResourceWithInitialSupply { args } => {
+            Instruction::CallFunction {
+                package_address: RESOURCE_PACKAGE,
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::CreateAccessController { args } => Instruction::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE,
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: manifest_args!(
-                generate_typed_value::<ManifestBucket>(
-                    controlled_asset,
-                    resolver,
-                    bech32_decoder,
-                    blobs
-                )?,
-                generate_typed_value::<RuleSet>(rule_set, resolver, bech32_decoder, blobs)?,
-                generate_typed_value::<Option<u32>>(
-                    timed_recovery_delay_in_minutes,
-                    resolver,
-                    bech32_decoder,
-                    blobs
-                )?
-            ),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentity {} => Instruction::CallFunction {
+        ast::Instruction::CreateIdentity { args } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateInput {}),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateIdentityAdvanced { authority_rules } => Instruction::CallFunction {
+        ast::Instruction::CreateIdentityAdvanced { args } => Instruction::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput {
-                authority_rules: generate_typed_value::<Roles>(
-                    authority_rules,
-                    resolver,
-                    bech32_decoder,
-                    blobs,
-                )?,
-            }),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-
-        ast::Instruction::CreateAccount {} => Instruction::CallFunction {
+        ast::Instruction::CreateAccount { args } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateInput {}),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateAccountAdvanced { config } => Instruction::CallFunction {
+        ast::Instruction::CreateAccountAdvanced { args } => Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput {
-                authority_rules: generate_typed_value(config, resolver, bech32_decoder, blobs)?,
-            }),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+
+        /* call non-main method aliases */
+        ast::Instruction::SetMetadata { address, args } => Instruction::CallMetadataMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: METADATA_SET_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::RemoveMetadata { address, args } => Instruction::CallMetadataMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: METADATA_REMOVE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
+            Instruction::CallRoyaltyMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::ClaimComponentRoyalty { address, args } => {
+            Instruction::CallRoyaltyMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetAuthorityAccessRule { address, args } => {
+            Instruction::CallAccessRulesMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetAuthorityMutability { address, args } => {
+            Instruction::CallAccessRulesMethod {
+                address: generate_global_address(address, bech32_decoder)?,
+                method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
+                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            }
+        }
+        /* call main method aliases */
+        ast::Instruction::MintFungible { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::MintNonFungible { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::MintUuidNonFungible { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetPackageRoyaltyConfig { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: PACKAGE_SET_ROYALTY_CONFIG_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::ClaimPackageRoyalty { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateValidator { address, args } => Instruction::CallMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
     })
 }
@@ -723,19 +676,6 @@ macro_rules! invalid_type {
             actual: $v.clone(),
         })
     };
-}
-
-fn generate_typed_value<T: ManifestDecode>(
-    value: &ast::Value,
-    resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
-    blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<T, GeneratorError> {
-    let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
-    let encoded = manifest_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
-    let decoded: T =
-        manifest_decode(&encoded).map_err(|e| GeneratorError::ArgumentDecodingError(e))?;
-    Ok(decoded)
 }
 
 fn generate_args(
@@ -756,13 +696,6 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v => invalid_type!(v, ast::Type::String),
-    }
-}
-
-fn generate_u8(value: &ast::Value) -> Result<u8, GeneratorError> {
-    match value {
-        ast::Value::U8(inner) => Ok(*inner),
-        v => invalid_type!(v, ast::Type::U8),
     }
 }
 
@@ -807,26 +740,6 @@ fn generate_package_address(
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::PackageAddress),
-    }
-}
-
-fn generate_component_address(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<ComponentAddress, GeneratorError> {
-    match value {
-        ast::Value::Address(inner) => match &**inner {
-            ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
-                    if let Ok(address) = ComponentAddress::try_from(full_data.as_ref()) {
-                        return Ok(address);
-                    }
-                }
-                return Err(GeneratorError::InvalidGlobalAddress(s.into()));
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::ComponentAddress, ast::Type::Address),
     }
 }
 
@@ -1014,7 +927,7 @@ fn generate_blob(
 
 fn generate_non_fungible_local_ids(
     value: &ast::Value,
-) -> Result<BTreeSet<NonFungibleLocalId>, GeneratorError> {
+) -> Result<Vec<NonFungibleLocalId>, GeneratorError> {
     match value {
         ast::Value::Array(kind, values) => {
             if kind != &ast::Type::NonFungibleLocalId {
@@ -1273,14 +1186,18 @@ mod tests {
     use crate::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use radix_engine_common::manifest_args;
+    use radix_engine_common::native_addresses::EPOCH_MANAGER;
+    use radix_engine_common::types::ComponentAddress;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::PackageSchema;
-    use radix_engine_interface::types::NonFungibleData;
+    use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
@@ -1448,7 +1365,7 @@ mod tests {
             "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
         )
         .unwrap();
-        let resource = ResourceAddress::try_from_bech32(
+        let resource_address = ResourceAddress::try_from_bech32(
             &bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
@@ -1458,20 +1375,18 @@ mod tests {
             r#"TAKE_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
-                resource_address: resource,
+                resource_address,
             },
         );
         generate_instruction_ok!(
             r#"TAKE_ALL_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromWorktop {
-                resource_address: resource
-            },
+            Instruction::TakeAllFromWorktop { resource_address },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1");"#,
             Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
-                resource_address: resource,
+                resource_address,
             },
         );
         generate_instruction_ok!(
@@ -1486,16 +1401,17 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")  "refill";"#,
             Instruction::CallMethod {
-                component_address: component,
+                address: component.into(),
                 method_name: "refill".to_string(),
                 args: manifest_args!()
             },
         );
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez") Decimal("100");"#,
-            Instruction::MintFungible {
-                resource_address: resource,
-                amount: dec!("100")
+            Instruction::CallMethod {
+                address: resource_address.into(),
+                method_name: "mint".to_string(),
+                args: manifest_args!(dec!("100"))
             },
         );
     }
@@ -1504,19 +1420,26 @@ mod tests {
     fn test_publish_instruction() {
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<String, Tuple>();"#,
-            Instruction::PublishPackageAdvanced {
-                code: ManifestBlobRef(
-                    hex::decode("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0")
+            Instruction::CallFunction {
+                package_address: PACKAGE_PACKAGE,
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
+                args: manifest_args!(
+                    ManifestBlobRef(
+                        hex::decode(
+                            "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0"
+                        )
                         .unwrap()
                         .try_into()
                         .unwrap()
+                    ),
+                    PackageSchema {
+                        blueprints: BTreeMap::new()
+                    },
+                    BTreeMap::<String, RoyaltyConfig>::new(),
+                    BTreeMap::<String, String>::new(),
+                    Roles::new()
                 ),
-                schema: PackageSchema {
-                    blueprints: BTreeMap::new()
-                },
-                royalty_config: BTreeMap::new(),
-                metadata: BTreeMap::new(),
-                authority_rules: Roles::new(),
             },
             "a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0",
             "554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791"
@@ -1680,7 +1603,7 @@ mod tests {
     #[test]
     fn test_mint_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let resource = ResourceAddress::try_from_bech32(
+        let resource_address = ResourceAddress::try_from_bech32(
             &bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
@@ -1690,12 +1613,11 @@ mod tests {
             r##"
             MINT_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Tuple(
-                    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))))
-                );
+                Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
-            Instruction::MintNonFungible {
-                resource_address: resource,
+            Instruction::CallMethod {
+                address: resource_address.into(),
+                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerMintManifestInput {
                     entries: BTreeMap::from([(
                         NonFungibleLocalId::integer(1),
@@ -1712,7 +1634,7 @@ mod tests {
     #[test]
     fn test_mint_uuid_non_fungible_instruction() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let resource = ResourceAddress::try_from_bech32(
+        let resource_address = ResourceAddress::try_from_bech32(
             &bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
@@ -1722,14 +1644,13 @@ mod tests {
             r#"
             MINT_UUID_NON_FUNGIBLE
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
-                Tuple(
-                    Array<Tuple>(
-                        Tuple(Tuple("Hello World", Decimal("12")))
-                    )
+                Array<Tuple>(
+                    Tuple(Tuple("Hello World", Decimal("12")))
                 );
             "#,
-            Instruction::MintUuidNonFungible {
-                resource_address: resource,
+            Instruction::CallMethod {
+                address: resource_address.into(),
+                method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT.to_string(),
                 args: to_manifest_value(&NonFungibleResourceManagerMintUuidManifestInput {
                     entries: Vec::from([(to_manifest_value(&(
                         String::from("Hello World"),
@@ -1744,10 +1665,10 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             Instruction::CallMethod {
-                component_address: EPOCH_MANAGER,
+                address: EPOCH_MANAGER.into(),
                 method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value(&EpochManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)

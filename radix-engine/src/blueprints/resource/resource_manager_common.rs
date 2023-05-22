@@ -229,20 +229,22 @@ where
         (bucket_authorities, protected_bucket_methods),
     ) = build_access_rules(access_rules);
 
-    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) =
-        if resource_address.as_node_id().is_global_fungible_resource() {
-            (
-                FUNGIBLE_VAULT_BLUEPRINT,
-                FUNGIBLE_BUCKET_BLUEPRINT,
-                FUNGIBLE_PROOF_BLUEPRINT,
-            )
-        } else {
-            (
-                NON_FUNGIBLE_VAULT_BLUEPRINT,
-                NON_FUNGIBLE_BUCKET_BLUEPRINT,
-                NON_FUNGIBLE_PROOF_BLUEPRINT,
-            )
-        };
+    let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) = if resource_address
+        .as_node_id()
+        .is_global_fungible_resource_manager()
+    {
+        (
+            FUNGIBLE_VAULT_BLUEPRINT,
+            FUNGIBLE_BUCKET_BLUEPRINT,
+            FUNGIBLE_PROOF_BLUEPRINT,
+        )
+    } else {
+        (
+            NON_FUNGIBLE_VAULT_BLUEPRINT,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT,
+            NON_FUNGIBLE_PROOF_BLUEPRINT,
+        )
+    };
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,

@@ -107,7 +107,7 @@ pub fn transform<T: TransformHandler<E>, E>(
                     .collect(),
             }),
             ManifestCustomValue::Blob(b) => Ok(ScryptoValue::Array {
-                element_value_kind: ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
+                element_value_kind: ScryptoValueKind::U8,
                 elements: handler
                     .replace_blob(b)?
                     .into_iter()

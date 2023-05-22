@@ -234,58 +234,58 @@ mod tests {
         // Fungible Resources
         check_address(
             XRD.as_ref(),
-            EntityType::GlobalFungibleResource,
+            EntityType::GlobalFungibleResourceManager,
             "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd",
         );
 
         // Virtual Badges
         check_address(
             ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxsecpsg",
         );
         check_address(
             EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxxed25sg",
         );
         check_address(
             PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxpkcllr",
         );
         check_address(
             GLOBAL_CALLER_VIRTUAL_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxglcllr",
         );
 
         // Transaction badges
         check_address(
             SYSTEM_TRANSACTION_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxsystxn",
         );
 
         // Entity owner badges
         check_address(
             PACKAGE_OWNER_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxpkgwnrxxxxxxxxx002558553505xxxxxxxxxpkgwnr",
         );
         check_address(
             VALIDATOR_OWNER_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr",
         );
         check_address(
             ACCOUNT_OWNER_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxaccwnr",
         );
         check_address(
             IDENTITY_OWNER_BADGE.as_ref(),
-            EntityType::GlobalNonFungibleResource,
+            EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxdntwnrxxxxxxxxx002876444928xxxxxxxxxdntwnr",
         );
 
