@@ -8,7 +8,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -106,7 +106,7 @@ impl ShowLedger {
     }
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<u64, Error> {
-        let instructions = vec![Instruction::CallMethod { 
+        let instructions = vec![InstructionV1::CallMethod {
             address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
@@ -122,7 +122,7 @@ impl ShowLedger {
         out: &mut O,
         precision: TimePrecision,
     ) -> Result<Instant, Error> {
-        let instructions = vec![Instruction::CallMethod { 
+        let instructions = vec![InstructionV1::CallMethod {
             address: CLOCK.into(),
             method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),

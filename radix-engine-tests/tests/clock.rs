@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::clock::{
 };
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::InstructionV1;
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -16,21 +16,16 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(CLOCK.into());
-    let instructions = vec![Instruction::CallFunction {
+    let instructions = vec![InstructionV1::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
         args: manifest_args!(Into::<[u8; NodeId::LENGTH]>::into(CLOCK), 1i64),
     }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        instructions,
+        btreeset![AuthAddresses::system_role()],
+        pre_allocated_ids,
     );
 
     // Assert
@@ -45,21 +40,16 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(CLOCK.into());
-    let instructions = vec![Instruction::CallFunction {
+    let instructions = vec![InstructionV1::CallFunction {
         package_address: CLOCK_PACKAGE,
         blueprint_name: CLOCK_BLUEPRINT.to_string(),
         function_name: CLOCK_CREATE_IDENT.to_string(),
         args: manifest_args!(Into::<[u8; NodeId::LENGTH]>::into(CLOCK), 1i64),
     }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        instructions,
+        btreeset![],
+        pre_allocated_ids,
     );
 
     // Assert

@@ -603,8 +603,9 @@ fn system_address_preallocation_smuggling_not_possible() {
             .build();
         // Standard global preallocation not yet allowed because of reference issues
         test_runner
-            .execute_system_transaction(
+            .execute_system_transaction_with_preallocation(
                 manifest.instructions,
+                btreeset!(),
                 btreeset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
@@ -623,8 +624,9 @@ fn system_address_preallocation_smuggling_not_possible() {
             .build();
         // Global preallocation with address-as-bytes-smuggling currently allowed
         test_runner
-            .execute_system_transaction(
+            .execute_system_transaction_with_preallocation(
                 manifest.instructions,
+                btreeset!(),
                 btreeset!(transaction_allocated_address.into_node_id()),
             )
             .expect_commit_success();
@@ -643,8 +645,9 @@ fn system_address_preallocation_smuggling_not_possible() {
             .build();
         // System transaction global preallocate address smuggling should not be allowed
         test_runner
-            .execute_system_transaction(
+            .execute_system_transaction_with_preallocation(
                 manifest.instructions,
+                btreeset!(),
                 btreeset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
@@ -663,8 +666,9 @@ fn system_address_preallocation_smuggling_not_possible() {
             .build();
         // System transaction global preallocate address smuggling should not be allowed
         test_runner
-            .execute_system_transaction(
+            .execute_system_transaction_with_preallocation(
                 manifest.instructions,
+                btreeset!(),
                 btreeset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();
@@ -683,8 +687,9 @@ fn system_address_preallocation_smuggling_not_possible() {
             .build();
         // We don't use the transaction allocated address - so it should be an error
         test_runner
-            .execute_system_transaction(
+            .execute_system_transaction_with_preallocation(
                 manifest.instructions,
+                btreeset!(),
                 btreeset!(transaction_allocated_address.into_node_id()),
             )
             .expect_not_success();

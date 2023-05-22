@@ -14,9 +14,9 @@ use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::InstructionV1;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -149,20 +149,11 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch - 1)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -181,20 +172,11 @@ fn next_epoch_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -432,20 +414,11 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -504,20 +477,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let a_substate = test_runner.get_validator_info_by_key(&a_key);
@@ -619,20 +583,11 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
@@ -705,20 +660,11 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
@@ -860,7 +806,7 @@ impl RegisterAndStakeTransactionType {
         account_address: ComponentAddress,
         validator_address: ComponentAddress,
         faucet: GlobalAddress,
-    ) -> Vec<TransactionManifest> {
+    ) -> Vec<TransactionManifestV1> {
         match self {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
                 let manifest = ManifestBuilder::new()
@@ -1005,20 +951,11 @@ fn registered_validator_test(
     );
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1131,20 +1068,11 @@ fn test_registering_and_staking_many_validators() {
     }
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
@@ -1183,20 +1111,11 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1243,20 +1162,11 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1328,8 +1238,8 @@ fn cannot_claim_unstake_immediately() {
 #[test]
 fn can_claim_unstake_after_epochs() {
     // Arrange
-    let initial_epoch = 5u64;
-    let num_unstake_epochs = 7u64;
+    let initial_epoch = 5u32;
+    let num_unstake_epochs = 7u32;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1341,8 +1251,8 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
-        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
+        initial_epoch as u64,
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1438,20 +1348,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1475,26 +1376,21 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        // No validator proofs
+        btreeset![],
+        pre_allocated_ids,
     );
 
     // Assert
@@ -1512,27 +1408,20 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        btreeset![AuthAddresses::system_role()],
+        pre_allocated_ids,
     );
 
     // Assert

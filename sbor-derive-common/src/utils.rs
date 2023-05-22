@@ -408,6 +408,7 @@ pub(crate) struct FieldsData {
     pub skipped_field_names: Vec<TokenStream>,
     pub skipped_field_types: Vec<Type>,
     pub fields_unpacking: TokenStream,
+    pub empty_fields_unpacking: TokenStream,
     pub unskipped_unpacked_field_names: Vec<TokenStream>,
     pub unskipped_field_count: Index,
 }
@@ -456,6 +457,9 @@ fn process_fields(
             let fields_unpacking = quote! {
                 {#(#unskipped_field_names,)* ..}
             };
+            let empty_fields_unpacking = quote! {
+                { .. }
+            };
             let unskipped_unpacked_field_names = unskipped_field_names.clone();
 
             let unskipped_field_count = Index::from(unskipped_field_names.len());
@@ -467,6 +471,7 @@ fn process_fields(
                 skipped_field_names,
                 skipped_field_types,
                 fields_unpacking,
+                empty_fields_unpacking,
                 unskipped_unpacked_field_names,
                 unskipped_field_count,
             }
@@ -479,6 +484,7 @@ fn process_fields(
             let mut skipped_indices = Vec::new();
             let mut skipped_field_types = Vec::new();
             let mut unpacking_idents = Vec::new();
+            let mut empty_idents = Vec::new();
             for (i, f) in fields.unnamed.iter().enumerate() {
                 let index = Index::from(i);
                 if !is_skipped(f)? {
@@ -493,9 +499,13 @@ fn process_fields(
                     skipped_field_types.push(f.ty.clone());
                     unpacking_idents.push(format_ident!("_"));
                 }
+                empty_idents.push(format_ident!("_"));
             }
             let fields_unpacking = quote! {
                 (#(#unpacking_idents),*)
+            };
+            let empty_fields_unpacking = quote! {
+                (#(#empty_idents),*)
             };
 
             let unskipped_field_count = Index::from(unskipped_indices.len());
@@ -507,6 +517,7 @@ fn process_fields(
                 skipped_field_names: skipped_indices,
                 skipped_field_types,
                 fields_unpacking,
+                empty_fields_unpacking,
                 unskipped_unpacked_field_names,
                 unskipped_field_count,
             }
@@ -518,10 +529,23 @@ fn process_fields(
             skipped_field_names: vec![],
             skipped_field_types: vec![],
             fields_unpacking: quote! {},
+            empty_fields_unpacking: quote! {},
             unskipped_unpacked_field_names: vec![],
             unskipped_field_count: Index::from(0),
         },
     })
+}
+
+pub fn add_where_predicate(
+    optional_where: Option<&WhereClause>,
+    predicate: WherePredicate,
+) -> WhereClause {
+    let mut where_clause = optional_where.cloned().unwrap_or(WhereClause {
+        where_token: Default::default(),
+        predicates: Default::default(),
+    });
+    where_clause.predicates.push(predicate);
+    where_clause
 }
 
 pub fn build_decode_generics<'a>(
