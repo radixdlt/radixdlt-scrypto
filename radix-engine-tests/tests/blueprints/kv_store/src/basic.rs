@@ -99,13 +99,32 @@ mod db {
             self.map.insert(len, val);
         }
 
-        pub fn read_repeat(&mut self, len: u32, count: u32) -> bool {
+        pub fn read(&mut self, len: u32) -> usize {
+            if let Some(value) = self.map.get(&len) {
+                (*value).len()
+            } else {
+                0
+            }
+        }
+
+        pub fn read_repeat(&mut self, len: u32, count: u32) -> usize {
+            let mut ret = 0;
             for _ in 0..count {
-                if self.map.get(&len).is_none() {
-                    return false;
+                if let Some(value) = self.map.get(&len) {
+                    ret += (*value).len();
                 }
             }
-            true
+            ret
+        }
+
+        pub fn read_all(&mut self, max_len: u32) -> usize {
+            let mut ret = 0;
+            for i in 0..=max_len {
+                if let Some(value) = self.map.get(&i) {
+                    ret += (*value).len();
+                }
+            }
+            ret
         }
 
     }

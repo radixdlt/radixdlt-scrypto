@@ -100,20 +100,22 @@ fn db_read_test() {
     }
 
     // read KV-store values
-    for i in 0..lengths.len() {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 1000.into())
-            .call_method(component, "read_repeat", manifest_args!(lengths[i], 100u32))
-            .build();
-        execute_and_commit_transaction(
-            &mut substate_db,
-            &mut scrypto_interpreter,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), (max_count * 2 + i as 
-                u32 + 3) as u64, cost_unit_limit)
-                .get_executable(BTreeSet::new()),
-        );
+    for _ in 0..100 {
+        for i in 0..lengths.len() {
+            let manifest = ManifestBuilder::new()
+                .lock_fee(FAUCET, 1000.into())
+                .call_method(component, "read", manifest_args!(lengths[i]))
+                .build();
+            execute_and_commit_transaction(
+                &mut substate_db,
+                &mut scrypto_interpreter,
+                &FeeReserveConfig::default(),
+                &ExecutionConfig::default(),
+                &TestTransaction::new(manifest.clone(), (max_count * 2 + i as 
+                    u32 + 3) as u64, cost_unit_limit)
+                    .get_executable(BTreeSet::new()),
+            );
+        }
     }
 
     // export results
