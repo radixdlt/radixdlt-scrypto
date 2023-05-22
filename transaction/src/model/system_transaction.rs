@@ -7,7 +7,7 @@ pub struct SystemTransaction {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
     pub pre_allocated_ids: BTreeSet<NodeId>,
-    pub nonce: u64,
+    pub nonce: u32,
 }
 
 pub struct PreparedSystemTransaction {
@@ -15,11 +15,11 @@ pub struct PreparedSystemTransaction {
     pub references: IndexSet<Reference>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
     pub pre_allocated_ids: BTreeSet<NodeId>,
-    pub nonce: u64,
+    pub nonce: u32,
 }
 
 impl SystemTransaction {
-    pub fn new(manifest: TransactionManifestV1, nonce: u64) -> Self {
+    pub fn new(manifest: TransactionManifestV1, nonce: u32) -> Self {
         let (instructions, blobs) = manifest.for_intent();
 
         Self {

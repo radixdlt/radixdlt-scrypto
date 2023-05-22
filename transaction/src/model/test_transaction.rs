@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 pub struct TestTransaction {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    pub nonce: u64,
+    pub nonce: u32,
 }
 
 #[derive(ManifestSbor)]
@@ -12,11 +12,11 @@ pub struct PreparedTestTransaction {
     pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    pub nonce: u64,
+    pub nonce: u32,
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifestV1, nonce: u64) -> Self {
+    pub fn new(manifest: TransactionManifestV1, nonce: u32) -> Self {
         let (instructions, blobs) = manifest.for_intent();
         Self {
             instructions,

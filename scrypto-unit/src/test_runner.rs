@@ -261,7 +261,7 @@ pub struct TestRunner {
     scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
 }
@@ -270,7 +270,7 @@ pub struct TestRunner {
 pub struct TestRunnerSnapshot {
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
@@ -319,7 +319,7 @@ impl TestRunner {
         self.next_private_key - 1
     }
 
-    pub fn next_transaction_nonce(&mut self) -> u64 {
+    pub fn next_transaction_nonce(&mut self) -> u32 {
         self.next_transaction_nonce += 1;
         self.next_transaction_nonce - 1
     }

@@ -353,19 +353,19 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Des
 /// ENUMS
 ///==============================================
 
-pub struct EnumValue<X: CustomValueKind, Y: CustomValue<X>> {
+pub struct EnumVariantValue<X: CustomValueKind, Y: CustomValue<X>> {
     pub discriminator: u8,
     pub fields: Vec<Value<X, Y>>,
 }
 
-impl<X: CustomValueKind, Y: CustomValue<X>> Categorize<X> for EnumValue<X, Y> {
+impl<X: CustomValueKind, Y: CustomValue<X>> Categorize<X> for EnumVariantValue<X, Y> {
     fn value_kind() -> ValueKind<X> {
         ValueKind::Enum
     }
 }
 
 impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode<X, E>
-    for EnumValue<X, Y>
+    for EnumVariantValue<X, Y>
 {
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_value_kind(Self::value_kind())
@@ -382,7 +382,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E> + CustomValue<X>> Encode
 }
 
 impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode<X, D>
-    for EnumValue<X, Y>
+    for EnumVariantValue<X, Y>
 {
     #[inline]
     fn decode_body_with_value_kind(
@@ -404,7 +404,7 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D> + CustomValue<X>> Decode
 }
 
 impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Describe<C>
-    for EnumValue<X, Y>
+    for EnumVariantValue<X, Y>
 {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
 

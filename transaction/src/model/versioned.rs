@@ -87,12 +87,14 @@ mod tests {
     }
 
     #[test]
-    pub fn v1_hashes_and_payloads_agree() {
+    pub fn v1_transaction_structure() {
+        // This test demonstrates how the hashes and payloads are constructed in a valid transaction.
+        // It also provides an example payload which can be used in other implementations.
         let network = NetworkDefinition::simulator();
 
         // Create key pairs
         let sig_1_private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let sig_2_private_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+        let sig_2_private_key = EddsaEd25519PrivateKey::from_u64(2).unwrap();
         let notary_private_key = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         //===================
@@ -167,6 +169,15 @@ mod tests {
 
         let intent_hash = prepared_intent.intent_hash();
 
+        assert_eq!(
+            intent_hash.to_string(),
+            "98ae3b6d9eba7681421f1df4e5249ad54f6df7612d00f486eeea504556ee13b3"
+        );
+        assert_eq!(
+            hex::encode(intent_payload_bytes),
+            "4d220104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000800002022011200202002070400010203070205062100"
+        );
+
         //===================
         // SIGNED INTENT
         //===================
@@ -213,6 +224,15 @@ mod tests {
 
         let signed_intent_hash = expected_signed_intent_hash;
 
+        assert_eq!(
+            signed_intent_hash.to_string(),
+            "e182c9cc287e5f46c1062192c92fdeae866846676cd1cbbae97036eed1faaafd"
+        );
+        assert_eq!(
+            hex::encode(signed_intent_payload_bytes),
+            "4d2202022104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b010008000020220112002020020704000102030702050621002022020001210120074101c5454b832fdd19997f592a4be0ccbd1fdd4dbd0d19a88fc520efe768aa140d76579cdf2be41d159dc127da1a4765eeaf6ee6abbddbb4a8abe169012c2e8f9e5101022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674210120074011581f7b88812dbd0c97693a18e7d86af6f0cc425fea894a1fa6c9ba25f740bd85488c89468b174d19a68883d26713c3838a67576b42f27304e8f62b0dbe940e"
+        );
+
         //======================
         // NOTARIZED TRANSACTION
         //======================
@@ -226,7 +246,7 @@ mod tests {
             signed_intent: signed_intent_v1.clone(),
             notary_signature: notary_signature_v1.clone(),
         };
-        let expected_notarized_intent_hash = NotarizedTransactionHash::from_hash(hash(
+        let expected_notarized_transaction_hash = NotarizedTransactionHash::from_hash(hash(
             [
                 [TransactionDiscriminator::V1Notarized as u8].as_slice(),
                 signed_intent_hash.0.as_slice(),
@@ -253,13 +273,23 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            expected_notarized_intent_hash,
+            expected_notarized_transaction_hash,
             prepared_notarized_transaction.notarized_transaction_hash()
         );
+        let notarized_transaction_hash = expected_notarized_transaction_hash;
         assert_eq!(
             signed_intent_hash,
             prepared_notarized_transaction.signed_intent_hash()
         );
         assert_eq!(intent_hash, prepared_notarized_transaction.intent_hash());
+
+        assert_eq!(
+            notarized_transaction_hash.to_string(),
+            "2e3188ad23cb72c61b1563ea3801dc80235c50e17aca92b75d747129440f5f63"
+        );
+        assert_eq!(
+            hex::encode(notarized_transaction_payload_bytes),
+            "4d22030221022104210707f2090100000009050000000900000000220101200720f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b010008000020220112002020020704000102030702050621002022020001210120074101c5454b832fdd19997f592a4be0ccbd1fdd4dbd0d19a88fc520efe768aa140d76579cdf2be41d159dc127da1a4765eeaf6ee6abbddbb4a8abe169012c2e8f9e5101022007207422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674210120074011581f7b88812dbd0c97693a18e7d86af6f0cc425fea894a1fa6c9ba25f740bd85488c89468b174d19a68883d26713c3838a67576b42f27304e8f62b0dbe940e220101210120074002e15f71c051131ad23be8b60e37317956b78cfffba66c007402630a649d05e06fde7d68da8ecdf16598a84e946e6e4d790a844a86b597c11ffae101e70c3f0a"
+        );
     }
 }
