@@ -20,7 +20,7 @@ pub struct ManifestDecompilationDisplayContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
-    pub multi_line: Option<MultiLine>,
+    pub multi_line: Option<MultiLine>, // TODO: do not print `\n` if `None`
 }
 
 impl<'a> ManifestDecompilationDisplayContext<'a> {
@@ -256,10 +256,10 @@ pub fn format_elements<F: fmt::Write>(
 ) -> fmt::Result {
     for (i, x) in values.iter().enumerate() {
         format_manifest_value(f, x, context, depth)?;
-        if i != values.len() - 1 {
-            write_with_ident!(f, context, depth, ",\n")?;
+        if i == values.len() - 1 {
+            write!(f, "\n")?;
         } else {
-            write_with_ident!(f, context, depth, "\n")?;
+            write!(f, ",\n")?;
         }
     }
     Ok(())
@@ -273,12 +273,12 @@ pub fn format_kv_entries<F: fmt::Write>(
 ) -> fmt::Result {
     for (i, x) in entries.iter().enumerate() {
         format_manifest_value(f, &x.0, context, depth)?;
-        write_with_ident!(f, context, depth, ",\n")?;
+        write!(f, ",\n")?;
         format_manifest_value(f, &x.1, context, depth)?;
-        if i != entries.len() - 1 {
-            write_with_ident!(f, context, depth, ",\n")?;
+        if i == entries.len() - 1 {
+            write!(f, "\n")?;
         } else {
-            write_with_ident!(f, context, depth, "\n")?;
+            write!(f, ",\n")?;
         }
     }
     Ok(())
