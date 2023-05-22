@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use radix_engine_store_interface::interface::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::rust::prelude::*;
@@ -59,6 +60,23 @@ impl CommittableSubstateDatabase for RocksdbSubstateStore {
                 result.expect("IO error");
             }
         }
+    }
+}
+
+impl ListableSubstateDatabase for RocksdbSubstateStore {
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
+        Box::new(
+            self.db
+                .iterator(IteratorMode::Start)
+                .map(|kv| {
+                    let (iter_key_bytes, _) = kv.as_ref().unwrap();
+                    let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
+                    iter_key
+                })
+                // Rocksdb iterator returns sorted entries, so ok to to eliminate
+                // duplicates with dedup()
+                .dedup(),
+        )
     }
 }
 
