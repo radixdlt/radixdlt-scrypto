@@ -4,8 +4,13 @@ version = "0.9.0"
 edition = "2021"
 
 [dependencies]
+radix-engine-store-interface = { path = "../radix-engine-store-interface" }
+radix-engine-stores = { path = "../radix-engine-stores" }
+
 shared_memory = { version = "0.12.4", optional = true }
 fixedstr = "0.2.9"
+plotters = "0.3.4"
+linreg = "0.2.0"
 
 [lib]
 bench = false
@@ -13,3 +18,4 @@ bench = false
 [features]
 default = []
 resource_tracker = ["dep:shared_memory"]
+rocksdb = []

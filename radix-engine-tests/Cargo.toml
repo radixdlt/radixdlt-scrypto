@@ -29,8 +29,7 @@ rayon = "1.5.3"
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
-plotters = "0.3.4"
-linreg = "0.2.0"
+
 
 [[bench]]
 name = "validation"
@@ -76,4 +75,4 @@ cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
 resource_tracker = ["dep:radix-engine-utils", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]
-rocksdb = []
+rocksdb = ["dep:radix-engine-utils"]
