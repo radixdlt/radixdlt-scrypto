@@ -73,6 +73,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use_statements.push(item);
         }
 
+        {
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
+            use_statements.push(item);
+        }
+
+
         use_statements
     };
 
@@ -800,6 +806,7 @@ mod tests {
                 pub mod test {
                     use scrypto::prelude::*;
                     use super::*;
+                    use scrypto::prelude::MethodPermission::*;
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
@@ -826,7 +833,23 @@ mod tests {
 
                     impl HasMethods for Test {
                         type BlueprintMethod = Method;
+                        type Permissions = MethodPermissions;
                     }
+
+                    pub struct MethodPermissions {
+                        x: MethodPermission,
+                    }
+
+                    impl ToPermissions for MethodPermissions {
+                        const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                        fn to_permissions(self) -> Vec<(String, MethodPermission)> {
+                            vec![
+                                ("x".to_string(), self.x),
+                            ]
+                        }
+                    }
+
 
                     #[derive(PartialEq, Eq, Ord, PartialOrd)]
                     #[allow(dead_code)]

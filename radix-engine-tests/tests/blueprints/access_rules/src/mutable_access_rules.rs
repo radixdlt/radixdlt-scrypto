@@ -10,11 +10,11 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles)
-                .method_permissions(MethodPermissions {
-                    borrow_funds: MethodPermission::Protected(["borrow_funds_auth"].into()),
-                    deposit_funds: MethodPermission::Protected(["deposit_funds_auth"].into()),
-                    set_authority_rules: MethodPermission::Public,
-                    lock_authority: MethodPermission::Public,
+                .methods(methods! {
+                    borrow_funds => ["borrow_funds_auth"];
+                    deposit_funds => ["deposit_funds_auth"];
+                    set_authority_rules => Public;
+                    lock_authority => Public;
                 })
                 .globalize()
         }

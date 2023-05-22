@@ -460,6 +460,17 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
+macro_rules! methods {
+    ($($method:ident => $permission:expr;)*) => ({
+        MethodPermissions {
+            $(
+                $method: $permission.into(),
+            )*
+        }
+    })
+}
+
+#[macro_export]
 macro_rules! protect {
     ( ) => ({
         ::scrypto::component::ProtectedMethods::new()

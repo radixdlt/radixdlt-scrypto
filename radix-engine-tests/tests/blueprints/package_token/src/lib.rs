@@ -14,9 +14,9 @@ mod factory {
                 .define_roles(roles! {
                     "auth" => rule!(require(Runtime::package_token()));
                 })
-                .protect_methods(protect!(
-                    Method::set_address => vec!["auth"];
-                ))
+                .methods(methods! {
+                    set_address => ["auth"];
+                })
                 .globalize()
         }
 

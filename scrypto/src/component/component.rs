@@ -186,6 +186,12 @@ pub enum MethodPermission {
     Protected(RoleList),
 }
 
+impl<const N: usize> From<[&str; N]> for MethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        MethodPermission::Protected(value.into())
+    }
+}
+
 pub enum MethodPermissionMutability {
     Locked,
     Mutable(RoleList),
@@ -279,7 +285,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn method_permissions(mut self, permissions: C::Permissions) -> Self {
+    pub fn methods(mut self, permissions: C::Permissions) -> Self {
         for (method, permissions) in permissions.to_permissions() {
             match permissions {
                 MethodPermission::Public => {}

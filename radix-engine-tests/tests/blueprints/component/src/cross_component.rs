@@ -18,8 +18,10 @@ mod cross_component {
             .define_roles(roles! {
                 "auth" => access_rule;
             })
-            .protect_methods(protect! {
-                Method::get_component_state => ["auth"];
+            .methods(methods! {
+                put_auth => Public;
+                cross_component_call => Public;
+                get_component_state => ["auth"];
             })
             .globalize()
         }

@@ -75,9 +75,9 @@ mod genesis_helper {
             .define_roles(roles! {
                 "system" => rule!(require(system_role.clone())), ["system"];
             })
-            .method_permissions(MethodPermissions {
-                ingest_data_chunk: MethodPermission::Protected(["system"].into()),
-                wrap_up: MethodPermission::Protected(["system"].into()),
+            .method_permissions(methods! {
+                ingest_data_chunk => ["system"];
+                wrap_up => ["system"];
             })
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()
