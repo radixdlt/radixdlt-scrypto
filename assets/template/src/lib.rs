@@ -23,6 +23,7 @@ mod hello {
                 sample_vault: Vault::with_bucket(my_bucket)
             }
                 .instantiate()
+                .prepare_to_globalize()
                 .globalize()
         }
 

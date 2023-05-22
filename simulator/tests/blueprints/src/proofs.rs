@@ -24,11 +24,13 @@ mod proofs {
 
             let component = Self {}
                 .instantiate()
-                .authority_rule(
-                    "organizational_authenticated_method",
-                    organizational_access_rule,
-                    AccessRule::DenyAll,
-                )
+                .prepare_to_globalize()
+                .define_roles(roles! {
+                    "auth" => organizational_access_rule;
+                })
+                .protect_methods(protect! {
+                    Method::organizational_authenticated_method => ["auth"];
+                })
                 .globalize();
             (
                 component,
