@@ -19,7 +19,7 @@ mod cross_component {
                 "auth" => access_rule;
             })
             .protect_methods(protect! {
-                Method::get_component_state => vec!["auth"];
+                Method::get_component_state => ["auth"];
             })
             .globalize()
         }

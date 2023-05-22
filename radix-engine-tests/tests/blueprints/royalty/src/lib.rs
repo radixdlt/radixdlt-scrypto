@@ -25,7 +25,7 @@ mod royalty_test {
                     "public" => rule!(allow_all);
                 })
                 .protect_royalty(protect! {
-                    RoyaltyMethod::claim_royalty => vec!["public"];
+                    RoyaltyMethod::claim_royalty => ["public"];
                 })
                 .set_royalties(royalties! {
                     Method::paid_method => 1u32;

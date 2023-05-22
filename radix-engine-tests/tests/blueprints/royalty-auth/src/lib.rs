@@ -34,16 +34,15 @@ mod royalty_test {
         pub fn create_component_with_royalty_enabled(
             badge: NonFungibleGlobalId,
         ) -> Global<RoyaltyTest> {
-            let local_component = Self {}.instantiate();
-
-            local_component
+            Self {}
+                .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "auth" => rule!(require(badge)), vec!["auth"];
+                    "auth" => rule!(require(badge)), ["auth"];
                 })
                 .protect_royalty(protect!(
-                    RoyaltyMethod::set_royalty_config => vec!["auth"];
-                    RoyaltyMethod::claim_royalty => vec!["auth"];
+                    RoyaltyMethod::set_royalty_config => ["auth"];
+                    RoyaltyMethod::claim_royalty => ["auth"];
                 ))
                 .set_royalties(royalties!(
                     Method::paid_method => 1u32;

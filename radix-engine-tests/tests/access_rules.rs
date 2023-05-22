@@ -131,8 +131,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules.clone());
 
     // Act
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("deposit_funds"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("deposit_funds"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -29,7 +29,7 @@ mod metadata_component {
                     "metadata" => rule!(allow_all);
                 })
                 .protect_metadata(protect!(
-                    MetadataMethod::set => vec!["metadata"];
+                    MetadataMethod::set => ["metadata"];
                 ))
                 .globalize();
 

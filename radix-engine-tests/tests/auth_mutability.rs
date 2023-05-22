@@ -28,10 +28,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, RoleKey::new(MINT_AUTHORITY)),
         ResourceAuth::Burn => (ObjectKey::SELF, RoleKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => (
-            ObjectKey::SELF,
-            RoleKey::new(UPDATE_METADATA_AUTHORITY),
-        ),
+        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, RoleKey::new(UPDATE_METADATA_AUTHORITY)),
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             RoleKey::new(WITHDRAW_AUTHORITY),
@@ -49,7 +46,12 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_mutability(token_address.into(), object_key, authority_key, RoleList::none())
+            .set_authority_mutability(
+                token_address.into(),
+                object_key,
+                authority_key,
+                RoleList::none(),
+            )
             .build();
         test_runner
             .execute_manifest(
@@ -68,10 +70,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (object_key, authority_key) = match action {
         ResourceAuth::Mint => (ObjectKey::SELF, RoleKey::new(MINT_AUTHORITY)),
         ResourceAuth::Burn => (ObjectKey::SELF, RoleKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => (
-            ObjectKey::SELF,
-            RoleKey::new(UPDATE_METADATA_AUTHORITY),
-        ),
+        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, RoleKey::new(UPDATE_METADATA_AUTHORITY)),
         ResourceAuth::Withdraw => (
             ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
             RoleKey::new(WITHDRAW_AUTHORITY),

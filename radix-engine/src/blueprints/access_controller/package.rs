@@ -1096,12 +1096,7 @@ fn init_access_rules_from_rule_set(
 
     let protected_methods = protected_methods
         .into_iter()
-        .map(|(s, roles)| {
-            (
-                MethodKey::new(ObjectModuleId::Main, s),
-                roles,
-            )
-        })
+        .map(|(s, roles)| (MethodKey::new(ObjectModuleId::Main, s), roles))
         .collect();
 
     (role_definitions, protected_methods)
@@ -1166,11 +1161,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.set_authority_rule(
-        RoleKey::new("primary"),
-        rule_set.primary_role.clone(),
-        api,
-    )?;
+    attached.set_authority_rule(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
     attached.set_authority_rule(
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),

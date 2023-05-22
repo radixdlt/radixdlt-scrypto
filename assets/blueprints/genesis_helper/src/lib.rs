@@ -74,11 +74,11 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize()
             .define_roles(roles! {
-                "system" => rule!(require(system_role.clone())), vec!("system");
+                "system" => rule!(require(system_role.clone())), ["system"];
             })
             .protect_methods(protect!(
-                Method::ingest_data_chunk => vec!["system"];
-                Method::wrap_up => vec!["system"];
+                Method::ingest_data_chunk => ["system"];
+                Method::wrap_up => ["system"];
             ))
             .with_address(ComponentAddress::new_or_panic(preallocated_address_bytes))
             .globalize()

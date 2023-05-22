@@ -16,11 +16,7 @@ pub trait SecurifiedAccessRules {
     fn create_config(authority_rules: Roles) -> Roles {
         let mut authority_rules_to_use = Self::role_definitions();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
-            authority_rules_to_use.define_role(
-                authority.key,
-                access_rule,
-                mutability,
-            );
+            authority_rules_to_use.define_role(authority.key, access_rule, mutability);
         }
 
         authority_rules_to_use

@@ -194,10 +194,8 @@ impl<M: ModuleMethod> ProtectedMethods<M> {
     }
 
     pub fn insert<L: Into<RoleList>>(&mut self, method: M, roles: L) {
-        self.protected_methods.insert(
-            method.to_ident(),
-            roles.into(),
-        );
+        self.protected_methods
+            .insert(method.to_ident(), roles.into());
     }
 }
 

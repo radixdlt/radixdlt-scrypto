@@ -114,9 +114,7 @@ pub struct RoleList {
 
 impl RoleList {
     pub fn none() -> Self {
-        Self {
-            list: vec![],
-        }
+        Self { list: vec![] }
     }
 
     pub fn insert<R: Into<RoleKey>>(&mut self, role: R) {
@@ -164,13 +162,8 @@ impl Roles {
         rule: AccessRule,
         mutability: L,
     ) {
-        self.rules.insert(
-            authority.into(),
-            (
-                rule,
-                mutability.into(),
-            ),
-        );
+        self.rules
+            .insert(authority.into(), (rule, mutability.into()));
     }
 }
 

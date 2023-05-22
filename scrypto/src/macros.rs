@@ -459,7 +459,6 @@ macro_rules! external_component_members {
     () => {}
 }
 
-
 #[macro_export]
 macro_rules! protect {
     ( ) => ({

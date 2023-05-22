@@ -11,8 +11,8 @@ mod mutable_access_rules_component {
                 .prepare_to_globalize()
                 .define_roles(roles)
                 .protect_methods(protect!(
-                    Method::borrow_funds => vec!["borrow_funds_auth"];
-                    Method::deposit_funds => vec!["deposit_funds_auth"];
+                    Method::borrow_funds => ["borrow_funds_auth"];
+                    Method::deposit_funds => ["deposit_funds_auth"];
                 ))
                 .globalize()
         }

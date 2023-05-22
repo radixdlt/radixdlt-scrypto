@@ -111,13 +111,12 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
-        access_rules
-            .set_authority_mutability(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, RoleList::none());
+        access_rules.set_authority_mutability(UPDATE_NON_FUNGIBLE_DATA_AUTHORITY, RoleList::none());
     }
 
     pub fn lock_withdrawable(&self) {
         let access_rules = self.0.access_rules();
-        access_rules.set_authority_mutability(WITHDRAW_AUTHORITY,RoleList::none());
+        access_rules.set_authority_mutability(WITHDRAW_AUTHORITY, RoleList::none());
     }
 
     pub fn lock_depositable(&self) {

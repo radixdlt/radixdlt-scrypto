@@ -109,15 +109,14 @@ macro_rules! role_list {
     });
 }
 
-
 #[macro_export]
 macro_rules! role_entry {
-    ($roles: expr, $role: expr, $rule:expr) => ({
+    ($roles: expr, $role: expr, $rule:expr) => {{
         $roles.define_role($role, $rule, RoleList::none());
-    });
-    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => ({
+    }};
+    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => {{
         $roles.define_role($role, $rule, $mutability);
-    });
+    }};
 }
 
 #[macro_export]

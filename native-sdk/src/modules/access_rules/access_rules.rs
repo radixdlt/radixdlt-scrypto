@@ -5,7 +5,9 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, RoleKey, MethodKey, ObjectKey, Roles, RoleList};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, MethodKey, ObjectKey, RoleKey, RoleList, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
