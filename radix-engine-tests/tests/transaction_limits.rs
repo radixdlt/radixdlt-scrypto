@@ -105,7 +105,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
@@ -145,7 +145,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
@@ -185,7 +185,7 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();
@@ -228,7 +228,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
         )
         .build();
 
-    let transactions = TestTransaction::new(manifest, 10);
+    let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::default();

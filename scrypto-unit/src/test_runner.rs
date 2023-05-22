@@ -773,7 +773,7 @@ impl TestRunner {
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction(
-            TestTransaction::new(manifest, nonce)
+            TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
@@ -791,7 +791,7 @@ impl TestRunner {
     {
         let nonce = self.next_transaction_nonce();
         self.execute_transaction_with_config(
-            TestTransaction::new(manifest, nonce)
+            TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
@@ -1222,7 +1222,7 @@ impl TestRunner {
             SystemTransaction {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                nonce,
+                hash: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids,
             }
             .prepare()
@@ -1249,7 +1249,7 @@ impl TestRunner {
             SystemTransaction {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                nonce,
+                hash: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids: BTreeSet::new(),
             }
             .prepare()
