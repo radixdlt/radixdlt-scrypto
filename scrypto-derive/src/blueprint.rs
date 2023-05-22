@@ -183,6 +183,17 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let output_method_enum = if method_idents.is_empty() {
         quote! {
+            pub struct MethodPermissions {
+            }
+
+            impl ToPermissions for MethodPermissions {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_permissions(self) -> Vec<(String, RoleList)> {
+                    vec![]
+                }
+            }
+
             #[derive(PartialEq, Eq, Ord, PartialOrd)]
             #[allow(dead_code)]
             #[allow(non_camel_case_types)]
@@ -202,6 +213,27 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     } else {
         quote! {
+            pub struct MethodPermissions<
+                #(#method_idents: Into<RoleList>),*
+            > {
+                #(
+                    #method_idents: MethodPermission<#method_idents>,
+                )*
+            }
+
+            impl< #(#method_idents: Into<RoleList>),* > ToPermissions for MethodPermissions< #(#method_idents),* > {
+                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
+
+                fn to_permissions(self) -> Vec<(String, MethodPerm)> {
+                    vec![
+                        #(
+                            (#method_names.to_string(), self.#method_idents.into())
+                        ,
+                        )*
+                    ]
+                }
+            }
+
             #[derive(PartialEq, Eq, Ord, PartialOrd)]
             #[allow(dead_code)]
             #[allow(non_camel_case_types)]

@@ -64,6 +64,12 @@ mod genesis_helper {
             epoch_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
+
+            let _permissions = MethodPermissions {
+                ingest_data_chunk: MethodPermission::Protected(["system"]),
+                wrap_up: MethodPermission::Protected(["system"]),
+            };
+
             Self {
                 epoch_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),

@@ -180,6 +180,35 @@ pub trait ModuleMethod {
     fn to_ident(&self) -> String;
 }
 
+pub enum MethodPerm {
+    Public,
+    Protected(RoleList),
+}
+
+impl<L: Into<RoleList>> From<MethodPermission<L>> for MethodPerm {
+    fn from(value: MethodPermission<L>) -> Self {
+        match value {
+            MethodPermission::Public => MethodPerm::Public,
+            MethodPermission::Protected(role_list) => MethodPerm::Protected(role_list.into()),
+        }
+    }
+}
+
+pub enum MethodPermission<L: Into<RoleList>> {
+    Public,
+    Protected(L),
+}
+
+pub enum MethodPermissionMutability {
+    Locked,
+    Mutable(RoleList),
+}
+
+pub trait ToPermissions {
+    const MODULE_ID: ObjectModuleId;
+    fn to_permissions(self) -> Vec<(String, MethodPerm)>;
+}
+
 pub struct ProtectedMethods<M: ModuleMethod> {
     protected_methods: IndexMap<String, RoleList>,
     phantom: PhantomData<M>,
