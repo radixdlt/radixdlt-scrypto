@@ -13,7 +13,7 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT, AccessRulesSetMethodPermissionAndMutabilityInput};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_UPDATE_METHOD_IDENT, AccessRulesUpdateMethod};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
@@ -442,12 +442,12 @@ impl ValidatorBlueprint {
         api.actor_call_module_method(
             OBJECT_HANDLE_SELF,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodPermissionAndMutabilityInput {
+            ACCESS_RULES_UPDATE_METHOD_IDENT,
+            scrypto_encode(&AccessRulesUpdateMethod {
                 object_key: ObjectKey::SELF,
                 method_key: MethodKey::main(VALIDATOR_STAKE_IDENT),
-                permission,
-                mutability: ["self"].into(),
+                permission: Some(permission),
+                mutability: None,
             }).unwrap(),
         )?;
 

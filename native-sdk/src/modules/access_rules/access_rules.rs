@@ -1,8 +1,8 @@
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesDefineRoleInput,
-    AccessRulesSetMethodPermissionAndMutabilityInput, AccessRulesSetRoleMutabilityInput,
+    AccessRulesUpdateMethod, AccessRulesSetRoleMutabilityInput,
     ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
-    ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_UPDATE_METHOD_IDENT,
     ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -142,12 +142,12 @@ pub trait AccessRulesObject {
             &node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodPermissionAndMutabilityInput {
+            ACCESS_RULES_UPDATE_METHOD_IDENT,
+            scrypto_encode(&AccessRulesUpdateMethod {
                 object_key: ObjectKey::SELF,
                 method_key,
-                permission: permission.into(),
-                mutability: mutability.into(),
+                permission: Some(permission.into()),
+                mutability: Some(mutability.into()),
             })
             .unwrap(),
         )?;

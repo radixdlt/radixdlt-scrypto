@@ -20,24 +20,6 @@ mod mutable_access_rules_component {
                 .globalize()
         }
 
-        pub fn new_with_update_access_rule(update_access_rule: AccessRule) -> Global<MutableAccessRulesComponent> {
-            Self {}
-                .instantiate()
-                .prepare_to_globalize()
-                .define_roles(roles! {
-                    "borrow_funds_auth" => rule!(allow_all);
-                    "deposit_funds_auth" => rule!(require(RADIX_TOKEN)), ["deposit_funds_auth_update"];
-                    "deposit_funds_auth_update" => update_access_rule;
-                })
-                .methods(methods! {
-                    borrow_funds => ["borrow_funds_auth"];
-                    deposit_funds => ["deposit_funds_auth"];
-                    set_authority_rules => Public;
-                    lock_authority => Public;
-                })
-                .globalize()
-        }
-
         pub fn new_with_owner(owner_update_access_rule: AccessRule) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
