@@ -31,7 +31,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::{BlobsV1, InstructionV1, InstructionsV1, SystemTransaction};
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -171,15 +171,13 @@ where
                 initial_time_ms,
             );
 
-            let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
-            for chunk in genesis_data_chunks.into_iter() {
-                let receipt = self.ingest_genesis_data_chunk(chunk, next_nonce);
-                next_nonce += 1;
+            for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
+                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -208,7 +206,10 @@ where
             self.scrypto_vm,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis().with_trace(self.trace),
-            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+            &transaction
+                .prepare()
+                .expect("Expected system bootstrap transaction to be preparable")
+                .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -222,15 +223,19 @@ where
     fn ingest_genesis_data_chunk(
         &mut self,
         chunk: GenesisDataChunk,
-        nonce: u64,
+        chunk_number: usize,
     ) -> TransactionReceipt {
-        let transaction = create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, nonce);
+        let transaction =
+            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis().with_trace(self.trace),
-            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+            &transaction
+                .prepare()
+                .expect("Expected genesis data chunk transaction to be preparable")
+                .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -240,15 +245,18 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(nonce);
+    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction();
 
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
             &FeeReserveConfig::default(),
             &ExecutionConfig::genesis(),
-            &transaction.get_executable(btreeset![AuthAddresses::system_role()]),
+            &transaction
+                .prepare()
+                .expect("Expected genesis wrap up transaction to be preparable")
+                .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -275,7 +283,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(PACKAGE_PACKAGE.into());
         let package_address = PACKAGE_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -299,7 +307,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(METADATA_MODULE_PACKAGE.into());
         let package_address = METADATA_MODULE_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -321,7 +329,7 @@ pub fn create_system_bootstrap_transaction(
         pre_allocated_ids.insert(ROYALTY_MODULE_PACKAGE.into());
         let package_address = ROYALTY_MODULE_PACKAGE.into();
 
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -342,7 +350,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(ACCESS_RULES_MODULE_PACKAGE.into());
         let package_address = ACCESS_RULES_MODULE_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -363,7 +371,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(RESOURCE_PACKAGE.into());
         let package_address = RESOURCE_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -401,7 +409,7 @@ pub fn create_system_bootstrap_transaction(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.into();
         pre_allocated_ids.insert(RADIX_TOKEN.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
@@ -425,7 +433,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
         pre_allocated_ids.insert(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -446,7 +454,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = GLOBAL_CALLER_VIRTUAL_BADGE.into();
         pre_allocated_ids.insert(GLOBAL_CALLER_VIRTUAL_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -474,7 +482,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_OWNER_BADGE.into();
         pre_allocated_ids.insert(PACKAGE_OWNER_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -502,7 +510,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = IDENTITY_OWNER_BADGE.into();
         pre_allocated_ids.insert(IDENTITY_OWNER_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -517,7 +525,7 @@ pub fn create_system_bootstrap_transaction(
 
         pre_allocated_ids.insert(IDENTITY_PACKAGE.into());
         let package_address = IDENTITY_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -543,7 +551,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(EPOCH_MANAGER_PACKAGE.into());
         let package_address = EPOCH_MANAGER_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -569,7 +577,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(CLOCK_PACKAGE.into());
         let package_address = CLOCK_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -600,7 +608,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ACCOUNT_OWNER_BADGE.into();
         pre_allocated_ids.insert(ACCOUNT_OWNER_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -615,7 +623,7 @@ pub fn create_system_bootstrap_transaction(
 
         pre_allocated_ids.insert(ACCOUNT_PACKAGE.into());
         let package_address = ACCOUNT_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -641,7 +649,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(ACCESS_CONTROLLER_PACKAGE.into());
         let package_address = ACCESS_CONTROLLER_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -683,7 +691,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(TRANSACTION_PROCESSOR_PACKAGE.into());
         let package_address = TRANSACTION_PROCESSOR_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
@@ -707,7 +715,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
         pre_allocated_ids.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -728,7 +736,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
         pre_allocated_ids.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -749,7 +757,7 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TRANSACTION_BADGE.into();
         pre_allocated_ids.insert(SYSTEM_TRANSACTION_BADGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
@@ -769,7 +777,7 @@ pub fn create_system_bootstrap_transaction(
         let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
         let package_address = FAUCET_PACKAGE.into();
         pre_allocated_ids.insert(FAUCET_PACKAGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -792,7 +800,7 @@ pub fn create_system_bootstrap_transaction(
         let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
         let package_address = GENESIS_HELPER_PACKAGE.into();
         pre_allocated_ids.insert(GENESIS_HELPER_PACKAGE.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -811,7 +819,7 @@ pub fn create_system_bootstrap_transaction(
     {
         let component_address = CLOCK.into();
         pre_allocated_ids.insert(CLOCK.into());
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: CLOCK_PACKAGE,
             blueprint_name: CLOCK_BLUEPRINT.to_string(),
             function_name: CLOCK_CREATE_IDENT.to_string(),
@@ -829,7 +837,7 @@ pub fn create_system_bootstrap_transaction(
         pre_allocated_ids.insert(EPOCH_MANAGER.into());
         pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
 
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: EPOCH_MANAGER_PACKAGE,
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
             function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
@@ -846,14 +854,14 @@ pub fn create_system_bootstrap_transaction(
     {
         let whole_lotta_xrd = id_allocator.new_bucket_id().unwrap();
         instructions.push(
-            Instruction::TakeAllFromWorktop {
+            InstructionV1::TakeAllFromWorktop {
                 resource_address: RADIX_TOKEN,
             }
             .into(),
         );
         pre_allocated_ids.insert(GENESIS_HELPER.into());
         let address_bytes = GENESIS_HELPER.as_node_id().0;
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: GENESIS_HELPER_PACKAGE,
             blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
@@ -867,17 +875,17 @@ pub fn create_system_bootstrap_transaction(
     }
 
     SystemTransaction {
-        instructions,
+        instructions: InstructionsV1(instructions),
         pre_allocated_ids,
-        blobs: Vec::new(),
-        nonce: 0,
+        blobs: BlobsV1 { blobs: vec![] },
+        hash: hash(format!("Genesis Bootstrap")),
     }
 }
 
 pub fn create_genesis_data_ingestion_transaction(
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
-    nonce: u64,
+    chunk_number: usize,
 ) -> SystemTransaction {
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
@@ -891,32 +899,32 @@ pub fn create_genesis_data_ingestion_transaction(
         }
     }
 
-    instructions.push(Instruction::CallMethod {
+    instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
         method_name: "ingest_data_chunk".to_string(),
         args: manifest_args!(chunk),
     });
 
     SystemTransaction {
-        instructions,
+        instructions: InstructionsV1(instructions),
         pre_allocated_ids,
-        blobs: Vec::new(),
-        nonce,
+        blobs: BlobsV1 { blobs: vec![] },
+        hash: hash(format!("Genesis Data Chunk: {}", chunk_number)),
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction() -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
-    instructions.push(Instruction::CallMethod {
+    instructions.push(InstructionV1::CallMethod {
         address: GENESIS_HELPER.clone().into(),
         method_name: "wrap_up".to_string(),
         args: manifest_args!(),
     });
 
     instructions.push(
-        Instruction::TakeAllFromWorktop {
+        InstructionV1::TakeAllFromWorktop {
             resource_address: RADIX_TOKEN,
         }
         .into(),
@@ -925,7 +933,7 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     let bucket = id_allocator.new_bucket_id().unwrap();
     let address_bytes = FAUCET.as_node_id().0;
 
-    instructions.push(Instruction::CallFunction {
+    instructions.push(InstructionV1::CallFunction {
         package_address: FAUCET_PACKAGE,
         blueprint_name: FAUCET_BLUEPRINT.to_string(),
         function_name: "new".to_string(),
@@ -933,9 +941,9 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
     });
 
     SystemTransaction {
-        instructions,
+        instructions: InstructionsV1(instructions),
         pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
-        blobs: Vec::new(),
-        nonce,
+        blobs: BlobsV1 { blobs: vec![] },
+        hash: hash(format!("Genesis Wrap Up")),
     }
 }
