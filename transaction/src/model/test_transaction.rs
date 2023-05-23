@@ -46,11 +46,6 @@ impl PreparedTestTransaction {
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        let auth_zone_params = AuthZoneParams {
-            initial_proofs,
-            virtual_resources: BTreeSet::new(),
-        };
-
         Executable::new(
             &self.encoded_instructions,
             &self.references,
@@ -58,7 +53,10 @@ impl PreparedTestTransaction {
             ExecutionContext {
                 transaction_hash: self.hash,
                 payload_size: self.encoded_instructions.len(),
-                auth_zone_params,
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtual_resources: BTreeSet::new(),
+                },
                 fee_payment: FeePayment::User { tip_percentage: 0 },
                 runtime_validations: vec![],
                 pre_allocated_ids: BTreeSet::new(),

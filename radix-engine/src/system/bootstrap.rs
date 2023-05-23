@@ -30,7 +30,9 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use radix_engine_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use transaction::model::{BlobsV1, InstructionV1, InstructionsV1, SystemTransaction};
+use transaction::model::{
+    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayloadEncode,
+};
 use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
@@ -270,7 +272,7 @@ pub fn create_system_bootstrap_transaction(
     initial_epoch: u64,
     initial_configuration: EpochManagerInitialConfiguration,
     initial_time_ms: i64,
-) -> SystemTransaction {
+) -> SystemTransactionV1 {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
 
@@ -852,11 +854,11 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
-    SystemTransaction {
+    SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_ids,
         blobs: BlobsV1 { blobs: vec![] },
-        hash: hash(format!("Genesis Bootstrap")),
+        hash_for_execution: hash(format!("Genesis Bootstrap")),
     }
 }
 
@@ -864,7 +866,7 @@ pub fn create_genesis_data_ingestion_transaction(
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
     chunk_number: usize,
-) -> SystemTransaction {
+) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
 
@@ -883,15 +885,15 @@ pub fn create_genesis_data_ingestion_transaction(
         args: manifest_args!(chunk),
     });
 
-    SystemTransaction {
+    SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_ids,
         blobs: BlobsV1 { blobs: vec![] },
-        hash: hash(format!("Genesis Data Chunk: {}", chunk_number)),
+        hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
     }
 }
 
-pub fn create_genesis_wrap_up_transaction() -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -918,10 +920,10 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransaction {
         args: manifest_args!(address_bytes, bucket),
     });
 
-    SystemTransaction {
+    SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
         blobs: BlobsV1 { blobs: vec![] },
-        hash: hash(format!("Genesis Wrap Up")),
+        hash_for_execution: hash(format!("Genesis Wrap Up")),
     }
 }

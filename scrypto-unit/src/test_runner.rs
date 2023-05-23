@@ -62,7 +62,7 @@ use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::model::{
     AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
-    SystemTransaction, TestTransaction,
+    SystemTransactionV1, TestTransaction, TransactionPayloadEncode,
 };
 
 pub struct Compile;
@@ -1219,10 +1219,10 @@ impl TestRunner {
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
-            SystemTransaction {
+            SystemTransactionV1 {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                hash: hash(format!("Test runner txn: {}", nonce)),
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids,
             }
             .prepare()
@@ -1246,10 +1246,10 @@ impl TestRunner {
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
-            SystemTransaction {
+            SystemTransactionV1 {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
-                hash: hash(format!("Test runner txn: {}", nonce)),
+                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids: BTreeSet::new(),
             }
             .prepare()

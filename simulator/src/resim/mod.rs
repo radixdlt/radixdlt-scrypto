@@ -82,9 +82,9 @@ use std::path::PathBuf;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::manifest::decompile;
-use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
+use transaction::model::{SystemTransactionV1, TransactionPayloadEncode};
 use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
@@ -169,12 +169,12 @@ pub fn handle_system_transaction<O: std::io::Write>(
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let nonce = get_nonce()?;
-    let transaction = SystemTransaction {
+    let transaction = SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         blobs: BlobsV1 {
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
-        hash: hash(format!("Simulator system transaction: {}", nonce)),
+        hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
         pre_allocated_ids: BTreeSet::new(),
     };
 
