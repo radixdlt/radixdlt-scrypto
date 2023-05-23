@@ -215,16 +215,16 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAccountDefaultDepositRuleInput>(
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(
                     ),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAccountDefaultDepositRuleOutput>(
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(
                     ),
-                export_name: ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+                export_name: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
@@ -594,10 +594,10 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT => {
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountChangeAccountDefaultDepositRuleInput {
+                let AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))

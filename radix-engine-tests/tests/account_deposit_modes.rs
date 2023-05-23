@@ -569,8 +569,8 @@ impl AccountDepositModesTestRunner {
         let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
-                ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT,
-                to_manifest_value(&AccountChangeAccountDefaultDepositRuleInput {
+                ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
+                to_manifest_value(&AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
                 }),
             )

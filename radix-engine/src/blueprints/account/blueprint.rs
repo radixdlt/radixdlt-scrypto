@@ -131,7 +131,7 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT,
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
