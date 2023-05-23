@@ -4,7 +4,7 @@ use crate::internal_prelude::*;
 pub struct TestTransaction {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    pub nonce: u64,
+    pub hash: Hash,
 }
 
 #[derive(ManifestSbor)]
@@ -12,16 +12,21 @@ pub struct PreparedTestTransaction {
     pub encoded_instructions: Vec<u8>,
     pub references: IndexSet<Reference>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    pub nonce: u64,
+    pub hash: Hash,
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifestV1, nonce: u64) -> Self {
+    /// The nonce needs to be globally unique amongst test transactions on your ledger
+    pub fn new_from_nonce(manifest: TransactionManifestV1, nonce: u32) -> Self {
+        Self::new(manifest, hash(format!("Test transaction: {}", nonce)))
+    }
+
+    pub fn new(manifest: TransactionManifestV1, hash: Hash) -> Self {
         let (instructions, blobs) = manifest.for_intent();
         Self {
             instructions,
             blobs,
-            nonce,
+            hash,
         }
     }
 
@@ -31,7 +36,7 @@ impl TestTransaction {
             encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
             references: prepared_instructions.references,
             blobs: self.blobs.prepare_partial()?.blobs_by_hash,
-            nonce: self.nonce,
+            hash: self.hash,
         })
     }
 }
@@ -41,9 +46,6 @@ impl PreparedTestTransaction {
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        // Fake transaction hash
-        let transaction_hash = hash(self.nonce.to_le_bytes());
-
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
             virtual_resources: BTreeSet::new(),
@@ -54,7 +56,7 @@ impl PreparedTestTransaction {
             &self.references,
             &self.blobs,
             ExecutionContext {
-                transaction_hash,
+                transaction_hash: self.hash,
                 payload_size: self.encoded_instructions.len(),
                 auth_zone_params,
                 fee_payment: FeePayment::User { tip_percentage: 0 },

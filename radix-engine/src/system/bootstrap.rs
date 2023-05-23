@@ -170,15 +170,13 @@ where
                 initial_time_ms,
             );
 
-            let mut next_nonce = 1;
             let mut data_ingestion_receipts = vec![];
-            for chunk in genesis_data_chunks.into_iter() {
-                let receipt = self.ingest_genesis_data_chunk(chunk, next_nonce);
-                next_nonce += 1;
+            for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
+                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(next_nonce);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -224,9 +222,10 @@ where
     fn ingest_genesis_data_chunk(
         &mut self,
         chunk: GenesisDataChunk,
-        nonce: u64,
+        chunk_number: usize,
     ) -> TransactionReceipt {
-        let transaction = create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, nonce);
+        let transaction =
+            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
             self.scrypto_vm,
@@ -245,8 +244,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, nonce: u64) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(nonce);
+    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction();
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -857,14 +856,14 @@ pub fn create_system_bootstrap_transaction(
         instructions: InstructionsV1(instructions),
         pre_allocated_ids,
         blobs: BlobsV1 { blobs: vec![] },
-        nonce: 0,
+        hash: hash(format!("Genesis Bootstrap")),
     }
 }
 
 pub fn create_genesis_data_ingestion_transaction(
     genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
-    nonce: u64,
+    chunk_number: usize,
 ) -> SystemTransaction {
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
@@ -888,11 +887,11 @@ pub fn create_genesis_data_ingestion_transaction(
         instructions: InstructionsV1(instructions),
         pre_allocated_ids,
         blobs: BlobsV1 { blobs: vec![] },
-        nonce,
+        hash: hash(format!("Genesis Data Chunk: {}", chunk_number)),
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
+pub fn create_genesis_wrap_up_transaction() -> SystemTransaction {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
@@ -923,6 +922,6 @@ pub fn create_genesis_wrap_up_transaction(nonce: u64) -> SystemTransaction {
         instructions: InstructionsV1(instructions),
         pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
         blobs: BlobsV1 { blobs: vec![] },
-        nonce,
+        hash: hash(format!("Genesis Wrap Up")),
     }
 }

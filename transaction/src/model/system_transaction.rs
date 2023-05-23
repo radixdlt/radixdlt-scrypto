@@ -7,7 +7,7 @@ pub struct SystemTransaction {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
     pub pre_allocated_ids: BTreeSet<NodeId>,
-    pub nonce: u64,
+    pub hash: Hash,
 }
 
 pub struct PreparedSystemTransaction {
@@ -15,18 +15,18 @@ pub struct PreparedSystemTransaction {
     pub references: IndexSet<Reference>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
     pub pre_allocated_ids: BTreeSet<NodeId>,
-    pub nonce: u64,
+    pub hash: Hash,
 }
 
 impl SystemTransaction {
-    pub fn new(manifest: TransactionManifestV1, nonce: u64) -> Self {
+    pub fn new(manifest: TransactionManifestV1, hash: Hash) -> Self {
         let (instructions, blobs) = manifest.for_intent();
 
         Self {
             instructions,
             blobs,
             pre_allocated_ids: btreeset!(),
-            nonce,
+            hash,
         }
     }
 
@@ -37,7 +37,7 @@ impl SystemTransaction {
             references: prepared_instructions.references,
             blobs: self.blobs.prepare_partial()?.blobs_by_hash,
             pre_allocated_ids: self.pre_allocated_ids,
-            nonce: self.nonce,
+            hash: self.hash,
         })
     }
 }
@@ -47,8 +47,7 @@ impl PreparedSystemTransaction {
         &'a self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> Executable<'a> {
-        // Fake transaction hash
-        let transaction_hash = hash(self.nonce.to_le_bytes());
+        let transaction_hash = self.hash;
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,

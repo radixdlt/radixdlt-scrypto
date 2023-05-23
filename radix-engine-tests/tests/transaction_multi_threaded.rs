@@ -44,7 +44,7 @@ mod multi_threaded_test {
 
         // Create two accounts
         let accounts = (0..2)
-            .map(|_| {
+            .map(|i| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET, 100.into())
                     .new_account_advanced(authority_rules.clone())
@@ -54,12 +54,13 @@ mod multi_threaded_test {
                     &mut scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
-                    &SystemTransaction::new(manifest.clone(), 1)
-                        .prepare()
-                        .unwrap()
-                        .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
-                            &public_key
-                        )]),
+                    &SystemTransaction::new(
+                        manifest.clone(),
+                        hash(format!("Account creation: {i}")),
+                    )
+                    .prepare()
+                    .unwrap()
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
                 )
                 .expect_commit(true)
                 .new_component_addresses()[0];
@@ -86,7 +87,7 @@ mod multi_threaded_test {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce)
+                &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
                     .expect("Expected transaction to be preparable")
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
@@ -105,19 +106,18 @@ mod multi_threaded_test {
             )
             .build();
 
-        let nonce = 3;
-
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
         // account2
         thread::scope(|s| {
             for _i in 0..20 {
+                // Note - we run the same transaction on all threads, but don't commit anything
                 s.spawn(|_| {
                     let receipt = execute_transaction(
                         &substate_db,
                         &scrypto_interpreter,
                         &FeeReserveConfig::default(),
                         &ExecutionConfig::default(),
-                        &TestTransaction::new(manifest.clone(), nonce)
+                        &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()
                             .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
@@ -125,7 +125,7 @@ mod multi_threaded_test {
                             )]),
                     );
                     receipt.expect_commit_success();
-                    println!("recept = {:?}", receipt);
+                    println!("receipt = {:?}", receipt);
                 });
             }
         })

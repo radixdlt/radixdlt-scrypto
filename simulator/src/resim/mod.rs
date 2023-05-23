@@ -174,7 +174,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         blobs: BlobsV1 {
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
-        nonce,
+        hash: hash(format!("Simulator system transaction: {}", nonce)),
         pre_allocated_ids: BTreeSet::new(),
     };
 
@@ -247,7 +247,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| NonFungibleGlobalId::from_public_key(&e.public_key()))
                 .collect::<BTreeSet<NonFungibleGlobalId>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce);
+            let transaction = TestTransaction::new_from_nonce(manifest, nonce);
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,

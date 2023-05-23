@@ -46,7 +46,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), 1)
+                &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
@@ -77,7 +77,7 @@ fn bench_transfer(c: &mut Criterion) {
             &mut scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &TestTransaction::new(manifest.clone(), nonce)
+            &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
                 .unwrap()
                 .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
@@ -105,7 +105,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &mut scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
-                &TestTransaction::new(manifest.clone(), nonce)
+                &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
