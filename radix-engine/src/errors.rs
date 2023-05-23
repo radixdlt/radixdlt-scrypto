@@ -2,6 +2,7 @@ use crate::blueprints::access_controller::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::epoch_manager::{EpochManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;
+use crate::blueprints::pool::single_resource_pool::SingleResourcePoolError;
 use crate::blueprints::resource::{AuthZoneError, NonFungibleVaultError};
 use crate::blueprints::resource::{
     BucketError, FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError,
@@ -407,6 +408,8 @@ pub enum ApplicationError {
     EventError(Box<EventError>),
 
     MetadataError(MetadataPanicError),
+
+    SingleResourcePoolError(SingleResourcePoolError),
 }
 
 impl From<TransactionProcessorError> for ApplicationError {

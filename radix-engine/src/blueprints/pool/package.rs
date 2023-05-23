@@ -41,16 +41,6 @@ impl PoolNativePackage {
             );
 
             functions.insert(
-                SINGLE_RESOURCE_POOL_INSTANTIATE_WITH_OWNER_RULE_IDENT.to_string(),
-                FunctionSchema {
-                    receiver: None,
-                    input: aggregator.add_child_type_and_descendents::<SingleResourcePoolInstantiateWithOwnerRuleInput>(),
-                    output: aggregator.add_child_type_and_descendents::<SingleResourcePoolInstantiateWithOwnerRuleOutput>(),
-                    export_name: SINGLE_RESOURCE_POOL_INSTANTIATE_WITH_OWNER_RULE_EXPORT_NAME.to_string(),
-                },
-            );
-
-            functions.insert(
                 SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT.to_string(),
                 FunctionSchema {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -171,32 +161,15 @@ impl PoolNativePackage {
                     ));
                 }
 
-                let SingleResourcePoolInstantiateInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = SingleResourcePoolBlueprint::instantiate(resource_address, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-
-            SINGLE_RESOURCE_POOL_INSTANTIATE_WITH_OWNER_RULE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                if receiver.is_some() {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
-                    ));
-                }
-
-                let SingleResourcePoolInstantiateWithOwnerRuleInput {
+                let SingleResourcePoolInstantiateInput {
                     resource_address,
-                    owner_rule,
+                    pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = SingleResourcePoolBlueprint::instantiate_with_owner_rule(
+                let rtn = SingleResourcePoolBlueprint::instantiate(
                     resource_address,
-                    owner_rule,
+                    pool_manager_rule,
                     api,
                 )?;
 
