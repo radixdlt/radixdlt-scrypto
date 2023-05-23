@@ -25,7 +25,7 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "owner" => rule!(require(RADIX_TOKEN)), ["owner_update"];
+                    "owner" => rule!(require(RADIX_TOKEN)), mut => ["owner_update"];
                     "owner_update" => owner_update_access_rule;
                 })
                 .methods(methods! {

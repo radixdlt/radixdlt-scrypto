@@ -114,7 +114,7 @@ macro_rules! role_entry {
     ($roles: expr, $role: expr, $rule:expr) => {{
         $roles.define_role($role, $rule, RoleList::none());
     }};
-    ($roles: expr, $role: expr, $rule:expr, $mutability:expr) => {{
+    ($roles: expr, $role: expr, $rule:expr, mut => $mutability:expr) => {{
         $roles.define_role($role, $rule, $mutability);
     }};
 }
@@ -124,14 +124,14 @@ macro_rules! roles {
     ( ) => ({
         $crate::blueprints::resource::Roles::new()
     });
-    ( $($role:expr => $($entry:expr),* );* ) => ({
+    ( $($role:expr => $rule:expr $(, mut => $mutability:expr)? );* ) => ({
         let mut roles = $crate::blueprints::resource::Roles::new();
         $(
-            role_entry!(roles, $role, $($entry),*);
+            role_entry!(roles, $role, $rule $(, mut => $mutability)? );
         )*
         roles
     });
-    ( $($role:expr => $($entry:expr),*;)* ) => ({
-        roles!($($role => $($entry),*);*)
+    ( $($role:expr => $rule:expr $(, mut => $mutability:expr)?;)* ) => ({
+        roles!($($role => $rule $(, mut => $mutability)?);*)
     })
 }

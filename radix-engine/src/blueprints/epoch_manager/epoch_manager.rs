@@ -187,7 +187,7 @@ impl EpochManagerBlueprint {
         };
 
         let role_definitions = roles! {
-            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))), ["self"];
+            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE)));
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
             SYSTEM_ROLE => rule!(require(AuthAddresses::system_role())); // Set epoch only used for debugging
         };
