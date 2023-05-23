@@ -4,9 +4,9 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetAuthorityMutabilityInput,
-    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    AccessRulesCreateInput, AccessRulesSetRoleMutabilityInput,
+    AccessRulesDefineRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles};
@@ -21,7 +21,7 @@ pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
     pub fn new(
-        method_permissions: BTreeMap<MethodKey, MethodPermission>,
+        method_permissions: BTreeMap<MethodKey, (MethodPermission, RoleList)>,
         authority_rules: Roles,
     ) -> Self {
         let rtn = ScryptoEnv
@@ -43,10 +43,10 @@ impl AccessRules {
 
     pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
+            ACCESS_RULES_DEFINE_ROLE_IDENT,
+            &AccessRulesDefineRoleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: RoleKey::new(name),
+                role_key: RoleKey::new(name),
                 rule: entry.into(),
             },
         );
@@ -59,10 +59,10 @@ impl AccessRules {
         entry: A,
     ) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            &AccessRulesSetAuthorityRuleInput {
+            ACCESS_RULES_DEFINE_ROLE_IDENT,
+            &AccessRulesDefineRoleInput {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                authority_key: RoleKey::new(name),
+                role_key: RoleKey::new(name),
                 rule: entry.into(),
             },
         );
@@ -70,10 +70,10 @@ impl AccessRules {
 
     pub fn set_authority_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT,
-            &AccessRulesSetAuthorityMutabilityInput {
+            ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
+            &AccessRulesSetRoleMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key: RoleKey::new(name),
+                role_key: RoleKey::new(name),
                 mutability: mutability.into(),
             },
         );

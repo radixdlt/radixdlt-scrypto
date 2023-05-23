@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission, Roles};
+use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission, RoleList, Roles};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -217,7 +217,7 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub authority_rules: Roles,
-    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, MethodPermission>>,
+    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, (MethodPermission, RoleList)>>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -274,7 +274,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         let mut method_permissions = index_map_new();
         for (method, permission) in permissions.to_mapping() {
-            method_permissions.insert(method, permission);
+            method_permissions.insert(method, (permission, RoleList::none()));
         }
 
         self.method_permissions.insert(T::MODULE_ID, method_permissions);
@@ -287,7 +287,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
         if !self.method_permissions.contains_key(&ObjectModuleId::Main) {
             for method in C::Permissions::methods() {
-                method_permissions.insert(MethodKey::new(ObjectModuleId::Main, method.to_string()), MethodPermission::Public);
+                method_permissions.insert(
+                    MethodKey::new(ObjectModuleId::Main, method.to_string()),
+                    (MethodPermission::Public, RoleList::none())
+                );
             }
         }
 

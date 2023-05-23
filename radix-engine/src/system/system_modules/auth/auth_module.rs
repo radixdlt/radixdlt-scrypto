@@ -203,7 +203,7 @@ impl AuthModule {
                 )?
             }
             _ => {
-                if let Some(permission) = node_authority_rules.protected_methods.get(&method_key) {
+                if let Some(permission) = node_authority_rules.method_permissions.get(&method_key) {
                     match permission {
                         MethodPermission::Public => return Ok(()),
                         MethodPermission::Protected(list) => list.clone(),

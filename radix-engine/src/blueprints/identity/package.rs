@@ -19,6 +19,7 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
+use crate::method_permissions;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
@@ -189,12 +190,12 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
-        btreemap!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => role_list!["owner"].into(),
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => role_list!["owner"].into(),
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => role_list!["owner"].into(),
-            MethodKey::new(ObjectModuleId::Main, IDENTITY_SECURIFY_IDENT) => role_list![IDENTITY_SECURIFY_IDENT].into(),
+    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+        method_permissions!(
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => ["owner"],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => ["owner"],
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => ["owner"],
+            MethodKey::new(ObjectModuleId::Main, IDENTITY_SECURIFY_IDENT) => [IDENTITY_SECURIFY_IDENT],
         )
     }
 

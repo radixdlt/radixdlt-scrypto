@@ -16,6 +16,7 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use crate::method_permissions;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerConfigSubstate {
@@ -192,10 +193,10 @@ impl EpochManagerBlueprint {
         };
 
         let access_rules = AccessRules::create(
-            btreemap!(
-                MethodKey::main(EPOCH_MANAGER_START_IDENT) => role_list!["self"].into(),
-                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => role_list![VALIDATOR_AUTHORITY].into(),
-                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => role_list![SYSTEM_AUTHORITY].into(),
+            method_permissions!(
+                MethodKey::main(EPOCH_MANAGER_START_IDENT) => ["self"],
+                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_AUTHORITY],
+                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_AUTHORITY],
                 MethodKey::main(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public,
                 MethodKey::main(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public,
             ),

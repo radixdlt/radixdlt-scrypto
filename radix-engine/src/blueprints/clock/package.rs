@@ -18,6 +18,7 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
+use crate::method_permissions;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ClockSubstate {
@@ -173,8 +174,8 @@ impl ClockNativePackage {
         );
 
         let access_rules = AccessRules::create(
-            btreemap!(
-                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => role_list![CLOCK_AUTHORITY].into(),
+            method_permissions!(
+                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => [CLOCK_AUTHORITY],
                 MethodKey::main(CLOCK_GET_CURRENT_TIME_IDENT) => MethodPermission::Public,
                 MethodKey::main(CLOCK_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public,
             ),

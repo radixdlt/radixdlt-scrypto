@@ -13,7 +13,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    AccessRulesDefineRoleInput, ACCESS_RULES_DEFINE_ROLE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
+use crate::method_permissions;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -445,10 +446,10 @@ impl ValidatorBlueprint {
             receiver,
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+            ACCESS_RULES_DEFINE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesDefineRoleInput {
                 object_key: ObjectKey::SELF,
-                authority_key: RoleKey::new("stake"),
+                role_key: RoleKey::new("stake"),
                 rule,
             })
             .unwrap(),
@@ -788,22 +789,22 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
-        btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"].into(),
+    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+        method_permissions!(
+            MethodKey::metadata(METADATA_SET_IDENT) => ["owner"],
 
             MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public,
             MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public,
 
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => role_list![VALIDATOR_STAKE_AUTHORITY].into(),
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => role_list![VALIDATOR_APPLY_EMISSION_AUTHORITY].into(),
+            MethodKey::main(VALIDATOR_REGISTER_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => ["owner"],
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => [VALIDATOR_STAKE_AUTHORITY],
+            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY],
         )
     }
 

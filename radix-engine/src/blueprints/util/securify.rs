@@ -9,11 +9,11 @@ pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission>;
+    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)>;
 
     fn role_definitions() -> Roles;
 
-    fn create_config(authority_rules: Roles) -> Roles {
+    fn create_roles(authority_rules: Roles) -> Roles {
         let mut authority_rules_to_use = Self::role_definitions();
         for (authority, (access_rule, mutability)) in authority_rules.rules {
             authority_rules_to_use.define_role(authority.key, access_rule, mutability);
@@ -25,7 +25,7 @@ pub trait SecurifiedAccessRules {
     fn init_securified_rules<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let authority_rules = Self::create_config(Roles::new());
+        let authority_rules = Self::create_roles(Roles::new());
         let protected_module_methods = Self::method_permissions();
         let access_rules =
             AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
@@ -36,15 +36,15 @@ pub trait SecurifiedAccessRules {
         role_definitions: Roles,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut authority_rules = Self::create_config(role_definitions);
+        let mut roles = Self::create_roles(role_definitions);
 
         if let Some(securify) = Self::SECURIFY_AUTHORITY {
-            authority_rules.define_role(securify, AccessRule::DenyAll, RoleList::none());
+            roles.define_role(securify, AccessRule::DenyAll, RoleList::none());
         }
 
-        let protected_module_methods = Self::method_permissions();
+        let method_permissions = Self::method_permissions();
         let access_rules =
-            AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
+            AccessRules::create(method_permissions, roles, btreemap!(), api)?;
 
         Ok(access_rules)
     }

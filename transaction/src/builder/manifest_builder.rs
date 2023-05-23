@@ -647,10 +647,10 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_SET_AUTHORITY_RULE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesSetAuthorityRuleInput {
+            method_name: ACCESS_RULES_DEFINE_ROLE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesDefineRoleInput {
                 object_key,
-                authority_key,
+                role_key: authority_key,
                 rule,
             }),
         })
@@ -666,10 +666,10 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesSetAuthorityMutabilityInput {
+            method_name: ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesSetRoleMutabilityInput {
                 object_key,
-                authority_key,
+                role_key: authority_key,
                 mutability,
             }),
         })

@@ -29,6 +29,7 @@ pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate a
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
+use crate::method_permissions;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -114,11 +115,11 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
-        btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"].into(),
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY].into(),
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY].into(),
+    fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
+        method_permissions!(
+            MethodKey::metadata(METADATA_SET_IDENT) => ["owner"],
+            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [PACKAGE_ROYALTY_AUTHORITY],
+            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [PACKAGE_ROYALTY_AUTHORITY],
         )
     }
 

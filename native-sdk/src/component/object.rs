@@ -1,5 +1,5 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetAuthorityRuleAndMutabilityInput,
+    AccessRulesSetMethodPermissionsAndMutabilityInput,
     ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
@@ -61,7 +61,7 @@ impl BorrowedObject {
             false,
             ObjectModuleId::AccessRules,
             ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
+            scrypto_encode(&AccessRulesSetMethodPermissionsAndMutabilityInput {
                 object_key: ObjectKey::SELF,
                 authority_key,
                 rule,

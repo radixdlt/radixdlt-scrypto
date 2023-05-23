@@ -1,7 +1,7 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetAuthorityRuleAndMutabilityInput,
-    AccessRulesSetAuthorityRuleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
+    AccessRulesCreateInput, AccessRulesSetMethodPermissionsAndMutabilityInput,
+    AccessRulesDefineRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
+    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -19,9 +19,9 @@ pub struct AccessRules(pub Own);
 
 impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
-        method_permissions: BTreeMap<MethodKey, MethodPermission>,
+        method_permissions: BTreeMap<MethodKey, (MethodPermission, RoleList)>,
         authority_rules: Roles,
-        inner_blueprint_rules: BTreeMap<String, (Roles, BTreeMap<MethodKey, MethodPermission>)>,
+        inner_blueprint_rules: BTreeMap<String, (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -73,10 +73,10 @@ pub trait AccessRulesObject {
             node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_AUTHORITY_RULE_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleInput {
+            ACCESS_RULES_DEFINE_ROLE_IDENT,
+            scrypto_encode(&AccessRulesDefineRoleInput {
                 object_key: ObjectKey::SELF,
-                authority_key,
+                role_key: authority_key,
                 rule: entry.into(),
             })
             .unwrap(),
@@ -103,7 +103,7 @@ pub trait AccessRulesObject {
             false,
             module_id,
             ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetAuthorityRuleAndMutabilityInput {
+            scrypto_encode(&AccessRulesSetMethodPermissionsAndMutabilityInput {
                 object_key: ObjectKey::SELF,
                 authority_key,
                 rule: rule.into(),

@@ -4,8 +4,8 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::address::Bech32Encoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_DEFINE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -493,11 +493,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_SET_AUTHORITY_RULE_IDENT) => {
+                (address, ACCESS_RULES_DEFINE_ROLE_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "SET_AUTHORITY_ACCESS_RULE"
                 }
-                (address, ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT) => {
+                (address, ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT) => {
                     fields.push(to_manifest_value(address));
                     "SET_AUTHORITY_MUTABILITY"
                 }
