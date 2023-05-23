@@ -135,7 +135,6 @@ pub const CONSENSUS_MANAGER_PACKAGE: PackageAddress = PackageAddress::new_or_pan
     95, 72, 198, 134, 49, 140, 99, 24, 198,
 ]);
 
-/// The native package for the clock.
 /// The native package for access controllers.
 pub const ACCESS_CONTROLLER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 144, 99, 24, 198, 49, 140, 108, 77, 99, 248, 204, 99, 24, 198, 49, 140, 247, 191, 85, 61,

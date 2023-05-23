@@ -69,7 +69,7 @@ pub struct TxFuzzer {
 impl TxFuzzer {
     pub fn new() -> Self {
         let mut runner = TestRunner::builder().without_trace().build();
-        let mut component_addresses = vec![CONSENSUS_MANAGER, CLOCK, GENESIS_HELPER, FAUCET];
+        let mut component_addresses = vec![CONSENSUS_MANAGER, GENESIS_HELPER, FAUCET];
         let mut all_resource_addresses = vec![
             RADIX_TOKEN,
             ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
@@ -89,7 +89,6 @@ impl TxFuzzer {
             RESOURCE_PACKAGE,
             IDENTITY_PACKAGE,
             CONSENSUS_MANAGER_PACKAGE,
-            CLOCK_PACKAGE,
             ACCOUNT_PACKAGE,
             ACCESS_CONTROLLER_PACKAGE,
             TRANSACTION_PROCESSOR_PACKAGE,
