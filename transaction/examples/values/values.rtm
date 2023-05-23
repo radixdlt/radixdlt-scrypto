@@ -11,17 +11,17 @@ CALL_METHOD
 
     # enum
     None
-    Enum(0u8)
+    Enum<0u8>()
     Some("hello")
-    Enum(1u8, "hello")
+    Enum<1u8>( "hello")
     Ok("test")
-    Enum(0u8, "test")
+    Enum<0u8>( "test")
     Err("test123")
-    Enum(1u8, "test123")
-    Enum("Option::None")
-    Enum("Option::Some", "a")
-    Enum("Result::Ok", "b")
-    Enum("Result::Err", "c")
+    Enum<1u8>( "test123")
+    Enum<"Option::None">()
+    Enum<"Option::Some">( "a")
+    Enum<"Result::Ok">( "b")
+    Enum<"Result::Err">( "c")
 
     # bytes
     Bytes("deadbeef")
