@@ -244,8 +244,7 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 // Account Transition Deposit Mode
 //=================================
 
-pub const ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT: &str =
-    "change_account_default_deposit_rule";
+pub const ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT: &str = "change_account_default_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountChangeDefaultDepositRuleInput {

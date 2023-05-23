@@ -24,7 +24,11 @@ fn test_manifest_with_non_existent_resource() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .take_all_from_worktop(non_existent_resource, |builder, bucket_id| {
-            builder.call_method(account, "try_deposit_abort_on_failure", manifest_args!(bucket_id))
+            builder.call_method(
+                account,
+                "try_deposit_abort_on_failure",
+                manifest_args!(bucket_id),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest(

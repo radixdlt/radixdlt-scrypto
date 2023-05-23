@@ -219,11 +219,9 @@ impl AccountNativePackage {
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(
-                    ),
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(
-                    ),
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
                 export_name: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );

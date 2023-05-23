@@ -30,7 +30,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::{
-    ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT, ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT,
+    ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
 };
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
