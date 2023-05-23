@@ -19,6 +19,7 @@ use crate::vm::ScryptoVm;
 use radix_engine_common::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerInitialConfiguration, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
@@ -388,11 +389,23 @@ pub fn create_system_bootstrap_transaction(
     // XRD Token
     {
         let mut metadata = BTreeMap::new();
-        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
-        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
-        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
-        metadata.insert("url".to_owned(), XRD_URL.to_owned());
-        metadata.insert("icon_url".to_owned(), XRD_ICON_URL.to_owned());
+        metadata.insert(
+            "symbol".to_owned(),
+            MetadataValue::String(XRD_SYMBOL.to_owned()),
+        );
+        metadata.insert(
+            "name".to_owned(),
+            MetadataValue::String(XRD_NAME.to_owned()),
+        );
+        metadata.insert(
+            "description".to_owned(),
+            MetadataValue::String(XRD_DESCRIPTION.to_owned()),
+        );
+        metadata.insert("url".to_owned(), MetadataValue::String(XRD_URL.to_owned()));
+        metadata.insert(
+            "icon_url".to_owned(),
+            MetadataValue::String(XRD_ICON_URL.to_owned()),
+        );
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
@@ -425,7 +438,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into();
@@ -446,7 +459,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Object Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         let resource_address = GLOBAL_CALLER_VIRTUAL_BADGE.into();
@@ -665,7 +678,7 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE.into();
@@ -686,7 +699,7 @@ pub fn create_system_bootstrap_transaction(
 
     // EDDSA ED25519 Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE.into();
@@ -707,7 +720,7 @@ pub fn create_system_bootstrap_transaction(
 
     // System Token
     {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TRANSACTION_BADGE.into();

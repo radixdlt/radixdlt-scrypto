@@ -697,7 +697,7 @@ impl TestRunner {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         authority_rules: AuthorityRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()

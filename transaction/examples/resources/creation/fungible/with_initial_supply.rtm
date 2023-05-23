@@ -17,10 +17,10 @@ CALL_METHOD
 # default resource behavior where it can be withdrawn and deposited by anybody.
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
-    Map<String, String>(
-        "name", "MyResource",                                        # Resource Name
-        "symbol", "RSRC",                                            # Resource Symbol
-        "description", "A very innovative and important resource"    # Resource Description
+    Map<String, Enum>(
+        "name", Enum<"Metadata::String">("MyResource"),                                        # Resource Name
+        "symbol", Enum<"Metadata::String">("RSRC"),                                            # Resource Symbol
+        "description", Enum<"Metadata::String">("A very innovative and important resource")    # Resource Description
     ) 
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
