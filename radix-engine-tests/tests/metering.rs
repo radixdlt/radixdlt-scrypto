@@ -48,7 +48,7 @@ fn test_basic_transfer() {
         .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -141,7 +141,7 @@ fn test_radiswap() {
                 })
                 .call_method(
                     account2,
-                    "try_deposit_batch_unsafe",
+                    "try_deposit_batch_abort_on_failure",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -159,7 +159,7 @@ fn test_radiswap() {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
-                    "try_deposit_batch_unsafe",
+                    "try_deposit_batch_abort_on_failure",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -179,7 +179,7 @@ fn test_radiswap() {
             })
             .call_method(
                 account3,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -260,7 +260,7 @@ fn test_flash_loan() {
                 })
                 .call_method(
                     account2,
-                    "try_deposit_batch_unsafe",
+                    "try_deposit_batch_abort_on_failure",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -289,7 +289,7 @@ fn test_flash_loan() {
             })
             .call_method(
                 account3,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -380,7 +380,7 @@ fn should_be_able_run_large_manifest() {
     }
     builder.call_method(
         account,
-        "try_deposit_batch_unsafe",
+        "try_deposit_batch_abort_on_failure",
         manifest_args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();

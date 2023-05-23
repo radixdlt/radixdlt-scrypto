@@ -92,7 +92,7 @@ impl NewAccount {
                 .0
                 .call_method(
                     account,
-                    "try_deposit_batch",
+                    "try_deposit_batch_return_on_failure",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build();

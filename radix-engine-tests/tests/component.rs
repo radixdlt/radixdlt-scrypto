@@ -39,7 +39,7 @@ fn test_component() {
         .call_method(component, "put_component_state", manifest_args!())
         .call_method(
             account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

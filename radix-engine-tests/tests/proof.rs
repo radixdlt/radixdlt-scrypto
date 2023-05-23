@@ -30,7 +30,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         })
         .call_method(
             account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -196,7 +196,7 @@ fn can_use_bucket_for_authorization() {
         })
         .call_method(
             account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -380,7 +380,7 @@ fn can_move_locked_bucket() {
         })
         .call_method(
             account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

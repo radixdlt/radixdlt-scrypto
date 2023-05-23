@@ -41,7 +41,7 @@ fn create_manifest_with_middle(
         })
         .call_method(
             sink_account(),
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build()

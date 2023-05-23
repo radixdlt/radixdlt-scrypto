@@ -16,7 +16,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .lock_fee_and_withdraw(account, 10.into(), token_resource_address, Decimal::one())
         .call_method(
             other_account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -61,7 +61,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         )
         .call_method(
             other_account,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

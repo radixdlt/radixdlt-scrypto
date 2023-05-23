@@ -75,7 +75,7 @@ mod multi_threaded_test {
             .call_method(FAUCET, "free", manifest_args!())
             .call_method(
                 account1,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -97,7 +97,7 @@ mod multi_threaded_test {
             .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

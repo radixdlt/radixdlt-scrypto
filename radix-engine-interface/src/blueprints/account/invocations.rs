@@ -271,50 +271,52 @@ pub type AccountConfigureResourceDepositOutput = ();
 // Account Try Deposit
 //=====================
 
-pub const ACCOUNT_TRY_DEPOSIT_IDENT: &str = "try_deposit";
+pub const ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT: &str = "try_deposit_return_on_failure";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositInput {
+pub struct AccountTryDepositReturnOnFailureInput {
     pub bucket: Bucket,
 }
 
-pub type AccountTryDepositOutput = Option<Bucket>;
+pub type AccountTryDepositReturnOnFailureOutput = Option<Bucket>;
 
 //===========================
-// Account Try Deposit Batch
+// Account Try Deposit Batch Return On Failure
 //===========================
 
-pub const ACCOUNT_TRY_DEPOSIT_BATCH_IDENT: &str = "try_deposit_batch";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT: &str =
+    "try_deposit_batch_return_on_failure";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositBatchInput {
+pub struct AccountTryDepositBatchReturnOnFailureInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountTryDepositBatchOutput = Vec<Bucket>;
+pub type AccountTryDepositBatchReturnOnFailureOutput = Vec<Bucket>;
 
 //============================
-// Account Try Deposit Unsafe
+// Account Try Deposit Abort On Failure
 //============================
 
-pub const ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT: &str = "try_deposit_unsafe";
+pub const ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT: &str = "try_deposit_abort_on_failure";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositUnsafeInput {
+pub struct AccountTryDepositAbortOnFailureInput {
     pub bucket: Bucket,
 }
 
-pub type AccountTryDepositUnsafeOutput = ();
+pub type AccountTryDepositAbortOnFailureOutput = ();
 
 //==================================
-// Account Try Deposit Batch Unsafe
+// Account Try Deposit Batch Abort On Failure
 //==================================
 
-pub const ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT: &str = "try_deposit_batch_unsafe";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT: &str =
+    "try_deposit_batch_abort_on_failure";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositBatchUnsafeInput {
+pub struct AccountTryDepositBatchAbortOnFailureInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountTryDepositBatchUnsafeOutput = ();
+pub type AccountTryDepositBatchAbortOnFailureOutput = ();

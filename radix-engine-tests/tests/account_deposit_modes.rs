@@ -83,14 +83,16 @@ fn account_try_deposit_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_batch_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_batch_return_on_failure_method_is_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
-        let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatch, false);
+        let receipt = test_runner.free_tokens_from_faucet_to_account(
+            DepositMethod::TryDepositBatchReturnOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -98,29 +100,31 @@ fn account_try_deposit_batch_method_is_callable_with_out_owner_signature() {
 }
 
 #[test]
-fn account_try_deposit_unsafe_method_is_callable_with_out_owner_signature() {
-    // Arrange
-    for is_virtual in [true, false] {
-        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
-
-        // Act
-        let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositUnsafe, false);
-
-        // Assert
-        receipt.expect_commit_success();
-    }
-}
-
-#[test]
-fn account_try_deposit_batch_unsafe_method_is_callable_with_out_owner_signature() {
+fn account_try_deposit_abort_on_failure_method_is_callable_with_out_owner_signature() {
     // Arrange
     for is_virtual in [true, false] {
         let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
 
         // Act
         let receipt = test_runner
-            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositBatchUnsafe, false);
+            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositAbortOnFailure, false);
+
+        // Assert
+        receipt.expect_commit_success();
+    }
+}
+
+#[test]
+fn account_try_deposit_batch_abort_on_failure_method_is_callable_with_out_owner_signature() {
+    // Arrange
+    for is_virtual in [true, false] {
+        let mut test_runner = AccountDepositModesTestRunner::new(is_virtual);
+
+        // Act
+        let receipt = test_runner.free_tokens_from_faucet_to_account(
+            DepositMethod::TryDepositBatchAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -165,8 +169,11 @@ fn allow_all_allows_for_all_resource_deposits() {
         let resource_address = test_runner.freely_mintable_resource();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -184,8 +191,11 @@ fn allow_all_disallows_deposit_of_resource_in_deny_list() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -206,8 +216,11 @@ fn resource_in_deny_list_could_be_converted_to_resource_in_allow_list() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -228,8 +241,11 @@ fn resource_in_deny_list_could_be_removed_from_there() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -249,8 +265,8 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner
+            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositAbortOnFailure, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -267,8 +283,8 @@ fn allow_existing_allows_deposit_of_xrd_if_not_on_deny_list() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner
+            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositAbortOnFailure, false);
 
         // Assert
         receipt.expect_commit_success();
@@ -291,8 +307,11 @@ fn allow_existing_allows_deposit_of_an_existing_resource() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -316,8 +335,11 @@ fn allow_existing_allows_deposit_of_an_existing_resource_even_if_account_has_non
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -338,8 +360,11 @@ fn allow_existing_allows_deposit_of_a_resource_account_does_not_have_if_it_is_on
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -363,8 +388,11 @@ fn removing_an_address_from_the_allow_list_removes_it() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -388,8 +416,11 @@ fn transitioning_an_address_to_deny_list_works_as_expected() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -406,8 +437,8 @@ fn disallow_all_does_not_permit_deposit_of_any_resource() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.free_tokens_from_faucet_to_account(DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner
+            .free_tokens_from_faucet_to_account(DepositMethod::TryDepositAbortOnFailure, false);
 
         // Assert
         receipt.expect_specific_failure(is_account_deposit_not_allowed_error);
@@ -428,8 +459,11 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
             .expect_commit_success();
 
         // Act
-        let receipt =
-            test_runner.mint_and_deposit(resource_address, DepositMethod::TryDepositUnsafe, false);
+        let receipt = test_runner.mint_and_deposit(
+            resource_address,
+            DepositMethod::TryDepositAbortOnFailure,
+            false,
+        );
 
         // Assert
         receipt.expect_commit_success();
@@ -462,11 +496,17 @@ impl AccountDepositModesTestRunner {
     ) -> TransactionReceipt {
         let (method, is_vec) = match deposit_method {
             DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_IDENT, false),
-            DepositMethod::TryDepositUnsafe => (ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT, false),
+            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT, false),
+            DepositMethod::TryDepositAbortOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT, false)
+            }
             DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatch => (ACCOUNT_TRY_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatchUnsafe => (ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT, true),
+            DepositMethod::TryDepositBatchReturnOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT, true)
+            }
+            DepositMethod::TryDepositBatchAbortOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT, true)
+            }
         };
 
         let manifest = ManifestBuilder::new()
@@ -490,11 +530,17 @@ impl AccountDepositModesTestRunner {
     ) -> TransactionReceipt {
         let (method, is_vec) = match deposit_method {
             DepositMethod::Deposit => (ACCOUNT_DEPOSIT_IDENT, false),
-            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_IDENT, false),
-            DepositMethod::TryDepositUnsafe => (ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT, false),
+            DepositMethod::TryDeposit => (ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT, false),
+            DepositMethod::TryDepositAbortOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT, false)
+            }
             DepositMethod::DepositBatch => (ACCOUNT_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatch => (ACCOUNT_TRY_DEPOSIT_BATCH_IDENT, true),
-            DepositMethod::TryDepositBatchUnsafe => (ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT, true),
+            DepositMethod::TryDepositBatchReturnOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT, true)
+            }
+            DepositMethod::TryDepositBatchAbortOnFailure => {
+                (ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT, true)
+            }
         };
 
         let manifest = ManifestBuilder::new()
@@ -598,7 +644,7 @@ impl AccountDepositModesTestRunner {
             .account_balance(self.component_address, resource_address);
         let manifest = ManifestBuilder::new()
             .withdraw_from_account(self.component_address, resource_address, balance.unwrap())
-            .try_deposit_batch(virtual_account)
+            .try_deposit_batch_return_on_failure(virtual_account)
             .build();
 
         self.execute_manifest(manifest, true)
@@ -624,11 +670,11 @@ impl AccountDepositModesTestRunner {
 enum DepositMethod {
     Deposit,
     TryDeposit,
-    TryDepositUnsafe,
+    TryDepositAbortOnFailure,
 
     DepositBatch,
-    TryDepositBatch,
-    TryDepositBatchUnsafe,
+    TryDepositBatchReturnOnFailure,
+    TryDepositBatchAbortOnFailure,
 }
 
 fn is_auth_unauthorized_error(runtime_error: &RuntimeError) -> bool {

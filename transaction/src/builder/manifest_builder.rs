@@ -1125,10 +1125,10 @@ impl ManifestBuilder {
         )
     }
 
-    pub fn try_deposit_batch(&mut self, account_address: ComponentAddress) -> &mut Self {
+    pub fn try_deposit_batch_return_on_failure(&mut self, account_address: ComponentAddress) -> &mut Self {
         self.call_method(
             account_address,
-            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
     }

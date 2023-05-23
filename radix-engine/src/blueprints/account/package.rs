@@ -239,45 +239,51 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_TRY_DEPOSIT_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountTryDepositInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountTryDepositOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountTryDepositBatchInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountTryDepositBatchOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountTryDepositUnsafeInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositUnsafeOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchUnsafeInput>(),
+                    .add_child_type_and_descendents::<AccountTryDepositReturnOnFailureInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchUnsafeOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountTryDepositReturnOnFailureOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchReturnOnFailureInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchReturnOnFailureOutput>(
+                    ),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositAbortOnFailureInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositAbortOnFailureOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchAbortOnFailureInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchAbortOnFailureOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT.to_string(),
             },
         );
 
@@ -453,44 +459,49 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AccountTryDepositReturnOnFailureInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
                 let rtn = AccountBlueprint::try_deposit(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_BATCH_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AccountTryDepositBatchReturnOnFailureInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = AccountBlueprint::try_deposit_batch(input.buckets, api)?;
+                let rtn =
+                    AccountBlueprint::try_deposit_batch_return_on_failure(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_UNSAFE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositUnsafeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AccountTryDepositAbortOnFailureInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = AccountBlueprint::try_deposit_unsafe(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit_abort_on_failure(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_BATCH_UNSAFE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchUnsafeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let input: AccountTryDepositBatchAbortOnFailureInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = AccountBlueprint::try_deposit_batch_unsafe(input.buckets, api)?;
+                let rtn = AccountBlueprint::try_deposit_batch_abort_on_failure(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {

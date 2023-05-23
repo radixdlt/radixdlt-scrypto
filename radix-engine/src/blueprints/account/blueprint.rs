@@ -396,7 +396,7 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
-    pub fn try_deposit_batch<Y>(
+    pub fn try_deposit_batch_return_on_failure<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<Vec<Bucket>, RuntimeError>
@@ -421,7 +421,7 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if the resources can't be deposited then the execution panics.
-    pub fn try_deposit_unsafe<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn try_deposit_abort_on_failure<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -435,7 +435,7 @@ impl AccountBlueprint {
 
     /// Method is public to all - if ANY of the resources can't be deposited then the execution
     /// panics.
-    pub fn try_deposit_batch_unsafe<Y>(
+    pub fn try_deposit_batch_abort_on_failure<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -443,7 +443,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         for bucket in buckets {
-            Self::try_deposit_unsafe(bucket, api)?;
+            Self::try_deposit_abort_on_failure(bucket, api)?;
         }
         Ok(())
     }

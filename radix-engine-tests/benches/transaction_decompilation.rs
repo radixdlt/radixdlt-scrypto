@@ -79,7 +79,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
         );
         builder.call_method(
             component_address,
-            "try_deposit_batch_unsafe",
+            "try_deposit_batch_abort_on_failure",
             manifest_args!(ManifestExpression::EntireWorktop),
         );
         builder.build()

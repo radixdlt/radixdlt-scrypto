@@ -95,7 +95,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .mint_fungible(token_address, dec!("1.0"))
             .call_method(
                 account,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Burn => builder
@@ -104,25 +104,25 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .burn_from_worktop(dec!("1.0"), token_address)
             .call_method(
                 account,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Withdraw => builder
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .call_method(
                 account,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_all_from_worktop(token_address, |builder, bucket_id| {
-                builder.call_method(account, "try_deposit_unsafe", manifest_args!(bucket_id))
+                builder.call_method(account, "try_deposit_abort_on_failure", manifest_args!(bucket_id))
             })
             .call_method(
                 account,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Recall => {
@@ -133,7 +133,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 .recall(InternalAddress::new_or_panic(vault_id.into()), Decimal::ONE)
                 .call_method(
                     account,
-                    "try_deposit_batch_unsafe",
+                    "try_deposit_batch_abort_on_failure",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
         }

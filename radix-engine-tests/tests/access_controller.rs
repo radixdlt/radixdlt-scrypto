@@ -1984,7 +1984,7 @@ impl AccessControllerTestRunner {
             )
             .call_method(
                 self.account.0,
-                "try_deposit_batch_unsafe",
+                "try_deposit_batch_abort_on_failure",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
