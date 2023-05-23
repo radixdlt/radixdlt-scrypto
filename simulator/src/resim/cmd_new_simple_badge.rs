@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -35,7 +35,7 @@ pub struct NewSimpleBadge {
 
     /// The website URL
     #[clap(long)]
-    pub url: Option<String>,
+    pub info_url: Option<String>,
 
     /// The ICON url
     #[clap(long)]
@@ -78,11 +78,11 @@ impl NewSimpleBadge {
                 MetadataValue::String(description),
             );
         }
-        if let Some(url) = self.url.clone() {
-            metadata.insert("url".to_string(), MetadataValue::String(url));
+        if let Some(info_url) = self.info_url.clone() {
+            metadata.insert("info_url".to_string(), MetadataValue::Url(Url(info_url)));
         }
         if let Some(icon_url) = self.icon_url.clone() {
-            metadata.insert("icon_url".to_string(), MetadataValue::String(icon_url));
+            metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
         };
 
         let manifest = ManifestBuilder::new()
