@@ -58,6 +58,11 @@ pub struct ValidatorSubstate {
     pub validator_fee_factor: Decimal,
 
     /// The most recent request to change the [`validator_fee_factor`] (which requires a delay).
+    /// Note: the value from this request will be used instead of [`validator_fee_factor`] if the
+    /// request has already reached its effective epoch.
+    /// Note: when another change is requested, the value from this (previous) one is moved to the
+    /// [`validator_fee_factor`] - provided that it became already effective. Otherwise, this
+    /// request is overwritten by the new one.
     pub validator_fee_change_request: Option<ValidatorFeeChangeRequest>,
 
     /// A type of fungible resource representing stake units specific to this validator.
@@ -750,11 +755,11 @@ impl ValidatorBlueprint {
         // - stake the validator fee XRDs (effectively same as regular staking)
         let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
         let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
-        let current_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
         let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
         let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
             validator_fee_xrd,
-            current_stake_pool_xrd,
+            post_emission_stake_pool_xrd,
             total_stake_unit_supply,
         );
         let fee_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
