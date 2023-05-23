@@ -17,9 +17,9 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum<"NonFungibleIdType::Integer">()
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 64u8), Array<String>())
-    Map<String, String>(
-        "name", "MyResource",                                        # Resource Name
-        "description", "A very innovative and important resource"    # Resource Description
+    Map<String, Enum>(
+        "name", Enum<"Metadata::String">("MyResource"),                                        # Resource Name
+        "description", Enum<"Metadata::String">("A very innovative and important resource")    # Resource Description
     )
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array

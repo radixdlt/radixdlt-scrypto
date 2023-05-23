@@ -38,6 +38,12 @@ pub type ManifestTraverser<'a> = VecTraverser<'a, ManifestCustomTraversal>;
 pub trait ManifestCategorize: Categorize<ManifestCustomValueKind> {}
 impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {}
 
+pub trait ManifestSborEnum: SborEnum<ManifestCustomValueKind> {}
+impl<T: SborEnum<ManifestCustomValueKind> + ?Sized> ManifestSborEnum for T {}
+
+pub trait ManifestSborTuple: SborTuple<ManifestCustomValueKind> {}
+impl<T: SborTuple<ManifestCustomValueKind> + ?Sized> ManifestSborTuple for T {}
+
 pub trait ManifestDecode: for<'a> Decode<ManifestCustomValueKind, ManifestDecoder<'a>> {}
 impl<T: for<'a> Decode<ManifestCustomValueKind, ManifestDecoder<'a>>> ManifestDecode for T {}
 

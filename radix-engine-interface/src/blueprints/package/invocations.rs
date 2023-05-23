@@ -2,6 +2,7 @@ use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -16,7 +17,7 @@ pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -24,7 +25,7 @@ pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
@@ -37,7 +38,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub code: Vec<u8>,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub role_definitions: Roles,
 }
 
@@ -47,7 +48,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub code: ManifestBlobRef,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub role_definitions: Roles,
 }
 
@@ -62,7 +63,7 @@ pub struct PackagePublishNativeInput {
     pub schema: PackageSchema,
     pub dependent_resources: Vec<ResourceAddress>,
     pub dependent_components: Vec<ComponentAddress>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
     pub package_access_rules: BTreeMap<FnKey, AccessRule>,
     pub default_package_access_rule: AccessRule,
 }

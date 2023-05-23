@@ -5,6 +5,7 @@ use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_DEFINE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT;
@@ -19,7 +20,7 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
@@ -661,9 +662,9 @@ pub fn generate_instruction(
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateValidator { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
-            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+        ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
     })
@@ -1188,10 +1189,11 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_common::manifest_args;
-    use radix_engine_common::native_addresses::EPOCH_MANAGER;
+    use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::ComponentAddress;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
+    use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+    use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintUuidManifestInput, ResourceMethodAuthKey, Roles,
@@ -1420,7 +1422,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, String>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Tuple(Map<String, Tuple>()) Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE,
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1438,7 +1440,7 @@ mod tests {
                         blueprints: BTreeMap::new()
                     },
                     BTreeMap::<String, RoyaltyConfig>::new(),
-                    BTreeMap::<String, String>::new(),
+                    BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()
                 ),
             },
@@ -1450,7 +1452,32 @@ mod tests {
     #[test]
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum<"NonFungibleIdType::Integer">() Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum<"ResourceMethodAuthKey::Withdraw">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()), Enum<"ResourceMethodAuthKey::Deposit">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()));"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<"NonFungibleIdType::Integer">()
+                Tuple(
+                    Tuple(
+                        Array<Enum>(),
+                        Array<Tuple>(),
+                        Array<Enum>()
+                    ),
+                    Enum<0u8>(66u8),
+                    Array<String>()
+                )
+                Map<String, Enum>(
+                    "name", Enum<"Metadata::String">("Token")
+                )
+                Map<Enum, Tuple>(
+                    Enum<"ResourceMethodAuthKey::Withdraw">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    ),
+                    Enum<"ResourceMethodAuthKey::Deposit">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    )
+                );"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -1458,7 +1485,10 @@ mod tests {
                 args: to_manifest_value(&NonFungibleResourceManagerCreateInput {
                     id_type: NonFungibleIdType::Integer,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1513,7 +1543,42 @@ mod tests {
     #[test]
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY Enum<"NonFungibleIdType::Integer">() Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 66u8), Array<String>()) Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum<"ResourceMethodAuthKey::Withdraw">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()), Enum<"ResourceMethodAuthKey::Deposit">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">())) Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#"), Tuple(Tuple("Hello World", Decimal("12"))));"##,
+            r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Enum<"NonFungibleIdType::Integer">()
+                Tuple(
+                    Tuple(
+                        Array<Enum>(),
+                        Array<Tuple>(),
+                        Array<Enum>()
+                    ),
+                    Enum<0u8>(66u8),
+                    Array<String>()
+                )
+                Map<String, Enum>(
+                    "name", Enum<"Metadata::String">("Token")
+                )
+                Map<Enum, Tuple>(
+                    Enum<"ResourceMethodAuthKey::Withdraw">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    ),
+                    Enum<"ResourceMethodAuthKey::Deposit">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    )
+                )
+                Map<NonFungibleLocalId, Tuple>(
+                    NonFungibleLocalId("#1#"),
+                    Tuple(
+                        Tuple(
+                            "Hello World",
+                            Decimal("12")
+                        )
+                    )
+                )
+            ;"##,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -1523,7 +1588,10 @@ mod tests {
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                        metadata: BTreeMap::from([(
+                            "name".to_string(),
+                            MetadataValue::String("Token".to_string())
+                        )]),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceMethodAuthKey::Withdraw,
@@ -1550,14 +1618,30 @@ mod tests {
     #[test]
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum<"ResourceMethodAuthKey::Withdraw">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()), Enum<"ResourceMethodAuthKey::Deposit">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE
+                18u8
+                Map<String, Enum>(
+                    "name", Enum<"Metadata::String">("Token")
+                )
+                Map<Enum, Tuple>(
+                    Enum<"ResourceMethodAuthKey::Withdraw">(),
+                    Tuple(Enum<"AccessRule::AllowAll">(),
+                    Enum<"AccessRule::DenyAll">()
+                ),
+                Enum<"ResourceMethodAuthKey::Deposit">(),
+                Tuple(Enum<"AccessRule::AllowAll">(),
+                Enum<"AccessRule::DenyAll">()))
+            ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateInput {
                     divisibility: 18,
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1576,7 +1660,25 @@ mod tests {
     #[test]
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum<"ResourceMethodAuthKey::Withdraw">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">()), Enum<"ResourceMethodAuthKey::Deposit">(), Tuple(Enum<"AccessRule::AllowAll">(), Enum<"AccessRule::DenyAll">())) Decimal("500");"#,
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                18u8
+                Map<String, Enum>(
+                    "name", Enum<"Metadata::String">("Token")
+                )
+                Map<Enum, Tuple>(
+                    Enum<"ResourceMethodAuthKey::Withdraw">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    ),
+                    Enum<"ResourceMethodAuthKey::Deposit">(),
+                    Tuple(
+                        Enum<"AccessRule::AllowAll">(),
+                        Enum<"AccessRule::DenyAll">()
+                    )
+                )
+                Decimal("500")
+            ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -1584,7 +1686,10 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     divisibility: 18,
-                    metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                    metadata: BTreeMap::from([(
+                        "name".to_string(),
+                        MetadataValue::String("Token".to_string())
+                    )]),
                     access_rules: BTreeMap::from([
                         (
                             ResourceMethodAuthKey::Withdraw,
@@ -1666,12 +1771,12 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             InstructionV1::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerCreateValidatorInput {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),

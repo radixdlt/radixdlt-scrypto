@@ -26,7 +26,7 @@ PUBLISH_PACKAGE_ADVANCED
         Map<String, Tuple>()
     )
     Map<String, Tuple>()
-    Map<String, String>()
+    Map<String, Enum>()
     Map<String, Tuple>();
 "##,
             ),
@@ -305,8 +305,7 @@ CALL_METHOD
     "custom_types"
     Address("${package_address}")
     Address("${account_address}")
-    Address("${epochmanager_address}")
-    Address("${clock_address}")
+    Address("${consensusmanager_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
     Bucket("bucket1")
@@ -374,164 +373,122 @@ SET_METADATA
     Address("${package_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${account_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<1u8>(
-            true
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<2u8>(
-            123u8
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<3u8>(
-            123u32
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<4u8>(
-            123u64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<5u8>(
-            -123i32
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<6u8>(
-            -123i64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<7u8>(
-            Decimal("10.5")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<8u8>(
-            Address("${account_address}")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<9u8>(
-            Enum<0u8>(
-                Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
-            )
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<10u8>(
-            NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<11u8>(
-            NonFungibleLocalId("<some_string>")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<12u8>(
-            10000i64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<13u8>(
-            "https://radixdlt.com/index.html"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<14u8>(
-            "https://radixdlt.com"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<15u8>(
-            Enum<0u8>(
-                Bytes("0000000000000000000000000000000000000000000000000000000000")
-            )
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
     Enum<1u8>(
-        Array<Enum>(
-            Enum<0u8>(
-                "some_string"
-            ),
-            Enum<0u8>(
-                "another_string"
-            ),
-            Enum<0u8>(
-                "yet_another_string"
-            )
+        true
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<2u8>(
+        123u8
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<3u8>(
+        123u32
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<4u8>(
+        123u64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<5u8>(
+        -123i32
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<6u8>(
+        -123i64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<7u8>(
+        Decimal("10.5")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<8u8>(
+        Address("${account_address}")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<9u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
+        )
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<10u8>(
+        NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<11u8>(
+        NonFungibleLocalId("<some_string>")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<12u8>(
+        10000i64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<13u8>(
+        "https://radixdlt.com/index.html"
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<14u8>(
+        "https://radixdlt.com"
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<15u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000")
+        )
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<128u8>(
+        Array<String>(
+            "some_string",
+            "another_string",
+            "yet_another_string"
         )
     );
 REMOVE_METADATA
@@ -585,13 +542,19 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
-    Map<String, String>(
+    Map<String, Enum>(
         "name",
-        "MyResource",
+        Enum<0u8>(
+            "MyResource"
+        ),
         "symbol",
-        "RSRC",
+        Enum<0u8>(
+            "RSRC"
+        ),
         "description",
-        "A very innovative and important resource"
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),
@@ -633,13 +596,19 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE
     18u8
-    Map<String, String>(
+    Map<String, Enum>(
         "name",
-        "MyResource",
+        Enum<0u8>(
+            "MyResource"
+        ),
         "symbol",
-        "RSRC",
+        Enum<0u8>(
+            "RSRC"
+        ),
         "description",
-        "A very innovative and important resource"
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),
@@ -682,7 +651,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>()
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 64u8))
-    Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
+    Map<String, Enum>("name", Enum<0u8>("MyResource"), "description", Enum<0u8>("A very innovative and important resource"))
     Map<Enum, Tuple>(Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>()), Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>()))
     Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
@@ -725,11 +694,15 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, String>(
+    Map<String, Enum>(
         "name",
-        "MyResource",
+        Enum<0u8>(
+            "MyResource"
+        ),
         "description",
-        "A very innovative and important resource"
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),
@@ -829,6 +802,22 @@ CALL_METHOD
 CREATE_ACCOUNT_ADVANCED
     Map<String, Tuple>();
 CREATE_ACCOUNT;
+"##,
+            ),
+        );
+    }
+
+    #[test]
+    fn test_create_validator() {
+        compile_and_decompile_with_inversion_test(
+            "create_validator",
+            apply_address_replacements(include_str!("../../examples/validator/new.rtm")),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+CREATE_VALIDATOR
+    Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
 "##,
             ),
         );
@@ -960,8 +949,7 @@ CREATE_ACCESS_CONTROLLER
         //     // Random address from resim new-account
         //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
-        //     println!("{}", Bech32Encoder::for_simulator().encode(EPOCH_MANAGER.as_node_id().as_bytes()).unwrap());
-        //     println!("{}", Bech32Encoder::for_simulator().encode(CLOCK.as_node_id().as_bytes()).unwrap());
+        //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
 
         //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
         //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
@@ -1048,12 +1036,8 @@ CREATE_ACCESS_CONTROLLER
                 "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
             ),
             (
-                "${epochmanager_address}",
-                "epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl",
-            ),
-            (
-                "${clock_address}",
-                "clock_sim1skxxxxxxxxxxclckxxxxxxxxxxx002253583992xxxxxxxxxx58hk6",
+                "${consensusmanager_address}",
+                "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
             ),
             (
                 "${validator_address}",

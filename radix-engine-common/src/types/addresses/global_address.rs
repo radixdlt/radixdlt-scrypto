@@ -64,13 +64,12 @@ impl GlobalAddress {
 impl<'a> Arbitrary<'a> for GlobalAddress {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
         use core::cmp::min;
-        let global_entities: [u8; 14] = [
+        let global_entities: [u8; 13] = [
             EntityType::GlobalPackage as u8,
             EntityType::GlobalFungibleResourceManager as u8,
             EntityType::GlobalNonFungibleResourceManager as u8,
-            EntityType::GlobalEpochManager as u8,
+            EntityType::GlobalConsensusManager as u8,
             EntityType::GlobalValidator as u8,
-            EntityType::GlobalClock as u8,
             EntityType::GlobalAccessController as u8,
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,

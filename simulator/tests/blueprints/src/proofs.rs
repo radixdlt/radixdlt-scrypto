@@ -28,8 +28,8 @@ mod proofs {
                 .define_roles(roles! {
                     "auth" => organizational_access_rule;
                 })
-                .protect_methods(protect! {
-                    Method::organizational_authenticated_method => ["auth"];
+                .methods(methods! {
+                    organizational_authenticated_method => ["auth"];
                 })
                 .globalize();
             (

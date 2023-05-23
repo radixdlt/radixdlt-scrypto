@@ -73,21 +73,13 @@ impl ResourceManager {
     pub fn set_depositable(&self, access_rule: AccessRule) {
         let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.define_role_on_inner_blueprint(
-            blueprint_name,
-            DEPOSIT_AUTHORITY,
-            access_rule,
-        );
+        access_rules.define_role_on_inner_blueprint(blueprint_name, DEPOSIT_AUTHORITY, access_rule);
     }
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
         let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.define_role_on_inner_blueprint(
-            blueprint_name,
-            RECALL_AUTHORITY,
-            access_rule,
-        );
+        access_rules.define_role_on_inner_blueprint(blueprint_name, RECALL_AUTHORITY, access_rule);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {

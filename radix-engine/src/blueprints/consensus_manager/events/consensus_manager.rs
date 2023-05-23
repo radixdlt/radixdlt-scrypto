@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::Validator;
+use crate::blueprints::consensus_manager::Validator;
 use crate::types::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]

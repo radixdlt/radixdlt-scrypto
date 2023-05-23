@@ -1,5 +1,5 @@
 use super::{BalanceChange, StateUpdateSummary};
-use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
+use crate::blueprints::consensus_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::system::system_modules::costing::FeeSummary;
 use crate::system::system_modules::execution_trace::{
@@ -99,8 +99,8 @@ impl CommitResult {
                 ..,
             ) = event_type_id
             {
-                if node_id == EPOCH_MANAGER_PACKAGE.as_node_id()
-                    || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
+                if node_id == CONSENSUS_MANAGER_PACKAGE.as_node_id()
+                    || node_id.entity_type() == Some(EntityType::GlobalConsensusManager)
                 {
                     if let Ok(EpochChangeEvent {
                         epoch, validators, ..

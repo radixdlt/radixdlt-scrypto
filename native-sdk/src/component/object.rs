@@ -1,6 +1,5 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateMethod,
-    ACCESS_RULES_UPDATE_METHOD_IDENT,
+    AccessRulesUpdateMethod, ACCESS_RULES_UPDATE_METHOD_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,

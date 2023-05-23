@@ -31,7 +31,10 @@ pub trait SecurifiedAccessRules {
         let mut method_permissions = Self::method_permissions();
 
         if let Some(securify) = Self::SECURIFY_METHOD {
-            method_permissions.insert(MethodKey::main(securify), (MethodPermission::nobody(), RoleList::none()));
+            method_permissions.insert(
+                MethodKey::main(securify),
+                (MethodPermission::nobody(), RoleList::none()),
+            );
         }
 
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
@@ -84,7 +87,11 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Self::create_roles(Roles::new());
-        roles.define_role(Self::OWNER_ROLE, rule!(require(owner_id)), [Self::SELF_ROLE]);
+        roles.define_role(
+            Self::OWNER_ROLE,
+            rule!(require(owner_id)),
+            [Self::SELF_ROLE],
+        );
 
         let mut method_permissions = Self::method_permissions();
         if let Some(securify) = Self::SECURIFY_METHOD {

@@ -5,7 +5,6 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-
         pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
@@ -20,7 +19,9 @@ mod mutable_access_rules_component {
                 .globalize()
         }
 
-        pub fn new_with_owner(owner_update_access_rule: AccessRule) -> Global<MutableAccessRulesComponent> {
+        pub fn new_with_owner(
+            owner_update_access_rule: AccessRule,
+        ) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()

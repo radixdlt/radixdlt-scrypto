@@ -16,6 +16,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
 };
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
@@ -25,8 +26,8 @@ use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
-use crate::{method_permissions, permission_entry};
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
+use crate::{method_permissions, permission_entry};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
 };
@@ -125,7 +126,7 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     }
 
     fn role_definitions() -> Roles {
-        roles! { }
+        roles! {}
     }
 }
 
@@ -136,7 +137,7 @@ fn globalize_package<Y>(
     code: PackageCodeSubstate,
     royalty: PackageRoyaltySubstate,
     function_access_rules: FunctionAccessRulesSubstate,
-    metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, MetadataValue>,
     access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -170,7 +171,7 @@ where
     for (key, value) in metadata {
         metadata_init.insert(
             SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            IndexedScryptoValue::from_typed(&Some(ScryptoValue::String { value })),
+            IndexedScryptoValue::from_typed(&Some(value)),
         );
     }
     node_modules.insert(
@@ -434,7 +435,7 @@ impl PackageNativePackage {
         schema: PackageSchema,
         dependent_resources: Vec<ResourceAddress>,
         dependent_components: Vec<ComponentAddress>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         package_access_rules: BTreeMap<FnKey, AccessRule>,
         default_package_access_rule: AccessRule,
         api: &mut Y,
@@ -484,7 +485,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
@@ -509,7 +510,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         authority_rules: Roles,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -535,7 +536,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
-        metadata: BTreeMap<String, String>,
+        metadata: BTreeMap<String, MetadataValue>,
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>

@@ -115,9 +115,9 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
-        rule!(require(virtual_badge_non_fungible_global_id.clone()))
-    );
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
 
     // Act
     let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
@@ -134,9 +134,9 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
-        rule!(require(virtual_badge_non_fungible_global_id.clone()))
-    );
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
 
     // Act
     let receipt = test_runner.lock_group_auth(RoleKey::new("owner"));
@@ -153,14 +153,13 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
-        rule!(require(virtual_badge_non_fungible_global_id.clone()))
-    );
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -172,9 +171,9 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
-        rule!(require(virtual_badge_non_fungible_global_id.clone()))
-    );
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
@@ -184,8 +183,7 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
+    let receipt = test_runner.set_authority_rule(RoleKey::new("owner"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -198,9 +196,9 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
-        rule!(require(virtual_badge_non_fungible_global_id.clone())),
-    );
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
