@@ -12,6 +12,7 @@ use radix_engine_interface::schema::PackageSchema;
 use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
+use super::TransactionProcessorRunInput;
 
 pub struct TransactionProcessorNativePackage;
 

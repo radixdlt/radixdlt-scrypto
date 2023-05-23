@@ -24,7 +24,7 @@ use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{Instruction, SystemTransaction};
+use transaction::model::InstructionV1;
 
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
 // should not be able to have full control over it.
@@ -631,20 +631,13 @@ fn epoch_manager_round_update_emits_correct_event() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let instructions = vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
     }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    let receipt = test_runner
+        .execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()]);
 
     // Assert
     {
@@ -674,42 +667,25 @@ fn epoch_manager_epoch_update_emits_epoch_change_event() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Prepare: advance to round `rounds_per_epoch - 1` by a gap followed by a fallback round; disregard the receipt
-    test_runner.execute_transaction(
-        SystemTransaction {
-            instructions: vec![Instruction::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerNextRoundInput {
-                    round: rounds_per_epoch - 1,
-                    leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (2..rounds_per_epoch).map(|_| 0).collect(),
-                        current_leader: 0,
-                        is_fallback: true,
-                    },
-                }),
-            }],
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
+        address: EPOCH_MANAGER.into(),
+        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&EpochManagerNextRoundInput {
+            round: rounds_per_epoch - 1,
+            leader_proposal_history: LeaderProposalHistory {
+                gap_round_leaders: (2..rounds_per_epoch).map(|_| 0).collect(),
+                current_leader: 0,
+                is_fallback: true,
+            },
+        }),
+    }]);
 
     // Act: perform the most usual successful next round
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(rounds_per_epoch, 0)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     {
@@ -744,20 +720,11 @@ fn epoch_manager_epoch_update_emits_xrd_minting_event() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1054,7 +1021,7 @@ fn validator_unstake_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
+    test_runner.set_current_epoch((initial_epoch + 1 + num_unstake_epochs) as u32);
 
     // Assert
     {
@@ -1208,7 +1175,7 @@ fn validator_claim_xrd_emits_correct_events() {
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
+    test_runner.set_current_epoch((initial_epoch + 1 + num_unstake_epochs) as u32);
 
     // Act
     let manifest = ManifestBuilder::new()

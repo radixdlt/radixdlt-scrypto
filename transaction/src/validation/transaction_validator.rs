@@ -1,37 +1,26 @@
-use radix_engine_constants::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::transaction_processor::RuntimeValidation;
-use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{Hash, PublicKey};
-use radix_engine_interface::network::NetworkDefinition;
-use sbor::rust::collections::*;
-
-use crate::errors::{SignatureValidationError, *};
-use crate::model::*;
+use crate::internal_prelude::*;
 use crate::validation::*;
-use radix_engine_interface::data::manifest::*;
 
-pub trait TransactionValidator<T: ManifestDecode> {
-    fn check_length_and_decode_from_slice(
+pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
+    type Validated;
+
+    fn check_length_decode_and_validate_from_slice(
         &self,
-        transaction: &[u8],
-    ) -> Result<T, TransactionValidationError> {
-        if transaction.len() > MAX_TRANSACTION_SIZE {
+        payload: &[u8],
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        if payload.len() > MAX_TRANSACTION_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction = manifest_decode(transaction)
-            .map_err(TransactionValidationError::DeserializationError)?;
+        let prepared = Prepared::prepare_from_payload(payload)?;
 
-        Ok(transaction)
+        self.validate(prepared)
     }
 
-    fn validate<'a, 't, I: IntentHashManager>(
-        &'a self,
-        transaction: &'t T,
-        payload_size: usize,
-        intent_hash_manager: &'a I,
-    ) -> Result<Executable<'t>, TransactionValidationError>;
+    fn validate(
+        &self,
+        transaction: Prepared,
+    ) -> Result<Self::Validated, TransactionValidationError>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -41,7 +30,7 @@ pub struct ValidationConfig {
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u16,
     pub max_tip_percentage: u16,
-    pub max_epoch_range: u64,
+    pub max_epoch_range: u32,
 }
 
 impl ValidationConfig {
@@ -66,51 +55,27 @@ pub struct NotarizedTransactionValidator {
     config: ValidationConfig,
 }
 
-impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidator {
-    fn validate<'a, 't, I: IntentHashManager>(
-        &'a self,
-        transaction: &'t NotarizedTransaction,
-        payload_size: usize,
-        intent_hash_manager: &'a I,
-    ) -> Result<Executable<'t>, TransactionValidationError> {
-        let intent = &transaction.signed_intent.intent;
-        let intent_hash = intent.hash()?;
+impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
+    type Validated = ValidatedNotarizedTransactionV1;
 
-        self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
+    fn validate(
+        &self,
+        transaction: PreparedNotarizedTransactionV1,
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        self.validate_intent(&transaction.signed_intent.intent)?;
+
+        let encoded_instructions =
+            manifest_encode(&transaction.signed_intent.intent.instructions.inner.0)?;
 
         let signer_keys = self
             .validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
-        let transaction_hash = transaction.hash()?;
-
-        let header = &intent.header;
-
-        Ok(Executable::new(
-            &intent.manifest.blobs.as_slice(),
-            &intent.manifest.instructions,
-            ExecutionContext {
-                transaction_hash,
-                payload_size,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthAddresses::signer_set(&signer_keys),
-                    virtual_resources: BTreeSet::new(),
-                },
-                fee_payment: FeePayment::User {
-                    cost_unit_limit: header.cost_unit_limit,
-                    tip_percentage: header.tip_percentage,
-                },
-                runtime_validations: vec![
-                    RuntimeValidation::IntentHashUniqueness { intent_hash }.enforced(),
-                    RuntimeValidation::WithinEpochRange {
-                        start_epoch_inclusive: header.start_epoch_inclusive,
-                        end_epoch_exclusive: header.end_epoch_exclusive,
-                    }
-                    .enforced(),
-                ],
-                pre_allocated_ids: BTreeSet::new(),
-            },
-        ))
+        Ok(ValidatedNotarizedTransactionV1 {
+            prepared: transaction,
+            encoded_instructions,
+            signer_keys,
+        })
     }
 }
 
@@ -119,207 +84,157 @@ impl NotarizedTransactionValidator {
         Self { config }
     }
 
-    pub fn validate_preview_intent<'a, 't, I: IntentHashManager>(
-        &'a self,
-        preview_intent: &'t PreviewIntent,
-        intent_hash_manager: &'a I,
-    ) -> Result<Executable<'t>, TransactionValidationError> {
-        let transaction_hash = preview_intent.hash()?;
-        let intent = &preview_intent.intent;
+    pub fn validate_preview_intent(
+        &self,
+        preview_intent: PreviewIntentV1,
+    ) -> Result<ValidatedPreviewIntent, TransactionValidationError> {
+        let intent = preview_intent.intent.prepare()?;
 
-        let flags = &preview_intent.flags;
-        let intent_hash = intent.hash()?;
-        self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
-        let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
+        self.validate_intent(&intent)?;
 
-        let mut virtual_resources = BTreeSet::new();
-        if flags.assume_all_signature_proofs {
-            virtual_resources.insert(ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE);
-            virtual_resources.insert(EDDSA_ED25519_SIGNATURE_VIRTUAL_BADGE);
-        }
+        let encoded_instructions = manifest_encode(&intent.instructions.inner.0)?;
 
-        let header = &intent.header;
-        let manifest = &intent.manifest;
-
-        let fee_payment = if flags.unlimited_loan {
-            FeePayment::NoFee
-        } else {
-            FeePayment::User {
-                cost_unit_limit: header.cost_unit_limit,
-                tip_percentage: header.tip_percentage,
-            }
-        };
-
-        Ok(Executable::new(
-            &manifest.blobs,
-            &manifest.instructions,
-            ExecutionContext {
-                transaction_hash,
-                payload_size: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources,
-                },
-                fee_payment,
-                runtime_validations: vec![
-                    RuntimeValidation::IntentHashUniqueness { intent_hash }
-                        .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),
-                    RuntimeValidation::WithinEpochRange {
-                        start_epoch_inclusive: header.start_epoch_inclusive,
-                        end_epoch_exclusive: header.end_epoch_exclusive,
-                    }
-                    .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
-                ],
-                pre_allocated_ids: BTreeSet::new(),
-            },
-        ))
+        Ok(ValidatedPreviewIntent {
+            intent,
+            encoded_instructions,
+            signer_public_keys: preview_intent.signer_public_keys,
+            flags: preview_intent.flags,
+        })
     }
 
-    pub fn validate_intent<I: IntentHashManager>(
+    pub fn validate_intent(
         &self,
-        intent_hash: &Hash,
-        intent: &TransactionIntent,
-        intent_hash_manager: &I,
+        intent: &PreparedIntentV1,
     ) -> Result<(), TransactionValidationError> {
-        // verify intent hash
-        if !intent_hash_manager.allows(intent_hash) {
-            return Err(TransactionValidationError::IntentHashRejected);
-        }
-
-        // verify intent header
-        self.validate_header(&intent)
+        self.validate_header(&intent.header.inner)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        Self::validate_manifest(&intent.manifest)?;
+        Self::validate_instructions(&intent.instructions.inner.0)?;
 
         return Ok(());
     }
 
-    pub fn validate_manifest(
-        manifest: &TransactionManifest,
+    pub fn validate_instructions(
+        instructions: &[InstructionV1],
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
         let mut id_validator = ManifestValidator::new();
-        for inst in &manifest.instructions {
+        for inst in instructions {
             match inst {
-                Instruction::TakeAllFromWorktop { .. } => {
+                InstructionV1::TakeAllFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktop { .. } => {
+                InstructionV1::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeNonFungiblesFromWorktop { .. } => {
+                InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::ReturnToWorktop { bucket_id } => {
+                InstructionV1::ReturnToWorktop { bucket_id } => {
                     id_validator
-                        .drop_bucket(bucket_id)
+                        .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::AssertWorktopContains { .. } => {}
-                Instruction::AssertWorktopContainsNonFungibles { .. } => {}
-                Instruction::PopFromAuthZone => {
-                    id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                Instruction::PushToAuthZone { proof_id } => {
-                    id_validator
-                        .drop_proof(proof_id)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                Instruction::ClearAuthZone => {}
-                Instruction::CreateProofFromAuthZone { .. } => {
+                InstructionV1::AssertWorktopContains { .. } => {}
+                InstructionV1::AssertWorktopContainsNonFungibles { .. } => {}
+                InstructionV1::PopFromAuthZone => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneOfAmount { .. } => {
+                InstructionV1::PushToAuthZone { proof_id } => {
+                    id_validator
+                        .drop_proof(&proof_id)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                InstructionV1::ClearAuthZone => {}
+                InstructionV1::CreateProofFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneOfNonFungibles { .. } => {
+                InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneOfAll { .. } => {
+                InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucket { bucket_id } => {
+                InstructionV1::CreateProofFromAuthZoneOfAll { .. } => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
+                InstructionV1::CreateProofFromBucket { bucket_id } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucketOfAmount { bucket_id, .. } => {
+                InstructionV1::CreateProofFromBucketOfAmount { bucket_id, .. } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
+                InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucketOfAll { bucket_id, .. } => {
+                InstructionV1::CreateProofFromBucketOfAll { bucket_id, .. } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CloneProof { proof_id } => {
+                InstructionV1::CloneProof { proof_id } => {
                     id_validator
-                        .clone_proof(proof_id)
+                        .clone_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropProof { proof_id } => {
+                InstructionV1::DropProof { proof_id } => {
                     id_validator
-                        .drop_proof(proof_id)
+                        .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropAllProofs => {
+                InstructionV1::DropAllProofs => {
                     id_validator
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::ClearSignatureProofs => {}
-                Instruction::CallFunction { args, .. }
-                | Instruction::CallMethod { args, .. }
-                | Instruction::CallRoyaltyMethod { args, .. }
-                | Instruction::CallMetadataMethod { args, .. }
-                | Instruction::CallAccessRulesMethod { args, .. } => {
+                InstructionV1::ClearSignatureProofs => {}
+                InstructionV1::CallFunction { args, .. }
+                | InstructionV1::CallMethod { args, .. }
+                | InstructionV1::CallRoyaltyMethod { args, .. }
+                | InstructionV1::CallMetadataMethod { args, .. }
+                | InstructionV1::CallAccessRulesMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::BurnResource { bucket_id } => {
+                InstructionV1::BurnResource { bucket_id } => {
                     id_validator
-                        .drop_bucket(bucket_id)
+                        .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::RecallResource { .. } => {}
+                InstructionV1::RecallResource { .. } => {}
             }
         }
 
         Ok(())
     }
 
-    pub fn validate_header(&self, intent: &TransactionIntent) -> Result<(), HeaderValidationError> {
-        let header = &intent.header;
-
-        // version
-        if header.version != TRANSACTION_VERSION_V1 {
-            return Err(HeaderValidationError::UnknownVersion(header.version));
-        }
-
+    pub fn validate_header(
+        &self,
+        header: &TransactionHeaderV1,
+    ) -> Result<(), HeaderValidationError> {
         // network
         if header.network_id != self.config.network_id {
             return Err(HeaderValidationError::InvalidNetwork);
@@ -333,18 +248,11 @@ impl NotarizedTransactionValidator {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
 
-        // cost unit limit
-        if header.cost_unit_limit < self.config.min_cost_unit_limit
-            || header.cost_unit_limit > self.config.max_cost_unit_limit
-        {
-            return Err(HeaderValidationError::InvalidCostUnitLimit);
-        }
-
         // tip percentage
         if header.tip_percentage < self.config.min_tip_percentage
             || header.tip_percentage > self.config.max_tip_percentage
         {
-            return Err(HeaderValidationError::InvalidTipBps);
+            return Err(HeaderValidationError::InvalidTipPercentage);
         }
 
         Ok(())
@@ -352,21 +260,28 @@ impl NotarizedTransactionValidator {
 
     pub fn validate_signatures(
         &self,
-        transaction: &NotarizedTransaction,
+        transaction: &PreparedNotarizedTransactionV1,
     ) -> Result<Vec<PublicKey>, SignatureValidationError> {
         // TODO: split into static validation part and runtime validation part to support more signatures
-        if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
+        if transaction
+            .signed_intent
+            .intent_signatures
+            .inner
+            .signatures
+            .len()
+            > MAX_NUMBER_OF_INTENT_SIGNATURES
+        {
             return Err(SignatureValidationError::TooManySignatures);
         }
 
         // verify intent signature
         let mut signers = index_set_new();
-        let intent_payload = transaction.signed_intent.intent.to_bytes()?;
-        for sig in &transaction.signed_intent.intent_signatures {
-            let public_key = recover(&intent_payload, sig)
+        let intent_hash = transaction.intent_hash().into_hash();
+        for intent_signature in &transaction.signed_intent.intent_signatures.inner.signatures {
+            let public_key = recover(&intent_hash, &intent_signature.0)
                 .ok_or(SignatureValidationError::InvalidIntentSignature)?;
 
-            if !verify(&intent_payload, &public_key, &sig.signature()) {
+            if !verify(&intent_hash, &public_key, &intent_signature.0.signature()) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
             }
 
@@ -375,16 +290,18 @@ impl NotarizedTransactionValidator {
             }
         }
 
-        if transaction.signed_intent.intent.header.notary_as_signatory {
-            signers.insert(transaction.signed_intent.intent.header.notary_public_key);
+        let header = &transaction.signed_intent.intent.header.inner;
+
+        if header.notary_is_signatory {
+            signers.insert(header.notary_public_key);
         }
 
         // verify notary signature
-        let signed_intent_payload = transaction.signed_intent.to_bytes()?;
+        let signed_intent_hash = transaction.signed_intent_hash().into_hash();
         if !verify(
-            &signed_intent_payload,
-            &transaction.signed_intent.intent.header.notary_public_key,
-            &transaction.notary_signature,
+            &signed_intent_hash,
+            &header.notary_public_key,
+            &transaction.notary_signature.inner.0,
         ) {
             return Err(SignatureValidationError::InvalidNotarySignature);
         }
@@ -415,24 +332,16 @@ mod tests {
     };
 
     macro_rules! assert_invalid_tx {
-        ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
-            let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
+        ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let config: ValidationConfig = ValidationConfig::simulator();
             let validator = NotarizedTransactionValidator::new(config);
             assert_eq!(
                 $result,
                 validator
                     .validate(
-                        &create_transaction(
-                            $version,
-                            $start_epoch,
-                            $end_epoch,
-                            $nonce,
-                            $signers,
-                            $notary
-                        ),
-                        0,
-                        &mut intent_hash_manager,
+                        create_transaction($start_epoch, $end_epoch, $nonce, $signers, $notary)
+                            .prepare()
+                            .unwrap()
                     )
                     .expect_err("Should be an error")
             );
@@ -443,21 +352,15 @@ mod tests {
     fn test_invalid_header() {
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
-                HeaderValidationError::UnknownVersion(2)
-            ),
-            (2, 0, 100, 5, vec![1], 2)
-        );
-        assert_invalid_tx!(
-            TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::InvalidEpochRange
             ),
-            (1, 0, 0, 5, vec![1], 2)
+            (0, 0, 5, vec![1], 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (1, 0, 1000, 5, vec![1], 2)
+            (0, 1000, 5, vec![1], 2)
         );
     }
 
@@ -467,26 +370,24 @@ mod tests {
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::TooManySignatures
             ),
-            (1, 0, 100, 5, (1..20).collect(), 2)
+            (0, 100, 5, (1..20).collect(), 2)
         );
         assert_invalid_tx!(
             TransactionValidationError::SignatureValidationError(
                 SignatureValidationError::DuplicateSigner
             ),
-            (1, 0, 100, 5, vec![1, 1], 2)
+            (0, 100, 5, vec![1, 1], 2)
         );
     }
 
     #[test]
     fn test_valid_preview() {
-        let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
-
         // Build the whole transaction but only really care about the intent
-        let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
+        let tx = create_transaction(0, 100, 5, vec![1, 2], 2);
 
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-        let preview_intent = PreviewIntent {
+        let preview_intent = PreviewIntentV1 {
             intent: tx.signed_intent.intent,
             signer_public_keys: Vec::new(),
             flags: PreviewFlags {
@@ -497,31 +398,28 @@ mod tests {
             },
         };
 
-        let result = validator.validate_preview_intent(&preview_intent, &mut intent_hash_manager);
+        let result = validator.validate_preview_intent(preview_intent);
 
         assert!(result.is_ok());
     }
 
     fn create_transaction(
-        version: u8,
-        start_epoch: u64,
-        end_epoch: u64,
-        nonce: u64,
+        start_epoch: u32,
+        end_epoch: u32,
+        nonce: u32,
         signers: Vec<u64>,
         notary: u64,
-    ) -> NotarizedTransaction {
+    ) -> NotarizedTransactionV1 {
         let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(notary).unwrap();
 
         let mut builder = TransactionBuilder::new()
-            .header(TransactionHeader {
-                version,
+            .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
                 notary_public_key: sk_notary.public_key().into(),
-                notary_as_signatory: false,
-                cost_unit_limit: 1_000_000,
+                notary_is_signatory: false,
                 tip_percentage: 5,
             })
             .manifest(ManifestBuilder::new().clear_auth_zone().build());

@@ -14,9 +14,9 @@ use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::InstructionV1;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -1003,7 +1003,7 @@ impl RegisterAndStakeTransactionType {
         account_address: ComponentAddress,
         validator_address: ComponentAddress,
         faucet: GlobalAddress,
-    ) -> Vec<TransactionManifest> {
+    ) -> Vec<TransactionManifestV1> {
         match self {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
                 let manifest = ManifestBuilder::new()
@@ -1420,8 +1420,8 @@ fn cannot_claim_unstake_immediately() {
 #[test]
 fn can_claim_unstake_after_epochs() {
     // Arrange
-    let initial_epoch = 5u64;
-    let num_unstake_epochs = 7u64;
+    let initial_epoch = 5u32;
+    let num_unstake_epochs = 7u32;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1433,8 +1433,8 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
-        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
+        initial_epoch as u64,
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1784,7 +1784,7 @@ fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_one
         .expect_commit_success();
 
     // Act (start unlock again after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -1893,7 +1893,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -1998,7 +1998,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after insufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay / 2);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32 / 2);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -2100,26 +2100,21 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        // No validator proofs
+        btreeset![],
+        pre_allocated_ids,
     );
 
     // Assert
@@ -2137,27 +2132,20 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        btreeset![AuthAddresses::system_role()],
+        pre_allocated_ids,
     );
 
     // Assert
