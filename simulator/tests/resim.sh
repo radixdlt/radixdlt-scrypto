@@ -15,9 +15,14 @@ account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
 # Dump each entity in the ledger
 addresses=`$resim show-ledger | grep -e "─ " | awk '{print $2}'`
-for addr in $addresses ; do
-    $resim show $addr
-done
+if [ "$addresses" != "" ] ; then
+    for addr in $addresses ; do
+        $resim show $addr
+    done
+else
+    echo "No entities found in the ledger"
+    exit 1
+fi
 
 # Test - set epoch & time
 $resim set-current-epoch 858585

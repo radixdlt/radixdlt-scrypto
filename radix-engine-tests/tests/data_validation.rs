@@ -4,7 +4,7 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::{builder::ManifestBuilder, model::TransactionManifest};
+use transaction::builder::*;
 
 fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
@@ -25,7 +25,7 @@ fn create_manifest_with_middle(
     test_runner: &mut TestRunner,
     component_address: ComponentAddress,
     constructor: ManifestConstructor,
-) -> TransactionManifest {
+) -> TransactionManifestV1 {
     ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())

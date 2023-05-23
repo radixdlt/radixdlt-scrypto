@@ -33,6 +33,12 @@ mod tests {
                         ::sbor::ValueKind::Tuple
                     }
                 }
+
+                impl ::sbor::SborTuple<radix_engine_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
+                    fn get_length(&self) -> usize {
+                        0usize
+                    }
+                }
             },
         );
     }
@@ -52,6 +58,24 @@ mod tests {
                     #[inline]
                     fn value_kind() -> ::sbor::ValueKind<radix_engine_common::data::scrypto::ScryptoCustomValueKind> {
                         ::sbor::ValueKind::Enum
+                    }
+                }
+
+                impl<T: Bound> ::sbor::SborEnum<radix_engine_common::data::scrypto::ScryptoCustomValueKind> for MyEnum<T> {
+                    fn get_discriminator(&self) -> u8 {
+                        match self {
+                            Self::A { .. } => 0u8,
+                            Self::B(_) => 1u8,
+                            Self::C => 2u8,
+                        }
+                    }
+
+                    fn get_length(&self) -> usize {
+                        match self {
+                            Self::A { .. } => 1,
+                            Self::B(_) => 1,
+                            Self::C => 0,
+                        }
                     }
                 }
             },

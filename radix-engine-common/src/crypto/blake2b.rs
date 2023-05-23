@@ -2,8 +2,10 @@ use crate::crypto::*;
 use blake2::digest::{consts::U32, Digest};
 use blake2::Blake2b;
 
+pub type Blake2b256 = Blake2b<U32>;
+
 pub fn blake2b_256_hash<T: AsRef<[u8]>>(data: T) -> Hash {
-    Hash(Blake2b::<U32>::digest(data).into())
+    Hash(Blake2b256::digest(data).into())
 }
 
 #[cfg(test)]

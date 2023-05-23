@@ -3,8 +3,7 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::schema::PackageSchema;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::TransactionManifest;
+use transaction::builder::*;
 use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
@@ -12,7 +11,7 @@ use utils::ContextualDisplay;
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
     test_runner: &mut TestRunner,
-    manifest: TransactionManifest,
+    manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
     let start = std::time::Instant::now();
@@ -28,7 +27,7 @@ fn execute_with_time_logging(
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
     test_runner: &mut TestRunner,
-    manifest: TransactionManifest,
+    manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
     let receipt = test_runner.execute_manifest(manifest, proofs);
@@ -75,7 +74,7 @@ fn test_basic_transfer() {
         + 62500 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1425 /* TxPayloadCost */
+        + 1320 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 938, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -211,7 +210,7 @@ fn test_radiswap() {
         + 15000 /* RunSystem */
         + 1535320 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1820 /* TxPayloadCost */
+        + 1715 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 2330, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -322,7 +321,7 @@ fn test_flash_loan() {
         + 40000 /* RunSystem */
         + 1328130 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2600 /* TxPayloadCost */
+        + 2495 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 4395, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum

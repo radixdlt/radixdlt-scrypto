@@ -62,3 +62,10 @@ impl CommittableSubstateDatabase for InMemorySubstateDatabase {
         }
     }
 }
+
+impl ListableSubstateDatabase for InMemorySubstateDatabase {
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
+        let partition_iter = self.partitions.iter().map(|(key, _)| key.clone());
+        Box::new(partition_iter)
+    }
+}
