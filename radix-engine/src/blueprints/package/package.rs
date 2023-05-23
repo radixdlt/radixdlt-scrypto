@@ -25,7 +25,7 @@ use resources_tracker_macro::trace_resources;
 
 // Import and re-export substate types
 pub use super::substates::PackageCodeTypeSubstate;
-use crate::method_permissions;
+use crate::{method_permissions, permission_entry};
 pub use crate::system::node_modules::access_rules::FunctionAccessRulesSubstate as PackageFunctionAccessRulesSubstate;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,

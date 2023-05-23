@@ -3,7 +3,7 @@ use crate::blueprints::epoch_manager::{SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::method_permissions;
+use crate::{method_permissions, permission_entry};
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;

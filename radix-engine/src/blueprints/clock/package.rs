@@ -1,5 +1,5 @@
 use crate::errors::{RuntimeError, SystemUpstreamError};
-use crate::method_permissions;
+use crate::{method_permissions, permission_entry};
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;

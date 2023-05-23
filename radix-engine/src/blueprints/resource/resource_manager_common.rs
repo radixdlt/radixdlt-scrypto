@@ -1,5 +1,5 @@
 use crate::errors::RuntimeError;
-use crate::method_permissions;
+use crate::{method_permissions, permission_entry};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;

@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{event_schema, method_permissions};
+use crate::{event_schema, method_permissions, permission_entry};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
