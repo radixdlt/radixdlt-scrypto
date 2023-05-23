@@ -116,11 +116,11 @@ pub struct ValidatorFeeChangeRequest {
     /// previous epoch `N-1` - this means that we will use this [`new_validator_fee_factor`] only if
     /// `epoch_effective <= N-1`, and [`ValidatorSubstate.validator_fee_factor`] otherwise.
     /// Note: when requesting a fee decrease, this will be "next epoch"; and when requesting an
-    /// increase, this will be set to [`EpochManagerConfigSubstate.num_fee_increase_delay_epochs`]
+    /// increase, this will be set to [`ConsensusManagerConfigSubstate.num_fee_increase_delay_epochs`]
     /// epochs away.
     epoch_effective: u64,
 
-    /// A requested new value of [`EpochManagerSubstate.validator_fee_factor`].
+    /// A requested new value of [`ConsensusManagerSubstate.validator_fee_factor`].
     new_fee_factor: Decimal,
 }
 
@@ -460,23 +460,23 @@ impl ValidatorBlueprint {
         }
 
         // read the current epoch
-        let epoch_manager_handle = api.actor_lock_field(
+        let consensus_manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            EpochManagerField::EpochManager.into(),
+            ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let epoch_manager: EpochManagerSubstate =
-            api.field_lock_read_typed(epoch_manager_handle)?;
-        let current_epoch = epoch_manager.epoch;
-        api.field_lock_release(epoch_manager_handle)?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
 
         // read the configured fee increase epochs delay
         let config_handle = api.actor_lock_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            EpochManagerField::Config.into(),
+            ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
         let num_fee_increase_delay_epochs = config.num_fee_increase_delay_epochs;
         api.field_lock_release(config_handle)?;
 
@@ -575,7 +575,7 @@ impl ValidatorBlueprint {
 
     /// Starts the process of unlocking the owner's stake units stored in the internal vault.
     /// The requested amount of stake units (if available) will be ready for withdrawal after the
-    /// network-configured [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
+    /// network-configured [`ConsensusManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
     /// call to [`finish_unlock_owner_stake_units()`].
     /// As an optimization, this method also performs the same "finish unlocking" operation, and
     /// returns the already-available stake units (if any).
@@ -587,23 +587,23 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
-        let epoch_manager_handle = api.actor_lock_field(
+        let consensus_manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            EpochManagerField::EpochManager.into(),
+            ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let epoch_manager: EpochManagerSubstate =
-            api.field_lock_read_typed(epoch_manager_handle)?;
-        let current_epoch = epoch_manager.epoch;
-        api.field_lock_release(epoch_manager_handle)?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
 
         // read the configured unlock epochs delay
         let config_handle = api.actor_lock_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            EpochManagerField::Config.into(),
+            ConsensusManagerField::Config.into(),
             LockFlags::read_only(),
         )?;
-        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
         let num_owner_stake_units_unlock_epochs = config.num_owner_stake_units_unlock_epochs;
         api.field_lock_release(config_handle)?;
 
@@ -670,15 +670,15 @@ impl ValidatorBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // read the current epoch
-        let epoch_manager_handle = api.actor_lock_field(
+        let consensus_manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_OUTER_OBJECT,
-            EpochManagerField::EpochManager.into(),
+            ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let epoch_manager: EpochManagerSubstate =
-            api.field_lock_read_typed(epoch_manager_handle)?;
-        let current_epoch = epoch_manager.epoch;
-        api.field_lock_release(epoch_manager_handle)?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
 
         // drain the already-available withdrawals
         let handle = api.actor_lock_field(

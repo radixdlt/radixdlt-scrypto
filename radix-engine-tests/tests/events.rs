@@ -684,7 +684,10 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: CONSENSUS_MANAGER.into(),
         method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(rounds_per_epoch, 0)),
+        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(
+            rounds_per_epoch,
+            0,
+        )),
     }]);
 
     // Assert

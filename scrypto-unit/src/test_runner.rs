@@ -32,10 +32,11 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
-    ConsensusManagerInitialConfiguration, ConsensusManagerSetCurrentTimeInput,
-    ConsensusManagerSetEpochInput, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
-    CONSENSUS_MANAGER_SET_EPOCH_IDENT,
+    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput,
+    ConsensusManagerSetCurrentTimeInput, ConsensusManagerSetEpochInput, LeaderProposalHistory,
+    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+    CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -1262,9 +1263,9 @@ impl TestRunner {
     pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
         self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerNextRoundInput {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerNextRoundInput {
                     round,
                     leader_proposal_history: LeaderProposalHistory {
                         gap_round_leaders: (1..round).map(|_| 0).collect(),

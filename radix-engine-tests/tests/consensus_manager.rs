@@ -697,7 +697,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         initial_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
     );
@@ -804,7 +804,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         initial_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_num_fee_increase_delay_epochs(fee_increase_delay_epochs)
             .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
@@ -1433,7 +1433,7 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
+        initial_epoch as u64,
         dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1498,7 +1498,7 @@ fn owner_can_lock_stake_units() {
         total_stake_amount,
         validator_account,
         5,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_key);
@@ -1555,7 +1555,7 @@ fn owner_can_start_unlocking_stake_units() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1641,7 +1641,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1733,7 +1733,7 @@ fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_one
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1842,7 +1842,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1947,7 +1947,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         total_stake_amount,
         validator_account,
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -2109,7 +2109,8 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
                 1u64,
-                dummy_consensus_manager_configuration()
+                dummy_consensus_manager_configuration(),
+                120000i64
             ),
         }],
         // No validator proofs
@@ -2141,7 +2142,8 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
                 1u64,
-                dummy_consensus_manager_configuration()
+                dummy_consensus_manager_configuration(),
+                120000i64
             ),
         }],
         btreeset![AuthAddresses::system_role()],

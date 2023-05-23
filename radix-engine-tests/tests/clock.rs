@@ -4,7 +4,6 @@ use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
 
 #[test]
 fn set_current_time_should_fail_without_validator_auth() {
