@@ -44,7 +44,7 @@ impl AccountNativePackage {
                     aggregator.add_child_type_and_descendents::<ResourceAddress>(),
                 ),
                 value: TypeSchema::Blueprint(
-                    aggregator.add_child_type_and_descendents::<ResourceDepositConfiguration>(),
+                    aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
                 ),
                 can_own: false,
             },

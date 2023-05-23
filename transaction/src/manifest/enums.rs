@@ -116,16 +116,16 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum AccountDepositsMode {
-                AllowAll = 0;
-                DenyAll = 1;
+            enum AccountDefaultDepositRule {
+                Accept = 0;
+                Reject = 1;
                 AllowExisting = 2;
             }
         );
 
         known_enum!(
             m,
-            enum ResourceDepositConfiguration {
+            enum ResourceDepositRule {
                 Neither = 0;
                 Allowed = 1;
                 Disallowed = 2;

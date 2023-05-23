@@ -203,7 +203,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             node_id,
                             OBJECT_BASE_PARTITION
                                 .at_offset(
-                                    AccountPartitionOffset::AccountResourceDepositConfigurationByAddress.into(),
+                                    AccountPartitionOffset::AccountResourceDepositRuleByAddress
+                                        .into(),
                                 )
                                 .unwrap(),
                             depth,

@@ -21,15 +21,23 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    deposits_mode: AccountDepositsMode,
+    deposits_mode: AccountDefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AccountError {
-    VaultDoesNotExist { resource_address: ResourceAddress },
-    AccountIsNotInAllowListDepositsMode { deposits_mode: AccountDepositsMode },
-    AccountIsNotInDisallowListDepositsMode { deposits_mode: AccountDepositsMode },
-    DepositIsDisallowed { resource_address: ResourceAddress },
+    VaultDoesNotExist {
+        resource_address: ResourceAddress,
+    },
+    AccountIsNotInAllowListDepositsMode {
+        deposits_mode: AccountDefaultDepositRule,
+    },
+    AccountIsNotInDisallowListDepositsMode {
+        deposits_mode: AccountDefaultDepositRule,
+    },
+    DepositIsDisallowed {
+        resource_address: ResourceAddress,
+    },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -157,7 +165,7 @@ const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
 
 const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
-pub type AccountResourceDepositConfigurationEntry = Option<ResourceDepositConfiguration>;
+pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
 pub struct AccountBlueprint;
 
@@ -289,7 +297,7 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             None,
             vec![scrypto_encode(&AccountSubstate {
-                deposits_mode: AccountDepositsMode::AllowAll,
+                deposits_mode: AccountDefaultDepositRule::Accept,
             })
             .unwrap()],
             btreemap!(),
@@ -572,7 +580,7 @@ impl AccountBlueprint {
     }
 
     pub fn change_allowed_deposits_mode<Y>(
-        deposits_mode: AccountDepositsMode,
+        deposits_mode: AccountDefaultDepositRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -592,7 +600,7 @@ impl AccountBlueprint {
 
     pub fn configure_resource_deposit<Y>(
         resource_address: ResourceAddress,
-        resource_deposit_configuration: ResourceDepositConfiguration,
+        resource_deposit_configuration: ResourceDepositRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -601,7 +609,7 @@ impl AccountBlueprint {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         match resource_deposit_configuration {
-            ResourceDepositConfiguration::Allowed | ResourceDepositConfiguration::Disallowed => {
+            ResourceDepositRule::Allowed | ResourceDepositRule::Disallowed => {
                 let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
@@ -616,7 +624,7 @@ impl AccountBlueprint {
 
                 api.key_value_entry_release(kv_store_entry_lock_handle)?;
             }
-            ResourceDepositConfiguration::Neither => {
+            ResourceDepositRule::Neither => {
                 api.actor_remove_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
@@ -627,7 +635,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    fn get_current_deposits_mode<Y>(api: &mut Y) -> Result<AccountDepositsMode, RuntimeError>
+    fn get_current_deposits_mode<Y>(api: &mut Y) -> Result<AccountDefaultDepositRule, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -714,30 +722,28 @@ impl AccountBlueprint {
         let is_deposit_allowed = match (deposits_mode, resource_deposits_configuration) {
             // Case: Account is in allow all mode and the resource is not in the deny list
             (
-                AccountDepositsMode::AllowAll,
-                ResourceDepositConfiguration::Allowed | ResourceDepositConfiguration::Neither,
+                AccountDefaultDepositRule::Accept,
+                ResourceDepositRule::Allowed | ResourceDepositRule::Neither,
             ) => true,
             // Case: Account is in allow all mode and the resource is in the deny list
-            (AccountDepositsMode::AllowAll, ResourceDepositConfiguration::Disallowed) => false,
+            (AccountDefaultDepositRule::Accept, ResourceDepositRule::Disallowed) => false,
             // Case: Account is in deny all mode and the resource is on the allow list
-            (AccountDepositsMode::DenyAll, ResourceDepositConfiguration::Allowed) => true,
+            (AccountDefaultDepositRule::Reject, ResourceDepositRule::Allowed) => true,
             // Case: Account is in deny all mode and the resource is is not on the allow list
             (
-                AccountDepositsMode::DenyAll,
-                ResourceDepositConfiguration::Disallowed | ResourceDepositConfiguration::Neither,
+                AccountDefaultDepositRule::Reject,
+                ResourceDepositRule::Disallowed | ResourceDepositRule::Neither,
             ) => false,
             // Case: Account is in airdrop mode
-            (AccountDepositsMode::AllowExisting, resource_deposits_configuration) => {
+            (AccountDefaultDepositRule::AllowExisting, resource_deposits_configuration) => {
                 // Deny list check takes precedence over other checks
-                if let ResourceDepositConfiguration::Disallowed = resource_deposits_configuration {
+                if let ResourceDepositRule::Disallowed = resource_deposits_configuration {
                     false
                 } else if *resource_address == RADIX_TOKEN
                     || Self::does_vault_exist(resource_address, api)?
                 {
                     true
-                } else if let ResourceDepositConfiguration::Allowed =
-                    resource_deposits_configuration
-                {
+                } else if let ResourceDepositRule::Allowed = resource_deposits_configuration {
                     true
                 } else {
                     false
@@ -782,7 +788,7 @@ impl AccountBlueprint {
     fn get_resource_deposit_configuration<Y>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<ResourceDepositConfiguration, RuntimeError>
+    ) -> Result<ResourceDepositRule, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -796,13 +802,13 @@ impl AccountBlueprint {
         )?;
 
         let resource_deposit_configuration = {
-            let entry = api.key_value_entry_get_typed::<AccountResourceDepositConfigurationEntry>(
+            let entry = api.key_value_entry_get_typed::<AccountResourceDepositRuleEntry>(
                 kv_store_entry_lock_handle,
             )?;
 
             match entry {
                 Option::Some(resource_deposit_configuration) => resource_deposit_configuration,
-                Option::None => ResourceDepositConfiguration::Neither,
+                Option::None => ResourceDepositRule::Neither,
             }
         };
 

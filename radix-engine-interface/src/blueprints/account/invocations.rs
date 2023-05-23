@@ -11,7 +11,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
-pub enum ResourceDepositConfiguration {
+pub enum ResourceDepositRule {
     /// The resource is neither on the allow or deny list.
     Neither,
 
@@ -23,12 +23,12 @@ pub enum ResourceDepositConfiguration {
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
-pub enum AccountDepositsMode {
+pub enum AccountDefaultDepositRule {
     /// Allows the deposit of all resources - the deny list is honored in this state.o
-    AllowAll,
+    Accept,
 
     /// Disallows the deposit of all resources - the allow list is honored in this state.
-    DenyAll,
+    Reject,
 
     /// Only deposits of existing resources is accepted - both allow and deny lists are honored in
     /// this mode.
@@ -248,7 +248,7 @@ pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT: &str = "change_allowed_dep
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountChangeAllowedDepositsModeInput {
-    pub deposit_mode: AccountDepositsMode,
+    pub deposit_mode: AccountDefaultDepositRule,
 }
 
 pub type AccountChangeAllowedDepositsModeOutput = ();
@@ -262,7 +262,7 @@ pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT: &str = "configure_resource_d
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountConfigureResourceDepositInput {
     pub resource_address: ResourceAddress,
-    pub resource_deposit_configuration: ResourceDepositConfiguration,
+    pub resource_deposit_configuration: ResourceDepositRule,
 }
 
 pub type AccountConfigureResourceDepositOutput = ();
