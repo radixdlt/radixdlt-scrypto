@@ -1,5 +1,5 @@
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::epoch_manager::{
+use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorRegisterInput, ValidatorStakeInput, ValidatorUpdateAcceptDelegatedStakeInput,
     VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };

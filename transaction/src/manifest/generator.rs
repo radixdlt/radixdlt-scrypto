@@ -19,7 +19,7 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
@@ -663,7 +663,7 @@ pub fn generate_instruction(
         },
         ast::Instruction::CreateValidator { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,
-            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
     })
@@ -1188,10 +1188,10 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_common::manifest_args;
-    use radix_engine_common::native_addresses::EPOCH_MANAGER;
+    use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::ComponentAddress;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::blueprints::epoch_manager::EpochManagerCreateValidatorInput;
+    use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, AuthorityRules, NonFungibleDataSchema,
         NonFungibleResourceManagerMintManifestInput,
@@ -1667,12 +1667,12 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Address("consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             InstructionV1::CallMethod {
-                address: EPOCH_MANAGER.into(),
-                method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value(&EpochManagerCreateValidatorInput {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerCreateValidatorInput {
                     key: EcdsaSecp256k1PrivateKey::from_u64(2u64)
                         .unwrap()
                         .public_key(),

@@ -4,7 +4,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use radix_engine_interface::blueprints::clock::*;
+use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::time::TimeComparisonOperator;
 use sbor::rust::boxed::Box;

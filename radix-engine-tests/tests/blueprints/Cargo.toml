@@ -11,7 +11,7 @@ members = [
     "cross_package_call",
     "data_validation",
     "deep_sbor",
-    "epoch_manager",
+    "consensus_manager",
     "execution_trace",
     "external_blueprint_caller",
     "fee",

@@ -1,4 +1,4 @@
-use scrypto::blueprints::clock::*;
+use scrypto::blueprints::consensus_manager::*;
 use scrypto::prelude::*;
 
 #[blueprint]
