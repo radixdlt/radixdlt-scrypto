@@ -165,6 +165,100 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         Ok(())
     }
 
+    pub fn export_graph_and_print_summary_for_two_series(&mut self, data_series1: &Vec<(i32, i32)>, data_series2: &Vec<(i32, i32)>, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+        // calculate diff points
+        assert_eq!(data_series1.len(), data_series2.len());
+        let mut v1 = data_series1.clone();
+        for (idx, (size, median_value)) in v1.iter_mut().enumerate() {
+            assert_eq!(*size, data_series2[idx].0);
+            *median_value -= data_series2[idx].1;
+
+        }
+        // calculate linear approximation of diff points
+        let (lin_slope, lin_intercept): (f64, f64) = linear_regression_of(&v1).unwrap();
+
+        // calculate axis max/min values
+        let y_ofs = 1000;
+        let x_ofs = 5000;
+        let x_min = data_series1.iter().map(|i| i.0).min().unwrap() - x_ofs;
+        let x_max = data_series1.iter().map(|i| i.0).max().unwrap() + x_ofs;
+        let y_min = data_series1.iter().map(|i| i.1).min().unwrap() - y_ofs;
+        let y_max = data_series1.iter().map(|i| i.1).max().unwrap() + y_ofs;
+
+        let lin_x_axis = (x_min..x_max).step(10);
+
+        // draw scatter plot
+        let root = BitMapBackend::new(output_png_file, (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+        root.margin(20, 20, 20, 20);
+
+        let mut scatter_ctx = ChartBuilder::on(&root)
+            .x_label_area_size(40)
+            .y_label_area_size(80)
+            .margin(20)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+        scatter_ctx
+            .configure_mesh()
+            .x_desc("Size [bytes]")
+            .y_desc("DB read duration [nanoseconds]")
+            .axis_desc_style(("sans-serif", 16))
+            .draw()?;
+        // 1. draw read series1 points
+        scatter_ctx
+            .draw_series(
+                data_series1.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+            )?
+            .label("RocksDB read (median points)")
+            .legend(|(x, y)| Circle::new((x + 10, y), 2, GREEN.filled()));
+        // 2. draw read series2 points
+        scatter_ctx
+            .draw_series(
+                data_series2.iter()
+                    .map(|(x, y)| Circle::new((*x, *y), 2, BLUE.filled())),
+            )?
+            .label("InMemory read (median points)")
+            .legend(|(x, y)| Circle::new((x + 10, y), 2, BLUE.filled()));
+        // 3. draw read series1-series2 points
+        scatter_ctx
+            .draw_series(
+                v1.iter()
+                    .map(|(x, y)| Cross::new((*x, *y), 6, MAGENTA)),
+            )?
+            .label("Diff points (RocksDB/green - InMemory/blue)")
+            .legend(|(x, y)| Cross::new((x + 10, y), 6, MAGENTA));
+        // 4. draw linear approximetion line
+        scatter_ctx
+            .draw_series(LineSeries::new(
+                lin_x_axis
+                    .values()
+                    .map(|x| (x, (lin_slope * x as f64 + lin_intercept) as i32)),
+                &RED,
+            ))?
+            .label(format!(
+                "Linear approx. of diff points: f(x)={:.4}*x+{:.1}",
+                lin_slope, lin_intercept
+            ))
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        scatter_ctx
+            .configure_series_labels()
+            .background_style(&WHITE)
+            .border_style(&BLACK)
+            .label_font(("sans-serif", 16))
+            .position(SeriesLabelPosition::UpperMiddle)
+            .draw()?;
+
+        root.present().expect("Unable to write result to file");
+
+        // print some informations
+        println!("Points list (size, time): {:?}", v1);
+        println!(
+            "Linear approx.:  f(size) = {} * size + {}\n",
+            lin_slope, lin_intercept
+        );
+
+        Ok(())
+    }
 
     fn calculate_median(data: &mut Vec<Duration>) -> Duration {
         data.sort();

@@ -29,7 +29,8 @@ fn db_read_test() {
     db_read_test_execution(&mut substate_db, read_counts);
 
     // clean data (spikes) and calculate median points
-    let (data, mut median_data_rocksdb) = substate_db.calculate_median_points();
+    let (data
+        , median_data_rocksdb) = substate_db.calculate_median_points();
 
     // export results
     substate_db.export_graph_and_print_summary(&data, &median_data_rocksdb, "/tmp/scrypto-rocksdb-reads-result.png").unwrap();
@@ -47,16 +48,8 @@ fn db_read_test() {
     substate_db_mem.export_graph_and_print_summary(&data, &median_data_inmem, "/tmp/scrypto-inmem-reads-result.png").unwrap();
 
 
-    // Calculate RocksDB - InMemory diff
-    assert_eq!(median_data_rocksdb.len(), median_data_inmem.len());
-
-    for (idx, (size, median_value)) in median_data_rocksdb.iter_mut().enumerate() {
-        assert_eq!(*size, median_data_inmem[idx].0);
-        *median_value -= median_data_inmem[idx].1;
-    }
-
-    // export results
-    substate_db_mem.export_graph_and_print_summary(&median_data_rocksdb, &median_data_rocksdb, "/tmp/scrypto-reads-result.png").unwrap();
+    // Calculate RocksDB - InMemory diff and export results
+    substate_db_mem.export_graph_and_print_summary_for_two_series(&median_data_rocksdb, &median_data_inmem, "/tmp/scrypto-reads-result.png").unwrap();
 
 }
 
