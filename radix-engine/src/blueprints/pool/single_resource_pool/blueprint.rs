@@ -2,7 +2,9 @@ use crate::errors::*;
 use radix_engine_common::math::*;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::*;
 
 pub const SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "SingleResourcePool";
 
@@ -73,4 +75,51 @@ impl SingleResourcePoolBlueprint {
     {
         todo!()
     }
+}
+
+fn authority_rules(pool_manager_rule: AccessRule) -> AuthorityRules {
+    let mut authority_rules = AuthorityRules::new();
+    /*
+    FIXME: When we have a way to map methods to authorities I would like to:
+
+    pool_manager_authority => [
+        SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT,
+        SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+        SINGLE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+    ]
+    public => all else
+     */
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT,
+        pool_manager_rule.clone(),
+        pool_manager_rule.clone(),
+    );
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
+        pool_manager_rule.clone(),
+        pool_manager_rule.clone(),
+    );
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
+        pool_manager_rule.clone(),
+        pool_manager_rule.clone(),
+    );
+
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_REDEEM_IDENT,
+        rule!(allow_all),
+        rule!(allow_all),
+    );
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+        rule!(allow_all),
+        rule!(allow_all),
+    );
+    authority_rules.set_main_authority_rule(
+        SINGLE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,
+        rule!(allow_all),
+        rule!(allow_all),
+    );
+
+    authority_rules
 }
