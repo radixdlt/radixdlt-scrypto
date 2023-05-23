@@ -28,8 +28,7 @@ CALL_METHOD
 CALL_METHOD 
     Address("${account_address}") 
     "change_allowed_deposits_mode" 
-    Enum(
-        "AccountDepositsMode::AllowList", 
+    Enum<"AccountDepositsMode::AllowList">(
         Array<Address>(
             Address("${first_resource_address}")
         )
@@ -51,8 +50,7 @@ CALL_METHOD
 CALL_METHOD 
     Address("${account_address}") 
     "change_allowed_deposits_mode" 
-    Enum(
-        "AccountDepositsMode::DisallowList", 
+    Enum<"AccountDepositsMode::DisallowList">(
         Array<Address>(
             Address("${first_resource_address}")
         )
