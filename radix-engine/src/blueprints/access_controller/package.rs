@@ -667,8 +667,7 @@ impl AccessControllerNativePackage {
             vec![scrypto_encode(&substate).unwrap()],
         )?;
 
-        let (authority_rules, protected_methods) =
-            init_access_rules_from_rule_set(input.rule_set);
+        let (authority_rules, protected_methods) = init_access_rules_from_rule_set(input.rule_set);
         let access_rules =
             AccessRules::create(protected_methods, authority_rules, btreemap!(), api)?.0;
 

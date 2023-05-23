@@ -200,15 +200,11 @@ impl SecurifiedAccessRules for SecurifiedIdentity {
     }
 
     fn role_definitions() -> Roles {
-        roles! {
-            Self::SELF_ROLE => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))); // TODO: Use self object
-        }
+        roles! {}
     }
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {
-    const SELF_ROLE: &'static str = "self";
-}
+impl PresecurifiedAccessRules for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 

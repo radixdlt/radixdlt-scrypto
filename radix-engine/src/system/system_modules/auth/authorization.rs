@@ -377,15 +377,15 @@ impl Authorization {
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.eq("self") {
             if let Some(access_rules_of) = access_rules_of {
-                rule!(require(global_caller(GlobalAddress::new_or_panic(access_rules_of.0))))
+                rule!(require(global_caller(GlobalAddress::new_or_panic(
+                    access_rules_of.0
+                ))))
             } else {
                 return Ok(AuthorizationCheckResult::Failed(vec![]));
             }
         } else {
             match access_rules.get_rule(key) {
-                Some(access_rule) => {
-                    access_rule.clone()
-                }
+                Some(access_rule) => access_rule.clone(),
                 None => {
                     // TODO: Change to fail
                     return Ok(AuthorizationCheckResult::Authorized);

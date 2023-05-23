@@ -80,24 +80,18 @@ pub trait SecurifiedAccessRules {
 }
 
 pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
-    const SELF_ROLE: &'static str;
-
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Self::create_roles(Roles::new());
-        roles.define_role(
-            Self::OWNER_ROLE,
-            rule!(require(owner_id)),
-            [Self::SELF_ROLE],
-        );
+        roles.define_role(Self::OWNER_ROLE, rule!(require(owner_id)), [SELF_ROLE]);
 
         let mut method_permissions = Self::method_permissions();
         if let Some(securify) = Self::SECURIFY_METHOD {
             method_permissions.insert(
                 MethodKey::main(securify),
-                ([Self::OWNER_ROLE].into(), [Self::SELF_ROLE].into()),
+                ([Self::OWNER_ROLE].into(), [SELF_ROLE].into()),
             );
         }
 

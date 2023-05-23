@@ -73,15 +73,11 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     }
 
     fn role_definitions() -> Roles {
-        roles! {
-            Self::SELF_ROLE => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))); // TODO: Use self object
-        }
+        roles! {}
     }
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {
-    const SELF_ROLE: &'static str = "self";
-}
+impl PresecurifiedAccessRules for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 
@@ -277,7 +273,7 @@ impl AccountBlueprint {
 
         let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
         if !is_deposit_allowed {
-            Runtime::assert_access_rule(rule!(require("owner")), api)?;
+            Runtime::assert_access_rule(rule!(require(SecurifiedAccount::OWNER_ROLE)), api)?;
         }
 
         Self::get_vault(

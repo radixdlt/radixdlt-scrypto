@@ -246,7 +246,6 @@ impl AuthModule {
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
-
         let result = Authorization::check_authorization_against_role_list(
             acting_location,
             *auth_zone_id,

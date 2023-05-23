@@ -14,6 +14,8 @@ use utils::btreemap;
 
 use super::AccessRule;
 
+pub const SELF_ROLE: &'static str = "self";
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct FnKey {
     pub blueprint: String,
