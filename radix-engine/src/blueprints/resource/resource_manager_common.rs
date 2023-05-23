@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -13,9 +13,9 @@ use radix_engine_interface::*;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    (Roles, BTreeMap<MethodKey, RoleList>),
-    (Roles, BTreeMap<MethodKey, RoleList>),
-    (Roles, BTreeMap<MethodKey, RoleList>),
+    (Roles, BTreeMap<MethodKey, MethodPermission>),
+    (Roles, BTreeMap<MethodKey, MethodPermission>),
+    (Roles, BTreeMap<MethodKey, MethodPermission>),
 ) {
     let (resman_authority_rules, resman_protected_methods) = {
         let (mint_access_rule, mint_mutability) = access_rules_map
@@ -92,12 +92,21 @@ fn build_access_rules(
         }
 
         let resman_protected_methods = btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list![UPDATE_METADATA_AUTHORITY],
-            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => role_list![MINT_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => role_list![MINT_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => role_list![MINT_AUTHORITY],
-            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => role_list![BURN_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => role_list![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY],
+            MethodKey::metadata(METADATA_GET_IDENT) => role_list![UPDATE_METADATA_AUTHORITY].into(),
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list![UPDATE_METADATA_AUTHORITY].into(),
+            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => role_list![MINT_AUTHORITY].into(),
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => role_list![MINT_AUTHORITY].into(),
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => role_list![MINT_AUTHORITY].into(),
+            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => role_list![BURN_AUTHORITY].into(),
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => role_list![UPDATE_NON_FUNGIBLE_DATA_AUTHORITY].into(),
+
+            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => MethodPermission::Public,
+            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => MethodPermission::Public,
+            MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => MethodPermission::Public,
+            MethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => MethodPermission::Public,
+            MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => MethodPermission::Public,
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => MethodPermission::Public,
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => MethodPermission::Public,
         );
 
         (resman_authority_rules, resman_protected_methods)
@@ -169,16 +178,20 @@ fn build_access_rules(
         }
 
         let vault_protected_methods = btreemap!(
-            MethodKey::main(VAULT_TAKE_IDENT) => role_list![WITHDRAW_AUTHORITY],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => role_list![WITHDRAW_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => role_list![WITHDRAW_AUTHORITY],
-            MethodKey::main(VAULT_RECALL_IDENT) => role_list![RECALL_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => role_list![RECALL_AUTHORITY],
-            MethodKey::main(VAULT_PUT_IDENT) => role_list![DEPOSIT_AUTHORITY],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"],
-            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
-            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"],
-            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
+            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => MethodPermission::Public,
+            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => MethodPermission::Public,
+            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public,
+
+            MethodKey::main(VAULT_TAKE_IDENT) => role_list![WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => role_list![WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => role_list![WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(VAULT_RECALL_IDENT) => role_list![RECALL_AUTHORITY].into(),
+            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => role_list![RECALL_AUTHORITY].into(),
+            MethodKey::main(VAULT_PUT_IDENT) => role_list![DEPOSIT_AUTHORITY].into(),
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"].into(),
         );
 
         (vault_authority_rules, vault_protected_methods)
@@ -197,10 +210,20 @@ fn build_access_rules(
         );
 
         let bucket_protected_methods = btreemap!(
-            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => role_list!["this_package"],
-            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => role_list!["this_package"],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"],
+            MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_CREATE_PROOF_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_PUT_IDENT) => MethodPermission::Public,
+            MethodKey::main(BUCKET_TAKE_IDENT) => MethodPermission::Public,
+            MethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => MethodPermission::Public,
+            MethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => MethodPermission::Public,
+
+            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"].into(),
+            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => role_list!["this_package"].into(),
         );
 
         (bucket_authority_rules, bucket_protected_methods)
@@ -246,13 +269,21 @@ where
         )
     };
 
+    let protected_proof_methods = btreemap!(
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_CLONE_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_DROP_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public,
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => MethodPermission::Public,
+    );
+
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
         resman_roles,
         btreemap!(
             vault_blueprint_name.to_string() => (vault_authorities, protected_vault_methods),
             bucket_blueprint_name.to_string() => (bucket_authorities, protected_bucket_methods),
-            proof_blueprint_name.to_string() => (Roles::new(), btreemap!()),
+            proof_blueprint_name.to_string() => (Roles::new(), protected_proof_methods),
         ),
         api,
     )?
@@ -291,13 +322,21 @@ where
         (bucket_authorities, protected_bucket_methods),
     ) = build_access_rules(access_rules);
 
+    let protected_proof_methods = btreemap!(
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_CLONE_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_DROP_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public,
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => MethodPermission::Public,
+    );
+
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
         resman_roles,
         btreemap!(
             FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
             FUNGIBLE_BUCKET_BLUEPRINT.to_string() => (bucket_authorities, protected_bucket_methods),
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), btreemap!()),
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), protected_proof_methods),
         ),
         api,
     )?
@@ -341,13 +380,21 @@ where
         (bucket_authorities, protected_bucket_methods),
     ) = build_access_rules(access_rules);
 
+    let protected_proof_methods = btreemap!(
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_CLONE_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_DROP_IDENT) => MethodPermission::Public,
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => MethodPermission::Public,
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => MethodPermission::Public,
+    );
+
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
         resman_roles,
         btreemap!(
             NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
             NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> (bucket_authorities, protected_bucket_methods),
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), btreemap!()),
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), protected_proof_methods),
         ),
         api,
     )?

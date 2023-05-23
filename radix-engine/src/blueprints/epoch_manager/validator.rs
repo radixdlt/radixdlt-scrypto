@@ -626,15 +626,19 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => role_list!["owner"],
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => role_list!["owner"],
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => role_list!["owner"],
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => role_list!["owner"],
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => role_list![VALIDATOR_STAKE_AUTHORITY],
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => role_list![VALIDATOR_APPLY_EMISSION_AUTHORITY],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"].into(),
+
+            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public,
+            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public,
+
+            MethodKey::main(VALIDATOR_REGISTER_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => role_list![VALIDATOR_STAKE_AUTHORITY].into(),
+            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => role_list![VALIDATOR_APPLY_EMISSION_AUTHORITY].into(),
         )
     }
 

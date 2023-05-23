@@ -47,26 +47,31 @@ impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
-            MethodKey::main(ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT) => role_list!["owner"],
-            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"],
-            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"],
-            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"],
-            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT) => role_list!["owner"].into(),
 
-            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY],
+            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_WITHDRAW_AUTHORITY].into(),
 
-            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => role_list![ACCOUNT_SECURIFY_AUTHORITY],
+            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => role_list![ACCOUNT_CREATE_PROOF_AUTHORITY].into(),
+            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => role_list![ACCOUNT_SECURIFY_AUTHORITY].into(),
+
+            MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => MethodPermission::Public,
+            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => MethodPermission::Public,
+            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_IDENT) => MethodPermission::Public,
+            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT) => MethodPermission::Public,
         )
     }
 

@@ -28,6 +28,7 @@ use transaction::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
+    NoMethod(FnIdentifier),
     CycleCheckError(CycleCheckError<RoleKey>),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
@@ -202,10 +203,18 @@ impl AuthModule {
                 )?
             }
             _ => {
-                if let Some(list) = node_authority_rules.protected_methods.get(&method_key) {
-                    list.clone()
+                if let Some(permission) = node_authority_rules.protected_methods.get(&method_key) {
+                    match permission {
+                        MethodPermission::Public => return Ok(()),
+                        MethodPermission::Protected(list) => list.clone(),
+                    }
                 } else {
-                    return Ok(());
+                    match &object_key {
+                        ObjectKey::SELF => {
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(AuthError::NoMethod(fn_identifier))));
+                        },
+                        ObjectKey::InnerBlueprint(..) => return Ok(()),
+                    }
                 }
             }
         };

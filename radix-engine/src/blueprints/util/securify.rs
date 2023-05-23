@@ -9,7 +9,7 @@ pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
     const SECURIFY_AUTHORITY: Option<&'static str> = None;
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList>;
+    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission>;
 
     fn role_definitions() -> Roles;
 
@@ -26,7 +26,7 @@ pub trait SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let authority_rules = Self::create_config(Roles::new());
-        let protected_module_methods = Self::protected_module_methods();
+        let protected_module_methods = Self::method_permissions();
         let access_rules =
             AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
         Ok(access_rules)
@@ -42,7 +42,7 @@ pub trait SecurifiedAccessRules {
             authority_rules.define_role(securify, AccessRule::DenyAll, RoleList::none());
         }
 
-        let protected_module_methods = Self::protected_module_methods();
+        let protected_module_methods = Self::method_permissions();
         let access_rules =
             AccessRules::create(protected_module_methods, authority_rules, btreemap!(), api)?;
 

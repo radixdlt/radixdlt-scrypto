@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodKey, RoleList, Roles};
+use radix_engine_interface::blueprints::resource::{MethodKey, MethodPermission, Roles};
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::own_type_data;
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -124,29 +124,20 @@ impl<C: HasStub> Describe<ScryptoCustomTypeKind> for Owned<C> {
     }
 }
 
-impl<C: HasStub> Owned<C> {
+impl<C: HasStub + HasMethods> Owned<C> {
     pub fn prepare_to_globalize(self) -> Globalizing<C> {
+        C::Permissions::methods();
+
         Globalizing {
             stub: self.0,
             metadata: None,
             royalty: RoyaltyConfig::default(),
 
             authority_rules: Roles::new(),
-            protected_module_methods: BTreeMap::new(),
+            method_permissions: index_map_new(),
 
             address: None,
         }
-    }
-}
-
-pub enum MethodPermission {
-    Public,
-    Protected(RoleList),
-}
-
-impl<const N: usize> From<[&str; N]> for MethodPermission {
-    fn from(value: [&str; N]) -> Self {
-        MethodPermission::Protected(value.into())
     }
 }
 
@@ -161,17 +152,11 @@ impl From<u32> for MethodRoyalty {
     }
 }
 
-/*
-pub enum MethodPermissionMutability {
-    Locked,
-    Mutable(RoleList),
-}
- */
-
 pub trait MethodMapping<T> {
     const MODULE_ID: ObjectModuleId;
 
     fn to_mapping(self) -> Vec<(String, T)>;
+    fn methods() -> Vec<&'static str>;
 }
 
 pub struct RoyaltyMethods<T> {
@@ -187,6 +172,10 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
             (COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(), self.set_royalty_config),
             (COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(), self.claim_royalty),
         ]
+    }
+
+    fn methods() -> Vec<&'static str> {
+        vec![COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT]
     }
 }
 
@@ -211,6 +200,10 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
             (METADATA_REMOVE_IDENT.to_string(), self.remove),
         ]
     }
+
+    fn methods() -> Vec<&'static str> {
+        vec![METADATA_SET_IDENT, METADATA_GET_IDENT, METADATA_REMOVE_IDENT]
+    }
 }
 
 pub struct MetadataInit {
@@ -218,13 +211,13 @@ pub struct MetadataInit {
     pub permissions: MetadataMethods<MethodPermission>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub authority_rules: Roles,
-    pub protected_module_methods: BTreeMap<MethodKey, RoleList>,
+    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, MethodPermission>>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -266,7 +259,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
 
         self.set_permissions(royalties.permissions);
-
         self
     }
 
@@ -276,21 +268,36 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     fn set_permissions<T: MethodMapping<MethodPermission>>(&mut self, permissions: T) {
-        for (method, permissions) in permissions.to_mapping() {
-            match permissions {
-                MethodPermission::Public => {}
-                MethodPermission::Protected(role_list) => {
-                    self.protected_module_methods
-                        .insert(MethodKey::new(T::MODULE_ID, method), role_list);
-                }
-            }
+        if self.method_permissions.contains_key(&T::MODULE_ID) {
+            panic!("Method permissions already set")
         }
+
+        let mut method_permissions = index_map_new();
+        for (method, permission) in permissions.to_mapping() {
+            method_permissions.insert(method, permission);
+        }
+
+        self.method_permissions.insert(T::MODULE_ID, method_permissions);
     }
 
     pub fn globalize(mut self) -> Global<C> {
         let metadata = self.metadata.take().unwrap_or_else(|| Metadata::default());
         let royalty = Royalty::new(self.royalty);
-        let access_rules = AccessRules::new(self.protected_module_methods, self.authority_rules);
+        let mut method_permissions = BTreeMap::new();
+
+        if !self.method_permissions.contains_key(&ObjectModuleId::Main) {
+            for method in C::Permissions::methods() {
+                method_permissions.insert(MethodKey::new(ObjectModuleId::Main, method.to_string()), MethodPermission::Public);
+            }
+        }
+
+        for (module_id, permisions) in self.method_permissions {
+            for (method, permission) in permisions {
+                method_permissions.insert(MethodKey::new(module_id, method), permission);
+            }
+        }
+
+        let access_rules = AccessRules::new(method_permissions, self.authority_rules);
 
         let modules = btreemap!(
             ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),

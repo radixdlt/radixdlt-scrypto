@@ -202,6 +202,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn to_mapping(self) -> Vec<(String, T)> {
                     vec![]
                 }
+
+
+                fn methods() -> Vec<&'static str> {
+                    vec![]
+                }
             }
         }
     } else {
@@ -222,6 +227,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         ,
                         )*
                     ]
+                }
+
+                fn methods() -> Vec<&'static str> {
+                    vec![ #(#method_names,)* ]
                 }
             }
         }
@@ -813,6 +822,10 @@ mod tests {
                             vec![
                                 ("x".to_string(), self.x),
                             ]
+                        }
+
+                        fn methods() -> Vec<&'static str> {
+                            vec![ "x", ]
                         }
                     }
 

@@ -69,6 +69,26 @@ impl MethodKey {
     }
 }
 
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum MethodPermission {
+    Public,
+    Protected(RoleList),
+}
+
+impl<const N: usize> From<[&str; N]> for MethodPermission {
+    fn from(value: [&str; N]) -> Self {
+        MethodPermission::Protected(value.into())
+    }
+}
+
+impl From<RoleList> for MethodPermission {
+    fn from(value: RoleList) -> Self {
+        Self::Protected(value)
+    }
+}
+
 impl From<String> for AccessRule {
     fn from(name: String) -> Self {
         AccessRule::Protected(AccessRuleNode::Authority(RoleKey::new(name)))

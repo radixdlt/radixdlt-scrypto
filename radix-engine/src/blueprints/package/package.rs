@@ -114,11 +114,11 @@ struct SecurifiedPackage;
 impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
-    fn protected_module_methods() -> BTreeMap<MethodKey, RoleList> {
+    fn method_permissions() -> BTreeMap<MethodKey, MethodPermission> {
         btreemap!(
-            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"],
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY],
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY],
+            MethodKey::metadata(METADATA_SET_IDENT) => role_list!["owner"].into(),
+            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY].into(),
+            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => role_list![PACKAGE_ROYALTY_AUTHORITY].into(),
         )
     }
 

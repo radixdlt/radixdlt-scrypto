@@ -1296,7 +1296,7 @@ fn locked_access_rules() -> RuleSet {
 fn init_access_rules_from_rule_set(
     address: GlobalAddress,
     rule_set: RuleSet,
-) -> (Roles, BTreeMap<MethodKey, RoleList>) {
+) -> (Roles, BTreeMap<MethodKey, MethodPermission>) {
     let role_definitions = roles! {
         "self" => rule!(require(global_caller(address)));
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
@@ -1305,32 +1305,32 @@ fn init_access_rules_from_rule_set(
         "confirmation" => rule_set.confirmation_role, ["self"];
     };
 
-    let protected_methods = btreemap!(
-        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => role_list!["primary"],
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => role_list!["primary"],
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary"],
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => role_list!["primary"],
-        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  role_list!["primary"],
-        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"],
-        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"],
+    let protected_methods: BTreeMap<&str, MethodPermission> = btreemap!(
+        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => role_list!["primary"].into(),
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => role_list!["primary"].into(),
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary"].into(),
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => role_list!["primary"].into(),
+        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  role_list!["primary"].into(),
+        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"].into(),
+        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => role_list!["recovery"].into(),
 
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery", "confirmation"],
-        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["recovery", "confirmation"].into(),
+        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["recovery", "confirmation"].into(),
 
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary", "confirmation"],
-        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["primary", "confirmation"],
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => role_list!["primary", "confirmation"].into(),
+        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => role_list!["primary", "confirmation"].into(),
 
 
-        ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => role_list!["primary", "recovery"],
+        ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => role_list!["primary", "recovery"].into(),
 
-        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => role_list!["primary", "confirmation", "recovery"],
+        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => role_list!["primary", "confirmation", "recovery"].into(),
 
-        ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => role_list!["this_package"],
+        ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => role_list!["this_package"].into(),
     );
 
     let protected_methods = protected_methods
