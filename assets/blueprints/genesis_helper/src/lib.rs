@@ -1,7 +1,6 @@
 use native_sdk::account::*;
-use native_sdk::epoch_manager::*;
-use scrypto::api::node_modules::metadata::MetadataVal;
-use scrypto::api::node_modules::metadata::MetadataValue;
+use native_sdk::consensus_manager::*;
+use scrypto::api::node_modules::metadata::*;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -53,7 +52,7 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     struct GenesisHelper {
-        epoch_manager: ComponentAddress,
+        consensus_manager: ComponentAddress,
         xrd_vault: Vault,
         resource_vaults: KeyValueStore<ResourceAddress, Vault>,
         validators: KeyValueStore<EcdsaSecp256k1PublicKey, ComponentAddress>,
@@ -63,11 +62,11 @@ mod genesis_helper {
         pub fn new(
             preallocated_address_bytes: [u8; 30],
             whole_lotta_xrd: Bucket,
-            epoch_manager: ComponentAddress,
+            consensus_manager: ComponentAddress,
             system_role: NonFungibleGlobalId,
         ) -> Global<GenesisHelper> {
             Self {
-                epoch_manager,
+                consensus_manager,
                 xrd_vault: Vault::with_bucket(whole_lotta_xrd),
                 resource_vaults: KeyValueStore::new(),
                 validators: KeyValueStore::new(),
@@ -110,7 +109,7 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, validator: GenesisValidator) {
-            let (validator_address, owner_token_bucket) = EpochManager(self.epoch_manager)
+            let (validator_address, owner_token_bucket) = ConsensusManager(self.consensus_manager)
                 .create_validator(validator.key, &mut ScryptoEnv)
                 .unwrap();
 
@@ -277,7 +276,7 @@ mod genesis_helper {
         }
 
         pub fn wrap_up(&mut self) -> Bucket {
-            EpochManager(self.epoch_manager)
+            ConsensusManager(self.consensus_manager)
                 .start(&mut ScryptoEnv)
                 .unwrap();
 

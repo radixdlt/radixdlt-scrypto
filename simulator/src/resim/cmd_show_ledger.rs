@@ -2,8 +2,7 @@ use crate::utils::*;
 use clap::Parser;
 use colored::*;
 use radix_engine::track::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use radix_engine_interface::blueprints::clock::*;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::time::UtcDateTime;
 use radix_engine_store_interface::interface::ListableSubstateDatabase;
@@ -107,9 +106,9 @@ impl ShowLedger {
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<u64, Error> {
         let instructions = vec![InstructionV1::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
         }];
         let blobs = vec![];
         let initial_proofs = btreeset![];
@@ -123,9 +122,9 @@ impl ShowLedger {
         precision: TimePrecision,
     ) -> Result<Instant, Error> {
         let instructions = vec![InstructionV1::CallMethod {
-            address: CLOCK.into(),
-            method_name: CLOCK_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ClockGetCurrentTimeInput { precision }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let initial_proofs = btreeset![];
