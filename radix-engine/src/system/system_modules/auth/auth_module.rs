@@ -18,7 +18,7 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };

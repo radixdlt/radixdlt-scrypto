@@ -197,14 +197,13 @@ impl ConsensusManagerBlueprint {
         };
 
         let role_definitions = roles! {
-            "self" => rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE)));
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
             SYSTEM_ROLE => rule!(require(AuthAddresses::system_role())); // Set epoch only used for debugging
         };
 
         let access_rules = AccessRules::create(
             method_permissions!(
-                MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => ["self"];
+                MethodKey::main(CONSENSUS_MANAGER_START_IDENT) => RoleList::none();
                 MethodKey::main(CONSENSUS_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
                 MethodKey::main(CONSENSUS_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_ROLE];
                 MethodKey::main(CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT) => [VALIDATOR_ROLE];
@@ -275,7 +274,7 @@ impl ConsensusManagerBlueprint {
         let access_rules = AttachedAccessRules(*receiver);
         access_rules.set_method_permission_and_mutability(
             MethodKey::main(CONSENSUS_MANAGER_START_IDENT),
-            MethodPermission::Protected(RoleList::none()),
+            MethodPermission::nobody(),
             RoleList::none(),
             api,
         )?;

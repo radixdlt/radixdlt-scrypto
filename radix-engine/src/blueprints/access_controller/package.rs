@@ -668,7 +668,7 @@ impl AccessControllerNativePackage {
         )?;
 
         let (authority_rules, protected_methods) =
-            init_access_rules_from_rule_set(address, input.rule_set);
+            init_access_rules_from_rule_set(input.rule_set);
         let access_rules =
             AccessRules::create(protected_methods, authority_rules, btreemap!(), api)?.0;
 
@@ -1294,11 +1294,9 @@ fn locked_access_rules() -> RuleSet {
 }
 
 fn init_access_rules_from_rule_set(
-    address: GlobalAddress,
     rule_set: RuleSet,
 ) -> (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>) {
     let role_definitions = roles! {
-        "self" => rule!(require(global_caller(address)));
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, mut => ["self"];
         "recovery" => rule_set.recovery_role, mut => ["self"];

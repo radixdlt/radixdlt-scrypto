@@ -950,7 +950,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
 
     fn role_definitions() -> Roles {
         roles! {
-            "self" => rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))); // TODO: Change to self
             VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(CONSENSUS_MANAGER)));
         }
     }
