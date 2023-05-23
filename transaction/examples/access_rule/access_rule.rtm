@@ -1,5 +1,5 @@
 SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
-    Enum(0u8)
-    Enum(0u8)
-    Enum("AccessRule::AllowAll");
+    Enum<0u8>()
+    Enum<0u8>()
+    Enum<"AccessRule::AllowAll">();

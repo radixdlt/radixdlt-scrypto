@@ -20,7 +20,7 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE_ADVANCED
-    Enum(0u8)
+    Enum<0u8>()
     Blob("${code_blob_hash}")
     Tuple(
         Map<String, Tuple>()
@@ -246,34 +246,34 @@ CREATE_PROOF_FROM_AUTH_ZONE
 CALL_METHOD
     Address("${component_address}")
     "aliases"
-    Enum(0u8)
-    Enum(0u8)
-    Enum(1u8,
+    Enum<0u8>()
+    Enum<0u8>()
+    Enum<1u8>(
         "hello"
     )
-    Enum(1u8,
+    Enum<1u8>(
         "hello"
     )
-    Enum(0u8,
+    Enum<0u8>(
         "test"
     )
-    Enum(0u8,
+    Enum<0u8>(
         "test"
     )
-    Enum(1u8,
+    Enum<1u8>(
         "test123"
     )
-    Enum(1u8,
+    Enum<1u8>(
         "test123"
     )
-    Enum(0u8)
-    Enum(1u8,
+    Enum<0u8>()
+    Enum<1u8>(
         "a"
     )
-    Enum(0u8,
+    Enum<0u8>(
         "b"
     )
-    Enum(1u8,
+    Enum<1u8>(
         "c"
     )
     Bytes("deadbeef")
@@ -375,97 +375,97 @@ CLAIM_COMPONENT_ROYALTY
 SET_METADATA
     Address("${package_address}")
     "field_name"
-    Enum(0u8,
-        Enum(0u8,
+    Enum<0u8>(
+        Enum<0u8>(
             "v"
         )
     );
 SET_METADATA
     Address("${account_address}")
     "field_name"
-    Enum(0u8,
-        Enum(0u8,
+    Enum<0u8>(
+        Enum<0u8>(
             "v"
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(0u8,
+    Enum<0u8>(
+        Enum<0u8>(
             "v"
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(1u8,
+    Enum<0u8>(
+        Enum<1u8>(
             true
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(2u8,
+    Enum<0u8>(
+        Enum<2u8>(
             123u8
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(3u8,
+    Enum<0u8>(
+        Enum<3u8>(
             123u32
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(4u8,
+    Enum<0u8>(
+        Enum<4u8>(
             123u64
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(5u8,
+    Enum<0u8>(
+        Enum<5u8>(
             -123i32
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(6u8,
+    Enum<0u8>(
+        Enum<6u8>(
             -123i64
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(7u8,
+    Enum<0u8>(
+        Enum<7u8>(
             Decimal("10.5")
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(8u8,
+    Enum<0u8>(
+        Enum<8u8>(
             Address("${account_address}")
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(9u8,
-            Enum(0u8,
+    Enum<0u8>(
+        Enum<9u8>(
+            Enum<0u8>(
                 Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
             )
         )
@@ -473,49 +473,49 @@ SET_METADATA
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(10u8,
+    Enum<0u8>(
+        Enum<10u8>(
             NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(11u8,
+    Enum<0u8>(
+        Enum<11u8>(
             NonFungibleLocalId("<some_string>")
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(12u8,
+    Enum<0u8>(
+        Enum<12u8>(
             10000i64
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(13u8,
+    Enum<0u8>(
+        Enum<13u8>(
             "https://radixdlt.com/index.html"
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(14u8,
+    Enum<0u8>(
+        Enum<14u8>(
             "https://radixdlt.com"
         )
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8,
-        Enum(15u8,
-            Enum(0u8,
+    Enum<0u8>(
+        Enum<15u8>(
+            Enum<0u8>(
                 Bytes("0000000000000000000000000000000000000000000000000000000000")
             )
         )
@@ -523,15 +523,15 @@ SET_METADATA
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(1u8,
+    Enum<1u8>(
         Array<Enum>(
-            Enum(0u8,
+            Enum<0u8>(
                 "some_string"
             ),
-            Enum(0u8,
+            Enum<0u8>(
                 "another_string"
             ),
-            Enum(0u8,
+            Enum<0u8>(
                 "yet_another_string"
             )
         )
@@ -561,9 +561,9 @@ REMOVE_METADATA
                 r##"
 SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
-    Enum(0u8)
-    Enum(0u8)
-    Enum(0u8);
+    Enum<0u8>()
+    Enum<0u8>()
+    Enum<0u8>();
 "##,
             ),
         );
@@ -596,15 +596,15 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         "A very innovative and important resource"
     )
     Map<Enum, Tuple>(
-        Enum(4u8),
+        Enum<4u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         ),
-        Enum(5u8),
+        Enum<5u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         )
     )
     Decimal("12");
@@ -644,15 +644,15 @@ CREATE_FUNGIBLE_RESOURCE
         "A very innovative and important resource"
     )
     Map<Enum, Tuple>(
-        Enum(4u8),
+        Enum<4u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         ),
-        Enum(5u8),
+        Enum<5u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         )
     );
 "##,
@@ -682,10 +682,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-    Enum(1u8)
-    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8))
+    Enum<1u8>()
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 64u8))
     Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Map<Enum, Tuple>(Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>()), Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>()))
     Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
     Address("${account_address}")
@@ -715,14 +715,14 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum(1u8)
+    Enum<1u8>()
     Tuple(
         Tuple(
             Array<Enum>(),
             Array<Tuple>(),
             Array<Enum>()
         ),
-        Enum(0u8,
+        Enum<0u8>(
             64u8
         ),
         Array<String>()
@@ -734,15 +734,15 @@ CREATE_NON_FUNGIBLE_RESOURCE
         "A very innovative and important resource"
     )
     Map<Enum, Tuple>(
-        Enum(4u8),
+        Enum<4u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         ),
-        Enum(5u8),
+        Enum<5u8>(),
         Tuple(
-            Enum(0u8),
-            Enum(1u8)
+            Enum<0u8>(),
+            Enum<1u8>()
         )
     );
 "##,
@@ -868,11 +868,11 @@ TAKE_ALL_FROM_WORKTOP
 CREATE_ACCESS_CONTROLLER
     Bucket("bucket1")
     Tuple(
-        Enum(0u8),
-        Enum(0u8),
-        Enum(0u8)
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
-    Enum(0u8);
+    Enum<0u8>();
 "##,
             ),
         );

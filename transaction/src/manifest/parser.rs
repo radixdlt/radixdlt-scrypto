@@ -352,19 +352,22 @@ impl Parser {
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        let mut discriminator_and_fields =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        let discriminator = match discriminator_and_fields.get(0) {
-            Some(Value::U8(discriminator)) => Ok(*discriminator),
-            Some(Value::String(discriminator)) => KNOWN_ENUM_DISCRIMINATORS
+
+        advance_match!(self, TokenKind::LessThan);
+        let discriminator = match self.parse_value()? {
+            Value::U8(discriminator) => discriminator,
+            Value::String(discriminator) => KNOWN_ENUM_DISCRIMINATORS
                 .get(discriminator.as_str())
                 .cloned()
-                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone())),
-            Some(_) => Err(ParserError::InvalidEnumDiscriminator),
-            None => Err(ParserError::MissingEnumDiscriminator),
-        }?;
-        discriminator_and_fields.remove(0);
-        Ok(Value::Enum(discriminator, discriminator_and_fields))
+                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone()))?,
+            _ => return Err(ParserError::InvalidEnumDiscriminator),
+        };
+        advance_match!(self, TokenKind::GreaterThan);
+
+        let fields =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+
+        Ok(Value::Enum(discriminator, fields))
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -575,10 +578,10 @@ mod tests {
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum(0u8, "Hello", 123u8)"#,
+            r#"Enum<0u8>("Hello", 123u8)"#,
             Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Vec::new()));
+        parse_value_ok!(r#"Enum<0u8>()"#, Value::Enum(0, Vec::new()));
     }
 
     #[test]
@@ -616,11 +619,11 @@ mod tests {
 
     #[test]
     fn test_failures() {
-        parse_value_error!(r#"Enum(0u8"#, ParserError::UnexpectedEof);
+        parse_value_error!(r#"Enum<0u8"#, ParserError::UnexpectedEof);
         parse_value_error!(
-            r#"Enum(0u8>"#,
+            r#"Enum<0u8)"#,
             ParserError::UnexpectedToken(Token {
-                kind: TokenKind::GreaterThan,
+                kind: TokenKind::CloseParenthesis,
                 span: Span { start: 8, end: 9 }
             })
         );

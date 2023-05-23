@@ -181,13 +181,13 @@ pub fn format_manifest_value<F: fmt::Write>(
             fields,
         } => {
             if fields.is_empty() {
-                write_with_indent!(f, context, depth, "Enum({}u8)", discriminator)?;
+                write_with_indent!(f, context, depth, "Enum<{}u8>()", discriminator)?;
             } else {
                 write_with_indent!(
                     f,
                     context,
                     depth,
-                    "Enum({}u8,{}",
+                    "Enum<{}u8>({}",
                     discriminator,
                     context.get_new_line()
                 )?;
