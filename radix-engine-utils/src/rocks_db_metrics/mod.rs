@@ -43,7 +43,7 @@ impl SubstateStoreWithMetrics<InMemorySubstateDatabase> {
 }
 
 impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics<S> {
-    pub fn export_graph_and_print_summary(&mut self, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn calculate_median_points(&self) -> (Vec<(i32,i32)>, Vec<(i32,i32)>) {
         // 1. calculate max values
         let mut max_values = Vec::with_capacity(100000);
         let binding = self.read_metrics.borrow();
@@ -70,7 +70,11 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
             //idx += 1;
         }
 
-        // 3. calculate axis max/min values
+        (data, median_data)
+    }
+
+    pub fn export_graph_and_print_summary(&mut self, data: &Vec<(i32, i32)>, median_data: &Vec<(i32, i32)>, output_png_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+        // calculate axis max/min values
         let y_ofs = 1000;
         let x_ofs = 5000;
         let x_min = data.iter().map(|i| i.0).min().unwrap() - x_ofs;
@@ -154,7 +158,7 @@ impl<S: SubstateDatabase + CommittableSubstateDatabase> SubstateStoreWithMetrics
         );
         println!("Median points list (size, time): {:?}", median_data);
         println!(
-            "Linear approx.:  f(size) = {} * size + {}",
+            "Linear approx.:  f(size) = {} * size + {}\n",
             lin_slope, lin_intercept
         );
 

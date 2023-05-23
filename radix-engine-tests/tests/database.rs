@@ -17,30 +17,53 @@ use transaction::model::TestTransaction;
 #[cfg(feature = "rocksdb")]
 #[test]
 fn db_read_test() {
+    let read_counts = 1000;
+
+    // RocksDB part
     let path = PathBuf::from(r"/tmp/radix-scrypto-db");
     // clean database
     std::fs::remove_dir_all(path.clone()).ok();
 
     let mut substate_db = SubstateStoreWithMetrics::new_rocksdb(path);
 
-    db_read_test_execution(&mut substate_db);
+    db_read_test_execution(&mut substate_db, read_counts);
+
+    // clean data (spikes) and calculate median points
+    let (data, mut median_data_rocksdb) = substate_db.calculate_median_points();
 
     // export results
-    substate_db.export_graph_and_print_summary("/tmp/scrypto-rocksdb-reads-result.png").unwrap();
+    substate_db.export_graph_and_print_summary(&data, &median_data_rocksdb, "/tmp/scrypto-rocksdb-reads-result.png").unwrap();
 
 
+    // InMemory part
     let mut substate_db_mem = SubstateStoreWithMetrics::new_inmem();
 
-    db_read_test_execution(&mut substate_db_mem);
+    db_read_test_execution(&mut substate_db_mem, read_counts    );
+
+    // clean data (spikes) and calculate median points
+    let (data, median_data_inmem) = substate_db_mem.calculate_median_points();
 
     // export results
-    substate_db_mem.export_graph_and_print_summary("/tmp/scrypto-inmem-reads-result.png").unwrap();
+    substate_db_mem.export_graph_and_print_summary(&data, &median_data_inmem, "/tmp/scrypto-inmem-reads-result.png").unwrap();
+
+
+    // Calculate RocksDB - InMemory diff
+    assert_eq!(median_data_rocksdb.len(), median_data_inmem.len());
+
+    for (idx, (size, median_value)) in median_data_rocksdb.iter_mut().enumerate() {
+        assert_eq!(*size, median_data_inmem[idx].0);
+        *median_value -= median_data_inmem[idx].1;
+    }
+
+    // export results
+    substate_db_mem.export_graph_and_print_summary(&median_data_rocksdb, &median_data_rocksdb, "/tmp/scrypto-reads-result.png").unwrap();
+
 }
 
 
 
 #[cfg(feature = "rocksdb")]
-fn db_read_test_execution<S: SubstateDatabase + CommittableSubstateDatabase>( substate_db: &mut S )
+fn db_read_test_execution<S: SubstateDatabase + CommittableSubstateDatabase>( substate_db: &mut S, count: usize )
 {
     // Set up environment.
     let mut scrypto_interpreter = ScryptoVm {
@@ -121,7 +144,7 @@ fn db_read_test_execution<S: SubstateDatabase + CommittableSubstateDatabase>( su
     }
 
     // read KV-store values
-    for _ in 0..1000 {
+    for _ in 0..count {
         for i in 0..lengths.len() {
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 1000.into())
