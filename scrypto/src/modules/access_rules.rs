@@ -43,7 +43,7 @@ impl AccessRules {
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn set_authority_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn define_role<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         self.call_ignore_rtn(
             ACCESS_RULES_DEFINE_ROLE_IDENT,
             &AccessRulesDefineRoleInput {
@@ -54,7 +54,18 @@ impl AccessRules {
         );
     }
 
-    pub fn set_authority_rule_on_inner_blueprint<A: Into<AccessRule>>(
+    pub fn set_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
+            &AccessRulesSetRoleMutabilityInput {
+                object_key: ObjectKey::SELF,
+                role_key: RoleKey::new(name),
+                mutability: mutability.into(),
+            },
+        );
+    }
+
+    pub fn define_role_on_inner_blueprint<A: Into<AccessRule>>(
         &self,
         inner_blueprint: &str,
         name: &str,
@@ -66,17 +77,6 @@ impl AccessRules {
                 object_key: ObjectKey::inner_blueprint(inner_blueprint),
                 role_key: RoleKey::new(name),
                 rule: entry.into(),
-            },
-        );
-    }
-
-    pub fn set_authority_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
-            &AccessRulesSetRoleMutabilityInput {
-                object_key: ObjectKey::SELF,
-                role_key: RoleKey::new(name),
-                mutability: mutability.into(),
             },
         );
     }

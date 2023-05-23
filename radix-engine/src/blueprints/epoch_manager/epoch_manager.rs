@@ -1,5 +1,5 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::blueprints::epoch_manager::{SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY};
+use crate::blueprints::epoch_manager::{SYSTEM_ROLE, VALIDATOR_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -188,15 +188,15 @@ impl EpochManagerBlueprint {
 
         let role_definitions = roles! {
             "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))), ["self"];
-            VALIDATOR_AUTHORITY => rule!(require(AuthAddresses::validator_role()));
-            SYSTEM_AUTHORITY => rule!(require(AuthAddresses::system_role())); // Set epoch only used for debugging
+            VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
+            SYSTEM_ROLE => rule!(require(AuthAddresses::system_role())); // Set epoch only used for debugging
         };
 
         let access_rules = AccessRules::create(
             method_permissions!(
                 MethodKey::main(EPOCH_MANAGER_START_IDENT) => ["self"];
-                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_AUTHORITY];
-                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_AUTHORITY];
+                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_ROLE];
+                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_ROLE];
                 MethodKey::main(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public;
                 MethodKey::main(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
             ),

@@ -16,11 +16,9 @@ use resources_tracker_macro::trace_resources;
 
 use super::*;
 
-pub const EPOCH_MANAGER_START_AUTHORITY: &str = "start";
-pub const VALIDATOR_AUTHORITY: &str = "validator";
-pub const SYSTEM_AUTHORITY: &str = "system";
+pub const VALIDATOR_ROLE: &str = "validator";
+pub const SYSTEM_ROLE: &str = "system";
 
-pub const VALIDATOR_STAKE_AUTHORITY: &str = "stake";
 pub const VALIDATOR_APPLY_EMISSION_AUTHORITY: &str = "apply_emission";
 
 pub struct EpochManagerNativePackage;
@@ -424,15 +422,11 @@ impl EpochManagerNativePackage {
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
-                    SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
-                ))?;
                 let input: ValidatorUpdateAcceptDelegatedStakeInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::update_accept_delegated_stake(
-                    receiver,
                     input.accept_delegated_stake,
                     api,
                 )?;

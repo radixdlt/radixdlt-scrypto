@@ -13,9 +13,7 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesDefineRoleInput, ACCESS_RULES_DEFINE_ROLE_IDENT,
-};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT, AccessRulesSetMethodPermissionAndMutabilityInput};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
@@ -429,30 +427,28 @@ impl ValidatorBlueprint {
     }
 
     pub fn update_accept_delegated_stake<Y>(
-        receiver: &NodeId,
         accept_delegated_stake: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let rule = if accept_delegated_stake {
-            AccessRule::AllowAll
+        let permission = if accept_delegated_stake {
+            MethodPermission::Public
         } else {
-            rule!(require("owner"))
+            ["owner"].into()
         };
 
-        api.call_method_advanced(
-            receiver,
-            false,
+        api.actor_call_module_method(
+            OBJECT_HANDLE_SELF,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_DEFINE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesDefineRoleInput {
+            ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodPermissionAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                role_key: RoleKey::new("stake"),
-                rule,
-            })
-            .unwrap(),
+                method_key: MethodKey::main(VALIDATOR_STAKE_IDENT),
+                permission,
+                mutability: ["self"].into(),
+            }).unwrap(),
         )?;
 
         Runtime::emit_event(
@@ -797,7 +793,7 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
             MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
 
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [VALIDATOR_STAKE_AUTHORITY];
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => [Self::OWNER_ROLE], ["self"];
 
             MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
             MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];
@@ -813,7 +809,6 @@ impl SecurifiedAccessRules for SecurifiedValidator {
     fn role_definitions() -> Roles {
         roles! {
             "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))); // TODO: Change to self
-            VALIDATOR_STAKE_AUTHORITY => rule!(require("owner")), vec!["self"];
             VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(EPOCH_MANAGER)));
         }
     }

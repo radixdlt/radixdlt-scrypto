@@ -20,7 +20,7 @@ macro_rules! permission_entry {
         $permissions.insert($method, ($permission.into(), RoleList::none()))
     }};
     ($permissions: expr, $method: expr, $permission:expr, $mutability:expr) => {{
-        $permissions.insert($method, ($permission.into(), $mutability))
+        $permissions.insert($method, ($permission.into(), $mutability.into()))
     }};
 }
 
