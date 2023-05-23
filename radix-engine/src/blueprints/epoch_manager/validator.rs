@@ -20,6 +20,7 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use sbor::rust::mem;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -81,9 +82,14 @@ pub struct ValidatorSubstate {
     /// This maps an epoch number to an amount of stake units that become unlocked at that epoch.
     /// Note: because of performance considerations, a maximum size of this map is limited to
     /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
-    /// attempt to automatically claim any withdrawals that have finished their wait, and only then
-    /// will fail if the limit is exceeded.
+    /// attempt to move any already-available amount to [`already_unlocked_owner_stake_unit_amount`]
+    /// and only then will fail if the limit is exceeded.
     pub pending_owner_stake_unit_withdrawals: BTreeMap<u64, Decimal>,
+
+    /// An amount of owner's stake units that has already waited for a sufficient number of epochs
+    /// in the [`pending_owner_stake_unit_withdrawals`] and was automatically moved from there.
+    /// The very next [`finish_unlock_owner_stake_units()`] operation will release this amount.
+    pub already_unlocked_owner_stake_unit_amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -484,12 +490,10 @@ impl ValidatorBlueprint {
     /// The requested amount of stake units (if available) will be ready for withdrawal after the
     /// network-configured [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
     /// call to [`finish_unlock_owner_stake_units()`].
-    /// As an optimization, this method also performs the same "finish unlocking" operation, and
-    /// returns the already-available stake units (if any).
     pub fn start_unlock_owner_stake_units<Y>(
         requested_stake_unit_amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -522,17 +526,19 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        // - drain the already-available withdrawals (as a drive-by)
-        let available_withdrawals = substate
+        // - move the already-available withdrawals to a dedicated field
+        let available_withdrawal_epochs = substate
             .pending_owner_stake_unit_withdrawals
             .range(..=current_epoch)
-            .map(|(epoch, available_amount)| (epoch.clone(), available_amount.clone()))
+            .map(|(epoch, _available_amount)| epoch.clone())
             .collect::<Vec<_>>();
-        let mut total_already_available_amount = Decimal::zero();
-        for (epoch, available_amount) in available_withdrawals {
+        for available_withdrawal_epoch in available_withdrawal_epochs {
             // no batch delete in a BTree
-            substate.pending_owner_stake_unit_withdrawals.remove(&epoch);
-            total_already_available_amount += available_amount;
+            let available_amount = substate
+                .pending_owner_stake_unit_withdrawals
+                .remove(&available_withdrawal_epoch)
+                .expect("key was just returned by the iterator");
+            substate.already_unlocked_owner_stake_unit_amount += available_amount;
         }
 
         // - insert the requested withdrawal as pending (if possible)
@@ -561,12 +567,8 @@ impl ValidatorBlueprint {
             locked_owner_stake_unit_vault.take(requested_stake_unit_amount, api)?;
         pending_owner_stake_unit_unlock_vault.put(pending_unlock_stake_unit_bucket, api)?;
 
-        // return the already-available withdrawals
-        let already_available_stake_unit_bucket =
-            pending_owner_stake_unit_unlock_vault.take(total_already_available_amount, api)?;
-
         api.field_lock_release(handle)?;
-        Ok(already_available_stake_unit_bucket)
+        Ok(())
     }
 
     /// Finishes the process of unlocking the owner's stake units by withdrawing *all* the pending
@@ -595,15 +597,21 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let available_withdrawals = substate
+        let available_withdrawal_epochs = substate
             .pending_owner_stake_unit_withdrawals
             .range(..=current_epoch)
-            .map(|(epoch, available_amount)| (epoch.clone(), available_amount.clone()))
+            .map(|(epoch, _available_amount)| epoch.clone())
             .collect::<Vec<_>>();
-        let mut total_already_available_amount = Decimal::zero();
-        for (epoch, available_amount) in available_withdrawals {
+        let mut total_already_available_amount = mem::replace(
+            &mut substate.already_unlocked_owner_stake_unit_amount,
+            Decimal::zero(),
+        );
+        for available_withdrawal_epoch in available_withdrawal_epochs {
             // no batch delete in a BTree
-            substate.pending_owner_stake_unit_withdrawals.remove(&epoch);
+            let available_amount = substate
+                .pending_owner_stake_unit_withdrawals
+                .remove(&available_withdrawal_epoch)
+                .expect("key was just returned by the iterator");
             total_already_available_amount += available_amount;
         }
 
@@ -918,6 +926,7 @@ impl ValidatorCreator {
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
             pending_owner_stake_unit_unlock_vault_id: pending_owner_stake_unit_unlock_vault.0,
             pending_owner_stake_unit_withdrawals,
+            already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
         let validator_id = api.new_simple_object(
