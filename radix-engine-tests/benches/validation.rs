@@ -1,14 +1,16 @@
+use std::hint::black_box;
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use transaction::eddsa_ed25519::EddsaEd25519PrivateKey;
-use transaction::model::TransactionHeader;
+use transaction::model::TransactionHeaderV1;
+use transaction::model::TransactionPayloadEncode;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
 use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::TestIntentHashManager;
 use transaction::validation::ValidationConfig;
 use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
 
@@ -54,15 +56,13 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let signer = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .header(TransactionHeader {
-            version: 1,
+        .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
             notary_public_key: signer.public_key().into(),
-            notary_as_signatory: true,
-            cost_unit_limit: 1_000_000,
+            notary_is_signatory: true,
             tip_percentage: 5,
         })
         .manifest(
@@ -77,21 +77,18 @@ fn bench_transaction_validation(c: &mut Criterion) {
         )
         .notarize(&signer)
         .build();
-    let transaction_bytes = transaction.to_bytes().unwrap();
+    let transaction_bytes = transaction.to_payload_bytes().unwrap();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     c.bench_function("Validation::validate_manifest", |b| {
         b.iter(|| {
-            let intent_hash_manager = TestIntentHashManager::new();
-
-            let transaction = validator
-                .check_length_and_decode_from_slice(&transaction_bytes)
-                .unwrap();
-            validator
-                .validate(&transaction, 0, &intent_hash_manager)
-                .unwrap();
+            black_box(
+                validator
+                    .check_length_decode_and_validate_from_slice(&transaction_bytes)
+                    .unwrap(),
+            )
         })
     });
 }

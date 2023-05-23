@@ -1,4 +1,4 @@
-use radix_engine_interface::data::manifest::model::*;
+use crate::internal_prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,7 +8,7 @@ pub enum HeaderValidationError {
     EpochRangeTooLarge,
     InvalidNetwork,
     InvalidCostUnitLimit,
-    InvalidTipBps,
+    InvalidTipPercentage,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,17 +48,31 @@ pub enum CallDataValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     TransactionTooLarge,
-    SerializationError(EncodeError),
-    DeserializationError(DecodeError),
-    IntentHashRejected,
+    EncodeError(EncodeError),
+    PrepareError(PrepareError),
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
     IdValidationError(ManifestIdValidationError),
     CallDataValidationError(CallDataValidationError),
 }
 
+impl From<PrepareError> for TransactionValidationError {
+    fn from(value: PrepareError) -> Self {
+        Self::PrepareError(value)
+    }
+}
+
 impl From<EncodeError> for TransactionValidationError {
-    fn from(err: EncodeError) -> Self {
-        Self::SerializationError(err)
+    fn from(value: EncodeError) -> Self {
+        Self::EncodeError(value)
+    }
+}
+
+impl From<ConvertToPreparedError> for TransactionValidationError {
+    fn from(value: ConvertToPreparedError) -> Self {
+        match value {
+            ConvertToPreparedError::EncodeError(value) => Self::EncodeError(value),
+            ConvertToPreparedError::PrepareError(value) => Self::PrepareError(value),
+        }
     }
 }

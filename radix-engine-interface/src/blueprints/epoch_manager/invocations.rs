@@ -28,6 +28,7 @@ pub struct EpochManagerInitialConfiguration {
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
+    pub num_fee_increase_delay_epochs: u64,
 }
 
 impl EpochManagerInitialConfiguration {
@@ -53,6 +54,16 @@ impl EpochManagerInitialConfiguration {
 
     pub fn with_min_validator_reliability(mut self, new_value: Decimal) -> Self {
         self.min_validator_reliability = new_value;
+        self
+    }
+
+    pub fn with_num_owner_stake_units_unlock_epochs(mut self, new_value: u64) -> Self {
+        self.num_owner_stake_units_unlock_epochs = new_value;
+        self
+    }
+
+    pub fn with_num_fee_increase_delay_epochs(mut self, new_value: u64) -> Self {
+        self.num_fee_increase_delay_epochs = new_value;
         self
     }
 }
@@ -233,6 +244,17 @@ pub struct ValidatorUpdateKeyInput {
 
 pub type ValidatorUpdateKeyOutput = ();
 
+pub const VALIDATOR_UPDATE_FEE_IDENT: &str = "update_fee";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorUpdateFeeInput {
+    /// A fraction of the effective emission amount which gets transferred to the validator's owner.
+    /// Must be within `[0.0, 1.0]`.
+    pub new_fee_factor: Decimal,
+}
+
+pub type ValidatorUpdateFeeOutput = ();
+
 pub const VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT: &str = "update_accept_delegated_stake";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
@@ -258,3 +280,28 @@ pub struct ValidatorApplyEmissionInput {
 }
 
 pub type ValidatorApplyEmissionOutput = ();
+
+pub const VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT: &str = "lock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorLockOwnerStakeUnitsInput {
+    pub stake_unit_bucket: Bucket,
+}
+
+pub type ValidatorLockOwnerStakeUnitsOutput = ();
+
+pub const VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "start_unlock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorStartUnlockOwnerStakeUnitsInput {
+    pub requested_stake_unit_amount: Decimal,
+}
+
+pub type ValidatorStartUnlockOwnerStakeUnitsOutput = ();
+
+pub const VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT: &str = "finish_unlock_owner_stake_units";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorFinishUnlockOwnerStakeUnitsInput {}
+
+pub type ValidatorFinishUnlockOwnerStakeUnitsOutput = Bucket;

@@ -1,8 +1,6 @@
 use super::EddsaEd25519Signature;
+use crate::internal_prelude::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
-use radix_engine_interface::crypto::EddsaEd25519PublicKey;
-use radix_engine_interface::crypto::Hash;
-use sbor::rust::vec::Vec;
 
 pub struct EddsaEd25519PrivateKey(SecretKey);
 
@@ -13,7 +11,7 @@ impl EddsaEd25519PrivateKey {
         EddsaEd25519PublicKey(PublicKey::from(&self.0).to_bytes())
     }
 
-    pub fn sign(&self, msg_hash: &Hash) -> EddsaEd25519Signature {
+    pub fn sign(&self, msg_hash: &impl IsHash) -> EddsaEd25519Signature {
         let keypair = Keypair {
             secret: SecretKey::from_bytes(self.0.as_bytes()).expect("From a valid key bytes"),
             public: PublicKey::from(&self.0),
@@ -21,7 +19,7 @@ impl EddsaEd25519PrivateKey {
 
         // SHA512 is used here
 
-        EddsaEd25519Signature(keypair.sign(&msg_hash.0).to_bytes())
+        EddsaEd25519Signature(keypair.sign(msg_hash.as_ref()).to_bytes())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

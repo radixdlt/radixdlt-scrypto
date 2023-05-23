@@ -25,7 +25,7 @@ pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
     pub schema: PackageSchema,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: BTreeMap<String, MetadataValue>,
 }
 
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);

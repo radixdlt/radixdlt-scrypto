@@ -13,10 +13,6 @@ pub struct EddsaEd25519Signature(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
 
-/// Represents an error ocurred when validating a signature.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SignatureValidationError {}
-
 /// EddsaEd25519 signature verifier.
 pub struct EddsaEd25519Verifier;
 

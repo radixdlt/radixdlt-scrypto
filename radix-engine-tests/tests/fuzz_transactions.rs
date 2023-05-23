@@ -13,9 +13,9 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{NotarizedTransaction, TransactionHeader};
+use transaction::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayloadEncode};
 use transaction::validation::{
-    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
 
 struct TransactionFuzzer {
@@ -45,12 +45,12 @@ impl TransactionFuzzer {
         }
     }
 
-    fn execute_single_transaction(&mut self, transaction: NotarizedTransaction) {
+    fn execute_single_transaction(&mut self, transaction: NotarizedTransactionV1) {
         let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-        let executable = validator
-            .validate(&transaction, 0, &TestIntentHashManager::new())
-            .unwrap();
+        let validated = validator
+            .validate(transaction.prepare().expect("transaction to be preparable"))
+            .expect("transaction to be validatable");
 
         let execution_config = ExecutionConfig::default();
         let fee_reserve_config = FeeReserveConfig::default();
@@ -60,11 +60,11 @@ impl TransactionFuzzer {
             &self.scrypto_interpreter,
             &fee_reserve_config,
             &execution_config,
-            &executable,
+            &validated.get_executable(),
         );
     }
 
-    fn next_transaction(&mut self) -> NotarizedTransaction {
+    fn next_transaction(&mut self) -> NotarizedTransactionV1 {
         let mut builder = ManifestBuilder::new();
         let instruction_count = self.rng.gen_range(0u32..20u32);
         for _ in 0..instruction_count {
@@ -107,15 +107,13 @@ impl TransactionFuzzer {
 
         let manifest = builder.build();
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let header = TransactionHeader {
-            version: 1,
+        let header = TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
             notary_public_key: private_key.public_key().into(),
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
+            notary_is_signatory: false,
             tip_percentage: 0,
         };
 
@@ -131,7 +129,7 @@ impl TransactionFuzzer {
 #[test]
 fn simple_transaction_fuzz_test() {
     let mut fuzzer = TransactionFuzzer::new();
-    let transactions: Vec<NotarizedTransaction> = (0..50)
+    let transactions: Vec<NotarizedTransactionV1> = (0..50)
         .into_iter()
         .map(|_| fuzzer.next_transaction())
         .collect();
