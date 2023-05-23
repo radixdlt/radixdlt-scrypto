@@ -396,7 +396,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
                     if address.as_node_id().is_global_epoch_manager() =>
                 {
-                    fields.push(to_manifest_value(address));
                     "CREATE_VALIDATOR"
                 }
 

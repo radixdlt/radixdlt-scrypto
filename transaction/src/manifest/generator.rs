@@ -5,6 +5,7 @@ use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_common::prelude::EPOCH_MANAGER;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_MUTABILITY_IDENT;
 use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_AUTHORITY_RULE_IDENT;
@@ -661,8 +662,8 @@ pub fn generate_instruction(
             method_name: PACKAGE_CLAIM_ROYALTY_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::CreateValidator { address, args } => InstructionV1::CallMethod {
-            address: generate_global_address(address, bech32_decoder)?,
+        ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
+            address: EPOCH_MANAGER.into(),
             method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, bech32_decoder, blobs)?,
         },
@@ -1667,7 +1668,7 @@ mod tests {
     fn test_create_validator_instruction() {
         generate_instruction_ok!(
             r#"
-            CREATE_VALIDATOR Address("epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl") Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
             "#,
             InstructionV1::CallMethod {
                 address: EPOCH_MANAGER.into(),

@@ -226,7 +226,6 @@ pub enum Instruction {
         args: Vec<Value>,
     },
     CreateValidator {
-        address: Value,
         args: Vec<Value>,
     },
 }
