@@ -24,12 +24,16 @@ mod royalty_test {
                 .define_roles(roles! {
                     "public" => rule!(allow_all);
                 })
-                .protect_royalty(protect! {
-                    RoyaltyMethod::claim_royalty => ["public"];
-                })
-                .set_royalties(royalties! {
-                    Method::paid_method => 1u32;
-                    Method::paid_method_panic => 1u32;
+                .royalties(royalties! {
+                    init => {
+                        free_method => Free;
+                        paid_method => 1u32;
+                        paid_method_panic => 1u32;
+                    },
+                    permissions => {
+                        claim_royalty => ["public"];
+                        set_royalty_config => [];
+                    }
                 })
                 .globalize()
         }

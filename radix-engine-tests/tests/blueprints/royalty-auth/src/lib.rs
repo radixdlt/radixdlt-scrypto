@@ -40,13 +40,16 @@ mod royalty_test {
                 .define_roles(roles! {
                     "auth" => rule!(require(badge)), ["auth"];
                 })
-                .protect_royalty(protect!(
-                    RoyaltyMethod::set_royalty_config => ["auth"];
-                    RoyaltyMethod::claim_royalty => ["auth"];
-                ))
-                .set_royalties(royalties!(
-                    Method::paid_method => 1u32;
-                    Method::paid_method_panic => 1u32;
+                .royalties(royalties!(
+                    init => {
+                        paid_method => 1u32;
+                        paid_method_panic => 1u32;
+                        free_method => Free;
+                    },
+                    permissions => {
+                        set_royalty_config => ["auth"];
+                        claim_royalty => ["auth"];
+                    }
                 ))
                 .globalize()
         }

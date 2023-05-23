@@ -76,6 +76,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         {
             let item: ItemUse = parse_quote! { use scrypto::prelude::MethodPermission::*; };
             use_statements.push(item);
+            let item: ItemUse = parse_quote! { use scrypto::prelude::MethodRoyalty::*; };
+            use_statements.push(item);
         }
 
 
@@ -183,8 +185,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl HasMethods for #bp_ident {
-            type BlueprintMethod = Method;
             type Permissions = Methods<MethodPermission>;
+            type Royalties = Methods<MethodRoyalty>;
         }
     };
 
@@ -808,6 +810,7 @@ mod tests {
                     use scrypto::prelude::*;
                     use super::*;
                     use scrypto::prelude::MethodPermission::*;
+                    use scrypto::prelude::MethodRoyalty::*;
 
                     #[derive(::scrypto::prelude::ScryptoSbor)]
                     pub struct Test {
@@ -833,24 +836,23 @@ mod tests {
                     }
 
                     impl HasMethods for Test {
-                        type BlueprintMethod = Method;
-                        type Permissions = MethodPermissions;
+                        type Permissions = Methods<MethodPermission>;
+                        type Royalties = Methods<MethodRoyalty>;
                     }
 
-                    pub struct MethodPermissions {
-                        x: MethodPermission,
+                    pub struct Methods<T> {
+                        x: t,
                     }
 
-                    impl ToPermissions for MethodPermissions {
+                    impl<T> MethodMapping<T> for Methods<T> {
                         const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
-                        fn to_permissions(self) -> Vec<(String, MethodPermission)> {
+                        fn to_mapping(self) -> Vec<(String, T)> {
                             vec![
                                 ("x".to_string(), self.x),
                             ]
                         }
                     }
-
 
                     #[derive(PartialEq, Eq, Ord, PartialOrd)]
                     #[allow(dead_code)]

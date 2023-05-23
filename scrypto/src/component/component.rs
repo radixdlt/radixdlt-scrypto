@@ -32,8 +32,8 @@ pub trait HasStub {
 }
 
 pub trait HasMethods {
-    type BlueprintMethod: ModuleMethod;
     type Permissions: MethodMapping<MethodPermission>;
+    type Royalties: MethodMapping<MethodRoyalty>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -192,15 +192,50 @@ impl<const N: usize> From<[&str; N]> for MethodPermission {
     }
 }
 
+pub enum MethodRoyalty {
+    Free,
+    Charge(u32),
+}
+
+impl From<u32> for MethodRoyalty {
+    fn from(value: u32) -> Self {
+        Self::Charge(value)
+    }
+}
+
+/*
 pub enum MethodPermissionMutability {
     Locked,
     Mutable(RoleList),
 }
+ */
 
 pub trait MethodMapping<T> {
     const MODULE_ID: ObjectModuleId;
 
     fn to_mapping(self) -> Vec<(String, T)>;
+}
+
+pub struct RoyaltyMethods<T> {
+    pub set_royalty_config: T,
+    pub claim_royalty: T,
+}
+
+
+impl<T> MethodMapping<T> for RoyaltyMethods<T> {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
+
+    fn to_mapping(self) -> Vec<(String, T)> {
+        vec![
+            (COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(), self.set_royalty_config),
+            (COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(), self.claim_royalty),
+        ]
+    }
+}
+
+pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
+    pub method_royalties: R,
+    pub permissions: RoyaltyMethods<MethodPermission>,
 }
 
 pub struct ProtectedMethods<M: ModuleMethod> {
@@ -219,24 +254,6 @@ impl<M: ModuleMethod> ProtectedMethods<M> {
     pub fn insert<L: Into<RoleList>>(&mut self, method: M, roles: L) {
         self.protected_methods
             .insert(method.to_ident(), roles.into());
-    }
-}
-
-pub struct Royalties<M: ModuleMethod> {
-    royalties: IndexMap<String, u32>,
-    phantom: PhantomData<M>,
-}
-
-impl<M: ModuleMethod> Royalties<M> {
-    pub fn new() -> Self {
-        Self {
-            royalties: index_map_new(),
-            phantom: PhantomData::default(),
-        }
-    }
-
-    pub fn insert(&mut self, method: M, royalty: u32) {
-        self.royalties.insert(method.to_ident(), royalty);
     }
 }
 
@@ -271,34 +288,6 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         }
     }
 
-    pub fn set_metadata(mut self, metadata: Metadata) -> Self {
-        if self.metadata.is_some() {
-            panic!("Metadata already set.");
-        }
-        self.metadata = Some(metadata);
-        self
-    }
-
-    pub fn set_royalties(mut self, royalties: Royalties<C::BlueprintMethod>) -> Self {
-        for (method, amount) in royalties.royalties {
-            self.royalty.set_rule(method, amount);
-        }
-        self
-    }
-
-    pub fn methods(mut self, permissions: C::Permissions) -> Self {
-        for (method, permissions) in permissions.to_mapping() {
-            match permissions {
-                MethodPermission::Public => {}
-                MethodPermission::Protected(role_list) => {
-                    self.protected_module_methods
-                        .insert(MethodKey::new(ObjectModuleId::Main, method), role_list);
-                }
-            }
-        }
-        self
-    }
-
     pub fn protect_metadata(
         mut self,
         protected_metadata_methods: ProtectedMethods<MetadataMethod>,
@@ -307,11 +296,41 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn protect_royalty(
-        mut self,
-        protected_royalty_methods: ProtectedMethods<RoyaltyMethod>,
-    ) -> Self {
-        self.protect(protected_royalty_methods);
+    pub fn set_metadata(mut self, metadata: Metadata) -> Self {
+        if self.metadata.is_some() {
+            panic!("Metadata already set.");
+        }
+        self.metadata = Some(metadata);
+        self
+    }
+
+    fn set_permissions<T: MethodMapping<MethodPermission>>(&mut self, permissions: T) {
+        for (method, permissions) in permissions.to_mapping() {
+            match permissions {
+                MethodPermission::Public => {}
+                MethodPermission::Protected(role_list) => {
+                    self.protected_module_methods
+                        .insert(MethodKey::new(T::MODULE_ID, method), role_list);
+                }
+            }
+        }
+    }
+
+    pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
+        for (method, royalty) in royalties.method_royalties.to_mapping() {
+            match royalty {
+                MethodRoyalty::Free => {}
+                MethodRoyalty::Charge(amount) => self.royalty.set_rule(method, amount),
+            }
+        }
+
+        self.set_permissions(royalties.permissions);
+
+        self
+    }
+
+    pub fn methods(mut self, permissions: C::Permissions) -> Self {
+        self.set_permissions(permissions);
         self
     }
 
