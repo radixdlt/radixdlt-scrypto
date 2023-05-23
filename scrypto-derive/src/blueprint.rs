@@ -203,23 +203,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     vec![]
                 }
             }
-
-            #[derive(PartialEq, Eq, Ord, PartialOrd)]
-            #[allow(dead_code)]
-            #[allow(non_camel_case_types)]
-            pub enum Method {
-                #(
-                    #method_idents,
-                )*
-            }
-
-            impl ModuleMethod for Method {
-                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
-
-                fn to_ident(&self) -> String {
-                    panic!();
-                }
-            }
         }
     } else {
         quote! {
@@ -239,27 +222,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         ,
                         )*
                     ]
-                }
-            }
-
-            #[derive(PartialEq, Eq, Ord, PartialOrd)]
-            #[allow(dead_code)]
-            #[allow(non_camel_case_types)]
-            pub enum Method {
-                #(
-                    #method_idents,
-                )*
-            }
-
-            impl ModuleMethod for Method {
-                const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
-
-                fn to_ident(&self) -> String {
-                    match self {
-                    #(
-                        Self::#method_idents => #method_names.to_string(),
-                    )*
-                    }
                 }
             }
         }
@@ -851,23 +813,6 @@ mod tests {
                             vec![
                                 ("x".to_string(), self.x),
                             ]
-                        }
-                    }
-
-                    #[derive(PartialEq, Eq, Ord, PartialOrd)]
-                    #[allow(dead_code)]
-                    #[allow(non_camel_case_types)]
-                    pub enum Method {
-                        x,
-                    }
-
-                    impl ModuleMethod for Method {
-                        const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
-
-                        fn to_ident(&self) -> String {
-                            match self {
-                                Self::x => "x".to_string(),
-                            }
                         }
                     }
 

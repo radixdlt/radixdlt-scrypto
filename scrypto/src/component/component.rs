@@ -139,48 +139,6 @@ impl<C: HasStub> Owned<C> {
     }
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub enum RoyaltyMethod {
-    set_royalty_config,
-    claim_royalty,
-}
-
-impl ModuleMethod for RoyaltyMethod {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
-
-    fn to_ident(&self) -> String {
-        match self {
-            RoyaltyMethod::claim_royalty => COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
-            RoyaltyMethod::set_royalty_config => {
-                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string()
-            }
-        }
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub enum MetadataMethod {
-    set,
-}
-
-impl ModuleMethod for MetadataMethod {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
-
-    fn to_ident(&self) -> String {
-        match self {
-            MetadataMethod::set => METADATA_SET_IDENT.to_string(),
-        }
-    }
-}
-
-pub trait ModuleMethod {
-    const MODULE_ID: ObjectModuleId;
-
-    fn to_ident(&self) -> String;
-}
-
 pub enum MethodPermission {
     Public,
     Protected(RoleList),
