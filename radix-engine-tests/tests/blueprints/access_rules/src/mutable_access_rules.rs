@@ -5,6 +5,7 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
+
         pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
@@ -13,6 +14,41 @@ mod mutable_access_rules_component {
                 .methods(methods! {
                     borrow_funds => ["borrow_funds_auth"];
                     deposit_funds => ["deposit_funds_auth"];
+                    set_authority_rules => Public;
+                    lock_authority => Public;
+                })
+                .globalize()
+        }
+
+        pub fn new_with_update_access_rule(update_access_rule: AccessRule) -> Global<MutableAccessRulesComponent> {
+            Self {}
+                .instantiate()
+                .prepare_to_globalize()
+                .define_roles(roles! {
+                    "borrow_funds_auth" => rule!(allow_all);
+                    "deposit_funds_auth" => rule!(require(RADIX_TOKEN)), ["deposit_funds_auth_update"];
+                    "deposit_funds_auth_update" => update_access_rule;
+                })
+                .methods(methods! {
+                    borrow_funds => ["borrow_funds_auth"];
+                    deposit_funds => ["deposit_funds_auth"];
+                    set_authority_rules => Public;
+                    lock_authority => Public;
+                })
+                .globalize()
+        }
+
+        pub fn new_with_owner(owner_update_access_rule: AccessRule) -> Global<MutableAccessRulesComponent> {
+            Self {}
+                .instantiate()
+                .prepare_to_globalize()
+                .define_roles(roles! {
+                    "owner" => rule!(require(RADIX_TOKEN)), ["owner_update"];
+                    "owner_update" => owner_update_access_rule;
+                })
+                .methods(methods! {
+                    borrow_funds => ["owner"];
+                    deposit_funds => ["owner"];
                     set_authority_rules => Public;
                     lock_authority => Public;
                 })
@@ -31,7 +67,7 @@ mod mutable_access_rules_component {
 
         pub fn lock_authority(&self, role: String) {
             let access_rules = Runtime::access_rules();
-            access_rules.define_role(role.as_str(), vec![]);
+            access_rules.set_role_mutability(role.as_str(), RoleList::none());
         }
 
         // The methods that the access rules will be added to

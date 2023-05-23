@@ -31,7 +31,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
                 vec![],
             );
             authority_rules.define_role(
-                "borrow_faunds_auth",
+                "borrow_funds_auth",
                 rule!(require("deposit_funds_auth")),
                 vec![],
             );
@@ -115,20 +115,9 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role(
-        "deposit_funds_auth_update",
-        rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        vec![],
+    let mut test_runner = MutableAccessRulesTestRunner::new2(
+        rule!(require(virtual_badge_non_fungible_global_id.clone()))
     );
-    authority_rules.define_role("borrow_funds_auth", rule!(allow_all), vec![]);
-    authority_rules.define_role(
-        "deposit_funds_auth",
-        rule!(require(RADIX_TOKEN)),
-        vec!["deposit_funds_auth_update"],
-    );
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules.clone());
 
     // Act
     let receipt = test_runner.set_authority_rule(RoleKey::new("deposit_funds"), rule!(allow_all));
@@ -145,20 +134,9 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role(
-        "deposit_funds_auth_update",
-        rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        vec![],
+    let mut test_runner = MutableAccessRulesTestRunner::new2(
+        rule!(require(virtual_badge_non_fungible_global_id.clone()))
     );
-    authority_rules.define_role("borrow_funds_auth", rule!(allow_all), vec![]);
-    authority_rules.define_role(
-        "deposit_funds_auth",
-        rule!(require(RADIX_TOKEN)),
-        vec!["deposit_funds_auth_update"],
-    );
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     let receipt = test_runner.lock_group_auth(RoleKey::new("deposit_funds_auth"));
@@ -175,20 +153,9 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role(
-        "deposit_funds_auth_update",
-        rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        vec![],
+    let mut test_runner = MutableAccessRulesTestRunner::new2(
+        rule!(require(virtual_badge_non_fungible_global_id.clone()))
     );
-    authority_rules.define_role("borrow_funds_auth", rule!(allow_all), vec![]);
-    authority_rules.define_role(
-        "deposit_funds_auth",
-        rule!(require(RADIX_TOKEN)),
-        vec!["deposit_funds_auth_update"],
-    );
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
@@ -205,20 +172,9 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role(
-        "deposit_funds_auth_update",
-        rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        vec![],
+    let mut test_runner = MutableAccessRulesTestRunner::new2(
+        rule!(require(virtual_badge_non_fungible_global_id.clone()))
     );
-    authority_rules.define_role("borrow_funds_auth", rule!(allow_all), vec![]);
-    authority_rules.define_role(
-        "deposit_funds_auth",
-        rule!(require(RADIX_TOKEN)),
-        vec!["deposit_funds_auth_update"],
-    );
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
@@ -242,18 +198,9 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role("deposit_funds_auth", rule!(require("owner")), vec!["owner"]);
-    authority_rules.define_role("borrow_funds_auth", rule!(require("owner")), vec!["owner"]);
-    authority_rules.define_role(
-        "owner_update",
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(
         rule!(require(virtual_badge_non_fungible_global_id.clone())),
-        vec![],
     );
-    authority_rules.define_role("owner", rule!(require(RADIX_TOKEN)), vec!["owner_update"]);
-
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
@@ -402,6 +349,64 @@ impl MutableAccessRulesTestRunner {
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    }
+
+    pub fn create_component2(
+        access_rule: AccessRule,
+        test_runner: &mut TestRunner,
+    ) -> TransactionReceipt {
+        let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+        let manifest = ManifestBuilder::new()
+            .call_function(
+                package_address,
+                Self::BLUEPRINT_NAME,
+                "new_with_update_access_rule",
+                manifest_args!(access_rule),
+            )
+            .build();
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    }
+
+    pub fn create_component_with_owner(
+        access_rule: AccessRule,
+        test_runner: &mut TestRunner,
+    ) -> TransactionReceipt {
+        let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
+
+        let manifest = ManifestBuilder::new()
+            .call_function(
+                package_address,
+                Self::BLUEPRINT_NAME,
+                "new_with_owner",
+                manifest_args!(access_rule),
+            )
+            .build();
+        test_runner.execute_manifest_ignoring_fee(manifest, vec![])
+    }
+
+    pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
+        let mut test_runner = TestRunner::builder().build();
+        let receipt = Self::create_component_with_owner(update_access_rule, &mut test_runner);
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        Self {
+            test_runner,
+            component_address,
+            initial_proofs: BTreeSet::new(),
+        }
+    }
+
+    pub fn new2(update_access_rule: AccessRule) -> Self {
+        let mut test_runner = TestRunner::builder().build();
+        let receipt = Self::create_component2(update_access_rule, &mut test_runner);
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        Self {
+            test_runner,
+            component_address,
+            initial_proofs: BTreeSet::new(),
+        }
     }
 
     pub fn new(authority_rules: Roles) -> Self {
