@@ -589,11 +589,17 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, Enum>(
         "name",
-        Enum<0u8>("MyResource"),
+        Enum<0u8>(
+            "MyResource"
+        ),
         "symbol",
-        Enum<0u8>("RSRC"),
+        Enum<0u8>(
+            "RSRC"
+        ),
         "description",
-        Enum<0u8>("A very innovative and important resource")
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),
@@ -637,11 +643,17 @@ CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, Enum>(
         "name",
-        Enum<0u8>("MyResource"),
+        Enum<0u8>(
+            "MyResource"
+        ),
         "symbol",
-        Enum<0u8>("RSRC"),
+        Enum<0u8>(
+            "RSRC"
+        ),
         "description",
-        Enum<0u8>("A very innovative and important resource")
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),
@@ -729,9 +741,13 @@ CREATE_NON_FUNGIBLE_RESOURCE
     )
     Map<String, Enum>(
         "name",
-        Enum<0u8>("MyResource"),
+        Enum<0u8>(
+            "MyResource"
+        ),
         "description",
-        Enum<0u8>("A very innovative and important resource"),
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
     )
     Map<Enum, Tuple>(
         Enum<4u8>(),

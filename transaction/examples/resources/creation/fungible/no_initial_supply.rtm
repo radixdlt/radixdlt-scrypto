@@ -18,9 +18,9 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, Enum>(
-        "name", Enum(0u8, "MyResource"),                                        # Resource Name
-        "symbol", Enum(0u8, "RSRC"),                                            # Resource Symbol
-        "description", Enum(0u8, "A very innovative and important resource")    # Resource Description
+        "name", Enum<"Metadata::String">("MyResource"),                                        # Resource Name
+        "symbol", Enum<"Metadata::String">("RSRC"),                                            # Resource Symbol
+        "description", Enum<"Metadata::String">("A very innovative and important resource")    # Resource Description
     ) 
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
