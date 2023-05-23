@@ -1,6 +1,7 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
+use crate::method_permissions;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -19,7 +20,6 @@ use radix_engine_interface::schema::BlueprintSchema;
 use radix_engine_interface::schema::{FunctionSchema, VirtualLazyLoadSchema};
 use radix_engine_interface::schema::{PackageSchema, ReceiverInfo};
 use resources_tracker_macro::trace_resources;
-use crate::method_permissions;
 
 const IDENTITY_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_EDDSA_ED25519_EXPORT_NAME: &str = "create_virtual_eddsa_ed25519";
@@ -188,7 +188,7 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
+    const SECURIFY_METHOD: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(

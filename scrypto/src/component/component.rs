@@ -4,7 +4,9 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -169,13 +171,22 @@ impl<T> MethodMapping<T> for RoyaltyMethods<T> {
 
     fn to_mapping(self) -> Vec<(String, T)> {
         vec![
-            (COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(), self.set_royalty_config),
-            (COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(), self.claim_royalty),
+            (
+                COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT.to_string(),
+                self.set_royalty_config,
+            ),
+            (
+                COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT.to_string(),
+                self.claim_royalty,
+            ),
         ]
     }
 
     fn methods() -> Vec<&'static str> {
-        vec![COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT]
+        vec![
+            COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
+            COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT,
+        ]
     }
 }
 
@@ -202,7 +213,11 @@ impl<T> MethodMapping<T> for MetadataMethods<T> {
     }
 
     fn methods() -> Vec<&'static str> {
-        vec![METADATA_SET_IDENT, METADATA_GET_IDENT, METADATA_REMOVE_IDENT]
+        vec![
+            METADATA_SET_IDENT,
+            METADATA_GET_IDENT,
+            METADATA_REMOVE_IDENT,
+        ]
     }
 }
 
@@ -217,7 +232,8 @@ pub struct Globalizing<C: HasStub> {
     pub metadata: Option<Metadata>,
     pub royalty: RoyaltyConfig,
     pub authority_rules: Roles,
-    pub method_permissions: IndexMap<ObjectModuleId, IndexMap<String, (MethodPermission, RoleList)>>,
+    pub method_permissions:
+        IndexMap<ObjectModuleId, IndexMap<String, (MethodPermission, RoleList)>>,
     pub address: Option<ComponentAddress>,
 }
 
@@ -277,7 +293,8 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             method_permissions.insert(method, (permission, RoleList::none()));
         }
 
-        self.method_permissions.insert(T::MODULE_ID, method_permissions);
+        self.method_permissions
+            .insert(T::MODULE_ID, method_permissions);
     }
 
     pub fn globalize(mut self) -> Global<C> {
@@ -289,7 +306,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             for method in C::Permissions::methods() {
                 method_permissions.insert(
                     MethodKey::new(ObjectModuleId::Main, method.to_string()),
-                    (MethodPermission::Public, RoleList::none())
+                    (MethodPermission::Public, RoleList::none()),
                 );
             }
         }

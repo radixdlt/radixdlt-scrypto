@@ -211,8 +211,10 @@ impl AuthModule {
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
-                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(AuthError::NoMethod(fn_identifier))));
-                        },
+                            return Err(RuntimeError::ModuleError(ModuleError::AuthError(
+                                AuthError::NoMethod(fn_identifier),
+                            )));
+                        }
                         ObjectKey::InnerBlueprint(..) => return Ok(()),
                     }
                 }

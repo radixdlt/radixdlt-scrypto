@@ -1,4 +1,5 @@
 use crate::errors::RuntimeError;
+use crate::method_permissions;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -7,10 +8,9 @@ use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, ME
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
+use radix_engine_interface::blueprints::resource::MethodPermission::Public;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use radix_engine_interface::blueprints::resource::MethodPermission::Public;
-use crate::method_permissions;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,

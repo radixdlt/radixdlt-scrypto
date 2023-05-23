@@ -3,6 +3,7 @@ use crate::blueprints::epoch_manager::{SYSTEM_AUTHORITY, VALIDATOR_AUTHORITY};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
+use crate::method_permissions;
 use crate::types::*;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -16,7 +17,6 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
-use crate::method_permissions;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct EpochManagerConfigSubstate {
@@ -259,10 +259,10 @@ impl EpochManagerBlueprint {
         Self::epoch_change(mgr.epoch, &config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_authority_rule_and_mutability(
-            RoleKey::new("self"),
-            AccessRule::DenyAll,
-            vec![],
+        access_rules.set_method_permission_and_mutability(
+            MethodKey::main(EPOCH_MANAGER_START_IDENT),
+            MethodPermission::Protected(RoleList::none()),
+            RoleList::none(),
             api,
         )?;
 

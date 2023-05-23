@@ -1,13 +1,15 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesSetMethodPermissionsAndMutabilityInput,
-    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
+    AccessRulesSetMethodPermissionAndMutabilityInput,
+    ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, ObjectKey, RoleKey, RoleList};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList,
+};
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;
 use sbor::rust::prelude::{Debug, ToOwned};
@@ -45,10 +47,10 @@ impl BorrowedObject {
         Ok(())
     }
 
-    pub fn set_authority_rule_and_mutability<Y, E>(
+    pub fn set_method_permission_and_mutability<Y, E>(
         &mut self,
-        authority_key: RoleKey,
-        rule: AccessRule,
+        method_key: MethodKey,
+        permission: MethodPermission,
         mutability: RoleList,
         api: &mut Y,
     ) -> Result<(), E>
@@ -60,11 +62,11 @@ impl BorrowedObject {
             &self.0,
             false,
             ObjectModuleId::AccessRules,
-            ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodPermissionsAndMutabilityInput {
+            ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodPermissionAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key,
-                rule,
+                method_key,
+                permission,
                 mutability,
             })
             .unwrap(),

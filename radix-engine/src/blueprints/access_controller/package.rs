@@ -1,10 +1,10 @@
 use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError, SystemUpstreamError};
-use crate::{event_schema, method_permissions};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
+use crate::{event_schema, method_permissions};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -1395,13 +1395,13 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.set_authority_rule(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
-    attached.set_authority_rule(
+    attached.define_role(RoleKey::new("primary"), rule_set.primary_role.clone(), api)?;
+    attached.define_role(
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
-    attached.set_authority_rule(
+    attached.define_role(
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),
         api,

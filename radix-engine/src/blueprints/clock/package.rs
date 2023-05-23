@@ -1,4 +1,5 @@
 use crate::errors::{RuntimeError, SystemUpstreamError};
+use crate::method_permissions;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
@@ -18,7 +19,6 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::time::*;
 use resources_tracker_macro::trace_resources;
-use crate::method_permissions;
 
 #[derive(Debug, Clone, Sbor, PartialEq, Eq)]
 pub struct ClockSubstate {

@@ -1,11 +1,15 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetMethodPermissionsAndMutabilityInput,
-    AccessRulesDefineRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
+    AccessRulesCreateInput, AccessRulesDefineRoleInput,
+    AccessRulesSetMethodPermissionAndMutabilityInput, AccessRulesSetRoleMutabilityInput,
+    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
+    ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
+    ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -21,7 +25,10 @@ impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
         method_permissions: BTreeMap<MethodKey, (MethodPermission, RoleList)>,
         authority_rules: Roles,
-        inner_blueprint_rules: BTreeMap<String, (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>)>,
+        inner_blueprint_rules: BTreeMap<
+            String,
+            (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>),
+        >,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -62,9 +69,14 @@ impl AccessRulesObject for AttachedAccessRules {
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
-    fn set_authority_rule<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+    fn define_role<
+        Y: ClientApi<E>,
+        E: Debug + ScryptoDecode,
+        R: Into<RoleKey>,
+        A: Into<AccessRule>,
+    >(
         &self,
-        authority_key: RoleKey,
+        role_key: R,
         entry: A,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -76,7 +88,7 @@ pub trait AccessRulesObject {
             ACCESS_RULES_DEFINE_ROLE_IDENT,
             scrypto_encode(&AccessRulesDefineRoleInput {
                 object_key: ObjectKey::SELF,
-                role_key: authority_key,
+                role_key: role_key.into(),
                 rule: entry.into(),
             })
             .unwrap(),
@@ -85,15 +97,43 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_authority_rule_and_mutability<
+    fn set_role_mutability<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
-        R: Into<AccessRule>,
+        R: Into<RoleKey>,
+        A: Into<RoleList>,
+    >(
+        &self,
+        role_key: R,
+        mutability: A,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let (node_id, module_id) = self.self_id();
+        let _rtn = api.call_method_advanced(
+            node_id,
+            false,
+            module_id,
+            ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetRoleMutabilityInput {
+                object_key: ObjectKey::SELF,
+                role_key: role_key.into(),
+                mutability: mutability.into(),
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
+    }
+
+    fn set_method_permission_and_mutability<
+        Y: ClientApi<E>,
+        E: Debug + ScryptoDecode,
+        P: Into<MethodPermission>,
         L: Into<RoleList>,
     >(
         &self,
-        authority_key: RoleKey,
-        rule: R,
+        method_key: MethodKey,
+        permission: P,
         mutability: L,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -102,11 +142,11 @@ pub trait AccessRulesObject {
             &node_id,
             false,
             module_id,
-            ACCESS_RULES_SET_AUTHORITY_RULE_AND_MUTABILITY_IDENT,
-            scrypto_encode(&AccessRulesSetMethodPermissionsAndMutabilityInput {
+            ACCESS_RULES_SET_METHOD_PERMISSION_AND_MUTABILITY_IDENT,
+            scrypto_encode(&AccessRulesSetMethodPermissionAndMutabilityInput {
                 object_key: ObjectKey::SELF,
-                authority_key,
-                rule: rule.into(),
+                method_key,
+                permission: permission.into(),
                 mutability: mutability.into(),
             })
             .unwrap(),

@@ -8,8 +8,8 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use utils::btreemap;
 
 use super::AccessRule;

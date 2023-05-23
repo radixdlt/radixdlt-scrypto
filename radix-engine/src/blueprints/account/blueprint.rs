@@ -4,6 +4,7 @@ use crate::blueprints::account::{
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::method_permissions;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -22,7 +23,6 @@ use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
-use crate::method_permissions;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -46,7 +46,7 @@ struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
+    const SECURIFY_METHOD: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(

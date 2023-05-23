@@ -3,6 +3,7 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
+use crate::method_permissions;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -22,7 +23,6 @@ use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
-use crate::method_permissions;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -787,7 +787,7 @@ struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
-    const SECURIFY_AUTHORITY: Option<&'static str> = None;
+    const SECURIFY_METHOD: Option<&'static str> = None;
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(

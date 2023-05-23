@@ -4,12 +4,14 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesSetRoleMutabilityInput,
-    AccessRulesDefineRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
+    AccessRulesCreateInput, AccessRulesDefineRoleInput, AccessRulesSetRoleMutabilityInput,
+    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
+    ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};

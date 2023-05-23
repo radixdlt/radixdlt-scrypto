@@ -80,7 +80,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use_statements.push(item);
         }
 
-
         use_statements
     };
 
