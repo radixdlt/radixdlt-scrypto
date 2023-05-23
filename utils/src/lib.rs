@@ -15,3 +15,20 @@ pub use contextual_display::*;
 #[cfg(feature = "serde")]
 pub use contextual_serialize::*;
 pub use slice::*;
+
+/// Each module should have its own prelude, which:
+/// * Adds preludes of upstream crates
+/// * Exports types with specific-enough names which mean they can safely be used downstream.
+///
+/// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
+/// This makes refactors easier, and makes integration into the node less painful.
+pub mod prelude {
+    // Add all rust types so that things work in no-std
+    pub use crate::rust::prelude::*;
+
+    // Export types and other useful methods
+    pub use crate::contextual_display::*;
+    #[cfg(feature = "serde")]
+    pub use crate::contextual_serialize::*;
+    pub use crate::slice::*;
+}

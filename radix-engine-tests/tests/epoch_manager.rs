@@ -14,9 +14,9 @@ use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::InstructionV1;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -149,20 +149,11 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch - 1)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -181,20 +172,11 @@ fn next_epoch_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -432,20 +414,11 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -504,20 +477,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let a_substate = test_runner.get_validator_info_by_key(&a_key);
@@ -619,20 +583,11 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
@@ -705,20 +660,11 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
@@ -860,7 +806,7 @@ impl RegisterAndStakeTransactionType {
         account_address: ComponentAddress,
         validator_address: ComponentAddress,
         faucet: GlobalAddress,
-    ) -> Vec<TransactionManifest> {
+    ) -> Vec<TransactionManifestV1> {
         match self {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
                 let manifest = ManifestBuilder::new()
@@ -1005,20 +951,11 @@ fn registered_validator_test(
     );
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1131,20 +1068,11 @@ fn test_registering_and_staking_many_validators() {
     }
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     let result = receipt.expect_commit(true);
     let next_epoch = result.next_epoch().expect("Should have next epoch");
@@ -1183,20 +1111,11 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1243,20 +1162,11 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1328,8 +1238,8 @@ fn cannot_claim_unstake_immediately() {
 #[test]
 fn can_claim_unstake_after_epochs() {
     // Arrange
-    let initial_epoch = 5u64;
-    let num_unstake_epochs = 7u64;
+    let initial_epoch = 5u32;
+    let num_unstake_epochs = 7u32;
     let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
@@ -1341,8 +1251,8 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
-        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
+        initial_epoch as u64,
+        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs as u64),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1393,6 +1303,547 @@ fn can_claim_unstake_after_epochs() {
 }
 
 #[test]
+fn owner_can_lock_stake_units() {
+    // Arrange
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        5,
+        dummy_epoch_manager_configuration(),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            validator_substate.stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(validator_substate.stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        test_runner.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
+        Some(stake_units_to_lock_amount)
+    );
+    assert_eq!(
+        test_runner.account_balance(validator_account, validator_substate.stake_unit_resource),
+        Some(total_stake_amount - stake_units_to_lock_amount)
+    )
+}
+
+#[test]
+fn owner_can_start_unlocking_stake_units() {
+    // Arrange
+    let initial_epoch = 7;
+    let unlock_epochs_delay = 2;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amount = dec!("0.1");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (start unlock)
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let substate = test_runner.get_validator_info(validator_address);
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        Some(stake_units_to_lock_amount - stake_units_to_unlock_amount) // subtracted from the locked vault
+    );
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        Some(stake_units_to_unlock_amount) // moved to the pending vault
+    );
+    assert_eq!(
+        substate.pending_owner_stake_unit_withdrawals, // scheduled for unlock in future
+        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_amount)
+    );
+    assert_eq!(
+        test_runner.account_balance(validator_account, stake_unit_resource),
+        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+    )
+}
+
+#[test]
+fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
+    // Arrange
+    let initial_epoch = 7;
+    let unlock_epochs_delay = 2;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amounts = vec![dec!("0.1"), dec!("0.3"), dec!("1.2")];
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (start unlock multiple times in a single epoch)
+    let stake_units_to_unlock_total_amount = stake_units_to_unlock_amounts.iter().cloned().sum();
+    for stake_units_to_unlock_amount in stake_units_to_unlock_amounts {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), 10.into())
+            .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+            .call_method(
+                validator_address,
+                VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(stake_units_to_unlock_amount),
+            )
+            .build();
+        test_runner
+            .execute_manifest(
+                manifest,
+                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            )
+            .expect_commit_success();
+    }
+
+    // Assert
+    let substate = test_runner.get_validator_info(validator_address);
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        Some(stake_units_to_lock_amount - stake_units_to_unlock_total_amount) // subtracted from the locked vault
+    );
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        Some(stake_units_to_unlock_total_amount) // moved to the pending vault
+    );
+    assert_eq!(
+        substate.pending_owner_stake_unit_withdrawals, // scheduled for unlock in future
+        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_total_amount)
+    );
+    assert_eq!(
+        test_runner.account_balance(validator_account, stake_unit_resource),
+        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+    )
+}
+
+#[test]
+fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate_field() {
+    // Arrange
+    let initial_epoch = 7;
+    let unlock_epochs_delay = 2;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("1.0");
+    let stake_units_to_unlock_amount = dec!("0.2");
+    let stake_units_to_unlock_next_amount = dec!("0.03");
+    let total_to_unlock_amount = stake_units_to_unlock_amount + stake_units_to_unlock_next_amount;
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Start unlock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (start unlock again after sufficient delay)
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_next_amount),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let substate = test_runner.get_validator_info(validator_address);
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        Some(stake_units_to_lock_amount - total_to_unlock_amount) // both amounts started unlocking
+    );
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        Some(total_to_unlock_amount) // both amounts are still locked (although one is ready to finish unlocking)
+    );
+    assert_eq!(
+        substate.already_unlocked_owner_stake_unit_amount, // the first unlock is moved to here
+        stake_units_to_unlock_amount
+    );
+    assert_eq!(
+        substate.pending_owner_stake_unit_withdrawals, // the "next unlock" is scheduled much later
+        btreemap!(initial_epoch + 2 * unlock_epochs_delay => stake_units_to_unlock_next_amount)
+    );
+}
+
+#[test]
+fn owner_can_finish_unlocking_stake_units_after_delay() {
+    // Arrange
+    let initial_epoch = 7;
+    let unlock_epochs_delay = 5;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amount = dec!("0.1");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Start unlock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (finish unlock after sufficient delay)
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(),
+        )
+        .call_method(
+            validator_account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let substate = test_runner.get_validator_info(validator_address);
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        Some(Decimal::zero()) // subtracted from the pending vault
+    );
+    assert_eq!(
+        substate.pending_owner_stake_unit_withdrawals,
+        btreemap!() // removed from the pending tracker
+    );
+    assert_eq!(
+        test_runner.account_balance(validator_account, stake_unit_resource),
+        Some(total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount)
+    )
+}
+
+#[test]
+fn owner_can_not_finish_unlocking_stake_units_before_delay() {
+    // Arrange
+    let initial_epoch = 7;
+    let unlock_epochs_delay = 5;
+    let total_stake_amount = dec!("10.5");
+    let stake_units_to_lock_amount = dec!("2.2");
+    let stake_units_to_unlock_amount = dec!("0.1");
+    let validator_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let genesis = CustomGenesis::single_validator_and_staker(
+        validator_key,
+        total_stake_amount,
+        validator_account,
+        initial_epoch,
+        dummy_epoch_manager_configuration()
+            .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let validator_address = test_runner.get_validator_with_key(&validator_key);
+    let stake_unit_resource = test_runner
+        .get_validator_info(validator_address)
+        .stake_unit_resource;
+
+    // Lock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .withdraw_from_account(
+            validator_account,
+            stake_unit_resource,
+            stake_units_to_lock_amount,
+        )
+        .take_all_from_worktop(stake_unit_resource, |builder, bucket| {
+            builder.call_method(
+                validator_address,
+                VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+                manifest_args!(bucket),
+            )
+        })
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Start unlock
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(stake_units_to_unlock_amount),
+        )
+        .build();
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+        )
+        .expect_commit_success();
+
+    // Act (finish unlock after insufficient delay)
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32 / 2);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .call_method(
+            validator_address,
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success(); // it is a success - simply unlocks nothing
+    let substate = test_runner.get_validator_info(validator_address);
+    assert_eq!(
+        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        Some(stake_units_to_unlock_amount) // still in the pending vault
+    );
+    assert_eq!(
+        substate.pending_owner_stake_unit_withdrawals, // still scheduled for unlock in future
+        btreemap!(initial_epoch + unlock_epochs_delay => stake_units_to_unlock_amount)
+    );
+    assert_eq!(
+        test_runner.account_balance(validator_account, stake_unit_resource),
+        Some(total_stake_amount - stake_units_to_lock_amount) // still NOT in the external vault
+    )
+}
+
+#[test]
 fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
@@ -1438,20 +1889,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::CallMethod {
+    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
         address: EPOCH_MANAGER.into(),
         method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
-    }];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
-        }
-        .get_executable(btreeset![AuthAddresses::validator_role()]),
-    );
+    }]);
 
     // Assert
     let result = receipt.expect_commit(true);
@@ -1475,26 +1917,21 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        // No validator proofs
+        btreeset![],
+        pre_allocated_ids,
     );
 
     // Assert
@@ -1512,27 +1949,20 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut pre_allocated_ids = BTreeSet::new();
     pre_allocated_ids.insert(EPOCH_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
-
-    let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
-        args: manifest_args!(
-            Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
-            1u64,
-            dummy_epoch_manager_configuration()
-        ),
-    }];
-    let blobs = vec![];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs,
-            nonce: 0,
-            pre_allocated_ids,
-        }
-        .get_executable(btreeset![AuthAddresses::system_role()]),
+    let receipt = test_runner.execute_system_transaction_with_preallocation(
+        vec![InstructionV1::CallFunction {
+            package_address: EPOCH_MANAGER_PACKAGE,
+            blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
+            function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            args: manifest_args!(
+                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
+                Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+                1u64,
+                dummy_epoch_manager_configuration()
+            ),
+        }],
+        btreeset![AuthAddresses::system_role()],
+        pre_allocated_ids,
     );
 
     // Assert

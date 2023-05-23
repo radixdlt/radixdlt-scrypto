@@ -7,8 +7,8 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::builder::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::TransactionManifest;
 
 #[test]
 fn initial_cyclic_authority_should_not_be_allowed() {
@@ -459,7 +459,7 @@ impl MutableAccessRulesTestRunner {
         ManifestBuilder::new()
     }
 
-    pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
+    pub fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
         self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }

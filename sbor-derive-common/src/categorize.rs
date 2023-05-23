@@ -48,22 +48,89 @@ fn handle_normal_categorize(
         build_custom_categorize_generic(&generics, &attrs, context_custom_value_kind, false)?;
 
     let output = match data {
-        Data::Struct(_) => quote! {
-            impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
-                #[inline]
-                fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
-                    ::sbor::ValueKind::Tuple
+        Data::Struct(s) => {
+            let FieldsData {
+                unskipped_field_names,
+                ..
+            } = process_fields_for_categorize(&s.fields)?;
+            let field_count = unskipped_field_names.len();
+            quote! {
+                impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
+                        ::sbor::ValueKind::Tuple
+                    }
+                }
+
+                impl #impl_generics ::sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #where_clause {
+                    fn get_length(&self) -> usize {
+                        #field_count
+                    }
                 }
             }
-        },
-        Data::Enum(_) => quote! {
-            impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
-                #[inline]
-                fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
-                    ::sbor::ValueKind::Enum
+        }
+        Data::Enum(DataEnum { variants, .. }) => {
+            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
+            let (discriminator_match_arms, field_count_match_arms): (Vec<_>, Vec<_>) = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let v_id = &v.ident;
+                    let discriminator = &discriminator_mapping[&i];
+
+                    let FieldsData {
+                        unskipped_field_count,
+                        empty_fields_unpacking,
+                        ..
+                    } = process_fields_for_encode(&v.fields)?;
+                    Ok((
+                        quote! { Self::#v_id #empty_fields_unpacking => #discriminator, },
+                        quote! { Self::#v_id #empty_fields_unpacking => #unskipped_field_count, },
+                    ))
+                })
+                .collect::<Result<Vec<_>>>()?
+                .into_iter()
+                .unzip();
+
+            let discriminator_match = if discriminator_match_arms.len() > 0 {
+                quote! {
+                    match self {
+                        #(#discriminator_match_arms)*
+                    }
+                }
+            } else {
+                quote! { 0 }
+            };
+
+            let field_count_match = if field_count_match_arms.len() > 0 {
+                quote! {
+                    match self {
+                        #(#field_count_match_arms)*
+                    }
+                }
+            } else {
+                quote! { 0 }
+            };
+
+            quote! {
+                impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
+                    #[inline]
+                    fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
+                        ::sbor::ValueKind::Enum
+                    }
+                }
+
+                impl #impl_generics ::sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #where_clause {
+                    fn get_discriminator(&self) -> u8 {
+                        #discriminator_match
+                    }
+
+                    fn get_length(&self) -> usize {
+                        #field_count_match
+                    }
                 }
             }
-        },
+        }
         Data::Union(_) => {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
@@ -88,6 +155,7 @@ fn handle_transparent_categorize(
     let output = match data {
         Data::Struct(s) => {
             let FieldsData {
+                unskipped_field_names,
                 unskipped_field_types,
                 ..
             } = process_fields_for_categorize(&s.fields)?;
@@ -95,14 +163,67 @@ fn handle_transparent_categorize(
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }
             let field_type = &unskipped_field_types[0];
+            let field_name = &unskipped_field_names[0];
 
-            quote! {
+            let categorize_impl = quote! {
                 impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                     #[inline]
                     fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
                         <#field_type as ::sbor::Categorize::<#sbor_cvk>>::value_kind()
                     }
                 }
+            };
+
+            // Dependent SborTuple impl:
+            // We'd like to just say "where #field_type: ::sbor::SborTuple" - but this doesn't work because of
+            // https://github.com/rust-lang/rust/issues/48214#issuecomment-1374378038
+            // Instead we can use that T: SborTuple => &T: SborTuple to apply a constraint on &T: SborTuple instead
+
+            // Rebuild the generic parameters without requiring categorize on generic parameters
+            let (impl_generics, ty_generics, where_clause, sbor_cvk) =
+                build_custom_categorize_generic(
+                    &generics,
+                    &attrs,
+                    context_custom_value_kind,
+                    false,
+                )?;
+
+            let tuple_where_clause = add_where_predicate(
+                where_clause,
+                parse_quote!(for<'b_> &'b_ #field_type: ::sbor::SborTuple <#sbor_cvk>),
+            );
+
+            let dependent_sbor_tuple_impl = quote! {
+                impl #impl_generics ::sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #tuple_where_clause {
+                    fn get_length(&self) -> usize {
+                        <&#field_type as ::sbor::SborTuple <#sbor_cvk>>::get_length(&&self.#field_name)
+                    }
+                }
+            };
+
+            let enum_where_clause = add_where_predicate(
+                where_clause,
+                parse_quote!(for<'b_> &'b_ #field_type: ::sbor::SborEnum <#sbor_cvk>),
+            );
+
+            let dependent_sbor_enum_impl = quote! {
+                impl #impl_generics ::sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #enum_where_clause {
+                    fn get_discriminator(&self) -> u8 {
+                        <&#field_type as ::sbor::SborEnum <#sbor_cvk>>::get_discriminator(&&self.#field_name)
+                    }
+
+                    fn get_length(&self) -> usize {
+                        <&#field_type as ::sbor::SborEnum <#sbor_cvk>>::get_length(&&self.#field_name)
+                    }
+                }
+            };
+
+            quote! {
+                #categorize_impl
+
+                #dependent_sbor_tuple_impl
+
+                #dependent_sbor_enum_impl
             }
         }
         Data::Enum(_) => {
@@ -141,6 +262,12 @@ mod tests {
                         ::sbor::ValueKind::Tuple
                     }
                 }
+
+                impl<X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test {
+                    fn get_length(&self) -> usize {
+                        1usize
+                    }
+                }
             },
         );
     }
@@ -161,6 +288,26 @@ mod tests {
                         <u32 as ::sbor::Categorize::<X>>::value_kind()
                     }
                 }
+
+                impl<X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test
+                    where for <'b_> &'b_ u32: ::sbor::SborTuple<X>
+                {
+                    fn get_length(&self) -> usize {
+                        <&u32 as ::sbor::SborTuple<X>>::get_length(&&self.a)
+                    }
+                }
+
+                impl<X: ::sbor::CustomValueKind> ::sbor::SborEnum<X> for Test
+                    where for <'b_> &'b_ u32: ::sbor::SborEnum<X>
+                {
+                    fn get_discriminator(&self) -> u8 {
+                        <&u32 as ::sbor::SborEnum<X>>::get_discriminator(&&self.a)
+                    }
+
+                    fn get_length(&self) -> usize {
+                        <&u32 as ::sbor::SborEnum<X>>::get_length(&&self.a)
+                    }
+                }
             },
         );
     }
@@ -177,6 +324,12 @@ mod tests {
                     #[inline]
                     fn value_kind() -> ::sbor::ValueKind<X> {
                         ::sbor::ValueKind::Tuple
+                    }
+                }
+
+                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test<A> {
+                    fn get_length(&self) -> usize {
+                        1usize
                     }
                 }
             },
@@ -197,6 +350,26 @@ mod tests {
                         <A as ::sbor::Categorize::<X>>::value_kind()
                     }
                 }
+
+                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test<A>
+                    where for <'b_> &'b_ A: ::sbor::SborTuple<X>
+                {
+                    fn get_length(&self) -> usize {
+                        <&A as ::sbor::SborTuple<X>>::get_length(&&self.a)
+                    }
+                }
+
+                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborEnum<X> for Test<A>
+                    where for <'b_> &'b_ A: ::sbor::SborEnum<X>
+                {
+                    fn get_discriminator(&self) -> u8 {
+                        <&A as ::sbor::SborEnum<X>>::get_discriminator(&&self.a)
+                    }
+
+                    fn get_length(&self) -> usize {
+                        <&A as ::sbor::SborEnum<X>>::get_length(&&self.a)
+                    }
+                }
             },
         );
     }
@@ -213,6 +386,24 @@ mod tests {
                     #[inline]
                     fn value_kind() -> ::sbor::ValueKind<X> {
                         ::sbor::ValueKind::Enum
+                    }
+                }
+
+                impl <X: ::sbor::CustomValueKind>  ::sbor::SborEnum<X> for Test {
+                    fn get_discriminator(&self) -> u8 {
+                        match self {
+                            Self::A => 0u8,
+                            Self::B(_) => 1u8,
+                            Self::C { .. } => 2u8,
+                        }
+                    }
+
+                    fn get_length(&self) -> usize {
+                        match self {
+                            Self::A => 0,
+                            Self::B(_) => 1,
+                            Self::C { .. } => 1,
+                        }
                     }
                 }
             },

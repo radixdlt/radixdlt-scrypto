@@ -1,14 +1,13 @@
 use radix_engine_interface::network::NetworkDefinition;
-use scrypto::prelude::hash;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
+use transaction::builder::TransactionManifestV1;
 use transaction::errors::TransactionValidationError;
 use transaction::manifest::{decompile, DecompileError};
-use transaction::model::TransactionManifest;
 use transaction::validation::NotarizedTransactionValidator;
 
 pub fn dump_manifest_to_file_system<P>(
-    manifest: &TransactionManifest,
+    manifest: &TransactionManifestV1,
     directory_path: P,
     network_definition: &NetworkDefinition,
 ) -> Result<(), DumpManifestError>
@@ -34,14 +33,13 @@ where
     }
 
     // Write all of the blobs to the specified path
-    for blob in &manifest.blobs {
-        let blob_hash = hash(blob);
-        let blob_path = path.join(format!("{blob_hash}.blob"));
-        std::fs::write(blob_path, blob)?;
+    for (hash, blob_content) in &manifest.blobs {
+        let blob_path = path.join(format!("{hash}.blob"));
+        std::fs::write(blob_path, blob_content)?;
     }
 
     // Validate the manifest
-    NotarizedTransactionValidator::validate_manifest(manifest)?;
+    NotarizedTransactionValidator::validate_instructions(&manifest.instructions)?;
 
     Ok(())
 }

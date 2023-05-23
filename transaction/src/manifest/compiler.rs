@@ -4,8 +4,8 @@ use radix_engine_interface::network::NetworkDefinition;
 
 use sbor::rust::collections::BTreeMap;
 
+use crate::builder::TransactionManifestV1;
 use crate::manifest::*;
-use crate::model::TransactionManifest;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {
@@ -18,7 +18,7 @@ pub fn compile(
     s: &str,
     network: &NetworkDefinition,
     blobs: Vec<Vec<u8>>,
-) -> Result<TransactionManifest, CompileError> {
+) -> Result<TransactionManifestV1, CompileError> {
     let bech32_decoder = Bech32Decoder::new(network);
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;

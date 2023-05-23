@@ -4,8 +4,8 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::manifest_decode;
 use std::path::PathBuf;
 use std::str::FromStr;
+use transaction::builder::TransactionManifestV1;
 use transaction::manifest::decompile;
-use transaction::model::TransactionManifest;
 
 /// Radix transaction manifest decompiler
 #[derive(Parser, Debug)]
@@ -44,13 +44,14 @@ pub fn run() -> Result<(), Error> {
         Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
     };
-    let manifest = manifest_decode::<TransactionManifest>(&content).map_err(Error::DecodeError)?;
+    let manifest =
+        manifest_decode::<TransactionManifestV1>(&content).map_err(Error::DecodeError)?;
     let result = decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
     std::fs::write(&args.output, &result).map_err(Error::IoError)?;
 
     if args.export_blobs {
         let directory = args.output.parent().unwrap();
-        for blob in manifest.blobs {
+        for blob in manifest.blobs.values() {
             let blob_hash = hash(&blob);
             std::fs::write(directory.join(format!("{}.blob", blob_hash)), &blob)
                 .map_err(Error::IoError)?;
