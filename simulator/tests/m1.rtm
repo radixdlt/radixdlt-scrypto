@@ -4,4 +4,4 @@ CALL_METHOD Address("${account}") "lock_fee" Decimal("10");
 CALL_FUNCTION Address("${package}") "Hello" "instantiate_hello";
 
 # Clean up - deposit resources
-CALL_METHOD Address("${account}") "try_deposit_batch" Expression("ENTIRE_WORKTOP");
+CALL_METHOD Address("${account}") "try_deposit_batch_abort_on_failure" Expression("ENTIRE_WORKTOP");

@@ -244,28 +244,29 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 // Account Transition Deposit Mode
 //=================================
 
-pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT: &str = "change_allowed_deposits_mode";
+pub const ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT: &str =
+    "change_account_default_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountChangeAllowedDepositsModeInput {
-    pub deposit_mode: AccountDefaultDepositRule,
+pub struct AccountChangeAccountDefaultDepositRuleInput {
+    pub default_deposit_rule: AccountDefaultDepositRule,
 }
 
-pub type AccountChangeAllowedDepositsModeOutput = ();
+pub type AccountChangeAccountDefaultDepositRuleOutput = ();
 
 //============================
-// Configure Resource Deposit
+// Configure Resource Deposit Rule
 //============================
 
-pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT: &str = "configure_resource_deposit";
+pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT: &str = "configure_resource_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountConfigureResourceDepositInput {
+pub struct AccountConfigureResourceDepositRuleInput {
     pub resource_address: ResourceAddress,
     pub resource_deposit_configuration: ResourceDepositRule,
 }
 
-pub type AccountConfigureResourceDepositOutput = ();
+pub type AccountConfigureResourceDepositRuleOutput = ();
 
 //=====================
 // Account Try Deposit

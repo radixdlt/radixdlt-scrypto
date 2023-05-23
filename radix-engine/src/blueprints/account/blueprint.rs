@@ -21,7 +21,7 @@ use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
-    deposits_mode: AccountDefaultDepositRule,
+    default_deposit_rule: AccountDefaultDepositRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -30,10 +30,10 @@ pub enum AccountError {
         resource_address: ResourceAddress,
     },
     AccountIsNotInAllowListDepositsMode {
-        deposits_mode: AccountDefaultDepositRule,
+        default_deposit_rule: AccountDefaultDepositRule,
     },
     AccountIsNotInDisallowListDepositsMode {
-        deposits_mode: AccountDefaultDepositRule,
+        default_deposit_rule: AccountDefaultDepositRule,
     },
     DepositIsDisallowed {
         resource_address: ResourceAddress,
@@ -131,12 +131,12 @@ impl SecurifiedAccessRules for SecurifiedAccount {
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT,
+            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
         authority_rules.set_main_authority_rule(
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT,
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
             rule!(require_owner()),
             rule!(deny_all),
         );
@@ -297,7 +297,7 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             None,
             vec![scrypto_encode(&AccountSubstate {
-                deposits_mode: AccountDefaultDepositRule::Accept,
+                default_deposit_rule: AccountDefaultDepositRule::Accept,
             })
             .unwrap()],
             btreemap!(),
@@ -579,8 +579,8 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn change_allowed_deposits_mode<Y>(
-        deposits_mode: AccountDefaultDepositRule,
+    pub fn change_account_default_deposit_rule<Y>(
+        default_deposit_rule: AccountDefaultDepositRule,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -590,7 +590,7 @@ impl AccountBlueprint {
         let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
-        account.deposits_mode = deposits_mode;
+        account.default_deposit_rule = default_deposit_rule;
 
         api.field_lock_write_typed(handle, account)?;
         api.field_lock_release(handle)?;
@@ -598,7 +598,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn configure_resource_deposit<Y>(
+    pub fn configure_resource_deposit_rule<Y>(
         resource_address: ResourceAddress,
         resource_deposit_configuration: ResourceDepositRule,
         api: &mut Y,
@@ -635,7 +635,9 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    fn get_current_deposits_mode<Y>(api: &mut Y) -> Result<AccountDefaultDepositRule, RuntimeError>
+    fn get_current_default_deposit_rule<Y>(
+        api: &mut Y,
+    ) -> Result<AccountDefaultDepositRule, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -643,10 +645,10 @@ impl AccountBlueprint {
         let handle =
             api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
-        let deposits_mode = account.deposits_mode;
+        let default_deposit_rule = account.default_deposit_rule;
         api.field_lock_release(handle)?;
 
-        Ok(deposits_mode)
+        Ok(default_deposit_rule)
     }
 
     fn get_vault<F, Y, R>(
@@ -715,11 +717,11 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Read the account's current deposit operation mode
-        let deposits_mode = Self::get_current_deposits_mode(api)?;
+        let default_deposit_rule = Self::get_current_default_deposit_rule(api)?;
         let resource_deposits_configuration =
             Self::get_resource_deposit_configuration(resource_address, api)?;
 
-        let is_deposit_allowed = match (deposits_mode, resource_deposits_configuration) {
+        let is_deposit_allowed = match (default_deposit_rule, resource_deposits_configuration) {
             // Case: Account is in allow all mode and the resource is not in the deny list
             (
                 AccountDefaultDepositRule::Accept,

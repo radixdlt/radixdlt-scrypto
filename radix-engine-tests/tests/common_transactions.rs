@@ -180,7 +180,7 @@ fn minting_of_non_fungible_resource_succeeds() {
 }
 
 #[test]
-fn changing_account_deposits_mode_succeeds() {
+fn changing_account_default_deposit_rule_succeeds() {
     test_manifest_with_restricted_minting_resource(
         ResourceType::Fungible { divisibility: 18 },
         |account_address,

@@ -215,26 +215,28 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT.to_string(),
+            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeInput>(),
+                    .add_child_type_and_descendents::<AccountChangeAccountDefaultDepositRuleInput>(
+                    ),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeOutput>(),
-                export_name: ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountChangeAccountDefaultDepositRuleOutput>(
+                    ),
+                export_name: ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT.to_string(),
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositInput>(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountConfigureResourceDepositOutput>(),
-                export_name: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleOutput>(),
+                export_name: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
@@ -592,26 +594,30 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT => {
+            ACCOUNT_CHANGE_ACCOUNT_DEFAULT_DEPOSIT_RULE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountChangeAllowedDepositsModeInput { deposit_mode } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::change_allowed_deposits_mode(deposit_mode, api)?;
+                let AccountChangeAccountDefaultDepositRuleInput {
+                    default_deposit_rule,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::change_account_default_deposit_rule(
+                    default_deposit_rule,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_IDENT => {
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountConfigureResourceDepositInput {
+                let AccountConfigureResourceDepositRuleInput {
                     resource_address,
                     resource_deposit_configuration,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = AccountBlueprint::configure_resource_deposit(
+                let rtn = AccountBlueprint::configure_resource_deposit_rule(
                     resource_address,
                     resource_deposit_configuration,
                     api,
