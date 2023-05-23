@@ -1,4 +1,4 @@
-use radix_engine_interface::blueprints::epoch_manager::TimePrecision;
+use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use radix_engine_interface::time::UtcDateTime;
 use scrypto_unit::*;
 

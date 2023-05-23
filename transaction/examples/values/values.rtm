@@ -48,7 +48,7 @@ CALL_METHOD
     # Address
     Address("${package_address}")
     Address("${account_address}")
-    Address("${epochmanager_address}")
+    Address("${consensusmanager_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
 

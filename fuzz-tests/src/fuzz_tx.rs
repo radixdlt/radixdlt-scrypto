@@ -11,7 +11,7 @@ use radix_engine_interface::api::node_modules::royalty::{
 };
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::resource::{FromPublicKey, NonFungibleGlobalId};
 #[cfg(feature = "dummy_fuzzing")]
@@ -70,7 +70,7 @@ pub struct TxFuzzer {
 impl TxFuzzer {
     pub fn new() -> Self {
         let mut runner = TestRunner::builder().without_trace().build();
-        let mut component_addresses = vec![EPOCH_MANAGER, CLOCK, GENESIS_HELPER, FAUCET];
+        let mut component_addresses = vec![CONSENSUS_MANAGER, CLOCK, GENESIS_HELPER, FAUCET];
         let mut all_resource_addresses = vec![
             RADIX_TOKEN,
             ECDSA_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
@@ -89,7 +89,7 @@ impl TxFuzzer {
             PACKAGE_PACKAGE,
             RESOURCE_PACKAGE,
             IDENTITY_PACKAGE,
-            EPOCH_MANAGER_PACKAGE,
+            CONSENSUS_MANAGER_PACKAGE,
             CLOCK_PACKAGE,
             ACCOUNT_PACKAGE,
             ACCESS_CONTROLLER_PACKAGE,
@@ -488,11 +488,11 @@ impl TxFuzzer {
                 }
                 // CreateValidator
                 27 => {
-                    let input = EpochManagerCreateValidatorInput { key: public_key };
+                    let input = ConsensusManagerCreateValidatorInput { key: public_key };
 
                     Some(Instruction::CallMethod { 
                         address: component_address.into(),
-                        method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                        method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                         args: to_manifest_value(&input),
                     })
                 }

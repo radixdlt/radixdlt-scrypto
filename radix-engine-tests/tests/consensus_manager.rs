@@ -1,4 +1,4 @@
-use radix_engine::blueprints::epoch_manager::{
+use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
 use radix_engine::errors::{ApplicationError, ModuleError, RuntimeError};
@@ -6,7 +6,7 @@ use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use rand::prelude::SliceRandom;
 use rand::Rng;
@@ -63,7 +63,7 @@ fn genesis_epoch_has_correct_initial_validators() {
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_epoch_manager_configuration()
+        initial_configuration: dummy_consensus_manager_configuration()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
     };
@@ -87,14 +87,14 @@ fn genesis_epoch_has_correct_initial_validators() {
 fn get_epoch_should_succeed() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "EpochManagerTest",
+            "ConsensusManagerTest",
             "get_epoch",
             manifest_args![],
         )
@@ -110,7 +110,7 @@ fn get_epoch_should_succeed() {
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/consensus_manager");
 
     // Act
     let round = 9876u64;
@@ -118,13 +118,13 @@ fn next_round_without_supervisor_auth_fails() {
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_function(
             package_address,
-            "EpochManagerTest",
+            "ConsensusManagerTest",
             "next_round",
-            manifest_args!(EPOCH_MANAGER, round),
+            manifest_args!(CONSENSUS_MANAGER, round),
         )
         .call_function(
             package_address,
-            "EpochManagerTest",
+            "ConsensusManagerTest",
             "get_epoch",
             manifest_args!(),
         )
@@ -144,14 +144,14 @@ fn next_round_with_validator_auth_succeeds() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch - 1)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -176,14 +176,14 @@ fn next_epoch_with_validator_auth_succeeds() {
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -215,7 +215,7 @@ fn register_validator_with_auth_succeeds() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -248,7 +248,7 @@ fn register_validator_without_auth_fails() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -279,7 +279,7 @@ fn unregister_validator_with_auth_succeeds() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -312,7 +312,7 @@ fn unregister_validator_without_auth_fails() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -342,7 +342,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&pub_key);
@@ -415,7 +415,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
@@ -433,8 +433,8 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -496,7 +496,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_epoch_manager_configuration()
+        initial_configuration: dummy_consensus_manager_configuration()
             .with_rounds_per_epoch(1)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
@@ -505,9 +505,9 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value(&EpochManagerNextRoundInput::successful(1, 0)),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        args: to_manifest_value(&ConsensusManagerNextRoundInput::successful(1, 0)),
     }];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -611,7 +611,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         validator_initial_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_rounds_per_epoch(rounds_per_epoch)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
@@ -620,8 +620,8 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -697,7 +697,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         validator_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
-        dummy_epoch_manager_configuration()
+        dummy_consensus_manager_configuration()
             .with_rounds_per_epoch(rounds_per_epoch)
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
@@ -706,8 +706,8 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     // Act
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -829,7 +829,7 @@ fn create_custom_genesis(
     let genesis = CustomGenesis {
         genesis_data_chunks,
         initial_epoch,
-        initial_configuration: dummy_epoch_manager_configuration()
+        initial_configuration: dummy_consensus_manager_configuration()
             .with_max_validators(max_validators as u32)
             .with_rounds_per_epoch(rounds_per_epoch),
         initial_time_ms: 1,
@@ -1006,8 +1006,8 @@ fn registered_validator_test(
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -1132,8 +1132,8 @@ fn test_registering_and_staking_many_validators() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -1167,7 +1167,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1184,8 +1184,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -1220,7 +1220,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1244,8 +1244,8 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -1284,7 +1284,7 @@ fn cannot_claim_unstake_immediately() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        dummy_epoch_manager_configuration(),
+        dummy_consensus_manager_configuration(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1342,7 +1342,7 @@ fn can_claim_unstake_after_epochs() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        dummy_epoch_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
+        dummy_consensus_manager_configuration().with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1410,7 +1410,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        dummy_epoch_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
+        dummy_consensus_manager_configuration().with_rounds_per_epoch(rounds_per_epoch),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1439,8 +1439,8 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 
     // Act
     let instructions = vec![Instruction::CallMethod {
-        address: EPOCH_MANAGER.into(),
-        method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+        address: CONSENSUS_MANAGER.into(),
+        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
         args: to_manifest_value(&next_round_after_gap(rounds_per_epoch)),
     }];
     let receipt = test_runner.execute_transaction(
@@ -1467,23 +1467,23 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 }
 
 #[test]
-fn epoch_manager_create_should_fail_with_supervisor_privilege() {
+fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(EPOCH_MANAGER.into());
+    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
     let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+        package_address: CONSENSUS_MANAGER_PACKAGE,
+        blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+        function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
             Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+            Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
             1u64,
-            dummy_epoch_manager_configuration(),
+            dummy_consensus_manager_configuration(),
             120000i64
         ),
     }];
@@ -1505,24 +1505,24 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 }
 
 #[test]
-fn epoch_manager_create_should_succeed_with_system_privilege() {
+fn consensus_manager_create_should_succeed_with_system_privilege() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
     // Act
     let mut pre_allocated_ids = BTreeSet::new();
-    pre_allocated_ids.insert(EPOCH_MANAGER.into());
+    pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
 
     let instructions = vec![Instruction::CallFunction {
-        package_address: EPOCH_MANAGER_PACKAGE,
-        blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-        function_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+        package_address: CONSENSUS_MANAGER_PACKAGE,
+        blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+        function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
         args: manifest_args!(
             Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-            Into::<[u8; NodeId::LENGTH]>::into(EPOCH_MANAGER),
+            Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
             1u64,
-            dummy_epoch_manager_configuration(),
+            dummy_consensus_manager_configuration(),
             120000i64
         ),
     }];
@@ -1541,8 +1541,8 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     receipt.expect_commit_success();
 }
 
-fn next_round_after_gap(current_round: u64) -> EpochManagerNextRoundInput {
-    EpochManagerNextRoundInput {
+fn next_round_after_gap(current_round: u64) -> ConsensusManagerNextRoundInput {
+    ConsensusManagerNextRoundInput {
         round: current_round,
         leader_proposal_history: LeaderProposalHistory {
             gap_round_leaders: (1..current_round).map(|_| 0).collect(),
@@ -1552,8 +1552,8 @@ fn next_round_after_gap(current_round: u64) -> EpochManagerNextRoundInput {
     }
 }
 
-fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
-    EpochManagerInitialConfiguration {
+fn dummy_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
+    ConsensusManagerInitialConfiguration {
         max_validators: 10,
         rounds_per_epoch: 5,
         num_unstake_epochs: 1,

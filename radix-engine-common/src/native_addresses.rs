@@ -129,10 +129,10 @@ pub const IDENTITY_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     127, 143, 23, 156, 166, 49, 140, 99, 24, 198,
 ]);
 
-/// The native package for the epoch manager.
-pub const EPOCH_MANAGER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
-    13, 144, 99, 24, 198, 49, 140, 108, 135, 23, 218, 12, 99, 24, 198, 49, 140, 247, 191, 197, 242,
-    149, 31, 42, 134, 49, 140, 99, 24, 198,
+/// The native package for the consensus manager.
+pub const CONSENSUS_MANAGER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 144, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247, 191, 213, 212,
+    95, 72, 198, 134, 49, 140, 99, 24, 198,
 ]);
 
 /// The native package for the clock.
@@ -186,10 +186,10 @@ pub const FAUCET_BLUEPRINT: &str = "Faucet";
 // SYSTEM SINGLETON COMPONENTS - NATIVE
 //=========================================================================
 
-/// The epoch manager native component - in charge of validators, consensus and epochs.
-pub const EPOCH_MANAGER: ComponentAddress = ComponentAddress::new_or_panic([
-    134, 76, 99, 24, 198, 49, 140, 108, 134, 251, 64, 204, 99, 24, 198, 49, 140, 247, 150, 52, 85,
-    30, 250, 28, 166, 49, 140, 99, 24, 198,
+/// The consensus manager native component - in charge of validators, consensus and epochs.
+pub const CONSENSUS_MANAGER: ComponentAddress = ComponentAddress::new_or_panic([
+    134, 12, 99, 24, 198, 49, 140, 108, 78, 27, 64, 204, 99, 24, 198, 49, 140, 247, 188, 165, 46,
+    181, 74, 106, 134, 49, 140, 99, 24, 198,
 ]);
 
 //=========================================================================
@@ -300,9 +300,9 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxdntyxx",
         );
         check_address(
-            EPOCH_MANAGER_PACKAGE.as_ref(),
+            CONSENSUS_MANAGER_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
-            "package_rdx1pkgxxxxxxxxxepchmgxxxxxxxxx000797223725xxxxxxxxxepchmg",
+            "package_rdx1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxcnsmgr",
         );
         check_address(
             ACCESS_CONTROLLER_PACKAGE.as_ref(),
@@ -342,9 +342,9 @@ mod tests {
 
         // System singleton components - native
         check_address(
-            EPOCH_MANAGER.as_ref(),
-            EntityType::GlobalEpochManager,
-            "epochmanager_rdx1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxxephmgr",
+            CONSENSUS_MANAGER.as_ref(),
+            EntityType::GlobalConsensusManager,
+            "consensusmanager_rdx1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxcnsmgr",
         );
 
         // System singleton components - scrypto

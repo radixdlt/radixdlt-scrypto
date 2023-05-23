@@ -1,4 +1,4 @@
-use scrypto::blueprints::epoch_manager::*;
+use scrypto::blueprints::consensus_manager::*;
 use scrypto::prelude::*;
 
 #[blueprint]

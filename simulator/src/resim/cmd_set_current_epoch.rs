@@ -1,8 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerSetEpochInput, EPOCH_MANAGER_SET_EPOCH_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerSetEpochInput, CONSENSUS_MANAGER_SET_EPOCH_IDENT,
 };
 use transaction::model::Instruction;
 
@@ -22,9 +22,9 @@ pub struct SetCurrentEpoch {
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch: self.epoch }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerSetEpochInput { epoch: self.epoch }),
         }];
 
         let blobs = vec![];

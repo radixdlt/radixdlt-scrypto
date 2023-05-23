@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::blueprints::epoch_manager::*;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
@@ -30,14 +30,15 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerGetCurrentEpochInput, EpochManagerGetCurrentTimeInput,
-    EpochManagerInitialConfiguration, EpochManagerSetCurrentTimeInput, EpochManagerSetEpochInput,
-    TimePrecision, EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT, EPOCH_MANAGER_GET_CURRENT_TIME_IDENT,
-    EPOCH_MANAGER_SET_CURRENT_TIME_IDENT, EPOCH_MANAGER_SET_EPOCH_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
+    ConsensusManagerInitialConfiguration, ConsensusManagerSetCurrentTimeInput,
+    ConsensusManagerSetEpochInput, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
+    CONSENSUS_MANAGER_SET_EPOCH_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::data::manifest::to_manifest_value;
 use radix_engine_interface::math::Decimal;
@@ -128,14 +129,14 @@ impl Compile {
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
     pub initial_epoch: u64,
-    pub initial_configuration: EpochManagerInitialConfiguration,
+    pub initial_configuration: ConsensusManagerInitialConfiguration,
     pub initial_time_ms: i64,
 }
 
 impl CustomGenesis {
     pub fn default(
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
     ) -> CustomGenesis {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
             .unwrap()
@@ -154,7 +155,7 @@ impl CustomGenesis {
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
         initial_epoch: u64,
-        initial_configuration: EpochManagerInitialConfiguration,
+        initial_configuration: ConsensusManagerInitialConfiguration,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
         let genesis_data_chunks = vec![
@@ -587,9 +588,9 @@ impl TestRunner {
         let substate = self
             .substate_db()
             .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
-                EPOCH_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER.as_node_id(),
                 OBJECT_BASE_PARTITION,
-                &EpochManagerField::CurrentValidatorSet.into(),
+                &ConsensusManagerField::CurrentValidatorSet.into(),
             )
             .unwrap();
 
@@ -1173,9 +1174,9 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetEpochInput { epoch }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerSetEpochInput { epoch }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1194,9 +1195,9 @@ impl TestRunner {
 
     pub fn get_current_epoch(&mut self) -> u64 {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentEpochInput),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
         }];
 
         let blobs = vec![];
@@ -1242,9 +1243,9 @@ impl TestRunner {
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerSetCurrentTimeInput { current_time_ms }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput { current_time_ms }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -1263,9 +1264,9 @@ impl TestRunner {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let instructions = vec![Instruction::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerGetCurrentTimeInput { precision }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
         }];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

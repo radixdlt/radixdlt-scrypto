@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::*;
+use crate::blueprints::consensus_manager::*;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -17,7 +17,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
@@ -66,7 +66,7 @@ pub struct ValidatorSubstate {
     /// A vault holding the SUs that this validator's owner voluntarily decided to temporarily lock
     /// here, as a public display of their confidence in this validator's future reliability.
     /// Withdrawing SUs from this vault is subject to a delay (which is configured separately from
-    /// the regular unstaking delay, see [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`]).
+    /// the regular unstaking delay, see [`ConsensusManagerConfigSubstate.num_owner_stake_units_unlock_epochs`]).
     /// This vault is private to the owner (i.e. the owner's badge is required for any interaction
     /// with this vault).
     pub locked_owner_stake_unit_vault_id: Own,
@@ -89,7 +89,7 @@ pub struct ValidatorSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
-    /// Note: on unstake, it is fixed to be [`EpochManagerConfigSubstate.num_unstake_epochs`] away.
+    /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
     epoch_unlocked: u64,
 
     /// An XRD amount to be claimed.
@@ -156,7 +156,7 @@ impl ValidatorBlueprint {
             (stake_unit_bucket, new_stake_amount)
         };
 
-        // Update EpochManager
+        // Update ConsensusManager
         let new_index_key =
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
@@ -205,18 +205,20 @@ impl ValidatorBlueprint {
 
             let manager_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::EpochManager.into(),
+                ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
-            let current_epoch = epoch_manager.epoch;
+            let consensus_manager: ConsensusManagerSubstate =
+                api.field_lock_read_typed(manager_handle)?;
+            let current_epoch = consensus_manager.epoch;
 
             let config_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::Config.into(),
+                ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
-            let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            let config: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
             let epoch_unlocked = current_epoch + config.num_unstake_epochs;
 
             api.field_lock_release(manager_handle)?;
@@ -235,7 +237,7 @@ impl ValidatorBlueprint {
             (unstake_bucket, new_stake_amount)
         };
 
-        // Update EpochManager
+        // Update ConsensusManager
         let new_index_key =
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
@@ -355,10 +357,10 @@ impl ValidatorBlueprint {
         let current_epoch = {
             let mgr_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::EpochManager.into(),
+                ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
+            let mgr_substate: ConsensusManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
             api.field_lock_release(mgr_handle)?;
             epoch
@@ -401,7 +403,7 @@ impl ValidatorBlueprint {
         )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        // Update Epoch Manager
+        // Update Consensus Manager
         {
             if let Some(index_key) = &validator.sorted_key {
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
@@ -540,7 +542,7 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -552,14 +554,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -575,14 +577,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -593,7 +595,7 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     &index_key,
                 )?;
             }
@@ -643,11 +645,11 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         authority_rules.set_main_authority_rule(
             VALIDATOR_STAKE_IDENT,
             rule!(require_owner()),
-            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
         );
         authority_rules.set_fixed_main_authority_rule(
             VALIDATOR_APPLY_EMISSION_IDENT,
-            rule!(require(global_caller(EPOCH_MANAGER))),
+            rule!(require(global_caller(CONSENSUS_MANAGER))),
         );
         authority_rules
     }

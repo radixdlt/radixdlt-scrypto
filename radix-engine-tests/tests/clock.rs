@@ -1,7 +1,7 @@
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_SET_CURRENT_TIME_IDENT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,8 +14,8 @@ fn set_current_time_should_fail_without_validator_auth() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            EPOCH_MANAGER,
-            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(123 as i64),
         )
         .build();
@@ -40,8 +40,8 @@ fn validator_can_set_current_time() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            EPOCH_MANAGER,
-            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(time_to_set_ms),
         )
         .call_function(
@@ -94,8 +94,8 @@ fn test_clock_comparison_methods_against_the_current_time() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .call_method(
-            EPOCH_MANAGER,
-            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT,
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
             manifest_args!(1669663688996 as i64),
         )
         .call_function(

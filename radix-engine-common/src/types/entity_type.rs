@@ -20,8 +20,8 @@ pub enum EntityType {
     //=========================================================================
     // System Components (start with char s for system)
     //=========================================================================
-    /// The global epoch manager entity (134 in decimal). Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
-    GlobalEpochManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
+    /// The global consensus manager entity (134 in decimal). Gives Bech32 prefix: `s` followed by one of `c`, `e`, `6` or `m`.
+    GlobalConsensusManager = 0b10000110, //-------------- 10000 => s, 110xx => ce6m [se vanity prefix]
 
     /// A global validator entity (130 in decimal). Gives Bech32 prefix: `s` followed by one of `v`, `d`, `w` or `0`.
     GlobalValidator = 0b10000010, //----------------- 10000 => s, 110xx => vdw0
@@ -101,7 +101,7 @@ impl EntityType {
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager
-            | EntityType::GlobalEpochManager
+            | EntityType::GlobalConsensusManager
             | EntityType::GlobalValidator
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
@@ -125,7 +125,7 @@ impl EntityType {
 
     pub const fn is_global_component(&self) -> bool {
         match self {
-            EntityType::GlobalEpochManager
+            EntityType::GlobalConsensusManager
             | EntityType::GlobalValidator
             | EntityType::GlobalAccessController
             | EntityType::GlobalAccount
@@ -150,8 +150,8 @@ impl EntityType {
         matches!(self, EntityType::GlobalPackage)
     }
 
-    pub const fn is_global_epoch_manager(&self) -> bool {
-        matches!(self, EntityType::GlobalEpochManager)
+    pub const fn is_global_consensus_manager(&self) -> bool {
+        matches!(self, EntityType::GlobalConsensusManager)
     }
 
     pub const fn is_global_resource_manager(&self) -> bool {

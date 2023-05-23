@@ -1,7 +1,7 @@
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::time::*;
 use radix_engine_interface::traits::ScryptoEvent;
@@ -29,9 +29,9 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            EPOCH_MANAGER.as_node_id(),
-            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT,
-            scrypto_encode(&EpochManagerGetCurrentEpochInput).unwrap(),
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentEpochInput).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -43,9 +43,9 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            EPOCH_MANAGER.as_node_id(),
-            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT,
-            scrypto_encode(&EpochManagerGetCurrentTimeInput { precision }).unwrap(),
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -62,9 +62,9 @@ impl Runtime {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
-            EPOCH_MANAGER.as_node_id(),
-            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT,
-            scrypto_encode(&EpochManagerCompareCurrentTimeInput {
+            CONSENSUS_MANAGER.as_node_id(),
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
+            scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
                 precision,
                 instant,
                 operator,

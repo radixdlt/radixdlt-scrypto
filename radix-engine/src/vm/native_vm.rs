@@ -1,6 +1,6 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
 use crate::blueprints::account::AccountNativePackage;
-use crate::blueprints::epoch_manager::EpochManagerNativePackage;
+use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
@@ -57,8 +57,8 @@ impl VmInvoke for NativeVmInstance {
             RESOURCE_MANAGER_CODE_ID => {
                 ResourceManagerNativePackage::invoke_export(export_name, receiver, input, api)
             }
-            EPOCH_MANAGER_CODE_ID => {
-                EpochManagerNativePackage::invoke_export(export_name, receiver, input, api)
+            CONSENSUS_MANAGER_CODE_ID => {
+                ConsensusManagerNativePackage::invoke_export(export_name, receiver, input, api)
             }
             IDENTITY_CODE_ID => {
                 IdentityNativePackage::invoke_export(export_name, receiver, input, api)

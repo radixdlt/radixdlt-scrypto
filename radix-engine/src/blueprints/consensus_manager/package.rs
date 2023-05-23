@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::{EpochManagerBlueprint, ValidatorBlueprint};
+use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
@@ -6,7 +6,7 @@ use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::{require, AccessRule, FnKey};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchema, BlueprintSortedIndexSchema, FunctionSchema,
@@ -16,15 +16,15 @@ use resources_tracker_macro::trace_resources;
 
 use super::*;
 
-pub struct EpochManagerNativePackage;
+pub struct ConsensusManagerNativePackage;
 
-impl EpochManagerNativePackage {
+impl ConsensusManagerNativePackage {
     pub fn schema() -> PackageSchema {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerConfigSubstate>());
-        fields.push(aggregator.add_child_type_and_descendents::<EpochManagerSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<ConsensusManagerConfigSubstate>());
+        fields.push(aggregator.add_child_type_and_descendents::<ConsensusManagerSubstate>());
         fields.push(aggregator.add_child_type_and_descendents::<CurrentValidatorSetSubstate>());
         fields
             .push(aggregator.add_child_type_and_descendents::<CurrentProposalStatisticSubstate>());
@@ -38,94 +38,97 @@ impl EpochManagerNativePackage {
 
         let mut functions = BTreeMap::new();
         functions.insert(
-            EPOCH_MANAGER_CREATE_IDENT.to_string(),
+            CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             FunctionSchema {
                 receiver: None,
-                input: aggregator.add_child_type_and_descendents::<EpochManagerCreateInput>(),
-                output: aggregator.add_child_type_and_descendents::<EpochManagerCreateOutput>(),
-                export_name: EPOCH_MANAGER_CREATE_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateInput>(),
+                output: aggregator.add_child_type_and_descendents::<ConsensusManagerCreateOutput>(),
+                export_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerGetCurrentEpochInput>(),
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerGetCurrentEpochOutput>(),
-                export_name: EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentEpochOutput>(),
+                export_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+            CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<EpochManagerSetEpochInput>(),
-                output: aggregator.add_child_type_and_descendents::<EpochManagerSetEpochOutput>(),
-                export_name: EPOCH_MANAGER_SET_EPOCH_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<ConsensusManagerSetEpochInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerSetEpochOutput>(),
+                export_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_START_IDENT.to_string(),
+            CONSENSUS_MANAGER_START_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<EpochManagerStartInput>(),
-                output: aggregator.add_child_type_and_descendents::<EpochManagerStartOutput>(),
-                export_name: EPOCH_MANAGER_START_IDENT.to_string(),
+                input: aggregator.add_child_type_and_descendents::<ConsensusManagerStartInput>(),
+                output: aggregator.add_child_type_and_descendents::<ConsensusManagerStartOutput>(),
+                export_name: CONSENSUS_MANAGER_START_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerGetCurrentTimeInput>(),
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerGetCurrentTimeOutput>(),
-                export_name: EPOCH_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ConsensusManagerGetCurrentTimeOutput>(),
+                export_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerSetCurrentTimeInput>(),
+                    .add_child_type_and_descendents::<ConsensusManagerSetCurrentTimeInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerSetCurrentTimeOutput>(),
-                export_name: EPOCH_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ConsensusManagerSetCurrentTimeOutput>(),
+                export_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCompareCurrentTimeInput>(),
+                    .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCompareCurrentTimeOutput>(),
-                export_name: EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ConsensusManagerCompareCurrentTimeOutput>(),
+                export_name: CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             },
         );
         functions.insert(
-            EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<EpochManagerNextRoundInput>(),
-                output: aggregator.add_child_type_and_descendents::<EpochManagerNextRoundOutput>(),
-                export_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCreateValidatorInput>(),
+                    .add_child_type_and_descendents::<ConsensusManagerNextRoundInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<EpochManagerCreateValidatorOutput>(),
-                export_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                    .add_child_type_and_descendents::<ConsensusManagerNextRoundOutput>(),
+                export_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCreateValidatorInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ConsensusManagerCreateValidatorOutput>(),
+                export_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             },
         );
 
@@ -138,7 +141,7 @@ impl EpochManagerNativePackage {
         };
 
         let schema = generate_full_schema(aggregator);
-        let epoch_manager_schema = BlueprintSchema {
+        let consensus_manager_schema = BlueprintSchema {
             outer_blueprint: None,
             schema,
             fields,
@@ -244,7 +247,7 @@ impl EpochManagerNativePackage {
 
         let schema = generate_full_schema(aggregator);
         let validator_schema = BlueprintSchema {
-            outer_blueprint: Some(EPOCH_MANAGER_BLUEPRINT.to_string()),
+            outer_blueprint: Some(CONSENSUS_MANAGER_BLUEPRINT.to_string()),
             schema,
             fields,
             collections: vec![],
@@ -255,7 +258,7 @@ impl EpochManagerNativePackage {
 
         PackageSchema {
             blueprints: btreemap!(
-                EPOCH_MANAGER_BLUEPRINT.to_string() => epoch_manager_schema,
+                CONSENSUS_MANAGER_BLUEPRINT.to_string() => consensus_manager_schema,
                 VALIDATOR_BLUEPRINT.to_string() => validator_schema
             ),
         }
@@ -265,8 +268,8 @@ impl EpochManagerNativePackage {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             FnKey::new(
-                EPOCH_MANAGER_BLUEPRINT.to_string(),
-                EPOCH_MANAGER_CREATE_IDENT.to_string(),
+                CONSENSUS_MANAGER_BLUEPRINT.to_string(),
+                CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
             ),
             rule!(require(AuthAddresses::system_role())),
         );
@@ -284,7 +287,7 @@ impl EpochManagerNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            EPOCH_MANAGER_CREATE_IDENT => {
+            CONSENSUS_MANAGER_CREATE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 if receiver.is_some() {
@@ -292,10 +295,10 @@ impl EpochManagerNativePackage {
                         SystemUpstreamError::NativeUnexpectedReceiver(export_name.to_string()),
                     ));
                 }
-                let input: EpochManagerCreateInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::create(
+                let rtn = ConsensusManagerBlueprint::create(
                     input.validator_owner_token,
                     input.component_address,
                     input.initial_epoch,
@@ -305,68 +308,70 @@ impl EpochManagerNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT => {
+            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: EpochManagerGetCurrentEpochInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
+                let _input: ConsensusManagerGetCurrentEpochInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
 
-                let rtn = EpochManagerBlueprint::get_current_epoch(api)?;
+                let rtn = ConsensusManagerBlueprint::get_current_epoch(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_SET_EPOCH_IDENT => {
+            CONSENSUS_MANAGER_SET_EPOCH_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerSetEpochInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerSetEpochInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::set_epoch(input.epoch, api)?;
+                let rtn = ConsensusManagerBlueprint::set_epoch(input.epoch, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_START_IDENT => {
+            CONSENSUS_MANAGER_START_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let receiver = receiver.ok_or(RuntimeError::SystemUpstreamError(
                     SystemUpstreamError::NativeExpectedReceiver(export_name.to_string()),
                 ))?;
-                let _input: EpochManagerStartInput = input.as_typed().map_err(|e| {
+                let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::start(receiver, api)?;
+                let rtn = ConsensusManagerBlueprint::start(receiver, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_GET_CURRENT_TIME_IDENT => {
+            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerGetCurrentTimeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::get_current_time(input.precision, api)?;
+                let rtn = ConsensusManagerBlueprint::get_current_time(input.precision, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_SET_CURRENT_TIME_IDENT => {
+            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerSetCurrentTimeInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerSetCurrentTimeInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::set_current_time(input.current_time_ms, api)?;
+                let rtn = ConsensusManagerBlueprint::set_current_time(input.current_time_ms, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
+            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
                 // TODO(resolve during review): I copied the `FIXED_HIGH_FEE` here as-is, but it
                 // does not feel right... (I mean: why would anyone call it instead of the cheaper
                 // `get_current_time()`?)
                 api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerCompareCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = EpochManagerBlueprint::compare_current_time(
+                let input: ConsensusManagerCompareCurrentTimeInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ConsensusManagerBlueprint::compare_current_time(
                     input.instant,
                     input.precision,
                     input.operator,
@@ -375,13 +380,13 @@ impl EpochManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_NEXT_ROUND_IDENT => {
+            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerNextRoundInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerNextRoundInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
-                let rtn = EpochManagerBlueprint::next_round(
+                let rtn = ConsensusManagerBlueprint::next_round(
                     input.round,
                     input.leader_proposal_history,
                     api,
@@ -389,13 +394,14 @@ impl EpochManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            EPOCH_MANAGER_CREATE_VALIDATOR_IDENT => {
+            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: EpochManagerCreateValidatorInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = EpochManagerBlueprint::create_validator(input.key, api)?;
+                let input: ConsensusManagerCreateValidatorInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ConsensusManagerBlueprint::create_validator(input.key, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
