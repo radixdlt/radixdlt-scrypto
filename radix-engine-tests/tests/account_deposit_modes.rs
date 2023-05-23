@@ -5,9 +5,8 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
 use scrypto::prelude::*;
 use scrypto_unit::TestRunner;
-use transaction::builder::ManifestBuilder;
+use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::TransactionManifest;
 
 #[test]
 fn account_deposit_method_is_callable_with_owner_signature() {
@@ -663,7 +662,7 @@ impl AccountDepositModesTestRunner {
 
     pub fn execute_manifest(
         &mut self,
-        manifest: TransactionManifest,
+        manifest: TransactionManifestV1,
         sign: bool,
     ) -> TransactionReceipt {
         self.test_runner.execute_manifest_ignoring_fee(

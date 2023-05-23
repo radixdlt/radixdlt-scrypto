@@ -59,7 +59,7 @@ token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print 
 # Test - transfer non fungible
 non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible_global_id=`echo "$non_fungible_create_receipt" | awk '/NonFungibleGlobalId:/ {print $NF}'`
-$resim call-method $account2 try_deposit "$non_fungible_global_id"
+$resim call-method $account2 try_deposit_abort_on_failure "$non_fungible_global_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs $minter_badge:1
