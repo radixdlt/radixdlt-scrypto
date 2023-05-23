@@ -467,7 +467,7 @@ impl AccountNativePackage {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
-                let rtn = AccountBlueprint::try_deposit(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit_return_on_failure(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT => {

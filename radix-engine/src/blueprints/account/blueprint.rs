@@ -38,6 +38,7 @@ pub enum AccountError {
     DepositIsDisallowed {
         resource_address: ResourceAddress,
     },
+    NotAllBucketsCouldBeDeposited,
 }
 
 impl From<AccountError> for RuntimeError {
@@ -375,7 +376,10 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if the resource can't be deposited it is returned.
-    pub fn try_deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<Option<Bucket>, RuntimeError>
+    pub fn try_deposit_return_on_failure<Y>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Option<Bucket>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -425,7 +429,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if let Some(bucket) = Self::try_deposit(bucket, api)? {
+        if let Some(bucket) = Self::try_deposit_return_on_failure(bucket, api)? {
             let resource_address = bucket.resource_address(api)?;
             Err(AccountError::DepositIsDisallowed { resource_address }.into())
         } else {
@@ -442,10 +446,12 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        for bucket in buckets {
-            Self::try_deposit_abort_on_failure(bucket, api)?;
+        let buckets = Self::try_deposit_batch_return_on_failure(buckets, api)?;
+        if buckets.len() != 0 {
+            Err(AccountError::NotAllBucketsCouldBeDeposited.into())
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     pub fn withdraw<Y>(
@@ -635,7 +641,7 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    fn get_current_default_deposit_rule<Y>(
+    fn get_account_default_deposit_rule<Y>(
         api: &mut Y,
     ) -> Result<AccountDefaultDepositRule, RuntimeError>
     where
@@ -716,39 +722,21 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Read the account's current deposit operation mode
-        let default_deposit_rule = Self::get_current_default_deposit_rule(api)?;
-        let resource_deposits_configuration =
+        let resource_deposit_rule =
             Self::get_resource_deposit_configuration(resource_address, api)?;
 
-        let is_deposit_allowed = match (default_deposit_rule, resource_deposits_configuration) {
-            // Case: Account is in allow all mode and the resource is not in the deny list
-            (
-                AccountDefaultDepositRule::Accept,
-                ResourceDepositRule::Allowed | ResourceDepositRule::Neither,
-            ) => true,
-            // Case: Account is in allow all mode and the resource is in the deny list
-            (AccountDefaultDepositRule::Accept, ResourceDepositRule::Disallowed) => false,
-            // Case: Account is in deny all mode and the resource is on the allow list
-            (AccountDefaultDepositRule::Reject, ResourceDepositRule::Allowed) => true,
-            // Case: Account is in deny all mode and the resource is is not on the allow list
-            (
-                AccountDefaultDepositRule::Reject,
-                ResourceDepositRule::Disallowed | ResourceDepositRule::Neither,
-            ) => false,
-            // Case: Account is in airdrop mode
-            (AccountDefaultDepositRule::AllowExisting, resource_deposits_configuration) => {
-                // Deny list check takes precedence over other checks
-                if let ResourceDepositRule::Disallowed = resource_deposits_configuration {
-                    false
-                } else if *resource_address == RADIX_TOKEN
-                    || Self::does_vault_exist(resource_address, api)?
-                {
-                    true
-                } else if let ResourceDepositRule::Allowed = resource_deposits_configuration {
-                    true
-                } else {
-                    false
+        let is_deposit_allowed = match resource_deposit_rule {
+            ResourceDepositRule::Allowed => true,
+            ResourceDepositRule::Disallowed => false,
+            ResourceDepositRule::Neither => {
+                let default_deposit_rule = Self::get_account_default_deposit_rule(api)?;
+                match default_deposit_rule {
+                    AccountDefaultDepositRule::Accept => true,
+                    AccountDefaultDepositRule::Reject => false,
+                    AccountDefaultDepositRule::AllowExisting => {
+                        *resource_address == RADIX_TOKEN
+                            || Self::does_vault_exist(resource_address, api)?
+                    }
                 }
             }
         };
