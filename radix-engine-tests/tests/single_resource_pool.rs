@@ -93,6 +93,66 @@ pub fn contribution_to_pool_mints_expected_amount_3() {
     assert_eq!(balance_change.clone(), BalanceChange::Fungible(50.into()));
 }
 
+#[test]
+pub fn contribution_to_pool_mints_expected_amount_after_all_pool_units_are_redeemed() {
+    // Arrange
+    let mut test_runner = SingleResourcePoolTestRunner::new(18);
+    let initial_contribution = 100.into();
+
+    // Act
+    {
+        test_runner
+            .contribute(initial_contribution, true)
+            .expect_commit_success();
+        test_runner
+            .redeem(initial_contribution, true)
+            .expect_commit_success();
+    };
+    let receipt = test_runner.contribute(50.into(), true);
+
+    // Assert
+    let commit_result = receipt.expect_commit_success();
+    let balance_change = commit_result
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.account_component_address))
+        .unwrap()
+        .get(&test_runner.pool_unit_resource_address)
+        .unwrap();
+
+    assert_eq!(
+        balance_change.clone(),
+        BalanceChange::Fungible(initial_contribution)
+    );
+}
+
+#[test]
+pub fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18() {
+    // Arrange
+    let divisibility = 2;
+    let mut test_runner = SingleResourcePoolTestRunner::new(divisibility);
+
+    test_runner
+        .contribute(100.into(), true)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.redeem(dec!("1.111111111111"), true);
+
+    // Assert
+    let commit_result = receipt.expect_commit_success();
+    let balance_change = commit_result
+        .balance_changes()
+        .get(&GlobalAddress::from(test_runner.account_component_address))
+        .unwrap()
+        .get(&test_runner.resource_address)
+        .unwrap();
+
+    assert_eq!(
+        balance_change.clone(),
+        BalanceChange::Fungible(dec!("1.11"))
+    );
+}
+
 //===================================
 // Test Runner and Utility Functions
 //===================================
@@ -165,6 +225,25 @@ impl SingleResourcePoolTestRunner {
                     self.pool_component_address,
                     SINGLE_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     to_manifest_value(&SingleResourcePoolContributeManifestInput { bucket }),
+                )
+            })
+            .safe_deposit_batch(self.account_component_address)
+            .build();
+        self.execute_manifest(manifest, sign)
+    }
+
+    pub fn redeem(&mut self, amount: Decimal, sign: bool) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .withdraw_from_account(
+                self.account_component_address,
+                self.pool_unit_resource_address,
+                amount,
+            )
+            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+                builder.call_method(
+                    self.pool_component_address,
+                    SINGLE_RESOURCE_POOL_REDEEM_IDENT,
+                    to_manifest_value(&SingleResourcePoolRedeemManifestInput { bucket }),
                 )
             })
             .safe_deposit_batch(self.account_component_address)

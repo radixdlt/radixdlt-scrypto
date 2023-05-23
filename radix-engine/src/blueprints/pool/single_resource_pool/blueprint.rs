@@ -160,13 +160,71 @@ impl SingleResourcePoolBlueprint {
     }
 
     pub fn redeem<Y>(
-        _bucket: Bucket,
-        _api: &mut Y,
+        bucket: Bucket,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolRedeemOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (pool_unit_resource_manager, mut vault, handle) = {
+            let substate_key = SingleResourcePoolField::SingleResourcePool.into();
+            let handle =
+                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+            let single_resource_pool_substate =
+                api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
+
+            let pool_unit_resource = single_resource_pool_substate.pool_unit_resource_manager();
+            let vault = single_resource_pool_substate.vault();
+
+            (pool_unit_resource, vault, handle)
+        };
+
+        // Ensure that the passed pool resources are indeed pool resources
+        let bucket_resource_address = bucket.resource_address(api)?;
+        if bucket_resource_address != pool_unit_resource_manager.0 {
+            return Err(SingleResourcePoolError::InvalidPoolUnitResource {
+                expected: pool_unit_resource_manager.0,
+                actual: bucket_resource_address,
+            }
+            .into());
+        }
+
+        // Calculating the amount owed based on the passed pool units.
+        let mut amount_owed = {
+            let pool_units_to_redeem = bucket.amount(api)?;
+            let pool_units_total_supply = pool_unit_resource_manager.total_supply(api)?;
+            let pool_resource_reserves = vault.amount(api)?;
+
+            (pool_units_to_redeem / pool_units_total_supply) * pool_resource_reserves
+        };
+
+        // Apply rounding if needed. Rounding is done if the resources in the pool have a
+        // divisibility that is not 18. If rounding is needed then apply it.
+        {
+            let divisibility = vault
+                .resource_address(api)
+                .and_then(|resource_address| ResourceManager(resource_address).resource_type(api))
+                .map(|resource_type| {
+                    if let ResourceType::Fungible { divisibility } = resource_type {
+                        divisibility
+                    } else {
+                        panic!("Impossible case, we check for this in the constructor.")
+                    }
+                })?;
+
+            if divisibility != 18 {
+                amount_owed =
+                    amount_owed.round(divisibility as u32, RoundingMode::TowardsNegativeInfinity);
+            }
+        }
+
+        // Burn the pool units and take the owed resources from the bucket.
+        bucket.burn(api)?;
+        let owed_resources = vault.take(amount_owed, api)?;
+
+        api.field_lock_release(handle)?;
+
+        Ok(owed_resources)
     }
 
     pub fn protected_deposit<Y>(
