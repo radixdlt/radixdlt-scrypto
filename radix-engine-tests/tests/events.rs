@@ -727,16 +727,18 @@ fn epoch_manager_epoch_update_emits_xrd_minting_event() {
     }]);
 
     // Assert
-    {
-        let events = receipt.expect_commit(true).clone().application_events;
-        let mint_events = events
-            .into_iter()
-            .filter(|(id, _data)| test_runner.is_event_name_equal::<MintFungibleResourceEvent>(id))
-            .map(|(_id, data)| scrypto_decode::<MintFungibleResourceEvent>(&data).unwrap())
-            .collect::<Vec<_>>();
-        assert_eq!(mint_events.len(), 1);
-        assert_eq!(mint_events.first().unwrap().amount, emission_xrd)
-    }
+    let result = receipt.expect_commit_success();
+    assert_eq!(
+        test_runner.extract_events_of_type::<MintFungibleResourceEvent>(result),
+        vec![
+            MintFungibleResourceEvent {
+                amount: emission_xrd
+            }, // we mint XRD (because of emission)
+            MintFungibleResourceEvent {
+                amount: emission_xrd
+            } // we stake them all immediately because of validator fee = 100% (and thus mint stake units)
+        ]
+    );
 }
 
 //===========
@@ -1486,5 +1488,6 @@ fn dummy_epoch_manager_configuration() -> EpochManagerInitialConfiguration {
         total_emission_xrd_per_epoch: Decimal::one(),
         min_validator_reliability: Decimal::one(),
         num_owner_stake_units_unlock_epochs: 2,
+        num_fee_increase_delay_epochs: 4,
     }
 }

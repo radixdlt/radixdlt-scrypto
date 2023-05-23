@@ -31,6 +31,9 @@ use super::{
 /// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
 
+/// A validator fee of newly-created validators.
+pub const DEFAULT_VALIDATOR_FEE_FACTOR: Decimal = Decimal::ONE;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
     /// A key used internally for storage of registered validators sorted by their stake descending.
@@ -46,6 +49,21 @@ pub struct ValidatorSubstate {
 
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
+
+    /// A fraction of the effective emission amount which gets transferred to the validator's owner
+    /// (by staking it and depositing the stake units to the [`locked_owner_stake_unit_vault_id`]).
+    /// Note: it is a decimal factor, not a percentage (i.e. `0.015` means "1.5%" here).
+    /// Note: it may be overridden by [`validator_fee_change_request`], if it contains a change
+    /// which already became effective.
+    pub validator_fee_factor: Decimal,
+
+    /// The most recent request to change the [`validator_fee_factor`] (which requires a delay).
+    /// Note: the value from this request will be used instead of [`validator_fee_factor`] if the
+    /// request has already reached its effective epoch.
+    /// Note: when another change is requested, the value from this (previous) one is moved to the
+    /// [`validator_fee_factor`] - provided that it became already effective. Otherwise, this
+    /// request is overwritten by the new one.
+    pub validator_fee_change_request: Option<ValidatorFeeChangeRequest>,
 
     /// A type of fungible resource representing stake units specific to this validator.
     /// Conceptually, "staking to validator A" means "contributing to the validator's staking pool,
@@ -102,6 +120,21 @@ pub struct UnstakeData {
     amount: Decimal,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ValidatorFeeChangeRequest {
+    /// An epoch number at (or after) which the fee change is effective.
+    /// To be specific: when a next epoch `N` begins, we perform accounting of emissions due for
+    /// previous epoch `N-1` - this means that we will use this [`new_validator_fee_factor`] only if
+    /// `epoch_effective <= N-1`, and [`ValidatorSubstate.validator_fee_factor`] otherwise.
+    /// Note: when requesting a fee decrease, this will be "next epoch"; and when requesting an
+    /// increase, this will be set to [`EpochManagerConfigSubstate.num_fee_increase_delay_epochs`]
+    /// epochs away.
+    epoch_effective: u64,
+
+    /// A requested new value of [`EpochManagerSubstate.validator_fee_factor`].
+    new_fee_factor: Decimal,
+}
+
 impl NonFungibleData for UnstakeData {
     const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }
@@ -111,6 +144,7 @@ pub enum ValidatorError {
     InvalidClaimResource,
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
+    InvalidValidatorFeeFactor,
 }
 
 pub struct ValidatorBlueprint;
@@ -148,14 +182,11 @@ impl ValidatorBlueprint {
         let (stake_unit_bucket, new_stake_amount) = {
             let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
-
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
-            let active_stake_amount = xrd_vault.amount(api)?;
-            let stake_unit_mint_amount = if active_stake_amount.is_zero() {
-                xrd_bucket_amount
-            } else {
-                xrd_bucket_amount * total_stake_unit_supply / active_stake_amount
-            };
+            let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+                xrd_bucket_amount,
+                xrd_vault.amount(api)?,
+                stake_unit_resman.total_supply(api)?,
+            );
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
             xrd_vault.put(xrd_bucket, api)?;
@@ -426,6 +457,71 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    pub fn update_fee<Y>(new_fee_factor: Decimal, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // only allow a proper fraction
+        if new_fee_factor.is_negative() || new_fee_factor > Decimal::one() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
+            ));
+        }
+
+        // read the current epoch
+        let epoch_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            EpochManagerField::EpochManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let epoch_manager: EpochManagerSubstate =
+            api.field_lock_read_typed(epoch_manager_handle)?;
+        let current_epoch = epoch_manager.epoch;
+        api.field_lock_release(epoch_manager_handle)?;
+
+        // read the configured fee increase epochs delay
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            EpochManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
+        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let num_fee_increase_delay_epochs = config.num_fee_increase_delay_epochs;
+        api.field_lock_release(config_handle)?;
+
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // - promote any currently pending change if it became effective already
+        if let Some(previous_request) = substate.validator_fee_change_request {
+            if previous_request.epoch_effective <= current_epoch {
+                substate.validator_fee_factor = previous_request.new_fee_factor;
+            }
+        }
+
+        // - calculate the effective epoch of the requested change
+        let epoch_effective = if new_fee_factor > substate.validator_fee_factor {
+            current_epoch + num_fee_increase_delay_epochs
+        } else {
+            current_epoch + 1 // make it effective on the *beginning* of next epoch
+        };
+
+        // ...end the read+modify+write of the validator substate
+        substate.validator_fee_change_request = Some(ValidatorFeeChangeRequest {
+            epoch_effective,
+            new_fee_factor,
+        });
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+
+        Ok(())
+    }
+
     pub fn update_accept_delegated_stake<Y>(
         receiver: &NodeId,
         accept_delegated_stake: bool,
@@ -620,12 +716,11 @@ impl ValidatorBlueprint {
     }
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
-    /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
-    /// ethod are used only for creating an event (i.e. they are only informational and do not drive
-    /// any logic at this point).
+    /// Note: the validator's proposal statistics passed to this method are used only for creating
+    /// an event (i.e. they are only informational and they do not drive any logic at this point).
     pub fn apply_emission<Y>(
         xrd_bucket: Bucket,
-        epoch: u64,
+        concluded_epoch: u64,
         proposals_made: u64,
         proposals_missed: u64,
         api: &mut Y,
@@ -633,6 +728,7 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        // begin the read+modify+write of the validator substate...
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ValidatorField::Validator.into(),
@@ -640,17 +736,44 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let stake_pool_added_xrd = xrd_bucket.amount(api)?;
-        let total_stake_unit_supply =
-            ResourceManager(substate.stake_unit_resource).total_supply(api)?;
+        // - resolve the effective validator fee factor
+        let effective_validator_fee_factor = match &substate.validator_fee_change_request {
+            Some(request) if request.epoch_effective <= concluded_epoch => request.new_fee_factor,
+            _ => substate.validator_fee_factor,
+        };
 
+        // - calculate the validator fee and subtract it from the emission bucket
+        let total_emission_xrd = xrd_bucket.amount(api)?;
+        let validator_fee_xrd = effective_validator_fee_factor * total_emission_xrd;
+        let fee_xrd_bucket = xrd_bucket.take(validator_fee_xrd, api)?;
+
+        // - put the net emission XRDs into the stake pool
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
         stake_xrd_vault.put(xrd_bucket, api)?;
 
-        let new_stake_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        // - stake the validator fee XRDs (effectively same as regular staking)
+        let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
+        let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
+        let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+        let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+            validator_fee_xrd,
+            post_emission_stake_pool_xrd,
+            total_stake_unit_supply,
+        );
+        let fee_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
+        stake_xrd_vault.put(fee_xrd_bucket, api)?;
+
+        // - immediately lock these new stake units in the internal owner's "public display" vault
+        Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
+
+        // - update the index, since the stake increased (because of net emission + staking of the validator fee)
+        let new_stake_xrd = starting_stake_pool_xrd + total_emission_xrd;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
+
+        // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
         api.field_lock_write_typed(handle, &substate)?;
         api.field_lock_release(handle)?;
@@ -658,11 +781,11 @@ impl ValidatorBlueprint {
         Runtime::emit_event(
             api,
             ValidatorEmissionAppliedEvent {
-                epoch,
+                epoch: concluded_epoch,
                 starting_stake_pool_xrd,
                 stake_pool_added_xrd,
                 total_stake_unit_supply,
-                validator_fee_xrd: Decimal::zero(), // TODO(emissions): update after implementing validator fees
+                validator_fee_xrd,
                 proposals_made,
                 proposals_missed,
             },
@@ -763,6 +886,19 @@ impl ValidatorBlueprint {
 
         Ok(())
     }
+
+    /// Returns an amount of stake units to be minted when [`xrd_amount`] of XRDs is being staked.
+    fn calculate_stake_unit_amount(
+        xrd_amount: Decimal,
+        total_stake_xrd_amount: Decimal,
+        total_stake_unit_supply: Decimal,
+    ) -> Decimal {
+        if total_stake_xrd_amount.is_zero() {
+            xrd_amount
+        } else {
+            xrd_amount * total_stake_unit_supply / total_stake_xrd_amount
+        }
+    }
 }
 
 fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
@@ -810,6 +946,8 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         );
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_FEE_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             rule!(require_owner()),
@@ -904,12 +1042,13 @@ impl ValidatorCreator {
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_withdrawals = BTreeMap::new();
-        // TODO(emissions): add `lock(), withdraw(), unlock()` owner-only methods for the 3 above
 
         let substate = ValidatorSubstate {
             sorted_key: None,
             key,
             is_registered,
+            validator_fee_factor: DEFAULT_VALIDATOR_FEE_FACTOR,
+            validator_fee_change_request: None,
             stake_unit_resource,
             unstake_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,

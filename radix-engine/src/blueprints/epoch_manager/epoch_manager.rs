@@ -24,6 +24,7 @@ pub struct EpochManagerConfigSubstate {
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
+    pub num_fee_increase_delay_epochs: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -161,6 +162,7 @@ impl EpochManagerBlueprint {
                 min_validator_reliability: initial_configuration.min_validator_reliability,
                 num_owner_stake_units_unlock_epochs: initial_configuration
                     .num_owner_stake_units_unlock_epochs,
+                num_fee_increase_delay_epochs: initial_configuration.num_fee_increase_delay_epochs,
             };
             let epoch_manager = EpochManagerSubstate {
                 epoch: initial_epoch,
