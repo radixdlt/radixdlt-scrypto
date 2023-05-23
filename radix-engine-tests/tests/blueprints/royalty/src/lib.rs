@@ -21,9 +21,6 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles(roles! {
-                    "public" => rule!(allow_all);
-                })
                 .royalties(royalties! {
                     init {
                         free_method => Free;
@@ -31,7 +28,7 @@ mod royalty_test {
                         paid_method_panic => 1u32;
                     },
                     permissions {
-                        claim_royalty => ["public"];
+                        claim_royalty => Public;
                         set_royalty_config => [];
                     }
                 })

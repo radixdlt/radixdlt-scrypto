@@ -32,14 +32,11 @@ mod metadata_component {
             let global = MetadataComponent {}
                 .instantiate()
                 .prepare_to_globalize()
-                .define_roles(roles! {
-                    "metadata" => rule!(allow_all);
-                })
                 .metadata(metadata! {
                     init {},
                     permissions {
-                        set => ["metadata"];
-                        remove => ["metadata"];
+                        set => Public;
+                        remove => Public;
                         get => Public;
                     }
                 })
