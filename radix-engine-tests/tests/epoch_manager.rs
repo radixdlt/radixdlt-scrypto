@@ -1602,7 +1602,7 @@ fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_one
         .expect_commit_success();
 
     // Act (start unlock again after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -1711,7 +1711,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
@@ -1816,7 +1816,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after insufficient delay)
-    test_runner.set_current_epoch(initial_epoch + unlock_epochs_delay / 2);
+    test_runner.set_current_epoch((initial_epoch + unlock_epochs_delay) as u32 / 2);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
