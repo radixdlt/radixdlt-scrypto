@@ -17,11 +17,11 @@ mod balance_changes_test {
                 "owner" => rule!(allow_all);
             })
             .royalties(royalties! {
-                init => {
+                init {
                     put => 1u32;
                     boom => 1u32;
                 },
-                permissions => {
+                permissions {
                     claim_royalty => ["owner"];
                     set_royalty_config => [];
                 }

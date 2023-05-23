@@ -4,7 +4,7 @@ use crate::prelude::well_known_scrypto_custom_types::{reference_type_data, REFER
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT};
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT,
 };
@@ -221,7 +221,6 @@ pub struct RoyaltyMethods<T> {
     pub claim_royalty: T,
 }
 
-
 impl<T> MethodMapping<T> for RoyaltyMethods<T> {
     const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
 
@@ -238,23 +237,27 @@ pub struct RoyaltiesConfig<R: MethodMapping<MethodRoyalty>> {
     pub permissions: RoyaltyMethods<MethodPermission>,
 }
 
-pub struct ProtectedMethods<M: ModuleMethod> {
-    protected_methods: IndexMap<String, RoleList>,
-    phantom: PhantomData<M>,
+pub struct MetadataMethods<T> {
+    pub set: T,
+    pub get: T,
+    pub remove: T,
 }
 
-impl<M: ModuleMethod> ProtectedMethods<M> {
-    pub fn new() -> Self {
-        Self {
-            protected_methods: index_map_new(),
-            phantom: PhantomData::default(),
-        }
-    }
+impl<T> MethodMapping<T> for MetadataMethods<T> {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::Metadata;
 
-    pub fn insert<L: Into<RoleList>>(&mut self, method: M, roles: L) {
-        self.protected_methods
-            .insert(method.to_ident(), roles.into());
+    fn to_mapping(self) -> Vec<(String, T)> {
+        vec![
+            (METADATA_SET_IDENT.to_string(), self.set),
+            (METADATA_GET_IDENT.to_string(), self.get),
+            (METADATA_REMOVE_IDENT.to_string(), self.remove),
+        ]
     }
+}
+
+pub struct MetadataInit {
+    pub metadata: Metadata,
+    pub permissions: MetadataMethods<MethodPermission>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -281,39 +284,19 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    fn protect<M: ModuleMethod>(&mut self, protected: ProtectedMethods<M>) {
-        for (method, roles) in protected.protected_methods {
-            self.protected_module_methods
-                .insert(MethodKey::new(M::MODULE_ID, method), roles);
-        }
-    }
-
-    pub fn protect_metadata(
-        mut self,
-        protected_metadata_methods: ProtectedMethods<MetadataMethod>,
-    ) -> Self {
-        self.protect(protected_metadata_methods);
+    pub fn methods(mut self, permissions: C::Permissions) -> Self {
+        self.set_permissions(permissions);
         self
     }
 
-    pub fn set_metadata(mut self, metadata: Metadata) -> Self {
+    pub fn metadata(mut self, init: MetadataInit) -> Self {
         if self.metadata.is_some() {
             panic!("Metadata already set.");
         }
-        self.metadata = Some(metadata);
-        self
-    }
+        self.metadata = Some(init.metadata);
+        self.set_permissions(init.permissions);
 
-    fn set_permissions<T: MethodMapping<MethodPermission>>(&mut self, permissions: T) {
-        for (method, permissions) in permissions.to_mapping() {
-            match permissions {
-                MethodPermission::Public => {}
-                MethodPermission::Protected(role_list) => {
-                    self.protected_module_methods
-                        .insert(MethodKey::new(T::MODULE_ID, method), role_list);
-                }
-            }
-        }
+        self
     }
 
     pub fn royalties(mut self, royalties: RoyaltiesConfig<C::Royalties>) -> Self {
@@ -329,14 +312,21 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn methods(mut self, permissions: C::Permissions) -> Self {
-        self.set_permissions(permissions);
-        self
-    }
-
     pub fn with_address(mut self, address: ComponentAddress) -> Self {
         self.address = Some(address);
         self
+    }
+
+    fn set_permissions<T: MethodMapping<MethodPermission>>(&mut self, permissions: T) {
+        for (method, permissions) in permissions.to_mapping() {
+            match permissions {
+                MethodPermission::Public => {}
+                MethodPermission::Protected(role_list) => {
+                    self.protected_module_methods
+                        .insert(MethodKey::new(T::MODULE_ID, method), role_list);
+                }
+            }
+        }
     }
 
     pub fn globalize(mut self) -> Global<C> {

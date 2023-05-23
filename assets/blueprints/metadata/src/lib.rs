@@ -12,8 +12,14 @@ mod metadata {
                 .define_roles(roles! {
                     "public" => rule!(allow_all);
                 })
-                .protect_metadata(protect! {
-                    MetadataMethod::set => ["public"];
+                .metadata(metadata! {
+                    init {
+                    },
+                    permissions {
+                        set => ["public"];
+                        remove => ["public"];
+                        get => ["public"];
+                    }
                 })
                 .globalize()
         }

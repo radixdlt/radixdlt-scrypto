@@ -841,7 +841,7 @@ mod tests {
                     }
 
                     pub struct Methods<T> {
-                        x: t,
+                        x: T,
                     }
 
                     impl<T> MethodMapping<T> for Methods<T> {

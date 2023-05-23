@@ -25,12 +25,12 @@ mod royalty_test {
                     "public" => rule!(allow_all);
                 })
                 .royalties(royalties! {
-                    init => {
+                    init {
                         free_method => Free;
                         paid_method => 1u32;
                         paid_method_panic => 1u32;
                     },
-                    permissions => {
+                    permissions {
                         claim_royalty => ["public"];
                         set_royalty_config => [];
                     }

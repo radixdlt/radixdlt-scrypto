@@ -460,6 +460,17 @@ macro_rules! external_component_members {
 }
 
 #[macro_export]
+macro_rules! metadata_methods {
+    ($($method:ident => $permission:expr;)*) => ({
+        MetadataMethods::<MethodPermission> {
+            $(
+                $method: $permission.into(),
+            )*
+        }
+    })
+}
+
+#[macro_export]
 macro_rules! royalty_methods {
     ($($method:ident => $permission:expr;)*) => ({
         RoyaltyMethods::<MethodPermission> {
@@ -494,7 +505,7 @@ macro_rules! method_royalties {
 
 #[macro_export]
 macro_rules! royalties {
-    (init => $method_royalties:tt, permissions => $permissions:tt) => ({
+    (init $method_royalties:tt, permissions $permissions:tt) => ({
         RoyaltiesConfig {
             method_royalties: method_royalties!$method_royalties,
             permissions: royalty_methods!$permissions,
@@ -503,43 +514,7 @@ macro_rules! royalties {
 }
 
 #[macro_export]
-macro_rules! protect {
-    ( ) => ({
-        ::scrypto::component::ProtectedMethods::new()
-    });
-    ( $($method:expr => $roles:expr);* ) => ({
-        let mut protected_methods = ::scrypto::component::ProtectedMethods::new();
-        $(
-            protected_methods.insert($method, $roles);
-        )*
-        protected_methods
-    });
-    ( $($method:expr => $roles:expr;)* ) => ({
-        protect!{$($method => $roles);*}
-    })
-}
-
-/*
-#[macro_export]
-macro_rules! royalties {
-    ( ) => ({
-        ::scrypto::component::Royalties::new()
-    });
-    ( $($method:expr => $royalty:expr);* ) => ({
-        let mut royalties = ::scrypto::component::Royalties::new();
-        $(
-            royalties.insert($method, $royalty);
-        )*
-        royalties
-    });
-    ( $($method:expr => $royalty:expr;)* ) => ({
-        royalties!{$($method => $royalty);*}
-    })
-}
- */
-
-#[macro_export]
-macro_rules! metadata {
+macro_rules! metadata_init {
     ( ) => ({
         ::scrypto::prelude::Metadata::new()
     });
@@ -551,6 +526,16 @@ macro_rules! metadata {
         metadata
     });
     ( $($key:expr => $value:expr;)* ) => ({
-        metadata!{$($key => $value);*}
+        metadata_init!{$($key => $value);*}
+    })
+}
+
+#[macro_export]
+macro_rules! metadata {
+    (init $init:tt, permissions $permissions:tt) => ({
+        MetadataInit {
+            metadata: metadata_init!$init,
+            permissions: metadata_methods!$permissions,
+        }
     })
 }

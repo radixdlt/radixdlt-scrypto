@@ -41,12 +41,12 @@ mod royalty_test {
                     "auth" => rule!(require(badge)), ["auth"];
                 })
                 .royalties(royalties!(
-                    init => {
+                    init {
                         paid_method => 1u32;
                         paid_method_panic => 1u32;
                         free_method => Free;
                     },
-                    permissions => {
+                    permissions {
                         set_royalty_config => ["auth"];
                         claim_royalty => ["auth"];
                     }

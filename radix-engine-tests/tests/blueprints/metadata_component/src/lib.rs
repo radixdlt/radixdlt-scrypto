@@ -11,8 +11,15 @@ mod metadata_component {
             let global = Self {}
                 .instantiate()
                 .prepare_to_globalize()
-                .set_metadata(metadata! {
-                    key.clone() => value.clone();
+                .metadata(metadata! {
+                    init {
+                        key.clone() => value.clone();
+                    },
+                    permissions {
+                        set => [];
+                        remove => [];
+                        get => Public;
+                    }
                 })
                 .globalize();
 
@@ -28,9 +35,14 @@ mod metadata_component {
                 .define_roles(roles! {
                     "metadata" => rule!(allow_all);
                 })
-                .protect_metadata(protect!(
-                    MetadataMethod::set => ["metadata"];
-                ))
+                .metadata(metadata! {
+                    init {},
+                    permissions {
+                        set => ["metadata"];
+                        remove => ["metadata"];
+                        get => Public;
+                    }
+                })
                 .globalize();
 
             let metadata = global.metadata();
