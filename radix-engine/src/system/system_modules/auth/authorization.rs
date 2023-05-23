@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::access_rules::NodeAuthorityRules;
+use crate::system::node_modules::access_rules::NodeAuthorizationRules;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -288,7 +288,8 @@ impl Authorization {
     pub fn verify_auth_rule<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorityRules,
+        access_rules_of: Option<&NodeId>,
+        access_rules: &NodeAuthorizationRules,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -299,9 +300,10 @@ impl Authorization {
                     return Ok(AuthorizationCheckResult::Authorized);
                 }
 
-                let rtn = Self::check_authorization_against_authority_key_internal(
+                let rtn = Self::check_authorization_against_role_key_internal(
                     acting_location,
                     auth_zone_id,
+                    access_rules_of,
                     access_rules,
                     authority,
                     already_verified_authorities,
@@ -329,6 +331,7 @@ impl Authorization {
                     let rtn = Self::verify_auth_rule(
                         acting_location,
                         auth_zone_id,
+                        access_rules_of,
                         access_rules,
                         r,
                         already_verified_authorities,
@@ -345,6 +348,7 @@ impl Authorization {
                     let rtn = Self::verify_auth_rule(
                         acting_location,
                         auth_zone_id,
+                        access_rules_of,
                         access_rules,
                         r,
                         already_verified_authorities,
@@ -360,30 +364,45 @@ impl Authorization {
         }
     }
 
-    pub fn check_authorization_against_authority_key_internal<
+    pub fn check_authorization_against_role_key_internal<
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorityRules,
+        access_rules_of: Option<&NodeId>,
+        access_rules: &NodeAuthorizationRules,
         key: &RoleKey,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        match access_rules.get_rule(key) {
-            Some(access_rule) => {
-                // TODO: Add costing for every access rule hop
-                Self::check_authorization_against_access_rule_internal(
-                    acting_location,
-                    auth_zone_id,
-                    access_rules,
-                    access_rule,
-                    already_verified_authorities,
-                    api,
-                )
+        let access_rule = if key.key.eq("self") {
+            if let Some(access_rules_of) = access_rules_of {
+                rule!(require(global_caller(GlobalAddress::new_or_panic(access_rules_of.0))))
+            } else {
+                return Ok(AuthorizationCheckResult::Failed(vec![]));
             }
-            None => Ok(AuthorizationCheckResult::Authorized),
-        }
+        } else {
+            match access_rules.get_rule(key) {
+                Some(access_rule) => {
+                    access_rule.clone()
+                }
+                None => {
+                    // TODO: Change to fail
+                    return Ok(AuthorizationCheckResult::Authorized);
+                }
+            }
+        };
+
+        // TODO: Add costing for every access rule hop
+        Self::check_authorization_against_access_rule_internal(
+            acting_location,
+            auth_zone_id,
+            access_rules_of,
+            access_rules,
+            &access_rule,
+            already_verified_authorities,
+            api,
+        )
     }
 
     fn check_authorization_against_access_rule_internal<
@@ -391,7 +410,8 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorityRules,
+        access_rules_of: Option<&NodeId>,
+        access_rules: &NodeAuthorizationRules,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -401,6 +421,7 @@ impl Authorization {
                 let mut rtn = Self::verify_auth_rule(
                     acting_location,
                     auth_zone_id,
+                    access_rules_of,
                     access_rules,
                     rule_node,
                     already_verified_authorities,
@@ -424,7 +445,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorityRules,
+        access_rules: &NodeAuthorizationRules,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -433,6 +454,7 @@ impl Authorization {
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
+            None,
             access_rules,
             rule,
             &mut already_verified_authorities,
@@ -445,7 +467,8 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorityRules,
+        access_rules_of: &NodeId,
+        access_rules: &NodeAuthorizationRules,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
@@ -454,9 +477,10 @@ impl Authorization {
         let mut failed = Vec::new();
 
         for key in &role_list.list {
-            let result = Self::check_authorization_against_authority_key_internal(
+            let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
+                Some(access_rules_of),
                 access_rules,
                 key,
                 &mut already_verified_authorities,

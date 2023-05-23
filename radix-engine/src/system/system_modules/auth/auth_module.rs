@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate, NodeAuthorityRules,
+    MethodAccessRulesSubstate, NodeAuthorizationRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -18,7 +18,7 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientActorApi, ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT,
 };
@@ -125,7 +125,7 @@ impl AuthModule {
 
         if let Some(parent) = info.outer_object {
             Self::check_authorization_against_access_rules(
-                callee.fn_identifier(),
+                callee,
                 auth_zone_id,
                 acting_location,
                 parent.as_node_id(),
@@ -138,7 +138,7 @@ impl AuthModule {
 
         if info.global {
             Self::check_authorization_against_access_rules(
-                callee.fn_identifier(),
+                callee,
                 auth_zone_id,
                 acting_location,
                 &node_id,
@@ -156,17 +156,17 @@ impl AuthModule {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        fn_identifier: FnIdentifier, // TODO: Cleanup
+        callee: &MethodActor, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        receiver: &NodeId,
+        access_rules_of: &NodeId,
         object_key: ObjectKey,
         method_key: MethodKey,
         args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         let handle = api.kernel_lock_substate(
-            receiver,
+            access_rules_of,
             ACCESS_RULES_FIELD_PARTITION,
             &AccessRulesField::AccessRules.into(),
             LockFlags::read_only(),
@@ -196,7 +196,7 @@ impl AuthModule {
                     ObjectKey::InnerBlueprint(..) => return Ok(()),
                 }
                 AccessRulesNativePackage::authorization(
-                    receiver,
+                    access_rules_of,
                     method_key.ident.as_str(),
                     args,
                     api,
@@ -212,7 +212,7 @@ impl AuthModule {
                     match &object_key {
                         ObjectKey::SELF => {
                             return Err(RuntimeError::ModuleError(ModuleError::AuthError(
-                                AuthError::NoMethod(fn_identifier),
+                                AuthError::NoMethod(callee.fn_identifier()),
                             )));
                         }
                         ObjectKey::InnerBlueprint(..) => return Ok(()),
@@ -222,9 +222,10 @@ impl AuthModule {
         };
 
         Self::check_authorization_against_role_list(
-            fn_identifier,
+            callee.fn_identifier(),
             auth_zone_id,
             acting_location,
+            access_rules_of,
             &node_authority_rules,
             &role_list,
             api,
@@ -240,13 +241,16 @@ impl AuthModule {
         fn_identifier: FnIdentifier, // TODO: Cleanup
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
-        access_rules: &NodeAuthorityRules,
+        access_rules_of: &NodeId,
+        access_rules: &NodeAuthorizationRules,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
+
         let result = Authorization::check_authorization_against_role_list(
             acting_location,
             *auth_zone_id,
+            access_rules_of,
             access_rules,
             role_list,
             api,
@@ -293,7 +297,7 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &NodeAuthorityRules::new(),
+                        &NodeAuthorizationRules::new(),
                         &access_rule,
                         &mut system,
                     )?;

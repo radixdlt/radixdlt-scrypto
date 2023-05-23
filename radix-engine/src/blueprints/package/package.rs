@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorityRules,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate, NodeAuthorizationRules,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_MEDIUM_FEE};
@@ -206,7 +206,7 @@ where
         node_modules.insert(
             ACCESS_RULES_FIELD_PARTITION,
             ModuleInit::AccessRules(MethodAccessRulesSubstate {
-                access_rules: NodeAuthorityRules::new(),
+                access_rules: NodeAuthorizationRules::new(),
                 inner_blueprint_access_rules: BTreeMap::new(),
             }),
         );
