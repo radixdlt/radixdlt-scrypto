@@ -94,20 +94,20 @@ fn build_access_rules(
         }
 
         let resman_protected_methods = method_permissions!(
-            MethodKey::metadata(METADATA_GET_IDENT) => [UPDATE_METADATA_AUTHORITY],
-            MethodKey::metadata(METADATA_SET_IDENT) => [UPDATE_METADATA_AUTHORITY],
-            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_AUTHORITY],
-            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_AUTHORITY],
-            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => Public,
-            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => Public,
-            MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => Public,
-            MethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => Public,
-            MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => Public,
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => Public,
-            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => Public,
+            MethodKey::metadata(METADATA_GET_IDENT) => [UPDATE_METADATA_AUTHORITY];
+            MethodKey::metadata(METADATA_SET_IDENT) => [UPDATE_METADATA_AUTHORITY];
+            MethodKey::main(FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT) => [MINT_AUTHORITY];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_UUID_IDENT) => [MINT_AUTHORITY];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_UUID_IDENT) => [MINT_AUTHORITY];
+            MethodKey::main(RESOURCE_MANAGER_BURN_IDENT) => [BURN_AUTHORITY];
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT) => [UPDATE_NON_FUNGIBLE_DATA_AUTHORITY];
+            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT) => Public;
+            MethodKey::main(RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT) => Public;
+            MethodKey::main(RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT) => Public;
+            MethodKey::main(RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT) => Public;
+            MethodKey::main(RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT) => Public;
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT) => Public;
+            MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => Public;
         );
 
         (resman_authority_rules, resman_protected_methods)
@@ -179,20 +179,20 @@ fn build_access_rules(
         }
 
         let vault_protected_methods = method_permissions!(
-            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => Public,
-            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => Public,
-            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => Public,
+            MethodKey::main(VAULT_GET_AMOUNT_IDENT) => Public;
+            MethodKey::main(VAULT_CREATE_PROOF_IDENT) => Public;
+            MethodKey::main(VAULT_CREATE_PROOF_OF_AMOUNT_IDENT) => Public;
 
-            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_AUTHORITY],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_AUTHORITY],
-            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_AUTHORITY],
-            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_AUTHORITY],
-            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_AUTHORITY],
-            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"],
-            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"],
-            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"],
-            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"],
+            MethodKey::main(VAULT_TAKE_IDENT) => [WITHDRAW_AUTHORITY];
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FEE_IDENT) => [WITHDRAW_AUTHORITY];
+            MethodKey::main(NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT) => [WITHDRAW_AUTHORITY];
+            MethodKey::main(VAULT_RECALL_IDENT) => [RECALL_AUTHORITY];
+            MethodKey::main(NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT) => [RECALL_AUTHORITY];
+            MethodKey::main(VAULT_PUT_IDENT) => [DEPOSIT_AUTHORITY];
+            MethodKey::main(FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+            MethodKey::main(NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+            MethodKey::main(FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT) => ["this_package"];
+            MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
         );
 
         (vault_authority_rules, vault_protected_methods)
@@ -211,20 +211,20 @@ fn build_access_rules(
         );
 
         let bucket_protected_methods = method_permissions!(
-            MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => Public,
-            MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => Public,
-            MethodKey::main(BUCKET_CREATE_PROOF_IDENT) => Public,
-            MethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => Public,
-            MethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => Public,
-            MethodKey::main(BUCKET_PUT_IDENT) => Public,
-            MethodKey::main(BUCKET_TAKE_IDENT) => Public,
-            MethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => Public,
-            MethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => Public,
+            MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => Public;
+            MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => Public;
+            MethodKey::main(BUCKET_CREATE_PROOF_IDENT) => Public;
+            MethodKey::main(BUCKET_CREATE_PROOF_OF_ALL_IDENT) => Public;
+            MethodKey::main(BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT) => Public;
+            MethodKey::main(BUCKET_PUT_IDENT) => Public;
+            MethodKey::main(BUCKET_TAKE_IDENT) => Public;
+            MethodKey::main(NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT) => Public;
+            MethodKey::main(NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => Public;
 
-            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"],
-            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"],
-            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"],
+            MethodKey::main(FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT) => ["this_package"];
+            MethodKey::main(FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT) => ["this_package"];
+            MethodKey::main(NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
+            MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
         );
 
         (bucket_authority_rules, bucket_protected_methods)
@@ -271,11 +271,11 @@ where
     };
 
     let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public,
-        MethodKey::main(PROOF_CLONE_IDENT) => Public,
-        MethodKey::main(PROOF_DROP_IDENT) => Public,
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public,
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public,
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
+        MethodKey::main(PROOF_CLONE_IDENT) => Public;
+        MethodKey::main(PROOF_DROP_IDENT) => Public;
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
     );
 
     let resman_access_rules = AccessRules::create(
@@ -324,11 +324,11 @@ where
     ) = build_access_rules(access_rules);
 
     let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public,
-        MethodKey::main(PROOF_CLONE_IDENT) => Public,
-        MethodKey::main(PROOF_DROP_IDENT) => Public,
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public,
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public,
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
+        MethodKey::main(PROOF_CLONE_IDENT) => Public;
+        MethodKey::main(PROOF_DROP_IDENT) => Public;
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
     );
 
     let resman_access_rules = AccessRules::create(
@@ -382,11 +382,11 @@ where
     ) = build_access_rules(access_rules);
 
     let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public,
-        MethodKey::main(PROOF_CLONE_IDENT) => Public,
-        MethodKey::main(PROOF_DROP_IDENT) => Public,
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public,
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public,
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
+        MethodKey::main(PROOF_CLONE_IDENT) => Public;
+        MethodKey::main(PROOF_DROP_IDENT) => Public;
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
     );
 
     let resman_access_rules = AccessRules::create(

@@ -175,9 +175,9 @@ impl ClockNativePackage {
 
         let access_rules = AccessRules::create(
             method_permissions!(
-                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => [CLOCK_AUTHORITY],
-                MethodKey::main(CLOCK_GET_CURRENT_TIME_IDENT) => MethodPermission::Public,
-                MethodKey::main(CLOCK_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public,
+                MethodKey::main(CLOCK_SET_CURRENT_TIME_IDENT) => [CLOCK_AUTHORITY];
+                MethodKey::main(CLOCK_GET_CURRENT_TIME_IDENT) => MethodPermission::Public;
+                MethodKey::main(CLOCK_COMPARE_CURRENT_TIME_IDENT) => MethodPermission::Public;
             ),
             authority_rules,
             btreemap!(),

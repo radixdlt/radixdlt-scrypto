@@ -1,6 +1,3 @@
-use crate::blueprints::account::{
-    ACCOUNT_CREATE_PROOF_AUTHORITY, ACCOUNT_SECURIFY_AUTHORITY, ACCOUNT_WITHDRAW_AUTHORITY,
-};
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -45,41 +42,38 @@ impl From<AccountError> for RuntimeError {
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
+    const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
-    const SECURIFY_METHOD: Option<&'static str> = Some(ACCOUNT_SECURIFY_AUTHORITY);
+    const SECURIFY_METHOD: Option<&'static str> = Some(ACCOUNT_SECURIFY_IDENT);
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => ["owner"],
-            MethodKey::main(ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT) => ["owner"],
-            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT) => ["owner"],
-            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT) => ["owner"],
-            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT) => ["owner"],
-            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT) => ["owner"],
+            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [Self::OWNER_ROLE];
 
-            MethodKey::main(ACCOUNT_WITHDRAW_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_CONTINGENT_FEE_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-            MethodKey::main(ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT) => [ACCOUNT_WITHDRAW_AUTHORITY],
-
-            MethodKey::main(ACCOUNT_CREATE_PROOF_IDENT) => [ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT) => [ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT) => [ACCOUNT_CREATE_PROOF_AUTHORITY],
-            MethodKey::main(ACCOUNT_SECURIFY_IDENT) => [ACCOUNT_SECURIFY_AUTHORITY],
-
-            MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => MethodPermission::Public,
-            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => MethodPermission::Public,
-            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_IDENT) => MethodPermission::Public,
-            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT) => MethodPermission::Public,
+            MethodKey::main(ACCOUNT_DEPOSIT_IDENT) => MethodPermission::Public;
+            MethodKey::main(ACCOUNT_DEPOSIT_BATCH_IDENT) => MethodPermission::Public;
+            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_IDENT) => MethodPermission::Public;
+            MethodKey::main(ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT) => MethodPermission::Public;
         )
     }
 
     fn role_definitions() -> Roles {
         roles! {
-            ACCOUNT_WITHDRAW_AUTHORITY => rule!(require("owner"));
-            ACCOUNT_CREATE_PROOF_AUTHORITY => rule!(require("owner"));
             Self::SELF_ROLE => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))); // TODO: Use self object
         }
     }

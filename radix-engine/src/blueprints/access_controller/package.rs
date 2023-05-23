@@ -1306,31 +1306,31 @@ fn init_access_rules_from_rule_set(
     };
 
     let protected_methods = method_permissions!(
-        MethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"],
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"],
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"],
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"],
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"],
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"],
-        MethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"],
+        MethodKey::main(ACCESS_CONTROLLER_CREATE_PROOF_IDENT) => ["primary"];
+        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT) => ["primary"];
+        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary"];
+        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT) => ["primary"];
+        MethodKey::main(ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) =>  ["primary"];
+        MethodKey::main(ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
+        MethodKey::main(ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT) => ["recovery"];
 
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"],
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"],
+        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["recovery", "confirmation"];
+        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["recovery", "confirmation"];
 
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"],
-        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"],
+        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT) => ["primary", "confirmation"];
+        MethodKey::main(ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT) => ["primary", "confirmation"];
 
 
-        MethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"],
+        MethodKey::main(ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT) => ["primary", "recovery"];
 
-        MethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"],
+        MethodKey::main(ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT) => ["primary", "confirmation", "recovery"];
 
-        MethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"],
+        MethodKey::main(ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT) => ["this_package"];
     );
 
     (role_definitions, protected_methods)

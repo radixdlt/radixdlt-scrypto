@@ -76,6 +76,12 @@ pub enum MethodPermission {
     Protected(RoleList),
 }
 
+impl MethodPermission {
+    pub fn nobody() -> Self {
+        MethodPermission::Protected(RoleList::none())
+    }
+}
+
 impl<const N: usize> From<[&str; N]> for MethodPermission {
     fn from(value: [&str; N]) -> Self {
         MethodPermission::Protected(value.into())

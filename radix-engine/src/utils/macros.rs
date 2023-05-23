@@ -16,7 +16,7 @@ macro_rules! event_schema {
 
 #[macro_export]
 macro_rules! method_permissions {
-    ( $($key:expr => $value:expr),* ) => ({
+    ( $($key:expr => $value:expr);* ) => ({
         let mut temp: BTreeMap<MethodKey, (MethodPermission, RoleList)>
             = BTreeMap::new();
         $(
@@ -24,7 +24,7 @@ macro_rules! method_permissions {
         )*
         temp
     });
-    ( $($key:expr => $value:expr,)* ) => (
-        method_permissions!{$($key => $value),*}
+    ( $($key:expr => $value:expr;)* ) => (
+        method_permissions!{$($key => $value);*}
     );
 }

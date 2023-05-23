@@ -8,7 +8,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList,
+    MethodKey, MethodPermission, ObjectKey, RoleList,
 };
 use radix_engine_interface::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_engine_interface::types::NodeId;

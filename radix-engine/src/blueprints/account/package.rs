@@ -14,10 +14,6 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use radix_engine_interface::types::ClientCostingReason;
 use resources_tracker_macro::trace_resources;
 
-pub const ACCOUNT_WITHDRAW_AUTHORITY: &str = "withdraw";
-pub const ACCOUNT_CREATE_PROOF_AUTHORITY: &str = "create_proof";
-pub const ACCOUNT_SECURIFY_AUTHORITY: &str = "securify";
-
 use super::AccountSubstate;
 
 const ACCOUNT_CREATE_VIRTUAL_ECDSA_SECP256K1_EXPORT_NAME: &str = "create_virtual_ecdsa_secp256k1";

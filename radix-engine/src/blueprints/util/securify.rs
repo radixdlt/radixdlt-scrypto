@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::resource::*;
 
 pub trait SecurifiedAccessRules {
     const OWNER_BADGE: ResourceAddress;
+    const OWNER_ROLE: &'static str;
     const SECURIFY_METHOD: Option<&'static str> = None;
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)>;
@@ -26,13 +27,13 @@ pub trait SecurifiedAccessRules {
         role_definitions: Roles,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut roles = Self::create_roles(role_definitions);
+        let roles = Self::create_roles(role_definitions);
+        let mut method_permissions = Self::method_permissions();
 
         if let Some(securify) = Self::SECURIFY_METHOD {
-            roles.define_role(securify, AccessRule::DenyAll, RoleList::none());
+            method_permissions.insert(MethodKey::main(securify), (MethodPermission::nobody(), RoleList::none()));
         }
 
-        let method_permissions = Self::method_permissions();
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
 
         Ok(access_rules)
@@ -57,7 +58,7 @@ pub trait SecurifiedAccessRules {
         if let Some(securify) = Self::SECURIFY_METHOD {
             access_rules.set_method_permission_and_mutability(
                 MethodKey::main(securify),
-                MethodPermission::Protected(RoleList::none()),
+                MethodPermission::nobody(),
                 RoleList::none(),
                 api,
             )?;
@@ -65,11 +66,11 @@ pub trait SecurifiedAccessRules {
 
         let global_id = NonFungibleGlobalId::new(Self::OWNER_BADGE, owner_local_id);
         access_rules.define_role(
-            RoleKey::new("owner"),
+            RoleKey::new(Self::OWNER_ROLE),
             rule!(require(global_id.clone())),
             api,
         )?;
-        access_rules.set_role_mutability("owner", ["owner"], api)?;
+        access_rules.set_role_mutability(Self::OWNER_ROLE, [Self::OWNER_ROLE], api)?;
 
         Ok(bucket)
     }
@@ -83,13 +84,13 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = Self::create_roles(Roles::new());
-        roles.define_role("owner", rule!(require(owner_id)), [Self::SELF_ROLE]);
+        roles.define_role(Self::OWNER_ROLE, rule!(require(owner_id)), [Self::SELF_ROLE]);
 
         let mut method_permissions = Self::method_permissions();
         if let Some(securify) = Self::SECURIFY_METHOD {
             method_permissions.insert(
                 MethodKey::main(securify),
-                (["owner"].into(), [Self::SELF_ROLE].into()),
+                ([Self::OWNER_ROLE].into(), [Self::SELF_ROLE].into()),
             );
         }
 

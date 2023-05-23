@@ -188,14 +188,14 @@ struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
+    const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_METHOD: Option<&'static str> = Some(IDENTITY_SECURIFY_IDENT);
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(
-            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => ["owner"],
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => ["owner"],
-            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => ["owner"],
-            MethodKey::new(ObjectModuleId::Main, IDENTITY_SECURIFY_IDENT) => [IDENTITY_SECURIFY_IDENT],
+            MethodKey::new(ObjectModuleId::Metadata, METADATA_SET_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::new(ObjectModuleId::Royalty, COMPONENT_ROYALTY_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
         )
     }
 

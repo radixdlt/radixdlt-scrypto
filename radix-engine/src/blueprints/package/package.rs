@@ -113,20 +113,19 @@ fn validate_package_event_schema(schema: &PackageSchema) -> Result<(), PackageEr
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
+    const OWNER_ROLE: &'static str = "owner";
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => ["owner"],
-            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [PACKAGE_ROYALTY_AUTHORITY],
-            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [PACKAGE_ROYALTY_AUTHORITY],
+            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(PACKAGE_CLAIM_ROYALTY_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(PACKAGE_SET_ROYALTY_CONFIG_IDENT) => [Self::OWNER_ROLE];
         )
     }
 
     fn role_definitions() -> Roles {
-        roles! {
-            "package_royalty" => rule!(require("owner"));
-        }
+        roles! { }
     }
 }
 

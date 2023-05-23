@@ -194,11 +194,11 @@ impl EpochManagerBlueprint {
 
         let access_rules = AccessRules::create(
             method_permissions!(
-                MethodKey::main(EPOCH_MANAGER_START_IDENT) => ["self"],
-                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_AUTHORITY],
-                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_AUTHORITY],
-                MethodKey::main(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public,
-                MethodKey::main(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public,
+                MethodKey::main(EPOCH_MANAGER_START_IDENT) => ["self"];
+                MethodKey::main(EPOCH_MANAGER_NEXT_ROUND_IDENT) => [VALIDATOR_AUTHORITY];
+                MethodKey::main(EPOCH_MANAGER_SET_EPOCH_IDENT) => [SYSTEM_AUTHORITY];
+                MethodKey::main(EPOCH_MANAGER_GET_CURRENT_EPOCH_IDENT) => MethodPermission::Public;
+                MethodKey::main(EPOCH_MANAGER_CREATE_VALIDATOR_IDENT) => MethodPermission::Public;
             ),
             role_definitions,
             btreemap!(

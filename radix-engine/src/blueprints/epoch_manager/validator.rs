@@ -787,30 +787,32 @@ struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
+    const OWNER_ROLE: &'static str = "owner";
     const SECURIFY_METHOD: Option<&'static str> = None;
 
     fn method_permissions() -> BTreeMap<MethodKey, (MethodPermission, RoleList)> {
         method_permissions!(
-            MethodKey::metadata(METADATA_SET_IDENT) => ["owner"],
+            MethodKey::metadata(METADATA_SET_IDENT) => [Self::OWNER_ROLE];
 
-            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public,
-            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public,
+            MethodKey::main(VALIDATOR_UNSTAKE_IDENT) => MethodPermission::Public;
+            MethodKey::main(VALIDATOR_CLAIM_XRD_IDENT) => MethodPermission::Public;
 
-            MethodKey::main(VALIDATOR_REGISTER_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => ["owner"],
-            MethodKey::main(VALIDATOR_STAKE_IDENT) => [VALIDATOR_STAKE_AUTHORITY],
-            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY],
+            MethodKey::main(VALIDATOR_STAKE_IDENT) => [VALIDATOR_STAKE_AUTHORITY];
+
+            MethodKey::main(VALIDATOR_REGISTER_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_UNREGISTER_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_UPDATE_KEY_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT) => [Self::OWNER_ROLE];
+            MethodKey::main(VALIDATOR_APPLY_EMISSION_IDENT) => [VALIDATOR_APPLY_EMISSION_AUTHORITY];
         )
     }
 
     fn role_definitions() -> Roles {
         roles! {
-            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE)));
+            "self" => rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))); // TODO: Change to self
             VALIDATOR_STAKE_AUTHORITY => rule!(require("owner")), vec!["self"];
             VALIDATOR_APPLY_EMISSION_AUTHORITY => rule!(require(global_caller(EPOCH_MANAGER)));
         }
