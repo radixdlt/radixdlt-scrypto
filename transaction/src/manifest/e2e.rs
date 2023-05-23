@@ -376,164 +376,122 @@ SET_METADATA
     Address("${package_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${account_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
     Enum<0u8>(
-        Enum<0u8>(
-            "v"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<1u8>(
-            true
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<2u8>(
-            123u8
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<3u8>(
-            123u32
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<4u8>(
-            123u64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<5u8>(
-            -123i32
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<6u8>(
-            -123i64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<7u8>(
-            Decimal("10.5")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<8u8>(
-            Address("${account_address}")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<9u8>(
-            Enum<0u8>(
-                Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
-            )
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<10u8>(
-            NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<11u8>(
-            NonFungibleLocalId("<some_string>")
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<12u8>(
-            10000i64
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<13u8>(
-            "https://radixdlt.com/index.html"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<14u8>(
-            "https://radixdlt.com"
-        )
-    );
-SET_METADATA
-    Address("${resource_address}")
-    "field_name"
-    Enum<0u8>(
-        Enum<15u8>(
-            Enum<0u8>(
-                Bytes("0000000000000000000000000000000000000000000000000000000000")
-            )
-        )
+        "Metadata string value, eg description"
     );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
     Enum<1u8>(
-        Array<Enum>(
-            Enum<0u8>(
-                "some_string"
-            ),
-            Enum<0u8>(
-                "another_string"
-            ),
-            Enum<0u8>(
-                "yet_another_string"
-            )
+        true
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<2u8>(
+        123u8
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<3u8>(
+        123u32
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<4u8>(
+        123u64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<5u8>(
+        -123i32
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<6u8>(
+        -123i64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<7u8>(
+        Decimal("10.5")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<8u8>(
+        Address("${account_address}")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<9u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
+        )
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<10u8>(
+        NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<11u8>(
+        NonFungibleLocalId("<some_string>")
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<12u8>(
+        10000i64
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<13u8>(
+        "https://radixdlt.com/index.html"
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<14u8>(
+        "https://radixdlt.com"
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<15u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000")
+        )
+    );
+SET_METADATA
+    Address("${resource_address}")
+    "field_name"
+    Enum<128u8>(
+        Array<String>(
+            "some_string",
+            "another_string",
+            "yet_another_string"
         )
     );
 REMOVE_METADATA

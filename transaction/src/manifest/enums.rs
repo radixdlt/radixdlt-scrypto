@@ -10,7 +10,6 @@ macro_rules! known_enum {
 }
 
 // TODO: we need a final sanity check before mainnet launch!
-
 lazy_static! {
     pub static ref KNOWN_ENUM_DISCRIMINATORS: NonIterMap<&'static str, u8> = {
         let mut m = NonIterMap::new();
@@ -44,7 +43,7 @@ lazy_static! {
                 I32 = 5;
                 I64 = 6;
                 Decimal = 7;
-                GlobalAddress = 8;
+                Address = 8;
                 PublicKey = 9;
                 NonFungibleGlobalId = 10;
                 NonFungibleLocalId = 11;
@@ -61,7 +60,7 @@ lazy_static! {
                 I32Array = 133;
                 I64Array = 134;
                 DecimalArray = 135;
-                GlobalAddressArray = 136;
+                AddressArray = 136;
                 PublicKeyArray = 137;
                 NonFungibleGlobalIdArray = 138;
                 NonFungibleLocalIdArray = 139;
@@ -142,6 +141,22 @@ lazy_static! {
                 AllowExisting = 1;
                 AllowList = 2;
                 DisallowList = 3;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum PublicKey {
+                Secp256k1 = 0;
+                Ed25519 = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum PublicKeyHash {
+                Secp256k1 = 0;
+                Ed25519 = 1;
             }
         );
 
