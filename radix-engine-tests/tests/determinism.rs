@@ -2,7 +2,7 @@ use radix_engine::types::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 #[test]
 fn test_simple_deterministic_execution() {
@@ -52,7 +52,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
         .map(|_| {
             builder
                 .create_proof_from_account_of_amount(account, resource_address, 1.into())
-                .add_instruction(Instruction::PopFromAuthZone)
+                .add_instruction(InstructionV1::PopFromAuthZone)
                 .2
                 .unwrap()
         })

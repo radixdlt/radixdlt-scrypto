@@ -1,13 +1,13 @@
 use crate::model::*;
 use crate::signing::Signer;
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::manifest::manifest_encode;
+
+use super::manifest_builder::TransactionManifestV1;
 
 pub struct TransactionBuilder {
-    manifest: Option<TransactionManifest>,
-    header: Option<TransactionHeader>,
-    intent_signatures: Vec<SignatureWithPublicKey>,
-    notary_signature: Option<Signature>,
+    manifest: Option<TransactionManifestV1>,
+    header: Option<TransactionHeaderV1>,
+    intent_signatures: Vec<SignatureWithPublicKeyV1>,
+    notary_signature: Option<SignatureV1>,
 }
 
 impl TransactionBuilder {
@@ -20,62 +20,82 @@ impl TransactionBuilder {
         }
     }
 
-    pub fn manifest(mut self, manifest: TransactionManifest) -> Self {
+    pub fn manifest(mut self, manifest: TransactionManifestV1) -> Self {
         self.manifest = Some(manifest);
         self
     }
 
-    pub fn header(mut self, header: TransactionHeader) -> Self {
+    pub fn header(mut self, header: TransactionHeaderV1) -> Self {
         self.header = Some(header);
         self
     }
 
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
-        let intent_payload = manifest_encode(&intent).unwrap();
-        let intent_payload_hash = hash(intent_payload);
+        let prepared = intent.prepare().expect("Intent could be prepared");
         self.intent_signatures
-            .push(signer.sign(&intent_payload_hash));
+            .push(signer.sign_with_public_key(&prepared.intent_hash()));
         self
     }
 
-    pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKey>) -> Self {
+    pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKeyV1>) -> Self {
         self.intent_signatures.extend(sigs);
         self
     }
 
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
-        let signed_intent_payload = manifest_encode(&signed_intent).unwrap();
-        let signed_intent_payload_hash = hash(signed_intent_payload);
-        self.notary_signature = Some(signer.sign(&signed_intent_payload_hash).signature());
+        let prepared = signed_intent
+            .prepare()
+            .expect("Signed intent could be prepared");
+        self.notary_signature = Some(
+            signer
+                .sign_with_public_key(&prepared.signed_intent_hash())
+                .signature(),
+        );
         self
     }
 
-    pub fn notary_signature(mut self, signature: Signature) -> Self {
+    pub fn notary_signature(mut self, signature: SignatureV1) -> Self {
         self.notary_signature = Some(signature);
         self
     }
 
-    pub fn build(&self) -> NotarizedTransaction {
-        NotarizedTransaction {
+    pub fn build(&self) -> NotarizedTransactionV1 {
+        NotarizedTransactionV1 {
             signed_intent: self.signed_transaction_intent(),
-            notary_signature: self.notary_signature.clone().expect("Not notarized"),
+            notary_signature: NotarySignatureV1(
+                self.notary_signature.clone().expect("Not notarized"),
+            ),
         }
     }
 
-    fn transaction_intent(&self) -> TransactionIntent {
-        TransactionIntent {
-            manifest: self.manifest.clone().expect("Manifest not specified"),
+    fn transaction_intent(&self) -> IntentV1 {
+        let (instructions, blobs) = self
+            .manifest
+            .clone()
+            .expect("Manifest not specified")
+            .for_intent();
+        IntentV1 {
             header: self.header.clone().expect("Header not specified"),
+            instructions,
+            blobs,
+            attachments: AttachmentsV1 {},
         }
     }
 
-    fn signed_transaction_intent(&self) -> SignedTransactionIntent {
+    fn signed_transaction_intent(&self) -> SignedIntentV1 {
         let intent = self.transaction_intent();
-        SignedTransactionIntent {
+        SignedIntentV1 {
             intent,
-            intent_signatures: self.intent_signatures.clone(),
+            intent_signatures: IntentSignaturesV1 {
+                signatures: self
+                    .intent_signatures
+                    .clone()
+                    .into_iter()
+                    .map(|sig| IntentSignatureV1(sig))
+                    .collect(),
+            },
         }
     }
 }
@@ -93,22 +113,28 @@ mod tests {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
         let transaction = TransactionBuilder::new()
-            .header(TransactionHeader {
-                version: 1,
+            .header(TransactionHeaderV1 {
                 network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
                 notary_public_key: private_key.public_key().into(),
-                notary_as_signatory: true,
-                cost_unit_limit: 1_000_000,
+                notary_is_signatory: true,
                 tip_percentage: 5,
             })
             .manifest(ManifestBuilder::new().clear_auth_zone().build())
             .notarize(&private_key)
             .build();
 
-        let bytes = transaction.to_bytes().unwrap();
-        NotarizedTransaction::from_slice(&bytes).unwrap();
+        let prepared = transaction.prepare().unwrap();
+        assert_eq!(
+            prepared
+                .signed_intent
+                .intent
+                .header
+                .inner
+                .notary_is_signatory,
+            true
+        );
     }
 }

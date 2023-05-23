@@ -17,8 +17,8 @@ use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
 use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
+    PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
@@ -57,10 +57,12 @@ use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
+use transaction::builder::TransactionManifestV1;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-use transaction::model::{AuthZoneParams, PreviewIntent, TestTransaction};
-use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
-use transaction::validation::TestIntentHashManager;
+use transaction::model::{
+    AuthZoneParams, BlobsV1, Executable, InstructionV1, InstructionsV1, PreviewIntentV1,
+    SystemTransaction, TestTransaction,
+};
 
 pub struct Compile;
 
@@ -237,7 +239,6 @@ impl TestRunnerBuilder {
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
-            intent_hash_manager: TestIntentHashManager::new(),
             next_private_key,
             next_transaction_nonce,
             trace: self.trace,
@@ -258,9 +259,8 @@ impl TestRunnerBuilder {
 pub struct TestRunner {
     scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
-    intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     trace: bool,
     state_hash_support: Option<StateHashSupport>,
 }
@@ -269,7 +269,7 @@ pub struct TestRunner {
 pub struct TestRunnerSnapshot {
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
-    next_transaction_nonce: u64,
+    next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
@@ -318,7 +318,7 @@ impl TestRunner {
         self.next_private_key - 1
     }
 
-    pub fn next_transaction_nonce(&mut self) -> u64 {
+    pub fn next_transaction_nonce(&mut self) -> u32 {
         self.next_transaction_nonce += 1;
         self.next_transaction_nonce - 1
     }
@@ -745,7 +745,7 @@ impl TestRunner {
 
     pub fn execute_manifest_ignoring_fee<T>(
         &mut self,
-        mut manifest: TransactionManifest,
+        mut manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
     where
@@ -753,7 +753,7 @@ impl TestRunner {
     {
         manifest.instructions.insert(
             0,
-            transaction::model::Instruction::CallMethod {
+            transaction::model::InstructionV1::CallMethod {
                 address: self.faucet_component(),
                 method_name: "lock_fee".to_string(),
                 args: manifest_args!(dec!("100")),
@@ -764,36 +764,41 @@ impl TestRunner {
 
     pub fn execute_manifest<T>(
         &mut self,
-        manifest: TransactionManifest,
+        manifest: TransactionManifestV1,
         initial_proofs: T,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        self.execute_manifest_with_cost_unit_limit(
-            manifest,
-            initial_proofs,
-            DEFAULT_COST_UNIT_LIMIT,
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
         )
     }
 
     pub fn execute_manifest_with_cost_unit_limit<T>(
         &mut self,
-        manifest: TransactionManifest,
+        manifest: TransactionManifestV1,
         initial_proofs: T,
         cost_unit_limit: u32,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        let transactions =
-            TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit);
-        let executable = transactions.get_executable(initial_proofs.into_iter().collect());
-
-        let fee_reserve_config = FeeReserveConfig::default();
-        let execution_config = ExecutionConfig::default().with_trace(self.trace);
-
-        self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction_with_config(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default()
+                .with_trace(self.trace)
+                .with_cost_unit_limit(cost_unit_limit),
+        )
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
@@ -828,13 +833,12 @@ impl TestRunner {
 
     pub fn preview(
         &mut self,
-        preview_intent: PreviewIntent,
+        preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
-    ) -> Result<PreviewResult, PreviewError> {
+    ) -> Result<TransactionReceipt, PreviewError> {
         execute_preview(
             &self.substate_db,
             &mut self.scrypto_interpreter,
-            &self.intent_hash_manager,
             network,
             preview_intent,
         )
@@ -1172,47 +1176,30 @@ impl TestRunner {
         receipt.expect_commit(true).new_component_addresses()[0]
     }
 
-    pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerSetEpochInput { epoch }),
-        }];
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::system_role()]),
+    pub fn set_current_epoch(&mut self, epoch: u32) {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerSetEpochInput {
+                    epoch: epoch as u64,
+                }),
+            }],
+            btreeset![AuthAddresses::system_role()],
         );
         receipt.expect_commit_success();
     }
 
-    pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
-        }];
-
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+    pub fn get_current_epoch(&mut self) -> u32 {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentEpochInput),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output(0)
+        receipt.expect_commit(true).output::<u64>(0) as u32
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1222,63 +1209,94 @@ impl TestRunner {
             .get_current()
     }
 
-    pub fn execute_system_transaction(
+    pub fn execute_system_transaction_with_preallocation(
         &mut self,
-        instructions: Vec<Instruction>,
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
         pre_allocated_ids: BTreeSet<NodeId>,
     ) -> TransactionReceipt {
-        let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
         self.execute_transaction(
             SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_ids,
             }
-            .get_executable(btreeset![]),
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+        )
+    }
+
+    pub fn execute_validator_transaction(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+    ) -> TransactionReceipt {
+        self.execute_system_transaction(instructions, btreeset![AuthAddresses::validator_role()])
+    }
+
+    pub fn execute_system_transaction(
+        &mut self,
+        instructions: Vec<InstructionV1>,
+        proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> TransactionReceipt {
+        let nonce = self.next_transaction_nonce();
+
+        self.execute_transaction(
+            SystemTransaction {
+                instructions: InstructionsV1(instructions),
+                blobs: BlobsV1 { blobs: vec![] },
+                hash: hash(format!("Test runner txn: {}", nonce)),
+                pre_allocated_ids: BTreeSet::new(),
+            }
+            .prepare()
+            .expect("expected transaction to be preparable")
+            .get_executable(proofs),
+        )
+    }
+
+    /// Executes a "start round number `round`" system transaction, as if it was proposed by the
+    /// first validator from the validator set, after `round - 1` missed rounds by that validator.
+    pub fn advance_to_round(&mut self, round: u64) -> TransactionReceipt {
+        self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: EPOCH_MANAGER.into(),
+                method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                args: to_manifest_value(&EpochManagerNextRoundInput {
+                    round,
+                    leader_proposal_history: LeaderProposalHistory {
+                        gap_round_leaders: (1..round).map(|_| 0).collect(),
+                        current_leader: 0,
+                        is_fallback: false,
+                    },
+                }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         )
     }
 
     pub fn set_current_time(&mut self, current_time_ms: i64) {
-        let instructions = vec![Instruction::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput { current_time_ms }),
-        }];
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput { current_time_ms }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         );
         receipt.expect_commit(true).output(0)
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
-        let instructions = vec![Instruction::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
-        }];
-        let blobs = vec![];
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransaction {
-                instructions,
-                blobs,
-                nonce,
-                pre_allocated_ids: BTreeSet::new(),
-            }
-            .get_executable(btreeset![AuthAddresses::validator_role()]),
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
+                args: to_manifest_value(&ConsensusManagerGetCurrentTimeInput { precision }),
+            }],
+            btreeset![AuthAddresses::validator_role()],
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1326,10 +1344,11 @@ impl TestRunner {
             store: &mut track,
         };
 
-        kernel_boot.call_function(
+        kernel_boot.call_boot_function(
             package_address,
             blueprint_name,
             function_name,
+            &indexset!(),
             scrypto_args!(&args),
         )
     }
@@ -1430,6 +1449,15 @@ impl TestRunner {
         };
         let actual_type_name = self.event_name(event_type_identifier);
         expected_type_name == actual_type_name
+    }
+
+    pub fn extract_events_of_type<T: ScryptoEvent>(&self, result: &CommitResult) -> Vec<T> {
+        result
+            .application_events
+            .iter()
+            .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
+            .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
+            .collect::<Vec<_>>()
     }
 }
 

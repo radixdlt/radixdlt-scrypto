@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;
@@ -5,7 +6,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
-pub enum Instruction {
+pub enum InstructionV1 {
     //==============
     // Worktop
     //==============

@@ -9,6 +9,12 @@ macro_rules! categorize_tuple {
                 ValueKind::Tuple
             }
         }
+
+        impl<X: CustomValueKind$(, $name)*> SborTuple<X> for ($($name,)*) {
+            fn get_length(&self) -> usize {
+                $n
+            }
+        }
     };
 }
 

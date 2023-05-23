@@ -33,11 +33,12 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     /// Executes a transaction
-    pub fn call_function(
+    pub fn call_boot_function(
         self,
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
+        references: &IndexSet<Reference>,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(feature = "resource_tracker")]
@@ -56,13 +57,10 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         SystemConfig::on_init(&mut kernel)?;
 
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
-            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-        })?;
-
-        for node_id in args.references() {
+        for reference in references.iter() {
+            let node_id = &reference.0;
             if node_id.is_global_virtual() {
-                // For virtual accounts and native packages, create a reference directly
+                // For virtual accounts, create a reference directly
                 kernel
                     .current_frame
                     .add_global_reference(GlobalAddress::new_or_panic(node_id.clone().into()));
@@ -76,6 +74,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             {
                 continue;
             }
+
+            // We have a reference to a node which can't be invoked - so it must be a direct access,
+            // let's validate it as such
 
             let (handle, _store_access) = kernel
                 .store
@@ -118,8 +119,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
 
         let mut system = SystemService::new(&mut kernel);
 
-        let rtn =
-            system.call_function(package_address, blueprint_name, function_name, args.into())?;
+        let rtn = system.call_function(package_address, blueprint_name, function_name, args)?;
+
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
 

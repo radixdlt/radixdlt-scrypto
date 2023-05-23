@@ -212,6 +212,15 @@ impl ConsensusManagerNativePackage {
             },
         );
         functions.insert(
+            VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeInput>(),
+                output: aggregator.add_child_type_and_descendents::<ValidatorUpdateFeeOutput>(),
+                export_name: VALIDATOR_UPDATE_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -220,6 +229,39 @@ impl ConsensusManagerNativePackage {
                 output: aggregator
                     .add_child_type_and_descendents::<ValidatorUpdateAcceptDelegatedStakeOutput>(),
                 export_name: VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ValidatorLockOwnerStakeUnitsOutput>(),
+                export_name: VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ValidatorStartUnlockOwnerStakeUnitsOutput>(),
+                export_name: VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<ValidatorFinishUnlockOwnerStakeUnitsOutput>(),
+                export_name: VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -459,6 +501,15 @@ impl ConsensusManagerNativePackage {
                 let rtn = ValidatorBlueprint::update_key(input.key, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            VALIDATOR_UPDATE_FEE_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorUpdateFeeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::update_fee(input.new_fee_factor, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -474,6 +525,38 @@ impl ConsensusManagerNativePackage {
                     input.accept_delegated_stake,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorLockOwnerStakeUnitsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::lock_owner_stake_units(input.stake_unit_bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: ValidatorStartUnlockOwnerStakeUnitsInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ValidatorBlueprint::start_unlock_owner_stake_units(
+                    input.requested_stake_unit_amount,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let _input: ValidatorFinishUnlockOwnerStakeUnitsInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                    })?;
+                let rtn = ValidatorBlueprint::finish_unlock_owner_stake_units(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_APPLY_EMISSION_IDENT => {

@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerSetCurrentTimeInput, CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
 };
 use radix_engine_interface::time::UtcDateTime;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -22,7 +22,7 @@ pub struct SetCurrentTime {
 
 impl SetCurrentTime {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![Instruction::CallMethod {
+        let instructions = vec![InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
             args: to_manifest_value(&ConsensusManagerSetCurrentTimeInput {

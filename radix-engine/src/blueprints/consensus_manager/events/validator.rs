@@ -47,6 +47,8 @@ pub struct ValidatorEmissionAppliedEvent {
     /// percentage).
     /// Note: this fee is automatically staked and placed inside the owner's stake vault (internal
     /// to the validator).
+    /// Note: calculating `stake_pool_added_xrd + validator_fee_xrd` gives the total emission for
+    /// this validator (entirety of which goes into its stake pool XRD vault).
     /// Note: calculating `validator_fee_xrd / (stake_pool_added_xrd + validator_fee_xrd)` gives the
     /// validator's configured fee percentage effective during the emission period.
     pub validator_fee_xrd: Decimal,

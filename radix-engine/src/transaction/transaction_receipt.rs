@@ -316,24 +316,26 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_failure(&self) -> &RuntimeError {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
+                TransactionOutcome::Failure(error) => error,
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        }
+    }
+
     pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: Fn(&RuntimeError) -> bool,
     {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
-                TransactionOutcome::Failure(err) => {
-                    if !f(&err) {
-                        panic!(
-                            "Expected specific failure but was different error:\n{:?}",
-                            self
-                        );
-                    }
-                }
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        if !f(self.expect_failure()) {
+            panic!(
+                "Expected specific failure but was different error:\n{:?}",
+                self
+            );
         }
     }
 }

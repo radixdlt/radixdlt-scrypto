@@ -1,21 +1,13 @@
 use crate::*;
+use radix_engine_common::crypto::*;
 use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
-use radix_engine_common::{crypto::*, data::scrypto::model::Reference};
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 
 pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct TransactionProcessorRunInput<'a> {
-    pub transaction_hash: Hash,
-    pub runtime_validations: Vec<RuntimeValidationRequest>,
-    pub instructions: Vec<u8>,
-    // Use `Cow` to avoid large blob copy
-    pub blobs: BTreeMap<Hash, Cow<'a, [u8]>>,
-    pub references: BTreeSet<Reference>,
-}
+// TransactionProcessorInput in the engine
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;
 
@@ -56,8 +48,8 @@ pub enum RuntimeValidation {
     IntentHashUniqueness { intent_hash: Hash },
     /// For preview - still do the look-ups to give equivalent cost unit spend, but ignore the result
     WithinEpochRange {
-        start_epoch_inclusive: u64,
-        end_epoch_exclusive: u64,
+        start_epoch_inclusive: u32,
+        end_epoch_exclusive: u32,
     },
 }
 

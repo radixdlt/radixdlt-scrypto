@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::network::ParseNetworkError;
 use sbor::*;
 use transaction::errors::*;
+use transaction::model::ConvertToPreparedError;
 
 use crate::ledger::EntityDumpError;
 use crate::utils::*;
@@ -44,6 +45,8 @@ pub enum Error {
     TransactionConstructionError(BuildCallInstructionError),
 
     TransactionValidationError(TransactionValidationError),
+
+    ConvertToPreparedError(ConvertToPreparedError),
 
     TransactionFailed(RuntimeError),
 

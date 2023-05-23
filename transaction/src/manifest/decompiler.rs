@@ -111,7 +111,7 @@ impl<'a> DecompilationContext<'a> {
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    instructions: &[Instruction],
+    instructions: &[InstructionV1],
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     let bech32_encoder = Bech32Encoder::new(network);
@@ -127,11 +127,11 @@ pub fn decompile(
 
 pub fn decompile_instruction<F: fmt::Write>(
     f: &mut F,
-    instruction: &Instruction,
+    instruction: &InstructionV1,
     context: &mut DecompilationContext,
 ) -> Result<(), DecompileError> {
     match instruction {
-        Instruction::TakeFromWorktop {
+        InstructionV1::TakeFromWorktop {
             amount,
             resource_address,
         } => {
@@ -149,7 +149,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::TakeNonFungiblesFromWorktop {
+        InstructionV1::TakeNonFungiblesFromWorktop {
             ids,
             resource_address,
         } => {
@@ -170,7 +170,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::TakeAllFromWorktop { resource_address } => {
+        InstructionV1::TakeAllFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
                 .new_bucket_id()
@@ -184,7 +184,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
             context.bucket_names.insert(bucket_id, name);
         }
-        Instruction::ReturnToWorktop { bucket_id } => {
+        InstructionV1::ReturnToWorktop { bucket_id } => {
             write!(
                 f,
                 "RETURN_TO_WORKTOP\n    Bucket({});",
@@ -195,7 +195,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
-        Instruction::AssertWorktopContains {
+        InstructionV1::AssertWorktopContains {
             amount,
             resource_address,
         } => {
@@ -206,7 +206,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 amount
             )?;
         }
-        Instruction::AssertWorktopContainsNonFungibles {
+        InstructionV1::AssertWorktopContainsNonFungibles {
             ids,
             resource_address,
         } => {
@@ -221,7 +221,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .join(", ")
             )?;
         }
-        Instruction::PopFromAuthZone => {
+        InstructionV1::PopFromAuthZone => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -230,7 +230,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(f, "POP_FROM_AUTH_ZONE\n    Proof(\"{}\");", name)?;
         }
-        Instruction::PushToAuthZone { proof_id } => {
+        InstructionV1::PushToAuthZone { proof_id } => {
             write!(
                 f,
                 "PUSH_TO_AUTH_ZONE\n    Proof({});",
@@ -241,10 +241,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0))
             )?;
         }
-        Instruction::ClearAuthZone => {
+        InstructionV1::ClearAuthZone => {
             f.write_str("CLEAR_AUTH_ZONE;")?;
         }
-        Instruction::CreateProofFromAuthZone { resource_address } => {
+        InstructionV1::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -258,7 +258,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneOfAmount {
+        InstructionV1::CreateProofFromAuthZoneOfAmount {
             amount,
             resource_address,
         } => {
@@ -276,7 +276,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneOfNonFungibles {
+        InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
             ids,
             resource_address,
         } => {
@@ -296,7 +296,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromAuthZoneOfAll { resource_address } => {
+        InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -311,11 +311,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
 
-        Instruction::ClearSignatureProofs => {
+        InstructionV1::ClearSignatureProofs => {
             f.write_str("CLEAR_SIGNATURE_PROOFS;")?;
         }
 
-        Instruction::CreateProofFromBucket { bucket_id } => {
+        InstructionV1::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -334,7 +334,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
 
-        Instruction::CreateProofFromBucketOfAmount { bucket_id, amount } => {
+        InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -353,7 +353,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
+        InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -375,7 +375,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::CreateProofFromBucketOfAll { bucket_id } => {
+        InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
             let proof_id = context
                 .id_allocator
                 .new_proof_id()
@@ -393,7 +393,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::BurnResource { bucket_id } => {
+        InstructionV1::BurnResource { bucket_id } => {
             write!(
                 f,
                 "BURN_RESOURCE\n    Bucket({});",
@@ -404,7 +404,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;
         }
-        Instruction::CloneProof { proof_id } => {
+        InstructionV1::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
                 .new_proof_id()
@@ -422,7 +422,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 name
             )?;
         }
-        Instruction::DropProof { proof_id } => {
+        InstructionV1::DropProof { proof_id } => {
             write!(
                 f,
                 "DROP_PROOF\n    Proof({});",
@@ -433,7 +433,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
         }
-        Instruction::CallFunction {
+        InstructionV1::CallFunction {
             package_address,
             blueprint_name,
             function_name,
@@ -511,7 +511,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::CallMethod {
+        InstructionV1::CallMethod {
             address,
             method_name,
             args,
@@ -587,7 +587,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::CallRoyaltyMethod {
+        InstructionV1::CallRoyaltyMethod {
             address,
             method_name,
             args,
@@ -620,7 +620,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::CallMetadataMethod {
+        InstructionV1::CallMetadataMethod {
             address,
             method_name,
             args,
@@ -653,7 +653,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::CallAccessRulesMethod {
+        InstructionV1::CallAccessRulesMethod {
             address,
             method_name,
             args,
@@ -687,14 +687,14 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_encoded_args(f, context, args)?;
             f.write_str(";")?;
         }
-        Instruction::RecallResource { vault_id, amount } => {
+        InstructionV1::RecallResource { vault_id, amount } => {
             f.write_str("RECALL_RESOURCE")?;
             format_typed_value(f, context, vault_id)?;
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
 
-        Instruction::DropAllProofs => {
+        InstructionV1::DropAllProofs => {
             f.write_str("DROP_ALL_PROOFS;")?;
         }
     }
