@@ -73,6 +73,7 @@ impl SingleResourcePoolBlueprint {
             let substate = SingleResourcePoolSubstate {
                 vault: vault.0,
                 pool_unit_resource,
+                initial_pool_unit_amount: None,
             };
             api.new_simple_object(
                 SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -98,13 +99,64 @@ impl SingleResourcePoolBlueprint {
     }
 
     pub fn contribute<Y>(
-        _bucket: Bucket,
-        _api: &mut Y,
+        bucket: Bucket,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolContributeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        // No check that the bucket is of the same resource as the vault. This check will be handled
+        // by the vault itself on deposit.
+
+        let substate_key = SingleResourcePoolField::SingleResourcePool.into();
+        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let mut single_resource_pool_substate =
+            api.field_lock_read_typed::<SingleResourcePoolSubstate>(handle)?;
+
+        let mut pool_unit_resource_manager =
+            single_resource_pool_substate.pool_unit_resource_manager();
+        let mut vault = single_resource_pool_substate.vault();
+
+        let amount_of_resources_in_pool = vault.amount(api)?;
+        let amount_of_contributed_resources = bucket.amount(api)?;
+
+        // Case: The pool has had contributions before
+        let (is_first_deposit, pool_units_to_mint) = if let Some(first_pool_unit_amount_minted) =
+            single_resource_pool_substate.initial_pool_unit_amount
+        {
+            // Case: If the pool units have all been burned then mint the initial amount upon a
+            // contribution
+            if pool_unit_resource_manager.total_supply(api)? == Decimal::ZERO {
+                (false, first_pool_unit_amount_minted)
+            }
+            // Case: There are no more resources in this pool - thus the regular calculation would
+            // result in a divide by zero error.
+            else if amount_of_resources_in_pool == Decimal::ZERO {
+                return Err(SingleResourcePoolError::IllegalState.into());
+            } else {
+                (
+                    false,
+                    (bucket.amount(api)? / amount_of_resources_in_pool)
+                        * pool_unit_resource_manager.total_supply(api)?,
+                )
+            }
+        }
+        // Case: This is the first contribution to the pool
+        else {
+            single_resource_pool_substate.initial_pool_unit_amount =
+                Some(amount_of_contributed_resources);
+            (true, amount_of_contributed_resources)
+        };
+
+        vault.put(bucket, api)?;
+        let pool_units = pool_unit_resource_manager.mint_fungible(pool_units_to_mint, api)?;
+
+        if is_first_deposit {
+            api.field_lock_write_typed(handle, single_resource_pool_substate)?;
+        }
+        api.field_lock_release(handle)?;
+
+        Ok(pool_units)
     }
 
     pub fn redeem<Y>(

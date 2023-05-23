@@ -6,6 +6,7 @@ use radix_engine_common::ScryptoSbor;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SingleResourcePoolError {
     CantCreateAPoolOfNonFungibleResources { resource_address: ResourceAddress },
+    IllegalState,
 }
 
 impl From<SingleResourcePoolError> for RuntimeError {
