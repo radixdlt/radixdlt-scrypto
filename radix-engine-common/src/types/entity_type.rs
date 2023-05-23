@@ -44,6 +44,9 @@ pub enum EntityType {
     /// A global native access controller entity (195 in decimal). Gives Bech32 prefix: `c` followed by one of `v`, `d`, `w` or `0`.
     GlobalAccessController = 0b11000011, //---------- 11000 => c, 011xx => vdw0 (011 = access controller)
 
+    /// A global native pool entity (196 in decimal). Gives Bech32 prefix: `c` followed by one of `s`, `3`, `j` or `n`.
+    GlobalSingleResourcePool = 0b11000100, //---------- 11000 => c, 100xx => s3jn (100 = pool)
+
     //=========================================================================
     // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
     //=========================================================================
@@ -114,7 +117,8 @@ impl EntityType {
             | EntityType::GlobalVirtualSecp256k1Account
             | EntityType::GlobalVirtualEd25519Account
             | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => true,
+            | EntityType::GlobalVirtualEd25519Identity
+            | EntityType::GlobalSingleResourcePool => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalAccount
@@ -139,7 +143,8 @@ impl EntityType {
             | EntityType::GlobalVirtualSecp256k1Account
             | EntityType::GlobalVirtualEd25519Account
             | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => true,
+            | EntityType::GlobalVirtualEd25519Identity
+            | EntityType::GlobalSingleResourcePool => true,
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager

@@ -670,7 +670,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_ids.insert(POOL_PACKAGE.into());
         let package_address = POOL_PACKAGE.into();
-        instructions.push(Instruction::CallFunction {
+        instructions.push(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),

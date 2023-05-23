@@ -1,3 +1,4 @@
+use radix_engine::blueprints::pool::single_resource_pool::SingleResourcePoolSubstate;
 use radix_engine::types::*;
 use sbor::rust::prelude::*;
 
@@ -104,6 +105,7 @@ pub enum TypedMainModuleSubstateKey {
     AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
+    SingleResourcePoolField(SingleResourcePoolField),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -283,6 +285,11 @@ fn to_typed_object_substate_key_internal(
                 }
             }
         }
+        EntityType::GlobalSingleResourcePool => {
+            TypedMainModuleSubstateKey::SingleResourcePoolField(SingleResourcePoolField::try_from(
+                substate_key,
+            )?)
+        }
         // These seem to be spread between Object and Virtualized SysModules
         EntityType::InternalKeyValueStore => {
             let key = substate_key.for_map().ok_or(())?;
@@ -335,6 +342,7 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
+    SingleResourcePool(TypedSingleResourcePoolFieldValue),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -403,6 +411,11 @@ pub enum GenericScryptoComponentFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedAccountFieldValue {
     Account(AccountSubstate),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedSingleResourcePoolFieldValue {
+    SingleResourcePool(SingleResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -585,6 +598,13 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::GenericKeyValueStoreKey(_) => {
             TypedMainModuleSubstateValue::GenericKeyValueStore(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::SingleResourcePoolField(offset) => {
+            TypedMainModuleSubstateValue::SingleResourcePool(match offset {
+                SingleResourcePoolField::SingleResourcePool => {
+                    TypedSingleResourcePoolFieldValue::SingleResourcePool(scrypto_decode(data)?)
+                }
+            })
         }
     };
     Ok(substate_value)

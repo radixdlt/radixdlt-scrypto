@@ -14,6 +14,7 @@ pub struct HrpSet {
     clock: String,
     validator: String,
     access_controller: String,
+    pool: String,
     internal_vault: String,
     internal_account: String,
     internal_component: String,
@@ -42,6 +43,7 @@ impl HrpSet {
             EntityType::InternalAccount => &self.internal_account,
             EntityType::InternalGenericComponent => &self.internal_component,
             EntityType::InternalKeyValueStore => &self.internal_key_value_store,
+            EntityType::GlobalSingleResourcePool => &self.pool,
         }
     }
 }
@@ -59,6 +61,7 @@ impl From<&NetworkDefinition> for HrpSet {
             clock: format!("clock_{}", suffix),
             validator: format!("validator_{}", suffix),
             access_controller: format!("accesscontroller_{}", suffix),
+            pool: format!("pool{}", suffix),
             internal_vault: format!("internal_vault_{}", suffix),
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),
