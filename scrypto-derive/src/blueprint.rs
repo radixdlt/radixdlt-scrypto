@@ -194,10 +194,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 t: PhantomData<T>,
             }
 
-            impl ToPermissions for Methods<MethodPermission> {
+            impl<T> MethodMapping<T> for Methods<T> {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
-                fn to_permissions(self) -> Vec<(String, MethodPermission)> {
+                fn to_mapping(self) -> Vec<(String, T)> {
                     vec![]
                 }
             }
@@ -227,10 +227,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 )*
             }
 
-            impl ToPermissions for Methods<MethodPermission> {
+            impl<T> MethodMapping<T> for Methods<T> {
                 const MODULE_ID: scrypto::api::ObjectModuleId = scrypto::api::ObjectModuleId::Main;
 
-                fn to_permissions(self) -> Vec<(String, MethodPermission)> {
+                fn to_mapping(self) -> Vec<(String, T)> {
                     vec![
                         #(
                             (#method_names.to_string(), self.#method_idents)

@@ -33,7 +33,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type BlueprintMethod: ModuleMethod;
-    type Permissions: ToPermissions;
+    type Permissions: MethodMapping<MethodPermission>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -197,9 +197,10 @@ pub enum MethodPermissionMutability {
     Mutable(RoleList),
 }
 
-pub trait ToPermissions {
+pub trait MethodMapping<T> {
     const MODULE_ID: ObjectModuleId;
-    fn to_permissions(self) -> Vec<(String, MethodPermission)>;
+
+    fn to_mapping(self) -> Vec<(String, T)>;
 }
 
 pub struct ProtectedMethods<M: ModuleMethod> {
@@ -286,7 +287,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn methods(mut self, permissions: C::Permissions) -> Self {
-        for (method, permissions) in permissions.to_permissions() {
+        for (method, permissions) in permissions.to_mapping() {
             match permissions {
                 MethodPermission::Public => {}
                 MethodPermission::Protected(role_list) => {
