@@ -2,7 +2,7 @@ use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorB
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE};
+use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
@@ -404,10 +404,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
-                // TODO(resolve during review): I copied the `FIXED_HIGH_FEE` here as-is, but it
-                // does not feel right... (I mean: why would anyone call it instead of the cheaper
-                // `get_current_time()`?)
-                api.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunNative)?;
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 let input: ConsensusManagerCompareCurrentTimeInput =
                     input.as_typed().map_err(|e| {
