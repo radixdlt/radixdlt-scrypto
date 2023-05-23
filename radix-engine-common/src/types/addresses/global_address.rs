@@ -70,7 +70,6 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
             EntityType::GlobalNonFungibleResourceManager as u8,
             EntityType::GlobalConsensusManager as u8,
             EntityType::GlobalValidator as u8,
-            EntityType::GlobalClock as u8,
             EntityType::GlobalAccessController as u8,
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,
