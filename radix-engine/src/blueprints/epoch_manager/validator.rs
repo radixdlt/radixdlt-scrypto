@@ -527,29 +527,9 @@ impl ValidatorBlueprint {
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
         // - move the already-available withdrawals to a dedicated field
-        let available_withdrawal_epochs = substate
-            .pending_owner_stake_unit_withdrawals
-            .range(..=current_epoch)
-            .map(|(epoch, _available_amount)| epoch.clone())
-            .collect::<Vec<_>>();
-        for available_withdrawal_epoch in available_withdrawal_epochs {
-            // no batch delete in a BTree
-            let available_amount = substate
-                .pending_owner_stake_unit_withdrawals
-                .remove(&available_withdrawal_epoch)
-                .expect("key was just returned by the iterator");
-            substate.already_unlocked_owner_stake_unit_amount += available_amount;
-        }
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
 
-        // - insert the requested withdrawal as pending (if possible)
-        let currently_pending_withdrawals = substate.pending_owner_stake_unit_withdrawals.len();
-        if currently_pending_withdrawals >= OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::ValidatorError(
-                    ValidatorError::PendingOwnerStakeWithdrawalLimitReached,
-                ),
-            ));
-        }
+        // - insert the requested withdrawal as pending
         substate
             .pending_owner_stake_unit_withdrawals
             .entry(current_epoch + num_owner_stake_units_unlock_epochs)
@@ -597,23 +577,11 @@ impl ValidatorBlueprint {
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let available_withdrawal_epochs = substate
-            .pending_owner_stake_unit_withdrawals
-            .range(..=current_epoch)
-            .map(|(epoch, _available_amount)| epoch.clone())
-            .collect::<Vec<_>>();
-        let mut total_already_available_amount = mem::replace(
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
+        let total_already_available_amount = mem::replace(
             &mut substate.already_unlocked_owner_stake_unit_amount,
             Decimal::zero(),
         );
-        for available_withdrawal_epoch in available_withdrawal_epochs {
-            // no batch delete in a BTree
-            let available_amount = substate
-                .pending_owner_stake_unit_withdrawals
-                .remove(&available_withdrawal_epoch)
-                .expect("key was just returned by the iterator");
-            total_already_available_amount += available_amount;
-        }
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
@@ -627,6 +595,29 @@ impl ValidatorBlueprint {
         Ok(already_available_stake_unit_bucket)
     }
 
+    /// Removes all no-longer-pending owner stake unit withdrawals (i.e. those which have already
+    /// reached the given [`current_epoch`]) from [`pending_owner_stake_unit_withdrawals`] into
+    /// [`already_unlocked_owner_stake_unit_amount`].
+    /// Note: this house-keeping operation prevents the internal collection from growing to a size
+    /// which would affect performance (or exceed the substate size limit).
+    fn normalize_available_owner_stake_unit_withdrawals(
+        substate: &mut ValidatorSubstate,
+        current_epoch: u64,
+    ) {
+        let available_withdrawal_epochs = substate
+            .pending_owner_stake_unit_withdrawals
+            .range(..=current_epoch)
+            .map(|(epoch, _available_amount)| epoch.clone())
+            .collect::<Vec<_>>();
+        for available_withdrawal_epoch in available_withdrawal_epochs {
+            // no batch delete in a BTree
+            let available_amount = substate
+                .pending_owner_stake_unit_withdrawals
+                .remove(&available_withdrawal_epoch)
+                .expect("key was just returned by the iterator");
+            substate.already_unlocked_owner_stake_unit_amount += available_amount;
+        }
+    }
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
