@@ -10,7 +10,7 @@ use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 use radix_engine_queries::typed_substate_layout::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::InstructionV1;
 use utils::ContextualDisplay;
 
 #[test]
@@ -121,7 +121,7 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::CallFunction {
+        .add_instruction(InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE,
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),

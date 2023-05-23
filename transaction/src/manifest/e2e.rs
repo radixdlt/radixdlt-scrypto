@@ -1,14 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::builder::ManifestBuilder;
     use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
+    use crate::internal_prelude::*;
     use crate::manifest::*;
-    use crate::model::{TransactionHeader, TransactionIntent};
-    use radix_engine_common::data::scrypto::model::{NonFungibleIdType, NonFungibleLocalId};
-    use radix_engine_common::{ManifestSbor, ScryptoSbor};
     use radix_engine_interface::blueprints::resource::AccessRule;
-    use radix_engine_interface::network::NetworkDefinition;
-    use sbor::rust::collections::*;
     use scrypto_derive::NonFungibleData;
 
     #[test]
@@ -705,7 +700,9 @@ CREATE_ACCESS_CONTROLLER
 
         assert_eq!(decompiled2.trim(), expected_canonical.trim()); // trim for better view
 
-        let intent = build_intent(&expected_canonical, blobs).to_bytes().unwrap();
+        let intent = build_intent(&expected_canonical, blobs)
+            .to_payload_bytes()
+            .unwrap();
         print_blob(name, intent);
     }
 
@@ -723,26 +720,26 @@ CREATE_ACCESS_CONTROLLER
         println!("];");
     }
 
-    fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> TransactionIntent {
+    fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> IntentV1 {
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
-        TransactionIntent::new(
-            &NetworkDefinition::simulator(),
-            TransactionHeader {
-                version: 1,
-                network_id: NetworkDefinition::simulator().id,
+        let network = NetworkDefinition::simulator();
+        let (instructions, blobs) = compile(manifest, &network, blobs).unwrap().for_intent();
+
+        IntentV1 {
+            header: TransactionHeaderV1 {
+                network_id: network.id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 1000,
                 nonce: 5,
                 notary_public_key: sk_notary.public_key().into(),
-                notary_as_signatory: false,
-                cost_unit_limit: 1_000_000,
+                notary_is_signatory: false,
                 tip_percentage: 3,
             },
-            manifest,
+            instructions,
             blobs,
-        )
-        .unwrap()
+            attachments: AttachmentsV1 {},
+        }
     }
 
     fn apply_address_replacements(input: impl ToString) -> String {
