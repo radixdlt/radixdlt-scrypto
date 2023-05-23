@@ -20,6 +20,7 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_
 use radix_engine_interface::blueprints::epoch_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use sbor::rust::mem;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -81,9 +82,14 @@ pub struct ValidatorSubstate {
     /// This maps an epoch number to an amount of stake units that become unlocked at that epoch.
     /// Note: because of performance considerations, a maximum size of this map is limited to
     /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
-    /// attempt to automatically claim any withdrawals that have finished their wait, and only then
-    /// will fail if the limit is exceeded.
+    /// attempt to move any already-available amount to [`already_unlocked_owner_stake_unit_amount`]
+    /// and only then will fail if the limit is exceeded.
     pub pending_owner_stake_unit_withdrawals: BTreeMap<u64, Decimal>,
+
+    /// An amount of owner's stake units that has already waited for a sufficient number of epochs
+    /// in the [`pending_owner_stake_unit_withdrawals`] and was automatically moved from there.
+    /// The very next [`finish_unlock_owner_stake_units()`] operation will release this amount.
+    pub already_unlocked_owner_stake_unit_amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -104,6 +110,7 @@ impl NonFungibleData for UnstakeData {
 pub enum ValidatorError {
     InvalidClaimResource,
     EpochUnlockHasNotOccurredYet,
+    PendingOwnerStakeWithdrawalLimitReached,
 }
 
 pub struct ValidatorBlueprint;
@@ -456,6 +463,161 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    /// Locks the given stake units in an internal "delayed withdrawal" vault (which is the owner's
+    /// way of showing their commitment to running this validator in an orderly fashion - see
+    /// [`ValidatorSubstate.locked_owner_stake_unit_vault_id`]).
+    pub fn lock_owner_stake_units<Y>(
+        stake_unit_bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(())
+    }
+
+    /// Starts the process of unlocking the owner's stake units stored in the internal vault.
+    /// The requested amount of stake units (if available) will be ready for withdrawal after the
+    /// network-configured [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
+    /// call to [`finish_unlock_owner_stake_units()`].
+    pub fn start_unlock_owner_stake_units<Y>(
+        requested_stake_unit_amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
+        let epoch_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            EpochManagerField::EpochManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let epoch_manager: EpochManagerSubstate =
+            api.field_lock_read_typed(epoch_manager_handle)?;
+        let current_epoch = epoch_manager.epoch;
+        api.field_lock_release(epoch_manager_handle)?;
+
+        // read the configured unlock epochs delay
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            EpochManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
+        let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let num_owner_stake_units_unlock_epochs = config.num_owner_stake_units_unlock_epochs;
+        api.field_lock_release(config_handle)?;
+
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // - move the already-available withdrawals to a dedicated field
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
+
+        // - insert the requested withdrawal as pending
+        substate
+            .pending_owner_stake_unit_withdrawals
+            .entry(current_epoch + num_owner_stake_units_unlock_epochs)
+            .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
+            .or_insert(requested_stake_unit_amount);
+
+        // ...end the read+modify+write of the validator substate
+        let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
+        let mut pending_owner_stake_unit_unlock_vault =
+            Vault(substate.pending_owner_stake_unit_unlock_vault_id);
+        api.field_lock_write_typed(handle, substate)?;
+
+        // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
+        let pending_unlock_stake_unit_bucket =
+            locked_owner_stake_unit_vault.take(requested_stake_unit_amount, api)?;
+        pending_owner_stake_unit_unlock_vault.put(pending_unlock_stake_unit_bucket, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(())
+    }
+
+    /// Finishes the process of unlocking the owner's stake units by withdrawing *all* the pending
+    /// amounts which have reached their target epoch and thus are already available (potentially
+    /// none).
+    pub fn finish_unlock_owner_stake_units<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // read the current epoch
+        let epoch_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            EpochManagerField::EpochManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let epoch_manager: EpochManagerSubstate =
+            api.field_lock_read_typed(epoch_manager_handle)?;
+        let current_epoch = epoch_manager.epoch;
+        api.field_lock_release(epoch_manager_handle)?;
+
+        // drain the already-available withdrawals
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
+        let total_already_available_amount = mem::replace(
+            &mut substate.already_unlocked_owner_stake_unit_amount,
+            Decimal::zero(),
+        );
+
+        let mut pending_owner_stake_unit_unlock_vault =
+            Vault(substate.pending_owner_stake_unit_unlock_vault_id);
+        api.field_lock_write_typed(handle, substate)?;
+
+        // return the already-available withdrawals
+        let already_available_stake_unit_bucket =
+            pending_owner_stake_unit_unlock_vault.take(total_already_available_amount, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(already_available_stake_unit_bucket)
+    }
+
+    /// Removes all no-longer-pending owner stake unit withdrawals (i.e. those which have already
+    /// reached the given [`current_epoch`]) from [`pending_owner_stake_unit_withdrawals`] into
+    /// [`already_unlocked_owner_stake_unit_amount`].
+    /// Note: this house-keeping operation prevents the internal collection from growing to a size
+    /// which would affect performance (or exceed the substate size limit).
+    fn normalize_available_owner_stake_unit_withdrawals(
+        substate: &mut ValidatorSubstate,
+        current_epoch: u64,
+    ) {
+        let available_withdrawal_epochs = substate
+            .pending_owner_stake_unit_withdrawals
+            .range(..=current_epoch)
+            .map(|(epoch, _available_amount)| epoch.clone())
+            .collect::<Vec<_>>();
+        for available_withdrawal_epoch in available_withdrawal_epochs {
+            // no batch delete in a BTree
+            let available_amount = substate
+                .pending_owner_stake_unit_withdrawals
+                .remove(&available_withdrawal_epoch)
+                .expect("key was just returned by the iterator");
+            substate.already_unlocked_owner_stake_unit_amount += available_amount;
+        }
+    }
     /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
     /// value of all its stake units.
     /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
@@ -634,6 +796,18 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
@@ -743,6 +917,7 @@ impl ValidatorCreator {
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
             pending_owner_stake_unit_unlock_vault_id: pending_owner_stake_unit_unlock_vault.0,
             pending_owner_stake_unit_withdrawals,
+            already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
         let validator_id = api.new_simple_object(
