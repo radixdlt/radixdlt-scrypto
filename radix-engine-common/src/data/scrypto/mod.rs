@@ -38,8 +38,7 @@ use sbor::rust::vec::Vec;
 use sbor::traversal::VecTraverser;
 use sbor::*;
 
-// 0x5c for [5c]rypto - (91 in decimal)
-pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
+pub use radix_engine_constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;

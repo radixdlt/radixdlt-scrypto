@@ -25,7 +25,7 @@ pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use display_context::*;
 
-pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 77; // [M] ASCII code
+pub use radix_engine_constants::MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
 pub const MANIFEST_SBOR_V1_MAX_DEPTH: usize = 24;
 
 pub type ManifestEncoder<'a> = VecEncoder<'a, ManifestCustomValueKind>;
