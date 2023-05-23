@@ -1715,7 +1715,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
 }
 
 #[test]
-fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_ones() {
+fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate_field() {
     // Arrange
     let initial_epoch = 7;
     let unlock_epochs_delay = 2;
@@ -1793,11 +1793,6 @@ fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_one
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
             manifest_args!(stake_units_to_unlock_next_amount),
         )
-        .call_method(
-            validator_account,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -1813,16 +1808,16 @@ fn starting_unlock_of_owner_stake_units_finishes_unlock_of_already_available_one
     );
     assert_eq!(
         test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
-        Some(stake_units_to_unlock_next_amount) // only the "next unlock" remains here
+        Some(total_to_unlock_amount) // both amounts are still locked (although one is ready to finish unlocking)
+    );
+    assert_eq!(
+        substate.already_unlocked_owner_stake_unit_amount, // the first unlock is moved to here
+        stake_units_to_unlock_amount
     );
     assert_eq!(
         substate.pending_owner_stake_unit_withdrawals, // the "next unlock" is scheduled much later
         btreemap!(initial_epoch + 2 * unlock_epochs_delay => stake_units_to_unlock_next_amount)
     );
-    assert_eq!(
-        test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount)
-    )
 }
 
 #[test]
