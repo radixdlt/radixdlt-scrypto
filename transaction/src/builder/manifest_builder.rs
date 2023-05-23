@@ -11,8 +11,8 @@ use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
 };
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateValidatorInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
     VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT,
     VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
@@ -29,7 +29,8 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, EPOCH_MANAGER, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
+    RESOURCE_PACKAGE,
 };
 use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 #[cfg(feature = "dump_manifest_to_file")]
@@ -498,9 +499,9 @@ impl ManifestBuilder {
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
-            address: EPOCH_MANAGER.into(),
-            method_name: EPOCH_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value(&EpochManagerCreateValidatorInput { key }),
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+            args: to_manifest_value(&ConsensusManagerCreateValidatorInput { key }),
         });
         self
     }

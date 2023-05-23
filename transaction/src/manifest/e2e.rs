@@ -305,8 +305,7 @@ CALL_METHOD
     "custom_types"
     Address("${package_address}")
     Address("${account_address}")
-    Address("${epochmanager_address}")
-    Address("${clock_address}")
+    Address("${consensusmanager_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
     Bucket("bucket1")
@@ -978,8 +977,7 @@ CREATE_ACCESS_CONTROLLER
         //     // Random address from resim new-account
         //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
-        //     println!("{}", Bech32Encoder::for_simulator().encode(EPOCH_MANAGER.as_node_id().as_bytes()).unwrap());
-        //     println!("{}", Bech32Encoder::for_simulator().encode(CLOCK.as_node_id().as_bytes()).unwrap());
+        //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
 
         //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
         //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
@@ -1066,12 +1064,8 @@ CREATE_ACCESS_CONTROLLER
                 "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
             ),
             (
-                "${epochmanager_address}",
-                "epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl",
-            ),
-            (
-                "${clock_address}",
-                "clock_sim1skxxxxxxxxxxclckxxxxxxxxxxx002253583992xxxxxxxxxx58hk6",
+                "${consensusmanager_address}",
+                "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
             ),
             (
                 "${validator_address}",

@@ -1,9 +1,9 @@
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::clock::{
-    ClockCompareCurrentTimeInput, ClockGetCurrentTimeInput, TimePrecision,
-    CLOCK_COMPARE_CURRENT_TIME_IDENT, CLOCK_GET_CURRENT_TIME_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerCompareCurrentTimeInput, ConsensusManagerGetCurrentTimeInput, TimePrecision,
+    CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
 };
-use radix_engine_interface::constants::CLOCK;
+use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::time::*;
 use sbor::rust::fmt::Debug;
@@ -24,9 +24,9 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                CLOCK.as_node_id(),
-                CLOCK_GET_CURRENT_TIME_IDENT,
-                scrypto_encode(&ClockGetCurrentTimeInput { precision }).unwrap(),
+                CONSENSUS_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+                scrypto_encode(&ConsensusManagerGetCurrentTimeInput { precision }).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()
@@ -67,9 +67,9 @@ impl Clock {
         let mut env = ScryptoEnv;
         let rtn = env
             .call_method(
-                CLOCK.as_node_id(),
-                CLOCK_COMPARE_CURRENT_TIME_IDENT,
-                scrypto_encode(&ClockCompareCurrentTimeInput {
+                CONSENSUS_MANAGER.as_node_id(),
+                CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
+                scrypto_encode(&ConsensusManagerCompareCurrentTimeInput {
                     instant,
                     precision,
                     operator,

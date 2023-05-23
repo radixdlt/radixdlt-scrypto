@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::{
     ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
 };
-use radix_engine_interface::blueprints::epoch_manager::EPOCH_MANAGER_CREATE_VALIDATOR_IDENT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
 };
@@ -394,8 +394,8 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
 
                 /* Validator */
-                (address, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT)
-                    if address == &EPOCH_MANAGER.into() =>
+                (address, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT)
+                    if address == &CONSENSUS_MANAGER.into() =>
                 {
                     "CREATE_VALIDATOR"
                 }
