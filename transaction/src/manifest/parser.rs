@@ -290,7 +290,6 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             TokenKind::CreateValidator => Instruction::CreateValidator {
-                address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
 
