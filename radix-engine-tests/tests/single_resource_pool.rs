@@ -363,7 +363,7 @@ impl SingleResourcePoolTestRunner {
                     to_manifest_value(&SingleResourcePoolContributeManifestInput { bucket }),
                 )
             })
-            .safe_deposit_batch(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -382,7 +382,7 @@ impl SingleResourcePoolTestRunner {
                     to_manifest_value(&SingleResourcePoolRedeemManifestInput { bucket }),
                 )
             })
-            .safe_deposit_batch(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -414,7 +414,7 @@ impl SingleResourcePoolTestRunner {
                     amount: amount.into(),
                 }),
             )
-            .safe_deposit_batch(self.account_component_address)
+            .try_deposit_batch_or_abort(self.account_component_address)
             .build();
         self.execute_manifest(manifest, sign)
     }

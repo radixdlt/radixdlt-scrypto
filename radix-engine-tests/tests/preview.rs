@@ -71,7 +71,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
