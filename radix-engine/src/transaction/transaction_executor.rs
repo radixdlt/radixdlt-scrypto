@@ -189,7 +189,11 @@ where
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
         let mut id_allocator = IdAllocator::new(
             executable.transaction_hash().clone(),
-            executable.pre_allocated_ids().clone(),
+            executable
+                .pre_allocated_ids()
+                .into_iter()
+                .cloned()
+                .collect(),
         );
         let mut system = SystemConfig {
             blueprint_schema_cache: NonIterMap::new(),

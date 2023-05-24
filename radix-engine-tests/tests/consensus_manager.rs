@@ -2159,7 +2159,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = BTreeSet::new();
+    let mut pre_allocated_ids = index_set_new();
     pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
     let receipt = test_runner.execute_system_transaction_with_preallocation(
@@ -2192,7 +2192,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let mut pre_allocated_ids = BTreeSet::new();
+    let mut pre_allocated_ids = index_set_new();
     pre_allocated_ids.insert(CONSENSUS_MANAGER.into());
     pre_allocated_ids.insert(VALIDATOR_OWNER_BADGE.into());
     let receipt = test_runner.execute_system_transaction_with_preallocation(

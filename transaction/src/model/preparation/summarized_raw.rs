@@ -143,3 +143,32 @@ impl TransactionChildBodyPreparable for SummarizedRawInnerBodyRawBytes {
         Vec::<u8>::value_kind()
     }
 }
+
+/// For use where the value is:
+/// * Already a hash, and it should be prepared as itself
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct SummarizedHash {
+    pub hash: Hash,
+    pub summary: Summary,
+}
+
+impl HasSummary for SummarizedHash {
+    fn get_summary(&self) -> &Summary {
+        &self.summary
+    }
+}
+
+impl TransactionFullChildPreparable for SummarizedHash {
+    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let start_offset = decoder.get_offset();
+        let hash = decoder.decode::<Hash>()?;
+        let end_offset = decoder.get_offset();
+        let summary = Summary {
+            effective_length: end_offset - start_offset,
+            // It's already been hashed before prepare, so don't count it
+            total_bytes_hashed: 0,
+            hash,
+        };
+        Ok(Self { hash, summary })
+    }
+}
