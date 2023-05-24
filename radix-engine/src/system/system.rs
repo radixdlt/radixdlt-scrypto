@@ -1702,7 +1702,7 @@ where
                 .as_typed::<super::node_modules::access_rules::MethodAccessRulesSubstate>()
                 .unwrap();
             self.kernel_drop_lock(handle)?;
-            access_rules.access_rules
+            access_rules.roles
         };
 
         // Authorize

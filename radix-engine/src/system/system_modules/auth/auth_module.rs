@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
     AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate, NodeAuthorizationRules,
+    MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -226,7 +226,7 @@ impl AuthModule {
             auth_zone_id,
             acting_location,
             access_rules_of,
-            &node_authority_rules,
+            &access_rules.roles,
             &role_list,
             api,
         )?;
@@ -242,7 +242,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         access_rules_of: &NodeId,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
@@ -296,7 +296,7 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &NodeAuthorizationRules::new(),
+                        &BTreeMap::new(),
                         &access_rule,
                         &mut system,
                     )?;

@@ -289,7 +289,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -370,7 +370,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         key: &RoleKey,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -384,11 +384,12 @@ impl Authorization {
                 return Ok(AuthorizationCheckResult::Failed(vec![]));
             }
         } else {
-            match access_rules.get_rule(key) {
+            match access_rules.get(key) {
                 Some(access_rule) => access_rule.clone(),
                 None => {
+                    return Ok(AuthorizationCheckResult::Failed(vec![]));
                     // TODO: Change to fail
-                    return Ok(AuthorizationCheckResult::Authorized);
+                    //return Ok(AuthorizationCheckResult::Authorized);
                 }
             }
         };
@@ -411,7 +412,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -445,7 +446,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -468,7 +469,7 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: &NodeId,
-        access_rules: &NodeAuthorizationRules,
+        access_rules: &BTreeMap<RoleKey, AccessRule>,
         role_list: &RoleList,
         api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {

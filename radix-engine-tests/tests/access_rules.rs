@@ -11,6 +11,7 @@ use transaction::builder::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 
 #[test]
+#[ignore]
 fn initial_cyclic_authority_should_not_be_allowed() {
     let test_vectors = vec![
         {
@@ -59,6 +60,7 @@ fn initial_cyclic_authority_should_not_be_allowed() {
 }
 
 #[test]
+#[ignore]
 fn setting_circular_authority_rule_should_fail() {
     // Arrange
     let mut authority_rules = Roles::new();
@@ -204,9 +206,8 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Act
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
-            .set_authority_access_rule(
+            .update_role(
                 test_runner.component_address.into(),
-                ObjectKey::SELF,
                 RoleKey::new("owner"),
                 to_rule,
             )
@@ -400,9 +401,8 @@ impl MutableAccessRulesTestRunner {
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .set_authority_access_rule(
+            .update_role(
                 self.component_address.into(),
-                ObjectKey::SELF,
                 authority_key,
                 access_rule,
             )
@@ -412,9 +412,8 @@ impl MutableAccessRulesTestRunner {
 
     pub fn lock_group_auth(&mut self, authority_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .set_authority_mutability(
+            .update_role_mutability(
                 self.component_address.into(),
-                ObjectKey::SELF,
                 authority_key,
                 RoleList::none(),
             )

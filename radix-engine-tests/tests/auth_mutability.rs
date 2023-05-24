@@ -25,30 +25,20 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
-    let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, RoleKey::new(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, RoleKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, RoleKey::new(UPDATE_METADATA_AUTHORITY)),
-        ResourceAuth::Withdraw => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(WITHDRAW_AUTHORITY),
-        ),
-        ResourceAuth::Deposit => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(DEPOSIT_AUTHORITY),
-        ),
-        ResourceAuth::Recall => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(RECALL_AUTHORITY),
-        ),
+    let authority_key = match action {
+        ResourceAuth::Mint => RoleKey::new(MINT_AUTHORITY),
+        ResourceAuth::Burn => RoleKey::new(BURN_AUTHORITY),
+        ResourceAuth::UpdateMetadata => RoleKey::new(UPDATE_METADATA_AUTHORITY),
+        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_AUTHORITY),
+        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_AUTHORITY),
+        ResourceAuth::Recall => RoleKey::new(RECALL_AUTHORITY),
     };
     {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .set_authority_mutability(
+            .update_role_mutability(
                 token_address.into(),
-                object_key,
                 authority_key,
                 RoleList::none(),
             )
@@ -67,36 +57,25 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         .lock_fee(test_runner.faucet_component(), 100u32.into())
         .create_proof_from_account(account, admin_auth);
 
-    let (object_key, authority_key) = match action {
-        ResourceAuth::Mint => (ObjectKey::SELF, RoleKey::new(MINT_AUTHORITY)),
-        ResourceAuth::Burn => (ObjectKey::SELF, RoleKey::new(BURN_AUTHORITY)),
-        ResourceAuth::UpdateMetadata => (ObjectKey::SELF, RoleKey::new(UPDATE_METADATA_AUTHORITY)),
-        ResourceAuth::Withdraw => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(WITHDRAW_AUTHORITY),
-        ),
-        ResourceAuth::Deposit => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(DEPOSIT_AUTHORITY),
-        ),
-        ResourceAuth::Recall => (
-            ObjectKey::InnerBlueprint(FUNGIBLE_VAULT_BLUEPRINT.to_string()),
-            RoleKey::new(RECALL_AUTHORITY),
-        ),
+    let role_key = match action {
+        ResourceAuth::Mint => RoleKey::new(MINT_AUTHORITY),
+        ResourceAuth::Burn => RoleKey::new(BURN_AUTHORITY),
+        ResourceAuth::UpdateMetadata => RoleKey::new(UPDATE_METADATA_AUTHORITY),
+        ResourceAuth::Withdraw => RoleKey::new(WITHDRAW_AUTHORITY),
+        ResourceAuth::Deposit => RoleKey::new(DEPOSIT_AUTHORITY),
+        ResourceAuth::Recall => RoleKey::new(RECALL_AUTHORITY),
     };
 
     let builder = if lock {
-        builder.set_authority_mutability(
+        builder.update_role_mutability(
             token_address.into(),
-            object_key,
-            authority_key.clone(),
+            role_key.clone(),
             RoleList::none(),
         )
     } else {
-        builder.set_authority_access_rule(
+        builder.update_role(
             token_address.into(),
-            object_key,
-            authority_key,
+            role_key,
             rule!(require(updated_auth)),
         )
     };

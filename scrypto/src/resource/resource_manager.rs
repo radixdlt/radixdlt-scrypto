@@ -46,40 +46,22 @@ impl ResourceManager {
         access_rules.define_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
-    fn vault_blueprint_name(&self) -> &str {
-        if self
-            .0
-             .0
-             .0
-            .as_node_id()
-            .is_global_fungible_resource_manager()
-        {
-            FUNGIBLE_VAULT_BLUEPRINT
-        } else {
-            NON_FUNGIBLE_VAULT_BLUEPRINT
-        }
-    }
-
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.define_role_on_inner_blueprint(
-            blueprint_name,
+        access_rules.define_role(
             WITHDRAW_AUTHORITY,
             access_rule,
         );
     }
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.define_role_on_inner_blueprint(blueprint_name, DEPOSIT_AUTHORITY, access_rule);
+        access_rules.define_role(DEPOSIT_AUTHORITY, access_rule);
     }
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
-        let blueprint_name = self.vault_blueprint_name();
         let access_rules = self.0.access_rules();
-        access_rules.define_role_on_inner_blueprint(blueprint_name, RECALL_AUTHORITY, access_rule);
+        access_rules.define_role(RECALL_AUTHORITY, access_rule);
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) {

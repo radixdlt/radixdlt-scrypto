@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, MethodKey, MethodPermission, ObjectKey, RoleKey, RoleList, Roles,
+    AccessRule, MethodKey, MethodPermission, RoleKey, RoleList, Roles,
 };
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -47,7 +47,6 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_DEFINE_ROLE_IDENT,
             &AccessRulesDefineRoleInput {
-                object_key: ObjectKey::SELF,
                 role_key: RoleKey::new(name),
                 rule: entry.into(),
             },
@@ -58,25 +57,8 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
             &AccessRulesSetRoleMutabilityInput {
-                object_key: ObjectKey::SELF,
                 role_key: RoleKey::new(name),
                 mutability: mutability.into(),
-            },
-        );
-    }
-
-    pub fn define_role_on_inner_blueprint<A: Into<AccessRule>>(
-        &self,
-        inner_blueprint: &str,
-        name: &str,
-        entry: A,
-    ) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_DEFINE_ROLE_IDENT,
-            &AccessRulesDefineRoleInput {
-                object_key: ObjectKey::inner_blueprint(inner_blueprint),
-                role_key: RoleKey::new(name),
-                rule: entry.into(),
             },
         );
     }

@@ -86,7 +86,6 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_DEFINE_ROLE_IDENT,
             scrypto_encode(&AccessRulesDefineRoleInput {
-                object_key: ObjectKey::SELF,
                 role_key: role_key.into(),
                 rule: entry.into(),
             })
@@ -114,7 +113,6 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
             scrypto_encode(&AccessRulesSetRoleMutabilityInput {
-                object_key: ObjectKey::SELF,
                 role_key: role_key.into(),
                 mutability: mutability.into(),
             })
