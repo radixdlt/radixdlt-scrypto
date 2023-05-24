@@ -7,6 +7,7 @@ use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -81,7 +82,14 @@ impl SingleResourcePoolBlueprint {
         };
         let access_rules =
             AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(
+            btreemap!(
+                "pool_vault_number".into() => MetadataValue::U8(1),
+                "pool_resources".into() => MetadataValue::GlobalAddress(resource_address.into()),
+                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource.into()),
+            ),
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
 
         api.globalize_with_address(

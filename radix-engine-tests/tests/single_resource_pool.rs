@@ -183,7 +183,7 @@ pub fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming() {
 #[test]
 pub fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunner::builder().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
