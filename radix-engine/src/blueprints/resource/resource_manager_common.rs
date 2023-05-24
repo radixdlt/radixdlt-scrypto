@@ -16,11 +16,14 @@ use radix_engine_interface::*;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>),
-    (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>),
-    (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>),
+    Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>,
+    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
+    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
+    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
 ) {
-    let (resman_authority_rules, resman_protected_methods) = {
+    let mut roles = Roles::new();
+
+    let resman_protected_methods = {
         let (mint_access_rule, mint_mutability) = access_rules_map
             .remove(&Mint)
             .unwrap_or((DenyAll, rule!(deny_all)));
@@ -35,16 +38,14 @@ fn build_access_rules(
             .remove(&UpdateMetadata)
             .unwrap_or((DenyAll, rule!(deny_all)));
 
-        let mut resman_authority_rules = Roles::new();
-
         {
-            resman_authority_rules.define_role(
+            roles.define_role(
                 UPDATE_METADATA_UPDATE_AUTHORITY,
                 update_metadata_mutability,
                 vec![UPDATE_METADATA_UPDATE_AUTHORITY],
             );
 
-            resman_authority_rules.define_role(
+            roles.define_role(
                 UPDATE_METADATA_AUTHORITY,
                 update_metadata_access_rule,
                 vec![UPDATE_METADATA_UPDATE_AUTHORITY],
@@ -53,12 +54,12 @@ fn build_access_rules(
 
         // Mint
         {
-            resman_authority_rules.define_role(
+            roles.define_role(
                 MINT_UPDATE_AUTHORITY,
                 mint_mutability,
                 vec![MINT_UPDATE_AUTHORITY],
             );
-            resman_authority_rules.define_role(
+            roles.define_role(
                 MINT_AUTHORITY,
                 mint_access_rule,
                 vec![MINT_UPDATE_AUTHORITY],
@@ -67,12 +68,12 @@ fn build_access_rules(
 
         // Burn
         {
-            resman_authority_rules.define_role(
+            roles.define_role(
                 BURN_UPDATE_AUTHORITY,
                 burn_mutability,
                 vec![BURN_UPDATE_AUTHORITY],
             );
-            resman_authority_rules.define_role(
+            roles.define_role(
                 BURN_AUTHORITY,
                 burn_access_rule,
                 vec![BURN_UPDATE_AUTHORITY],
@@ -81,13 +82,13 @@ fn build_access_rules(
 
         // Non Fungible Update data
         {
-            resman_authority_rules.define_role(
+            roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY,
                 update_non_fungible_data_mutability,
                 vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
             );
 
-            resman_authority_rules.define_role(
+            roles.define_role(
                 UPDATE_NON_FUNGIBLE_DATA_AUTHORITY,
                 update_non_fungible_data_access_rule,
                 vec![UPDATE_NON_FUNGIBLE_DATA_UPDATE_AUTHORITY],
@@ -111,10 +112,10 @@ fn build_access_rules(
             MethodKey::main(NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT) => Public;
         );
 
-        (resman_authority_rules, resman_protected_methods)
+        resman_protected_methods
     };
 
-    let (vault_authority_rules, vault_protected_methods) = {
+    let vault_protected_methods = {
         let (deposit_access_rule, deposit_mutability) = access_rules_map
             .remove(&ResourceMethodAuthKey::Deposit)
             .unwrap_or((AllowAll, rule!(deny_all)));
@@ -125,16 +126,14 @@ fn build_access_rules(
             .remove(&ResourceMethodAuthKey::Recall)
             .unwrap_or((DenyAll, rule!(deny_all)));
 
-        let mut vault_authority_rules = Roles::new();
-
         // Withdraw
         {
-            vault_authority_rules.define_role(
+            roles.define_role(
                 WITHDRAW_UPDATE_AUTHORITY,
                 withdraw_mutability,
                 vec![WITHDRAW_UPDATE_AUTHORITY],
             );
-            vault_authority_rules.define_role(
+            roles.define_role(
                 WITHDRAW_AUTHORITY,
                 withdraw_access_rule,
                 vec![WITHDRAW_UPDATE_AUTHORITY],
@@ -143,12 +142,12 @@ fn build_access_rules(
 
         // Recall
         {
-            vault_authority_rules.define_role(
+            roles.define_role(
                 RECALL_UPDATE_AUTHORITY,
                 recall_mutability,
                 vec![RECALL_UPDATE_AUTHORITY],
             );
-            vault_authority_rules.define_role(
+            roles.define_role(
                 RECALL_AUTHORITY,
                 recall_access_rule,
                 vec![RECALL_UPDATE_AUTHORITY],
@@ -157,13 +156,13 @@ fn build_access_rules(
 
         // Deposit
         {
-            vault_authority_rules.define_role(
+            roles.define_role(
                 DEPOSIT_UPDATE_AUTHORITY,
                 deposit_mutability,
                 vec![DEPOSIT_UPDATE_AUTHORITY],
             );
 
-            vault_authority_rules.define_role(
+            roles.define_role(
                 DEPOSIT_AUTHORITY,
                 deposit_access_rule,
                 vec![DEPOSIT_UPDATE_AUTHORITY],
@@ -172,7 +171,7 @@ fn build_access_rules(
 
         // Internal
         {
-            vault_authority_rules.define_role(
+            roles.define_role(
                 "this_package",
                 rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
                 vec![],
@@ -196,21 +195,14 @@ fn build_access_rules(
             MethodKey::main(NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
         );
 
-        (vault_authority_rules, vault_protected_methods)
+        vault_protected_methods
     };
 
     // Note that if a local reference to a bucket is passed to another actor, the recipient will be able
     // to take resource from the bucket. This is not what Scrypto lib supports/encourages, but can be done
     // theoretically.
 
-    let (bucket_authority_rules, bucket_protected_methods) = {
-        let mut bucket_authority_rules = Roles::new();
-        bucket_authority_rules.define_role(
-            "this_package",
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-            vec![],
-        );
-
+    let bucket_protected_methods = {
         let bucket_protected_methods = method_permissions!(
             MethodKey::main(BUCKET_GET_AMOUNT_IDENT) => Public;
             MethodKey::main(BUCKET_GET_RESOURCE_ADDRESS_IDENT) => Public;
@@ -228,13 +220,24 @@ fn build_access_rules(
             MethodKey::main(NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT) => ["this_package"];
         );
 
-        (bucket_authority_rules, bucket_protected_methods)
+        bucket_protected_methods
     };
 
+    let protected_proof_methods = method_permissions!(
+        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
+        MethodKey::main(PROOF_CLONE_IDENT) => Public;
+        MethodKey::main(PROOF_DROP_IDENT) => Public;
+        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
+        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
+    );
+
+
     (
-        (resman_authority_rules, resman_protected_methods),
-        (vault_authority_rules, vault_protected_methods),
-        (bucket_authority_rules, bucket_protected_methods),
+        roles,
+        resman_protected_methods,
+        vault_protected_methods,
+        bucket_protected_methods,
+        protected_proof_methods
     )
 }
 
@@ -249,9 +252,11 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (
-        (resman_roles, protected_resman_methods),
-        (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods),
+        roles,
+        protected_resman_methods,
+        protected_vault_methods,
+        protected_bucket_methods,
+        protected_proof_methods,
     ) = build_access_rules(access_rules);
 
     let (vault_blueprint_name, bucket_blueprint_name, proof_blueprint_name) = if resource_address
@@ -271,21 +276,14 @@ where
         )
     };
 
-    let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
-        MethodKey::main(PROOF_CLONE_IDENT) => Public;
-        MethodKey::main(PROOF_DROP_IDENT) => Public;
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
-    );
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
-        resman_roles,
+        roles,
         btreemap!(
-            vault_blueprint_name.to_string() => (vault_authorities, protected_vault_methods),
-            bucket_blueprint_name.to_string() => (bucket_authorities, protected_bucket_methods),
-            proof_blueprint_name.to_string() => (Roles::new(), protected_proof_methods),
+            vault_blueprint_name.to_string() => protected_vault_methods,
+            bucket_blueprint_name.to_string() => protected_bucket_methods,
+            proof_blueprint_name.to_string() => protected_proof_methods,
         ),
         api,
     )?
@@ -319,26 +317,20 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (
-        (resman_roles, protected_resman_methods),
-        (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods),
+        roles,
+        protected_resman_methods,
+        protected_vault_methods,
+        protected_bucket_methods,
+        protected_proof_methods,
     ) = build_access_rules(access_rules);
-
-    let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
-        MethodKey::main(PROOF_CLONE_IDENT) => Public;
-        MethodKey::main(PROOF_DROP_IDENT) => Public;
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
-    );
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
-        resman_roles,
+        roles,
         btreemap!(
-            FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
-            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => (bucket_authorities, protected_bucket_methods),
-            FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), protected_proof_methods),
+            FUNGIBLE_VAULT_BLUEPRINT.to_string() => protected_vault_methods,
+            FUNGIBLE_BUCKET_BLUEPRINT.to_string() => protected_bucket_methods,
+            FUNGIBLE_PROOF_BLUEPRINT.to_string() => protected_proof_methods,
         ),
         api,
     )?
@@ -377,26 +369,20 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let (
-        (resman_roles, protected_resman_methods),
-        (vault_authorities, protected_vault_methods),
-        (bucket_authorities, protected_bucket_methods),
+        roles,
+        protected_resman_methods,
+        protected_vault_methods,
+        protected_bucket_methods,
+        protected_proof_methods,
     ) = build_access_rules(access_rules);
-
-    let protected_proof_methods = method_permissions!(
-        MethodKey::main(PROOF_GET_RESOURCE_ADDRESS_IDENT) => Public;
-        MethodKey::main(PROOF_CLONE_IDENT) => Public;
-        MethodKey::main(PROOF_DROP_IDENT) => Public;
-        MethodKey::main(PROOF_GET_AMOUNT_IDENT) => Public;
-        MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
-    );
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,
-        resman_roles,
+        roles,
         btreemap!(
-            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => (vault_authorities, protected_vault_methods),
-            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string()=> (bucket_authorities, protected_bucket_methods),
-            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => (Roles::new(), protected_proof_methods),
+            NON_FUNGIBLE_VAULT_BLUEPRINT.to_string() => protected_vault_methods,
+            NON_FUNGIBLE_BUCKET_BLUEPRINT.to_string() => protected_bucket_methods,
+            NON_FUNGIBLE_PROOF_BLUEPRINT.to_string() => protected_proof_methods,
         ),
         api,
     )?

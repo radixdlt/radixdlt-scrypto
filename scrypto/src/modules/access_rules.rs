@@ -33,7 +33,7 @@ impl AccessRules {
                 ACCESS_RULES_CREATE_IDENT,
                 scrypto_encode(&AccessRulesCreateInput {
                     method_permissions,
-                    authority_rules,
+                    roles: authority_rules,
                     inner_blueprint_rules: btreemap!(),
                 })
                 .unwrap(),

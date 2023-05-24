@@ -215,7 +215,7 @@ impl ConsensusManagerBlueprint {
             ),
             role_definitions,
             btreemap!(
-                VALIDATOR_BLUEPRINT.to_string() => (Roles::new(), btreemap!())
+                VALIDATOR_BLUEPRINT.to_string() => btreemap!(),
             ),
             api,
         )?

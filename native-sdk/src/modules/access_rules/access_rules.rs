@@ -23,10 +23,10 @@ pub struct AccessRules(pub Own);
 impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
         method_permissions: BTreeMap<MethodKey, (MethodPermission, RoleList)>,
-        authority_rules: Roles,
+        roles: Roles,
         inner_blueprint_rules: BTreeMap<
             String,
-            (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>),
+            BTreeMap<MethodKey, (MethodPermission, RoleList)>,
         >,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -39,7 +39,7 @@ impl AccessRules {
             ACCESS_RULES_CREATE_IDENT,
             scrypto_encode(&AccessRulesCreateInput {
                 method_permissions,
-                authority_rules,
+                roles,
                 inner_blueprint_rules,
             })
             .unwrap(),
