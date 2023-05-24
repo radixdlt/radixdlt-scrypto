@@ -28,7 +28,7 @@ fn test_call() {
         .call_function(package_address, "MoveTest", "move_proof", manifest_args![])
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

@@ -2,7 +2,7 @@ use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::identity::{
     IdentitySecurifyToSingleBadgeInput, IDENTITY_SECURIFY_IDENT,
 };
@@ -28,7 +28,7 @@ fn cannot_securify_in_advanced_mode() {
         .0
         .call_method(
             account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -62,7 +62,7 @@ fn can_securify_from_virtual_identity() {
         .0
         .call_method(
             account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -89,7 +89,7 @@ fn cannot_securify_twice() {
         .0
         .call_method(
             account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -108,7 +108,7 @@ fn cannot_securify_twice() {
         .0
         .call_method(
             account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -140,7 +140,7 @@ fn can_set_metadata_after_securify() {
         .0
         .call_method(
             account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

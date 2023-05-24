@@ -64,7 +64,7 @@ impl Transfer {
             .withdraw_from_account(default_account, self.resource_address.0, self.amount)
             .call_method(
                 self.recipient.0,
-                "try_deposit_batch_return_on_failure",
+                "try_deposit_batch_or_refund",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

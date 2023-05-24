@@ -26,7 +26,7 @@ fn test_manifest_with_non_existent_resource() {
         .take_all_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(
                 account,
-                "try_deposit_abort_on_failure",
+                "try_deposit_or_abort",
                 manifest_args!(bucket_id),
             )
         })
@@ -62,7 +62,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         })
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -70,7 +70,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         })
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -78,7 +78,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         })
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -198,7 +198,7 @@ fn test_faucet_drain_attempt_should_fail() {
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

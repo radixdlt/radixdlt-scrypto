@@ -67,7 +67,7 @@ fn bench_transfer(c: &mut Criterion) {
         .call_method(FAUCET, "free", manifest_args!())
         .call_method(
             account1,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -91,7 +91,7 @@ fn bench_transfer(c: &mut Criterion) {
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

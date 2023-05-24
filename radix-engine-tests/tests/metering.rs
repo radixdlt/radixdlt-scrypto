@@ -47,7 +47,7 @@ fn test_basic_transfer() {
         .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -68,13 +68,13 @@ fn test_basic_transfer() {
         + 1744 /* CreateNode */
         + 6031 /* DropLock */
         + 1680 /* DropNode */
-        + 1140312 /* Invoke */
-        + 606786 /* LockSubstate */
+        + 1140299 /* Invoke */
+        + 605204 /* LockSubstate */
         + 8456 /* ReadSubstate */
         + 65000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1320 /* TxPayloadCost */
+        + 1280 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 979, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -140,7 +140,7 @@ fn test_radiswap() {
                 })
                 .call_method(
                     account2,
-                    "try_deposit_batch_abort_on_failure",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -158,7 +158,7 @@ fn test_radiswap() {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
-                    "try_deposit_batch_abort_on_failure",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -178,7 +178,7 @@ fn test_radiswap() {
             })
             .call_method(
                 account3,
-                "try_deposit_batch_abort_on_failure",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -203,14 +203,14 @@ fn test_radiswap() {
         + 3935 /* CreateNode */
         + 14356 /* DropLock */
         + 3675 /* DropNode */
-        + 3395024 /* Invoke */
-        + 5621763 /* LockSubstate */
+        + 3395011 /* Invoke */
+        + 5620181 /* LockSubstate */
         + 20104 /* ReadSubstate */
         + 137500 /* RunNative */
         + 15000 /* RunSystem */
         + 1535320 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 1715 /* TxPayloadCost */
+        + 1675 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 2371, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -259,7 +259,7 @@ fn test_flash_loan() {
                 })
                 .call_method(
                     account2,
-                    "try_deposit_batch_abort_on_failure",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -288,7 +288,7 @@ fn test_flash_loan() {
             })
             .call_method(
                 account3,
-                "try_deposit_batch_abort_on_failure",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -314,14 +314,14 @@ fn test_flash_loan() {
         + 6322 /* CreateNode */
         + 22755 /* DropLock */
         + 6090 /* DropNode */
-        + 4768546 /* Invoke */
-        + 6913322 /* LockSubstate */
+        + 4768533 /* Invoke */
+        + 6911740 /* LockSubstate */
         + 32256 /* ReadSubstate */
         + 205000 /* RunNative */
         + 40000 /* RunSystem */
         + 1328130 /* RunWasm */
         + 50000 /* TxBaseCost */
-        + 2495 /* TxPayloadCost */
+        + 2455 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
         + 4436, /* WriteSubstate */
         commit_result.fee_summary.execution_cost_sum
@@ -379,7 +379,7 @@ fn should_be_able_run_large_manifest() {
     }
     builder.call_method(
         account,
-        "try_deposit_batch_abort_on_failure",
+        "try_deposit_batch_or_abort",
         manifest_args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();

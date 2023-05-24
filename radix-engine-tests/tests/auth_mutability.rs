@@ -110,7 +110,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     let manifest = builder
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

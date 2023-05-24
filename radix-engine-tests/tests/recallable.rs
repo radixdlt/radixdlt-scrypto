@@ -20,7 +20,7 @@ fn non_existing_vault_should_cause_error() {
         .recall(non_existing_address, Decimal::one())
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -55,7 +55,7 @@ fn cannot_take_on_non_recallable_vault() {
         )
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -90,7 +90,7 @@ fn can_take_on_recallable_vault() {
         )
         .call_method(
             other_account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -146,7 +146,7 @@ fn test_recall_on_internal_vault() {
             )
             .call_method(
                 account,
-                "try_deposit_batch_abort_on_failure",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -183,7 +183,7 @@ fn test_recall_on_received_direct_access_reference() {
             )
             .call_method(
                 account,
-                "try_deposit_batch_abort_on_failure",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),

@@ -376,7 +376,7 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if the resource can't be deposited it is returned.
-    pub fn try_deposit_return_on_failure<Y>(
+    pub fn try_deposit_or_refund<Y>(
         bucket: Bucket,
         api: &mut Y,
     ) -> Result<Option<Bucket>, RuntimeError>
@@ -400,7 +400,7 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if ANY of the resources can't be deposited then ALL are returned.
-    pub fn try_deposit_batch_return_on_failure<Y>(
+    pub fn try_deposit_batch_or_refund<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<Vec<Bucket>, RuntimeError>
@@ -425,11 +425,11 @@ impl AccountBlueprint {
     }
 
     /// Method is public to all - if the resources can't be deposited then the execution panics.
-    pub fn try_deposit_abort_on_failure<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
+    pub fn try_deposit_or_abort<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        if let Some(bucket) = Self::try_deposit_return_on_failure(bucket, api)? {
+        if let Some(bucket) = Self::try_deposit_or_refund(bucket, api)? {
             let resource_address = bucket.resource_address(api)?;
             Err(AccountError::DepositIsDisallowed { resource_address }.into())
         } else {
@@ -439,14 +439,14 @@ impl AccountBlueprint {
 
     /// Method is public to all - if ANY of the resources can't be deposited then the execution
     /// panics.
-    pub fn try_deposit_batch_abort_on_failure<Y>(
+    pub fn try_deposit_batch_or_abort<Y>(
         buckets: Vec<Bucket>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let buckets = Self::try_deposit_batch_return_on_failure(buckets, api)?;
+        let buckets = Self::try_deposit_batch_or_refund(buckets, api)?;
         if buckets.len() != 0 {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
         } else {

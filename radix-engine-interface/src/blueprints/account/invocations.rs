@@ -267,56 +267,54 @@ pub struct AccountConfigureResourceDepositRuleInput {
 
 pub type AccountConfigureResourceDepositRuleOutput = ();
 
-//=====================
-// Account Try Deposit
-//=====================
+//===============================
+// Account Try Deposit Or Refund
+//===============================
 
-pub const ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT: &str = "try_deposit_return_on_failure";
+pub const ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT: &str = "try_deposit_or_refund";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositReturnOnFailureInput {
+pub struct AccountTryDepositOrRefundInput {
     pub bucket: Bucket,
 }
 
-pub type AccountTryDepositReturnOnFailureOutput = Option<Bucket>;
+pub type AccountTryDepositOrRefundOutput = Option<Bucket>;
 
-//===========================
-// Account Try Deposit Batch Return On Failure
-//===========================
+//=====================================
+// Account Try Deposit Batch Or Refund
+//=====================================
 
-pub const ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT: &str =
-    "try_deposit_batch_return_on_failure";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT: &str = "try_deposit_batch_or_refund";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositBatchReturnOnFailureInput {
+pub struct AccountTryDepositBatchOrRefundInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountTryDepositBatchReturnOnFailureOutput = Vec<Bucket>;
+pub type AccountTryDepositBatchOrRefundOutput = Vec<Bucket>;
 
-//============================
-// Account Try Deposit Abort On Failure
-//============================
+//==============================
+// Account Try Deposit Or Abort
+//==============================
 
-pub const ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT: &str = "try_deposit_abort_on_failure";
+pub const ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT: &str = "try_deposit_or_abort";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositAbortOnFailureInput {
+pub struct AccountTryDepositOrAbortInput {
     pub bucket: Bucket,
 }
 
-pub type AccountTryDepositAbortOnFailureOutput = ();
+pub type AccountTryDepositOrAbortOutput = ();
 
-//==================================
-// Account Try Deposit Batch Abort On Failure
-//==================================
+//====================================
+// Account Try Deposit Batch Or Abort
+//====================================
 
-pub const ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT: &str =
-    "try_deposit_batch_abort_on_failure";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT: &str = "try_deposit_batch_or_abort";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountTryDepositBatchAbortOnFailureInput {
+pub struct AccountTryDepositBatchOrAbortInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountTryDepositBatchAbortOnFailureOutput = ();
+pub type AccountTryDepositBatchOrAbortOutput = ();

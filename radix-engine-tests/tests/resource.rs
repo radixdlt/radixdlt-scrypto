@@ -60,7 +60,7 @@ fn test_resource_manager() {
         )
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -91,7 +91,7 @@ fn mint_with_bad_granularity_should_fail() {
         )
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -164,7 +164,7 @@ fn mint_too_much_should_fail() {
         )
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -205,7 +205,7 @@ fn can_mint_with_proof_in_root() {
         .mint_fungible(resource, 1.into())
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -239,7 +239,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .call_method(component, "mint", manifest_args!(resource))
         .call_method(
             account,
-            "try_deposit_batch_abort_on_failure",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

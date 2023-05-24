@@ -30,7 +30,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::{
-    ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
 };
 use radix_engine_interface::blueprints::clock::{
     ClockGetCurrentTimeInput, ClockSetCurrentTimeInput, TimePrecision,
@@ -521,7 +521,7 @@ impl TestRunner {
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(
                     account_address,
-                    ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT,
+                    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
                     manifest_args!(bucket),
                 )
             })
@@ -551,7 +551,7 @@ impl TestRunner {
             .call_method(self.faucet_component(), "free", manifest_args!())
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -668,7 +668,7 @@ impl TestRunner {
             .create_identity()
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -689,7 +689,7 @@ impl TestRunner {
             .create_validator(pub_key)
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -917,7 +917,7 @@ impl TestRunner {
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1059,7 +1059,7 @@ impl TestRunner {
             )
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1081,7 +1081,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1105,7 +1105,7 @@ impl TestRunner {
             .create_fungible_resource(1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1129,7 +1129,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -1153,7 +1153,7 @@ impl TestRunner {
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

@@ -239,51 +239,51 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositReturnOnFailureInput>(),
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositReturnOnFailureOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchReturnOnFailureInput>(),
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchReturnOnFailureOutput>(
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(
                     ),
-                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT.to_string(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositAbortOnFailureInput>(),
+                    .add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositAbortOnFailureOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountTryDepositOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchAbortOnFailureInput>(),
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchAbortOnFailureOutput>(),
-                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
             },
         );
 
@@ -459,49 +459,49 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_RETURN_ON_FAILURE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositReturnOnFailureInput =
+                let input: AccountTryDepositOrRefundInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
-                let rtn = AccountBlueprint::try_deposit_return_on_failure(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit_or_refund(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_BATCH_RETURN_ON_FAILURE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchReturnOnFailureInput =
+                let input: AccountTryDepositBatchOrRefundInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
                 let rtn =
-                    AccountBlueprint::try_deposit_batch_return_on_failure(input.buckets, api)?;
+                    AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_ABORT_ON_FAILURE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositAbortOnFailureInput =
+                let input: AccountTryDepositOrAbortInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
-                let rtn = AccountBlueprint::try_deposit_abort_on_failure(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit_or_abort(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_TRY_DEPOSIT_BATCH_ABORT_ON_FAILURE_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchAbortOnFailureInput =
+                let input: AccountTryDepositBatchOrAbortInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                     })?;
 
-                let rtn = AccountBlueprint::try_deposit_batch_abort_on_failure(input.buckets, api)?;
+                let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
