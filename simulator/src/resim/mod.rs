@@ -76,6 +76,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
 use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
+use sbor::rust::prelude::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -175,7 +176,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
         hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
-        pre_allocated_ids: BTreeSet::new(),
+        pre_allocated_ids: index_set_new(),
     };
 
     let receipt = execute_and_commit_transaction(
