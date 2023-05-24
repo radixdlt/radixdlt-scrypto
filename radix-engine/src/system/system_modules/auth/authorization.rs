@@ -1,7 +1,6 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::access_rules::NodeAuthorizationRules;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
@@ -289,36 +288,11 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         auth_rule: &AccessRuleNode,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
-            AccessRuleNode::Authority(authority) => {
-                if already_verified_authorities.contains_key(authority) {
-                    return Ok(AuthorizationCheckResult::Authorized);
-                }
-
-                let rtn = Self::check_authorization_against_role_key_internal(
-                    acting_location,
-                    auth_zone_id,
-                    access_rules_of,
-                    access_rules,
-                    authority,
-                    already_verified_authorities,
-                    api,
-                )?;
-
-                match rtn {
-                    AuthorizationCheckResult::Authorized => {
-                        already_verified_authorities.insert(authority.clone(), ());
-                    }
-                    AuthorizationCheckResult::Failed(..) => {}
-                }
-
-                Ok(rtn)
-            }
             AccessRuleNode::ProofRule(rule) => {
                 if Self::verify_proof_rule(acting_location, auth_zone_id, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
@@ -332,7 +306,6 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules_of,
-                        access_rules,
                         r,
                         already_verified_authorities,
                         api,
@@ -349,7 +322,6 @@ impl Authorization {
                         acting_location,
                         auth_zone_id,
                         access_rules_of,
-                        access_rules,
                         r,
                         already_verified_authorities,
                         api,
@@ -388,18 +360,14 @@ impl Authorization {
                 Some(access_rule) => access_rule.clone(),
                 None => {
                     return Ok(AuthorizationCheckResult::Failed(vec![]));
-                    // TODO: Change to fail
-                    //return Ok(AuthorizationCheckResult::Authorized);
                 }
             }
         };
 
-        // TODO: Add costing for every access rule hop
         Self::check_authorization_against_access_rule_internal(
             acting_location,
             auth_zone_id,
             access_rules_of,
-            access_rules,
             &access_rule,
             already_verified_authorities,
             api,
@@ -412,7 +380,6 @@ impl Authorization {
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
         access_rules_of: Option<&NodeId>,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         rule: &AccessRule,
         already_verified_authorities: &mut NonIterMap<RoleKey, ()>,
         api: &mut Y,
@@ -423,7 +390,6 @@ impl Authorization {
                     acting_location,
                     auth_zone_id,
                     access_rules_of,
-                    access_rules,
                     rule_node,
                     already_verified_authorities,
                     api,
@@ -446,7 +412,6 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules: &BTreeMap<RoleKey, AccessRule>,
         rule: &AccessRule,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -456,7 +421,6 @@ impl Authorization {
             acting_location,
             auth_zone_id,
             None,
-            access_rules,
             rule,
             &mut already_verified_authorities,
             api,

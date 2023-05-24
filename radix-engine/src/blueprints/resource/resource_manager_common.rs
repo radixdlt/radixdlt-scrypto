@@ -16,7 +16,8 @@ use radix_engine_interface::*;
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (
-    Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>,
+    Roles,
+    BTreeMap<MethodKey, (MethodPermission, RoleList)>,
     BTreeMap<MethodKey, (MethodPermission, RoleList)>,
     BTreeMap<MethodKey, (MethodPermission, RoleList)>,
     BTreeMap<MethodKey, (MethodPermission, RoleList)>,
@@ -231,13 +232,12 @@ fn build_access_rules(
         MethodKey::main(NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT) => Public;
     );
 
-
     (
         roles,
         resman_protected_methods,
         vault_protected_methods,
         bucket_protected_methods,
-        protected_proof_methods
+        protected_proof_methods,
     )
 }
 
@@ -275,7 +275,6 @@ where
             NON_FUNGIBLE_PROOF_BLUEPRINT,
         )
     };
-
 
     let resman_access_rules = AccessRules::create(
         protected_resman_methods,

@@ -3,9 +3,7 @@ extern crate core;
 use radix_engine::errors::{ModuleError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, ObjectKey, FUNGIBLE_VAULT_BLUEPRINT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -37,11 +35,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .update_role_mutability(
-                token_address.into(),
-                authority_key,
-                RoleList::none(),
-            )
+            .update_role_mutability(token_address.into(), authority_key, RoleList::none())
             .build();
         test_runner
             .execute_manifest(
@@ -67,17 +61,9 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     };
 
     let builder = if lock {
-        builder.update_role_mutability(
-            token_address.into(),
-            role_key.clone(),
-            RoleList::none(),
-        )
+        builder.update_role_mutability(token_address.into(), role_key.clone(), RoleList::none())
     } else {
-        builder.update_role(
-            token_address.into(),
-            role_key,
-            rule!(require(updated_auth)),
-        )
+        builder.update_role(token_address.into(), role_key, rule!(require(updated_auth)))
     };
 
     let manifest = builder

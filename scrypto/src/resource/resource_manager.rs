@@ -48,10 +48,7 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
-        access_rules.define_role(
-            WITHDRAW_AUTHORITY,
-            access_rule,
-        );
+        access_rules.define_role(WITHDRAW_AUTHORITY, access_rule);
     }
 
     pub fn set_depositable(&self, access_rule: AccessRule) {

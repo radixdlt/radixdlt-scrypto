@@ -25,12 +25,14 @@ fn bench_radiswap(c: &mut Criterion) {
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
         btreemap!(
-            "Radiswap".to_owned() => RoyaltyConfigBuilder::new()
-                .add_rule("instantiate_pool", 5)
-                .add_rule("add_liquidity", 1)
-                .add_rule("remove_liquidity", 1)
-                .add_rule("swap", 2)
-                .default(0),
+            "Radiswap".to_owned() => {
+                let mut config = RoyaltyConfig::default();
+                config.set_rule("instantiate_pool", 5);
+                config.set_rule("add_liquidity", 1);
+                config.set_rule("remove_liquidity", 1);
+                config.set_rule("swap", 2);
+                config
+            }
         ),
         btreemap!(),
         Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),

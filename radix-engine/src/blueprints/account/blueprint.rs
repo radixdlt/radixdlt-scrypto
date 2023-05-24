@@ -14,11 +14,13 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::kernel_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::node_modules::auth::{
+    AccessRulesGetRoleInput, ACCESS_RULES_GET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
-use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_GET_ROLE_IDENT, AccessRulesGetRoleInput};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
@@ -281,7 +283,8 @@ impl AccountBlueprint {
                 ACCESS_RULES_GET_ROLE_IDENT,
                 scrypto_encode(&AccessRulesGetRoleInput {
                     role_key: RoleKey::new(SecurifiedAccount::OWNER_ROLE),
-                }).unwrap()
+                })
+                .unwrap(),
             )?;
 
             let access_rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();

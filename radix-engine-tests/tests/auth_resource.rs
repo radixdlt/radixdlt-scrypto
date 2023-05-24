@@ -2,9 +2,7 @@ extern crate core;
 
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -45,11 +43,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_proof_from_account(account, admin_auth)
-            .update_role(
-                token_address.into(),
-                role_key,
-                rule!(require(updated_auth)),
-            )
+            .update_role(token_address.into(), role_key, rule!(require(updated_auth)))
             .build();
         test_runner
             .execute_manifest(

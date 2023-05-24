@@ -648,10 +648,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
             method_name: ACCESS_RULES_DEFINE_ROLE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesDefineRoleInput {
-                role_key,
-                rule,
-            }),
+            args: to_manifest_value(&AccessRulesDefineRoleInput { role_key, rule }),
         })
         .0
     }

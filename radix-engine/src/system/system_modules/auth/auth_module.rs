@@ -7,8 +7,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::module::SystemModule;
 use crate::system::node_init::ModuleInit;
 use crate::system::node_modules::access_rules::{
-    AccessRulesNativePackage, CycleCheckError, FunctionAccessRulesSubstate,
-    MethodAccessRulesSubstate,
+    AccessRulesNativePackage, FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::SystemService;
@@ -29,7 +28,7 @@ use transaction::model::AuthZoneParams;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
     NoMethod(FnIdentifier),
-    CycleCheckError(CycleCheckError<RoleKey>),
+    UsedReservedRole(String),
     VisibilityError(NodeId),
     Unauthorized(Box<Unauthorized>),
     InnerBlueprintDoesNotExist(String),
@@ -298,7 +297,6 @@ impl AuthModule {
                     let auth_result = Authorization::check_authorization_against_access_rule(
                         acting_location,
                         auth_zone_id,
-                        &BTreeMap::new(),
                         &access_rule,
                         &mut system,
                     )?;

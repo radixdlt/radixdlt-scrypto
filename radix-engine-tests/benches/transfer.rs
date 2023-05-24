@@ -32,10 +32,11 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let mut authority_rules = Roles::new();
-            authority_rules.set_owner_authority(
+            let mut roles = Roles::new();
+            roles.define_role(
+                "owner",
                 rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
-                rule!(require(NonFungibleGlobalId::from_public_key(&public_key))),
+                ["owner"],
             );
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 100.into())

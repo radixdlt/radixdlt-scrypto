@@ -1688,28 +1688,10 @@ where
             .last_auth_zone()
             .expect("Missing auth zone");
 
-        let config = {
-            let node_id = self.actor_get_global_address()?.into_node_id();
-            let handle = self.kernel_lock_substate(
-                &node_id,
-                ACCESS_RULES_FIELD_PARTITION,
-                &AccessRulesField::AccessRules.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let access_rules = self
-                .kernel_read_substate(handle)?
-                .as_typed::<super::node_modules::access_rules::MethodAccessRulesSubstate>()
-                .unwrap();
-            self.kernel_drop_lock(handle)?;
-            access_rules.roles
-        };
-
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
             auth_zone_id,
-            &config,
             &rule,
             self,
         )?;

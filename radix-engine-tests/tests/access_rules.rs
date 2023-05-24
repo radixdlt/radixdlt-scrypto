@@ -1,5 +1,4 @@
 use radix_engine::errors::{ModuleError, RuntimeError, SystemError};
-use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -9,84 +8,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
-
-#[test]
-#[ignore]
-fn initial_cyclic_authority_should_not_be_allowed() {
-    let test_vectors = vec![
-        {
-            let mut authority_rules = Roles::new();
-            authority_rules.define_role(
-                "deposit_funds_auth",
-                rule!(require("deposit_funds_auth")),
-                vec![],
-            );
-            authority_rules.define_role("borrow_faunds_auth", rule!(deny_all), vec![]);
-            authority_rules
-        },
-        {
-            let mut authority_rules = Roles::new();
-            authority_rules.define_role(
-                "deposit_funds_auth",
-                rule!(require("borrow_funds_auth")),
-                vec![],
-            );
-            authority_rules.define_role(
-                "borrow_funds_auth",
-                rule!(require("deposit_funds_auth")),
-                vec![],
-            );
-
-            authority_rules
-        },
-    ];
-
-    // Arrange
-    for authority_rules in test_vectors {
-        let mut test_runner = TestRunner::builder().build();
-
-        // Act
-        let receipt =
-            MutableAccessRulesTestRunner::create_component(authority_rules, &mut test_runner);
-
-        // Assert
-        receipt.expect_specific_failure(|e| {
-            matches!(
-                e,
-                &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-            )
-        });
-    }
-}
-
-#[test]
-#[ignore]
-fn setting_circular_authority_rule_should_fail() {
-    // Arrange
-    let mut authority_rules = Roles::new();
-    authority_rules.define_role("deposit_funds_auth_update", rule!(allow_all), vec![]);
-    authority_rules.define_role(
-        "deposit_funds_auth",
-        rule!(allow_all),
-        vec!["deposit_funds_auth_update"],
-    );
-    authority_rules.define_role("borrow_funds_auth", rule!(allow_all), vec![]);
-    let mut test_runner = MutableAccessRulesTestRunner::new(authority_rules);
-
-    // Act
-    let receipt = test_runner.set_authority_rule(
-        RoleKey::new("deposit_funds_auth"),
-        rule!(require("deposit_funds")),
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            &RuntimeError::ModuleError(ModuleError::AuthError(AuthError::CycleCheckError(..)))
-        )
-    });
-}
 
 #[test]
 fn access_rules_method_auth_can_not_be_mutated_when_locked() {
@@ -401,11 +322,7 @@ impl MutableAccessRulesTestRunner {
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .update_role(
-                self.component_address.into(),
-                authority_key,
-                access_rule,
-            )
+            .update_role(self.component_address.into(), authority_key, access_rule)
             .build();
         self.execute_manifest(manifest)
     }

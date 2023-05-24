@@ -96,12 +96,6 @@ impl From<RoleList> for MethodPermission {
     }
 }
 
-impl From<String> for AccessRule {
-    fn from(name: String) -> Self {
-        AccessRule::Protected(AccessRuleNode::Authority(RoleKey::new(name)))
-    }
-}
-
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum AttachedModule {

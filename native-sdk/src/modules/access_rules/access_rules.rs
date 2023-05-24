@@ -24,10 +24,7 @@ impl AccessRules {
     pub fn create<Y, E: Debug + ScryptoDecode>(
         method_permissions: BTreeMap<MethodKey, (MethodPermission, RoleList)>,
         roles: Roles,
-        inner_blueprint_rules: BTreeMap<
-            String,
-            BTreeMap<MethodKey, (MethodPermission, RoleList)>,
-        >,
+        inner_blueprint_rules: BTreeMap<String, BTreeMap<MethodKey, (MethodPermission, RoleList)>>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
