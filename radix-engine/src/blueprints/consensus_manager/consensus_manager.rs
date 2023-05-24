@@ -65,6 +65,7 @@ impl ActiveValidatorSet {
         self.validators_by_stake_desc.get(address)
     }
 
+    /// Note for performance - this is calculated by iterating over the whole validator set.
     pub fn get_by_public_key(
         &self,
         public_key: &EcdsaSecp256k1PublicKey,
@@ -74,6 +75,7 @@ impl ActiveValidatorSet {
             .find(|(_, validator)| &validator.key == public_key)
     }
 
+    /// Note for performance - this is calculated by iterating over the whole validator set.
     pub fn total_active_stake_xrd(&self) -> Decimal {
         self.validators_by_stake_desc
             .iter()
