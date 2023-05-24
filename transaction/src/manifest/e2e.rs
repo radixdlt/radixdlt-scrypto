@@ -20,11 +20,13 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 PUBLISH_PACKAGE_ADVANCED
-    Enum(0u8)
+    Enum<0u8>()
     Blob("${code_blob_hash}")
-    Tuple(Map<String, Tuple>())
+    Tuple(
+        Map<String, Tuple>()
+    )
     Map<String, Tuple>()
-    Map<String, String>()
+    Map<String, Enum>()
     Map<Enum, Tuple>();
 "##,
             ),
@@ -63,7 +65,9 @@ RETURN_TO_WORKTOP
     Bucket("bucket2");
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${non_fungible_resource_address}")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"))
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#")
+    )
     Bucket("bucket3");
 CALL_METHOD
     Address("${account_address}")
@@ -100,7 +104,9 @@ CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
     Proof("proof2");
 CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES
     Bucket("bucket1")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#123#")
+    )
     Proof("proof3");
 CREATE_PROOF_FROM_BUCKET_OF_ALL
     Bucket("bucket1")
@@ -136,7 +142,9 @@ CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
     Proof("proof8");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
     Address("${non_fungible_resource_address}")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"))
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#123#")
+    )
     Proof("proof9");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${non_fungible_resource_address}")
@@ -238,18 +246,36 @@ CREATE_PROOF_FROM_AUTH_ZONE
 CALL_METHOD
     Address("${component_address}")
     "aliases"
-    Enum(0u8)
-    Enum(0u8)
-    Enum(1u8, "hello")
-    Enum(1u8, "hello")
-    Enum(0u8, "test")
-    Enum(0u8, "test")
-    Enum(1u8, "test123")
-    Enum(1u8, "test123")
-    Enum(0u8)
-    Enum(1u8, "a")
-    Enum(0u8, "b")
-    Enum(1u8, "c")
+    Enum<0u8>()
+    Enum<0u8>()
+    Enum<1u8>(
+        "hello"
+    )
+    Enum<1u8>(
+        "hello"
+    )
+    Enum<0u8>(
+        "test"
+    )
+    Enum<0u8>(
+        "test"
+    )
+    Enum<1u8>(
+        "test123"
+    )
+    Enum<1u8>(
+        "test123"
+    )
+    Enum<0u8>()
+    Enum<1u8>(
+        "a"
+    )
+    Enum<0u8>(
+        "b"
+    )
+    Enum<1u8>(
+        "c"
+    )
     Bytes("deadbeef")
     Bytes("050aff")
     NonFungibleGlobalId("${non_fungible_resource_address}:<value>")
@@ -258,17 +284,28 @@ CALL_METHOD
     NonFungibleGlobalId("${non_fungible_resource_address}:[031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f]")
     NonFungibleGlobalId("${non_fungible_resource_address}:#1234567890#")
     NonFungibleGlobalId("${non_fungible_resource_address}:#1#")
-    Array<Array>(Bytes("dead"), Bytes("050aff"))
-    Array<Array>(Bytes("dead"), Bytes("050aff"))
-    Array<Tuple>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), NonFungibleGlobalId("${non_fungible_resource_address}:#1#"))
-    Array<Tuple>(NonFungibleGlobalId("${non_fungible_resource_address}:<value>"), NonFungibleGlobalId("${non_fungible_resource_address}:#1#"));
+    Array<Array>(
+        Bytes("dead"),
+        Bytes("050aff")
+    )
+    Array<Array>(
+        Bytes("dead"),
+        Bytes("050aff")
+    )
+    Array<Tuple>(
+        NonFungibleGlobalId("${non_fungible_resource_address}:<value>"),
+        NonFungibleGlobalId("${non_fungible_resource_address}:#1#")
+    )
+    Array<Tuple>(
+        NonFungibleGlobalId("${non_fungible_resource_address}:<value>"),
+        NonFungibleGlobalId("${non_fungible_resource_address}:#1#")
+    );
 CALL_METHOD
     Address("${component_address}")
     "custom_types"
     Address("${package_address}")
     Address("${account_address}")
-    Address("${epochmanager_address}")
-    Address("${clock_address}")
+    Address("${consensusmanager_address}")
     Address("${validator_address}")
     Address("${accesscontroller_address}")
     Bucket("bucket1")
@@ -297,10 +334,25 @@ CALL_METHOD
                 r##"
 SET_PACKAGE_ROYALTY_CONFIG
     Address("${package_address}")
-    Map<String, Tuple>("Blueprint", Tuple(Map<String, U32>("method", 1u32), 0u32));
+    Map<String, Tuple>(
+        "Blueprint",
+        Tuple(
+            Map<String, U32>(
+                "method",
+                1u32
+            ),
+            0u32
+        )
+    );
 SET_COMPONENT_ROYALTY_CONFIG
     Address("${account_address}")
-    Tuple(Map<String, U32>("method", 1u32), 0u32);
+    Tuple(
+        Map<String, U32>(
+            "method",
+            1u32
+        ),
+        0u32
+    );
 CLAIM_PACKAGE_ROYALTY
     Address("${package_address}");
 CLAIM_COMPONENT_ROYALTY
@@ -322,79 +374,125 @@ CLAIM_COMPONENT_ROYALTY
 SET_METADATA
     Address("${package_address}")
     "field_name"
-    Enum(0u8, Enum(0u8, "v"));
+    Enum<0u8>(
+        "Metadata string value, eg description"
+    );
 SET_METADATA
     Address("${account_address}")
     "field_name"
-    Enum(0u8, Enum(0u8, "v"));
+    Enum<0u8>(
+        "Metadata string value, eg description"
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(0u8, "v"));
+    Enum<0u8>(
+        "Metadata string value, eg description"
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(1u8, true));
+    Enum<1u8>(
+        true
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(2u8, 123u8));
+    Enum<2u8>(
+        123u8
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(3u8, 123u32));
+    Enum<3u8>(
+        123u32
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(4u8, 123u64));
+    Enum<4u8>(
+        123u64
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(5u8, -123i32));
+    Enum<5u8>(
+        -123i32
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(6u8, -123i64));
+    Enum<6u8>(
+        -123i64
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(7u8, Decimal("10.5")));
+    Enum<7u8>(
+        Decimal("10.5")
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(8u8, Address("${account_address}")));
+    Enum<8u8>(
+        Address("${account_address}")
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(9u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000000000ff"))));
+    Enum<9u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000000000ff")
+        )
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(10u8, NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")));
+    Enum<10u8>(
+        NonFungibleGlobalId("${non_fungible_resource_address}:<some_string>")
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(11u8, NonFungibleLocalId("<some_string>")));
+    Enum<11u8>(
+        NonFungibleLocalId("<some_string>")
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(12u8, 10000i64));
+    Enum<12u8>(
+        10000i64
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(13u8, "https://radixdlt.com/index.html"));
+    Enum<13u8>(
+        "https://radixdlt.com/index.html"
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(14u8, "https://radixdlt.com"));
+    Enum<14u8>(
+        "https://radixdlt.com"
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(0u8, Enum(15u8, Enum(0u8, Bytes("0000000000000000000000000000000000000000000000000000000000"))));
+    Enum<15u8>(
+        Enum<0u8>(
+            Bytes("0000000000000000000000000000000000000000000000000000000000")
+        )
+    );
 SET_METADATA
     Address("${resource_address}")
     "field_name"
-    Enum(1u8, Array<Enum>(Enum(0u8, "some_string"), Enum(0u8, "another_string"), Enum(0u8, "yet_another_string")));
+    Enum<128u8>(
+        Array<String>(
+            "some_string",
+            "another_string",
+            "yet_another_string"
+        )
+    );
 REMOVE_METADATA
     Address("${package_address}")
     "field_name";
@@ -420,9 +518,9 @@ REMOVE_METADATA
                 r##"
 SET_AUTHORITY_ACCESS_RULE
     Address("${resource_address}")
-    Enum(0u8)
-    Enum(0u8)
-    Enum(0u8);
+    Enum<0u8>()
+    Enum<0u8>()
+    Enum<0u8>();
 "##,
             ),
         );
@@ -446,8 +544,32 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
-    Map<String, String>("name", "MyResource", "symbol", "RSRC", "description", "A very innovative and important resource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Map<String, Enum>(
+        "name",
+        Enum<0u8>(
+            "MyResource"
+        ),
+        "symbol",
+        Enum<0u8>(
+            "RSRC"
+        ),
+        "description",
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
+    )
+    Map<Enum, Tuple>(
+        Enum<4u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<5u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
     Decimal("12");
 CALL_METHOD
     Address("${account_address}")
@@ -476,8 +598,32 @@ CALL_METHOD
     Decimal("10");
 CREATE_FUNGIBLE_RESOURCE
     18u8
-    Map<String, String>("name", "MyResource", "symbol", "RSRC", "description", "A very innovative and important resource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
+    Map<String, Enum>(
+        "name",
+        Enum<0u8>(
+            "MyResource"
+        ),
+        "symbol",
+        Enum<0u8>(
+            "RSRC"
+        ),
+        "description",
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
+    )
+    Map<Enum, Tuple>(
+        Enum<4u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<5u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    );
 "##,
             ),
         );
@@ -505,10 +651,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
-    Enum(1u8)
-    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8))
-    Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Enum<1u8>()
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>( 64u8))
+    Map<String, Enum>("name", Enum<0u8>("MyResource"), "description", Enum<0u8>("A very innovative and important resource"))
+    Map<Enum, Tuple>(Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>()), Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>()))
     Map<NonFungibleLocalId, Array>(NonFungibleLocalId("#12#"), Bytes("5c21020c0b48656c6c6f20576f726c64a00000b0d86b9088a6000000000000000000000000000000000000000000000000"));
 CALL_METHOD
     Address("${account_address}")
@@ -538,10 +684,40 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum(1u8)
-    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum(0u8, 64u8), Array<String>())
-    Map<String, String>("name", "MyResource", "description", "A very innovative and important resource")
-    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)));
+    Enum<1u8>()
+    Tuple(
+        Tuple(
+            Array<Enum>(),
+            Array<Tuple>(),
+            Array<Enum>()
+        ),
+        Enum<0u8>(
+            64u8
+        ),
+        Array<String>()
+    )
+    Map<String, Enum>(
+        "name",
+        Enum<0u8>(
+            "MyResource"
+        ),
+        "description",
+        Enum<0u8>(
+            "A very innovative and important resource"
+        )
+    )
+    Map<Enum, Tuple>(
+        Enum<4u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<5u8>(),
+        Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    );
 "##,
             ),
         );
@@ -601,7 +777,12 @@ CALL_METHOD
     Decimal("1");
 MINT_NON_FUNGIBLE
     Address("${mintable_non_fungible_resource_address}")
-    Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("${non_fungible_local_id}"), Tuple(Tuple()));
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("${non_fungible_local_id}"),
+        Tuple(
+            Tuple()
+        )
+    );
 CALL_METHOD
     Address("${account_address}")
     "deposit_batch"
@@ -623,6 +804,22 @@ CALL_METHOD
 CREATE_ACCOUNT_ADVANCED
     Map<Enum, Tuple>();
 CREATE_ACCOUNT;
+"##,
+            ),
+        );
+    }
+
+    #[test]
+    fn test_create_validator() {
+        compile_and_decompile_with_inversion_test(
+            "create_validator",
+            apply_address_replacements(include_str!("../../examples/validator/new.rtm")),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+CREATE_VALIDATOR
+    Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5");
 "##,
             ),
         );
@@ -659,8 +856,12 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("bucket1");
 CREATE_ACCESS_CONTROLLER
     Bucket("bucket1")
-    Tuple(Enum(0u8), Enum(0u8), Enum(0u8))
-    Enum(0u8);
+    Tuple(
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Enum<0u8>();
 "##,
             ),
         );
@@ -673,37 +874,32 @@ CREATE_ACCESS_CONTROLLER
         blobs: Vec<Vec<u8>>,
         expected_canonical: impl AsRef<str>,
     ) {
-        let manifest = manifest.as_ref();
-        let expected_canonical = expected_canonical.as_ref();
+        let original_string = manifest.as_ref();
+        let original_struct = compile(original_string, network, blobs.clone()).unwrap();
+        let original_binary = manifest_encode(&original_struct);
 
-        let compiled1 = compile(manifest, network, blobs.clone()).unwrap();
-        let decompiled1 = decompile(&compiled1.instructions, network).unwrap();
+        let decompiled_string = decompile(&original_struct.instructions, network).unwrap();
+        let decompiled_struct = compile(&decompiled_string, network, blobs.clone()).unwrap();
+        let decompiled_binary = manifest_encode(&decompiled_struct);
 
-        // Whilst we're here - let's test that compile/decompile are inverses...
-        let compiled2 = compile(manifest, network, blobs.clone()).unwrap();
-        let decompiled2 = decompile(&compiled2.instructions, network).unwrap();
-
-        // The manifest argument is not necessarily in canonical decompiled string representation,
-        // therefore we can't assert that decompiled1 == manifest ...
-        // So instead we assert that decompiled1 and decompiled2 match :)
-        assert_eq!(
-            compiled1, compiled2,
-            "Compile(Decompile(compiled_manifest)) != compiled_manifest"
-        );
-        assert_eq!(
-            decompiled1, decompiled2,
-            "Decompile(Compile(canonical_manifest_str)) != canonical_manifest_str"
-        );
+        let recompiled_string = decompile(&decompiled_struct.instructions, network).unwrap();
+        let recompiled_struct = compile(&recompiled_string, network, blobs.clone()).unwrap();
+        let recompiled_binary = manifest_encode(&recompiled_struct);
 
         // If you use the following output for test cases, make sure you've checked the diff
-        println!("{}", decompiled2);
-
-        assert_eq!(decompiled2.trim(), expected_canonical.trim()); // trim for better view
-
-        let intent = build_intent(&expected_canonical, blobs)
+        println!("{}", recompiled_string);
+        let intent = build_intent(expected_canonical.as_ref(), blobs)
             .to_payload_bytes()
             .unwrap();
         print_blob(name, intent);
+
+        // Check round-trip property
+        assert_eq!(original_binary, decompiled_binary);
+        assert_eq!(decompiled_binary, recompiled_binary);
+        assert_eq!(decompiled_string, recompiled_string);
+
+        // Assert with expectation
+        assert_eq!(recompiled_string.trim(), expected_canonical.as_ref().trim());
     }
 
     fn print_blob(name: &str, blob: Vec<u8>) {
@@ -755,8 +951,7 @@ CREATE_ACCESS_CONTROLLER
         //     // Random address from resim new-account
         //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
-        //     println!("{}", Bech32Encoder::for_simulator().encode(EPOCH_MANAGER.as_node_id().as_bytes()).unwrap());
-        //     println!("{}", Bech32Encoder::for_simulator().encode(CLOCK.as_node_id().as_bytes()).unwrap());
+        //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
 
         //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
         //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
@@ -843,12 +1038,8 @@ CREATE_ACCESS_CONTROLLER
                 "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk",
             ),
             (
-                "${epochmanager_address}",
-                "epochmanager_sim1sexxxxxxxxxxephmgrxxxxxxxxx009352500589xxxxxxxxx82g6cl",
-            ),
-            (
-                "${clock_address}",
-                "clock_sim1skxxxxxxxxxxclckxxxxxxxxxxx002253583992xxxxxxxxxx58hk6",
+                "${consensusmanager_address}",
+                "consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl",
             ),
             (
                 "${validator_address}",

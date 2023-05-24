@@ -1,7 +1,7 @@
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::epoch_manager::{
-    EpochManagerCreateValidatorInput, EpochManagerStartInput, EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-    EPOCH_MANAGER_START_IDENT,
+use radix_engine_interface::blueprints::consensus_manager::{
+    ConsensusManagerCreateValidatorInput, ConsensusManagerStartInput,
+    CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, CONSENSUS_MANAGER_START_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
@@ -10,9 +10,9 @@ use radix_engine_interface::types::ComponentAddress;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]
-pub struct EpochManager(pub ComponentAddress);
+pub struct ConsensusManager(pub ComponentAddress);
 
-impl EpochManager {
+impl ConsensusManager {
     pub fn create_validator<Y, E: Debug + ScryptoDecode>(
         &self,
         key: EcdsaSecp256k1PublicKey,
@@ -23,8 +23,8 @@ impl EpochManager {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            EPOCH_MANAGER_CREATE_VALIDATOR_IDENT,
-            scrypto_encode(&EpochManagerCreateValidatorInput { key }).unwrap(),
+            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
+            scrypto_encode(&ConsensusManagerCreateValidatorInput { key }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
@@ -36,8 +36,8 @@ impl EpochManager {
     {
         api.call_method(
             self.0.as_node_id(),
-            EPOCH_MANAGER_START_IDENT,
-            scrypto_encode(&EpochManagerStartInput {}).unwrap(),
+            CONSENSUS_MANAGER_START_IDENT,
+            scrypto_encode(&ConsensusManagerStartInput {}).unwrap(),
         )?;
 
         Ok(())

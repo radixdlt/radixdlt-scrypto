@@ -1,4 +1,4 @@
-use crate::blueprints::epoch_manager::*;
+use crate::blueprints::consensus_manager::*;
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -17,9 +17,10 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
-use radix_engine_interface::blueprints::epoch_manager::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
+use sbor::rust::mem;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
@@ -29,6 +30,9 @@ use super::{
 /// A performance-driven limit on the number of simultaneously pending "delayed withdrawal"
 /// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
+
+/// A validator fee of newly-created validators.
+pub const DEFAULT_VALIDATOR_FEE_FACTOR: Decimal = Decimal::ONE;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ValidatorSubstate {
@@ -45,6 +49,21 @@ pub struct ValidatorSubstate {
 
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
+
+    /// A fraction of the effective emission amount which gets transferred to the validator's owner
+    /// (by staking it and depositing the stake units to the [`locked_owner_stake_unit_vault_id`]).
+    /// Note: it is a decimal factor, not a percentage (i.e. `0.015` means "1.5%" here).
+    /// Note: it may be overridden by [`validator_fee_change_request`], if it contains a change
+    /// which already became effective.
+    pub validator_fee_factor: Decimal,
+
+    /// The most recent request to change the [`validator_fee_factor`] (which requires a delay).
+    /// Note: the value from this request will be used instead of [`validator_fee_factor`] if the
+    /// request has already reached its effective epoch.
+    /// Note: when another change is requested, the value from this (previous) one is moved to the
+    /// [`validator_fee_factor`] - provided that it became already effective. Otherwise, this
+    /// request is overwritten by the new one.
+    pub validator_fee_change_request: Option<ValidatorFeeChangeRequest>,
 
     /// A type of fungible resource representing stake units specific to this validator.
     /// Conceptually, "staking to validator A" means "contributing to the validator's staking pool,
@@ -66,7 +85,7 @@ pub struct ValidatorSubstate {
     /// A vault holding the SUs that this validator's owner voluntarily decided to temporarily lock
     /// here, as a public display of their confidence in this validator's future reliability.
     /// Withdrawing SUs from this vault is subject to a delay (which is configured separately from
-    /// the regular unstaking delay, see [`EpochManagerConfigSubstate.num_owner_stake_units_unlock_epochs`]).
+    /// the regular unstaking delay, see [`ConsensusManagerConfigSubstate.num_owner_stake_units_unlock_epochs`]).
     /// This vault is private to the owner (i.e. the owner's badge is required for any interaction
     /// with this vault).
     pub locked_owner_stake_unit_vault_id: Own,
@@ -81,19 +100,39 @@ pub struct ValidatorSubstate {
     /// This maps an epoch number to an amount of stake units that become unlocked at that epoch.
     /// Note: because of performance considerations, a maximum size of this map is limited to
     /// [`OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT`]: starting another withdrawal will first
-    /// attempt to automatically claim any withdrawals that have finished their wait, and only then
-    /// will fail if the limit is exceeded.
+    /// attempt to move any already-available amount to [`already_unlocked_owner_stake_unit_amount`]
+    /// and only then will fail if the limit is exceeded.
     pub pending_owner_stake_unit_withdrawals: BTreeMap<u64, Decimal>,
+
+    /// An amount of owner's stake units that has already waited for a sufficient number of epochs
+    /// in the [`pending_owner_stake_unit_withdrawals`] and was automatically moved from there.
+    /// The very next [`finish_unlock_owner_stake_units()`] operation will release this amount.
+    pub already_unlocked_owner_stake_unit_amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
-    /// Note: on unstake, it is fixed to be [`EpochManagerConfigSubstate.num_unstake_epochs`] away.
+    /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
     epoch_unlocked: u64,
 
     /// An XRD amount to be claimed.
     amount: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ValidatorFeeChangeRequest {
+    /// An epoch number at (or after) which the fee change is effective.
+    /// To be specific: when a next epoch `N` begins, we perform accounting of emissions due for
+    /// previous epoch `N-1` - this means that we will use this [`new_validator_fee_factor`] only if
+    /// `epoch_effective <= N-1`, and [`ValidatorSubstate.validator_fee_factor`] otherwise.
+    /// Note: when requesting a fee decrease, this will be "next epoch"; and when requesting an
+    /// increase, this will be set to [`ConsensusManagerConfigSubstate.num_fee_increase_delay_epochs`]
+    /// epochs away.
+    epoch_effective: u64,
+
+    /// A requested new value of [`ConsensusManagerSubstate.validator_fee_factor`].
+    new_fee_factor: Decimal,
 }
 
 impl NonFungibleData for UnstakeData {
@@ -104,6 +143,8 @@ impl NonFungibleData for UnstakeData {
 pub enum ValidatorError {
     InvalidClaimResource,
     EpochUnlockHasNotOccurredYet,
+    PendingOwnerStakeWithdrawalLimitReached,
+    InvalidValidatorFeeFactor,
 }
 
 pub struct ValidatorBlueprint;
@@ -141,14 +182,11 @@ impl ValidatorBlueprint {
         let (stake_unit_bucket, new_stake_amount) = {
             let mut stake_unit_resman = ResourceManager(validator.stake_unit_resource);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
-
-            let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
-            let active_stake_amount = xrd_vault.amount(api)?;
-            let stake_unit_mint_amount = if active_stake_amount.is_zero() {
-                xrd_bucket_amount
-            } else {
-                xrd_bucket_amount * total_stake_unit_supply / active_stake_amount
-            };
+            let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+                xrd_bucket_amount,
+                xrd_vault.amount(api)?,
+                stake_unit_resman.total_supply(api)?,
+            );
 
             let stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
             xrd_vault.put(xrd_bucket, api)?;
@@ -156,7 +194,7 @@ impl ValidatorBlueprint {
             (stake_unit_bucket, new_stake_amount)
         };
 
-        // Update EpochManager
+        // Update ConsensusManager
         let new_index_key =
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
@@ -205,18 +243,20 @@ impl ValidatorBlueprint {
 
             let manager_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::EpochManager.into(),
+                ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let epoch_manager: EpochManagerSubstate = api.field_lock_read_typed(manager_handle)?;
-            let current_epoch = epoch_manager.epoch;
+            let consensus_manager: ConsensusManagerSubstate =
+                api.field_lock_read_typed(manager_handle)?;
+            let current_epoch = consensus_manager.epoch;
 
             let config_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::Config.into(),
+                ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
-            let config: EpochManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            let config: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
             let epoch_unlocked = current_epoch + config.num_unstake_epochs;
 
             api.field_lock_release(manager_handle)?;
@@ -235,7 +275,7 @@ impl ValidatorBlueprint {
             (unstake_bucket, new_stake_amount)
         };
 
-        // Update EpochManager
+        // Update ConsensusManager
         let new_index_key =
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
@@ -355,10 +395,10 @@ impl ValidatorBlueprint {
         let current_epoch = {
             let mgr_handle = api.actor_lock_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
-                EpochManagerField::EpochManager.into(),
+                ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: EpochManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
+            let mgr_substate: ConsensusManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
             api.field_lock_release(mgr_handle)?;
             epoch
@@ -401,7 +441,7 @@ impl ValidatorBlueprint {
         )?;
         let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        // Update Epoch Manager
+        // Update Consensus Manager
         {
             if let Some(index_key) = &validator.sorted_key {
                 let update = UpdateSecondaryIndex::UpdatePublicKey {
@@ -415,6 +455,71 @@ impl ValidatorBlueprint {
 
         validator.key = key;
         api.field_lock_write_typed(handle, &validator)?;
+
+        Ok(())
+    }
+
+    pub fn update_fee<Y>(new_fee_factor: Decimal, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // only allow a proper fraction
+        if new_fee_factor.is_negative() || new_fee_factor > Decimal::one() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidValidatorFeeFactor),
+            ));
+        }
+
+        // read the current epoch
+        let consensus_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
+
+        // read the configured fee increase epochs delay
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            ConsensusManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
+        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let num_fee_increase_delay_epochs = config.num_fee_increase_delay_epochs;
+        api.field_lock_release(config_handle)?;
+
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // - promote any currently pending change if it became effective already
+        if let Some(previous_request) = substate.validator_fee_change_request {
+            if previous_request.epoch_effective <= current_epoch {
+                substate.validator_fee_factor = previous_request.new_fee_factor;
+            }
+        }
+
+        // - calculate the effective epoch of the requested change
+        let epoch_effective = if new_fee_factor > substate.validator_fee_factor {
+            current_epoch + num_fee_increase_delay_epochs
+        } else {
+            current_epoch + 1 // make it effective on the *beginning* of next epoch
+        };
+
+        // ...end the read+modify+write of the validator substate
+        substate.validator_fee_change_request = Some(ValidatorFeeChangeRequest {
+            epoch_effective,
+            new_fee_factor,
+        });
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
 
         Ok(())
     }
@@ -456,16 +561,11 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
-    /// value of all its stake units.
-    /// Note: the concluded epoch's number and the validator's proposal statistics passed to this
-    /// ethod are used only for creating an event (i.e. they are only informational and do not drive
-    /// any logic at this point).
-    pub fn apply_emission<Y>(
-        xrd_bucket: Bucket,
-        epoch: u64,
-        proposals_made: u64,
-        proposals_missed: u64,
+    /// Locks the given stake units in an internal "delayed withdrawal" vault (which is the owner's
+    /// way of showing their commitment to running this validator in an orderly fashion - see
+    /// [`ValidatorSubstate.locked_owner_stake_unit_vault_id`]).
+    pub fn lock_owner_stake_units<Y>(
+        stake_unit_bucket: Bucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -474,21 +574,208 @@ impl ValidatorBlueprint {
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(())
+    }
+
+    /// Starts the process of unlocking the owner's stake units stored in the internal vault.
+    /// The requested amount of stake units (if available) will be ready for withdrawal after the
+    /// network-configured [`ConsensusManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
+    /// call to [`finish_unlock_owner_stake_units()`].
+    pub fn start_unlock_owner_stake_units<Y>(
+        requested_stake_unit_amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
+        let consensus_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
+
+        // read the configured unlock epochs delay
+        let config_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            ConsensusManagerField::Config.into(),
+            LockFlags::read_only(),
+        )?;
+        let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+        let num_owner_stake_units_unlock_epochs = config.num_owner_stake_units_unlock_epochs;
+        api.field_lock_release(config_handle)?;
+
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
 
-        let stake_pool_added_xrd = xrd_bucket.amount(api)?;
-        let total_stake_unit_supply =
-            ResourceManager(substate.stake_unit_resource).total_supply(api)?;
+        // - move the already-available withdrawals to a dedicated field
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
 
+        // - insert the requested withdrawal as pending
+        substate
+            .pending_owner_stake_unit_withdrawals
+            .entry(current_epoch + num_owner_stake_units_unlock_epochs)
+            .and_modify(|pending_amount| pending_amount.add_assign(requested_stake_unit_amount))
+            .or_insert(requested_stake_unit_amount);
+
+        // ...end the read+modify+write of the validator substate
+        let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
+        let mut pending_owner_stake_unit_unlock_vault =
+            Vault(substate.pending_owner_stake_unit_unlock_vault_id);
+        api.field_lock_write_typed(handle, substate)?;
+
+        // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
+        let pending_unlock_stake_unit_bucket =
+            locked_owner_stake_unit_vault.take(requested_stake_unit_amount, api)?;
+        pending_owner_stake_unit_unlock_vault.put(pending_unlock_stake_unit_bucket, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(())
+    }
+
+    /// Finishes the process of unlocking the owner's stake units by withdrawing *all* the pending
+    /// amounts which have reached their target epoch and thus are already available (potentially
+    /// none).
+    pub fn finish_unlock_owner_stake_units<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // read the current epoch
+        let consensus_manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_OUTER_OBJECT,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let consensus_manager: ConsensusManagerSubstate =
+            api.field_lock_read_typed(consensus_manager_handle)?;
+        let current_epoch = consensus_manager.epoch;
+        api.field_lock_release(consensus_manager_handle)?;
+
+        // drain the already-available withdrawals
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
+        let total_already_available_amount = mem::replace(
+            &mut substate.already_unlocked_owner_stake_unit_amount,
+            Decimal::zero(),
+        );
+
+        let mut pending_owner_stake_unit_unlock_vault =
+            Vault(substate.pending_owner_stake_unit_unlock_vault_id);
+        api.field_lock_write_typed(handle, substate)?;
+
+        // return the already-available withdrawals
+        let already_available_stake_unit_bucket =
+            pending_owner_stake_unit_unlock_vault.take(total_already_available_amount, api)?;
+
+        api.field_lock_release(handle)?;
+        Ok(already_available_stake_unit_bucket)
+    }
+
+    /// Removes all no-longer-pending owner stake unit withdrawals (i.e. those which have already
+    /// reached the given [`current_epoch`]) from [`pending_owner_stake_unit_withdrawals`] into
+    /// [`already_unlocked_owner_stake_unit_amount`].
+    /// Note: this house-keeping operation prevents the internal collection from growing to a size
+    /// which would affect performance (or exceed the substate size limit).
+    fn normalize_available_owner_stake_unit_withdrawals(
+        substate: &mut ValidatorSubstate,
+        current_epoch: u64,
+    ) {
+        let available_withdrawal_epochs = substate
+            .pending_owner_stake_unit_withdrawals
+            .range(..=current_epoch)
+            .map(|(epoch, _available_amount)| epoch.clone())
+            .collect::<Vec<_>>();
+        for available_withdrawal_epoch in available_withdrawal_epochs {
+            // no batch delete in a BTree
+            let available_amount = substate
+                .pending_owner_stake_unit_withdrawals
+                .remove(&available_withdrawal_epoch)
+                .expect("key was just returned by the iterator");
+            substate.already_unlocked_owner_stake_unit_amount += available_amount;
+        }
+    }
+    /// Puts the given bucket into this validator's stake XRD vault, effectively increasing the
+    /// value of all its stake units.
+    /// Note: the validator's proposal statistics passed to this method are used only for creating
+    /// an event (i.e. they are only informational and they do not drive any logic at this point).
+    pub fn apply_emission<Y>(
+        xrd_bucket: Bucket,
+        concluded_epoch: u64,
+        proposals_made: u64,
+        proposals_missed: u64,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // begin the read+modify+write of the validator substate...
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+
+        // - resolve the effective validator fee factor
+        let effective_validator_fee_factor = match &substate.validator_fee_change_request {
+            Some(request) if request.epoch_effective <= concluded_epoch => request.new_fee_factor,
+            _ => substate.validator_fee_factor,
+        };
+
+        // - calculate the validator fee and subtract it from the emission bucket
+        let total_emission_xrd = xrd_bucket.amount(api)?;
+        let validator_fee_xrd = effective_validator_fee_factor * total_emission_xrd;
+        let fee_xrd_bucket = xrd_bucket.take(validator_fee_xrd, api)?;
+
+        // - put the net emission XRDs into the stake pool
         let mut stake_xrd_vault = Vault(substate.stake_xrd_vault_id);
         let starting_stake_pool_xrd = stake_xrd_vault.amount(api)?;
         stake_xrd_vault.put(xrd_bucket, api)?;
 
-        let new_stake_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        // - stake the validator fee XRDs (effectively same as regular staking)
+        let mut stake_unit_resman = ResourceManager(substate.stake_unit_resource);
+        let stake_pool_added_xrd = total_emission_xrd - validator_fee_xrd;
+        let post_emission_stake_pool_xrd = starting_stake_pool_xrd + stake_pool_added_xrd;
+        let total_stake_unit_supply = stake_unit_resman.total_supply(api)?;
+        let stake_unit_mint_amount = Self::calculate_stake_unit_amount(
+            validator_fee_xrd,
+            post_emission_stake_pool_xrd,
+            total_stake_unit_supply,
+        );
+        let fee_stake_unit_bucket = stake_unit_resman.mint_fungible(stake_unit_mint_amount, api)?;
+        stake_xrd_vault.put(fee_xrd_bucket, api)?;
+
+        // - immediately lock these new stake units in the internal owner's "public display" vault
+        Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
+
+        // - update the index, since the stake increased (because of net emission + staking of the validator fee)
+        let new_stake_xrd = starting_stake_pool_xrd + total_emission_xrd;
         let new_index_key =
             Self::index_update(&substate, substate.is_registered, new_stake_xrd, api)?;
+
+        // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
         api.field_lock_write_typed(handle, &substate)?;
         api.field_lock_release(handle)?;
@@ -496,11 +783,11 @@ impl ValidatorBlueprint {
         Runtime::emit_event(
             api,
             ValidatorEmissionAppliedEvent {
-                epoch,
+                epoch: concluded_epoch,
                 starting_stake_pool_xrd,
                 stake_pool_added_xrd,
                 total_stake_unit_supply,
-                validator_fee_xrd: Decimal::zero(), // TODO(emissions): update after implementing validator fees
+                validator_fee_xrd,
                 proposals_made,
                 proposals_missed,
             },
@@ -540,7 +827,7 @@ impl ValidatorBlueprint {
             } => {
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -552,14 +839,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -575,14 +862,14 @@ impl ValidatorBlueprint {
                 let (address, mut validator) = api
                     .actor_sorted_index_remove_typed::<(ComponentAddress, Validator)>(
                         OBJECT_HANDLE_OUTER_OBJECT,
-                        EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                        CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                         &index_key,
                     )?
                     .unwrap();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     new_index_key,
                     EpochRegisteredValidatorByStakeEntry {
                         component_address: address,
@@ -593,13 +880,26 @@ impl ValidatorBlueprint {
             UpdateSecondaryIndex::Remove { index_key } => {
                 api.actor_sorted_index_remove(
                     OBJECT_HANDLE_OUTER_OBJECT,
-                    EPOCH_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
+                    CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX,
                     &index_key,
                 )?;
             }
         }
 
         Ok(())
+    }
+
+    /// Returns an amount of stake units to be minted when [`xrd_amount`] of XRDs is being staked.
+    fn calculate_stake_unit_amount(
+        xrd_amount: Decimal,
+        total_stake_xrd_amount: Decimal,
+        total_stake_unit_supply: Decimal,
+    ) -> Decimal {
+        if total_stake_xrd_amount.is_zero() {
+            xrd_amount
+        } else {
+            xrd_amount * total_stake_unit_supply / total_stake_xrd_amount
+        }
     }
 }
 
@@ -634,8 +934,22 @@ impl SecurifiedAccessRules for SecurifiedValidator {
             .set_fixed_main_authority_rule(VALIDATOR_REGISTER_IDENT, rule!(require_owner()));
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UNREGISTER_IDENT, rule!(require_owner()));
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
+        authority_rules.set_fixed_main_authority_rule(
+            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
+            rule!(require_owner()),
+        );
         authority_rules
             .set_fixed_main_authority_rule(VALIDATOR_UPDATE_KEY_IDENT, rule!(require_owner()));
+        authority_rules
+            .set_fixed_main_authority_rule(VALIDATOR_UPDATE_FEE_IDENT, rule!(require_owner()));
         authority_rules.set_fixed_main_authority_rule(
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
             rule!(require_owner()),
@@ -643,11 +957,11 @@ impl SecurifiedAccessRules for SecurifiedValidator {
         authority_rules.set_main_authority_rule(
             VALIDATOR_STAKE_IDENT,
             rule!(require_owner()),
-            rule!(require(package_of_direct_caller(EPOCH_MANAGER_PACKAGE))),
+            rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
         );
         authority_rules.set_fixed_main_authority_rule(
             VALIDATOR_APPLY_EMISSION_IDENT,
-            rule!(require(global_caller(EPOCH_MANAGER))),
+            rule!(require(global_caller(CONSENSUS_MANAGER))),
         );
         authority_rules
     }
@@ -730,12 +1044,13 @@ impl ValidatorCreator {
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_withdrawals = BTreeMap::new();
-        // TODO(emissions): add `lock(), withdraw(), unlock()` owner-only methods for the 3 above
 
         let substate = ValidatorSubstate {
             sorted_key: None,
             key,
             is_registered,
+            validator_fee_factor: DEFAULT_VALIDATOR_FEE_FACTOR,
+            validator_fee_change_request: None,
             stake_unit_resource,
             unstake_nft,
             stake_xrd_vault_id: stake_xrd_vault.0,
@@ -743,6 +1058,7 @@ impl ValidatorCreator {
             locked_owner_stake_unit_vault_id: locked_owner_stake_unit_vault.0,
             pending_owner_stake_unit_unlock_vault_id: pending_owner_stake_unit_unlock_vault.0,
             pending_owner_stake_unit_withdrawals,
+            already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
         let validator_id = api.new_simple_object(
