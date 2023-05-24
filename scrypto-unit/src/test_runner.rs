@@ -34,8 +34,8 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
-    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput, LeaderProposalHistory,
-    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput, EpochChangeCondition,
+    LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
@@ -156,7 +156,11 @@ impl CustomGenesis {
     pub fn default_consensus_manager_configuration() -> ConsensusManagerInitialConfiguration {
         ConsensusManagerInitialConfiguration {
             max_validators: 10,
-            rounds_per_epoch: 1,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1,
+                target_duration_millis: 0,
+            },
             num_unstake_epochs: 1,
             total_emission_xrd_per_epoch: Decimal::one(),
             min_validator_reliability: Decimal::one(),
@@ -190,7 +194,7 @@ impl CustomGenesis {
             genesis_data_chunks,
             initial_epoch,
             initial_configuration,
-            initial_time_ms: 1,
+            initial_time_ms: 0,
         }
     }
 }
@@ -1194,14 +1198,20 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u32) {
+        let mut substate = self
+            .substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                &CONSENSUS_MANAGER.as_node_id(),
+                OBJECT_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap();
+        substate.epoch = epoch as u64;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             OBJECT_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
-            &ConsensusManagerSubstate {
-                epoch: epoch as u64,
-                round: 0,
-            },
+            &substate,
         );
     }
 

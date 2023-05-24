@@ -144,8 +144,13 @@ fn next_round_with_validator_auth_succeeds() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -158,24 +163,84 @@ fn next_round_with_validator_auth_succeeds() {
 }
 
 #[test]
-fn next_epoch_with_validator_auth_succeeds() {
+fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     // Arrange
     let initial_epoch = 5u64;
-    let rounds_per_epoch = 2u64;
+    let rounds_per_epoch = 100u64;
+    let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: 0,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
     // Act
-    let receipt = test_runner.advance_to_round(rounds_per_epoch);
+    let receipt =
+        test_runner.advance_to_round_at_timestamp(rounds_per_epoch, epoch_duration_millis - 1);
 
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch").1;
     assert_eq!(next_epoch, initial_epoch + 1);
+}
+
+#[test]
+fn next_round_causes_epoch_change_on_reaching_target_duration() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 100u64;
+    let epoch_duration_millis = 1000;
+    let genesis = CustomGenesis::default(
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: 0,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: epoch_duration_millis,
+            },
+        ),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Act
+    let receipt = test_runner.advance_to_round_at_timestamp(1, epoch_duration_millis as i64);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    let next_epoch = result.next_epoch().expect("Should have next epoch").1;
+    assert_eq!(next_epoch, initial_epoch + 1);
+}
+
+#[test]
+fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_round_count() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 100u64;
+    let epoch_duration_millis = 1000;
+    let genesis = CustomGenesis::default(
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch / 2,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: epoch_duration_millis,
+            },
+        ),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Act
+    let receipt = test_runner.advance_to_round_at_timestamp(1, epoch_duration_millis as i64);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    assert!(result.next_epoch().is_none());
 }
 
 #[test]
@@ -391,8 +456,13 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let rounds_per_epoch = 2u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
@@ -461,7 +531,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         genesis_data_chunks,
         initial_epoch,
         initial_configuration: CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(1)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            })
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd),
         initial_time_ms: 1,
     };
@@ -563,7 +637,11 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
         CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            })
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
     );
@@ -639,7 +717,11 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
         initial_epoch,
         CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            })
             .with_total_emission_xrd_per_epoch(epoch_emissions_xrd)
             .with_min_validator_reliability(min_required_reliability),
     );
@@ -702,7 +784,11 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
-            .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_key);
@@ -810,7 +896,11 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         CustomGenesis::default_consensus_manager_configuration()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_num_fee_increase_delay_epochs(fee_increase_delay_epochs)
-            .with_rounds_per_epoch(1), // deliberate, to go through rounds/epoch without gaps
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            }),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_key);
@@ -977,7 +1067,11 @@ fn create_custom_genesis(
         initial_epoch,
         initial_configuration: CustomGenesis::default_consensus_manager_configuration()
             .with_max_validators(max_validators as u32)
-            .with_rounds_per_epoch(rounds_per_epoch),
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 0,
+            }),
         initial_time_ms: 1,
     };
 
@@ -1288,8 +1382,13 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -1329,8 +1428,13 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         Decimal::one(),
         validator_account_address,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
@@ -2049,8 +2153,13 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         Decimal::from(10),
         account_with_su,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_validator_with_key(&validator_pub_key);

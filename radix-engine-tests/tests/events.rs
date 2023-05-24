@@ -13,7 +13,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerNextRoundInput, ValidatorUpdateAcceptDelegatedStakeInput,
+    ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
@@ -627,7 +627,13 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 fn consensus_manager_round_update_emits_correct_event() {
     let genesis = CustomGenesis::default(
         1u64,
-        CustomGenesis::default_consensus_manager_configuration().with_rounds_per_epoch(100), // we do not want the "epoch change" event here
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: 100, // we do not want the "epoch change" event here
+                max_round_count: 100,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -661,8 +667,13 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
     let rounds_per_epoch = 5u64;
     let genesis = CustomGenesis::default(
         initial_epoch,
-        CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(rounds_per_epoch),
+        CustomGenesis::default_consensus_manager_configuration().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: rounds_per_epoch,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: 1000,
+            },
+        ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
@@ -707,7 +718,11 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         ComponentAddress::virtual_account_from_public_key(&validator_key),
         4,
         CustomGenesis::default_consensus_manager_configuration()
-            .with_rounds_per_epoch(1)
+            .with_epoch_change_condition(EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
+                target_duration_millis: 0,
+            })
             .with_total_emission_xrd_per_epoch(emission_xrd),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();

@@ -25,7 +25,7 @@ pub struct ConsensusManagerCreateInput {
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ConsensusManagerInitialConfiguration {
     pub max_validators: u32,
-    pub rounds_per_epoch: u64,
+    pub epoch_change_condition: EpochChangeCondition,
     pub num_unstake_epochs: u64,
     pub total_emission_xrd_per_epoch: Decimal,
     pub min_validator_reliability: Decimal,
@@ -39,8 +39,8 @@ impl ConsensusManagerInitialConfiguration {
         self
     }
 
-    pub fn with_rounds_per_epoch(mut self, new_value: u64) -> Self {
-        self.rounds_per_epoch = new_value;
+    pub fn with_epoch_change_condition(mut self, new_value: EpochChangeCondition) -> Self {
+        self.epoch_change_condition = new_value;
         self
     }
 
@@ -67,6 +67,41 @@ impl ConsensusManagerInitialConfiguration {
     pub fn with_num_fee_increase_delay_epochs(mut self, new_value: u64) -> Self {
         self.num_fee_increase_delay_epochs = new_value;
         self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+pub struct EpochChangeCondition {
+    /// A lower bound (inclusive) on number of rounds that is assumed to happen during the
+    /// [`duration_millis`].
+    /// If an actual number of rounds after [`duration_millis`] is less than this value, the epoch
+    /// change will wait until this value is reached.
+    pub min_round_count: u64,
+
+    /// An upper bound (exclusive) on number of rounds that is assumed to happen during the
+    /// [`duration_millis`].
+    /// If an actual number of rounds before [`duration_millis`] reaches this value, the epoch
+    /// change will happen right away.
+    pub max_round_count: u64,
+
+    /// An "ideal" duration of an epoch, which should be applied if the number of epochs is within
+    /// the `min_round_count..max_round_count` range.
+    /// Note: the range exists in order to limit the amount of damage that can be done by
+    /// semi-byzantine purposeful clock drift attacks.
+    pub target_duration_millis: u64,
+}
+
+impl EpochChangeCondition {
+    /// Determines whether this condition is met by the given actual state.
+    /// See the condition's field definitions for exact rules.
+    pub fn is_met(&self, duration_millis: i64, round_count: u64) -> bool {
+        if round_count >= self.max_round_count {
+            true
+        } else if round_count < self.min_round_count {
+            false
+        } else {
+            duration_millis >= 0 && (duration_millis as u64) >= self.target_duration_millis
+        }
     }
 }
 

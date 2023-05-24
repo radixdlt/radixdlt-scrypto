@@ -18,11 +18,11 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
         .seconds_since_unix_epoch;
 
     // the 13 seconds and 337 millis are supposed to be lost via rounding down to a minute
-    let epoch_millis = (epoch_seconds_rounded_to_minutes + 13) * 1000 + 337;
+    let epoch_milli = (epoch_seconds_rounded_to_minutes + 13) * 1000 + 337;
 
     // Act
     test_runner
-        .advance_to_round_at_timestamp(1, epoch_millis)
+        .advance_to_round_at_timestamp(1, epoch_milli)
         .expect_commit_success();
 
     // Assert
@@ -43,14 +43,11 @@ fn advancing_round_changes_internal_milli_timestamp() {
             CustomGenesis::default_consensus_manager_configuration(),
         ))
         .build();
-    let epoch_millis = 123456789;
+    let epoch_milli = 123456789;
 
     // Act
-    test_runner.advance_to_round_at_timestamp(1, epoch_millis);
+    test_runner.advance_to_round_at_timestamp(1, epoch_milli);
 
     // Assert
-    assert_eq!(
-        test_runner.get_current_proposer_timestamp_ms(),
-        epoch_millis
-    );
+    assert_eq!(test_runner.get_current_proposer_timestamp_ms(), epoch_milli);
 }

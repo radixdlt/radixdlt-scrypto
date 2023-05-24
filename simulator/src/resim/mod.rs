@@ -480,7 +480,11 @@ pub fn db_upsert_epoch(epoch: u64) -> Result<(), Error> {
             OBJECT_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
-        .unwrap_or_else(|| ConsensusManagerSubstate { epoch: 0, round: 0 });
+        .unwrap_or_else(|| ConsensusManagerSubstate {
+            epoch: 0,
+            epoch_start_milli: 0,
+            round: 0,
+        });
 
     consensus_manager_substate.epoch = epoch;
 

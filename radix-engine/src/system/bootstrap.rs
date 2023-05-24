@@ -21,7 +21,7 @@ use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerInitialConfiguration, CONSENSUS_MANAGER_BLUEPRINT,
+    ConsensusManagerInitialConfiguration, EpochChangeCondition, CONSENSUS_MANAGER_BLUEPRINT,
     CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
@@ -136,7 +136,11 @@ where
             1u64,
             ConsensusManagerInitialConfiguration {
                 max_validators: 10,
-                rounds_per_epoch: 1,
+                epoch_change_condition: EpochChangeCondition {
+                    min_round_count: 1,
+                    max_round_count: 1,
+                    target_duration_millis: 0,
+                },
                 num_unstake_epochs: 1,
                 total_emission_xrd_per_epoch: Decimal::one(),
                 min_validator_reliability: Decimal::one(),
