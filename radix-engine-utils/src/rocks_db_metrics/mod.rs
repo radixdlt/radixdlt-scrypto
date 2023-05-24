@@ -2,7 +2,7 @@ use radix_engine_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionEntry, SubstateDatabase, PartitionUpdates, DatabaseUpdate,
 };
-use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, LogLevel, RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
+use radix_engine_stores::{rocks_db::{BlockBasedOptions, Options, /*LogLevel,*/ RocksdbSubstateStore}, memory_db::InMemorySubstateDatabase};
 use std::{path::PathBuf, time::Duration, cell::RefCell, collections::BTreeMap};
 use linreg::linear_regression_of;
 use plotters::prelude::*;
