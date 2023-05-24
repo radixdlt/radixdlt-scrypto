@@ -75,7 +75,6 @@ impl SingleResourcePoolBlueprint {
         };
         let access_rules =
             AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
-
         // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
         // able to update them later on.
         let metadata = Metadata::create_with_data(

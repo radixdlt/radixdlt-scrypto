@@ -1,11 +1,13 @@
 use crate::blueprints::pool::two_resource_pool::*;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::resource::NativeBucket;
-use native_sdk::resource::NativeVault;
-use native_sdk::resource::ResourceManager;
+use native_sdk::modules::access_rules::*;
+use native_sdk::modules::metadata::*;
+use native_sdk::modules::royalty::*;
+use native_sdk::resource::*;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
+use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -17,19 +19,108 @@ pub const TWO_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "TwoResourcePool";
 pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
     pub fn instantiate<Y>(
-        (_resource_address_1, _resource_address_2): (ResourceAddress, ResourceAddress),
-        _pool_manager_rule: AccessRule,
-        _api: &mut Y,
+        (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
+        pool_manager_rule: AccessRule,
+        api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi,
     {
-        todo!()
+        // A pool can't be created between the same resources - error out if it's
+        if resource_address1 == resource_address2 {
+            return Err(TwoResourcePoolError::SameResourceError.into());
+        }
+
+        // A pool can't be created where one of the resources is non-fungible - error out if any of
+        // them are
+        for resource_address in [resource_address1, resource_address2] {
+            let resource_manager = ResourceManager(resource_address);
+            if let ResourceType::NonFungible { .. } = resource_manager.resource_type(api)? {
+                return Err(
+                    TwoResourcePoolError::PoolsDoNotSupportNonFungibleResources {
+                        resource_address,
+                    }
+                    .into(),
+                );
+            }
+        }
+
+        // Allocating the address of the pool - this is going to be needed for the metadata of the
+        // pool unit resource.
+        let address = {
+            let node_id = api.kernel_allocate_node_id(EntityType::GlobalSingleResourcePool)?;
+            GlobalAddress::new_or_panic(node_id.0)
+        };
+
+        // Creating the pool unit resource
+        let pool_unit_resource = {
+            let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address.into());
+
+            let access_rules = btreemap!(
+                Mint => (
+                    rule!(require(component_caller_badge.clone())),
+                    AccessRule::DenyAll,
+                ),
+                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
+            );
+
+            // TODO: Pool unit resource metadata - one things is needed to do this:
+            // 1- A fix for the issue with references so that we can have the component address of
+            //    the pool component in the metadata of the pool unit resource (currently results in
+            //    an error because we're passing a reference to a node that doesn't exist).
+
+            ResourceManager::new_fungible(18, Default::default(), access_rules, api)?.0
+        };
+
+        // Creating the pool nodes
+        let object_id = {
+            let substate = TwoResourcePoolSubstate {
+                vaults: [
+                    (resource_address1, Vault::create(resource_address1, api)?.0),
+                    (resource_address2, Vault::create(resource_address2, api)?.0),
+                ],
+                pool_unit_resource,
+                initial_pool_unit_amount: None,
+            };
+            api.new_simple_object(
+                TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
+                vec![scrypto_encode(&substate).unwrap()],
+            )?
+        };
+        let access_rules =
+            AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
+        // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
+        // able to update them later on.
+        let metadata = Metadata::create_with_data(
+            btreemap!(
+                "pool_vault_number".into() => MetadataValue::U8(2),
+                "pool_resources".into() => MetadataValue::GlobalAddressArray(vec![
+                    resource_address1.into(),
+                    resource_address2.into()
+                ]),
+                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource.into()),
+            ),
+            api,
+        )?;
+        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+
+        api.globalize_with_address(
+            btreemap!(
+                ObjectModuleId::Main => object_id,
+                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::Metadata => metadata.0,
+                ObjectModuleId::Royalty => royalty.0,
+            ),
+            address,
+        )?;
+
+        Ok(ComponentAddress::new_or_panic(address.as_node_id().0))
     }
 
     pub fn contribute<Y>(
-        (first_bucket, second_bucket): (Bucket, Bucket),
-        api: &mut Y,
+        (_first_bucket, _second_bucket): (Bucket, Bucket),
+        _api: &mut Y,
     ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -257,7 +348,7 @@ struct ReserveResourceInformation {
     divisibility: u8,
 }
 
-fn _authority_rules(pool_manager_rule: AccessRule) -> AuthorityRules {
+fn authority_rules(pool_manager_rule: AccessRule) -> AuthorityRules {
     let mut authority_rules = AuthorityRules::new();
     /*
     FIXME: When we have a way to map methods to authorities I would like to:
