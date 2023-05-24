@@ -189,7 +189,7 @@ impl AuthModule {
             }
         };
 
-        let role_list = match method_key.module_id {
+        let permission = match method_key.module_id {
             ObjectModuleId::AccessRules => {
                 match &object_key {
                     ObjectKey::SELF => {}
@@ -204,10 +204,7 @@ impl AuthModule {
             }
             _ => {
                 if let Some(permission) = node_authority_rules.method_permissions.get(&method_key) {
-                    match permission {
-                        MethodPermission::Public => return Ok(()),
-                        MethodPermission::Protected(list) => list.clone(),
-                    }
+                    permission.clone()
                 } else {
                     match &object_key {
                         ObjectKey::SELF => {
@@ -219,6 +216,11 @@ impl AuthModule {
                     }
                 }
             }
+        };
+
+        let role_list = match permission {
+            MethodPermission::Public => return Ok(()),
+            MethodPermission::Protected(list) => list,
         };
 
         Self::check_authorization_against_role_list(

@@ -18,6 +18,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::node_modules::auth::{ACCESS_RULES_GET_ROLE_IDENT, AccessRulesGetRoleInput};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 
@@ -205,6 +206,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
+    // TODO: Remove
     pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
@@ -273,7 +275,19 @@ impl AccountBlueprint {
 
         let is_deposit_allowed = Self::is_deposit_allowed(&deposits_mode, &resource_address, api)?;
         if !is_deposit_allowed {
-            Runtime::assert_access_rule(rule!(require(SecurifiedAccount::OWNER_ROLE)), api)?;
+            let rtn = api.actor_call_module_method(
+                OBJECT_HANDLE_SELF,
+                ObjectModuleId::AccessRules,
+                ACCESS_RULES_GET_ROLE_IDENT,
+                scrypto_encode(&AccessRulesGetRoleInput {
+                    role_key: RoleKey::new(SecurifiedAccount::OWNER_ROLE),
+                }).unwrap()
+            )?;
+
+            let access_rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
+
+            // TODO: Remove unwrap
+            Runtime::assert_access_rule(access_rule.unwrap(), api)?;
         }
 
         Self::get_vault(
