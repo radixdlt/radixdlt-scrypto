@@ -169,7 +169,7 @@ fn test_balance_changes_when_recall() {
         )
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -213,7 +213,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .withdraw_from_account(account, resource_address, dec!("1.0"))
         .call_method(
             other_account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

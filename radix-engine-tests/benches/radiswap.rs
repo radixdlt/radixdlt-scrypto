@@ -70,7 +70,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 })
                 .call_method(
                     account2,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -88,7 +88,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -105,7 +105,7 @@ fn bench_radiswap(c: &mut Criterion) {
         })
         .call_method(
             account3,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

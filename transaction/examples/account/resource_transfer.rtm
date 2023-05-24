@@ -22,5 +22,5 @@ CALL_METHOD
 # Depositing all of the XRD withdrawn from the account into the other account
 CALL_METHOD
     Address("${other_account_address}") 
-    "deposit_batch"
+    "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP");

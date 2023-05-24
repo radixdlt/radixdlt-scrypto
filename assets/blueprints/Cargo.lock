@@ -705,6 +705,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "paste",
+ "radix-engine-constants",
  "radix-engine-derive",
  "sbor",
  "serde",

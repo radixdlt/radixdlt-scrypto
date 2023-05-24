@@ -189,6 +189,7 @@ pub enum AuthZoneField {
 pub enum AccountPartitionOffset {
     Account,
     AccountVaultsByResourceAddress,
+    AccountResourceDepositRuleByAddress,
 }
 
 impl From<AccountPartitionOffset> for PartitionOffset {

@@ -272,7 +272,7 @@ fn test_claim_royalty() {
             .claim_package_royalty(package_address)
             .call_method(
                 account,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),
@@ -287,7 +287,7 @@ fn test_claim_royalty() {
             .claim_component_royalty(component_address)
             .call_method(
                 account,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build(),

@@ -1,4 +1,4 @@
-use crate::blueprints::consensus_manager::Validator;
+use crate::blueprints::consensus_manager::ActiveValidatorSet;
 use crate::types::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
@@ -11,5 +11,5 @@ pub struct EpochChangeEvent {
     /// The *new* epoch's number.
     pub epoch: u64,
     /// The *new* epoch's validator set.
-    pub validators: BTreeMap<ComponentAddress, Validator>,
+    pub validator_set: ActiveValidatorSet,
 }

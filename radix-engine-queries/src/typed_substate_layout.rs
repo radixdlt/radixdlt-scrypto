@@ -99,9 +99,10 @@ pub enum TypedMainModuleSubstateKey {
     ConsensusManagerField(ConsensusManagerField),
     ConsensusManagerRegisteredValidatorsByStakeIndexKey(ValidatorByStakeKey),
     ValidatorField(ValidatorField),
-    AccountVaultIndexKey(ResourceAddress),
     AccessControllerField(AccessControllerField),
     AccountField(AccountField),
+    AccountVaultIndexKey(ResourceAddress),
+    AccountResourceDepositRuleIndexKey(ResourceAddress),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -250,6 +251,12 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                AccountPartitionOffset::AccountResourceDepositRuleByAddress => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
                 AccountPartitionOffset::Account => {
                     TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
                 }
@@ -326,9 +333,10 @@ pub enum TypedMainModuleSubstateValue {
     ConsensusManagerField(TypedConsensusManagerFieldValue),
     ConsensusManagerRegisteredValidatorsByStakeIndexEntry(EpochRegisteredValidatorByStakeEntry),
     Validator(TypedValidatorFieldValue),
-    Account(TypedAccountFieldValue),
-    AccountVaultIndex(AccountVaultIndexEntry), // (We don't yet have account fields yet)
     AccessController(TypedAccessControllerFieldValue),
+    Account(TypedAccountFieldValue),
+    AccountVaultIndex(AccountVaultIndexEntry),
+    AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(Option<ScryptoOwnedRawValue>),
@@ -372,8 +380,8 @@ pub enum TypedConsensusManagerFieldValue {
     ConsensusManager(ConsensusManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
-    CurrentTimeRoundedToMinutes(i64),
-    CurrentTime(i64),
+    CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
+    CurrentTime(ProposerMilliTimestampSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -558,6 +566,9 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::AccountVaultIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountVaultIndex(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
+            TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {

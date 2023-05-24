@@ -93,7 +93,7 @@ fn recursion_bomb() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -127,7 +127,7 @@ fn recursion_bomb_to_failure() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -169,7 +169,7 @@ fn recursion_bomb_2() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -203,7 +203,7 @@ fn recursion_bomb_2_to_failure() {
         })
         .call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

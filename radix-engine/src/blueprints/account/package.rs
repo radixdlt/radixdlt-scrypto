@@ -38,6 +38,17 @@ impl AccountNativePackage {
                 can_own: true,
             },
         ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceAddress>(),
+                ),
+                value: TypeSchema::Blueprint(
+                    aggregator.add_child_type_and_descendents::<ResourceDepositRule>(),
+                ),
+                can_own: false,
+            },
+        ));
 
         let mut functions = BTreeMap::new();
 
@@ -204,83 +215,73 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT.to_string(),
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeInput>(),
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountChangeAllowedDepositsModeOutput>(),
-                export_name: ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountChangeDefaultDepositRuleOutput>(),
+                export_name: ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
                 input: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToAllowedDepositsListInput>(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToAllowedDepositsListOutput>(),
-                export_name: ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountConfigureResourceDepositRuleOutput>(),
+                export_name: ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromAllowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromAllowedDepositsListOutput>(),
-                export_name: ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToDisallowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountAddResourceToDisallowedDepositsListOutput>(),
-                export_name: ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromDisallowedDepositsListInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<AccountRemoveResourceFromDisallowedDepositsListOutput>(),
-                export_name: ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
-            ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositInput>(),
-                output: aggregator.add_child_type_and_descendents::<AccountSafeDepositOutput>(),
-                export_name: ACCOUNT_SAFE_DEPOSIT_IDENT.to_string(),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrRefundOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT.to_string(),
             },
         );
 
         functions.insert(
-            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<AccountSafeDepositBatchInput>(),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountSafeDepositBatchOutput>(),
-                export_name: ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT.to_string(),
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            FunctionSchema {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortInput>(),
+                output: aggregator
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrAbortOutput>(),
+                export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
             },
         );
 
@@ -456,24 +457,44 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::deposit_batch(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_SAFE_DEPOSIT_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountSafeDepositInput = input.as_typed().map_err(|e| {
+                let input: AccountTryDepositOrRefundInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::safe_deposit(input.bucket, api)?;
+                let rtn = AccountBlueprint::try_deposit_or_refund(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT => {
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountSafeDepositBatchInput = input.as_typed().map_err(|e| {
+                let input: AccountTryDepositBatchOrRefundInput = input.as_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::safe_deposit_batch(input.buckets, api)?;
+                let rtn = AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_or_abort(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
+                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
+
+                let input: AccountTryDepositBatchOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+
+                let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
@@ -564,62 +585,32 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT => {
+            ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountChangeAllowedDepositsModeInput { deposit_mode } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::change_allowed_deposits_mode(deposit_mode, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountAddResourceToAllowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn =
-                    AccountBlueprint::add_resource_to_allowed_deposits_list(resource_address, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountRemoveResourceFromAllowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::remove_resource_from_allowed_deposits_list(
-                    resource_address,
+                let AccountChangeDefaultDepositRuleInput {
+                    default_deposit_rule,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::change_account_default_deposit_rule(
+                    default_deposit_rule,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT => {
+            ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let AccountAddResourceToDisallowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::add_resource_to_disallowed_deposits_list(
+                let AccountConfigureResourceDepositRuleInput {
                     resource_address,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let AccountRemoveResourceFromDisallowedDepositsListInput { resource_address } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
-                let rtn = AccountBlueprint::remove_resource_from_disallowed_deposits_list(
+                    resource_deposit_configuration,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
+                let rtn = AccountBlueprint::configure_resource_deposit_rule(
                     resource_address,
+                    resource_deposit_configuration,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
