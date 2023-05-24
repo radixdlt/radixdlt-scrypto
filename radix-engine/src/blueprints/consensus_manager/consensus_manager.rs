@@ -17,9 +17,9 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::rule;
 
-const SECONDS_TO_MS_FACTOR: i64 = 1000;
-const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
-const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
+const MILLIS_IN_SECOND: i64 = 1000;
+const SECONDS_IN_MINUTE: i64 = 60;
+const MILLIS_IN_MINUTE: i64 = MILLIS_IN_SECOND * SECONDS_IN_MINUTE;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerConfigSubstate {
@@ -47,6 +47,59 @@ pub struct Validator {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CurrentValidatorSetSubstate {
     pub validator_set: BTreeMap<ComponentAddress, Validator>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ProposerMilliTimestampSubstate {
+    /// A number of millis elapsed since epoch (i.e. a classic "epoch millis" timestamp).
+    /// A signed number is traditionally used (for reasons like representing instants before A.D.
+    /// 1970, which may not even apply in our case).
+    pub epoch_milli: i64,
+}
+
+impl ProposerMilliTimestampSubstate {
+    pub fn from_epoch_milli(epoch_milli: i64) -> Self {
+        ProposerMilliTimestampSubstate { epoch_milli }
+    }
+}
+
+impl From<Instant> for ProposerMilliTimestampSubstate {
+    fn from(instant: Instant) -> Self {
+        Self::from_epoch_milli(instant.seconds_since_unix_epoch * MILLIS_IN_SECOND)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ProposerMinuteTimestampSubstate {
+    /// A number of full minutes elapsed since epoch.
+    /// A signed number is used for the same reasons as in [`ProposerMilliTimestampSubstate`], and
+    /// gives us time until A.D. 5772.
+    pub epoch_minute: i32,
+}
+
+impl From<ProposerMilliTimestampSubstate> for ProposerMinuteTimestampSubstate {
+    fn from(milli_timestamp: ProposerMilliTimestampSubstate) -> Self {
+        let epoch_minute = milli_timestamp.epoch_milli / MILLIS_IN_MINUTE;
+        Self {
+            epoch_minute: epoch_minute.try_into().unwrap(),
+        }
+    }
+}
+
+impl From<Instant> for ProposerMinuteTimestampSubstate {
+    fn from(instant: Instant) -> Self {
+        Self::from(ProposerMilliTimestampSubstate::from(instant))
+    }
+}
+
+impl From<ProposerMinuteTimestampSubstate> for Instant {
+    fn from(substate: ProposerMinuteTimestampSubstate) -> Self {
+        Instant {
+            seconds_since_unix_epoch: substate.epoch_minute as i64 * SECONDS_IN_MINUTE,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -181,6 +234,10 @@ impl ConsensusManagerBlueprint {
                 validator_statistics: Vec::new(),
             };
 
+            let milli_timestamp = ProposerMilliTimestampSubstate::from_epoch_milli(initial_time_ms);
+            let milli_timestamp_bytes = scrypto_encode(&milli_timestamp).unwrap();
+            let minute_timestamp = ProposerMinuteTimestampSubstate::from(milli_timestamp);
+            let minute_timestamp_bytes = scrypto_encode(&minute_timestamp).unwrap();
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
                 vec![
@@ -188,8 +245,8 @@ impl ConsensusManagerBlueprint {
                     scrypto_encode(&consensus_manager).unwrap(),
                     scrypto_encode(&current_validator_set).unwrap(),
                     scrypto_encode(&current_proposal_statistic).unwrap(),
-                    scrypto_encode(&Self::round_to_minutes_ms(initial_time_ms)).unwrap(),
-                    scrypto_encode(&initial_time_ms).unwrap(),
+                    minute_timestamp_bytes,
+                    milli_timestamp_bytes,
                 ],
             )?
         };
@@ -287,21 +344,24 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let proposer_milli_timestamp =
+            ProposerMilliTimestampSubstate::from_epoch_milli(current_time_ms);
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTime.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &current_time_ms)?;
+        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
         api.field_lock_release(handle)?;
 
-        let current_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(current_time_ms);
+        let proposer_minute_timestamp =
+            ProposerMinuteTimestampSubstate::from(proposer_milli_timestamp);
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &current_time_rounded_to_minutes_ms)?;
+        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
         api.field_lock_release(handle)?;
 
         Ok(())
@@ -321,10 +381,11 @@ impl ConsensusManagerBlueprint {
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
+                    api.field_lock_read_typed(handle)?;
                 api.field_lock_release(handle)?;
-                let instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
-                Ok(instant)
+
+                Ok(Instant::from(proposer_minute_timestamp))
             }
         }
     }
@@ -345,30 +406,20 @@ impl ConsensusManagerBlueprint {
                     ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
                     LockFlags::read_only(),
                 )?;
-                let current_time_rounded_to_minutes_ms: i64 = api.field_lock_read_typed(handle)?;
+                let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
+                    api.field_lock_read_typed(handle)?;
                 api.field_lock_release(handle)?;
 
-                let other_time_ms = Self::instant_to_millis(other_arbitrary_precision_instant);
-                let other_time_rounded_to_minutes_ms = Self::round_to_minutes_ms(other_time_ms);
+                let other_minute_timestamp =
+                    ProposerMinuteTimestampSubstate::from(other_arbitrary_precision_instant);
 
-                let current_instant = Self::instant_from_millis(current_time_rounded_to_minutes_ms);
-                let other_instant = Self::instant_from_millis(other_time_rounded_to_minutes_ms);
-                let result = current_instant.compare(other_instant, operator);
+                // convert back to Instant only for comparison operation
+                let proposer_instant = Instant::from(proposer_minute_timestamp);
+                let other_instant = Instant::from(other_minute_timestamp);
+                let result = proposer_instant.compare(other_instant, operator);
                 Ok(result)
             }
         }
-    }
-
-    fn round_to_minutes_ms(time_ms: i64) -> i64 {
-        (time_ms / MINUTES_TO_MS_FACTOR) * MINUTES_TO_MS_FACTOR
-    }
-
-    fn instant_from_millis(time_ms: i64) -> Instant {
-        Instant::new(time_ms / SECONDS_TO_MS_FACTOR)
-    }
-
-    fn instant_to_millis(instant: Instant) -> i64 {
-        instant.seconds_since_unix_epoch * SECONDS_TO_MS_FACTOR
     }
 
     pub(crate) fn next_round<Y>(

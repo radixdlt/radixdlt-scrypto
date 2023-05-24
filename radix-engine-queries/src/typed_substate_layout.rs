@@ -380,8 +380,8 @@ pub enum TypedConsensusManagerFieldValue {
     ConsensusManager(ConsensusManagerSubstate),
     CurrentValidatorSet(CurrentValidatorSetSubstate),
     CurrentProposalStatistic(CurrentProposalStatisticSubstate),
-    CurrentTimeRoundedToMinutes(i64),
-    CurrentTime(i64),
+    CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
+    CurrentTime(ProposerMilliTimestampSubstate),
 }
 
 #[derive(Debug, Clone)]
