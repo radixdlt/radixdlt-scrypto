@@ -205,7 +205,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, BTreeMap<ComponentAddress, Validator>) {
+    pub fn build_and_get_epoch(self) -> (TestRunner, IndexMap<ComponentAddress, Validator>) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
@@ -249,7 +249,7 @@ impl TestRunnerBuilder {
             .expect_commit_success()
             .next_epoch()
             .unwrap();
-        (runner, next_epoch.0)
+        (runner, next_epoch.validators)
     }
 
     pub fn build(self) -> TestRunner {

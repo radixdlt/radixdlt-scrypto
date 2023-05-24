@@ -22,15 +22,17 @@ use transaction::model::InstructionV1;
 fn genesis_epoch_has_correct_initial_validators() {
     // Arrange
     let initial_epoch = 1u64;
-    let max_validators = 10u32;
+    let max_validators = 100u32;
 
     let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
-    for k in 1usize..=100usize {
+    let mut keys = BTreeMap::<EcdsaSecp256k1PublicKey, usize>::new();
+    for k in 1usize..=150usize {
         let pub_key = EcdsaSecp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
+        keys.insert(pub_key.clone(), k);
         let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
         accounts.push(validator_account_address);
         validators.push(GenesisValidator {
@@ -41,7 +43,17 @@ fn genesis_epoch_has_correct_initial_validators() {
             owner: validator_account_address,
         });
 
-        let stake = Decimal::from(1000000 * ((k + 1) / 2));
+        let stake = if k == 91 {
+            Decimal::from(1000000 * 1000)
+        } else if k == 104 {
+            Decimal::from(1000000 * 990)
+        } else if k <= 10 {
+            Decimal::from(100000) // All the same
+        } else if k <= 100 {
+            Decimal::from(1000000 * ((k + 1) / 2))
+        } else {
+            Decimal::from(0)
+        };
 
         stake_allocations.push((
             pub_key,
@@ -75,11 +87,30 @@ fn genesis_epoch_has_correct_initial_validators() {
 
     // Assert
     assert_eq!(validators.len(), max_validators as usize);
-    for (_, validator) in validators {
-        assert!(
-            validator.stake >= Decimal::from(45000000u64)
-                && validator.stake <= Decimal::from(50000000u64)
-        )
+
+    for (i, (_, validator)) in validators.into_iter().enumerate() {
+        let index = *keys.get(&validator.key).unwrap();
+        // Check that the validator set is in order stake DESC
+        // Based on the weird special-casing of certain validators we defined above
+        match i {
+            0 => {
+                assert_eq!(index, 91);
+                assert_eq!(validator.stake, Decimal::from(1000000 * 1000));
+            }
+            1 => {
+                assert_eq!(index, 104);
+                assert_eq!(validator.stake, Decimal::from(1000000 * 990));
+            }
+            x if x < 91 => {
+                assert!(index > 10);
+                assert!(validator.stake >= Decimal::from(5000000));
+                assert!(validator.stake <= Decimal::from(50000000));
+            }
+            _ => {
+                assert!(index <= 10);
+                assert_eq!(validator.stake, Decimal::from(100000));
+            }
+        }
     }
 }
 
@@ -172,7 +203,7 @@ fn next_epoch_with_validator_auth_succeeds() {
 
     // Assert
     let result = receipt.expect_commit_success();
-    let next_epoch = result.next_epoch().expect("Should have next epoch").1;
+    let next_epoch = result.next_epoch().expect("Should have next epoch").epoch;
     assert_eq!(next_epoch, initial_epoch + 1);
 }
 
@@ -411,8 +442,8 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(!next_epoch.0.contains_key(&validator_address));
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert!(!next_epoch.validators.contains_key(&validator_address));
 }
 
 #[test]
@@ -486,19 +517,22 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .0
+        .validators
         .into_values()
         .collect::<Vec<_>>();
+
+    assert!(b_new_stake > a_new_stake);
     assert_eq!(
         next_epoch_validators,
+        // Note - it's ordered by stake desc, so b is first
         vec![
-            Validator {
-                key: a_key,
-                stake: a_new_stake,
-            },
             Validator {
                 key: b_key,
                 stake: b_new_stake,
+            },
+            Validator {
+                key: a_key,
+                stake: a_new_stake,
             },
         ]
     );
@@ -516,19 +550,8 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .collect::<Vec<_>>();
     assert_eq!(
         emission_applied_events,
+        // Note - emissions are output in the order of the active validator set, so b is first as it has higher stake
         vec![
-            (
-                test_runner.get_validator_with_key(&a_key).into_node_id(),
-                ValidatorEmissionAppliedEvent {
-                    epoch: initial_epoch,
-                    starting_stake_pool_xrd: a_initial_stake,
-                    stake_pool_added_xrd: Decimal::zero(), // default `fee_factor = 1.0` zeroes out the net emission for regular stakers
-                    total_stake_unit_supply: a_initial_stake, // stays at the level captured before any emissions
-                    validator_fee_xrd: a_stake_added, // default `fee_factor = 1.0` takes the entire emission as fee
-                    proposals_made: 1,
-                    proposals_missed: 0,
-                }
-            ),
             (
                 test_runner.get_validator_with_key(&b_key).into_node_id(),
                 ValidatorEmissionAppliedEvent {
@@ -537,6 +560,18 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
                     stake_pool_added_xrd: Decimal::zero(), // default `fee_factor = 1.0` zeroes out the net emission for regular stakers
                     total_stake_unit_supply: b_initial_stake, // stays at the level captured before any emissions
                     validator_fee_xrd: b_stake_added, // default `fee_factor = 1.0` takes the entire emission as fee
+                    proposals_made: 1,
+                    proposals_missed: 0,
+                }
+            ),
+            (
+                test_runner.get_validator_with_key(&a_key).into_node_id(),
+                ValidatorEmissionAppliedEvent {
+                    epoch: initial_epoch,
+                    starting_stake_pool_xrd: a_initial_stake,
+                    stake_pool_added_xrd: Decimal::zero(), // default `fee_factor = 1.0` zeroes out the net emission for regular stakers
+                    total_stake_unit_supply: a_initial_stake, // stays at the level captured before any emissions
+                    validator_fee_xrd: a_stake_added, // default `fee_factor = 1.0` takes the entire emission as fee
                     proposals_made: 0,
                     proposals_missed: 0,
                 }
@@ -595,7 +630,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .0
+        .validators
         .into_values()
         .collect::<Vec<_>>();
     assert_eq!(
@@ -656,7 +691,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     let next_epoch_validators = result
         .next_epoch()
         .expect("Should have next epoch")
-        .0
+        .validators
         .into_values()
         .collect::<Vec<_>>();
     assert_eq!(
@@ -1153,10 +1188,13 @@ fn registered_validator_test(
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.0.len(), expected_num_validators_in_next_epoch);
-    assert_eq!(next_epoch.1, initial_epoch + 1);
     assert_eq!(
-        next_epoch.0.contains_key(&validator_address),
+        next_epoch.validators.len(),
+        expected_num_validators_in_next_epoch
+    );
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert_eq!(
+        next_epoch.validators.contains_key(&validator_address),
         expect_in_next_epoch
     );
 }
@@ -1266,8 +1304,8 @@ fn test_registering_and_staking_many_validators() {
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.0.len(), 10);
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.validators.len(), 10);
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
 }
 
 #[test]
@@ -1306,8 +1344,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(!next_epoch.0.contains_key(&validator_address));
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
+    assert!(!next_epoch.validators.contains_key(&validator_address));
 }
 
 #[test]
@@ -1353,9 +1391,9 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
     assert_eq!(
-        next_epoch.0.get(&validator_address).unwrap().key,
+        next_epoch.validators.get(&validator_address).unwrap().key,
         next_validator_pub_key
     );
 }
@@ -2076,9 +2114,9 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Assert
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(next_epoch.epoch, initial_epoch + 1);
     assert_eq!(
-        next_epoch.0.get(&validator_address).unwrap(),
+        next_epoch.validators.get(&validator_address).unwrap(),
         &Validator {
             key: validator_pub_key,
             stake: Decimal::from(9),
