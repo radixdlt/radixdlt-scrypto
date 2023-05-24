@@ -257,8 +257,7 @@ impl AccountNativePackage {
                 input: aggregator
                     .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundInput>(),
                 output: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(
-                    ),
+                    .add_child_type_and_descendents::<AccountTryDepositBatchOrRefundOutput>(),
                 export_name: ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
             },
         );
@@ -267,8 +266,7 @@ impl AccountNativePackage {
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
+                input: aggregator.add_child_type_and_descendents::<AccountTryDepositOrAbortInput>(),
                 output: aggregator
                     .add_child_type_and_descendents::<AccountTryDepositOrAbortOutput>(),
                 export_name: ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT.to_string(),
@@ -462,10 +460,9 @@ impl AccountNativePackage {
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositOrRefundInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
+                let input: AccountTryDepositOrRefundInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
 
                 let rtn = AccountBlueprint::try_deposit_or_refund(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -473,22 +470,19 @@ impl AccountNativePackage {
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchOrRefundInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
+                let input: AccountTryDepositBatchOrRefundInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
 
-                let rtn =
-                    AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
+                let rtn = AccountBlueprint::try_deposit_batch_or_refund(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositOrAbortInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
+                let input: AccountTryDepositOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
 
                 let rtn = AccountBlueprint::try_deposit_or_abort(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -496,10 +490,9 @@ impl AccountNativePackage {
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: AccountTryDepositBatchOrAbortInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                    })?;
+                let input: AccountTryDepositBatchOrAbortInput = input.as_typed().map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+                })?;
 
                 let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
