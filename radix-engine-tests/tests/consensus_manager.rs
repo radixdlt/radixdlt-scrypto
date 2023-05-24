@@ -506,14 +506,14 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let receipt = test_runner.advance_to_round(1);
 
     // Assert
-    let a_substate = test_runner.get_validator_info_by_key(&a_key);
+    let a_substate = test_runner.get_active_validator_info_by_key(&a_key);
     let a_new_stake = test_runner
         .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
         .unwrap();
     let a_stake_added = epoch_emissions_xrd * a_initial_stake / both_initial_stake;
     assert_eq!(a_new_stake, a_initial_stake + a_stake_added);
 
-    let b_substate = test_runner.get_validator_info_by_key(&b_key);
+    let b_substate = test_runner.get_active_validator_info_by_key(&b_key);
     let b_new_stake = test_runner
         .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
         .unwrap();
@@ -617,7 +617,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let receipt = test_runner.advance_to_round(rounds_per_epoch);
 
     // Assert: stake vault balance increased by the given emission * reliability factor
-    let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
+    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
     let validator_new_stake = test_runner
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
@@ -694,7 +694,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     let receipt = test_runner.advance_to_round(rounds_per_epoch);
 
     // Assert
-    let validator_substate = test_runner.get_validator_info_by_key(&validator_pub_key);
+    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
     let validator_new_stake = test_runner
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
@@ -788,7 +788,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         },]
     );
     let first_epoch_fee_xrd = emission_xrd_per_epoch; // the entire emission was raked...
-    let validator_substate = test_runner.get_validator_info_by_key(&validator_key);
+    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_eq!(
         test_runner.inspect_vault_balance(validator_substate.stake_xrd_vault_id.0),
         Some(initial_stake_amount + first_epoch_fee_xrd) // ... and it also was auto-staked...
@@ -818,7 +818,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             proposals_missed: 0,
         },]
     );
-    let validator_substate = test_runner.get_validator_info_by_key(&validator_key);
+    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
     assert_eq!(
         test_runner.inspect_vault_balance(validator_substate.stake_xrd_vault_id.0),
         Some(initial_stake_amount + dec!("2") * emission_xrd_per_epoch) // everything still goes into stake, by various means

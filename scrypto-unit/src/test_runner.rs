@@ -570,7 +570,10 @@ impl TestRunner {
         (pub_key, priv_key, account)
     }
 
-    pub fn get_validator_info_by_key(&self, key: &EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
+    pub fn get_active_validator_info_by_key(
+        &self,
+        key: &EcdsaSecp256k1PublicKey,
+    ) -> ValidatorSubstate {
         let address = self.get_active_validator_with_key(key);
         self.get_validator_info(address)
     }
