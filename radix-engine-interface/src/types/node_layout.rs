@@ -108,12 +108,12 @@ pub enum NonFungibleVaultField {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum EpochManagerPartitionOffset {
-    EpochManager,
+pub enum ConsensusManagerPartitionOffset {
+    ConsensusManager,
     RegisteredValidatorsByStakeIndex,
 }
 
-impl TryFrom<u8> for EpochManagerPartitionOffset {
+impl TryFrom<u8> for ConsensusManagerPartitionOffset {
     type Error = ();
 
     fn try_from(offset: u8) -> Result<Self, Self::Error> {
@@ -123,11 +123,13 @@ impl TryFrom<u8> for EpochManagerPartitionOffset {
 
 #[repr(u8)]
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum EpochManagerField {
+pub enum ConsensusManagerField {
     Config,
-    EpochManager,
+    ConsensusManager,
     CurrentValidatorSet,
     CurrentProposalStatistic,
+    CurrentTimeRoundedToMinutes,
+    CurrentTime,
 }
 
 #[repr(u8)]
@@ -168,12 +170,6 @@ pub enum NonFungibleProofField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum WorktopField {
     Worktop,
-}
-
-#[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
-pub enum ClockField {
-    CurrentTimeRoundedToMinutes,
 }
 
 #[repr(u8)]
@@ -261,7 +257,7 @@ substate_key!(NonFungibleResourceManagerField);
 substate_key!(NonFungibleVaultField);
 substate_key!(NonFungibleBucketField);
 substate_key!(NonFungibleProofField);
-substate_key!(EpochManagerField);
+substate_key!(ConsensusManagerField);
 substate_key!(ValidatorField);
 substate_key!(AccessControllerField);
 substate_key!(AccountField);
@@ -269,5 +265,4 @@ substate_key!(SingleResourcePoolField);
 
 // Transient
 substate_key!(WorktopField);
-substate_key!(ClockField);
 substate_key!(AuthZoneField);

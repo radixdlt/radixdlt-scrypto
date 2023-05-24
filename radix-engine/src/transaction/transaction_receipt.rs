@@ -1,5 +1,5 @@
 use super::{BalanceChange, StateUpdateSummary};
-use crate::blueprints::epoch_manager::{EpochChangeEvent, Validator};
+use crate::blueprints::consensus_manager::{EpochChangeEvent, Validator};
 use crate::errors::*;
 use crate::system::system_modules::costing::FeeSummary;
 use crate::system::system_modules::execution_trace::{
@@ -99,8 +99,8 @@ impl CommitResult {
                 ..,
             ) = event_type_id
             {
-                if node_id == EPOCH_MANAGER_PACKAGE.as_node_id()
-                    || node_id.entity_type() == Some(EntityType::GlobalEpochManager)
+                if node_id == CONSENSUS_MANAGER_PACKAGE.as_node_id()
+                    || node_id.entity_type() == Some(EntityType::GlobalConsensusManager)
                 {
                     if let Ok(EpochChangeEvent {
                         epoch, validators, ..
@@ -316,24 +316,26 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_failure(&self) -> &RuntimeError {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
+                TransactionOutcome::Failure(error) => error,
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        }
+    }
+
     pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: Fn(&RuntimeError) -> bool,
     {
-        match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
-                TransactionOutcome::Failure(err) => {
-                    if !f(&err) {
-                        panic!(
-                            "Expected specific failure but was different error:\n{:?}",
-                            self
-                        );
-                    }
-                }
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
-            TransactionResult::Abort(..) => panic!("Transaction was aborted"),
+        if !f(self.expect_failure()) {
+            panic!(
+                "Expected specific failure but was different error:\n{:?}",
+                self
+            );
         }
     }
 }

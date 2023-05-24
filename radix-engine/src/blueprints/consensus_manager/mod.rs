@@ -1,9 +1,9 @@
-mod epoch_manager;
+mod consensus_manager;
 mod events;
 mod package;
 mod validator;
 
-pub use epoch_manager::*;
+pub use consensus_manager::*;
 pub use events::*;
 pub use package::*;
 pub use validator::*;
