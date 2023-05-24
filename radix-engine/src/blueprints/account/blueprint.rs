@@ -183,7 +183,7 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        owner_rule: AccessRule,
+        owner_rule: OwnerRule,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where

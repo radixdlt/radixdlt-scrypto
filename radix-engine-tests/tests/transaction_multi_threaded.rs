@@ -41,7 +41,9 @@ mod multi_threaded_test {
             .map(|i| {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(FAUCET, 100.into())
-                    .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(&public_key))))
+                    .new_account_advanced(OwnerRule::Fixed(rule!(require(
+                        NonFungibleGlobalId::from_public_key(&public_key)
+                    ))))
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,

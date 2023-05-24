@@ -130,7 +130,7 @@ fn test_non_existent_blob_hash() {
                 schema: PackageSchema::default(),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                owner_rule: AccessRule::DenyAll,
+                owner_rule: OwnerRule::None,
                 package_address: None,
             }),
         })

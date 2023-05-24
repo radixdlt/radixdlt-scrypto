@@ -16,7 +16,11 @@ pub trait SecurifiedAccessRules {
 
     fn create_roles<M: Into<RoleList>>(owner_rule: AccessRule, mutability: M) -> Roles {
         let mut roles = Self::role_definitions();
-        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule, mutability.into());
+        roles.define_role(
+            RoleKey::new(Self::OWNER_ROLE),
+            owner_rule,
+            mutability.into(),
+        );
         roles
     }
 
@@ -31,10 +35,11 @@ pub trait SecurifiedAccessRules {
     }
 
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        owner_rule: AccessRule,
+        owner_rule: OwnerRule,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(owner_rule, [Self::OWNER_ROLE]);
+        let (rule, mutability) = owner_rule.to_rules(Self::OWNER_ROLE);
+        let roles = Self::create_roles(rule, mutability);
         let method_permissions =
             Self::create_method_permissions((MethodPermission::nobody(), RoleList::none()));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;

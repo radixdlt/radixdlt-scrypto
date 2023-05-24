@@ -71,13 +71,13 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    builder.new_account_advanced(AccessRule::AllowAll);
+                    builder.new_account_advanced(OwnerRule::Fixed(AccessRule::AllowAll));
                 }
                 1 => {
-                    builder.new_account_advanced(AccessRule::AllowAll);
+                    builder.new_account_advanced(OwnerRule::Fixed(AccessRule::AllowAll));
                 }
                 2 => {
-                    builder.new_account_advanced(AccessRule::AllowAll);
+                    builder.new_account_advanced(OwnerRule::Fixed(AccessRule::AllowAll));
                 }
                 3 => {
                     builder.call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")));

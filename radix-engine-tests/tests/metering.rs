@@ -71,7 +71,7 @@ mod tests {
             + 6031 /* DropLock */
             + 1680 /* DropNode */
             + 1140299 /* Invoke */
-            + 695096 /* LockSubstate */
+            + 690233 /* LockSubstate */
             + 8456 /* ReadSubstate */
             + 65000 /* RunNative */
             + 7500 /* RunSystem */
@@ -109,7 +109,7 @@ mod tests {
                 }
             ),
             btreemap!(),
-            rule!(require(NonFungibleGlobalId::from_public_key(&pk1))),
+            OwnerRule::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
         );
 
         // Instantiate radiswap
@@ -208,7 +208,7 @@ mod tests {
             + 14356 /* DropLock */
             + 3675 /* DropNode */
             + 3395011 /* Invoke */
-            + 6258716 /* LockSubstate */
+            + 6256087 /* LockSubstate */
             + 20104 /* ReadSubstate */
             + 137500 /* RunNative */
             + 15000 /* RunSystem */
@@ -245,7 +245,7 @@ mod tests {
                 }
             ),
             btreemap!(),
-            rule!(require(NonFungibleGlobalId::from_public_key(&pk1))),
+            OwnerRule::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
         );
 
         // Instantiate flash_loan
@@ -321,7 +321,7 @@ mod tests {
             + 22755 /* DropLock */
             + 6090 /* DropNode */
             + 4768533 /* Invoke */
-            + 7481147 /* LockSubstate */
+            + 7478518 /* LockSubstate */
             + 32256 /* ReadSubstate */
             + 205000 /* RunNative */
             + 40000 /* RunSystem */
@@ -357,7 +357,7 @@ mod tests {
                 PackageSchema::default(),
                 BTreeMap::new(),
                 BTreeMap::new(),
-                AccessRule::DenyAll,
+                OwnerRule::None,
             )
             .build();
 

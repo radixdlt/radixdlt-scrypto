@@ -163,6 +163,24 @@ impl<const N: usize> From<[&str; N]> for RoleList {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+pub enum OwnerRule {
+    None,
+    Fixed(AccessRule),
+    Updateable(AccessRule),
+}
+
+impl OwnerRule {
+    pub fn to_rules(self, owner_role_name: &str) -> (AccessRule, RoleList) {
+        match self {
+            OwnerRule::Fixed(rule) => (rule, RoleList::none()),
+            OwnerRule::Updateable(rule) => (rule, [owner_role_name].into()),
+            OwnerRule::None => (AccessRule::DenyAll, RoleList::none()),
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
     pub rules: BTreeMap<RoleKey, (AccessRule, RoleList)>,
