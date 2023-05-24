@@ -53,9 +53,14 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
+use radix_engine::blueprints::consensus_manager::{
+    ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
+};
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::track::db_key_mapper::{
+    DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -74,7 +79,9 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
-use radix_engine_store_interface::interface::SubstateDatabase;
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, SubstateDatabase,
+};
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -437,4 +444,34 @@ pub fn get_event_schema<S: SubstateDatabase>(
             .schema
             .clone(),
     ))
+}
+
+pub fn db_upsert_timestamps(
+    milli_timestamp: ProposerMilliTimestampSubstate,
+    minute_timestamp: ProposerMinuteTimestampSubstate,
+) -> Result<(), Error> {
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+
+    let consensus_manager_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+    );
+    let milli_timestamp_sort_key =
+        SpreadPrefixKeyMapper::to_db_sort_key(&ConsensusManagerField::CurrentTime.into());
+    let minute_timestamp_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(
+        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+    );
+
+    substate_db.commit(&indexmap!(
+        consensus_manager_partition_key => indexmap!(
+            milli_timestamp_sort_key => DatabaseUpdate::Set(
+                scrypto_encode(&milli_timestamp).unwrap()
+            ),
+            minute_timestamp_sort_key => DatabaseUpdate::Set(
+                scrypto_encode(&minute_timestamp).unwrap()
+            )
+        )
+    ));
+
+    Ok(())
 }

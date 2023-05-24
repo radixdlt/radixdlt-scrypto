@@ -225,10 +225,6 @@ impl ConsensusManagerBlueprint {
             rule!(require(package_of_direct_caller(CONSENSUS_MANAGER_PACKAGE))),
         );
         authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT,
-            rule!(require(AuthAddresses::validator_role())),
-        );
-        authority_rules.set_fixed_main_authority_rule(
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             rule!(require(AuthAddresses::validator_role())),
         );
@@ -307,35 +303,6 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn set_current_time<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
-            epoch_milli: current_time_ms,
-        };
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTime.into(),
-            LockFlags::MUTABLE,
-        )?;
-        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
-        api.field_lock_release(handle)?;
-
-        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
-            epoch_minute: Self::milli_to_minute(current_time_ms),
-        };
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-            LockFlags::MUTABLE,
-        )?;
-        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
-        api.field_lock_release(handle)?;
-
-        Ok(())
-    }
-
     pub(crate) fn get_current_time<Y>(
         precision: TimePrecision,
         api: &mut Y,
@@ -405,6 +372,7 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn next_round<Y>(
         round: u64,
+        proposer_timestamp_ms: i64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -417,13 +385,15 @@ impl ConsensusManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
-        let mgr_handle = api.actor_lock_field(
+        api.field_lock_release(config_handle)?;
+
+        let consensus_manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::MUTABLE,
         )?;
         let mut consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(mgr_handle)?;
+            api.field_lock_read_typed(consensus_manager_handle)?;
 
         let progressed_rounds = round as i128 - consensus_manager.round as i128;
         if progressed_rounds <= 0 {
@@ -449,8 +419,10 @@ impl ConsensusManagerBlueprint {
             consensus_manager.round = round;
         }
 
-        api.field_lock_write_typed(mgr_handle, &consensus_manager)?;
-        api.field_lock_release(mgr_handle)?;
+        api.field_lock_write_typed(consensus_manager_handle, &consensus_manager)?;
+        api.field_lock_release(consensus_manager_handle)?;
+
+        Self::update_timestamps(proposer_timestamp_ms, api)?;
 
         Ok(())
     }
@@ -482,6 +454,35 @@ impl ConsensusManagerBlueprint {
         let (validator_address, owner_token_bucket) = ValidatorCreator::create(key, false, api)?;
 
         Ok((validator_address, owner_token_bucket))
+    }
+
+    fn update_timestamps<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
+            epoch_milli: current_time_ms,
+        };
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::CurrentTime.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
+        api.field_lock_release(handle)?;
+
+        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
+            epoch_minute: Self::milli_to_minute(current_time_ms),
+        };
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+            LockFlags::MUTABLE,
+        )?;
+        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
+        api.field_lock_release(handle)?;
+
+        Ok(())
     }
 
     fn update_proposal_statistics<Y>(

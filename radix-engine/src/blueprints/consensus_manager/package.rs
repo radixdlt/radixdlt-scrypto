@@ -88,17 +88,6 @@ impl ConsensusManagerNativePackage {
             },
         );
         functions.insert(
-            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator
-                    .add_child_type_and_descendents::<ConsensusManagerSetCurrentTimeInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<ConsensusManagerSetCurrentTimeOutput>(),
-                export_name: CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT.to_string(),
-            },
-        );
-        functions.insert(
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref()),
@@ -393,16 +382,6 @@ impl ConsensusManagerNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            CONSENSUS_MANAGER_SET_CURRENT_TIME_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let input: ConsensusManagerSetCurrentTimeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = ConsensusManagerBlueprint::set_current_time(input.current_time_ms, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
@@ -427,6 +406,7 @@ impl ConsensusManagerNativePackage {
                 })?;
                 let rtn = ConsensusManagerBlueprint::next_round(
                     input.round,
+                    input.proposer_timestamp_ms,
                     input.leader_proposal_history,
                     api,
                 )?;
