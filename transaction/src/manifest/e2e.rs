@@ -506,7 +506,7 @@ REMOVE_METADATA
     }
 
     #[test]
-    fn test_access_rule() {
+    fn test_update_role() {
         compile_and_decompile_with_inversion_test(
             "access_rule",
             apply_address_replacements(include_str!("../../examples/access_rule/access_rule.rtm")),
@@ -514,10 +514,13 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-SET_AUTHORITY_ACCESS_RULE
+UPDATE_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "auth"
+    Enum<1u8>(
+        Enum<0u8>()
+    )
     Enum<0u8>();
 "##,
             ),

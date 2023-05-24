@@ -95,21 +95,6 @@ macro_rules! rule {
 }
 
 #[macro_export]
-macro_rules! role_list {
-    ( ) => ({
-        $crate::blueprints::resource::RoleList { list: vec![] }
-    });
-    ( $($role:expr),* ) => ({
-        let mut list = vec![];
-        $(
-            list.push(RoleKey::new($role));
-        )*
-
-        $crate::blueprints::resource::RoleList { list }
-    });
-}
-
-#[macro_export]
 macro_rules! role_entry {
     ($roles: expr, $role: expr, $rule:expr) => {{
         $roles.define_role($role, $rule, RoleList::none());

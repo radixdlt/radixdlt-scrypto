@@ -38,7 +38,7 @@ mod royalty_test {
                 .instantiate()
                 .prepare_to_globalize()
                 .define_roles(roles! {
-                    "auth" => rule!(require(badge)), mut => ["auth"];
+                    "auth" => rule!(require(badge)), mut ["auth"];
                 })
                 .royalties(royalties!(
                     init {
