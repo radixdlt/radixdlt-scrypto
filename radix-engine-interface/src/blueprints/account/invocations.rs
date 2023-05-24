@@ -10,19 +10,29 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+pub enum ResourceDepositRule {
+    /// The resource is neither on the allow or deny list.
+    Neither,
+
+    /// The resource is on the allow list.
+    Allowed,
+
+    /// The resource is on the deny list.
+    Disallowed,
+}
+
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor, Clone)]
-pub enum AccountDepositsMode {
-    /// Allows the deposit of all resources. Equivalent to a DisallowList of an empty set.
-    AllowAll,
+pub enum AccountDefaultDepositRule {
+    /// Allows the deposit of all resources - the deny list is honored in this state.o
+    Accept,
 
-    /// Only allows deposits of resources that the account has a vault for (i.e., existing).
+    /// Disallows the deposit of all resources - the allow list is honored in this state.
+    Reject,
+
+    /// Only deposits of existing resources is accepted - both allow and deny lists are honored in
+    /// this mode.
     AllowExisting,
-
-    /// Only allows deposits of resources specified by the owner of the account.
-    AllowList(IndexSet<ResourceAddress>),
-
-    /// Disallows deposits of resources specified by the owner of the account.
-    DisallowList(IndexSet<ResourceAddress>),
 }
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
@@ -234,93 +244,77 @@ pub type AccountCreateProofOfNonFungiblesOutput = Proof;
 // Account Transition Deposit Mode
 //=================================
 
-pub const ACCOUNT_CHANGE_ALLOWED_DEPOSITS_MODE_IDENT: &str = "change_allowed_deposits_mode";
+pub const ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT: &str = "change_account_default_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountChangeAllowedDepositsModeInput {
-    pub deposit_mode: AccountDepositsMode,
+pub struct AccountChangeDefaultDepositRuleInput {
+    pub default_deposit_rule: AccountDefaultDepositRule,
 }
 
-pub type AccountChangeAllowedDepositsModeOutput = ();
+pub type AccountChangeDefaultDepositRuleOutput = ();
 
-//=======================================
-// Add Resource To Allowed Deposits List
-//=======================================
+//============================
+// Configure Resource Deposit Rule
+//============================
 
-pub const ACCOUNT_ADD_RESOURCE_TO_ALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "add_resource_to_allowed_deposits_list";
+pub const ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT: &str = "configure_resource_deposit_rule";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountAddResourceToAllowedDepositsListInput {
+pub struct AccountConfigureResourceDepositRuleInput {
     pub resource_address: ResourceAddress,
+    pub resource_deposit_configuration: ResourceDepositRule,
 }
 
-pub type AccountAddResourceToAllowedDepositsListOutput = bool;
+pub type AccountConfigureResourceDepositRuleOutput = ();
 
-//============================================
-// Remove Resource From Allowed Deposits List
-//============================================
+//===============================
+// Account Try Deposit Or Refund
+//===============================
 
-pub const ACCOUNT_REMOVE_RESOURCE_FROM_ALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "remove_resource_from_allowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountRemoveResourceFromAllowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountRemoveResourceFromAllowedDepositsListOutput = bool;
-
-//==========================================
-// Add Resource To Disallowed Deposits List
-//==========================================
-
-pub const ACCOUNT_ADD_RESOURCE_TO_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "add_resource_to_disallowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountAddResourceToDisallowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountAddResourceToDisallowedDepositsListOutput = bool;
-
-//===============================================
-// Remove Resource From Disallowed Deposits List
-//===============================================
-
-pub const ACCOUNT_REMOVE_RESOURCE_FROM_DISALLOWED_DEPOSITS_LIST_IDENT: &str =
-    "remove_resource_from_disallowed_deposits_list";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountRemoveResourceFromDisallowedDepositsListInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountRemoveResourceFromDisallowedDepositsListOutput = bool;
-
-//======================
-// Account Safe Deposit
-//======================
-
-pub const ACCOUNT_SAFE_DEPOSIT_IDENT: &str = "safe_deposit";
+pub const ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT: &str = "try_deposit_or_refund";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountSafeDepositInput {
+pub struct AccountTryDepositOrRefundInput {
     pub bucket: Bucket,
 }
 
-pub type AccountSafeDepositOutput = Option<Bucket>;
+pub type AccountTryDepositOrRefundOutput = Option<Bucket>;
 
-//============================
-// Account Safe Deposit Batch
-//============================
+//=====================================
+// Account Try Deposit Batch Or Refund
+//=====================================
 
-pub const ACCOUNT_SAFE_DEPOSIT_BATCH_IDENT: &str = "safe_deposit_batch";
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT: &str = "try_deposit_batch_or_refund";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AccountSafeDepositBatchInput {
+pub struct AccountTryDepositBatchOrRefundInput {
     pub buckets: Vec<Bucket>,
 }
 
-pub type AccountSafeDepositBatchOutput = Vec<Bucket>;
+pub type AccountTryDepositBatchOrRefundOutput = Vec<Bucket>;
+
+//==============================
+// Account Try Deposit Or Abort
+//==============================
+
+pub const ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT: &str = "try_deposit_or_abort";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositOrAbortInput {
+    pub bucket: Bucket,
+}
+
+pub type AccountTryDepositOrAbortOutput = ();
+
+//====================================
+// Account Try Deposit Batch Or Abort
+//====================================
+
+pub const ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT: &str = "try_deposit_batch_or_abort";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccountTryDepositBatchOrAbortInput {
+    pub buckets: Vec<Bucket>,
+}
+
+pub type AccountTryDepositBatchOrAbortOutput = ();

@@ -76,7 +76,7 @@ impl NewBadgeFixed {
             .new_badge_fixed(metadata, self.total_supply)
             .call_method(
                 default_account,
-                "deposit_batch",
+                "try_deposit_batch_or_refund",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();

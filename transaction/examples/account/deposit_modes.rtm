@@ -15,55 +15,38 @@ CALL_METHOD
 # Example 1: Allow All deposits mode
 CALL_METHOD 
     Address("${account_address}") 
-    "change_allowed_deposits_mode" 
-    Enum<"AccountDepositsMode::AllowAll">();
+    "change_account_default_deposit_rule" 
+    Enum<"AccountDefaultDepositRule::Accept">();
 
-# Example 2: Allow Existing deposits mode
+# Example 2: Deny All deposits mode
 CALL_METHOD 
     Address("${account_address}") 
-    "change_allowed_deposits_mode" 
-    Enum<"AccountDepositsMode::AllowExisting">();
+    "change_account_default_deposit_rule" 
+    Enum<"AccountDefaultDepositRule::Reject">();
 
-# Example 3: Allow List Deposit Mode
+# Example 3: Allow existing deposits mode
 CALL_METHOD 
     Address("${account_address}") 
-    "change_allowed_deposits_mode" 
-    Enum<"AccountDepositsMode::AllowList">(
-        Array<Address>(
-            Address("${first_resource_address}")
-        )
-    );
-
-# Example 3a: Adding a resource to the allow list
-CALL_METHOD
-    Address("${account_address}")
-    "add_resource_to_allowed_deposits_list"
-    Address("${second_resource_address}");
-
-# Example 3b: Removing a resource from the allow list
-CALL_METHOD
-    Address("${account_address}")
-    "remove_resource_from_allowed_deposits_list"
-    Address("${second_resource_address}");
-
-# Example 4: Allow List Deposit Mode
-CALL_METHOD 
-    Address("${account_address}") 
-    "change_allowed_deposits_mode" 
-    Enum<"AccountDepositsMode::DisallowList">(
-        Array<Address>(
-            Address("${first_resource_address}")
-        )
-    );
+    "change_account_default_deposit_rule" 
+    Enum<"AccountDefaultDepositRule::AllowExisting">();
 
 # Example 4a: Adding a resource to the allow list
 CALL_METHOD
     Address("${account_address}")
-    "add_resource_to_disallowed_deposits_list"
-    Address("${second_resource_address}");
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<"ResourceDepositRule::Allowed">();
 
-# Example 4b: Removing a resource from the allow list
+# Example 4a: Adding a resource to the deny list
 CALL_METHOD
     Address("${account_address}")
-    "remove_resource_from_disallowed_deposits_list"
-    Address("${second_resource_address}");
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<"ResourceDepositRule::Disallowed">();
+
+# Example 4a: Removing a resource from the allow and deny lists
+CALL_METHOD
+    Address("${account_address}")
+    "configure_resource_deposit_rule"
+    Address("${second_resource_address}")
+    Enum<"ResourceDepositRule::Neither">();

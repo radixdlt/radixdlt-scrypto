@@ -232,7 +232,7 @@ fn vault_fungible_recall_emits_correct_events() {
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -314,7 +314,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -328,7 +328,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -408,7 +408,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         )
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -470,7 +470,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             .create_fungible_resource(18, Default::default(), access_rules, None)
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -554,7 +554,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             )
             .call_method(
                 account,
-                ACCOUNT_DEPOSIT_BATCH_IDENT,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -890,7 +890,7 @@ fn validator_staking_emits_correct_event() {
         })
         .call_method(
             account,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1015,7 +1015,7 @@ fn validator_unstake_emits_correct_events() {
         })
         .call_method(
             account_with_su,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1169,7 +1169,7 @@ fn validator_claim_xrd_emits_correct_events() {
         })
         .call_method(
             account_with_su,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
@@ -1189,7 +1189,7 @@ fn validator_claim_xrd_emits_correct_events() {
         })
         .call_method(
             account_with_su,
-            ACCOUNT_DEPOSIT_BATCH_IDENT,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();

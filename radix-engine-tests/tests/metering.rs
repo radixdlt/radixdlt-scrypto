@@ -49,7 +49,7 @@ mod tests {
             .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
             .call_method(
                 account2,
-                "deposit_batch",
+                "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             )
             .build();
@@ -66,19 +66,19 @@ mod tests {
         // Or you can run just this test with the below:
         // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
         assert_eq!(
-            1035 /* AllocateNodeId */
-            + 1635 /* CreateNode */
-            + 5624 /* DropLock */
-            + 1575 /* DropNode */
-            + 1050432 /* Invoke */
-            + 680874 /* LockSubstate */
-            + 7896 /* ReadSubstate */
-            + 62500 /* RunNative */
+            1104 /* AllocateNodeId */
+            + 1744 /* CreateNode */
+            + 6031 /* DropLock */
+            + 1680 /* DropNode */
+            + 1140299 /* Invoke */
+            + 668454 /* LockSubstate */
+            + 8456 /* ReadSubstate */
+            + 65000 /* RunNative */
             + 7500 /* RunSystem */
             + 50000 /* TxBaseCost */
-            + 1215 /* TxPayloadCost */
+            + 1280 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
-            + 938, /* WriteSubstate */
+            + 979, /* WriteSubstate */
             commit_result.fee_summary.execution_cost_sum
         );
     }
@@ -142,7 +142,7 @@ mod tests {
                     })
                     .call_method(
                         account2,
-                        "deposit_batch",
+                        "try_deposit_batch_or_abort",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build(),
@@ -160,7 +160,7 @@ mod tests {
                     .withdraw_from_account(account2, btc, btc_amount)
                     .call_method(
                         account3,
-                        "deposit_batch",
+                        "try_deposit_batch_or_abort",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build(),
@@ -180,7 +180,7 @@ mod tests {
                 })
                 .call_method(
                     account3,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -201,20 +201,20 @@ mod tests {
         // Or you can run just this test with the below:
         // cargo test -p radix-engine-tests --test metering -- test_radiswap
         assert_eq!(
-            2415 /* AllocateNodeId */
-            + 3826 /* CreateNode */
-            + 13912 /* DropLock */
-            + 3570 /* DropNode */
-            + 3305144 /* Invoke */
-            + 5939564 /* LockSubstate */
-            + 19488 /* ReadSubstate */
-            + 135000 /* RunNative */
+            2484 /* AllocateNodeId */
+            + 3935 /* CreateNode */
+            + 14356 /* DropLock */
+            + 3675 /* DropNode */
+            + 3395011 /* Invoke */
+            + 5935915 /* LockSubstate */
+            + 20104 /* ReadSubstate */
+            + 137500 /* RunNative */
             + 15000 /* RunSystem */
-            + 1535485 /* RunWasm */
+            + 1535475 /* RunWasm */
             + 50000 /* TxBaseCost */
-            + 1610 /* TxPayloadCost */
+            + 1675 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
-            + 2330, /* WriteSubstate */
+            + 2371, /* WriteSubstate */
             commit_result.fee_summary.execution_cost_sum
         );
     }
@@ -261,7 +261,7 @@ mod tests {
                     })
                     .call_method(
                         account2,
-                        "deposit_batch",
+                        "try_deposit_batch_or_abort",
                         manifest_args!(ManifestExpression::EntireWorktop),
                     )
                     .build(),
@@ -290,7 +290,7 @@ mod tests {
                 })
                 .call_method(
                     account3,
-                    "deposit_batch",
+                    "try_deposit_batch_or_abort",
                     manifest_args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
@@ -312,20 +312,20 @@ mod tests {
         // Or you can run just this test with the below:
         // cargo test -p radix-engine-tests --test metering -- test_flash_loan
         assert_eq!(
-            3933 /* AllocateNodeId */
-            + 6213 /* CreateNode */
-            + 22348 /* DropLock */
-            + 5985 /* DropNode */
-            + 4678666 /* Invoke */
-            + 7215041 /* LockSubstate */
-            + 31696 /* ReadSubstate */
-            + 202500 /* RunNative */
+            4002 /* AllocateNodeId */
+            + 6322 /* CreateNode */
+            + 22755 /* DropLock */
+            + 6090 /* DropNode */
+            + 4768533 /* Invoke */
+            + 7212486 /* LockSubstate */
+            + 32256 /* ReadSubstate */
+            + 205000 /* RunNative */
             + 40000 /* RunSystem */
-            + 1328245 /* RunWasm */
+            + 1328225 /* RunWasm */
             + 50000 /* TxBaseCost */
-            + 2390 /* TxPayloadCost */
+            + 2455 /* TxPayloadCost */
             + 100000 /* TxSignatureVerification */
-            + 4395, /* WriteSubstate */
+            + 4436, /* WriteSubstate */
             commit_result.fee_summary.execution_cost_sum
         );
     }
@@ -381,7 +381,7 @@ mod tests {
         }
         builder.call_method(
             account,
-            "deposit_batch",
+            "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         );
         let manifest = builder.build();
