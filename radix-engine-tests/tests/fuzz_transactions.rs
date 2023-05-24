@@ -71,20 +71,13 @@ impl TransactionFuzzer {
             let next = self.rng.gen_range(0u32..4u32);
             match next {
                 0 => {
-                    let mut authority_rules = Roles::new();
-                    authority_rules.define_role("owner", AccessRule::AllowAll, vec!["owner"]);
-
-                    builder.new_account_advanced(authority_rules);
+                    builder.new_account_advanced(AccessRule::AllowAll);
                 }
                 1 => {
-                    let mut authority_rules = Roles::new();
-                    authority_rules.define_role("owner", AccessRule::AllowAll, vec!["owner"]);
-                    builder.new_account_advanced(authority_rules);
+                    builder.new_account_advanced(AccessRule::AllowAll);
                 }
                 2 => {
-                    let mut authority_rules = Roles::new();
-                    authority_rules.define_role("owner", AccessRule::AllowAll, vec!["owner"]);
-                    builder.new_account_advanced(authority_rules);
+                    builder.new_account_advanced(AccessRule::AllowAll);
                 }
                 3 => {
                     builder.call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")));

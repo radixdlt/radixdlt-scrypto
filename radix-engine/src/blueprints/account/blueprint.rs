@@ -183,14 +183,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        authority_rules: Roles,
+        owner_rule: AccessRule,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(authority_rules, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(owner_rule, api)?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();

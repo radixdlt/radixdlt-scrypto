@@ -109,7 +109,7 @@ mod tests {
                 }
             ),
             btreemap!(),
-            Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+            rule!(require(NonFungibleGlobalId::from_public_key(&pk1))),
         );
 
         // Instantiate radiswap
@@ -245,7 +245,7 @@ mod tests {
                 }
             ),
             btreemap!(),
-            Roles::new_with_owner_authority(&NonFungibleGlobalId::from_public_key(&pk1)),
+            rule!(require(NonFungibleGlobalId::from_public_key(&pk1))),
         );
 
         // Instantiate flash_loan
@@ -357,7 +357,7 @@ mod tests {
                 PackageSchema::default(),
                 BTreeMap::new(),
                 BTreeMap::new(),
-                Roles::new(),
+                AccessRule::DenyAll,
             )
             .build();
 

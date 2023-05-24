@@ -27,7 +27,7 @@ PUBLISH_PACKAGE_ADVANCED
     )
     Map<String, Tuple>()
     Map<String, Enum>()
-    Map<String, Tuple>();
+    Enum<0u8>();
 "##,
             ),
         );

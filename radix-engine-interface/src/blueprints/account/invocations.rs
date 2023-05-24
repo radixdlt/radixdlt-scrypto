@@ -60,7 +60,7 @@ pub const ACCOUNT_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateAdvancedInput {
-    pub authority_rules: Roles,
+    pub owner_rule: AccessRule,
 }
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;

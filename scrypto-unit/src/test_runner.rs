@@ -531,15 +531,10 @@ impl TestRunner {
 
     pub fn new_account_advanced(
         &mut self,
-        withdraw_auth: AccessRule,
-        mutability: AccessRule,
+        owner_rule: AccessRule,
     ) -> ComponentAddress {
-        let mut authority_rules = Roles::new();
-        authority_rules.define_role("owner_update", mutability, vec!["owner_update"]);
-        authority_rules.define_role("owner", withdraw_auth, vec!["owner_update"]);
-
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(authority_rules)
+            .new_account_advanced(owner_rule)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -620,7 +615,7 @@ impl TestRunner {
     ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
-        let account = self.new_account_advanced(withdraw_auth.clone(), withdraw_auth);
+        let account = self.new_account_advanced(withdraw_auth);
         (key_pair.0, key_pair.1, account)
     }
 
@@ -648,11 +643,9 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let mut authority_rules = Roles::new();
-            authority_rules.define_role("owner", rule!(require(owner_id)), vec!["owner"]);
             let manifest = ManifestBuilder::new()
                 .lock_fee(self.faucet_component(), 10.into())
-                .create_identity_advanced(authority_rules)
+                .create_identity_advanced(rule!(require(owner_id)))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
@@ -704,11 +697,11 @@ impl TestRunner {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: Roles,
+        owner_rule: AccessRule,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
-            .publish_package_advanced(code, schema, royalty_config, metadata, authority_rules)
+            .publish_package_advanced(code, schema, royalty_config, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -732,7 +725,7 @@ impl TestRunner {
 
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
         let (code, schema) = Compile::compile(package_dir);
-        self.publish_package(code, schema, BTreeMap::new(), BTreeMap::new(), Roles::new())
+        self.publish_package(code, schema, BTreeMap::new(), BTreeMap::new(), AccessRule::DenyAll)
     }
 
     pub fn compile_and_publish_with_owner<P: AsRef<Path>>(

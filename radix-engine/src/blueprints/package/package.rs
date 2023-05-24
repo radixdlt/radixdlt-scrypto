@@ -408,7 +408,7 @@ impl PackageNativePackage {
                     input.schema,
                     input.royalty_config,
                     input.metadata,
-                    input.role_definitions,
+                    input.owner_rule,
                     api,
                 )?;
 
@@ -513,13 +513,13 @@ impl PackageNativePackage {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: Roles,
+        owner_rule: AccessRule,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedPackage::create_advanced(authority_rules, api)?;
+        let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
         let address = Self::publish_wasm_internal(
             package_address,
             code,

@@ -14,12 +14,9 @@ pub trait SecurifiedAccessRules {
 
     fn role_definitions() -> Roles;
 
-    fn create_roles(owner_rule: AccessRule, authority_rules: Roles) -> Roles {
+    fn create_roles<M: Into<RoleList>>(owner_rule: AccessRule, mutability: M) -> Roles {
         let mut roles = Self::role_definitions();
-        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule, [SELF_ROLE]);
-        for (role_key, (access_rule, mutability)) in authority_rules.rules {
-            roles.define_role(role_key, access_rule, mutability);
-        }
+        roles.define_role(RoleKey::new(Self::OWNER_ROLE), owner_rule, mutability.into());
         roles
     }
 
@@ -33,12 +30,11 @@ pub trait SecurifiedAccessRules {
         method_permissions
     }
 
-    // TODO: This should include method permissions
     fn create_advanced<Y: ClientApi<RuntimeError>>(
-        role_definitions: Roles,
+        owner_rule: AccessRule,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(AccessRule::DenyAll, role_definitions);
+        let roles = Self::create_roles(owner_rule, [Self::OWNER_ROLE]);
         let method_permissions =
             Self::create_method_permissions((MethodPermission::nobody(), RoleList::none()));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
@@ -49,7 +45,7 @@ pub trait SecurifiedAccessRules {
     fn create_securified<Y: ClientApi<RuntimeError>>(
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let roles = Self::create_roles(AccessRule::DenyAll, Roles::new());
+        let roles = Self::create_roles(AccessRule::DenyAll, [SELF_ROLE]);
         let method_permissions =
             Self::create_method_permissions((MethodPermission::nobody(), RoleList::none()));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;
@@ -90,7 +86,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let roles = Self::create_roles(rule!(require(owner_id)), Roles::new());
+        let roles = Self::create_roles(rule!(require(owner_id)), [SELF_ROLE]);
         let method_permissions =
             Self::create_method_permissions(([Self::OWNER_ROLE].into(), [SELF_ROLE].into()));
         let access_rules = AccessRules::create(method_permissions, roles, btreemap!(), api)?;

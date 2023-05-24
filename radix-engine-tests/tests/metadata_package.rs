@@ -18,7 +18,7 @@ fn cannot_set_package_metadata_with_no_owner() {
             single_function_package_schema("Test", "f"),
             BTreeMap::new(),
             BTreeMap::new(),
-            Roles::new(),
+            AccessRule::DenyAll,
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

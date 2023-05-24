@@ -477,12 +477,12 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_identity_advanced(&mut self, authority_rules: Roles) -> &mut Self {
+    pub fn create_identity_advanced(&mut self, owner_rule: AccessRule) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&IdentityCreateAdvancedInput { authority_rules }),
+            args: to_manifest_value(&IdentityCreateAdvancedInput { owner_rule }),
         });
         self
     }
@@ -696,7 +696,7 @@ impl ManifestBuilder {
         schema: PackageSchema,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, MetadataValue>,
-        authority_rules: Roles,
+        owner_rule: AccessRule,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -711,7 +711,7 @@ impl ManifestBuilder {
                 royalty_config,
                 metadata,
                 package_address: None,
-                role_definitions: authority_rules,
+                owner_rule,
             }),
         });
         self
@@ -756,7 +756,7 @@ impl ManifestBuilder {
                 schema,
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                role_definitions: Roles::new_with_owner_authority(&owner_badge),
+                owner_rule: rule!(require(owner_badge.clone())),
             }),
         });
         self
@@ -942,12 +942,12 @@ impl ManifestBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account_advanced(&mut self, authority_rules: Roles) -> &mut Self {
+    pub fn new_account_advanced(&mut self, owner_rule: AccessRule) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value(&AccountCreateAdvancedInput { authority_rules }),
+            args: to_manifest_value(&AccountCreateAdvancedInput { owner_rule }),
         })
         .0
     }
