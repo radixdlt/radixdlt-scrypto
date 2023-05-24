@@ -2,6 +2,7 @@ use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingReason;
 use crate::blueprints::pool::single_resource_pool::SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT;
+use crate::blueprints::pool::two_resource_pool::TWO_RESOURCE_POOL_BLUEPRINT_IDENT;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, KernelError, RuntimeError,
@@ -2130,6 +2131,7 @@ pub fn get_entity_type_for_blueprint(blueprint: &BlueprintId) -> EntityType {
         (POOL_PACKAGE, SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT) => {
             EntityType::GlobalSingleResourcePool
         }
+        (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
         _ => EntityType::GlobalGenericComponent,
     }
 }

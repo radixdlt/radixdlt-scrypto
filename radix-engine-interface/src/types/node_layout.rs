@@ -218,6 +218,12 @@ pub enum SingleResourcePoolField {
     SingleResourcePool,
 }
 
+#[repr(u8)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum TwoResourcePoolField {
+    TwoResourcePool,
+}
+
 macro_rules! substate_key {
     ($t:ty) => {
         impl From<$t> for SubstateKey {
@@ -263,6 +269,7 @@ substate_key!(ValidatorField);
 substate_key!(AccessControllerField);
 substate_key!(AccountField);
 substate_key!(SingleResourcePoolField);
+substate_key!(TwoResourcePoolField);
 
 // Transient
 substate_key!(WorktopField);
