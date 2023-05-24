@@ -5,6 +5,7 @@ use native_sdk::modules::access_rules::*;
 use native_sdk::modules::metadata::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
+use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -111,7 +112,7 @@ impl SingleResourcePoolBlueprint {
         // by the vault itself on deposit.
 
         let (mut single_resource_pool_substate, handle) =
-            Self::lock_and_read(api, LockFlags::read_only())?;
+            Self::lock_and_read(api, LockFlags::MUTABLE)?;
         let mut pool_unit_resource_manager =
             single_resource_pool_substate.pool_unit_resource_manager();
         let mut vault = single_resource_pool_substate.vault();
@@ -154,6 +155,14 @@ impl SingleResourcePoolBlueprint {
             api.field_lock_write_typed(handle, single_resource_pool_substate)?;
         }
         api.field_lock_release(handle)?;
+
+        Runtime::emit_event(
+            api,
+            ContributionEvent {
+                amount_of_resources_contributed: amount_of_contributed_resources,
+                pool_unit_tokens_minted: pool_units_to_mint,
+            },
+        )?;
 
         Ok(pool_units)
     }
@@ -214,6 +223,14 @@ impl SingleResourcePoolBlueprint {
 
         api.field_lock_release(handle)?;
 
+        Runtime::emit_event(
+            api,
+            RedemptionEvent {
+                pool_unit_tokens_redeemed: pool_units_to_redeem,
+                redeemed_amount: amount_owed,
+            },
+        )?;
+
         Ok(owed_resources)
     }
 
@@ -226,8 +243,16 @@ impl SingleResourcePoolBlueprint {
     {
         let (single_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
+
+        let event = DepositEvent {
+            amount: bucket.amount(api)?,
+        };
+
         single_resource_pool_substate.vault().put(bucket, api)?;
         api.field_lock_release(handle)?;
+
+        Runtime::emit_event(api, event)?;
+
         Ok(())
     }
 
@@ -240,8 +265,12 @@ impl SingleResourcePoolBlueprint {
     {
         let (single_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
+
         let bucket = single_resource_pool_substate.vault().take(amount, api)?;
         api.field_lock_release(handle)?;
+
+        Runtime::emit_event(api, WithdrawEvent { amount })?;
+
         Ok(bucket)
     }
 

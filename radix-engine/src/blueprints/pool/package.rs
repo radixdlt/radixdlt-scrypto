@@ -115,10 +115,10 @@ impl PoolNativePackage {
             let event_schema = event_schema! {
                 aggregator,
                 [
-                    SingleResourcePoolContributionEvent,
-                    SingleResourcePoolRedemptionEvent,
-                    SingleResourceProtectedWithdrawEvent,
-                    SingleResourceProtectedDepositEvent
+                    ContributionEvent,
+                    RedemptionEvent,
+                    WithdrawEvent,
+                    DepositEvent
                 ]
             };
 

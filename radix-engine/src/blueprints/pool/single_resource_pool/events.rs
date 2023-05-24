@@ -1,23 +1,25 @@
-use radix_engine_common::{math::Decimal, ScryptoSbor};
+use crate::types::*;
+use radix_engine_common::math::Decimal;
+use radix_engine_common::{ScryptoEvent, ScryptoSbor};
 
-#[derive(ScryptoSbor)]
-pub struct SingleResourcePoolContributionEvent {
-    contribution_amount: Decimal,
-    pool_unit_tokens_minted: Decimal,
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct ContributionEvent {
+    pub amount_of_resources_contributed: Decimal,
+    pub pool_unit_tokens_minted: Decimal,
 }
 
-#[derive(ScryptoSbor)]
-pub struct SingleResourcePoolRedemptionEvent {
-    pool_unit_tokens_redeemed: Decimal,
-    redeemed_amount: Decimal,
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct RedemptionEvent {
+    pub pool_unit_tokens_redeemed: Decimal,
+    pub redeemed_amount: Decimal,
 }
 
-#[derive(ScryptoSbor)]
-pub struct SingleResourceProtectedWithdrawEvent {
-    amount: Decimal,
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct WithdrawEvent {
+    pub amount: Decimal,
 }
 
-#[derive(ScryptoSbor)]
-pub struct SingleResourceProtectedDepositEvent {
-    amount: Decimal,
+#[derive(ScryptoSbor, ScryptoEvent)]
+pub struct DepositEvent {
+    pub amount: Decimal,
 }
