@@ -13,6 +13,13 @@ pub enum TwoResourcePoolError {
         expected: ResourceAddress,
         actual: ResourceAddress,
     },
+    FailedToFindVaultOfResource {
+        resource_address: ResourceAddress,
+    },
+    ResourceDoesNotBelongToPool {
+        resource_address: ResourceAddress,
+    },
+    SameResourceError,
 }
 
 impl From<TwoResourcePoolError> for RuntimeError {

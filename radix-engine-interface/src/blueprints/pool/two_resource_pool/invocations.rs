@@ -25,7 +25,7 @@ define_invocation! {
     input: struct {
         buckets: (Bucket, Bucket)
     },
-    output: type Bucket,
+    output: type (Bucket, Bucket),
     manifest_input: struct {
         buckets: (ManifestBucket, ManifestBucket)
     }
@@ -75,7 +75,7 @@ define_invocation! {
     input: struct {
         amount_of_pool_units: Decimal
     },
-    output: type HashMap<ResourceAddress, Decimal>,
+    output: type BTreeMap<ResourceAddress, Decimal>,
     manifest_input: struct {
         amount_of_pool_units: Decimal
     }
@@ -85,6 +85,6 @@ define_invocation! {
     blueprint_name: TwoResourcePool,
     function_name: get_vault_amounts,
     input: struct {},
-    output: type HashMap<ResourceAddress, Decimal>,
+    output: type BTreeMap<ResourceAddress, Decimal>,
     manifest_input: struct {}
 }

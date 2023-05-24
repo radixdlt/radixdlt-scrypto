@@ -7,8 +7,10 @@ use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct TwoResourcePoolSubstate {
-    /// The vault of the resources of the pool.
-    pub vaults: (Own, Own),
+    /// The vaults of the resources of the pool - the maximum number of entires that this map can
+    /// have is two, a single vault for each resource. This is a map as it makes the interactions
+    /// simpler.
+    pub vaults: [(ResourceAddress, Own); 2],
 
     /// The address of the pool unit resource that the pool works with.
     pub pool_unit_resource: ResourceAddress,
@@ -20,8 +22,20 @@ pub struct TwoResourcePoolSubstate {
 }
 
 impl TwoResourcePoolSubstate {
-    pub fn vaults(&self) -> (Vault, Vault) {
-        (Vault(self.vaults.0), Vault(self.vaults.1))
+    pub fn vaults(&self) -> [(ResourceAddress, Vault); 2] {
+        self.vaults
+            .iter()
+            .map(|(resource_address, vault)| (*resource_address, Vault(*vault)))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
+    }
+
+    pub fn vault(&self, resource_address: ResourceAddress) -> Option<Vault> {
+        self.vaults
+            .iter()
+            .find(|(vault_resource_address, _)| resource_address == *vault_resource_address)
+            .map(|(_, vault)| Vault(*vault))
     }
 
     pub fn pool_unit_resource_manager(&self) -> ResourceManager {
