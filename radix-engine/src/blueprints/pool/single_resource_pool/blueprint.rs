@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
 
 pub const SINGLE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "SingleResourcePool";
 
@@ -44,20 +43,14 @@ impl SingleResourcePoolBlueprint {
         let pool_unit_resource = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address.into());
 
-            let mut access_rules = BTreeMap::new();
-
-            access_rules.insert(
-                Mint,
-                (
+            let access_rules = btreemap!(
+                Mint => (
                     rule!(require(component_caller_badge.clone())),
                     AccessRule::DenyAll,
                 ),
+                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
-            access_rules.insert(
-                Burn,
-                (rule!(require(component_caller_badge)), AccessRule::DenyAll),
-            );
-            access_rules.insert(Recall, (AccessRule::DenyAll, AccessRule::DenyAll));
 
             // TODO: Pool unit resource metadata - two things are needed to do this:
             // 1- Better APIs for initializing the metadata so that it's not string string.
@@ -82,6 +75,9 @@ impl SingleResourcePoolBlueprint {
         };
         let access_rules =
             AccessRules::create(authority_rules(pool_manager_rule), btreemap!(), api)?.0;
+
+        // TODO: The following fields must ALL be LOCKED. No entity with any authority should be
+        // able to update them later on.
         let metadata = Metadata::create_with_data(
             btreemap!(
                 "pool_vault_number".into() => MetadataValue::U8(1),
@@ -228,23 +224,31 @@ impl SingleResourcePoolBlueprint {
     }
 
     pub fn protected_deposit<Y>(
-        _bucket: Bucket,
-        _api: &mut Y,
+        bucket: Bucket,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolProtectedDepositOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (single_resource_pool_substate, handle) =
+            Self::lock_and_read(api, LockFlags::read_only())?;
+        single_resource_pool_substate.vault().put(bucket, api)?;
+        api.field_lock_release(handle)?;
+        Ok(())
     }
 
     pub fn protected_withdraw<Y>(
-        _amount: Decimal,
-        _api: &mut Y,
+        amount: Decimal,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (single_resource_pool_substate, handle) =
+            Self::lock_and_read(api, LockFlags::read_only())?;
+        let bucket = single_resource_pool_substate.vault().take(amount, api)?;
+        api.field_lock_release(handle)?;
+        Ok(bucket)
     }
 
     pub fn get_redemption_value<Y>(
@@ -292,12 +296,16 @@ impl SingleResourcePoolBlueprint {
     }
 
     pub fn get_vault_amount<Y>(
-        _api: &mut Y,
+        api: &mut Y,
     ) -> Result<SingleResourcePoolGetVaultAmountOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        todo!()
+        let (single_resource_pool_substate, handle) =
+            Self::lock_and_read(api, LockFlags::read_only())?;
+        let amount = single_resource_pool_substate.vault().amount(api)?;
+        api.field_lock_release(handle)?;
+        Ok(amount)
     }
 
     //===================
