@@ -278,7 +278,7 @@ pub fn create_system_bootstrap_transaction(
 
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = BTreeSet::new();
+    let mut pre_allocated_ids = index_set_new();
 
     // Package Package
     {
@@ -868,7 +868,7 @@ pub fn create_genesis_data_ingestion_transaction(
     chunk_number: usize,
 ) -> SystemTransactionV1 {
     let mut instructions = Vec::new();
-    let mut pre_allocated_ids = BTreeSet::new();
+    let mut pre_allocated_ids = index_set_new();
 
     if let GenesisDataChunk::Resources(resources) = &chunk {
         for resource in resources {
@@ -922,7 +922,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
 
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_ids: btreeset! { FAUCET.as_node_id().clone() },
+        pre_allocated_ids: indexset! { FAUCET.as_node_id().clone() },
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }

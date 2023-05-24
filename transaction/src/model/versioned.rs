@@ -85,7 +85,7 @@ pub enum VersionedTransactionPayload {
     SystemTransactionV1 {
         instructions: InstructionsV1,
         blobs: BlobsV1,
-        pre_allocated_ids: BTreeSet<NodeId>,
+        pre_allocated_ids: IndexSet<NodeId>,
         hash_for_execution: Hash,
     },
 }
@@ -342,7 +342,7 @@ mod tests {
         .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
-        let pre_allocated_ids_v1 = btreeset![XRD.into_node_id()];
+        let pre_allocated_ids_v1 = indexset![XRD.into_node_id()];
         let expected_preallocated_ids_hash =
             hash_manifest_encoded_without_prefix_byte(&pre_allocated_ids_v1);
 

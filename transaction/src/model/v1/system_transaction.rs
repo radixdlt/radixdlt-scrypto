@@ -6,7 +6,9 @@ use crate::model::{AuthZoneParams, Executable};
 pub struct SystemTransactionV1 {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,
-    pub pre_allocated_ids: BTreeSet<NodeId>,
+    // This is an IndexSet rather than a BTreeSet to better satisfy the round trip property
+    // when encoding from a value model which may not respect the BTreeSet ordering
+    pub pre_allocated_ids: IndexSet<NodeId>,
     pub hash_for_execution: Hash,
 }
 
@@ -21,7 +23,7 @@ impl TransactionPayloadEncode for SystemTransactionV1 {
     }
 }
 
-type PreparedPreAllocatedIds = SummarizedRawFullBody<BTreeSet<NodeId>>;
+type PreparedPreAllocatedIds = SummarizedRawFullBody<IndexSet<NodeId>>;
 type PreparedHash = SummarizedHash;
 
 pub struct PreparedSystemTransactionV1 {
@@ -92,7 +94,7 @@ impl SystemTransactionV1 {
         Self {
             instructions,
             blobs,
-            pre_allocated_ids: btreeset!(),
+            pre_allocated_ids: indexset!(),
             hash_for_execution,
         }
     }

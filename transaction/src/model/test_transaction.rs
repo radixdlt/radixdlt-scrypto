@@ -59,7 +59,7 @@ impl PreparedTestTransaction {
                 },
                 fee_payment: FeePayment::User { tip_percentage: 0 },
                 runtime_validations: vec![],
-                pre_allocated_ids: BTreeSet::new(),
+                pre_allocated_ids: index_set_new(),
             },
         )
     }

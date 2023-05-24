@@ -1214,7 +1214,7 @@ impl TestRunner {
         &mut self,
         instructions: Vec<InstructionV1>,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_ids: BTreeSet<NodeId>,
+        pre_allocated_ids: IndexSet<NodeId>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
 
@@ -1250,7 +1250,7 @@ impl TestRunner {
                 instructions: InstructionsV1(instructions),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_ids: BTreeSet::new(),
+                pre_allocated_ids: index_set_new(),
             }
             .prepare()
             .expect("expected transaction to be preparable")
