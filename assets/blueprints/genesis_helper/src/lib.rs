@@ -74,7 +74,7 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize()
             .define_roles(roles! {
-                "system" => rule!(require(system_role.clone())), mut => ["system"];
+                "system" => rule!(require(system_role.clone())), mut ["system"];
             })
             .methods(methods! {
                 ingest_data_chunk => ["system"];

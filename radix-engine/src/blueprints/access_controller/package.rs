@@ -1297,9 +1297,9 @@ fn init_access_rules_from_rule_set(
 ) -> (Roles, BTreeMap<MethodKey, (MethodPermission, RoleList)>) {
     let role_definitions = roles! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
-        "primary" => rule_set.primary_role, mut => ["self"];
-        "recovery" => rule_set.recovery_role, mut => ["self"];
-        "confirmation" => rule_set.confirmation_role, mut => ["self"];
+        "primary" => rule_set.primary_role, mut ["self"];
+        "recovery" => rule_set.recovery_role, mut ["self"];
+        "confirmation" => rule_set.confirmation_role, mut ["self"];
     };
 
     let protected_methods = method_permissions!(
