@@ -647,8 +647,12 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_DEFINE_ROLE_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesDefineRoleInput { role_key, rule }),
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                role_key,
+                rule: Some(rule),
+                mutability: None,
+            }),
         })
         .0
     }
@@ -656,15 +660,16 @@ impl ManifestBuilder {
     pub fn update_role_mutability(
         &mut self,
         address: GlobalAddress,
-        authority_key: RoleKey,
+        role_key: RoleKey,
         mutability: RoleList,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address,
-            method_name: ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT.to_string(),
-            args: to_manifest_value(&AccessRulesSetRoleMutabilityInput {
-                role_key: authority_key,
-                mutability,
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: to_manifest_value(&AccessRulesUpdateRoleInput {
+                role_key,
+                rule: None,
+                mutability: Some(mutability),
             }),
         })
         .0

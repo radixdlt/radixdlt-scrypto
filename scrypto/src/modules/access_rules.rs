@@ -4,9 +4,8 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesDefineRoleInput, AccessRulesSetRoleMutabilityInput,
-    ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_DEFINE_ROLE_IDENT,
-    ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
+    AccessRulesCreateInput, AccessRulesUpdateRoleInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_UPDATE_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
@@ -43,22 +42,24 @@ impl AccessRules {
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn define_role<A: Into<AccessRule>>(&self, name: &str, entry: A) {
+    pub fn update_role_rule<A: Into<AccessRule>>(&self, name: &str, entry: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_DEFINE_ROLE_IDENT,
-            &AccessRulesDefineRoleInput {
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
                 role_key: RoleKey::new(name),
-                rule: entry.into(),
+                rule: Some(entry.into()),
+                mutability: None,
             },
         );
     }
 
-    pub fn set_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
+    pub fn update_role_mutability<L: Into<RoleList>>(&self, name: &str, mutability: L) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT,
-            &AccessRulesSetRoleMutabilityInput {
+            ACCESS_RULES_UPDATE_ROLE_IDENT,
+            &AccessRulesUpdateRoleInput {
                 role_key: RoleKey::new(name),
-                mutability: mutability.into(),
+                rule: None,
+                mutability: Some(mutability.into()),
             },
         );
     }

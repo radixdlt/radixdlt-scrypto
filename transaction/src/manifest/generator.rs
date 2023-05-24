@@ -7,8 +7,7 @@ use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_DEFINE_ROLE_IDENT;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT;
+use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::royalty::{
@@ -622,20 +621,11 @@ pub fn generate_instruction(
                 args: generate_args(args, resolver, bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::SetAuthorityAccessRule { address, args } => {
-            InstructionV1::CallAccessRulesMethod {
-                address: generate_global_address(address, bech32_decoder)?,
-                method_name: ACCESS_RULES_DEFINE_ROLE_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
-            }
-        }
-        ast::Instruction::SetAuthorityMutability { address, args } => {
-            InstructionV1::CallAccessRulesMethod {
-                address: generate_global_address(address, bech32_decoder)?,
-                method_name: ACCESS_RULES_SET_ROLE_MUTABILITY_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
-            }
-        }
+        ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_global_address(address, bech32_decoder)?,
+            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+        },
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
             address: generate_global_address(address, bech32_decoder)?,

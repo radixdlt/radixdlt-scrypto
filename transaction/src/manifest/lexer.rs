@@ -127,8 +127,7 @@ pub enum TokenKind {
     RemoveMetadata,
     SetComponentRoyaltyConfig,
     ClaimComponentRoyalty,
-    SetAuthorityAccessRule,
-    SetAuthorityMutability,
+    UpdateRole,
 
     /* Call main method aliases */
     SetPackageRoyaltyConfig,
@@ -491,8 +490,7 @@ impl Lexer {
             "REMOVE_METADATA" => Ok(TokenKind::RemoveMetadata),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
             "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
-            "SET_AUTHORITY_ACCESS_RULE" => Ok(TokenKind::SetAuthorityAccessRule),
-            "SET_AUTHORITY_MUTABILITY" => Ok(TokenKind::SetAuthorityMutability),
+            "UPDATE_ROLE" => Ok(TokenKind::UpdateRole),
 
             /* call main method aliases */
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),

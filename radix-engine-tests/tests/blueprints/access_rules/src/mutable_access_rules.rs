@@ -45,12 +45,12 @@ mod mutable_access_rules_component {
 
         pub fn set_authority_rules(&self, authority: String, rule: AccessRule) {
             let access_rules = Runtime::access_rules();
-            access_rules.define_role(authority.as_str(), rule);
+            access_rules.update_role_rule(authority.as_str(), rule);
         }
 
         pub fn lock_authority(&self, role: String) {
             let access_rules = Runtime::access_rules();
-            access_rules.set_role_mutability(role.as_str(), RoleList::none());
+            access_rules.update_role_mutability(role.as_str(), RoleList::none());
         }
 
         // The methods that the access rules will be added to

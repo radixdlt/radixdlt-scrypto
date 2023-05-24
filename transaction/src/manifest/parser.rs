@@ -259,11 +259,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            TokenKind::SetAuthorityAccessRule => Instruction::SetAuthorityAccessRule {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            TokenKind::SetAuthorityMutability => Instruction::SetAuthorityMutability {
+            TokenKind::UpdateRole => Instruction::UpdateRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
