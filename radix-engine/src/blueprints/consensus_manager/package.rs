@@ -58,16 +58,6 @@ impl ConsensusManagerNativePackage {
             },
         );
         functions.insert(
-            CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
-            FunctionSchema {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: aggregator.add_child_type_and_descendents::<ConsensusManagerSetEpochInput>(),
-                output: aggregator
-                    .add_child_type_and_descendents::<ConsensusManagerSetEpochOutput>(),
-                export_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
-            },
-        );
-        functions.insert(
             CONSENSUS_MANAGER_START_IDENT.to_string(),
             FunctionSchema {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -348,15 +338,6 @@ impl ConsensusManagerNativePackage {
                     })?;
 
                 let rtn = ConsensusManagerBlueprint::get_current_epoch(api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            CONSENSUS_MANAGER_SET_EPOCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let input: ConsensusManagerSetEpochInput = input.as_typed().map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-                })?;
-                let rtn = ConsensusManagerBlueprint::set_epoch(input.epoch, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_START_IDENT => {

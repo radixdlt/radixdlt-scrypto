@@ -228,10 +228,6 @@ impl ConsensusManagerBlueprint {
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             rule!(require(AuthAddresses::validator_role())),
         );
-        authority_rules.set_fixed_main_authority_rule(
-            CONSENSUS_MANAGER_SET_EPOCH_IDENT,
-            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-        );
 
         let access_rules = AccessRules::create(
             authority_rules,
@@ -423,23 +419,6 @@ impl ConsensusManagerBlueprint {
         api.field_lock_release(consensus_manager_handle)?;
 
         Self::update_timestamps(proposer_timestamp_ms, api)?;
-
-        Ok(())
-    }
-
-    pub(crate) fn set_epoch<Y>(epoch: u64, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::MUTABLE,
-        )?;
-
-        let mut consensus_manager: ConsensusManagerSubstate = api.field_lock_read_typed(handle)?;
-        consensus_manager.epoch = epoch;
-        api.field_lock_write_typed(handle, &consensus_manager)?;
 
         Ok(())
     }

@@ -3,9 +3,7 @@ use radix_engine::blueprints::consensus_manager::{
     ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::time::UtcDateTime;
-use transaction::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -14,10 +12,6 @@ use crate::resim::*;
 pub struct SetCurrentTime {
     /// UTC date time in ISO-8601 format, up to second precision, such as '2011-12-03T10:15:30Z'.
     pub date_time: UtcDateTime,
-
-    /// Turn on tracing
-    #[clap(short, long)]
-    pub trace: bool,
 }
 
 impl SetCurrentTime {
@@ -31,7 +25,7 @@ impl SetCurrentTime {
                 epoch_minute: i32::try_from(instant.seconds_since_unix_epoch / 60).unwrap(),
             },
         )?;
-        writeln!(out, "Time set successfully")?;
+        writeln!(out, "Time set successfully").map_err(Error::IOError)?;
         Ok(())
     }
 }

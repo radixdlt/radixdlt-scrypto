@@ -54,12 +54,12 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::blueprints::consensus_manager::{
-    ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
+    ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::track::db_key_mapper::{
-    DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
 };
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
@@ -79,9 +79,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::schema::{IndexedBlueprintSchema, IndexedPackageSchema, PackageSchema};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, SubstateDatabase,
-};
+use radix_engine_store_interface::interface::SubstateDatabase;
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
@@ -450,28 +448,48 @@ pub fn db_upsert_timestamps(
     milli_timestamp: ProposerMilliTimestampSubstate,
     minute_timestamp: ProposerMinuteTimestampSubstate,
 ) -> Result<(), Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
-    let consensus_manager_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         OBJECT_BASE_PARTITION,
-    );
-    let milli_timestamp_sort_key =
-        SpreadPrefixKeyMapper::to_db_sort_key(&ConsensusManagerField::CurrentTime.into());
-    let minute_timestamp_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(
-        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+        &ConsensusManagerField::CurrentTime.into(),
+        &milli_timestamp,
     );
 
-    substate_db.commit(&indexmap!(
-        consensus_manager_partition_key => indexmap!(
-            milli_timestamp_sort_key => DatabaseUpdate::Set(
-                scrypto_encode(&milli_timestamp).unwrap()
-            ),
-            minute_timestamp_sort_key => DatabaseUpdate::Set(
-                scrypto_encode(&minute_timestamp).unwrap()
-            )
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+        &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
+        &minute_timestamp,
+    );
+
+    Ok(())
+}
+
+pub fn db_upsert_epoch(epoch: u64) -> Result<(), Error> {
+    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
+    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+
+    let mut consensus_manager_substate = substate_db
+        .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+            &CONSENSUS_MANAGER.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
         )
-    ));
+        .unwrap_or_else(|| ConsensusManagerSubstate { epoch: 0, round: 0 });
+
+    consensus_manager_substate.epoch = epoch;
+
+    substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        &CONSENSUS_MANAGER.as_node_id(),
+        OBJECT_BASE_PARTITION,
+        &ConsensusManagerField::ConsensusManager.into(),
+        &consensus_manager_substate,
+    );
 
     Ok(())
 }

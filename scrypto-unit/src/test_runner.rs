@@ -14,7 +14,9 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::system::system_modules::costing::SystemLoanFeeReserve;
-use radix_engine::track::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
+use radix_engine::track::db_key_mapper::{
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
 use radix_engine::track::Track;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
@@ -32,10 +34,9 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, ConsensusManagerGetCurrentTimeInput,
-    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput,
-    ConsensusManagerSetEpochInput, LeaderProposalHistory, TimePrecision,
-    CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT, CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
-    CONSENSUS_MANAGER_NEXT_ROUND_IDENT, CONSENSUS_MANAGER_SET_EPOCH_IDENT,
+    ConsensusManagerInitialConfiguration, ConsensusManagerNextRoundInput, LeaderProposalHistory,
+    TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{PackageInfoSubstate, PackageRoyaltySubstate};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
@@ -1193,17 +1194,15 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u32) {
-        let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_SET_EPOCH_IDENT.to_string(),
-                args: to_manifest_value(&ConsensusManagerSetEpochInput {
-                    epoch: epoch as u64,
-                }),
-            }],
-            btreeset![AuthAddresses::system_role()],
+        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+            &CONSENSUS_MANAGER.as_node_id(),
+            OBJECT_BASE_PARTITION,
+            &ConsensusManagerField::ConsensusManager.into(),
+            &ConsensusManagerSubstate {
+                epoch: epoch as u64,
+                round: 0,
+            },
         );
-        receipt.expect_commit_success();
     }
 
     pub fn get_current_epoch(&mut self) -> u32 {

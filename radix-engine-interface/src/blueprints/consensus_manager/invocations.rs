@@ -79,15 +79,6 @@ pub struct ConsensusManagerGetCurrentEpochInput;
 
 pub type ConsensusManagerGetCurrentEpochOutput = u64;
 
-pub const CONSENSUS_MANAGER_SET_EPOCH_IDENT: &str = "set_epoch";
-
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
-pub struct ConsensusManagerSetEpochInput {
-    pub epoch: u64,
-}
-
-pub type ConsensusManagerSetEpochOutput = ();
-
 pub const CONSENSUS_MANAGER_START_IDENT: &str = "start";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
